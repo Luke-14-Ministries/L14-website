@@ -2044,3 +2044,29 @@ The CSV of pairings carries names, roles, households and the background-check wo
 who joined or left in the last 30 days (logged from today by a trigger on `profiles.email_news`),
 and a CSV. It does not send: newsletters stay in Resend's own tools until a later decision, and
 people who signed up through the public Google Form are not on this list.
+
+
+---
+
+## 2026-10-14 — Required answers, the volunteer form trimmed, and the 2026 retreat stays on CampSite
+
+**Required answers** — Ellen and Katie's position, adopted by Lawrence on 14 October, which closes
+the open staff question "which details fields should block saving" the other way from the 24 August
+default. The boxes that decide what staff do must be filled in: a camper's disability or diagnosis;
+what the allergies are and how serious, when allergies are ticked; the seizure and rescue-medication
+detail when those are ticked. On the volunteer application every question except skills. A
+scholarship request needs a sentence. **"None" and "N/A" are accepted** — they are what a reviewer
+follows up on, which is the point of asking. A reviewer sees them on the person page and the
+registration; a flag in the review queue for placeholder answers is a possible later step and is not
+built. The photo and the emergency contact keep their strong prompts.
+
+**The volunteer form no longer asks** about diagnosis, communication, getting around or personal
+care — those are camper questions (Ellen). Anyone who is not a camper keeps allergies, medications,
+seizures, sleep and rooming. Text already entered in the removed boxes stays visible.
+
+**"Where would you like to serve?"** says that a preference is a preference and the camp team makes
+placements (Katie).
+
+**Adult Adventure Retreat 2026 registers on CampSite** (Ellen, for the organisation). The public
+retreat page sends people to the ministry's existing site, where the CampSite links are; this
+platform's first retreat is the next one. The wizard links are kept in a comment for then.

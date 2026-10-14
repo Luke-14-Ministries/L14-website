@@ -1,11 +1,16 @@
-import Link from 'next/link';
 import { asset } from '@/lib/site';
 
 export const metadata = { title: 'Adult Adventure Retreat' };
 
-// Registration links carry the program so the chooser does not ask a question
-// the visitor has already answered by being on this page.
-const REG = '/register/family/%3Fprogram%3DAdult%2520Adventure%2520Retreat%25202026';
+// The 2026 retreat registers on CampSite, through the ministry's existing
+// site (Ellen, 14 Oct 2026): this platform's first retreat is the next one.
+// The links below therefore go to the page that holds the CampSite links,
+// not to the registration wizard here. When registration for a retreat
+// opens on this site, point them at
+//   /register/family/?program=Adult%20Adventure%20Retreat%20<year>
+// again (the chooser then skips the question the visitor has already
+// answered by being on this page).
+const CURRENT_REGISTRATION = 'https://luke14ministries.net/adultadventureretreat';
 
 // The hero borrows the BANNER'S PALETTE rather than reproducing the banner at
 // full bleed. Three reasons:
@@ -74,18 +79,11 @@ export default function AdultAdventureRetreatPage() {
               </dl>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
-                <Link href={`/account/signup/?next=${REG}`} className="btn-gold !px-8">
-                  Register for the Retreat
-                </Link>
+                <a href={CURRENT_REGISTRATION} className="btn-gold !px-8">
+                  Register for the 2026 Retreat
+                </a>
                 <span className="text-white/80">
-                  Been before?{' '}
-                  <Link
-                    href={`/account/?next=${REG}`}
-                    className="font-semibold underline"
-                    style={{ color: GOLD }}
-                  >
-                    Log in and register
-                  </Link>
+                  Registration for 2026 is on our main site, where it has always been.
                 </span>
               </div>
             </div>
@@ -131,9 +129,9 @@ export default function AdultAdventureRetreatPage() {
             </p>
           </div>
           <div className="mt-8">
-            <Link href={`/account/signup/?next=${REG}`} className="btn-primary !px-8">
-              Register for the Retreat
-            </Link>
+            <a href={CURRENT_REGISTRATION} className="btn-primary !px-8">
+              Register for the 2026 Retreat
+            </a>
           </div>
         </div>
       </section>

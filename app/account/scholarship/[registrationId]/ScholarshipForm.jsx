@@ -47,6 +47,12 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
       );
       return;
     }
+    // A request with nothing written in it gives staff nothing to decide on
+    // (Ellen's note; Lawrence 14 Oct 2026). A sentence is enough.
+    if (!statement.trim()) {
+      setError('Please tell us a little about why — a sentence is enough. Staff read every request.');
+      return;
+    }
     setBusy(true);
     setError('');
     const res = await requestScholarship(registrationId, row.participantId, {

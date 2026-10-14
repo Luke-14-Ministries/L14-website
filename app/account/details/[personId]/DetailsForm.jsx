@@ -159,6 +159,28 @@ export default function DetailsForm({
     // upload any nonsense picture, so a hard wall buys no real verification
     // and costs the family that genuinely has no good photo to hand tonight.
     // The ask, with its reasons, does the actual work.
+    const missing = [];
+    if (isCamper && !(f.disabilities ?? '').trim()) {
+      missing.push('Disability or diagnosis — write "none" if there is none');
+    }
+    if (f.has_allergies === true && !(f.allergy_detail ?? '').trim()) {
+      missing.push('What the allergies are');
+    }
+    if (f.has_allergies === true && !f.allergy_severity) {
+      missing.push('How serious the allergy is (Mild, Severe, Anaphylaxis)');
+    }
+    if (f.has_seizures === true && !(f.seizure_detail ?? '').trim()) {
+      missing.push('About the seizures — how long, what helps, when to call for help');
+    }
+    if (f.has_rescue_medication === true && !(f.rescue_medication_detail ?? '').trim()) {
+      missing.push('The rescue medication and when it is given');
+    }
+    if (missing.length > 0) {
+      setError(
+        `Please fill in: ${missing.join('; ')}. "None" or "N/A" is a fine answer — staff read every one.`
+      );
+      return;
+    }
     if (!hasPhoto) {
       const ok = window.confirm(
         `Save without a photo of ${name}?\n\n` +
@@ -245,10 +267,13 @@ export default function DetailsForm({
           />
         </div>
 
-        {showAll && (
+        {showAll && (isCamper || hasFullerDetail) && (
           <>
         <label className={label}>
-          Disability or diagnosis, in your own words <span className="font-normal text-neutral-500">(optional)</span>
+          Disability or diagnosis, in your own words{' '}
+          <span className="font-normal text-neutral-500">
+            {isCamper ? '(required — "none" is an answer)' : '(optional)'}
+          </span>
         </label>
         <textarea className={input} rows={2} value={f.disabilities} onChange={set('disabilities')} />
 
@@ -520,8 +545,9 @@ export default function DetailsForm({
         <div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-5 text-center">
           <p className="text-sm text-neutral-700">
             We&rsquo;ve kept this short because {name} isn&rsquo;t registered as a camper.
-            If there is more we should know — how they communicate, getting around,
-            medications, seizures, what helps on a hard day — it all matters just as much.
+            If there is more we should know — allergies and what they are, medications,
+            seizures, sleep away from home, who they would like to room with — it all
+            matters just as much.
           </p>
           <button
             type="button"

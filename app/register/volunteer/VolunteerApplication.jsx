@@ -85,6 +85,18 @@ export default function VolunteerApplication({
     // the form (board decision, relayed 29 Sep 2026): somebody who is not
     // comfortable affirming it is asked to speak with Larry, and the
     // omission is flagged to staff at review rather than refused here.
+    // Every question except skills is required (Ellen & Katie; Lawrence,
+    // 14 Oct 2026). "None" is an answer; a blank is not.
+    const missing = [];
+    if (picked.length === 0) missing.push('where you would like to serve');
+    if (firstTime === '') missing.push('whether this is your first time');
+    if (!church.trim()) missing.push('home church ("none" is fine)');
+    if (!faith.trim()) missing.push('a little about your faith');
+    if (!experience.trim()) missing.push('experience with people with disabilities ("none" is fine)');
+    if (missing.length > 0) {
+      setError(`Please answer: ${missing.join('; ')}.`);
+      return;
+    }
     setPending(true);
     setError('');
     const res = await submitVolunteerApplication({
@@ -160,7 +172,14 @@ export default function VolunteerApplication({
 
       {open && (
         <div className="mt-4 border-t border-neutral-100 pt-4">
-          <label className={label}>Where would you like to serve? (pick any)</label>
+          <label className={label}>Where would you like to serve? (pick any — required)</label>
+          {/* Katie, 14 Oct 2026: say up front that a preference is a
+              preference. Leadership honours them where it can; the camp
+              decides where each person is placed. */}
+          <p className="mb-1 text-xs text-neutral-500">
+            We do our best to honour preferences, and the camp team makes the final placements —
+            you may be asked to serve somewhere else.
+          </p>
           <div className="grid sm:grid-cols-2 gap-1">
             {AREAS.map((a) => (
               <label key={a} className="flex items-center gap-2 text-sm text-neutral-700">
@@ -175,7 +194,7 @@ export default function VolunteerApplication({
             ))}
           </div>
 
-          <label className={label}>Is this your first time volunteering with us?</label>
+          <label className={label}>Is this your first time volunteering with us? (required)</label>
           <div className="flex gap-4 text-sm text-neutral-700">
             {['yes', 'no'].map((v) => (
               <label key={v} className="flex items-center gap-2">
@@ -191,7 +210,7 @@ export default function VolunteerApplication({
             ))}
           </div>
 
-          <label className={label}>Home church (if any)</label>
+          <label className={label}>Home church (required — &ldquo;none&rdquo; is an answer)</label>
           <input className={input} value={church} onChange={(e) => setChurch(e.target.value)} />
 
           {/* The cap "(a sentence or two is plenty)" was removed on 29 August 2026 at Lee Anne's
@@ -199,13 +218,13 @@ export default function VolunteerApplication({
               taller for the same reason -- a two-row box says "keep it short" even without the
               words. These faith questions are on the VOLUNTEER application only; families and
               campers never see them (confirmed by Larry, 29 Aug 2026). */}
-          <label className={label}>A little about your faith</label>
+          <label className={label}>A little about your faith (required)</label>
           <textarea className={input} rows={4} value={faith} onChange={(e) => setFaith(e.target.value)} />
 
           <label className={label}>Skills you&rsquo;d bring (music, lifeguard, nursing, crafts…)</label>
           <textarea className={input} rows={2} value={skills} onChange={(e) => setSkills(e.target.value)} />
 
-          <label className={label}>Experience with people with disabilities (none needed!)</label>
+          <label className={label}>Experience with people with disabilities (required — none needed, just tell us)</label>
           <textarea
             className={input}
             rows={2}
