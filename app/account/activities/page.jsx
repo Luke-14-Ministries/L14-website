@@ -30,7 +30,7 @@ export default async function ActivitiesPage() {
         .from('registrations')
         .select(
           `id, events ( id, name, starts_on, ends_on ),
-           registration_participants ( id, status, people ( id, first_name, last_name ) )`
+           registration_participants ( id, status, camp_role, people ( id, first_name, last_name ) )`
         )
         .in('household_id', householdIds)
         .order('created_at', { ascending: false })
@@ -125,8 +125,12 @@ export default async function ActivitiesPage() {
           placesLeft: a.capacity == null ? null : Math.max(0, a.capacity - (takenByActivity.get(a.id) ?? 0)),
           slots: slotsByActivity.get(a.id) ?? [],
         }));
+      // Campers only (Lawrence, 14 Oct 2026). Activities are chosen for the
+      // camper; the buddy goes along with them. A volunteer, parent or
+      // sibling choosing horseback riding for themselves was never the idea,
+      // and the sheets the area leaders carry count places for campers.
       const people = (r.registration_participants ?? [])
-        .filter((p) => p.status !== 'cancelled')
+        .filter((p) => p.status !== 'cancelled' && p.camp_role === 'camper')
         .map((p) => ({
           participantId: p.id,
           name: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
@@ -159,7 +163,8 @@ export default async function ActivitiesPage() {
         ) : (
           <>
             <p className="text-neutral-600 mb-8">
-              Choose what each person would like to do. Nothing here is binding — tell us
+              Choose what each camper would like to do — their buddy goes along with them.
+              Nothing here is binding — tell us
               what you&rsquo;d like and camp staff will confirm the details closer to the
               time. You can change your mind whenever you like.
               {' '}

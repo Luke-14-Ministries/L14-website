@@ -2003,3 +2003,24 @@ was no single place to see everything a reviewer needs.
   to more than one person. It now says it is a key to the two badge colours.
 - **Rosters' event column** shows "CC 2027 · Wk 2" / "AAR 2026" with the full name on hover; it
   was wrapping to four lines.
+
+
+---
+
+## 2026-10-14 — Activities are chosen for campers; the sheets print one at a time
+
+Lawrence, 14 October, with Ellen's notes. **Only campers choose activities** — the family page
+lists campers alone, and a registration with no camper shows no "Choose activities" button. The
+buddy goes along with their camper; a volunteer picking horseback riding for themselves was never
+the idea. (The seats the area leaders count are campers' seats.)
+
+**The activity sheets print one activity at a time** as well as all together (`?activity=`), and
+the column that read "Notes" is "Support": it is a flag about the person, so it reads the same
+on every sheet they appear on — Katie Pratt2 carried "ask the coordinator" on every activity
+because she carries a support flag, not because each activity has a note. Per-activity notes
+would be a new field; not asked for.
+
+**Wording:** the activity editor's examples said "boat" for every activity that runs in sittings,
+which read oddly on the Salon. They now say "trip" and "sitting". The Salon's own sitting,
+"Landing 1" on 15 July, is data Ellen entered while setting activities up and is hers to correct
+on the Activities page.

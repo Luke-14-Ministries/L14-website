@@ -51,6 +51,11 @@ export default async function ActivityPrintPage({ searchParams }) {
         .order('sort_order')
     : { data: [] };
 
+  // ?activity=<id> prints one sheet. Asked for 14 Oct 2026: the leader of
+  // one activity wants their own register, not the whole booklet.
+  const only = typeof params?.activity === 'string' ? params.activity : '';
+  const shown = only ? (activities ?? []).filter((a) => a.id === only) : activities ?? [];
+
   const activityIds = (activities ?? []).map((a) => a.id);
 
   const { data: slotRows } = activityIds.length
@@ -142,7 +147,7 @@ export default async function ActivityPrintPage({ searchParams }) {
             <th className="w-8 py-1">✓</th>
             <th className="py-1 pr-3">Name</th>
             <th className="py-1 pr-3">Family</th>
-            <th className="py-1">Notes</th>
+            <th className="py-1">Support</th>
           </tr>
         </thead>
         <tbody>
@@ -177,11 +182,32 @@ export default async function ActivityPrintPage({ searchParams }) {
         <h1 className="text-xl font-bold">Activity sheets</h1>
         <PrintButton />
       </div>
-      <p className="mb-6 text-sm text-neutral-500 print:hidden">
+      <p className="mb-3 text-sm text-neutral-500 print:hidden">
         One register per activity, per sitting. Names and a flag only &mdash; the detail behind
         &ldquo;ask the coordinator&rdquo; stays on the Medical &amp; Support page, because this
-        sheet is paper and paper gets left on a table.
+        sheet is paper and paper gets left on a table. The <strong>Support</strong> column is
+        about the person, not the activity: it reads the same on every sheet they appear on.
       </p>
+      {(activities ?? []).length > 1 && (
+        <p className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm print:hidden">
+          <span className="text-neutral-500">Print:</span>
+          <a
+            href={`/admin/activities/print/?event=${selected ?? ''}`}
+            className={only ? 'text-brand underline' : 'font-semibold'}
+          >
+            all activities
+          </a>
+          {(activities ?? []).map((a) => (
+            <a
+              key={a.id}
+              href={`/admin/activities/print/?event=${selected ?? ''}&activity=${a.id}`}
+              className={only === a.id ? 'font-semibold' : 'text-brand underline'}
+            >
+              {a.name}
+            </a>
+          ))}
+        </p>
+      )}
 
       <p className="mb-6 text-sm font-semibold">
         {event ? `${event.name} · ${event.starts_on} – ${event.ends_on}` : 'No event selected'}
@@ -193,7 +219,7 @@ export default async function ActivityPrintPage({ searchParams }) {
 
       {/* Each activity starts a new page: the leader carries one sheet, not a
           booklet with three other activities on the back of theirs. */}
-      {(activities ?? []).map((a) => {
+      {shown.map((a) => {
         const slots = slotsByActivity.get(a.id) ?? [];
         const loose = byActivityNoSlot.get(a.id) ?? [];
         return (

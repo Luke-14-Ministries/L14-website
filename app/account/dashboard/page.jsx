@@ -1285,13 +1285,20 @@ export default async function DashboardPage({ searchParams }) {
                         {/* Activities live on their own page: a family with
                             three people and eleven activities is more screen
                             than a dashboard card should carry. */}
-                        <Link
-                          href="/account/activities/"
-                          title="Choose horseback riding, the boat, rafting and the rest."
-                          className="btn-outline !py-2"
-                        >
-                          Choose activities
-                        </Link>
+                        {/* Campers only (14 Oct 2026): a registration with no
+                            camper on it has nothing to choose, so the button
+                            does not appear. */}
+                        {(r.registration_participants ?? []).some(
+                          (p) => p.camp_role === 'camper' && p.status !== 'cancelled'
+                        ) && (
+                          <Link
+                            href="/account/activities/"
+                            title="Choose horseback riding, the pontoon, rafting and the rest for your campers."
+                            className="btn-outline !py-2"
+                          >
+                            Choose activities
+                          </Link>
+                        )}
                         {/* Agreements are event things, so the primary route
                             to them lives with the event (flagged 24 Aug); the
                             account-settings link remains as a second door. */}

@@ -277,7 +277,7 @@ export function AddActivity({ eventId, eventName }) {
       {f.mode === 'signup' && (
         <p className="mt-3 rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
           <span className="font-semibold">Times come afterwards.</span> If this one runs in
-          sittings — a boat that goes out four times, a chair that takes one person at a time —
+          sittings — a trip that goes out four times, a chair that takes one person at a time —
           add it first, then open it and use <span className="font-semibold">Times</span>. You
           can add them one at a time or generate a whole run at once.
         </p>
@@ -440,7 +440,7 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
     <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
       <h4 className="text-sm font-bold">Times</h4>
       <p className="mt-0.5 text-xs text-neutral-500">
-        For activities that run in sittings — the 2 o&rsquo;clock boat, chair 3. Times are as
+        For activities that run in sittings — the 2 o&rsquo;clock trip, chair 3. Times are as
         they are at camp; nothing is adjusted for where you are sitting.
       </p>
 
@@ -514,7 +514,7 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
             className={input}
             value={f.label}
             onChange={set('label')}
-            placeholder="Boat 1"
+            placeholder="Sitting 1"
           />
         </label>
       </div>
@@ -547,8 +547,8 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
       {genOpen && (
         <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
           <p className="text-xs text-neutral-600">
-            Splits one stretch of the day into equal slots — half-hour boat trips all
-            afternoon, fifteen-minute salon appointments. Each gets the same number of places.
+            Splits one stretch of the day into equal slots — half-hour sittings all
+            afternoon, fifteen-minute appointments. Each gets the same number of places.
           </p>
           <div className="mt-2 grid gap-2 sm:grid-cols-6">
             <label className="text-xs">
