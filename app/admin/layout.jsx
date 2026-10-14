@@ -59,6 +59,9 @@ const NAV = [
   { href: '/admin/scholarships', label: 'Scholarship requests', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/payments', label: 'Event Payments', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/giving', label: 'Giving', need: 'giving', ready: true },
+  // The newsletter list (14 Oct 2026): who has news & updates on, who joined
+  // or left lately, and a CSV. Sending stays in Resend for now.
+  { href: '/admin/newsletter', label: 'Newsletter', need: 'registrar', ready: true },
   { href: '/admin/setup', label: 'Setup', need: 'admin', ready: true },
   // Accounts subsumes the old Two-Factor Resets page: the same reset lives in
   // each row's menu, without typing an email address. /admin/security still

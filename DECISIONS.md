@@ -2024,3 +2024,23 @@ would be a new field; not asked for.
 which read oddly on the Salon. They now say "trip" and "sitting". The Salon's own sitting,
 "Landing 1" on 15 July, is data Ellen entered while setting activities up and is hers to correct
 on the Activities page.
+
+
+---
+
+## 2026-10-14 — Buddy sheets carry the pairing notes and the allergy; a Newsletter page lists, it does not send
+
+**Buddy sheets** (`/admin/buddies/print`), one page per buddy for orientation, print the camper's
+name and what they go by, age at camp, household, program, room once published, the five pairing
+notes the board already shows (communication, getting around, personal care, what is harder, what
+helps), and the safety facts: allergy with its severity and what it is, seizures, rescue medication.
+They do **not** print medications, diagnoses, behaviour history or the emergency contact. The room
+list's rule — paper gets left on a table — still holds; the difference is that the buddy is the one
+adult beside this camper all week and needs these facts in their pocket. The footer says to hand the
+sheet back. If staff decide the sheet should carry less, the two detail lines are marked in the file.
+The CSV of pairings carries names, roles, households and the background-check word only.
+
+**Newsletter** (`/admin/newsletter`, migration `0085`): who has "Ministry news & updates" on,
+who joined or left in the last 30 days (logged from today by a trigger on `profiles.email_news`),
+and a CSV. It does not send: newsletters stay in Resend's own tools until a later decision, and
+people who signed up through the public Google Form are not on this list.
