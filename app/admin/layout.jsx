@@ -33,7 +33,11 @@ const ROLE_INFO = {
 // sidebar; ungrouped items render at the top (before) or bottom (after) level.
 const NAV = [
   { href: '/admin', label: 'Overview', need: 'staff', ready: true },
-  { href: '/admin/rosters', label: 'Rosters', need: 'registrar', ready: true, group: 'events' },
+  // The review queue as its own page (14 Oct 2026): every family with
+  // somebody still "submitted", with the deposit / scholarship state and
+  // every flag in one row. The Overview's amber number links here.
+  { href: '/admin/review', label: 'Awaiting review', need: 'registrar', ready: true },
+  { href: '/admin/rosters', label: 'Roster: Campers & Families', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/checkin', label: 'Check-In', need: 'door', ready: true, group: 'events' },
   { href: '/admin/changes', label: 'Recent Changes', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/dietary', label: 'Dietary & Allergies', need: 'sensitive', ready: true, group: 'events' },
@@ -52,7 +56,7 @@ const NAV = [
   // "Scholarship Requests" wrapped to two lines, dropping its badge onto a
   // line of its own (25 Aug). Shortened to match its neighbours — Rosters,
   // Volunteers, Cancellations are all one word. The page keeps its full title.
-  { href: '/admin/scholarships', label: 'Scholarships', need: 'registrar', ready: true, group: 'events' },
+  { href: '/admin/scholarships', label: 'Scholarship requests', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/payments', label: 'Event Payments', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/giving', label: 'Giving', need: 'giving', ready: true },
   { href: '/admin/setup', label: 'Setup', need: 'admin', ready: true },
@@ -62,6 +66,33 @@ const NAV = [
   { href: '/admin/accounts', label: 'Accounts', need: 'admin', ready: true },
   { href: '/admin/staff', label: 'Staff & Access', need: 'admin', ready: true },
 ];
+
+// The order the Events group is shown in, which is not the order above:
+// the roster first, then the two lists staff open most after it (Volunteers,
+// Recent Changes), then the camp-week tools, then money -- with Scholarship
+// requests directly under Event Payments, because a scholarship decision is
+// a money decision (Lawrence, 14 Oct 2026). Items not named here fall to
+// the end in their original order, so a new page never disappears.
+const EVENTS_ORDER = [
+  '/admin/rosters',
+  '/admin/volunteers',
+  '/admin/changes',
+  '/admin/checkin',
+  '/admin/dietary',
+  '/admin/medical',
+  '/admin/activities',
+  '/admin/buddies',
+  '/admin/lodging',
+  '/admin/programs',
+  '/admin/cancellations',
+  '/admin/deletion-requests',
+  '/admin/payments',
+  '/admin/scholarships',
+];
+const eventsRank = (href) => {
+  const i = EVENTS_ORDER.indexOf(href);
+  return i < 0 ? EVENTS_ORDER.length : i;
+};
 
 export default async function AdminLayout({ children }) {
   const [staff, leaderships] = await Promise.all([getStaff(), getProgramLeadership()]);
@@ -399,11 +430,14 @@ export default async function AdminLayout({ children }) {
         <div className="grid gap-6 lg:grid-cols-[220px_1fr] print:block">
           <div className="print:hidden">
             <AdminNav
-            top={items.filter((n) => !n.group && n.href === '/admin')}
-            events={items.filter((n) => n.group === 'events')}
-            rest={items.filter((n) => !n.group && n.href !== '/admin')}
+            top={items.filter((n) => !n.group && (n.href === '/admin' || n.href === '/admin/review'))}
+            events={items
+              .filter((n) => n.group === 'events')
+              .sort((a, b) => eventsRank(a.href) - eventsRank(b.href))}
+            rest={items.filter((n) => !n.group && n.href !== '/admin' && n.href !== '/admin/review')}
             badges={{
               '/admin': awaitingReview,
+              '/admin/review': awaitingReview,
               '/admin/changes': unreviewedChanges,
               '/admin/volunteers': volunteersAwaiting,
               '/admin/accounts': recentAccounts,
@@ -417,6 +451,7 @@ export default async function AdminLayout({ children }) {
             }}
             badgeTitles={{
               '/admin': 'new sign-ups waiting to be confirmed or waitlisted',
+              '/admin/review': 'new sign-ups waiting to be confirmed or waitlisted',
               '/admin/accounts': 'created in the last 7 days',
               '/admin/cancellations': 'families waiting to hear back',
               '/admin/deletion-requests': 'families asking for their data to be deleted',

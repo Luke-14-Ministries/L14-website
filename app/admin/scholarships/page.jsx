@@ -115,6 +115,13 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
   return (
     <div>
       <h2 className="text-xl font-bold mb-1">Scholarship Requests</h2>
+      <p className="text-xs text-neutral-500 mb-2">
+        Part of{' '}
+        <Link href="/admin/payments/" className="text-brand-dark hover:underline">
+          Event Payments
+        </Link>
+        {' '}— a scholarship decision is a money decision.
+      </p>
       <p className="text-sm text-neutral-500 mb-4">
         Families asking for help with the fee. Approving one takes the amount straight off
         what that family owes — it shows on their balance, their dashboard, and their

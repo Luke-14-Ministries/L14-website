@@ -4,6 +4,7 @@
 // (newest submissions first by default); CSV and print links that carry the
 // active filters so the export matches the screen.
 
+import { shortEventName } from '@/lib/events';
 import { useMemo, useState } from 'react';
 import EventFilter from '@/components/EventFilter';
 import { STATUS_LABEL, statusPill } from '@/lib/format';
@@ -491,7 +492,11 @@ export default function RosterTable({ events, rows, programs = [] }) {
                   </td>
                   <td className="px-4 py-2 text-right">{money(r.fee)}</td>
                   <td className="px-4 py-2 text-neutral-600">{r.submitted ? r.submitted.slice(0, 10) : '—'}</td>
-                  {!fEvent && <td className="px-4 py-2 text-neutral-600">{eventName(r.eventId)}</td>}
+                  {!fEvent && (
+                    <td className="px-4 py-2 text-neutral-600 whitespace-nowrap" title={eventName(r.eventId)}>
+                      {shortEventName(eventName(r.eventId))}
+                    </td>
+                  )}
                 </tr>
                 );
               })}

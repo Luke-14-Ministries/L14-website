@@ -165,13 +165,16 @@ export default function AdminNav({ top, events, rest, badges = {}, badgeTitles =
 
       {/* Said once, here, rather than left as tribal knowledge -- the whole
           point of two colours is lost if nobody knows there are two. */}
+      {/* Read as a counter by more than one person (14 Oct 2026) -- it is a
+          key, and now says so. */}
       <p className="mt-3 px-3 text-xs leading-relaxed text-neutral-500">
+        Badge colours:{' '}
         <span className="inline-block rounded-full bg-amber-100 px-1.5 font-semibold text-amber-800">
-          n
+          amber
         </span>{' '}
-        waiting for review ·{' '}
+        waiting on staff — reaches zero when the work is done ·{' '}
         <span className="inline-block rounded-full bg-blue-100 px-1.5 font-semibold text-blue-800">
-          n
+          blue
         </span>{' '}
         activity in the last 7 days
       </p>

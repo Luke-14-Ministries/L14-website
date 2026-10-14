@@ -1977,3 +1977,29 @@ These come from the staff questions PDF and are recorded in full in the project 
   indicator is easy to miss. A forwarding group would be easier to notice, but could lose its
   use as a "send from" address for the site's automatic emails.
 
+
+
+---
+
+## 2026-10-14 — The review queue is one page; Event Payments is money again
+
+Lawrence, 14 October, answering the question "where does the review happen?" The 30 September
+answer put the three review classes and every flag on Event Payments; a fortnight of use said that
+a registrar sorting money does not want the Creed and photo flags in that column, and that there
+was no single place to see everything a reviewer needs.
+
+- **`/admin/review` — "Awaiting review"** — is that place: every registration with somebody
+  still *submitted*, by event, each row carrying the deposit / scholarship class, every flag
+  (deposit short, photo permission declined, Creed not affirmed), paid and balance, and a link to
+  the registration where the decision is made. The Overview's amber "37" links to it, and it is the
+  second item in the sidebar. `?show=all` lists every live registration.
+- **Event Payments keeps only the money flag** (deposit short). Its "Flagged" filter is now
+  "Deposit short". Scholarship requests sit beside it as a tab, and directly under it in the
+  sidebar, because a scholarship decision is a money decision.
+- **Sidebar order**: Roster first (renamed "Roster: Campers & Families"), then Volunteers and
+  Recent Changes, then the camp-week tools, then Event Payments with Scholarship requests under
+  it. The order is an explicit list in `app/admin/layout.jsx` so the item comments stay put.
+- **The legend under the sidebar** read as a broken counter ("n waiting for review · n activity")
+  to more than one person. It now says it is a key to the two badge colours.
+- **Rosters' event column** shows "CC 2027 · Wk 2" / "AAR 2026" with the full name on hover; it
+  was wrapping to four lines.

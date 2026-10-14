@@ -14,19 +14,27 @@ export const metadata = { title: 'Overview — Staff Admin' };
 // page function: this is a server component, so nothing remounts, but the
 // lint (react-hooks/static-components) cannot tell, and the habit is worth
 // not having.
-function Stat({ label, sub, value, tone }) {
-  return (
-    <div
-      className={`rounded-lg bg-white border shadow-sm p-5 ${
-        tone === 'amber' ? 'border-amber-300' : 'border-neutral-200'
-      }`}
-    >
+function Stat({ label, sub, value, tone, href }) {
+  const body = (
+    <>
       <div className={`text-3xl font-bold ${tone === 'amber' ? 'text-amber-700' : ''}`}>
         {value}
       </div>
       <div className="text-sm font-semibold text-neutral-700">{label}</div>
       <div className="text-xs text-neutral-500">{sub}</div>
-    </div>
+    </>
+  );
+  const cls = `block rounded-lg bg-white border shadow-sm p-5 ${
+    tone === 'amber' ? 'border-amber-300' : 'border-neutral-200'
+  }`;
+  // A number that is also the way to the work (14 Oct 2026): "37 awaiting
+  // review" opens the review queue.
+  return href ? (
+    <Link href={href} className={`${cls} hover:shadow-md hover:border-brand`}>
+      {body}
+    </Link>
+  ) : (
+    <div className={cls}>{body}</div>
   );
 }
 
@@ -148,6 +156,7 @@ export default async function AdminOverview() {
           }
           value={totalPending}
           tone={totalPending > 0 ? 'amber' : undefined}
+          href="/admin/review/"
         />
       </div>
 

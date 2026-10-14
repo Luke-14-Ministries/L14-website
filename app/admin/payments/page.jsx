@@ -160,7 +160,9 @@ export default async function AdminPaymentsPage({ searchParams }) {
       case 'neither':
         return reviewByReg.get(b.registration_id)?.review_class === paystate;
       case 'flagged':
-        return (reviewByReg.get(b.registration_id)?.flags ?? []).length > 0;
+        // Money flags only (14 Oct 2026): the photo and Creed flags moved to
+        // the review queue (/admin/review), where every flag lives together.
+        return (reviewByReg.get(b.registration_id)?.flags ?? []).includes('deposit_short');
       default:
         return true;
     }
@@ -177,7 +179,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     ['deposit_paid', 'To review: deposit received'],
     ['full_scholarship', 'To contact: full scholarship'],
     ['neither', 'No deposit yet'],
-    ['flagged', 'Flagged'],
+    ['flagged', 'Deposit short'],
   ];
   // One helper builds every filter-carrying URL (pills, CSVs) so the active
   // event + payment state always travel together.
@@ -303,7 +305,22 @@ export default async function AdminPaymentsPage({ searchParams }) {
         </div>
       </div>
 
-      <h3 className="font-semibold text-neutral-700 mb-2">Balances by family</h3>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+        <h3 className="font-semibold text-neutral-700">Balances by family</h3>
+        {/* Scholarship decisions are money decisions (Lawrence, 14 Oct 2026),
+            so their page sits here as a tab rather than elsewhere in the
+            sidebar. The photo and Creed flags that used to show in the
+            Review column live on the review queue instead. */}
+        <nav className="flex gap-3 text-sm">
+          <span className="font-semibold text-brand-dark border-b-2 border-brand">Balances</span>
+          <Link href="/admin/scholarships/" className="text-neutral-600 hover:text-brand-dark hover:underline">
+            Scholarship requests →
+          </Link>
+          <Link href="/admin/review/" className="text-neutral-600 hover:text-brand-dark hover:underline">
+            Review queue →
+          </Link>
+        </nav>
+      </div>
       <div className="flex flex-wrap items-center gap-2 mb-3">
         {PAYSTATES.map(([v, label]) => (
           <Link
@@ -432,7 +449,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                           >
                             {c.label}
                           </span>
-                          {(rv.flags ?? []).map((f) => (
+                          {(rv.flags ?? []).filter((f) => f === 'deposit_short').map((f) => (
                             <span
                               key={f}
                               className="block whitespace-nowrap text-xs font-semibold text-amber-800"
