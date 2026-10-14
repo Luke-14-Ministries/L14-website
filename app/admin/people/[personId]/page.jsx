@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { allergyPill, statusPill } from '@/lib/format';
+import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 
 export const metadata = { title: 'Person — Staff Admin' };
 
@@ -114,6 +115,66 @@ export default async function PersonPage({ params }) {
       : Promise.resolve({ data: [] }),
   ]);
   const programName = new Map((programs ?? []).map((g) => [g.id, g.name]));
+
+  // Everything else a reviewer asks about a person, by event (14 Oct 2026,
+  // Lawrence: "there doesn't seem to be a way to easily get to ALL of the
+  // info for a person's registration"). The review class and flags come from
+  // the same view the review queue uses; agreements are this person's own
+  // signatures plus any household-level one from before 30 Sep; the
+  // volunteer application carries the Creed answer; permissions are the
+  // latest answer per kind.
+  const regIds = [...new Set((parts ?? []).map((p) => p.registration_id).filter(Boolean))];
+  const [{ data: reviewRows }, { data: ownSigs }, { data: householdSigs }, { data: apps }, { data: consents }] =
+    await Promise.all([
+      regIds.length
+        ? supabase.from('registration_review').select('registration_id, review_class, flags').in('registration_id', regIds)
+        : Promise.resolve({ data: [] }),
+      supabase
+        .from('agreement_signatures')
+        .select('registration_id, status, signed_at, signer_name, signer_role, agreements ( key, title, version )')
+        .eq('person_id', personId)
+        .order('signed_at', { ascending: true }),
+      regIds.length
+        ? supabase
+            .from('agreement_signatures')
+            .select('registration_id, status, signed_at, signer_name, signer_role, agreements ( key, title, version )')
+            .is('person_id', null)
+            .in('registration_id', regIds)
+            .order('signed_at', { ascending: true })
+        : Promise.resolve({ data: [] }),
+      participantIds.length
+        ? supabase
+            .from('volunteer_applications')
+            .select('registration_participant_id, status, creed_affirmed, reviewed_at, updated_at')
+            .in('registration_participant_id', participantIds)
+        : Promise.resolve({ data: [] }),
+      supabase
+        .from('person_consents')
+        .select('kind, granted, recorded_at, recorded_as')
+        .eq('person_id', personId)
+        .order('recorded_at', { ascending: false }),
+    ]);
+  const reviewByReg = new Map((reviewRows ?? []).map((r) => [r.registration_id, r]));
+  const sigsByReg = new Map();
+  for (const sig of [...(ownSigs ?? []), ...(householdSigs ?? [])]) {
+    if (!sigsByReg.has(sig.registration_id)) sigsByReg.set(sig.registration_id, []);
+    sigsByReg.get(sig.registration_id).push(sig);
+  }
+  const appByPart = new Map((apps ?? []).map((a) => [a.registration_participant_id, a]));
+  const latestConsent = new Map();
+  for (const c of consents ?? []) if (!latestConsent.has(c.kind)) latestConsent.set(c.kind, c);
+  const CONSENT_LABEL = { media: 'Photos and video', directory: 'Participant directory' };
+  const SIGNER_ROLE = {
+    self: 'for themselves',
+    parent_guardian: 'as parent or guardian',
+    legal_guardian: 'as legal guardian',
+    authorized_adult: 'with their permission',
+    all_registered: 'for everyone on the registration (household signature)',
+    parent: 'as a parent',
+    guardian: 'as guardian',
+    account_holder: 'as the account holder',
+  };
+  const fmtDate = (iso) => (iso ? String(iso).slice(0, 10) : '');
 
   // Cabin names for rooms, so "Room 3" reads as "Oak Cabin · Room 3". A room
   // points at its cabin; a cabin points at nothing.
@@ -325,9 +386,91 @@ export default async function PersonPage({ params }) {
                       <span className="text-amber-700">No place assigned</span>
                     )}
                   </Row>
+                  {(() => {
+                    const rv = reviewByReg.get(p.registration_id);
+                    const cls = rv ? REVIEW_CLASS[rv.review_class] : null;
+                    const flags = rv?.flags ?? [];
+                    return (
+                      <Row label="Review">
+                        {cls ? (
+                          <span
+                            title={cls.hint}
+                            className={`rounded px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
+                          >
+                            {cls.label}
+                          </span>
+                        ) : (
+                          <span className="text-neutral-500">—</span>
+                        )}
+                        {flags.map((fl) => (
+                          <span key={fl} className="ml-2 whitespace-nowrap text-xs font-semibold text-amber-800">
+                            ⚑ {REVIEW_FLAG[fl] ?? fl}
+                          </span>
+                        ))}
+                      </Row>
+                    );
+                  })()}
+                  <Row label="Agreements">
+                    {(() => {
+                      const sigs = sigsByReg.get(p.registration_id) ?? [];
+                      if (sigs.length === 0) return <span className="text-amber-700">Not signed</span>;
+                      return (
+                        <ul className="space-y-0.5">
+                          {sigs.map((sg, i) => (
+                            <li key={i} className="text-xs">
+                              {sg.agreements?.title ?? sg.agreements?.key}
+                              {sg.agreements?.version ? ` (v${sg.agreements.version})` : ''} —{' '}
+                              {fmtDate(sg.signed_at)} by {sg.signer_name}
+                              {sg.signer_role ? `, ${SIGNER_ROLE[sg.signer_role] ?? sg.signer_role}` : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    })()}
+                  </Row>
+                  {(p.camp_role === 'volunteer' || appByPart.has(p.id)) && (
+                    <Row label="Volunteer application">
+                      {(() => {
+                        const a = appByPart.get(p.id);
+                        if (!a) return <span className="text-amber-700">Not started</span>;
+                        return (
+                          <>
+                            <span className="capitalize">{a.status}</span>
+                            {a.reviewed_at ? ` · reviewed ${fmtDate(a.reviewed_at)}` : ''}
+                            {' · '}
+                            {a.creed_affirmed ? (
+                              <span className="text-green-700">Creed affirmed</span>
+                            ) : (
+                              <span className="font-semibold text-red-700">⚠ Creed not affirmed — speak with Larry</span>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </Row>
+                  )}
                 </div>
               );
             })
+          )}
+        </Section>
+
+        <Section title="Permissions" note="The latest answer given for this person; earlier answers are kept.">
+          {latestConsent.size === 0 ? (
+            <p className="text-neutral-500">Nothing recorded yet.</p>
+          ) : (
+            [...latestConsent.values()].map((c) => (
+              <Row key={c.kind} label={CONSENT_LABEL[c.kind] ?? c.kind}>
+                {c.granted ? (
+                  <span className="text-green-700">Yes</span>
+                ) : (
+                  <span className="font-semibold text-amber-800">⚑ Declined</span>
+                )}
+                <span className="ml-2 text-xs text-neutral-500">
+                  {fmtDate(c.recorded_at)}
+                  {c.recorded_as ? ` · ${c.recorded_as}` : ''}
+                </span>
+              </Row>
+            ))
           )}
         </Section>
 
