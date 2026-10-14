@@ -139,6 +139,11 @@ export default function BuddyBoard({
   }
   const [error, setError] = useState('');
   const [picking, setPicking] = useState(null); // camper participantId
+  // Volunteers who already have a camper are hidden from the picker unless
+  // asked for (14 Oct 2026, Lawrence): the list is for finding a free pair of
+  // hands, and a second camper for the same volunteer is the exception, not
+  // the default. The box brings them back, with their load shown.
+  const [showPaired, setShowPaired] = useState(false);
 
   const byCamper = useMemo(() => {
     const m = new Map();
@@ -324,13 +329,31 @@ export default function BuddyBoard({
             {publishedAt && `Published ${publishedAt.slice(0, 10)}`}
           </p>
         </div>
-        <button
-          onClick={togglePublish}
-          disabled={pending}
-          className={publishedAt ? 'btn-outline !py-2' : 'btn-primary !py-2'}
-        >
-          {publishedAt ? 'Unpublish' : 'Publish assignments'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* The pairings as a spreadsheet, and as one sheet per buddy for
+              orientation (14 Oct 2026). Both carry the event. */}
+          <a
+            href={`/admin/buddies/export?event=${eventId}`}
+            className="btn-outline !py-2 text-sm"
+            title="Every pairing for this event as a CSV: camper, buddy, household, check status."
+          >
+            Download CSV
+          </a>
+          <a
+            href={`/admin/buddies/print/?event=${eventId}`}
+            className="btn-outline !py-2 text-sm"
+            title="One printable sheet per buddy, with their camper's details, to hand out at orientation."
+          >
+            Print buddy sheets
+          </a>
+          <button
+            onClick={togglePublish}
+            disabled={pending}
+            className={publishedAt ? 'btn-outline !py-2' : 'btn-primary !py-2'}
+          >
+            {publishedAt ? 'Unpublish' : 'Publish assignments'}
+          </button>
+        </div>
       </div>
 
       {campers.length === 0 ? (
@@ -442,13 +465,30 @@ export default function BuddyBoard({
                           Cancel
                         </button>
                       </div>
+                      <label className="mb-2 flex items-center gap-2 text-xs text-neutral-600">
+                        <input
+                          type="checkbox"
+                          checked={showPaired}
+                          onChange={(e) => setShowPaired(e.target.checked)}
+                        />
+                        Show volunteers who already have a camper
+                        {!showPaired && volunteers.some((v) => (loadByVolunteer.get(v.participantId) ?? 0) > 0) && (
+                          <span className="text-neutral-400">
+                            ({volunteers.filter((v) => (loadByVolunteer.get(v.participantId) ?? 0) > 0).length} hidden)
+                          </span>
+                        )}
+                      </label>
                       {volunteers.length === 0 ? (
                         <p className="text-sm text-neutral-500">
                           No volunteers on this roster yet.
                         </p>
+                      ) : volunteers.every((v) => (loadByVolunteer.get(v.participantId) ?? 0) > 0) && !showPaired ? (
+                        <p className="text-sm text-neutral-500">
+                          Every volunteer on this roster already has a camper — tick the box to see them.
+                        </p>
                       ) : (
                         <ul className="grid gap-1 sm:grid-cols-2">
-                          {volunteers.map((v) => {
+                          {volunteers.filter((v) => showPaired || (loadByVolunteer.get(v.participantId) ?? 0) === 0).map((v) => {
                             const load = loadByVolunteer.get(v.participantId) ?? 0;
                             return (
                               <li key={v.participantId}>
