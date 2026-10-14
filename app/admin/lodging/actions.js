@@ -19,6 +19,29 @@ export async function assignLodging({ participantId, lodgingId, note }) {
   const user = await getCurrentUser();
   const supabase = await createClient();
 
+  // A building is a container, not a bed. Ellen placed a family straight into
+  // "Lodge" on 14 Oct 2026 and the board accepted it, so the print list showed
+  // them under "Lodge Building · 3" with no room. The rule is by structure,
+  // not by kind: anything with active rooms under it refuses, which also
+  // covers a cabin that has been split into rooms. A cabin with no rooms is
+  // still assigned whole, as the board's intro says.
+  const { data: kids, error: kidsError } = await supabase
+    .from('lodgings')
+    .select('id')
+    .eq('parent_id', lodgingId)
+    .eq('active', true)
+    .limit(1);
+  if (kidsError) {
+    console.error('assignLodging children:', kidsError.message);
+    return { ok: false, error: 'That could not be checked.' };
+  }
+  if (kids && kids.length > 0) {
+    return {
+      ok: false,
+      error: 'That place holds rooms — put people in one of its rooms, not the building itself.',
+    };
+  }
+
   const { error } = await supabase.from('lodging_assignments').upsert(
     {
       lodging_id: lodgingId,
@@ -223,6 +246,32 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
     // and the occupancy arithmetic gets harder to check by eye.
     if (parent.parent_id) {
       return { ok: false, error: 'Rooms go inside a building, not inside another room.' };
+    }
+  }
+
+  // One name per building. The 14 Oct round added "Maple 129 (TEST)" beside
+  // a retired room of the same name and got two; on a board of eighty rooms
+  // two "Lodge 103"s would be a wrong-room mistake waiting to happen. Retired
+  // rooms do not count -- bring one back instead of adding its twin.
+  {
+    let dup = supabase
+      .from('lodgings')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('active', true)
+      .ilike('name', row.name)
+      .limit(1);
+    dup = parentId ? dup.eq('parent_id', parentId) : dup.is('parent_id', null);
+    const { data: dupRows, error: dupError } = await dup;
+    if (dupError) {
+      console.error('upsertLodging duplicate check:', dupError.message);
+      return { ok: false, error: 'That could not be checked.' };
+    }
+    if (dupRows && dupRows.length > 0) {
+      return {
+        ok: false,
+        error: `There is already a place called "${row.name}" here. Check the retired list before adding another.`,
+      };
     }
   }
 

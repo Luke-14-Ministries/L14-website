@@ -44,6 +44,11 @@ function ActivityRow({ person, activity }) {
   const slots = activity.slots ?? [];
   const hasSlots = slots.length > 0;
   const [slotId, setSlotId] = useState(existing?.slot_id ?? '');
+  // True between ticking an activity that runs in sittings and choosing a
+  // time. Until 14 Oct 2026 the tick set nothing visible, so the box stayed
+  // unticked and the times never appeared -- "clicking it seemed to do
+  // nothing" (Lawrence, on the Salon).
+  const [choosing, setChoosing] = useState(false);
   const chosenSlot = slots.find((sl) => sl.id === (existing?.slot_id ?? slotId)) ?? null;
   const needsProvider = Boolean(activity.provider_url || activity.provider_name);
   const [ack, setAck] = useState(Boolean(existing?.waiver_acknowledged_at));
@@ -59,8 +64,10 @@ function ActivityRow({ person, activity }) {
     if (next && hasSlots && !nextSlot) {
       setSlotId('');
       setError('');
+      setChoosing(true);
       return;
     }
+    if (!next) setChoosing(false);
     start(async () => {
       const res = await setActivityChoice({
         participantId: person.participantId,
@@ -83,7 +90,7 @@ function ActivityRow({ person, activity }) {
         <label className="flex flex-1 min-w-0 items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
-            checked={isOn}
+            checked={isOn || choosing}
             disabled={pending || full}
             onChange={(e) => toggle(e.target.checked)}
             className="mt-1 shrink-0"
@@ -126,10 +133,10 @@ function ActivityRow({ person, activity }) {
       {/* The times. Shown once the activity is ticked (or already booked),
           because until then there is nothing to put a time on. Each says how
           many places are left, the way the activity itself does. */}
-      {hasSlots && (isOn || slotId !== '' || error) && (
+      {hasSlots && (isOn || choosing || slotId !== '' || error) && (
         <fieldset className="mt-2 ml-7">
           <legend className="text-sm font-semibold">
-            {isOn ? 'Time' : 'Choose a time'}
+            {isOn ? 'Time' : 'Choose a time — the tick takes effect once a time is picked'}
           </legend>
           <div className="mt-1 space-y-1">
             {slots.map((sl) => {

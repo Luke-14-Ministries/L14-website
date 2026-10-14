@@ -546,13 +546,16 @@ export default function FamilyWizard({
         {result.depositDue !== false && (
           <div className="mt-4 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-left text-amber-900">
             <p className="font-semibold">
-              {isUpdate
-                ? 'Still outstanding: the $50 deposit.'
-                : 'Next step: the $50 deposit.'}
+              {/* The family's own figure, from the save. "$50" was a literal
+                  here until 14 Oct 2026, so a family of five read "$50" and
+                  then "Pay deposit — $250.00" on the dashboard. */}
+              {isUpdate ? 'Still outstanding: the ' : 'Next step: the '}
+              {result.depositCents ? `$${Math.round(result.depositCents / 100)} ` : ''}
+              deposit.
             </p>
             <p className="mt-1 text-sm">
               Your registration is saved, and camp staff approve it once the deposit
-              ($50 a person) arrives — unless you are requesting a full scholarship, in
+              ({`$${Math.round((result.depositPerPersonCents ?? 5000) / 100)}`} a person) arrives — unless you are requesting a full scholarship, in
               which case use &ldquo;Request help with the fee&rdquo; on your dashboard and
               staff will be in touch. You can pay the deposit from your dashboard in
               about a minute; the rest can be paid in one go, in parts, or with a

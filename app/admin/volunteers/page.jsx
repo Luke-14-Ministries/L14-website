@@ -95,11 +95,15 @@ export default async function AdminVolunteersPage() {
   // somebody not comfortable with it is told to speak with Larry, and the
   // omission is made conspicuous HERE, at review, so nobody is approved
   // without that conversation having happened.
+  // EVERY version of the Creed agreement, not only the active one. Version 2
+  // shipped on 30 Sep 2026 (0081); anyone who affirmed before that holds a
+  // version-1 signature, and filtering to the active version made their
+  // history invisible -- so an untick read as "never affirmed" instead of
+  // "affirmation withdrawn". Found by the 14 Oct round (Script 4 §5.3).
   const { data: creedRows } = await supabase
     .from('agreements')
     .select('id')
-    .eq('key', 'apostles_creed')
-    .eq('active', true);
+    .eq('key', 'apostles_creed');
   const creedIds = (creedRows ?? []).map((c) => c.id);
   const { data: creedSigs } =
     creedIds.length && personIds.length

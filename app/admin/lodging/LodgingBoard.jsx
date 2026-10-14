@@ -435,7 +435,16 @@ export default function LodgingBoard({
             </ul>
           )}
 
-          {placingGroup && placingGroup.length > 0 && (
+          {/* A place that holds rooms offers no "Place here" of its own: the
+              rooms below are where people go (14 Oct 2026, Ellen's finding).
+              The server refuses too; this just stops the button appearing. */}
+          {kids.length > 0 && (placing || (placingGroup && placingGroup.length > 0)) && (
+            <p className="mt-3 text-xs text-neutral-500">
+              Pick one of the rooms below — a building is not assigned itself.
+            </p>
+          )}
+
+          {kids.length === 0 && placingGroup && placingGroup.length > 0 && (
             <button
               onClick={() => doAssignGroup(placingGroup, lodging)}
               disabled={pending}
@@ -445,7 +454,7 @@ export default function LodgingBoard({
             </button>
           )}
 
-          {placing && !here.some((p) => p.participantId === placing) && (
+          {kids.length === 0 && placing && !here.some((p) => p.participantId === placing) && (
             <button
               onClick={() => doAssign(peopleById.get(placing), lodging)}
               disabled={pending}

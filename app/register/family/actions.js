@@ -467,6 +467,8 @@ export async function submitFamilyRegistration(payload) {
   // "already paid" are different facts. A failure here leaves this undefined
   // and the card errs toward asking, which is the safe direction.
   let depositDue;
+  let depositCents = null;
+  let depositPerPersonCents = null;
   let balanceDue = null;
   let needsPaymentChoice = false;
   let paymentChosen = false;
@@ -486,6 +488,10 @@ export async function submitFamilyRegistration(payload) {
           .maybeSingle(),
       ]);
       const deposit = ev2?.deposit_cents ?? 0;
+      // The family's whole deposit, for the confirmation card. It said "$50"
+      // whatever the family size until 14 Oct 2026 (Script 4 round, Track F).
+      depositPerPersonCents = deposit;
+      depositCents = deposit * (data?.saved ?? mapped.length);
       balanceDue = balanceDueOn(ev2);
       needsPaymentChoice = requiresPaymentChoice(ev2);
       if (needsPaymentChoice) {
@@ -510,6 +516,8 @@ export async function submitFamilyRegistration(payload) {
     signed,
     signatureError,
     depositDue,
+    depositCents,
+    depositPerPersonCents,
     balanceDue,
     // Always false since 30 Sep 2026 (see requiresPaymentChoice in
     // lib/plans.js); kept so the flow can be turned back on in one place.
