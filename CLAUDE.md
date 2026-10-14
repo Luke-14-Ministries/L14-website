@@ -155,6 +155,19 @@ inline and then continues. Testing Script 3, item 20.10.
    placeholders — "Email balance reminders (all shown)" and "Email selected families" render but
    do nothing.
 
+**14 October 2026 — Script 4 run by bots; the review queue; migrations through `0085`.** Testing
+Script 4 was run by three automated testers against the deployed commit (notes in SharePoint,
+*Testing notes*): five defects, all fixed the same day. Then, from Lawrence's reading of Ellen and
+Katie's feedback: the review queue is its own page (`app/admin/review/`) and Event Payments shows
+money flags only; the person page carries review state, agreements, application and permissions
+per event; Buddy Assignments hides paired volunteers by default and has a CSV and one printable
+sheet per buddy; `app/admin/newsletter/` lists who has news on (`0085`); only campers choose
+activities; the support form requires the answers that decide what staff do and no longer asks
+non-campers the disability questions; a building with rooms refuses placements; the retreat page
+sends 2026 registrants to CampSite. The sidebar order is an explicit list in `layout.jsx`.
+`0084` makes the first save of support details reach Recent Changes. **The rafting rule from
+2 October (staff tick each rafter once the outfitter confirms) is decided and not built.**
+
 **Built 30 September 2026 — migration `0080`, payment plans (read before touching money).** A
 camp week's balance is due two weeks before it starts (`balanceDueOn()` in `lib/events.js`
 and `balance_due_on()` in SQL: change both together). A camp-week registration is **not
