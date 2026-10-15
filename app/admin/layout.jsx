@@ -407,6 +407,13 @@ export default async function AdminLayout({ children }) {
                 Giving
               </span>
             )}
+            {/* The third grant gets a pill like the other two (15 Oct 2026);
+                it had none since 0058. */}
+            {staff?.can_view_background_checks && (
+              <span className="rounded-full bg-neutral-200 text-neutral-700 px-2.5 py-0.5 text-xs font-semibold">
+                Background checks
+              </span>
+            )}
             <span className="text-xs text-neutral-500">{viewerEmail}</span>
           </div>
           <p className="text-xs text-neutral-500 mt-1.5">

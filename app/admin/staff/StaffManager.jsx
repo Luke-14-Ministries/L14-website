@@ -192,7 +192,7 @@ function Table({ rows, sortKey, sortDir, onSort, selfId, busyId, onPatch, onRemo
             <SortTh k="role" {...sortProps}>Role</SortTh>
             <SortTh k="sensitive" center {...sortProps}>Sensitive</SortTh>
             <SortTh k="giving" center {...sortProps}>Giving</SortTh>
-            <SortTh k="checks" center {...sortProps}>Checks</SortTh>
+            <SortTh k="checks" center {...sortProps}>Background checks</SortTh>
             <th className="px-4 py-2" />
           </tr>
         </thead>
