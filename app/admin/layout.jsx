@@ -38,9 +38,6 @@ const NAV = [
   // every flag in one row. The Overview's amber number links here.
   { href: '/admin/review', label: 'Awaiting review', need: 'registrar', ready: true },
   { href: '/admin/rosters', label: 'Roster: Campers & Families', need: 'registrar', ready: true, group: 'events' },
-  // Find a person or family by name or email (14 Oct 2026). The box in the
-  // staff header lands here too.
-  { href: '/admin/search', label: 'Search', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/checkin', label: 'Check-In', need: 'door', ready: true, group: 'events' },
   { href: '/admin/changes', label: 'Recent Changes', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/dietary', label: 'Dietary & Allergies', need: 'sensitive', ready: true, group: 'events' },
@@ -80,7 +77,9 @@ const NAV = [
 // decision. An item that appears in no section (a leader's My Program) is
 // shown on its own after the top two. Order inside a section is this list's.
 const SECTIONS = [
-  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/search', '/admin/changes'] },
+  // Search is the box in the header, not a sidebar item (Lawrence, 15 Oct
+  // 2026); /admin/search is only where a search lands.
+  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/changes'] },
   {
     key: 'camp',
     label: 'Camp week',
@@ -424,7 +423,7 @@ export default async function AdminLayout({ children }) {
                   name="q"
                   placeholder="Find a person or family"
                   aria-label="Search people and families"
-                  className="w-48 rounded border border-neutral-300 px-2 py-1.5 text-sm"
+                  className="w-80 max-w-full rounded border border-neutral-300 px-3 py-1.5 text-sm"
                 />
                 <button type="submit" className="btn-outline !py-1.5 text-sm">
                   Search
@@ -454,7 +453,8 @@ export default async function AdminLayout({ children }) {
               (n) => !TOP.includes(n.href) && !SECTIONS.some((sec) => sec.hrefs.includes(n.href))
             )}
             badges={{
-              '/admin': awaitingReview,
+              // Overview carries no badge: it was the same number as Awaiting
+              // review's, twice in a row (Lawrence, 15 Oct 2026).
               '/admin/review': awaitingReview,
               '/admin/changes': unreviewedChanges,
               '/admin/volunteers': volunteersAwaiting,
@@ -468,7 +468,6 @@ export default async function AdminLayout({ children }) {
               '/admin/my-program': myProgramCount,
             }}
             badgeTitles={{
-              '/admin': 'new sign-ups waiting to be confirmed or waitlisted',
               '/admin/review': 'new sign-ups waiting to be confirmed or waitlisted',
               '/admin/accounts': 'created in the last 7 days',
               '/admin/cancellations': 'families waiting to hear back',

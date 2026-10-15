@@ -163,6 +163,11 @@ export default async function AdminPaymentsPage({ searchParams }) {
         // Money flags only (14 Oct 2026): the photo and Creed flags moved to
         // the review queue (/admin/review), where every flag lives together.
         return (reviewByReg.get(b.registration_id)?.flags ?? []).includes('deposit_short');
+      // A family that has paid more than it owes -- a refund due, a scholarship
+      // granted after payment, a cancelled person. Money staff must settle, so
+      // it is a flag here (Lawrence, 15 Oct 2026).
+      case 'credit':
+        return bal < 0;
       default:
         return true;
     }
@@ -180,6 +185,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     ['full_scholarship', 'To contact: full scholarship'],
     ['neither', 'No deposit yet'],
     ['flagged', 'Deposit short'],
+    ['credit', 'Credit to settle'],
   ];
   // One helper builds every filter-carrying URL (pills, CSVs) so the active
   // event + payment state always travel together.
@@ -440,15 +446,26 @@ export default async function AdminPaymentsPage({ searchParams }) {
                     {(() => {
                       const rv = reviewByReg.get(b.registration_id);
                       const c = rv ? REVIEW_CLASS[rv.review_class] : null;
-                      if (!c) return <span className="text-neutral-400">—</span>;
+                      const credit = (b.balance_cents ?? 0) < 0 ? -b.balance_cents : 0;
+                      if (!c && !credit) return <span className="text-neutral-400">—</span>;
                       return (
                         <div className="space-y-1">
-                          <span
-                            title={c.hint}
-                            className={`inline-block whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold ${c.cls}`}
-                          >
-                            {c.label}
-                          </span>
+                          {c && (
+                            <span
+                              title={c.hint}
+                              className={`inline-block whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold ${c.cls}`}
+                            >
+                              {c.label}
+                            </span>
+                          )}
+                          {credit > 0 && (
+                            <span
+                              title="Paid more than is owed: a refund due, a later scholarship, or a cancelled person. Settle it -- refund, or carry it as a credit."
+                              className="block whitespace-nowrap text-xs font-semibold text-amber-800"
+                            >
+                              ⚑ Credit of {money(credit)} — paid more than owed
+                            </span>
+                          )}
                           {(rv.flags ?? []).filter((f) => f === 'deposit_short').map((f) => (
                             <span
                               key={f}
