@@ -652,11 +652,14 @@ export default async function DashboardPage({ searchParams }) {
                           : 'btn-outline !py-1.5 text-sm'
                       }
                     >
+                      {/* Each button names the form it opens (15 Oct 2026):
+                          "Finish it" here and "Complete it now" on the
+                          volunteer banner read as one task, and they are two. */}
                       {state === 'empty'
-                        ? 'Fill it in'
+                        ? 'Start support details'
                         : state === 'incomplete'
-                          ? 'Finish it'
-                          : 'Review or update'}
+                          ? 'Complete support details'
+                          : 'Review support details'}
                     </Link>
                   </li>
                 );
@@ -720,7 +723,7 @@ export default async function DashboardPage({ searchParams }) {
               </p>
             </div>
             <Link href="/register/volunteer" className="btn-primary !py-2">
-              Complete it now
+              Complete the volunteer application
             </Link>
           </div>
         )}
@@ -977,7 +980,7 @@ export default async function DashboardPage({ searchParams }) {
                                   Volunteer application:{' '}
                                   {VOL_APP_LABEL[volAppStatus.get(p.id)] ?? 'not started'} ·{' '}
                                   <Link href="/register/volunteer" className="text-brand underline font-semibold">
-                                    {volAppStatus.has(p.id) ? 'View / edit' : 'Start it'}
+                                    {volAppStatus.has(p.id) ? 'View or edit the application' : 'Start the application'}
                                   </Link>
                                 </p>
                               )}
