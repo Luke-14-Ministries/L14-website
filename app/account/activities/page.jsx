@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import ActivityPicker from './ActivityPicker';
+import WaiverUpload from './WaiverUpload';
 import BackBar from '@/components/BackBar';
 import BackLink from '@/components/BackLink';
 
@@ -63,6 +64,19 @@ export default async function ActivitiesPage() {
         .select('registration_participant_id, activity_id, slot_id, status, waiver_acknowledged_at')
         .in('registration_participant_id', participantIds)
     : { data: [] };
+
+  // Proof that an outside provider's form was done (0087, 14 Oct 2026):
+  // one upload per person per activity, shown beside the activity and, for
+  // volunteers, in their own block below the campers.
+  const { data: waiverRows } = participantIds.length
+    ? await supabase
+        .from('activity_waiver_uploads')
+        .select('registration_participant_id, activity_id, storage_path, uploaded_at')
+        .in('registration_participant_id', participantIds)
+    : { data: [] };
+  const waiverByKey = new Map(
+    (waiverRows ?? []).map((w) => [`${w.registration_participant_id}:${w.activity_id}`, w])
+  );
 
   // How full each activity is. The function returns counts only -- a family
   // cannot read other families' signups, and does not need to.
@@ -139,10 +153,34 @@ export default async function ActivitiesPage() {
               .map((a) => [a.id, chosen.get(`${p.id}:${a.id}`) ?? null])
               .filter(([, v]) => v)
           ),
+          waivers: Object.fromEntries(
+            activities
+              .map((a) => [a.id, waiverByKey.get(`${p.id}:${a.id}`) ?? null])
+              .filter(([, v]) => v)
+          ),
         }));
-      return { registrationId: r.id, event: r.events, activities, people };
+      // Volunteers do not choose activities (they go where their camper
+      // goes), but an outside provider wants THEIR form too. So each
+      // volunteer gets an upload box per provider-run activity on the event.
+      const providerActivities = activities.filter((a) => a.provider_name || a.provider_url);
+      const volunteers = (r.registration_participants ?? [])
+        .filter((p) => p.status !== 'cancelled' && p.camp_role === 'volunteer')
+        .map((p) => ({
+          participantId: p.id,
+          name: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
+          waivers: Object.fromEntries(
+            providerActivities
+              .map((a) => [a.id, waiverByKey.get(`${p.id}:${a.id}`) ?? null])
+              .filter(([, v]) => v)
+          ),
+        }));
+      return { registrationId: r.id, event: r.events, activities, people, volunteers, providerActivities };
     })
-    .filter((s) => s.activities.length > 0 && s.people.length > 0);
+    .filter(
+      (s) =>
+        s.activities.length > 0 &&
+        (s.people.length > 0 || (s.volunteers.length > 0 && s.providerActivities.length > 0))
+    );
 
   return (
     <section className="bg-neutral-50 py-12 min-h-[60vh]">
@@ -191,6 +229,44 @@ export default async function ActivitiesPage() {
                         activities={s.activities}
                       />
                     ))}
+                    {s.volunteers.length > 0 && s.providerActivities.length > 0 && (
+                      <div className="rounded-lg border border-neutral-200 bg-white p-5">
+                        <h3 className="text-lg font-bold">Volunteers and buddies — outside providers</h3>
+                        <p className="mt-1 text-sm text-neutral-600">
+                          A buddy goes wherever their camper goes. Where an activity is run by an
+                          outside provider, the provider needs the volunteer&rsquo;s own form as
+                          well. Complete it with them, then upload their confirmation here —
+                          this can be done after camp starts, once pairings are known.
+                        </p>
+                        {s.volunteers.map((v) => (
+                          <div key={v.participantId} className="mt-4">
+                            <p className="font-semibold">{v.name}</p>
+                            {s.providerActivities.map((a) => (
+                              <div key={a.id} className="mt-2">
+                                <p className="text-sm">
+                                  <span className="font-semibold">{a.name}</span> — run by{' '}
+                                  {a.provider_name || 'an outside provider'}
+                                  {a.provider_url && (
+                                    <>
+                                      {' '}
+                                      <a href={a.provider_url} target="_blank" rel="noopener noreferrer" className="underline font-semibold text-amber-800">
+                                        Open their form ↗
+                                      </a>
+                                    </>
+                                  )}
+                                </p>
+                                <WaiverUpload
+                                  participantId={v.participantId}
+                                  activityId={a.id}
+                                  providerName={a.provider_name}
+                                  existing={v.waivers?.[a.id] ?? null}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

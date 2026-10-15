@@ -1291,11 +1291,13 @@ export default async function DashboardPage({ searchParams }) {
                             camper on it has nothing to choose, so the button
                             does not appear. */}
                         {(r.registration_participants ?? []).some(
-                          (p) => p.camp_role === 'camper' && p.status !== 'cancelled'
+                          (p) =>
+                            (p.camp_role === 'camper' || p.camp_role === 'volunteer') &&
+                            p.status !== 'cancelled'
                         ) && (
                           <Link
                             href="/account/activities/"
-                            title="Choose horseback riding, the pontoon, rafting and the rest for your campers."
+                            title="Choose activities for your campers; volunteers upload outside providers' confirmations here too."
                             className="btn-outline !py-2"
                           >
                             Choose activities

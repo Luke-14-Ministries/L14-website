@@ -21,6 +21,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { setActivityChoice } from './actions';
+import WaiverUpload from './WaiverUpload';
 
 function Availability({ activity }) {
   if (activity.booking_mode === 'interest' || activity.capacity == null) return null;
@@ -193,6 +194,18 @@ function ActivityRow({ person, activity }) {
             what we need.
           </span>
         </label>
+      )}
+
+      {/* The proof, not the promise (14 Oct 2026): once signed up for a
+          provider-run activity, the family uploads the provider's own
+          confirmation. Staff see who has one. */}
+      {needsProvider && isOn && (
+        <WaiverUpload
+          participantId={person.participantId}
+          activityId={activity.id}
+          providerName={activity.provider_name}
+          existing={person.waivers?.[activity.id] ?? null}
+        />
       )}
 
       {needsProvider && isOn && existing?.waiver_acknowledged_at && (

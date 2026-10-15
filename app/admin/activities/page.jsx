@@ -87,6 +87,32 @@ export default async function AdminActivitiesPage({ searchParams }) {
         .in('activity_id', activityIds)
     : { data: [] };
 
+  // Outfitter confirmations (0087): one file per person per activity. Signed
+  // URLs are minted here, server-side, for ten minutes -- the bucket is
+  // private and staff open the file from this page. Volunteers upload without
+  // being signed up, so they are listed separately under the provider note.
+  const { data: waiverRows } = activityIds.length
+    ? await supabase
+        .from('activity_waiver_uploads')
+        .select(
+          `activity_id, registration_participant_id, storage_path, uploaded_at,
+           registration_participants ( id, camp_role, people ( first_name, last_name ) )`
+        )
+        .in('activity_id', activityIds)
+    : { data: [] };
+  const waiverByKey = new Map();
+  for (const w of waiverRows ?? []) {
+    const { data: signed } = await supabase.storage
+      .from('waiver-confirmations')
+      .createSignedUrl(w.storage_path, 600);
+    waiverByKey.set(`${w.activity_id}:${w.registration_participant_id}`, {
+      url: signed?.signedUrl ?? null,
+      uploadedAt: w.uploaded_at,
+      name: `${w.registration_participants?.people?.first_name ?? ''} ${w.registration_participants?.people?.last_name ?? ''}`.trim(),
+      role: w.registration_participants?.camp_role,
+    });
+  }
+
   const takenBySlot = new Map();
   for (const g of signups ?? []) {
     if (g.status === 'cancelled' || !g.slot_id) continue;
@@ -104,6 +130,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
     if (s.status === 'cancelled') continue;
     if (!byActivity.has(s.activity_id)) byActivity.set(s.activity_id, []);
     byActivity.get(s.activity_id).push({
+      participantId: s.registration_participants?.id,
       slotId: s.slot_id,
       name: `${s.registration_participants?.people?.first_name ?? ''} ${
         s.registration_participants?.people?.last_name ?? ''
@@ -180,9 +207,38 @@ export default async function AdminActivitiesPage({ searchParams }) {
                 {a.provider_name && (
                   <p className="mt-1 text-sm text-amber-800">
                     Outside provider: {a.provider_name}. Their own waiver is the family&rsquo;s
-                    to complete — the ticks below record only that we told them.
+                    to complete; &ldquo;confirmation&rdquo; below means they uploaded the
+                    provider&rsquo;s proof, and opens it. &ldquo;told&rdquo; records only that
+                    we said so.
                   </p>
                 )}
+                {a.provider_name && (() => {
+                  // Volunteers and buddies upload without a sign-up row.
+                  const signedUpIds = new Set((byActivity.get(a.id) ?? []).map((p) => p.participantId));
+                  const extra = [...waiverByKey.entries()]
+                    .filter(([k]) => k.startsWith(`${a.id}:`))
+                    .map(([k, v]) => ({ participantId: k.split(':')[1], ...v }))
+                    .filter((v) => !signedUpIds.has(v.participantId))
+                    .sort((x, y) => x.name.localeCompare(y.name));
+                  if (extra.length === 0) return null;
+                  return (
+                    <p className="mt-1 text-sm text-neutral-700">
+                      <span className="font-semibold">Volunteer confirmations:</span>{' '}
+                      {extra.map((v, i) => (
+                        <span key={v.participantId}>
+                          {i > 0 && ', '}
+                          {v.url ? (
+                            <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-brand underline">
+                              {v.name}
+                            </a>
+                          ) : (
+                            v.name
+                          )}
+                        </span>
+                      ))}
+                    </p>
+                  );
+                })()}
 
                 {people.length === 0 ? (
                   <p className="mt-3 text-sm text-neutral-500">Nobody yet.</p>
@@ -221,6 +277,27 @@ export default async function AdminActivitiesPage({ searchParams }) {
                             {p.acknowledged ? 'told' : 'not told'}
                           </span>
                         )}
+                        {a.provider_name && p.status === 'signed_up' && (() => {
+                          const w = waiverByKey.get(`${a.id}:${p.participantId}`);
+                          return w ? (
+                            <a
+                              href={w.url ?? '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Provider confirmation uploaded ${String(w.uploadedAt).slice(0, 10)} — opens the file`}
+                              className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 underline"
+                            >
+                              confirmation ✓
+                            </a>
+                          ) : (
+                            <span
+                              title="No provider confirmation uploaded yet"
+                              className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800"
+                            >
+                              no confirmation
+                            </span>
+                          );
+                        })()}
                         {p.source === 'staff' && (
                           <span className="text-xs text-neutral-400">added by staff</span>
                         )}

@@ -45,7 +45,7 @@ export default async function ActivityPrintPage({ searchParams }) {
   const { data: activities } = selected
     ? await supabase
         .from('activities')
-        .select('id, name, description, capacity, active, sort_order')
+        .select('id, name, description, capacity, active, sort_order, provider_name')
         .eq('event_id', selected)
         .eq('active', true)
         .order('sort_order')
@@ -80,6 +80,17 @@ export default async function ActivityPrintPage({ searchParams }) {
         .in('activity_id', activityIds)
     : { data: [] };
 
+  // Provider confirmations (0087): on a provider-run activity the sheet says
+  // who has one and who has not, so the day starts with the list, not a hunt.
+  const providerIds = new Set((activities ?? []).filter((a) => a.provider_name).map((a) => a.id));
+  const { data: waiverRows } = activityIds.length
+    ? await supabase
+        .from('activity_waiver_uploads')
+        .select('activity_id, registration_participant_id')
+        .in('activity_id', activityIds)
+    : { data: [] };
+  const hasWaiver = new Set((waiverRows ?? []).map((w) => `${w.activity_id}:${w.registration_participant_id}`));
+
   const shape = (g) => {
     const rp = g.registration_participants;
     const pe = rp?.people;
@@ -97,6 +108,9 @@ export default async function ActivityPrintPage({ searchParams }) {
       ask: Boolean(
         s?.has_allergies || s?.has_seizures || s?.has_rescue_medication || s?.buddy_required
       ),
+      waiver: providerIds.has(g.activity_id)
+        ? hasWaiver.has(`${g.activity_id}:${rp?.id}`) ? 'yes' : 'no'
+        : null,
     };
   };
 
@@ -168,6 +182,10 @@ export default async function ActivityPrintPage({ searchParams }) {
                   <span className="font-semibold">ask the coordinator</span>
                 ) : (
                   <span className="text-neutral-400">&mdash;</span>
+                )}
+                {r.waiver === 'yes' && <span className="ml-2 text-xs">· provider form ✓</span>}
+                {r.waiver === 'no' && (
+                  <span className="ml-2 text-xs font-semibold">· NO provider confirmation</span>
                 )}
               </td>
             </tr>

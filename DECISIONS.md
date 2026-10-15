@@ -2108,3 +2108,20 @@ Giving); **Admin** (Newsletter, Setup, Accounts, Staff & Access). The sections a
 by name or email and links to the person page and each registration — the answer to "the person
 page is not readily accessible". **Volunteers** filters by event with the same pills as every other
 staff page and has a printable list (`/admin/volunteers/print`).
+
+
+---
+
+## 2026-10-14 — An outside provider's waiver needs proof, not a tick
+
+Lawrence: "Do not accept word of mouth confirmation of rafting waiver." A provider-run activity
+(rafting, horseback) now carries a **link to the provider's own form** (the activity's provider
+URL, already on the editor) and an **upload** of the provider's confirmation — a screenshot, a
+photo of the signed page, or the PDF — by the family for each signed-up camper, and by each
+volunteer for themselves, since a buddy goes where their camper goes and the provider wants the
+buddy's form too. Volunteers can do this after camp starts, once pairings are known. Staff see
+"confirmation ✓" (opens the file) or "no confirmation" beside every name on Activities, a
+"Volunteer confirmations" line for buddies, and the same mark on the printed activity sheet. The
+old "told / not told" acknowledgement stays as what it is: a record that we said so. Migration
+`0087`: a private bucket, one file per person per activity under the participant's id, the same
+household check as every other family-facing table.
