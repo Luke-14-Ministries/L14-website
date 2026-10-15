@@ -2212,6 +2212,26 @@ as the match, which is what the import matches on. Larry recalls SSNs being
 entered by hand for the recent checks — a staff question for Ellen, because if that is the
 process, the page's instructions and the no-SSN rule need re-examining before go-live.
 
+**Background checks are for adults only, and a date of birth must be real** (migration `0094`).
+A volunteer was on file as born 0014-02-24 — a two-digit year typed into a date box — so every
+age check read a child as an adult and queued a background check for her. Three layers now refuse
+a date before 1900 or after today: the date boxes carry min and max, every server action that
+writes a date of birth says "not a real date of birth — check the year (four digits)" in words,
+and a trigger on `people` refuses it from any path. It deliberately does not guess: "14" could
+be 2014 or 1914, and "65" two plausible adults. A volunteer under 18 shows *Under 18 — not
+screened* and is not counted as missing a background check, on the page, on the Buddy board or on
+the sidebar; Checkr does not screen minors and 0056 refuses to order for them.
+
+**Two people on one email address.** A couple on the household address each get their own row in
+Checkr's bulk file and their own invitation, to the same inbox; the screening row says so. On
+import, an address invited for more than one person is settled by the name on the row or listed
+for a human — it used to attach to whichever person was last in the lookup.
+
+**A sent batch can be downloaded again, or taken back.** Re-download rebuilds the same file from
+the addresses invited and changes nothing; *Mark as not sent* returns rows still "invited" to
+never checked and is logged per person, for a press on the wrong day or a file that never reached
+Checkr. The first bot batch (11 people, 15 Oct) was taken back the same day.
+
 **Staff idle logout is an hour, not fifteen minutes** (Lawrence, 15 Oct). Staff were being logged
 out mid-task; the two-minute warning stays, and families stay at thirty.
 
