@@ -171,7 +171,9 @@ longer offers it, the database refuses it); outside-provider waivers need an upl
 from the family and from each volunteer (`0087`, private bucket `waiver-confirmations`); the
 Creed agreement is at version 3 (`0088`, "contact Larry" said once); the sidebar is in sections
 (one `SECTIONS` list in `layout.jsx`); `/admin/search` and a header search box; Volunteers by
-event with `/admin/volunteers/print`. **Testing Script 5 needs writing.**
+event with `/admin/volunteers/print`. **Testing Script 5 is written** (SharePoint, `01 Plans and
+Decisions`) and is the current script; Script 4 is archived. Python 3.12 is installed on the build
+machine, so the library's `render.py` runs here.
 
 **Built 30 September 2026 — migration `0080`, payment plans (read before touching money).** A
 camp week's balance is due two weeks before it starts (`balanceDueOn()` in `lib/events.js`
