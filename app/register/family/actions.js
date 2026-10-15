@@ -65,7 +65,9 @@ export async function submitFamilyRegistration(payload) {
       role: ROLE_MAP[m.role] || 'camper',
       // Not sent to the RPC — it takes one option and writes one row per
       // person. The second, zero-fee volunteer row is written below.
-      alsoVolunteering: m.alsoVolunteering === true && m.role !== 'Volunteer',
+      // Retired 14 Oct 2026: one role per person per event (0086). Pinned to
+      // false so a stale browser tab cannot still send it.
+      alsoVolunteering: false,
       // Enrollment questions. The selects hold strings, and '' means "not
       // answered" -- which has to reach the database as null, not as a blank,
       // so an answer given last time is never wiped by a skipped dropdown.

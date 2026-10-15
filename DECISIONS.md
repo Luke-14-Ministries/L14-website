@@ -2070,3 +2070,24 @@ placements (Katie).
 **Adult Adventure Retreat 2026 registers on CampSite** (Ellen, for the organisation). The public
 retreat page sends people to the ministry's existing site, where the CampSite links are; this
 platform's first retreat is the next one. The wizard links are kept in a comment for then.
+
+
+---
+
+## 2026-10-14 — One role per person per event, superseding "a parent who also volunteers"
+
+Lawrence, with Ellen's Script 4 feedback: a person registers for an event **either** as a volunteer
+**or** as a camper / family member, never both. This supersedes the 29 August rule (`0069`: a
+parent who also volunteers, as a second zero-fee row). The wizard no longer offers "is also
+volunteering"; the server pins that flag to false; and migration `0086` adds a trigger that refuses
+a second live row for the same person at the same event however it arrives. Existing double rows
+from `0069`'s own testing are left for the purge — the trigger runs only on a new row, a moved
+row, or a row brought back from cancelled, so confirming or editing old data is never blocked.
+The zero-fee volunteer option stays on the events for history; nothing writes to it now.
+
+Also today, from the same conversation: the buddy picker's box is **"Hide paired"** and is on by
+default; the sibling note on the family dashboard carries Lawrence's wording ("Camp Celebrate
+commits to matching up a buddy for every camper…"); the wizard's "$50 deposit per person" line
+reads the event's own deposit; the review flag "Deposit short of $50 a person" no longer names a
+figure; the newsletter is on **Mailchimp** for now (Ellen), cost still unknown, Resend later.
+The medical contact was already admin-only on both the page and the action.

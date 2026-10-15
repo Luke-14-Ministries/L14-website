@@ -954,17 +954,19 @@ export default async function DashboardPage({ searchParams }) {
                                 p.status !== 'cancelled' &&
                                 !buddyNameByParticipant.get(p.id) && (
                                   <p className="mt-1 text-xs text-neutral-500">
-                                    Buddies are for campers. A sibling may be paired with a buddy
-                                    when a volunteer is free — a preference we note, not a promise.
-                                    If {p.people?.first_name ?? 'this sibling'} has particular
-                                    needs, please tell us at{' '}
+                                    {/* Lawrence's wording, 14 Oct 2026, replacing a blunter
+                                        opener found by the Script 4 round. */}
+                                    Camp Celebrate commits to matching up a buddy for every camper.
+                                    If there are additional volunteer resources, it may be possible
+                                    for siblings to be paired with a buddy as well. Please feel free
+                                    to reach out to discuss any concerns with the camp staff at{' '}
                                     <a
                                       href="mailto:registration@luke14ministries.net"
                                       className="text-brand underline"
                                     >
                                       registration@luke14ministries.net
-                                    </a>{' '}
-                                    so we can talk it through.
+                                    </a>
+                                    .
                                   </p>
                                 )}
                               {/* Volunteers keep a permanent path back to their

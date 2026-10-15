@@ -138,6 +138,9 @@ export default async function FamilyRegisterPage({ searchParams }) {
             // that has not published one — in which case the wizard simply
             // does not offer "also volunteering".
             volunteerOptionId: volunteerOption(e)?.id ?? null,
+            // The per-person deposit, so the wizard never says "$50" from
+            // memory (14 Oct 2026).
+            depositCents: e.deposit_cents ?? 0,
             name: e.name,
             startsOn: e.starts_on,
             endsOn: e.ends_on,

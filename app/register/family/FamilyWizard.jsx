@@ -916,40 +916,12 @@ export default function FamilyWizard({
                     <option value="Volunteer">Volunteer</option>
                   </select>
 
-                  {/* One person, two roles at the same camp (0069). A parent
-                      who is also volunteering is rare and real, and the
-                      ministry charges them ONCE — the second role is written
-                      with no fee at all rather than a fee cancelled by a
-                      discount, so nothing downstream has two numbers to
-                      reconcile.
-
-                      Hidden when the role IS Volunteer, because "also
-                      volunteering" is then a question about itself. */}
-                  {m.role && m.role !== 'Volunteer' && week?.volunteerOptionId && (
-                    <label className="mt-2 flex items-start gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5"
-                        checked={Boolean(m.alsoVolunteering)}
-                        onChange={(e) =>
-                          setMembers(
-                            members.map((mm, j) =>
-                              j === i ? { ...mm, alsoVolunteering: e.target.checked } : mm
-                            )
-                          )
-                        }
-                      />
-                      <span>
-                        <span className="font-semibold">
-                          {m.firstName || 'This person'} is also volunteering
-                        </span>{' '}
-                        <span className="text-neutral-600">
-                          &mdash; no extra fee. The volunteer team will be in touch about the
-                          separate volunteer application.
-                        </span>
-                      </span>
-                    </label>
-                  )}
+                  {/* "Also volunteering" was offered here from 29 Aug to
+                      14 Oct 2026 (0069): a parent who also volunteers, as a
+                      second zero-fee row. Retired on Lawrence's ruling with
+                      Ellen -- one role per person per event, and the database
+                      now refuses a second live row (0086). A parent who wants
+                      to volunteer registers as a volunteer. */}
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -1358,8 +1330,9 @@ export default function FamilyWizard({
           button has been misled by us. The deposit paragraph in the
           confirmation email changes with it. */}
       <p className="text-center text-sm text-neutral-500 pb-2">
-        Cost shouldn&rsquo;t decide this. You can submit without paying: a $50
-        deposit per person is needed for approval, unless you request a full
+        Cost shouldn&rsquo;t decide this. You can submit without paying: a{' '}
+        {week?.depositCents ? `$${Math.round(week.depositCents / 100)}` : '$50'} deposit
+        per person is needed for approval, unless you request a full
         scholarship &mdash; use &ldquo;Request help with the fee&rdquo; on your
         dashboard after submitting. Asking does not affect anyone&rsquo;s place.
         {anyVolunteer && week?.volunteerArrivesOn

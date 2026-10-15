@@ -50,8 +50,9 @@ export default async function NewsletterPage() {
       </div>
       <p className="mb-5 text-sm text-neutral-500">
         Everyone with an account who has <em>Ministry news &amp; updates</em> switched on. Families
-        change it themselves on My Account → Contact details. Sending still happens in Resend; this
-        is the list. People who signed up through the public Google Form are not here.
+        change it themselves on My Account → Contact details. Sending happens in Mailchimp for now
+        (Ellen runs it; a move to Resend is for later); this is the list. People who signed up through
+        the public Google Form are not here.
       </p>
 
       {error && (
