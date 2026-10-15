@@ -38,6 +38,9 @@ const NAV = [
   // every flag in one row. The Overview's amber number links here.
   { href: '/admin/review', label: 'Awaiting review', need: 'registrar', ready: true },
   { href: '/admin/rosters', label: 'Roster: Campers & Families', need: 'registrar', ready: true, group: 'events' },
+  // Find a person or family by name or email (14 Oct 2026). The box in the
+  // staff header lands here too.
+  { href: '/admin/search', label: 'Search', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/checkin', label: 'Check-In', need: 'door', ready: true, group: 'events' },
   { href: '/admin/changes', label: 'Recent Changes', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/dietary', label: 'Dietary & Allergies', need: 'sensitive', ready: true, group: 'events' },
@@ -70,32 +73,25 @@ const NAV = [
   { href: '/admin/staff', label: 'Staff & Access', need: 'admin', ready: true },
 ];
 
-// The order the Events group is shown in, which is not the order above:
-// the roster first, then the two lists staff open most after it (Volunteers,
-// Recent Changes), then the camp-week tools, then money -- with Scholarship
-// requests directly under Event Payments, because a scholarship decision is
-// a money decision (Lawrence, 14 Oct 2026). Items not named here fall to
-// the end in their original order, so a new page never disappears.
-const EVENTS_ORDER = [
-  '/admin/rosters',
-  '/admin/volunteers',
-  '/admin/changes',
-  '/admin/checkin',
-  '/admin/dietary',
-  '/admin/medical',
-  '/admin/activities',
-  '/admin/buddies',
-  '/admin/lodging',
-  '/admin/programs',
-  '/admin/cancellations',
-  '/admin/deletion-requests',
-  '/admin/payments',
-  '/admin/scholarships',
+// The sidebar in sections (Lawrence, 14 Oct 2026, reviewing the hierarchy):
+// the two queues at the top, then People, the camp-week tools (the one
+// collapsible group), requests, money, and the admin pages. Scholarship
+// requests sit under Event Payments because a scholarship decision is a money
+// decision. An item that appears in no section (a leader's My Program) is
+// shown on its own after the top two. Order inside a section is this list's.
+const SECTIONS = [
+  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/search', '/admin/changes'] },
+  {
+    key: 'camp',
+    label: 'Camp week',
+    collapsible: true,
+    hrefs: ['/admin/checkin', '/admin/dietary', '/admin/medical', '/admin/activities', '/admin/buddies', '/admin/lodging', '/admin/programs'],
+  },
+  { key: 'requests', label: 'Requests', hrefs: ['/admin/cancellations', '/admin/deletion-requests'] },
+  { key: 'money', label: 'Money', hrefs: ['/admin/payments', '/admin/scholarships', '/admin/giving'] },
+  { key: 'admin', label: 'Admin', hrefs: ['/admin/newsletter', '/admin/setup', '/admin/accounts', '/admin/staff'] },
 ];
-const eventsRank = (href) => {
-  const i = EVENTS_ORDER.indexOf(href);
-  return i < 0 ? EVENTS_ORDER.length : i;
-};
+const TOP = ['/admin', '/admin/review'];
 
 export default async function AdminLayout({ children }) {
   const [staff, leaderships] = await Promise.all([getStaff(), getProgramLeadership()]);
@@ -418,7 +414,23 @@ export default async function AdminLayout({ children }) {
               route back to their own account was the site nav's "My Account".
               Both are one click from here now. Sign-out is a POST form, not a
               link — see app/auth/signout/route.js for why. */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Find a person or family from any staff page (14 Oct 2026).
+                A plain GET form: no script between typing and results. */}
+            {staff && can(staff, 'registrar') && (
+              <form action="/admin/search/" method="get" className="flex items-center gap-1">
+                <input
+                  type="search"
+                  name="q"
+                  placeholder="Find a person or family"
+                  aria-label="Search people and families"
+                  className="w-48 rounded border border-neutral-300 px-2 py-1.5 text-sm"
+                />
+                <button type="submit" className="btn-outline !py-1.5 text-sm">
+                  Search
+                </button>
+              </form>
+            )}
             <Link href="/account/dashboard/" className="btn-outline !py-1.5 text-sm">
               My Dashboard
             </Link>
@@ -433,11 +445,14 @@ export default async function AdminLayout({ children }) {
         <div className="grid gap-6 lg:grid-cols-[220px_1fr] print:block">
           <div className="print:hidden">
             <AdminNav
-            top={items.filter((n) => !n.group && (n.href === '/admin' || n.href === '/admin/review'))}
-            events={items
-              .filter((n) => n.group === 'events')
-              .sort((a, b) => eventsRank(a.href) - eventsRank(b.href))}
-            rest={items.filter((n) => !n.group && n.href !== '/admin' && n.href !== '/admin/review')}
+            top={TOP.map((h) => items.find((n) => n.href === h)).filter(Boolean)}
+            sections={SECTIONS.map((sec) => ({
+              ...sec,
+              items: sec.hrefs.map((h) => items.find((n) => n.href === h)).filter(Boolean),
+            })).filter((sec) => sec.items.length > 0)}
+            loose={items.filter(
+              (n) => !TOP.includes(n.href) && !SECTIONS.some((sec) => sec.hrefs.includes(n.href))
+            )}
             badges={{
               '/admin': awaitingReview,
               '/admin/review': awaitingReview,

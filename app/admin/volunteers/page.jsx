@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import VolunteerManager from './VolunteerManager';
+import EventFilter from '@/components/EventFilter';
 
 export const metadata = { title: 'Volunteers — Staff Admin' };
 
@@ -10,7 +11,8 @@ export const metadata = { title: 'Volunteers — Staff Admin' };
 // backstop. Clearances live in volunteer_clearances (a yes/no and dates
 // only) — the paperwork itself stays in the restricted SharePoint folder,
 // never here. That is a board-level rule, not a preference.
-export default async function AdminVolunteersPage() {
+export default async function AdminVolunteersPage({ searchParams }) {
+  const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/volunteers/');
   if (!can(staff, 'registrar')) redirect('/admin');
@@ -142,5 +144,30 @@ export default async function AdminVolunteersPage() {
   const unassigned = rows.filter((r) => !(events ?? []).some((ev) => ev.id === r.eventId));
   if (unassigned.length) groups.push({ event: { id: 'none', name: 'Unassigned' }, rows: unassigned });
 
-  return <VolunteerManager groups={groups} maySeeChecks={maySeeChecks} />;
+  // ?event=<id> narrows to one event (Ellen's "drop-down per event", 14 Oct
+  // 2026); the print view carries the same filter.
+  const eventFilter = typeof params?.event === 'string' ? params.event : '';
+  const shownGroups = eventFilter ? groups.filter((g) => g.event.id === eventFilter) : groups;
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <EventFilter
+          events={(events ?? []).map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on }))}
+          selected={eventFilter || null}
+          basePath="/admin/volunteers"
+          allowAll
+          allLabel="All events"
+        />
+        <a
+          href={`/admin/volunteers/print/${eventFilter ? `?event=${eventFilter}` : ''}`}
+          className="btn-outline !py-2 text-sm"
+          title="The volunteer list as a printable sheet: who, which event, where they want to serve, and where their application stands."
+        >
+          Print volunteer list
+        </a>
+      </div>
+      <VolunteerManager groups={shownGroups} maySeeChecks={maySeeChecks} />
+    </div>
+  );
 }

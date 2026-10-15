@@ -2091,3 +2091,20 @@ commits to matching up a buddy for every camper…"); the wizard's "$50 deposit 
 reads the event's own deposit; the review flag "Deposit short of $50 a person" no longer names a
 figure; the newsletter is on **Mailchimp** for now (Ellen), cost still unknown, Resend later.
 The medical contact was already admin-only on both the page and the action.
+
+
+---
+
+## 2026-10-14 — The sidebar in sections, a search box on every staff page, Volunteers by event
+
+Lawrence asked for a review of the left-hand navigation's hierarchy. It now reads: the two queues
+(Overview, Awaiting review); **People** (Roster, Volunteers, Search, Recent Changes); **Camp week**
+(Check-In, Dietary, Medical, Activities, Buddies, Rooms, Programs — the one group that folds);
+**Requests** (Cancellations, Deletion requests); **Money** (Event Payments, Scholarship requests,
+Giving); **Admin** (Newsletter, Setup, Accounts, Staff & Access). The sections are one list in
+`app/admin/layout.jsx`.
+
+**Search** (`/admin/search`, and a box in the staff header on every page) finds people and families
+by name or email and links to the person page and each registration — the answer to "the person
+page is not readily accessible". **Volunteers** filters by event with the same pills as every other
+staff page and has a printable list (`/admin/volunteers/print`).

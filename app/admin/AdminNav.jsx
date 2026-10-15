@@ -72,7 +72,7 @@ const BADGE_TONE = {
   '/admin/my-program': 'window',
 };
 
-export default function AdminNav({ top, events, rest, badges = {}, badgeTitles = {} }) {
+export default function AdminNav({ top = [], sections = [], loose = [], badges = {}, badgeTitles = {} }) {
   const pathname = usePathname();
   const open = useSyncExternalStore(subscribeOpen, readOpen, () => true);
 
@@ -139,29 +139,41 @@ export default function AdminNav({ top, events, rest, badges = {}, badgeTitles =
         <Item key={n.href} n={n} />
       ))}
 
-      {events.length > 0 && (
-        <>
-          <button
-            type="button"
-            onClick={toggle}
-            aria-expanded={open}
-            className="flex items-center justify-between rounded px-3 py-2 font-semibold text-neutral-700 hover:bg-neutral-200 text-left"
-          >
-            <span>Events</span>
-            <span
-              aria-hidden
-              className={`text-xs transition-transform ${open ? 'rotate-90' : ''}`}
-            >
-              ▶
-            </span>
-          </button>
-          {open && events.map((n) => <Item key={n.href} n={n} indent />)}
-        </>
-      )}
-
-      {rest.map((n) => (
+      {loose.map((n) => (
         <Item key={n.href} n={n} />
       ))}
+
+      {/* Sections (14 Oct 2026): a small heading over each group. The camp-week
+          group is the only one that folds, because it is the long one and the
+          one a registrar outside camp season has least use for; its open/closed
+          state is the same per-browser preference as before. */}
+      {sections.map((sec) =>
+        sec.collapsible ? (
+          <div key={sec.key} className="mt-2">
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={open}
+              className="flex w-full items-center justify-between rounded px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:bg-neutral-200 text-left"
+            >
+              <span>{sec.label}</span>
+              <span aria-hidden className={`text-xs transition-transform ${open ? 'rotate-90' : ''}`}>
+                ▶
+              </span>
+            </button>
+            {open && sec.items.map((n) => <Item key={n.href} n={n} indent />)}
+          </div>
+        ) : (
+          <div key={sec.key} className="mt-2">
+            <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              {sec.label}
+            </p>
+            {sec.items.map((n) => (
+              <Item key={n.href} n={n} indent />
+            ))}
+          </div>
+        )
+      )}
 
       {/* Said once, here, rather than left as tribal knowledge -- the whole
           point of two colours is lost if nobody knows there are two. */}
