@@ -36,7 +36,6 @@ export default async function NewsletterPage() {
     name: `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() || r.email,
   }));
   const subscribed = rows.filter((r) => r.email_news).sort((a, b) => a.name.localeCompare(b.name));
-  const unsubscribed = rows.filter((r) => !r.email_news);
   const joined = (recent ?? []).filter((r) => r.email_news).length;
   const left = (recent ?? []).filter((r) => !r.email_news).length;
 
@@ -64,8 +63,10 @@ export default async function NewsletterPage() {
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
           <div className="text-3xl font-bold">{subscribed.length}</div>
+          {/* No "N opted out" under it (Lawrence, 15 Oct 2026): somebody who
+              has news off is simply not on the list, and a count of them
+              with no names is a question, not information. */}
           <div className="text-sm font-semibold text-neutral-700">on the list</div>
-          <div className="text-xs text-neutral-500">{unsubscribed.length} opted out</div>
         </div>
         <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
           <div className="text-3xl font-bold text-green-700">{joined}</div>

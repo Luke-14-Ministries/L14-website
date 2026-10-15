@@ -48,11 +48,10 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
       return;
     }
     // A request with nothing written in it gives staff nothing to decide on
-    // (Ellen's note; Lawrence 14 Oct 2026). A sentence is enough.
-    if (!statement.trim()) {
-      setError('Please tell us a little about why — a sentence is enough. Staff read every request.');
-      return;
-    }
+    // (Ellen's note; Lawrence 14 Oct 2026) -- but it is NOT a blocker
+    // (Lawrence, 15 Oct): the form says plainly that no details usually means
+    // no scholarship, and a family who has already talked to the office can
+    // still send the request through. The reviewer sees the empty statement.
     setBusy(true);
     setError('');
     const res = await requestScholarship(registrationId, row.participantId, {
@@ -149,8 +148,7 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
           </p>
 
           <label className="block font-semibold mb-1.5 mt-4">
-            Anything you&rsquo;d like us to know?{' '}
-            <span className="font-normal text-neutral-500">(optional)</span>
+            Please tell us a little about your situation
           </label>
           <textarea
             rows={3}
@@ -159,8 +157,9 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
             className="w-full rounded border border-neutral-300 px-3 py-2"
           />
           <p className="mt-1 text-xs text-neutral-500">
-            Only the small group of staff who handle scholarships will read this. You do not
-            need to explain or justify — a sentence is plenty.
+            A sentence is plenty. Staff decide from what is written here, so a request with
+            nothing in it usually cannot be granted — unless you have already spoken with the
+            office. Only the small group of staff who handle scholarships will read it.
           </p>
 
           {error && (

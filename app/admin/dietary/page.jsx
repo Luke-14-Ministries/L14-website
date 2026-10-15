@@ -168,23 +168,27 @@ export default async function DietaryPage({ searchParams }) {
                       <tr key={i} className="border-t border-neutral-100 align-top">
                         <td className="px-4 py-2 font-medium">
                           {r.name}
-                          {(() => {
-                            const pill = allergyPill(r.hasAllergies, r.allergySeverity);
-                            return pill ? (
-                              <span
-                                title={pill.title}
-                                className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${pill.cls}`}
-                              >
-                                {pill.text}
-                              </span>
-                            ) : null;
-                          })()}
-                          {r.hasAllergies && r.personId && (
+                          {/* The picker is the pill (15 Oct 2026); the plain
+                              pill is only for a row with nobody to save
+                              against. */}
+                          {r.hasAllergies && r.personId ? (
                             <SeverityPicker
                               personId={r.personId}
                               value={r.allergySeverity ?? ''}
                               name={r.name}
                             />
+                          ) : (
+                            (() => {
+                              const pill = allergyPill(r.hasAllergies, r.allergySeverity);
+                              return pill ? (
+                                <span
+                                  title={pill.title}
+                                  className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${pill.cls}`}
+                                >
+                                  {pill.text}
+                                </span>
+                              ) : null;
+                            })()
                           )}
                         </td>
                         <td className="px-4 py-2 whitespace-pre-wrap">{r.allergies || '—'}</td>

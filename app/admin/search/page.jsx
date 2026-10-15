@@ -39,12 +39,20 @@ export default async function SearchPage({ searchParams }) {
   if (q.length >= 2) {
     // Each word must match somewhere: "ada bot" finds Ada BOTFAMILY-A. The
     // email check uses the whole string.
+    //
+    // The household embed NAMES its foreign key. people -> households has two
+    // paths since 0037 (people.household_id, and households.primary_contact_
+    // person_id pointing back), and a bare "households ( … )" makes PostgREST
+    // refuse the whole query (PGRST201) -- which this page swallowed into
+    // "Nothing matches" for every search from the day it shipped (found by
+    // Lawrence, 15 Oct 2026, searching "acorn leaf"). CLAUDE.md's rule about
+    // two FKs to the same table, learned again.
     const words = q.split(/\s+/).filter(Boolean).slice(0, 4);
     let query = supabase
       .from('people')
       .select(
         `id, first_name, last_name, preferred_name, email, date_of_birth,
-         households ( id, display_name, email ),
+         households!people_household_id_fkey ( id, display_name, email ),
          registration_participants ( id, camp_role, status, registration_id,
            registrations ( id, events ( id, name, starts_on ) ) )`
       )
@@ -56,7 +64,9 @@ export default async function SearchPage({ searchParams }) {
       );
     }
     const { data, error } = await query;
-    if (error) console.error('search:', error.message);
+    // Shown, not swallowed: an empty list and a broken query must not look
+    // the same to the person searching.
+    if (error) throw new Error(`Search failed: ${error.message}`);
     people = data ?? [];
   }
 
@@ -65,11 +75,13 @@ export default async function SearchPage({ searchParams }) {
   let households = [];
   if (q.length >= 2) {
     const like = `%${q.replace(/[%_]/g, '')}%`;
-    const { data } = await supabase
+    // Same two-path problem in the other direction: name the key.
+    const { data, error } = await supabase
       .from('households')
-      .select('id, display_name, email, people ( id, first_name, last_name )')
+      .select('id, display_name, email, people!people_household_id_fkey ( id, first_name, last_name )')
       .or(`display_name.ilike.${like},email.ilike.${like}`)
       .limit(20);
+    if (error) throw new Error(`Search failed: ${error.message}`);
     households = data ?? [];
   }
 

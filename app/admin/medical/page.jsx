@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { eventWindow, staffAssigns } from '@/lib/events';
@@ -174,8 +175,13 @@ export default async function MedicalPage({ searchParams }) {
                 </>
               ) : (
                 <span className="text-neutral-500">
-                  No medical contact set for this event — an administrator can add one on the
-                  Check-In page.
+                  No medical contact set for this event — an administrator can add one on the{' '}
+                  {/* A link, not a mention (Lawrence, 15 Oct 2026): it lands on
+                      Check-In with this event already selected. */}
+                  <Link href={`/admin/checkin?event=${ev.id}`} className="text-brand underline">
+                    Check-In page
+                  </Link>
+                  .
                 </span>
               )}
             </p>

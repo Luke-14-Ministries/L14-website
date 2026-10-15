@@ -5,16 +5,23 @@
 // NOTE and not a confirm dialog: Lawrence asked for a non-blocking warning, and
 // the point is to keep the rule in front of whoever is typing, not to make them
 // click through it.
+//
+// The select IS the pill (15 Oct 2026). It used to sit beside a read-only
+// pill saying the same word -- "mild allergy  [Mild v]" -- which Lawrence
+// read as redundant. Now one control, coloured like the pill on every other
+// page (allergyPill in lib/format.js), with the dropdown arrow as the only
+// sign that it can be changed.
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { setAllergySeverity } from './actions';
+import { allergyPill } from '@/lib/format';
 
 const OPTIONS = [
-  ['', 'not recorded'],
-  ['mild', 'Mild'],
-  ['severe', 'Severe'],
-  ['anaphylaxis', 'Anaphylaxis'],
+  ['', 'allergy — severity not recorded'],
+  ['mild', 'mild allergy'],
+  ['severe', 'severe allergy'],
+  ['anaphylaxis', 'ANAPHYLAXIS'],
 ];
 
 export default function SeverityPicker({ personId, value, name }) {
@@ -38,15 +45,16 @@ export default function SeverityPicker({ personId, value, name }) {
     });
   }
 
+  const pill = allergyPill(true, current || null);
   return (
     <span className="ml-2 inline-flex flex-col gap-0.5 align-middle">
       <select
         aria-label={`Allergy severity for ${name}`}
-        title="Set this only from what the family or the camp doctor has told you."
+        title={`${pill.title} Set this only from what the family or the camp doctor has told you.`}
         value={current}
         onChange={onChange}
         disabled={pending}
-        className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-xs"
+        className={`cursor-pointer rounded-full border-0 py-0.5 pl-2 pr-6 text-xs font-semibold ${pill.cls}`}
       >
         {OPTIONS.map(([v, label]) => (
           <option key={v} value={v}>

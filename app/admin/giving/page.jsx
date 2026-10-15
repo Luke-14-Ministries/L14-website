@@ -55,6 +55,19 @@ export default async function AdminGivingPage({ searchParams }) {
       (!fFund || g.fund === fFund) &&
       (!fMethod || g.method === fMethod)
   );
+  // The cards say what period they cover (Lawrence, 15 Oct 2026): with no
+  // dates set they are ALL TIME, which a reader was taking for a recent
+  // window. Named from the filters, or from the earliest gift on file.
+  const earliest = allGifts.map(giftDate).filter(Boolean).sort()[0] ?? null;
+  const periodLabel = fFrom && fTo
+    ? `${fFrom} to ${fTo}`
+    : fFrom
+      ? `from ${fFrom}`
+      : fTo
+        ? `up to ${fTo}`
+        : earliest
+          ? `all time, since ${earliest}`
+          : 'all time';
   const csvParams = new URLSearchParams();
   if (fFrom) csvParams.set('from', fFrom);
   if (fTo) csvParams.set('to', fTo);
@@ -122,17 +135,23 @@ export default async function AdminGivingPage({ searchParams }) {
         </a>
       </form>
 
+      <p className="text-sm text-neutral-600 mb-2">
+        Showing <span className="font-semibold">{periodLabel}</span>
+        {fFund && <> · {fFund}</>}
+        {fMethod && <> · {fMethod}</>}
+        {!fFrom && !fTo && <> — set From and To above for a period.</>}
+      </p>
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
         <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-5">
           <div className="text-2xl font-bold">{money(total)}</div>
-          <div className="text-sm text-neutral-500">Total gifts (incl. clearing)</div>
+          <div className="text-sm text-neutral-500">Total gifts (incl. clearing) · {periodLabel}</div>
         </div>
         <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-5">
           <div className="text-2xl font-bold">{good.length}</div>
-          <div className="text-sm text-neutral-500">Gifts recorded</div>
+          <div className="text-sm text-neutral-500">Gifts recorded · {periodLabel}</div>
         </div>
         <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-5">
-          <div className="text-sm font-semibold mb-1">By fund</div>
+          <div className="text-sm font-semibold mb-1">By fund <span className="font-normal text-neutral-500">· {periodLabel}</span></div>
           {byFund.size === 0 ? (
             <p className="text-sm text-neutral-500">No gifts yet.</p>
           ) : (
