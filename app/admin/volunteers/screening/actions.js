@@ -57,9 +57,11 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
 
   const supabase = await createClient();
 
+  // The household's address stands in where the person has none -- the same
+  // rule the screening page applies, so what it lists is what gets ordered.
   const { data: people, error: peopleError } = await supabase
     .from('people')
-    .select('id, first_name, last_name, email, phone, date_of_birth')
+    .select('id, first_name, last_name, email, phone, date_of_birth, households!people_household_id_fkey ( email )')
     .in('id', personIds);
   if (peopleError) return { ok: false, error: 'Could not read those people.' };
 
@@ -72,8 +74,9 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
     // Checkr's bulk template makes email the one required column, so a person
     // without one cannot be ordered at all. Saying which person, by name, is
     // the difference between a fixable problem and a silent short batch.
-    if (!normEmail(p.email)) {
-      skipped.push(`${name} — no email address on file`);
+    const sendTo = normEmail(p.email) || normEmail(p.households?.email);
+    if (!sendTo) {
+      skipped.push(`${name} — no email address on file for them or their household`);
       continue;
     }
     // The database refuses a Checkr order for a minor or for anyone whose age
@@ -88,7 +91,7 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
       provider: 'checkr',
       checkr_status: 'invited',
       screening_reason: reason,
-      invited_email: normEmail(p.email),
+      invited_email: sendTo,
       order_batch: batch,
       ordered_by: staff.userId,
       ordered_at: now,

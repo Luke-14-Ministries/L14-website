@@ -86,14 +86,23 @@ export default function ScreeningBoard({ candidates }) {
       <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-bold">1 · Who is due</h2>
         <p className="mt-1 mb-4 max-w-prose text-sm text-neutral-500">
-          Adult volunteers with no check on file, or whose check has expired.
+          Adult volunteers with no background check on file, or whose background check has expired.
           Nothing here has been ordered yet and nothing is charged until you
           upload the file to Checkr.
         </p>
 
-        {orderable.length === 0 ? (
+        {/* Two different empty states (15 Oct 2026): nobody due because
+            everyone is cleared is good news; nobody orderable because every
+            due person is missing an email or a date of birth is a to-do list,
+            and the page said the first when it meant the second. */}
+        {orderable.length === 0 && blocked.length === 0 ? (
           <p className="rounded border border-green-200 bg-green-50 px-4 py-3 text-green-900">
-            Nobody is due. Every adult volunteer has a check on file that is still in date.
+            Nobody is due. Every adult volunteer has a background check on file that is still in date.
+          </p>
+        ) : orderable.length === 0 ? (
+          <p className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+            {blocked.length} {blocked.length === 1 ? 'person is' : 'people are'} due a background check,
+            but none can be ordered yet — each is missing something listed below.
           </p>
         ) : (
           <>
@@ -129,7 +138,10 @@ export default function ScreeningBoard({ candidates }) {
                   />
                   <label htmlFor={`p-${c.personId}`} className="flex-1 min-w-0">
                     <span className="font-semibold">{c.name}</span>
-                    <span className="text-neutral-500"> · {c.email}</span>
+                    <span className="text-neutral-500">
+                      {' '}· {c.email}
+                      {c.emailIsHousehold && ' (household address)'}
+                    </span>
                     <span className="block text-xs text-neutral-500">
                       {c.eventName}
                       {c.reason ? ` — ${c.reason}` : ''}

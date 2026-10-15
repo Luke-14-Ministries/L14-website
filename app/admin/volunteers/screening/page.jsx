@@ -9,7 +9,7 @@ export const metadata = { title: 'Background screening — Staff Admin' };
 // Who is due a background check, and the two file moves that get them one.
 //
 // "Due" is deliberately narrow. It is adult volunteers on a registration for an
-// event that has not finished, with no check on file or one that has expired.
+// event that has not finished, with no background check on file or one that has expired.
 // A wider net would be easy and wrong: every extra name is about $26.50 and a
 // real person being asked for their Social Security number.
 export default async function ScreeningPage() {
@@ -38,7 +38,7 @@ export default async function ScreeningPage() {
         <BackLink href="/admin/volunteers" label="Back to Volunteers" />
         <h1 className="text-2xl font-bold mb-1">Background screening</h1>
         <p className="text-neutral-600">
-          No upcoming events, so nobody is due a check for one.
+          No upcoming events, so nobody is due a background check for one.
         </p>
       </div>
     );
@@ -48,6 +48,7 @@ export default async function ScreeningPage() {
     .from('registrations')
     .select(
       `id, event_id,
+       households ( email ),
        registration_participants ( id, camp_role, status,
          people ( id, first_name, last_name, email, phone, date_of_birth ) )`
     )
@@ -67,7 +68,15 @@ export default async function ScreeningPage() {
         if (ev?.name && !seen.events.includes(ev.name)) seen.events.push(ev.name);
         continue;
       }
-      byPerson.set(person.id, { person, events: ev?.name ? [ev.name] : [] });
+      byPerson.set(person.id, {
+        person,
+        events: ev?.name ? [ev.name] : [],
+        // The address the family registered with. Most people carry no email
+        // of their own (every one of the 15 volunteers on 15 Oct 2026 had none,
+        // and every one of their households had one), so this is the address
+        // Checkr's invitation actually goes to unless the person has their own.
+        householdEmail: (r.households?.email ?? '').trim() || null,
+      });
     }
   }
 
@@ -91,9 +100,11 @@ export default async function ScreeningPage() {
   };
 
   const candidates = [];
-  for (const [personId, { person, events: evNames }] of byPerson) {
+  for (const [personId, { person, events: evNames, householdEmail }] of byPerson) {
     const c = clearanceBy.get(personId);
     const adult = isAdult(person.date_of_birth);
+    const ownEmail = (person.email || '').trim();
+    const email = ownEmail || householdEmail || '';
 
     // Already cleared and in date: not due, say nothing.
     if (c?.background_check_on_file && (!c.expires_on || c.expires_on >= today)) continue;
@@ -109,8 +120,9 @@ export default async function ScreeningPage() {
     if (adult === null) {
       blockedBecause =
         'no date of birth on file, so we cannot confirm they are 18 — add it on their details page';
-    } else if (!(person.email || '').trim()) {
-      blockedBecause = 'no email address on file, and Checkr needs one to send the invitation';
+    } else if (!email) {
+      blockedBecause =
+        'no email address on file for them or their household, and Checkr needs one to send the invitation';
     } else if (waiting) {
       blockedBecause = `already invited${c.order_batch ? ` on ${c.order_batch.slice(0, 10)}` : ''} — waiting on Checkr`;
     }
@@ -118,7 +130,10 @@ export default async function ScreeningPage() {
     candidates.push({
       personId,
       name: `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim() || 'Unnamed',
-      email: (person.email || '').trim() || '—',
+      email: email || '—',
+      // Said on the row, so a coordinator knows the invitation lands in the
+      // family's inbox rather than the volunteer's own.
+      emailIsHousehold: Boolean(email) && !ownEmail,
       eventName: evNames.join(' · ') || 'No event',
       status: c?.checkr_status ?? 'not_started',
       reason: c?.expires_on && c.expires_on < today

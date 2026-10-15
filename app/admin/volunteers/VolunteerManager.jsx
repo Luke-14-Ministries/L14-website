@@ -326,7 +326,7 @@ function VolunteerRow({ row, maySeeChecks }) {
               "hidden" without the grant; the grant still gates the record
               itself (dates, Checkr's words, the log), not the pill. */}
           <span title={pill.title} className={`rounded-full px-2.5 py-0.5 font-semibold ${pill.cls}`}>
-            Background check: {pill.text}
+            {pill.text}
           </span>
           <button type="button" onClick={() => setOpen((o) => !o)} className="btn-outline !py-1 !px-3">
             {open ? 'Close' : 'Details'}
