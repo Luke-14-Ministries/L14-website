@@ -491,7 +491,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false }) {
           className="rounded-lg bg-white border border-neutral-200 px-4 py-2"
           title="People (counted once, however many weeks they serve) without a current background check marked OK"
         >
-          <span className={}>
+          <span className={`font-bold text-lg ${missingCheck.size > 0 ? 'text-amber-700' : 'text-green-700'}`}>
             {missingCheck.size}
           </span>{' '}
           {missingCheck.size === 1 ? 'person' : 'people'} without a background check
