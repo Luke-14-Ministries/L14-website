@@ -50,7 +50,7 @@ const NAV = [
   // registration_participants' UPDATE policy, which is is_registrar(). A
   // coordinator offered this page would find Save did nothing and say
   // nothing, which is the failure this project keeps meeting.
-  { href: '/admin/programs', label: 'Programs', need: 'registrar', ready: true, group: 'events' },
+  { href: '/admin/programs', label: 'Programs', need: 'coordinator', ready: true, group: 'events' },
   { href: '/admin/cancellations', label: 'Cancellations', need: 'registrar', ready: true, group: 'events' },
   { href: '/admin/deletion-requests', label: 'Deletion requests', need: 'registrar', ready: true, group: 'events' },
   // "Scholarship Requests" wrapped to two lines, dropping its badge onto a

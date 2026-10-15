@@ -3,26 +3,27 @@
 // The assignment portal's writes: placing people into programs, and saying
 // who leads one.
 //
-// PERMISSION NOTE, and the reason this file checks rather than assumes.
-// Writing `registration_participants.program_id` goes through that table's
-// existing UPDATE policy, which is `is_registrar()` -- registrar or admin, NOT
-// coordinator. A coordinator pressing Save would get zero rows updated and no
-// error, because an UPDATE that matches nothing is not a failure in Postgres.
-// That is the silent-failure shape this project has been bitten by twice
-// (0054, and the Checkr importer). So the check is explicit and the message
-// says what to do about it.
+// PERMISSION NOTE. Placing somebody is COORDINATION (0090, Lawrence 15 Oct
+// 2026): like buddies, rooming and activities, it is the coordinator's, and
+// an administrator qualifies as everywhere else. The write goes through the
+// place_in_program() function, which checks the role itself and touches only
+// program_id -- the participants table's own UPDATE policy stays registrar's,
+// because opening it to coordinators would open every column on it. The
+// function RAISES when refused, so the silent zero-rows shape this project
+// was bitten by twice (0054, the Checkr importer) cannot happen here; the
+// row count it returns is still checked, for the case where nothing matched.
 
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 
-async function requireRegistrar() {
+async function requireCoordinator() {
   const staff = await getStaff();
   if (!staff) return { error: 'You are not signed in as staff.' };
-  if (!can(staff, 'registrar')) {
+  if (!can(staff, 'coordinator')) {
     return {
       error:
-        'Placing people into programs needs registrar or administrator access. Ask an administrator.',
+        'Placing people into programs needs coordinator or administrator access. Ask an administrator.',
     };
   }
   return { staff };
@@ -32,25 +33,21 @@ async function requireRegistrar() {
 // used by the "Unassign" option, and the reason program_id is nullable.
 export async function setParticipantProgram({ participantId, programId }) {
   if (!participantId) return { ok: false, error: 'Nothing to place.' };
-  const { error: permError } = await requireRegistrar();
+  const { error: permError } = await requireCoordinator();
   if (permError) return { ok: false, error: permError };
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('registration_participants')
-    .update({ program_id: programId || null })
-    .eq('id', participantId)
-    .select('id');
+  const { data: saved, error } = await supabase.rpc('place_in_program', {
+    p_participant_ids: [participantId],
+    p_program_id: programId || null,
+  });
 
   if (error) {
     console.error('setParticipantProgram:', error.message);
-    return { ok: false, error: 'That placement could not be saved.' };
+    return { ok: false, error: error.message || 'That placement could not be saved.' };
   }
-  // Belt and braces against the silent case above: no rows back means the
-  // policy refused, and the person deserves to be told rather than shown a
-  // page that quietly did not change.
-  if (!data || data.length === 0) {
-    return { ok: false, error: 'Nothing was saved — you may not have permission to change this.' };
+  if (!saved) {
+    return { ok: false, error: 'Nothing was saved — that person is no longer on the roster.' };
   }
 
   revalidatePath('/admin/programs');
@@ -64,23 +61,22 @@ export async function setParticipantProgram({ participantId, programId }) {
 export async function setManyParticipantPrograms({ participantIds, programId }) {
   const ids = (participantIds ?? []).filter(Boolean);
   if (!ids.length) return { ok: false, error: 'Nobody selected.' };
-  const { error: permError } = await requireRegistrar();
+  const { error: permError } = await requireCoordinator();
   if (permError) return { ok: false, error: permError };
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('registration_participants')
-    .update({ program_id: programId || null })
-    .in('id', ids)
-    .select('id');
+  const { data, error } = await supabase.rpc('place_in_program', {
+    p_participant_ids: ids,
+    p_program_id: programId || null,
+  });
 
   if (error) {
     console.error('setManyParticipantPrograms:', error.message);
-    return { ok: false, error: 'Those placements could not be saved.' };
+    return { ok: false, error: error.message || 'Those placements could not be saved.' };
   }
-  const saved = data?.length ?? 0;
+  const saved = data ?? 0;
   if (saved === 0) {
-    return { ok: false, error: 'Nothing was saved — you may not have permission to change these.' };
+    return { ok: false, error: 'Nothing was saved — nobody selected is still on the roster.' };
   }
 
   revalidatePath('/admin/programs');

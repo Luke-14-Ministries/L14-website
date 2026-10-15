@@ -182,8 +182,11 @@ waitlists everyone still submitted in one click or sends the registration back t
 for more information. That last one is `0089`: two columns on `registrations`
 (`awaiting_family_since`, `awaiting_family_reason`), guarded by a trigger so only a registrar
 moves them. The review queue separates *waiting on staff* from *waiting on the family*, the nav
-badge counts only the first, and the family's dashboard shows the ask in amber. The high-water
-mark is `0089`. **Also that day: `/admin/search` had returned "Nothing matches" for every query
+badge counts only the first, and the family's dashboard shows the ask in amber. **Placing people
+into programs is coordination** (`0090`): the Programs page and its writes need coordinator or
+administrator, through `place_in_program()`, a definer function that touches only `program_id`
+-- the participants table's UPDATE policy stays the registrar's. Naming a leader stays
+administrator-only, now in the database as well as the app. The high-water mark is `0090`. **Also that day: `/admin/search` had returned "Nothing matches" for every query
 since it shipped** — `people → households` has two paths since `0037` (`people.household_id`
 and `households.primary_contact_person_id`), PostgREST refused the embed with PGRST201, and the
 page swallowed the error. Name the key (`households!people_household_id_fkey`) on every

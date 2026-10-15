@@ -2172,6 +2172,15 @@ a note on their dashboard **and** marks the registration as waiting on the famil
 family sees the ask in amber on their dashboard. It clears when staff say the family has
 answered, or when everyone is confirmed or waitlisted. Nothing is emailed automatically.
 
+**Program placement is coordination, not registration** (migration `0090`). Buddies, rooming and
+activities belong to the coordinator; placing people into programs needed a registrar, because
+the write lands on the participants table and that table's update rule is the registrar's. Larry
+and Lawrence, reading the access-model note: odd, the coordinator makes sense. Opening the whole
+participants row to coordinators would open fees and status too, so the placement goes through a
+function that changes one column and checks the role itself. Naming or removing a program leader
+stays an administrator's act, and the database now says so as well as the page. Registrars lose
+the Programs page unless they are also administrators; nobody active today is affected.
+
 **Refunds stay on the registration page.** Asked whether money should live only under Event
 Payments: a refund goes back against one payment, and the registration page is the one place
 that shows the payment, the person and the event it belongs to. Event Payments is the list across

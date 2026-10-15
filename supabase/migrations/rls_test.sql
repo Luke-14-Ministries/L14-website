@@ -287,6 +287,17 @@ begin
   perform pg_temp.as_user(uC);
   perform pg_temp.expect_allowed('coordinator MAY move buddies',
     format('insert into public.buddy_assignments (event_id, buddy_participant_id, camper_participant_id) values (%L, %L, %L)', ev, rpB, rpA));
+  -- Program placement is coordination too (0090); the function raises for
+  -- anyone else, and a direct write to program_id is still the registrar's
+  -- policy -- a coordinator cannot reach the column except through it.
+  perform pg_temp.expect_allowed('coordinator MAY place somebody in a program (0090)',
+    format('select public.place_in_program(array[%L]::uuid[], (select id from public.programs where active order by sort_order limit 1))', rpA));
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('registrar may NOT place into a program (0090)',
+    format('select public.place_in_program(array[%L]::uuid[], null)', rpA));
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('family may NOT place into a program (0090)',
+    format('select public.place_in_program(array[%L]::uuid[], null)', rpA));
 
   ---- buddy visibility -------------------------------------------------
   perform pg_temp.as_user(uA);
