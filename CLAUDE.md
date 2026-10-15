@@ -195,7 +195,9 @@ expiry follows from it by `clearance_interval_months()` (36), and every change l
 staff member the three facts — on file, current, verdict — and `clearancePill()` in
 `lib/format.js` is the one way they are shown. The `volunteer_clearances` compatibility view
 from `0056` is dropped (`0092`, applied once the commit was live). Staff idle logout is 60
-minutes (was 15). The high-water mark is `0092`. **Rule of thumb for any access question
+minutes (was 15). **The bulk order never wrote a row** until `0093`: 0029's check constraint wanted a
+Checkr candidate id on any row past not_started, which the file flow cannot have until the export
+comes back; it now accepts the invited email as the match. The high-water mark is `0093`. **Rule of thumb for any access question
 (Lawrence, 15 Oct):** when it is not obvious what a role or person should have, default to
 read; write is granted on top, for a named person, and logged. **Background screening reads the
 household's email and phone where the person has none** — on 15 Oct none of the 15 volunteers
