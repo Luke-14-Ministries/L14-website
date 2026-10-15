@@ -165,8 +165,13 @@ sheet per buddy; `app/admin/newsletter/` lists who has news on (`0085`); only ca
 activities; the support form requires the answers that decide what staff do and no longer asks
 non-campers the disability questions; a building with rooms refuses placements; the retreat page
 sends 2026 registrants to CampSite. The sidebar order is an explicit list in `layout.jsx`.
-`0084` makes the first save of support details reach Recent Changes. **The rafting rule from
-2 October (staff tick each rafter once the outfitter confirms) is decided and not built.**
+`0084` makes the first save of support details reach Recent Changes. **Evening, the same day:**
+one role per person per event (`0086`, superseding `0069`'s parent-who-volunteers: the wizard no
+longer offers it, the database refuses it); outside-provider waivers need an uploaded confirmation
+from the family and from each volunteer (`0087`, private bucket `waiver-confirmations`); the
+Creed agreement is at version 3 (`0088`, "contact Larry" said once); the sidebar is in sections
+(one `SECTIONS` list in `layout.jsx`); `/admin/search` and a header search box; Volunteers by
+event with `/admin/volunteers/print`. **Testing Script 5 needs writing.**
 
 **Built 30 September 2026 — migration `0080`, payment plans (read before touching money).** A
 camp week's balance is due two weeks before it starts (`balanceDueOn()` in `lib/events.js`
