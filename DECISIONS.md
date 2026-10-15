@@ -2125,3 +2125,22 @@ buddy's form too. Volunteers can do this after camp starts, once pairings are kn
 old "told / not told" acknowledgement stays as what it is: a record that we said so. Migration
 `0087`: a private bucket, one file per person per activity under the participant's id, the same
 household check as every other family-facing table.
+
+---
+
+## 2026-10-15 — The build-skip command must fall back to "build" when it cannot see the last deployed commit
+
+Every push from the evening of 14 October to the morning of 15 October ended as a Vercel deployment
+in ERROR, and production kept serving the 4 October commit. Nothing was wrong with the code: CI built
+every push, and so did the local machine. The failure was the `ignoreCommand` in `vercel.json`
+(29 September), which runs `git diff` against `VERCEL_GIT_PREVIOUS_SHA`, the last *deployed* commit.
+Vercel clones only the last few commits, so once fifteen pushes separated the two, that commit was not
+in the clone, git said `fatal: bad object`, and Vercel treats any exit code other than 0 or 1 as a
+build error rather than as "go ahead and build". The 29 September entry assumed the opposite.
+
+The command now checks the commit exists first and otherwise exits 1 — the "build" answer — so the
+skip only ever applies when it can actually see what changed. The rule itself is unchanged: a push
+that touches only Markdown and LICENSE still does not build.
+
+Also noticed the same morning: the repository is now `L14-website` (renamed on GitHub); the Vercel link
+followed the rename. Nothing in the repository refers to the old name except history.
