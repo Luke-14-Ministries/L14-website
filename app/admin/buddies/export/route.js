@@ -4,6 +4,7 @@
 // no support notes, because a spreadsheet travels further than a screen.
 
 import { getStaff, can } from '@/lib/staff';
+import { clearancePill } from '@/lib/format';
 import { createClient } from '@/lib/supabase/server';
 
 const esc = (v) => {
@@ -45,21 +46,15 @@ export async function GET(request) {
     .filter((p) => p.camp_role === 'volunteer')
     .map((p) => p.people?.id)
     .filter(Boolean);
+  // clearance_status (0091): on file, current, verdict -- the words the
+  // board shows, so the sheet and the screen cannot disagree.
   const { data: clearances } = volunteerPersonIds.length
     ? await supabase
-        .from('volunteer_clearances')
-        .select('person_id, background_check_on_file, expires_on')
+        .from('clearance_status')
+        .select('person_id, on_file, expires_on, is_current, verdict')
         .in('person_id', volunteerPersonIds)
     : { data: [] };
-  const today = new Date().toISOString().slice(0, 10);
-  const clearanceWord = new Map();
-  for (const c of clearances ?? []) {
-    const expired = c.expires_on && c.expires_on < today;
-    clearanceWord.set(
-      c.person_id,
-      expired ? 'expired' : c.background_check_on_file ? 'cleared' : 'pending'
-    );
-  }
+  const clearanceWord = new Map((clearances ?? []).map((c) => [c.person_id, clearancePill(c).text]));
 
   const name = (p) =>
     p ? `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim() : '';

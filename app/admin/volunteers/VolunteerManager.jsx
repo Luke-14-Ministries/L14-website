@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { reviewVolunteerApplication, setVolunteerClearance } from './actions';
+import { clearancePill, CLEARANCE_VERDICT_LABEL } from '@/lib/format';
 
 const APP_CHIP = {
   applied: ['Applied — needs review', 'bg-amber-100 text-amber-800'],
@@ -44,18 +45,39 @@ const fmtAge = (dob) => {
   return age;
 };
 
+const VERDICT_OPTIONS = [
+  ['ok', 'OK to serve', 'text-green-800'],
+  ['follow_up', 'Needs a follow-up conversation', 'text-amber-800'],
+  ['not_permitted', 'Not permitted to attend', 'text-red-800'],
+];
+const LOG_FIELD = {
+  background_check_on_file: 'paperwork on file',
+  background_check_date: 'check date',
+  expires_on: 'expires',
+  verdict: 'verdict',
+  verdict_note: 'verdict note',
+  checkr_status: 'Checkr status',
+  adjudication: 'adjudication',
+};
+const whenLocal = (iso) =>
+  iso ? new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' }) : '';
+
+// The record (0091, 15 Oct 2026): paperwork on file, the check date (the
+// expiry follows by policy), and the ministry's verdict -- with who did each
+// and when, stamped by the database, and the log underneath.
 function ClearanceEditor({ personId, clearance, email, onDone }) {
   const router = useRouter();
   const [onFile, setOnFile] = useState(Boolean(clearance?.background_check_on_file));
   const [date, setDate] = useState(clearance?.background_check_date ?? '');
-  const [expires, setExpires] = useState(clearance?.expires_on ?? '');
+  const [verdict, setVerdict] = useState(clearance?.verdict ?? '');
+  const [note, setNote] = useState(clearance?.verdict_note ?? '');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
 
   async function save() {
     setPending(true);
     setError('');
-    const res = await setVolunteerClearance({ personId, onFile, date: date || null, expires: expires || null });
+    const res = await setVolunteerClearance({ personId, onFile, date: date || null, verdict: verdict || null, note });
     setPending(false);
     if (!res?.ok) setError(res?.error || 'Could not save.');
     else {
@@ -73,18 +95,66 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
           Paperwork on file (in the restricted SharePoint folder)
         </label>
         <label className="block">
-          <span className="block text-xs font-semibold text-neutral-500 mb-0.5">Check date</span>
+          <span className="block text-xs font-semibold text-neutral-500 mb-0.5">Check date (required when on file)</span>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded border border-neutral-300 px-2 py-1" />
         </label>
-        <label className="block">
-          <span className="block text-xs font-semibold text-neutral-500 mb-0.5">Expires</span>
-          <input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} className="rounded border border-neutral-300 px-2 py-1" />
-        </label>
-        <button onClick={save} disabled={pending} className="btn-primary !py-1.5 text-sm">
-          {pending ? 'Saving…' : 'Save'}
-        </button>
+        <span className="text-xs text-neutral-500">
+          {clearance?.expires_on
+            ? `Expires ${clearance.expires_on} (36 months from the check date)`
+            : 'Expiry is worked out from the check date: 36 months.'}
+        </span>
+      </div>
+      <div className="mt-3">
+        <span className="block text-xs font-semibold text-neutral-500 mb-1">Verdict — the ministry&rsquo;s decision, not Checkr&rsquo;s word</span>
+        <div className="flex flex-wrap gap-4">
+          <label className="flex items-center gap-1.5">
+            <input type="radio" name={`verdict-${personId}`} checked={verdict === ''} onChange={() => setVerdict('')} />
+            <span className="text-neutral-600">Not decided</span>
+          </label>
+          {VERDICT_OPTIONS.map(([v, label, cls]) => (
+            <label key={v} className={`flex items-center gap-1.5 font-semibold ${cls}`}>
+              <input type="radio" name={`verdict-${personId}`} checked={verdict === v} onChange={() => setVerdict(v)} />
+              {label}
+            </label>
+          ))}
+        </div>
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={500}
+          placeholder="Note (optional) — e.g. spoke with Larry 14 Oct; cleared to serve with a buddy"
+          className="mt-2 w-full rounded border border-neutral-300 px-2 py-1"
+        />
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <button onClick={save} disabled={pending} className="btn-primary !py-1.5 text-sm">
+            {pending ? 'Saving…' : 'Save record'}
+          </button>
+          {clearance?.paperwork_marked_at && (
+            <span className="text-xs text-neutral-500">
+              Paperwork marked by {clearance.paperworkByName ?? 'staff'} · {whenLocal(clearance.paperwork_marked_at)}
+            </span>
+          )}
+          {clearance?.verdict_at && (
+            <span className="text-xs text-neutral-500">
+              Verdict ({CLEARANCE_VERDICT_LABEL[clearance.verdict] ?? clearance.verdict}) by {clearance.verdictByName ?? 'staff'} · {whenLocal(clearance.verdict_at)}
+            </span>
+          )}
+        </div>
       </div>
       {error && <p className="mt-2 text-red-700">{error}</p>}
+      {(clearance?.log ?? []).length > 0 && (
+        <details className="mt-3 text-xs text-neutral-600">
+          <summary className="cursor-pointer font-semibold">History ({clearance.log.length} most recent changes)</summary>
+          <ul className="mt-1 space-y-0.5">
+            {clearance.log.map((l, i) => (
+              <li key={i}>
+                {whenLocal(l.changed_at)} · {l.by} set <span className="font-semibold">{LOG_FIELD[l.field] ?? l.field}</span>{' '}
+                {l.old_value != null && <>from &ldquo;{l.old_value}&rdquo; </>}to &ldquo;{l.new_value ?? '—'}&rdquo;
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       <CheckrPanel clearance={clearance} email={email} />
     </div>
@@ -194,8 +264,8 @@ function VolunteerRow({ row, maySeeChecks }) {
     else router.refresh();
   }
 
-  const cleared = clearance?.background_check_on_file;
-  const expired = cleared && clearance?.expires_on && clearance.expires_on < new Date().toISOString().slice(0, 10);
+  // The same pill every staff member sees on the Buddy board (0091).
+  const pill = clearancePill(clearance);
 
   return (
     <div
@@ -248,29 +318,12 @@ function VolunteerRow({ row, maySeeChecks }) {
                   : '⚠ Creed not affirmed — speak with Larry'}
             </span>
           )}
-          <span
-            /* "Not shown to you" must never wear the same grey as "none on
-               file". Someone glancing down this column has to be able to tell
-               "nobody checked this person" from "you are not allowed to know",
-               because acting on the first when it is really the second is how
-               an unscreened volunteer ends up cleared. */
-            className={`rounded-full px-2.5 py-0.5 font-semibold ${
-              !maySeeChecks
-                ? 'bg-blue-50 text-blue-800 italic'
-                : expired
-                  ? 'bg-red-100 text-red-800'
-                  : cleared
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-neutral-100 text-neutral-500'
-            }`}
-          >
-            {!maySeeChecks
-              ? 'Background check — hidden'
-              : expired
-                ? `Background check expired ${clearance.expires_on}`
-                : cleared
-                  ? `Background check on file${clearance?.background_check_date ? ` · ${clearance.background_check_date}` : ''}`
-                  : 'No background check on file'}
+          {/* Three facts for everyone on staff -- on file, current, the
+              verdict -- from clearance_status (0091). Until 15 Oct this read
+              "hidden" without the grant; the grant still gates the record
+              itself (dates, Checkr's words, the log), not the pill. */}
+          <span title={pill.title} className={`rounded-full px-2.5 py-0.5 font-semibold ${pill.cls}`}>
+            Background check: {pill.text}
           </span>
           <button type="button" onClick={() => setOpen((o) => !o)} className="btn-outline !py-1 !px-3">
             {open ? 'Close' : 'Details'}
@@ -376,9 +429,9 @@ function VolunteerRow({ row, maySeeChecks }) {
             />
           ) : (
             <p className="mt-4 rounded border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
-              Background-check records are a separate permission. An administrator
-              can grant it. Every grant is recorded, including one somebody makes to
-              their own account.
+              The pill above is all you can see: on file, current, and the verdict. The record
+              itself (dates, what Checkr said, who decided) is a separate permission an
+              administrator can grant. Every grant is recorded.
             </p>
           )}
         </div>

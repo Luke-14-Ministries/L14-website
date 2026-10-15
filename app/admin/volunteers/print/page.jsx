@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { clearancePill } from '@/lib/format';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
@@ -58,18 +59,14 @@ export default async function VolunteerPrintPage({ searchParams }) {
           .select('registration_participant_id, first_time_volunteering, preferred_areas, status, creed_affirmed')
           .in('registration_participant_id', partIds)
       : Promise.resolve({ data: [] }),
-    personIds.length && maySeeChecks
-      ? supabase.from('person_clearances').select('person_id, background_check_on_file, expires_on').in('person_id', personIds)
+    // The three facts any staff member may know (clearance_status, 0091).
+    personIds.length
+      ? supabase.from('clearance_status').select('person_id, on_file, expires_on, is_current, verdict').in('person_id', personIds)
       : Promise.resolve({ data: [] }),
   ]);
   const appByPart = new Map((apps ?? []).map((a) => [a.registration_participant_id, a]));
   const today = new Date().toISOString().slice(0, 10);
-  const checkWord = new Map(
-    (clearances ?? []).map((c) => [
-      c.person_id,
-      c.expires_on && c.expires_on < today ? 'expired' : c.background_check_on_file ? 'cleared' : 'pending',
-    ])
-  );
+  const checkWord = new Map((clearances ?? []).map((c) => [c.person_id, clearancePill(c).text]));
 
   const groups = (events ?? [])
     .filter((ev) => !eventFilter || ev.id === eventFilter)

@@ -65,20 +65,60 @@ export default async function AdminVolunteersPage({ searchParams }) {
           )
           .in('registration_participant_id', partIds)
       : Promise.resolve({ data: [] }),
-    personIds.length && maySeeChecks
-      ? supabase
-          .from('person_clearances')
-          // Checkr columns are read but never written yet (migration 0029) --
-          // the panel that shows them is a reviewable placeholder, not a
-          // working integration.
-          .select(
-            `person_id, background_check_on_file, background_check_date, expires_on,
-             provider, checkr_status, checkr_package, adjudication,
-             invitation_sent_at, report_completed_at`
-          )
-          .in('person_id', personIds)
+    // With the grant: the whole record. Without it: the three facts every
+    // staff member may know (on file, current, verdict) from clearance_status
+    // (0091) -- until 15 Oct this column read "hidden" for anyone without the
+    // grant, and the Buddy board read "no check on file" for everybody.
+    personIds.length
+      ? maySeeChecks
+        ? supabase
+            .from('person_clearances')
+            .select(
+              `person_id, background_check_on_file, background_check_date, expires_on,
+               verdict, verdict_note, verdict_by, verdict_at, paperwork_marked_by, paperwork_marked_at,
+               provider, checkr_status, checkr_package, adjudication,
+               invitation_sent_at, report_completed_at`
+            )
+            .in('person_id', personIds)
+        : supabase
+            .from('clearance_status')
+            .select('person_id, on_file, check_date, expires_on, is_current, verdict')
+            .in('person_id', personIds)
       : Promise.resolve({ data: [] }),
   ]);
+
+  // Names for the stamps on the record, and the recent log lines, only when
+  // the record itself is shown.
+  let nameOf = new Map();
+  let logByPerson = new Map();
+  if (maySeeChecks && (clearances ?? []).length) {
+    const stampIds = [
+      ...new Set((clearances ?? []).flatMap((c) => [c.verdict_by, c.paperwork_marked_by]).filter(Boolean)),
+    ];
+    const [{ data: stampProfiles }, { data: logRows }] = await Promise.all([
+      stampIds.length
+        ? supabase.from('profiles').select('id, first_name, last_name').in('id', stampIds)
+        : Promise.resolve({ data: [] }),
+      supabase
+        .from('clearance_review_log')
+        .select('person_id, field, old_value, new_value, changed_by, changed_at')
+        .in('person_id', personIds)
+        .order('changed_at', { ascending: false })
+        .limit(200),
+    ]);
+    nameOf = new Map((stampProfiles ?? []).map((p) => [p.id, `${p.first_name} ${p.last_name}`.trim()]));
+    const logIds = [...new Set((logRows ?? []).map((l) => l.changed_by).filter(Boolean))].filter((id) => !nameOf.has(id));
+    if (logIds.length) {
+      const { data: more } = await supabase.from('profiles').select('id, first_name, last_name').in('id', logIds);
+      for (const p of more ?? []) nameOf.set(p.id, `${p.first_name} ${p.last_name}`.trim());
+    }
+    for (const l of logRows ?? []) {
+      if (!logByPerson.has(l.person_id)) logByPerson.set(l.person_id, []);
+      if (logByPerson.get(l.person_id).length < 8) {
+        logByPerson.get(l.person_id).push({ ...l, by: nameOf.get(l.changed_by) ?? 'staff' });
+      }
+    }
+  }
 
   // Accompanying adults' names, looked up separately (simple lookups over
   // nested joins, as everywhere in the admin).
@@ -127,7 +167,16 @@ export default async function AdminVolunteersPage({ searchParams }) {
       app: app
         ? { ...app, accompanyingAdultName: adultName.get(app.accompanying_adult_person_id) ?? null }
         : null,
-      clearance: clearanceByPerson.get(v.person?.id) ?? null,
+      clearance: (() => {
+        const c = clearanceByPerson.get(v.person?.id) ?? null;
+        if (!c) return null;
+        return {
+          ...c,
+          verdictByName: nameOf.get(c.verdict_by) ?? null,
+          paperworkByName: nameOf.get(c.paperwork_marked_by) ?? null,
+          log: logByPerson.get(v.person?.id) ?? [],
+        };
+      })(),
       // Three states (0075): affirmed on the last save; withdrawn (a signature
       // exists but the last save left the box unticked -- re-flagged, per
       // Lawrence 29 Sep); never affirmed. The answer on the application wins;

@@ -186,7 +186,16 @@ badge counts only the first, and the family's dashboard shows the ask in amber. 
 into programs is coordination** (`0090`): the Programs page and its writes need coordinator or
 administrator, through `place_in_program()`, a definer function that touches only `program_id`
 -- the participants table's UPDATE policy stays the registrar's. Naming a leader stays
-administrator-only, now in the database as well as the app. The high-water mark is `0090`. **Also that day: `/admin/search` had returned "Nothing matches" for every query
+administrator-only, now in the database as well as the app. **Background checks carry a
+verdict** (`0091`): `person_clearances.verdict` is the ministry's word (`ok`, `follow_up`,
+`not_permitted`), set from the volunteer's record by a holder of the Background-checks grant;
+who and when are stamped by trigger, the check date is required once paperwork is on file, the
+expiry follows from it by `clearance_interval_months()` (36), and every change lands in
+`clearance_review_log`. The `clearance_status` view (definer, like `program_roster`) gives every
+staff member the three facts — on file, current, verdict — and `clearancePill()` in
+`lib/format.js` is the one way they are shown. The `volunteer_clearances` compatibility view
+from `0056` is no longer read by the app. Staff idle logout is 60 minutes (was 15). The
+high-water mark is `0091`. **Also that day: `/admin/search` had returned "Nothing matches" for every query
 since it shipped** — `people → households` has two paths since `0037` (`people.household_id`
 and `households.primary_contact_person_id`), PostgREST refused the embed with PGRST201, and the
 page swallowed the error. Name the key (`households!people_household_id_fkey`) on every

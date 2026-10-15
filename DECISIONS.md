@@ -2181,6 +2181,21 @@ function that changes one column and checks the role itself. Naming or removing 
 stays an administrator's act, and the database now says so as well as the page. Registrars lose
 the Programs page unless they are also administrators; nobody active today is affected.
 
+**A background check gets a verdict, and the verdict gets a name** (migration `0091`). The chain
+was: order in Checkr's dashboard, import the CSV, and only a "clear" report set "on file"; a
+"consider" waited for a person, who cleared it by ticking *Paperwork on file* on the volunteer's
+record — and nothing said who ticked it, when, or what they concluded. Now the record carries the
+ministry's own verdict in three words — *OK to serve*, *needs a follow-up conversation*, *not
+permitted to attend* — set by whoever holds the Background-checks grant; the database stamps who
+and when, requires the check date once paperwork is on file, works the expiry out from it (36
+months, one function, until the board picks an interval — W21), and logs every change the way
+grant changes are logged. Everyone on staff sees three facts — on file, current, verdict — through
+a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
+been checked. Larry's "not permitted" is red wherever a name appears.
+
+**Staff idle logout is an hour, not fifteen minutes** (Lawrence, 15 Oct). Staff were being logged
+out mid-task; the two-minute warning stays, and families stay at thirty.
+
 **Refunds stay on the registration page.** Asked whether money should live only under Event
 Payments: a refund goes back against one payment, and the registration page is the one place
 that shows the payment, the person and the event it belongs to. Event Payments is the list across

@@ -6,46 +6,17 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { assignBuddy, unassignBuddy, setBuddyPublication, setBuddyRequired } from './actions';
+import { clearancePill } from '@/lib/format';
 
+// One pill, shared with Volunteers (lib/format.js, 0091): no record is not
+// the same as a failed check, on file is not the same as OK, and the
+// ministry's verdict -- green OK, amber follow-up, red not permitted -- is
+// what a coordinator pairing a buddy actually needs to know.
 function ClearanceBadge({ clearance }) {
-  // No record at all is NOT the same as a failed check, and saying "not
-  // cleared" for both would be wrong about one of them.
-  if (!clearance) {
-    return (
-      <span
-        title="No background check recorded for this volunteer"
-        className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800"
-      >
-        no check on file
-      </span>
-    );
-  }
-  if (clearance.expired) {
-    return (
-      <span
-        title="Their background check has expired"
-        className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800"
-      >
-        check expired
-      </span>
-    );
-  }
-  if (!clearance.cleared) {
-    return (
-      <span
-        title={`Background check status: ${clearance.status ?? 'pending'}`}
-        className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800"
-      >
-        check pending
-      </span>
-    );
-  }
+  const pill = clearancePill(clearance);
   return (
-    <span
-      title="Background check on file and current"
-      className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-600"
-    >
-      cleared
+    <span title={pill.title} className={`rounded-full px-2 py-0.5 text-xs font-semibold ${pill.cls}`}>
+      {pill.text}
     </span>
   );
 }

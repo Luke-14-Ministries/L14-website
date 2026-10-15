@@ -83,23 +83,18 @@ export default async function BuddiesPage({ searchParams }) {
     .map((r) => r.people?.id)
     .filter(Boolean);
 
+  // clearance_status (0091): the three facts every staff member may know.
+  // The old read was the table itself, behind the Background-checks grant,
+  // so a coordinator without it saw every volunteer as "no check on file".
+  // (It also went through volunteer_clearances, the compatibility view 0056
+  // marked temporary; retired 15 Oct.)
   const { data: clearanceRows } = volunteerPersonIds.length
     ? await supabase
-        .from('volunteer_clearances')
-        .select('person_id, background_check_on_file, expires_on, checkr_status')
+        .from('clearance_status')
+        .select('person_id, on_file, expires_on, is_current, verdict')
         .in('person_id', volunteerPersonIds)
     : { data: [] };
-
-  const today = new Date().toISOString().slice(0, 10);
-  const clearanceByPerson = new Map();
-  for (const c of clearanceRows ?? []) {
-    const expired = c.expires_on && c.expires_on < today;
-    clearanceByPerson.set(c.person_id, {
-      cleared: Boolean(c.background_check_on_file) && !expired,
-      expired: Boolean(expired),
-      status: c.checkr_status ?? null,
-    });
-  }
+  const clearanceByPerson = new Map((clearanceRows ?? []).map((c) => [c.person_id, c]));
 
   const shape = (r) => {
     const s = r.people?.person_support ?? null;

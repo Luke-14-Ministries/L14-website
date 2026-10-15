@@ -2,7 +2,7 @@
 
 // Staff-side volunteer actions. Registrar-gated here AND by row-level
 // security (volunteer_applications_update allows registrars; the
-// volunteer_clearances policy is registrar-only in both directions).
+// person_clearances policy needs the Background-checks grant in both directions).
 
 import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
@@ -29,18 +29,35 @@ export async function reviewVolunteerApplication(participantId, decision) {
   return { ok: true };
 }
 
-export async function setVolunteerClearance({ personId, onFile, date, expires }) {
+// The manual record (0091, 15 Oct 2026). Needs the Background-checks grant,
+// the same one that orders and imports checks: reading the result and
+// recording what the ministry concluded are the same kind of knowledge.
+// The check date is required once paperwork is on file -- the expiry is
+// worked out from it by policy in the database, never typed here -- and a
+// verdict needs paperwork to be on file to be a verdict about anything.
+// Who and when are stamped by trigger; the log fills itself.
+const VERDICTS = ['ok', 'follow_up', 'not_permitted'];
+
+export async function setVolunteerClearance({ personId, onFile, date, verdict, note }) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) return { ok: false, error: 'Not permitted.' };
+  if (!can(staff, 'background_checks')) {
+    return { ok: false, error: 'Recording a background check needs the Background-checks grant.' };
+  }
   if (!personId) return { ok: false, error: 'Missing person.' };
+  const isOn = Boolean(onFile);
+  if (isOn && !date) return { ok: false, error: 'Give the date of the check — the expiry is worked out from it.' };
+  const v = verdict ? String(verdict) : null;
+  if (v && !VERDICTS.includes(v)) return { ok: false, error: 'Unknown verdict.' };
+  if (v && !isOn) return { ok: false, error: 'A verdict needs the paperwork on file first.' };
 
   const supabase = await createClient();
-  const { error } = await supabase.from('volunteer_clearances').upsert(
+  const { error } = await supabase.from('person_clearances').upsert(
     {
       person_id: personId,
-      background_check_on_file: Boolean(onFile),
+      background_check_on_file: isOn,
       background_check_date: date || null,
-      expires_on: expires || null,
+      verdict: v,
+      verdict_note: (note ?? '').trim().slice(0, 500) || null,
       recorded_by: staff.userId,
     },
     { onConflict: 'person_id' }
@@ -48,7 +65,7 @@ export async function setVolunteerClearance({ personId, onFile, date, expires })
 
   if (error) {
     console.error('setVolunteerClearance:', error.message);
-    return { ok: false, error: 'Could not save the record.' };
+    return { ok: false, error: error.message || 'Could not save the record.' };
   }
   revalidatePath('/admin/volunteers');
   return { ok: true };
