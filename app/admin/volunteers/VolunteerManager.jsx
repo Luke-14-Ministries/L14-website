@@ -447,6 +447,16 @@ export default function VolunteerManager({ groups, maySeeChecks = false }) {
     0
   );
   const noApp = groups.reduce((s, g) => s + g.rows.filter((r) => !r.app).length, 0);
+  // People, not rows, missing a background check (Lawrence, 15 Oct 2026):
+  // a volunteer at both weeks is one person to screen, so the count is by
+  // person id, and 'missing' is anything short of a current check with an
+  // OK verdict -- none on file, expired, undecided, follow-up, not permitted.
+  const missingCheck = new Set();
+  for (const g of groups) {
+    for (const r of g.rows) {
+      if (r.person?.id && clearancePill(r.clearance).key !== 'ok') missingCheck.add(r.person.id);
+    }
+  }
 
   return (
     <div>
@@ -476,6 +486,15 @@ export default function VolunteerManager({ groups, maySeeChecks = false }) {
         </span>
         <span className="rounded-lg bg-white border border-neutral-200 px-4 py-2">
           <span className="font-bold text-lg text-neutral-600">{noApp}</span> no application yet
+        </span>
+        <span
+          className="rounded-lg bg-white border border-neutral-200 px-4 py-2"
+          title="People (counted once, however many weeks they serve) without a current background check marked OK"
+        >
+          <span className={}>
+            {missingCheck.size}
+          </span>{' '}
+          {missingCheck.size === 1 ? 'person' : 'people'} without a background check
         </span>
       </div>
 
