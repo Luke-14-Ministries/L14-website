@@ -194,8 +194,8 @@ expiry follows from it by `clearance_interval_months()` (36), and every change l
 `clearance_review_log`. The `clearance_status` view (definer, like `program_roster`) gives every
 staff member the three facts — on file, current, verdict — and `clearancePill()` in
 `lib/format.js` is the one way they are shown. The `volunteer_clearances` compatibility view
-from `0056` is no longer read by the app. Staff idle logout is 60 minutes (was 15). The
-high-water mark is `0091`. **Also that day: `/admin/search` had returned "Nothing matches" for every query
+from `0056` is dropped (`0092`, applied once the commit was live). Staff idle logout is 60
+minutes (was 15). The high-water mark is `0092`. **Also that day: `/admin/search` had returned "Nothing matches" for every query
 since it shipped** — `people → households` has two paths since `0037` (`people.household_id`
 and `households.primary_contact_person_id`), PostgREST refused the embed with PGRST201, and the
 page swallowed the error. Name the key (`households!people_household_id_fkey`) on every
