@@ -195,7 +195,14 @@ expiry follows from it by `clearance_interval_months()` (36), and every change l
 staff member the three facts — on file, current, verdict — and `clearancePill()` in
 `lib/format.js` is the one way they are shown. The `volunteer_clearances` compatibility view
 from `0056` is dropped (`0092`, applied once the commit was live). Staff idle logout is 60
-minutes (was 15). The high-water mark is `0092`. **Also that day: `/admin/search` had returned "Nothing matches" for every query
+minutes (was 15). The high-water mark is `0092`. **Rule of thumb for any access question
+(Lawrence, 15 Oct):** when it is not obvious what a role or person should have, default to
+read; write is granted on top, for a named person, and logged. **Background screening reads the
+household's email and phone where the person has none** — on 15 Oct none of the 15 volunteers
+carried an email of their own and every household did — and the Checkr bulk file's header is
+their "bulk order with SMS" template, verbatim. The access-model plan lives at
+`01 Plans and Decisions\md files\Luke14-Access-Model-Plan.md`; one open staff question (→ Ellen)
+asks how the recent checks were actually run, since Larry recalls SSNs being entered by hand. **Also that day: `/admin/search` had returned "Nothing matches" for every query
 since it shipped** — `people → households` has two paths since `0037` (`people.household_id`
 and `households.primary_contact_person_id`), PostgREST refused the embed with PGRST201, and the
 page swallowed the error. Name the key (`households!people_household_id_fkey`) on every

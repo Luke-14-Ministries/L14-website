@@ -2193,6 +2193,21 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+**The rule of thumb for access: default to read, grant write by name.** Lawrence, 15 Oct, for
+the access-model plan and for any question before it is built: when it is not obvious what a
+role or a person should have, they read; write is added for a named person when the job needs
+it, and the grant is logged. The plan's tables are read under that rule.
+
+**Screening is the administrator's, and the screening page tells the truth.** Read and write of
+the background-check record — ordering, importing, the verdict — sit with administrators; every
+other staff member sees on file / current / verdict. The page had said "nobody is due" above a
+list of eleven people it could not order, each "no email on file": none of the fifteen volunteers
+carries an email of their own, every household does, so the household address (and phone, for
+Checkr's SMS template) stands in and the row says so. The Checkr export can be chosen as a file
+as well as pasted; the file is read in the browser and never stored. Larry recalls SSNs being
+entered by hand for the recent checks — a staff question for Ellen, because if that is the
+process, the page's instructions and the no-SSN rule need re-examining before go-live.
+
 **Staff idle logout is an hour, not fifteen minutes** (Lawrence, 15 Oct). Staff were being logged
 out mid-task; the two-minute warning stays, and families stay at thirty.
 
