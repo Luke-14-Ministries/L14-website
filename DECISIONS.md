@@ -2204,7 +2204,11 @@ other staff member sees on file / current / verdict. The page had said "nobody i
 list of eleven people it could not order, each "no email on file": none of the fifteen volunteers
 carries an email of their own, every household does, so the household address (and phone, for
 Checkr's SMS template) stands in and the row says so. The Checkr export can be chosen as a file
-as well as pasted; the file is read in the browser and never stored. Larry recalls SSNs being
+as well as pasted; the file is read in the browser and never stored. And the one button that
+matters -- download the bulk file and record the batch as sent -- had never once succeeded:
+0029's check constraint demanded a Checkr candidate id on any row past not_started, which the
+file flow cannot have until the export comes back. Migration `0093` lets the invited email stand
+as the match, which is what the import matches on. Larry recalls SSNs being
 entered by hand for the recent checks — a staff question for Ellen, because if that is the
 process, the page's instructions and the no-SSN rule need re-examining before go-live.
 
