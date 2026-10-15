@@ -182,6 +182,11 @@ export default function ScreeningBoard({ candidates }) {
                       {' '}· {c.email}
                       {c.emailIsHousehold && ' (household address)'}
                     </span>
+                    {c.sharesEmailWith?.length > 0 && (
+                      <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
+                        same inbox as {c.sharesEmailWith.join(' and ')} — two invitations, each opens their own
+                      </span>
+                    )}
                     <span className="block text-xs text-neutral-500">
                       {c.eventName}
                       {c.reason ? ` — ${c.reason}` : ''}

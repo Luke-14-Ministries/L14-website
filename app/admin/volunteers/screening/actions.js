@@ -371,11 +371,19 @@ export async function importCheckrResults(csvText, { dryRun = true } = {}) {
     .from('people')
     .select('id, first_name, last_name');
 
+  // An address may have been invited for MORE than one person -- a couple on
+  // one household email. byEmail therefore holds a set, and a row whose
+  // address is shared is settled by the name on the row, or not at all
+  // (Lawrence, 15 Oct 2026: "how to treat two people with the same email?").
   const byEmail = new Map();
   const haveRow = new Set();
   for (const r of existing ?? []) {
     haveRow.add(r.person_id);
-    if (r.invited_email) byEmail.set(norm(r.invited_email), r.person_id);
+    if (r.invited_email) {
+      const k = norm(r.invited_email);
+      if (!byEmail.has(k)) byEmail.set(k, new Set());
+      byEmail.get(k).add(r.person_id);
+    }
   }
   // Exact full-name match only, and only where the name is UNIQUE in the
   // database. Two Steve Gillespies means no match and a line in the report --
@@ -421,8 +429,27 @@ export async function importCheckrResults(csvText, { dryRun = true } = {}) {
     const nameKey = normName(fullName);
     const nameId = nameKey && nameCount.get(nameKey) === 1 ? byName.get(nameKey) : undefined;
 
-    let personId = emailIsOrderers || !email ? undefined : byEmail.get(email);
-    let how = personId ? 'email' : null;
+    const emailIds = emailIsOrderers || !email ? null : byEmail.get(email);
+    let personId;
+    let how = null;
+    if (emailIds && emailIds.size === 1) {
+      personId = [...emailIds][0];
+      how = 'email';
+    } else if (emailIds && emailIds.size > 1) {
+      // Shared address: the name decides, and only if it names one of them.
+      if (nameId && emailIds.has(nameId)) {
+        personId = nameId;
+        how = 'name';
+      } else {
+        unmatched.push({
+          name: fullName || '(no name)',
+          email: email || '(no email)',
+          verdict,
+          why: `${emailIds.size} people were invited at this address and the name on the row does not settle which — match it by hand`,
+        });
+        continue;
+      }
+    }
 
     // Email says one person, name says another. There is no safe way to prefer
     // one over the other, so neither wins -- the row is listed for a human.

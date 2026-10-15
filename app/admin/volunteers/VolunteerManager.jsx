@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { reviewVolunteerApplication, setVolunteerClearance } from './actions';
-import { clearancePill, CLEARANCE_VERDICT_LABEL } from '@/lib/format';
+import { clearancePill, CLEARANCE_VERDICT_LABEL, isMinor } from '@/lib/format';
 
 const APP_CHIP = {
   applied: ['Applied — needs review', 'bg-amber-100 text-amber-800'],
@@ -264,8 +264,9 @@ function VolunteerRow({ row, maySeeChecks }) {
     else router.refresh();
   }
 
-  // The same pill every staff member sees on the Buddy board (0091).
-  const pill = clearancePill(clearance);
+  // The same pill every staff member sees on the Buddy board (0091). A
+  // volunteer under 18 is not screened, and says so instead of "missing".
+  const pill = clearancePill(isMinor(person?.date_of_birth) ? { ...(clearance ?? {}), minor: true } : clearance);
 
   return (
     <div
@@ -454,10 +455,12 @@ export default function VolunteerManager({ groups, maySeeChecks = false }) {
   // a volunteer at both weeks is one person to screen, so the count is by
   // person id, and 'missing' is anything short of a current check with an
   // OK verdict -- none on file, expired, undecided, follow-up, not permitted.
+  // Adults only: a volunteer under 18 is not screened and is not counted.
   const missingCheck = new Set();
   for (const g of groups) {
     for (const r of g.rows) {
-      if (r.person?.id && clearancePill(r.clearance).key !== 'ok') missingCheck.add(r.person.id);
+      if (!r.person?.id || isMinor(r.person?.date_of_birth)) continue;
+      if (clearancePill(r.clearance).key !== 'ok') missingCheck.add(r.person.id);
     }
   }
 
@@ -494,12 +497,12 @@ export default function VolunteerManager({ groups, maySeeChecks = false }) {
         </span>
         <span
           className="rounded-lg bg-white border border-neutral-200 px-4 py-2"
-          title="People (counted once, however many weeks they serve) without a current background check marked OK"
+          title="Adults (counted once, however many weeks they serve) without a current background check marked OK; under-18s are not screened"
         >
           <span className={`font-bold text-lg ${missingCheck.size > 0 ? 'text-amber-700' : 'text-green-700'}`}>
             {missingCheck.size}
           </span>{' '}
-          {missingCheck.size === 1 ? 'person' : 'people'} without a background check
+          {missingCheck.size === 1 ? 'adult' : 'adults'} without a background check
         </span>
       </div>
 

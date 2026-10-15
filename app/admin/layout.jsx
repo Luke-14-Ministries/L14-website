@@ -4,6 +4,7 @@ import { getStaff, can } from '@/lib/staff';
 import { getProgramLeadership } from '@/lib/programs';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sinceISO, STAFF_ASSIGNED_TYPES } from '@/lib/events';
+import { isMinor } from '@/lib/format';
 import AdminNav from './AdminNav';
 
 export const metadata = { title: 'Staff Admin — Luke 14 Ministries' };
@@ -285,11 +286,18 @@ export default async function AdminLayout({ children }) {
       const today = new Date().toISOString().slice(0, 10);
       const { data: volRows } = await supabase
         .from('registration_participants')
-        .select('person_id, registrations!inner ( events!inner ( ends_on ) )')
+        .select('person_id, people ( date_of_birth ), registrations!inner ( events!inner ( ends_on ) )')
         .eq('camp_role', 'volunteer')
         .neq('status', 'cancelled')
         .gte('registrations.events.ends_on', today);
-      const volIds = [...new Set((volRows ?? []).map((r) => r.person_id).filter(Boolean))];
+      // Adults only: Checkr does not screen under-18s (Lawrence, 15 Oct 2026).
+      const volIds = [
+        ...new Set(
+          (volRows ?? [])
+            .filter((r) => r.person_id && !isMinor(r.people?.date_of_birth))
+            .map((r) => r.person_id)
+        ),
+      ];
       if (volIds.length) {
         const { data: statusRows } = await supabase
           .from('clearance_status')
@@ -524,7 +532,7 @@ export default async function AdminLayout({ children }) {
             }}
             redBadges={{ '/admin/volunteers': volunteersMissingCheck }}
             redBadgeTitles={{
-              '/admin/volunteers': 'volunteers without a current background check marked OK',
+              '/admin/volunteers': 'adult volunteers without a current background check marked OK',
             }}
             />
           </div>

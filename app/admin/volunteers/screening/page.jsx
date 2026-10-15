@@ -146,6 +146,22 @@ export default async function ScreeningPage() {
     });
   }
 
+  // Two people at one address (a couple, a parent and an adult child) each
+  // get their own row in Checkr's file and their own invitation -- to the
+  // same inbox. The row says so, so whoever opens the mail knows there are
+  // two links and each person must use their own (Lawrence, 15 Oct 2026).
+  const emailUse = new Map();
+  for (const c of candidates) {
+    if (c.email === '—') continue;
+    const k = c.email.toLowerCase();
+    if (!emailUse.has(k)) emailUse.set(k, []);
+    emailUse.get(k).push(c.name);
+  }
+  for (const c of candidates) {
+    const others = c.email === '—' ? [] : emailUse.get(c.email.toLowerCase()).filter((n) => n !== c.name);
+    c.sharesEmailWith = others;
+  }
+
   candidates.sort((a, b) => a.name.localeCompare(b.name));
 
   return (

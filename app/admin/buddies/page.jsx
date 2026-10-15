@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { eventWindow, staffAssigns } from '@/lib/events';
+import { isMinor } from '@/lib/format';
 import BuddyBoard from './BuddyBoard';
 import EventFilter from '@/components/EventFilter';
 
@@ -123,7 +124,9 @@ export default async function BuddiesPage({ searchParams }) {
             allergies: Boolean(support.has_allergies),
           }
         : null,
-      clearance: clearanceByPerson.get(r.people?.id) ?? null,
+      clearance: isMinor(r.people?.date_of_birth)
+        ? { ...(clearanceByPerson.get(r.people?.id) ?? {}), minor: true }
+        : clearanceByPerson.get(r.people?.id) ?? null,
     };
   };
 

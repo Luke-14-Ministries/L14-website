@@ -216,7 +216,7 @@ export default function AdminNav({
         <span className="inline-block rounded-full bg-red-100 px-1.5 font-semibold text-red-800">
           red
         </span>{' '}
-        people without a background check
+        adults without a background check
       </p>
     </nav>
   );
