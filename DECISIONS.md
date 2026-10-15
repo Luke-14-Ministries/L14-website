@@ -2184,4 +2184,12 @@ counted every non-volunteer (parents and caregivers included) while the board co
 siblings, so the nav said 19 against 4 + 7; the badge now counts what the board counts. A
 dropdown beside a pill saying the same word ("mild allergy [Mild ▾]") is now one control: the
 dropdown wears the pill's colours, on Dietary & Allergies and on each person's status. The
-bottom card of the registration page has a title and folds like the others.
+bottom card of the registration page has a title and folds like the others. Giving's summary
+cards say what period they cover (all time unless From/To is set); Newsletter no longer counts
+the opted-out; Medical & Support links to Check-In where a medical contact is missing.
+
+**A defect, not a decision, recorded because of its lesson.** Search (`/admin/search`, 14 Oct) had
+never returned a result: the `people → households` embed has two paths since `0037`, PostgREST
+refused it (PGRST201), and the page logged the error and showed "Nothing matches". Two rules
+restated: name the foreign key on any people↔households embed, and a query error is thrown, never
+rendered as an empty list.

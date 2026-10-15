@@ -183,7 +183,11 @@ for more information. That last one is `0089`: two columns on `registrations`
 (`awaiting_family_since`, `awaiting_family_reason`), guarded by a trigger so only a registrar
 moves them. The review queue separates *waiting on staff* from *waiting on the family*, the nav
 badge counts only the first, and the family's dashboard shows the ask in amber. The high-water
-mark is `0089`.
+mark is `0089`. **Also that day: `/admin/search` had returned "Nothing matches" for every query
+since it shipped** — `people → households` has two paths since `0037` (`people.household_id`
+and `households.primary_contact_person_id`), PostgREST refused the embed with PGRST201, and the
+page swallowed the error. Name the key (`households!people_household_id_fkey`) on every
+people↔households embed, and never turn a query error into an empty list.
 
 **Built 30 September 2026 — migration `0080`, payment plans (read before touching money).** A
 camp week's balance is due two weeks before it starts (`balanceDueOn()` in `lib/events.js`
