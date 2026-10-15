@@ -236,17 +236,36 @@ export default function ScreeningBoard({ candidates }) {
       <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-bold">3 · Bring the results back</h2>
         <p className="mt-1 mb-3 max-w-prose text-sm text-neutral-500">
-          Export the reports from Checkr and paste the file here. Batches sent from this
-          screen match on the address we invited, so somebody who changes their email in
-          between still matches. Checks ordered by hand at Checkr carry the{' '}
-          <em>orderer&rsquo;s</em> address instead, so those match on name — and the preview
-          says which rows did that before anything is written.
+          Export the reports from Checkr and choose the file here (or paste its contents).
+          Batches sent from this screen match on the address we invited, so somebody who
+          changes their email in between still matches. Background checks ordered by hand at
+          Checkr carry the <em>orderer&rsquo;s</em> address instead, so those match on name —
+          and the preview says which rows did that before anything is written.
         </p>
+        {/* A file picker as well as the box (Lawrence, 15 Oct 2026: "why paste
+            and not upload a CSV?"). The file is read in the browser and lands
+            in the same box -- nothing is uploaded or stored anywhere; the
+            preview and the import work from the text exactly as before. */}
+        <label className="mb-2 flex flex-wrap items-center gap-3 text-sm">
+          <span className="font-semibold">Checkr export (.csv)</span>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            className="text-sm"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => setCsvText(String(reader.result ?? ''));
+              reader.readAsText(file);
+            }}
+          />
+        </label>
         <textarea
           value={csvText}
           onChange={(e) => setCsvText(e.target.value)}
           rows={5}
-          placeholder="Paste the whole CSV, heading row and all"
+          placeholder="…or paste the whole CSV here, heading row and all"
           className="w-full rounded border border-neutral-300 px-3 py-2 font-mono text-xs"
         />
         <div className="mt-3 flex flex-wrap items-center gap-3">
