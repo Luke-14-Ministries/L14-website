@@ -177,8 +177,8 @@ export default function VolunteerApplication({
               preference. Leadership honours them where it can; the camp
               decides where each person is placed. */}
           <p className="mb-1 text-xs text-neutral-500">
-            We do our best to honour preferences, and the camp team makes the final placements —
-            you may be asked to serve somewhere else.
+            This is to tell us your preference. Leadership will try to honor it where possible;
+            final placements are made by the camp team.
           </p>
           <div className="grid sm:grid-cols-2 gap-1">
             {AREAS.map((a) => (
