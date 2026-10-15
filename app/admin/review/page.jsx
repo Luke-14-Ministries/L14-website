@@ -153,7 +153,6 @@ export default async function ReviewQueuePage({ searchParams }) {
                   <th className="px-3 py-2 text-left font-semibold">Money</th>
                   <th className="px-3 py-2 text-left font-semibold">Flags</th>
                   <th className="px-3 py-2 text-right font-semibold">Paid / balance</th>
-                  <th className="px-3 py-2" />
                 </tr>
               </thead>
               <tbody>
@@ -225,19 +224,15 @@ export default async function ReviewQueuePage({ searchParams }) {
                           </ul>
                         )}
                       </td>
+                      {/* The family name is the link to the registration; an
+                          "Open →" beside it was the same link twice (15 Oct). */}
                       <td className="px-3 py-2.5 text-right whitespace-nowrap">
                         <div>{money(r.balance?.paid_cents)}</div>
                         <div className="text-xs text-neutral-500">
-                          {money(r.balance?.balance_cents)} owed
+                          {(r.balance?.balance_cents ?? 0) < 0
+                            ? `${money(-r.balance.balance_cents)} credit`
+                            : `${money(r.balance?.balance_cents)} owed`}
                         </div>
-                      </td>
-                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                        <Link
-                          href={`/admin/registrations/${r.id}/`}
-                          className="text-sm font-semibold text-brand-dark hover:underline"
-                        >
-                          Open →
-                        </Link>
                       </td>
                     </tr>
                   );
