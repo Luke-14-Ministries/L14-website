@@ -61,7 +61,7 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
   // rule the screening page applies, so what it lists is what gets ordered.
   const { data: people, error: peopleError } = await supabase
     .from('people')
-    .select('id, first_name, last_name, email, phone, date_of_birth, households!people_household_id_fkey ( email )')
+    .select('id, first_name, last_name, email, phone, date_of_birth, households!people_household_id_fkey ( email, phone )')
     .in('id', personIds);
   if (peopleError) return { ok: false, error: 'Could not read those people.' };
 
@@ -122,8 +122,15 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
       const p = byId.get(r.person_id);
       // Digits only. Checkr's example is a bare 10-digit number, and
       // "(423) 748-4954" is the kind of thing a strict parser rejects for the
-      // whole row rather than the one field.
-      const phone = (p?.phone ?? '').replace(/\D/g, '');
+      // whole row rather than the one field. The household's phone stands in
+      // where the person has none (1 of 15 volunteers had their own on
+      // 15 Oct 2026; every household did), the same way the email does --
+      // Ellen's template is the "with SMS" one, which texts the invitation
+      // to this number as well as emailing it. A leading country 1 is
+      // dropped so the number is the 10 digits Checkr's example shows.
+      const rawPhone = (p?.phone ?? '').trim() || (p?.households?.phone ?? '').trim();
+      let phone = rawPhone.replace(/\D/g, '');
+      if (phone.length === 11 && phone.startsWith('1')) phone = phone.slice(1);
       const first = (p?.first_name ?? '').replace(/[",\n]/g, ' ').trim();
       return `${r.invited_email},${first},${phone}`;
     }),
