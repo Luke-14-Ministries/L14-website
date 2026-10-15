@@ -4,7 +4,24 @@
 // who is due, send the batch, bring the results back.
 
 import { useMemo, useState, useTransition } from 'react';
-import { markBatchOrdered, importCheckrResults } from './actions';
+import { markBatchOrdered, importCheckrResults, rebuildBatchCsv, unsendBatch } from './actions';
+
+// Hand a CSV to the browser. The file never goes near a server we control,
+// which is the point: it holds email addresses. The link is put in the page
+// and the object URL released a moment later -- revoking it in the same tick
+// as the click is a known way to get no download at all in some browsers.
+function saveCsv(csv, filename) {
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 1000);
+}
 
 const money = (n) => `$${n.toFixed(2)}`;
 const PER_CHECK = 26.5; // Basic Plus $25.49 plus the passthrough fees actually invoiced.
@@ -38,6 +55,36 @@ export default function ScreeningBoard({ candidates }) {
     () => candidates.filter((c) => c.blockedBecause),
     [candidates]
   );
+  // Batches already sent, newest first: the people still 'invited', grouped
+  // by the batch they went out in, so the file can be downloaded again or
+  // the batch taken back (15 Oct 2026).
+  const batches = useMemo(() => {
+    const m = new Map();
+    for (const c of candidates) {
+      if (c.status !== 'invited' || !c.batch) continue;
+      if (!m.has(c.batch)) m.set(c.batch, []);
+      m.get(c.batch).push(c);
+    }
+    return [...m.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  }, [candidates]);
+  const [batchNote, setBatchNote] = useState(null);
+
+  function downloadAgain(batch) {
+    setBatchNote(null);
+    start(async () => {
+      const r = await rebuildBatchCsv(batch);
+      if (r.ok) saveCsv(r.csv, r.filename);
+      setBatchNote(r.ok ? `${r.filename} is in your downloads.` : r.error);
+    });
+  }
+  function unsend(batch, n) {
+    if (!window.confirm(`Mark these ${n} as NOT sent? They go back to never checked and will be offered for the next batch. Do this only if the file never reached Checkr.`)) return;
+    setBatchNote(null);
+    start(async () => {
+      const r = await unsendBatch(batch);
+      setBatchNote(r.ok ? `${r.undone} taken back.` : r.error);
+    });
+  }
 
   const toggle = (id) =>
     setPicked((s) => {
@@ -55,14 +102,7 @@ export default function ScreeningBoard({ candidates }) {
       const r = await markBatchOrdered([...picked], batch, 'volunteer');
       setResult(r);
       if (r.ok && r.csv) {
-        // Handed straight to the browser. The file never goes near a server
-        // we control, which is the point: it holds email addresses.
-        const url = URL.createObjectURL(new Blob([r.csv], { type: 'text/csv' }));
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = r.filename;
-        a.click();
-        URL.revokeObjectURL(url);
+        saveCsv(r.csv, r.filename);
         setPicked(new Set());
       }
     });
@@ -187,6 +227,40 @@ export default function ScreeningBoard({ candidates }) {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {batches.length > 0 && (
+          <div className="mt-5 rounded border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">
+            <p className="font-semibold text-neutral-800">Batches sent, still waiting on Checkr</p>
+            <ul className="mt-1.5 space-y-2">
+              {batches.map(([batch, people]) => (
+                <li key={batch} className="flex flex-wrap items-center gap-3">
+                  <span>
+                    <strong>{String(batch).slice(0, 10)}</strong> · {people.length}{' '}
+                    {people.length === 1 ? 'person' : 'people'}
+                    <span className="text-neutral-500"> — {people.map((p) => p.name).join(', ')}</span>
+                  </span>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => downloadAgain(batch)}
+                    className="btn-outline !py-1 !px-3 text-xs"
+                  >
+                    Download the file again
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => unsend(batch, people.length)}
+                    className="text-xs text-red-700 underline"
+                  >
+                    Mark as not sent
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {batchNote && <p className="mt-2 text-neutral-700">{batchNote}</p>}
           </div>
         )}
       </section>

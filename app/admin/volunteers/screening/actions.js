@@ -114,7 +114,22 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
   // nobody was ordered, and the next batch invites all of them again -- at
   // about $26.50 each. One click, one record, one file.
   const byId = new Map((people ?? []).map((p) => [p.id, p]));
-  const csv = [
+  const csv = buildCheckrCsv(rows, byId);
+
+  revalidatePath('/admin/volunteers');
+  return {
+    ok: true,
+    ordered: rows.length,
+    skipped,
+    csv,
+    filename: batchFilename(batch, rows.length),
+  };
+}
+
+// Checkr's bulk file, from the rows of a batch and the people they belong to.
+// One function, so the first download and a re-download are the same bytes.
+function buildCheckrCsv(rows, byId) {
+  return [
     // Checkr's own template header, reproduced exactly. Their parser reads
     // these strings; "first name" is not "First Name" to it.
     'email (required),first name (optional),phone number (optional)',
@@ -135,15 +150,63 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
       return `${r.invited_email},${first},${phone}`;
     }),
   ].join('\r\n');
+}
+const batchFilename = (batch, n) => `luke14-checkr-${String(batch).slice(0, 10)}-${n}.csv`;
 
+// The same file again, for a batch already recorded as sent (Lawrence,
+// 15 Oct 2026: "the ability to re-download should be possible"). Reads only;
+// the batch stays exactly as recorded. The addresses are the ones invited,
+// not whatever the people carry now, so the file is the one Checkr got.
+export async function rebuildBatchCsv(batch) {
+  const staff = await getStaff();
+  if (!can(staff, 'background_checks')) return { ok: false, error: 'Not permitted.' };
+  if (!batch) return { ok: false, error: 'Which batch?' };
+
+  const supabase = await createClient();
+  const { data: rows, error } = await supabase
+    .from('person_clearances')
+    .select('person_id, invited_email')
+    .eq('order_batch', batch)
+    .not('invited_email', 'is', null);
+  if (error) return { ok: false, error: error.message };
+  if (!rows?.length) return { ok: false, error: 'That batch has no invitations left on it.' };
+
+  const { data: people } = await supabase
+    .from('people')
+    .select('id, first_name, phone, households!people_household_id_fkey ( phone )')
+    .in('id', rows.map((r) => r.person_id));
+  const byId = new Map((people ?? []).map((p) => [p.id, p]));
+  return { ok: true, csv: buildCheckrCsv(rows, byId), filename: batchFilename(batch, rows.length) };
+}
+
+// Take a batch back (Lawrence, 15 Oct 2026): a press on the wrong day, or a
+// file that never reached Checkr. Only rows still 'invited' are touched --
+// anything Checkr has already moved along stays as it is -- and they go
+// back to never-checked, so the people are due again. The log trigger
+// records each status change with who did it.
+export async function unsendBatch(batch) {
+  const staff = await getStaff();
+  if (!can(staff, 'background_checks')) return { ok: false, error: 'Not permitted.' };
+  if (!batch) return { ok: false, error: 'Which batch?' };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('person_clearances')
+    .update({
+      checkr_status: 'not_started',
+      invited_email: null,
+      order_batch: null,
+      ordered_by: null,
+      ordered_at: null,
+      invitation_sent_at: null,
+    })
+    .eq('order_batch', batch)
+    .eq('checkr_status', 'invited')
+    .select('person_id');
+  if (error) return { ok: false, error: error.message };
   revalidatePath('/admin/volunteers');
-  return {
-    ok: true,
-    ordered: rows.length,
-    skipped,
-    csv,
-    filename: `luke14-checkr-${batch.slice(0, 10)}-${rows.length}.csv`,
-  };
+  revalidatePath('/admin/volunteers/screening');
+  return { ok: true, undone: data?.length ?? 0 };
 }
 
 // ---------------------------------------------------------------------------

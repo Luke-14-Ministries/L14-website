@@ -136,6 +136,7 @@ export default async function ScreeningPage() {
       emailIsHousehold: Boolean(email) && !ownEmail,
       eventName: evNames.join(' · ') || 'No event',
       status: c?.checkr_status ?? 'not_started',
+      batch: c?.order_batch ?? null,
       reason: c?.expires_on && c.expires_on < today
         ? `expired ${c.expires_on}`
         : c?.background_check_on_file
