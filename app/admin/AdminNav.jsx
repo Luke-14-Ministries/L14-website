@@ -72,7 +72,19 @@ const BADGE_TONE = {
   '/admin/my-program': 'window',
 };
 
-export default function AdminNav({ top = [], sections = [], loose = [], badges = {}, badgeTitles = {} }) {
+// redBadges: a second count on the same item, in red, for the thing that is
+// not merely waiting but WRONG until somebody acts -- today, volunteers
+// without a background check (Lawrence, 15 Oct 2026: "12 / 15"). Amber then
+// red, side by side, each with its own tooltip.
+export default function AdminNav({
+  top = [],
+  sections = [],
+  loose = [],
+  badges = {},
+  badgeTitles = {},
+  redBadges = {},
+  redBadgeTitles = {},
+}) {
   const pathname = usePathname();
   const open = useSyncExternalStore(subscribeOpen, readOpen, () => true);
 
@@ -111,16 +123,28 @@ export default function AdminNav({ top = [], sections = [], loose = [], badges =
         }`}
       >
         <span className="min-w-0">{n.label}</span>
-        {(badges[n.href] ?? 0) > 0 && (
-          <span
-            title={`${badges[n.href]} ${badgeTitles[n.href] ?? 'needing review'}`}
-            className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-              BADGE_TONE[n.href] === 'window'
-                ? 'bg-blue-100 text-blue-800'
-                : 'bg-amber-100 text-amber-800'
-            }`}
-          >
-            {badges[n.href]}
+        {((badges[n.href] ?? 0) > 0 || (redBadges[n.href] ?? 0) > 0) && (
+          <span className="flex shrink-0 items-center gap-1">
+            {(badges[n.href] ?? 0) > 0 && (
+              <span
+                title={`${badges[n.href]} ${badgeTitles[n.href] ?? 'needing review'}`}
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  BADGE_TONE[n.href] === 'window'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-amber-100 text-amber-800'
+                }`}
+              >
+                {badges[n.href]}
+              </span>
+            )}
+            {(redBadges[n.href] ?? 0) > 0 && (
+              <span
+                title={`${redBadges[n.href]} ${redBadgeTitles[n.href] ?? 'needing attention'}`}
+                className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800"
+              >
+                {redBadges[n.href]}
+              </span>
+            )}
           </span>
         )}
       </Link>
@@ -188,7 +212,11 @@ export default function AdminNav({ top = [], sections = [], loose = [], badges =
         <span className="inline-block rounded-full bg-blue-100 px-1.5 font-semibold text-blue-800">
           blue
         </span>{' '}
-        activity in the last 7 days
+        activity in the last 7 days ·{' '}
+        <span className="inline-block rounded-full bg-red-100 px-1.5 font-semibold text-red-800">
+          red
+        </span>{' '}
+        people without a background check
       </p>
     </nav>
   );

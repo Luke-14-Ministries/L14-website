@@ -195,6 +195,7 @@ export default async function AdminLayout({ children }) {
   // count (support-detail rows stay invisible without the sensitive grant).
   let unreviewedChanges = 0;
   let volunteersAwaiting = 0;
+  let volunteersMissingCheck = 0;
   let recentAccounts = 0;
   let recentPayments = 0;
   let openCancellations = 0;
@@ -275,6 +276,31 @@ export default async function AdminLayout({ children }) {
       ]);
     unreviewedChanges = changesCount ?? 0;
     volunteersAwaiting = volCount ?? 0;
+
+    // Volunteers on an event that has not finished, counted by PERSON, whose
+    // background check is not on file, current and marked OK (0091). Read
+    // through clearance_status, which every staff member may see, so the
+    // number is the same whoever is looking (Lawrence, 15 Oct 2026).
+    {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: volRows } = await supabase
+        .from('registration_participants')
+        .select('person_id, registrations!inner ( events!inner ( ends_on ) )')
+        .eq('camp_role', 'volunteer')
+        .neq('status', 'cancelled')
+        .gte('registrations.events.ends_on', today);
+      const volIds = [...new Set((volRows ?? []).map((r) => r.person_id).filter(Boolean))];
+      if (volIds.length) {
+        const { data: statusRows } = await supabase
+          .from('clearance_status')
+          .select('person_id, on_file, is_current, verdict')
+          .in('person_id', volIds);
+        const ok = new Set(
+          (statusRows ?? []).filter((c) => c.on_file && c.is_current && c.verdict === 'ok').map((c) => c.person_id)
+        );
+        volunteersMissingCheck = volIds.filter((id) => !ok.has(id)).length;
+      }
+    }
     recentPayments = payCount ?? 0;
     openCancellations = cancelCount ?? 0;
     {
@@ -495,6 +521,10 @@ export default async function AdminLayout({ children }) {
               '/admin/payments': 'payments in the last 7 days',
               '/admin/programs': 'people on a roster with no program yet',
               '/admin/my-program': 'people in your program',
+            }}
+            redBadges={{ '/admin/volunteers': volunteersMissingCheck }}
+            redBadgeTitles={{
+              '/admin/volunteers': 'volunteers without a current background check marked OK',
             }}
             />
           </div>

@@ -311,11 +311,14 @@ function VolunteerRow({ row, maySeeChecks }) {
                     : 'Did not affirm the Apostles’ Creed — they were asked to speak with Larry; confirm that has happened before approving'
               }
             >
+              {/* The fact only (Lawrence, 15 Oct 2026): red already says
+                  "stop"; the triangle and "speak with Larry" are in the
+                  tooltip and on the application itself. */}
               {row.creedAffirmed
                 ? 'Creed affirmed'
                 : row.creedWithdrawn
-                  ? '⚠ Creed affirmation withdrawn — speak with Larry'
-                  : '⚠ Creed not affirmed — speak with Larry'}
+                  ? 'Creed affirmation withdrawn'
+                  : 'Creed not affirmed'}
             </span>
           )}
           {/* Three facts for everyone on staff -- on file, current, the
@@ -430,8 +433,8 @@ function VolunteerRow({ row, maySeeChecks }) {
           ) : (
             <p className="mt-4 rounded border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
               The pill above is all you can see: on file, current, and the verdict. The record
-              itself (dates, what Checkr said, who decided) is a separate permission an
-              administrator can grant. Every grant is recorded.
+              itself (dates, what Checkr said, who decided) is kept by administrators. Ask one if
+              something looks wrong.
             </p>
           )}
         </div>
@@ -473,8 +476,10 @@ export default function VolunteerManager({ groups, maySeeChecks = false }) {
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-prose">
         Everyone registered with the Volunteer role, with their application and background-check
-        record. The check paperwork itself lives in the restricted SharePoint folder — only the
-        yes/no and dates are recorded here.
+        status. The check paperwork itself lives in the restricted SharePoint folder. The record
+        here — ordering, Checkr&rsquo;s import, the check date and the verdict — is an
+        administrator&rsquo;s to keep; everyone else on staff sees on file, current, and the
+        verdict.
       </p>
 
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
