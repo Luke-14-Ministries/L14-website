@@ -507,10 +507,15 @@ export default function LoginForm() {
       <label className="block font-semibold mb-1.5" htmlFor="login-email">
         Email
       </label>
+      {/* name + autoComplete="username" are what a password manager keys on to
+          recognise a LOGIN form (Bitwarden, 15 Oct 2026: no shield offered on
+          these two boxes). id alone was enough for the browser, not for it.
+          Same lesson as the code box in September. */}
       <input
         id="login-email"
+        name="email"
         type="email"
-        autoComplete="email"
+        autoComplete="username"
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -521,6 +526,7 @@ export default function LoginForm() {
       </label>
       <input
         id="login-password"
+        name="password"
         type="password"
         autoComplete="current-password"
         required
