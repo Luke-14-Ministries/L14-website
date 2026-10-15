@@ -19,7 +19,10 @@ import { createClient } from '@/lib/supabase/client';
 
 const MIN = 60 * 1000;
 const WARN_MS = 2 * MIN; // how long the warning shows before logout
-const STAFF_IDLE = 15 * MIN;
+// 15 minutes until 15 Oct 2026; Lawrence: staff were being logged out
+// mid-task ("extend it to like 30 min or an hour"). An hour, with the same
+// two-minute warning. Families stay at 30.
+const STAFF_IDLE = 60 * MIN;
 const FAMILY_IDLE = 30 * MIN;
 
 // Passive signals that someone is still at the keyboard. mousemove is throttled
