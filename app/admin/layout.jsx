@@ -262,10 +262,16 @@ export default async function AdminLayout({ children }) {
         // 'submitted' only. Waitlisted is a decision already made, and
         // counting it here would put a badge on the nav that no amount of
         // reviewing could clear.
+        //
+        // And not a registration staff have sent back to the family for
+        // more information (0089, 15 Oct 2026): that one is waiting on them,
+        // and a badge that cannot drop until the family replies is a badge
+        // staff learn to ignore.
         supabase
           .from('registration_participants')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'submitted'),
+          .select('id, registrations!inner ( awaiting_family_since )', { count: 'exact', head: true })
+          .eq('status', 'submitted')
+          .is('registrations.awaiting_family_since', null),
       ]);
     unreviewedChanges = changesCount ?? 0;
     volunteersAwaiting = volCount ?? 0;
@@ -313,7 +319,12 @@ export default async function AdminLayout({ children }) {
           'id, person_id, camp_role, registrations!inner ( events!inner ( ends_on, event_type ) )'
         )
         .neq('status', 'cancelled')
-        .neq('camp_role', 'volunteer')
+        // The same people the board lists (ruling 29 Sep 2026, §17.1):
+        // campers and siblings. This badge still excluded only volunteers,
+        // so every parent, guardian and caregiver counted as "without a
+        // buddy" and the nav said 19 while the two boards said 4 and 7
+        // (Lawrence, 15 Oct 2026).
+        .in('camp_role', ['camper', 'sibling'])
         .gte('registrations.events.ends_on', today)
         // Camps only: other events pair buddies on arrival (2-3 Oct 2026).
         .in('registrations.events.event_type', STAFF_ASSIGNED_TYPES),

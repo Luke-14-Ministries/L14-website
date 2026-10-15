@@ -31,14 +31,20 @@ export default async function ReviewQueuePage({ searchParams }) {
   if (!staff) await bounceNonStaff('/admin/review/');
   if (!can(staff, 'registrar')) redirect('/admin');
 
-  const showAll = params?.show === 'all';
+  // ?show=all lists every live registration; ?show=family lists the ones
+  // staff sent back for more information (0089). The default is what is
+  // actually waiting on STAFF.
+  const show = params?.show === 'all' || params?.show === 'family' ? params.show : 'staff';
+  const showAll = show === 'all';
   const supabase = await createClient();
 
   const [{ data: regs }, { data: parts }, { data: reviews }, { data: balances }] =
     await Promise.all([
       supabase
         .from('registrations')
-        .select('id, created_at, households ( display_name ), events ( id, name, starts_on )'),
+        .select(
+          'id, created_at, awaiting_family_since, awaiting_family_reason, households ( display_name ), events ( id, name, starts_on )'
+        ),
       supabase
         .from('registration_participants')
         .select('registration_id, status, camp_role, people ( first_name, last_name )'),
@@ -73,9 +79,16 @@ export default async function ReviewQueuePage({ searchParams }) {
         review: reviewByReg.get(r.id) ?? null,
         balance: balanceByReg.get(r.id) ?? null,
         created: r.created_at,
+        awaitingSince: r.awaiting_family_since ?? null,
+        awaitingReason: r.awaiting_family_reason ?? null,
       };
     })
-    .filter((r) => r.people.length > 0 && (showAll || r.pending.length > 0));
+    .filter((r) => {
+      if (r.people.length === 0) return false;
+      if (show === 'all') return true;
+      if (show === 'family') return Boolean(r.awaitingSince);
+      return r.pending.length > 0 && !r.awaitingSince;
+    });
 
   // Group by event, soonest first; registrations oldest first inside, so the
   // family that has waited longest is at the top.
@@ -91,6 +104,9 @@ export default async function ReviewQueuePage({ searchParams }) {
   for (const g of groups) g.rows.sort((a, b) => String(a.created).localeCompare(String(b.created)));
 
   const totalPending = rows.reduce((s, r) => s + r.pending.length, 0);
+  // How many families are parked with the family, so the "waiting on staff"
+  // view can say where the rest went.
+  const onFamily = (regs ?? []).filter((r) => r.awaiting_family_since).length;
   const totalFlags = rows.reduce((s, r) => s + (r.review?.flags?.length ?? 0), 0);
 
   return (
@@ -107,6 +123,14 @@ export default async function ReviewQueuePage({ searchParams }) {
             Waiting on staff
           </Link>
           <Link
+            href="/admin/review/?show=family"
+            className={`rounded-full px-3 py-1 font-semibold border ${
+              show === 'family' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
+            }`}
+          >
+            Waiting on the family{onFamily > 0 && ` (${onFamily})`}
+          </Link>
+          <Link
             href="/admin/review/?show=all"
             className={`rounded-full px-3 py-1 font-semibold border ${
               showAll ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
@@ -119,7 +143,8 @@ export default async function ReviewQueuePage({ searchParams }) {
       <p className="text-sm text-neutral-500 mb-4">
         Every family with somebody still <em>submitted</em>, with everything a reviewer needs in
         one row: whether the deposit is in or a scholarship was asked for, and any flag that wants
-        a conversation first. Open the registration to confirm, waitlist, or write to the family.
+        a conversation first. Open the registration: its Review card approves or waitlists
+        everyone at once, or sends the registration back to the family for more information.
         {' '}
         <strong>{totalPending}</strong> {totalPending === 1 ? 'person' : 'people'} waiting
         {totalFlags > 0 && (
@@ -132,7 +157,7 @@ export default async function ReviewQueuePage({ searchParams }) {
 
       {groups.length === 0 && (
         <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          Nothing waiting on staff.
+          {show === 'family' ? 'Nothing is waiting on a family.' : 'Nothing waiting on staff.'}
         </p>
       )}
 
@@ -212,7 +237,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        {flags.length === 0 ? (
+                        {flags.length === 0 && !r.awaitingSince ? (
                           <span className="text-neutral-400">—</span>
                         ) : (
                           <ul className="space-y-0.5">
@@ -221,6 +246,17 @@ export default async function ReviewQueuePage({ searchParams }) {
                                 ⚑ {REVIEW_FLAG[f] ?? f}
                               </li>
                             ))}
+                            {r.awaitingSince && (
+                              <li className="text-xs text-neutral-700" title={r.awaitingReason ?? ''}>
+                                <span className="font-semibold">Waiting on the family</span> since{' '}
+                                {String(r.awaitingSince).slice(0, 10)}
+                                {r.awaitingReason && (
+                                  <span className="block max-w-xs truncate text-neutral-500">
+                                    &ldquo;{r.awaitingReason}&rdquo;
+                                  </span>
+                                )}
+                              </li>
+                            )}
                           </ul>
                         )}
                       </td>

@@ -7,7 +7,8 @@
 
 import { useState, useTransition } from 'react';
 import { setPlanStatus } from './actions';
-import { ROUTE_LABEL, SCHEDULE_LABEL, PLAN_STATUS_LABEL, REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
+import { ROUTE_LABEL, SCHEDULE_LABEL, PLAN_STATUS_LABEL } from '@/lib/plans';
+import Panel from './Panel';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 const INST_LABEL = {
@@ -27,7 +28,6 @@ export default function StaffPlanPanel({
   installments,
   earlyDiscountCents,
   familyDiscountCents = 0,
-  review = null,
   requiresChoice,
 }) {
   const [pending, start] = useTransition();
@@ -46,31 +46,13 @@ export default function StaffPlanPanel({
 
   const unfinished = requiresChoice && route === 'none';
 
+  // A titled, folding card like every other card on the page (15 Oct 2026).
+  // It used to be a bare white box with the review pill as its first line
+  // and no way to put it away; the review now has its own card at the top
+  // (ReviewCard.jsx), and this one is only about how the money arrives.
   return (
-    <section id="plan" className="mt-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-      {/* The review class (Lawrence, 30 Sep 2026): deposit received = review
-          and approve; full scholarship = reach out; neither = no review yet. */}
-      {review && REVIEW_CLASS[review.review_class] && (
-        <div className="mb-4">
-          <span
-            className={`inline-block rounded px-2 py-0.5 text-sm font-semibold ${REVIEW_CLASS[review.review_class].cls}`}
-          >
-            {REVIEW_CLASS[review.review_class].label}
-          </span>{' '}
-          <span className="text-sm text-neutral-600">
-            {REVIEW_CLASS[review.review_class].hint} · received {money(review.confirmed_paid_cents)} of a{' '}
-            {money(review.deposit_expected_cents)} deposit
-          </span>
-          {(review.flags ?? []).length > 0 && (
-            <ul className="mt-1 text-sm font-semibold text-amber-800">
-              {review.flags.map((f) => (
-                <li key={f}>⚑ {REVIEW_FLAG[f] ?? f}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-      <h2 className="text-lg font-bold mb-1">How this registration is being paid</h2>
+    <div id="plan" className="mt-6">
+    <Panel title="How this registration is being paid" count={ROUTE_LABEL[route] ?? null}>
       <p className={`text-sm mb-3 ${unfinished ? 'font-semibold text-amber-800' : 'text-neutral-600'}`}>
         {ROUTE_LABEL[route] ?? route ?? '—'}
         {unfinished && ' — the family has not chosen pay in full, a payment plan or a scholarship yet.'}
@@ -182,6 +164,7 @@ export default function StaffPlanPanel({
         <p className="text-sm text-neutral-500">A plan was started but its deposit has not been paid.</p>
       )}
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-    </section>
+    </Panel>
+    </div>
   );
 }

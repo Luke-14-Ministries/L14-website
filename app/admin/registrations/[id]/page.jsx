@@ -23,7 +23,7 @@ export default async function RegistrationDetailPage({ params }) {
   const { data: reg } = await supabase
     .from('registrations')
     .select(
-      `id, family_notes, created_at,
+      `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
        households ( id, display_name, email, phone,
                     address_line1, address_line2, city, state, postal_code,
                     home_church, how_did_you_hear, how_did_you_hear_from ),
@@ -39,6 +39,28 @@ export default async function RegistrationDetailPage({ params }) {
     .maybeSingle();
 
   if (!reg) notFound();
+
+  // Every registration this household holds, for the header's "Registered
+  // for" list (15 Oct 2026): a family at two events is one family, and the
+  // registrar moves between the two from here. One row per household per
+  // event (unique in 0001), so this is the complete list.
+  const { data: familyRegs, error: familyRegsError } = reg.households?.id
+    ? await supabase
+        .from('registrations')
+        .select(
+          `id, events ( id, name, starts_on, ends_on ),
+           registration_participants ( status, people ( id, first_name, last_name ) )`
+        )
+        .eq('household_id', reg.households.id)
+    : { data: [], error: null };
+  if (familyRegsError) throw new Error(`Family registrations lookup failed: ${familyRegsError.message}`);
+  const familyRegistrations = (familyRegs ?? [])
+    .map((r) => ({
+      id: r.id,
+      event: r.events ?? null,
+      participants: (r.registration_participants ?? []).map((p) => ({ status: p.status, person: p.people })),
+    }))
+    .sort((a, b) => String(a.event?.starts_on ?? '').localeCompare(String(b.event?.starts_on ?? '')));
 
   // Camp options for this event, so a staff member adding a person can pick the
   // one that sets the fee.
@@ -309,6 +331,9 @@ export default async function RegistrationDetailPage({ params }) {
     <>
     <RegistrationManager
       registration={registration}
+      familyRegistrations={familyRegistrations}
+      review={reviewRow ?? null}
+      awaiting={{ since: reg.awaiting_family_since ?? null, reason: reg.awaiting_family_reason ?? null }}
       options={options ?? []}
       adjustmentRecords={adjustmentRecords}
       familyMessages={familyMessages}
@@ -325,7 +350,6 @@ export default async function RegistrationDetailPage({ params }) {
       installments={planInstallments}
       earlyDiscountCents={balanceRow?.early_discount_cents ?? 0}
       familyDiscountCents={balanceRow?.family_discount_cents ?? 0}
-      review={reviewRow ?? null}
       requiresChoice={requiresPaymentChoice(reg.events)}
     />
     </>

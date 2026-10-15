@@ -96,6 +96,8 @@ function revalidateAll(registrationId) {
   // has to reach the door immediately -- a stale cache is the one way this
   // change could be made and still not honoured.
   revalidatePath('/admin/checkin');
+  // The review queue is its own page from 14 Oct 2026.
+  revalidatePath('/admin/review');
 }
 
 // The early-registration discount (0080) depends on who is on a registration,
@@ -605,6 +607,72 @@ export async function addFamilyMessage(registrationId, body) {
   }
   revalidatePath(`/admin/registrations/${registrationId}`);
   return { ok: true };
+}
+
+// The review decision for a whole registration (Lawrence, 15 Oct 2026):
+// approve or waitlist everyone still "submitted", or send it back to the
+// family for more information. See ReviewCard.jsx for the why; 0089 for the
+// two columns the "ask" writes.
+//
+// Approve and waitlist go through setParticipantStatus one person at a time,
+// so the deposit guard (and its override) and the discount recalcs happen
+// exactly as they do from the per-person dropdown. A needsOverride comes
+// back from the FIRST person, before anybody has changed.
+export async function reviewRegistration(registrationId, { action, reason = '', override = false } = {}) {
+  const { error: authError } = await requireRegistrar();
+  if (authError) return { ok: false, error: authError };
+  const supabase = await createClient();
+
+  if (action === 'approve' || action === 'waitlist') {
+    const { data: rows, error } = await supabase
+      .from('registration_participants')
+      .select('id')
+      .eq('registration_id', registrationId)
+      .eq('status', 'submitted');
+    if (error) return { ok: false, error: error.message };
+    if (!rows?.length) return { ok: false, error: 'Nobody on this registration is waiting on review.' };
+    const next = action === 'approve' ? 'confirmed' : 'waitlisted';
+    for (const r of rows) {
+      const res = await setParticipantStatus(registrationId, r.id, next, { override });
+      if (!res.ok) return res;
+    }
+    // A decision made is no longer waiting on anybody.
+    const { error: clearError } = await supabase
+      .from('registrations')
+      .update({ awaiting_family_since: null, awaiting_family_reason: null })
+      .eq('id', registrationId);
+    if (clearError) return { ok: false, error: clearError.message };
+    revalidateAll(registrationId);
+    return { ok: true, count: rows.length };
+  }
+
+  if (action === 'ask') {
+    const text = typeof reason === 'string' ? reason.trim().slice(0, 1000) : '';
+    if (!text) return { ok: false, error: 'Say what you need from the family first.' };
+    // The ask is a note to the family like any other, so it shows on their
+    // dashboard and stays in the notes list after the state is cleared.
+    const note = await addFamilyMessage(registrationId, text);
+    if (!note.ok) return note;
+    const { error } = await supabase
+      .from('registrations')
+      .update({ awaiting_family_since: new Date().toISOString(), awaiting_family_reason: text })
+      .eq('id', registrationId);
+    if (error) return { ok: false, error: error.message };
+    revalidateAll(registrationId);
+    return { ok: true };
+  }
+
+  if (action === 'answered') {
+    const { error } = await supabase
+      .from('registrations')
+      .update({ awaiting_family_since: null, awaiting_family_reason: null })
+      .eq('id', registrationId);
+    if (error) return { ok: false, error: error.message };
+    revalidateAll(registrationId);
+    return { ok: true };
+  }
+
+  return { ok: false, error: 'Unknown review action.' };
 }
 
 export async function deleteFamilyMessage(registrationId, messageId) {

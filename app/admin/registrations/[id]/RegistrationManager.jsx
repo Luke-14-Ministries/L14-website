@@ -32,48 +32,10 @@ const TSHIRT_SIZES = [
   'Adult S', 'Adult M', 'Adult L', 'Adult XL', 'Adult 2XL', 'Adult 3XL',
 ];
 
-// A card that folds.
-//
-// Asked for 25 Aug: a registrar arriving to check ONE thing reads past
-// household details, agreements, payments and a people list to reach it.
-// Open by default, because most visits want most of the page — this is about
-// getting things out of the way, not hiding them.
-//
-// Deliberately NOT remembered between visits. A card someone folded in June
-// staying folded in July is how a registrar stops seeing the payments panel
-// and never notices they have stopped.
-function Panel({ title, count = null, children, defaultOpen = true }) {
-  // count may be a number ("3") or a phrase ("4 signed") — whichever says the
-  // most in the fewest characters for that card.
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="rounded-lg bg-white border border-neutral-200 shadow-sm">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 rounded-lg px-6 py-4 text-left hover:bg-neutral-50"
-      >
-        <span className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className={`text-xs text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
-          >
-            ▶
-          </span>
-          <span className="text-lg font-bold">{title}</span>
-          {count != null && (
-            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-600">
-              {count}
-            </span>
-          )}
-        </span>
-        <span className="text-xs text-neutral-400">{open ? 'Hide' : 'Show'}</span>
-      </button>
-      {open && <div className="border-t border-neutral-100 px-6 pb-6 pt-4">{children}</div>}
-    </div>
-  );
-}
+// The folding card every section of this page uses, StaffPlanPanel included.
+import Panel from './Panel';
+import ReviewCard from './ReviewCard';
+import { eventDateRange } from '@/lib/events';
 
 const SIGNER_ROLE_LABEL = {
   // "for themselves" was a mis-caption, not just terse: the option it
@@ -203,19 +165,17 @@ Confirm anyway?`)) {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            STATUS_CLS[participant.status] ?? STATUS_CLS.submitted
-          }`}
-        >
-          {participant.status}
-        </span>
+        {/* The select is the pill (15 Oct 2026): it used to sit beside a
+            read-only pill saying the same word. Same colours as every other
+            status pill; the arrow is the only sign it can be changed. */}
         <select
           value={participant.status}
           onChange={change}
           disabled={pending}
           aria-label="Change status"
-          className="rounded border border-neutral-300 px-2 py-1 text-sm"
+          className={`cursor-pointer rounded-full border-0 py-1 pl-3 pr-7 text-xs font-semibold ${
+            STATUS_CLS[participant.status] ?? STATUS_CLS.submitted
+          }`}
         >
           {STATUS_OPTIONS.map(([v, label]) => (
             <option key={v} value={v}>
@@ -1118,8 +1078,9 @@ function FamilyMessages({ registrationId, messages }) {
     <Panel title="Notes to the family" count={messages.length || null}>
       <p className="text-sm text-neutral-500 mb-3">
         Shown on the family&rsquo;s dashboard under this registration — e.g. &ldquo;We added a
-        $100 scholarship credit to your registration on 8/17.&rdquo; For staff-only notes, use
-        the fields above instead.
+        $100 scholarship credit to your registration on 8/17.&rdquo; Everything written here is
+        visible to the family. The one note only staff can see is the one kept with a
+        scholarship or discount (People on this week → Scholarship &amp; discount → Note).
       </p>
       {messages.length > 0 && (
         <ul className="mb-4 space-y-2">
@@ -1460,8 +1421,210 @@ function RefundForm({ registrationId, payment, onDone }) {
   );
 }
 
+// Which people are on a registration, as a sentence of links to their
+// person pages. Cancelled people are left out of the heading but stay in the
+// People card below, where their status can be changed.
+function PeopleLine({ participants }) {
+  const seen = new Set();
+  const live = participants.filter((p) => {
+    if (p.status === 'cancelled' || !p.person?.id || seen.has(p.person.id)) return false;
+    seen.add(p.person.id);
+    return true;
+  });
+  if (live.length === 0) return <span className="text-neutral-500">Nobody active on this registration.</span>;
+  return (
+    <>
+      {live.map((p, i) => (
+        <span key={p.person.id}>
+          {i > 0 && <span className="text-neutral-400"> · </span>}
+          <Link href={`/admin/people/${p.person.id}/`} className="font-medium text-brand-dark hover:underline">
+            {p.person.preferred_name || p.person.first_name} {p.person.last_name}
+          </Link>
+          <span className="text-neutral-500"> ({(p.camp_role ?? '').replace('_', '/')})</span>
+        </span>
+      ))}
+    </>
+  );
+}
+
+// The page's shape from 15 Oct 2026 (Lawrence): the FAMILY is the thing, the
+// event is where they are going. A registrar opening this page used to see
+// the event name as the title, with the family relegated to the breadcrumb --
+// which reads backwards when a family is registered for two events and the
+// registrar wants to move between them. So: family name on top, the people
+// on this registration as links to their person pages, every event this
+// household is registered for as a link to that registration, and only then
+// this registration's details.
+function FamilyHeader({ registration, familyRegistrations }) {
+  const others = familyRegistrations.filter((r) => r.id !== registration.id);
+  return (
+    <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {registration.household?.display_name ?? 'Registration'}
+          </h1>
+          <p className="mt-1 text-sm">
+            <PeopleLine participants={registration.participants ?? []} />
+          </p>
+        </div>
+        <a
+          href={`/admin/registrations/${registration.id}/statement`}
+          className="btn-outline !py-1.5 text-sm"
+        >
+          Family statement (print)
+        </a>
+      </div>
+
+      <div className="mt-4 border-t border-neutral-100 pt-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          Registered for
+        </p>
+        <ul className="mt-1 space-y-1 text-sm">
+          <li className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-semibold">{registration.event?.name ?? 'Event'}</span>
+            {registration.event?.starts_on && (
+              <span className="text-neutral-500">
+                {eventDateRange(registration.event.starts_on, registration.event.ends_on)}
+              </span>
+            )}
+            <span className="rounded bg-brand/10 px-1.5 py-0.5 text-xs font-semibold text-brand-dark">
+              this page
+            </span>
+          </li>
+          {others.map((r) => {
+            const people = (r.participants ?? []).filter((p) => p.status !== 'cancelled');
+            return (
+              <li key={r.id} className="flex flex-wrap items-baseline gap-x-2">
+                <Link href={`/admin/registrations/${r.id}/`} className="font-semibold text-brand-dark hover:underline">
+                  {r.event?.name ?? 'Event'}
+                </Link>
+                {r.event?.starts_on && (
+                  <span className="text-neutral-500">
+                    {eventDateRange(r.event.starts_on, r.event.ends_on)}
+                  </span>
+                )}
+                <span className="text-neutral-500">
+                  · {people.length === 0
+                    ? 'nobody active'
+                    : people.map((p) => `${p.person?.first_name ?? ''} ${p.person?.last_name ?? ''}`.trim()).join(', ')}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        {others.length === 0 && (
+          <p className="mt-1 text-xs text-neutral-500">This is the family&rsquo;s only registration.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// One line of the money summary. Module level, never inside MoneySummary:
+// a component defined inside another remounts on every render (CLAUDE.md).
+function MoneyRow({ label, value, note, strong, cls = '' }) {
+  return (
+    <div className={`flex items-baseline justify-between gap-4 ${strong ? 'font-bold' : ''}`}>
+      <span>
+        {label}
+        {note && <span className="ml-1 font-normal text-neutral-500">{note}</span>}
+      </span>
+      <span className={`tabular-nums ${cls}`}>{value}</span>
+    </div>
+  );
+}
+
+// The money, explained (Lawrence, 15 Oct 2026). The one-line version --
+// "Fees $960 − $240 · Paid $950 · Credit $230 · $470 refund on its way" --
+// was five true facts with no arithmetic between them, and the refund clause
+// was the puzzle: a credit AND a refund on the way, with no line saying what
+// the family will owe once the refund clears. Every number here comes from
+// the registration_balances view (the same one Event Payments and the family
+// dashboard read), and the pending-refund paragraph does the sum.
+//
+// How the view counts: "paid" is payments that succeeded or are processing,
+// minus refunds that have COMPLETED. A refund still pending is not yet taken
+// off "paid" (0053: it must not be, or the ministry could be holding all of
+// a family's money while the page asks for more). So the balance shown is
+// the balance today, and the paragraph says what it becomes.
+function MoneySummary({ balance, livePeople }) {
+  if (!balance) return null;
+  const fee = balance.fee_cents ?? 0;
+  const scholarship = balance.scholarship_cents ?? 0;
+  const discount = balance.discount_cents ?? 0;
+  const coupon = balance.coupon_cents ?? 0;
+  const due = fee - scholarship - discount - coupon;
+  const paid = balance.paid_cents ?? 0;
+  const bal = balance.balance_cents ?? 0;
+  const pending = balance.refund_pending_cents ?? 0;
+  const refunded = balance.refunded_cents ?? 0;
+  const afterPaid = paid - pending;
+  const afterBal = bal + pending;
+
+  const balanceText =
+    bal < 0 ? `Credit ${money(-bal)}` : bal === 0 ? 'Settled' : `Owed ${money(bal)}`;
+  const balanceCls = bal > 0 ? 'text-amber-700' : 'text-green-700';
+
+  return (
+    <div className="mb-6 grid gap-4 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-sm md:grid-cols-2">
+      <div className="space-y-1 text-sm">
+        <MoneyRow label="Fees" note={`${livePeople} ${livePeople === 1 ? 'person' : 'people'}`} value={money(fee)} />
+        {scholarship > 0 && <MoneyRow label="− Scholarships" value={money(scholarship)} cls="text-green-700" />}
+        {discount > 0 && <MoneyRow label="− Discounts" value={money(discount)} cls="text-green-700" />}
+        {coupon > 0 && <MoneyRow label="− Coupons" value={money(coupon)} cls="text-green-700" />}
+        <div className="border-t border-neutral-200 pt-1">
+          <MoneyRow label="Amount due" value={money(due)} strong />
+        </div>
+        <MoneyRow
+          label="Paid"
+          note={refunded > 0 ? `after ${money(refunded)} already refunded` : null}
+          value={money(paid)}
+        />
+        <div className="border-t border-neutral-200 pt-1">
+          <MoneyRow label="Balance today" value={balanceText} strong cls={balanceCls} />
+        </div>
+      </div>
+      <div className="text-sm text-neutral-700">
+        {bal < 0 && pending === 0 && (
+          <p>
+            The family has paid <strong>{money(-bal)}</strong> more than the amount due. Settle it
+            with a refund from the Payments card, or leave it as a credit.
+          </p>
+        )}
+        {bal > 0 && pending === 0 && (
+          <p>
+            <strong>{money(bal)}</strong> is still owed. No refund is in progress.
+          </p>
+        )}
+        {bal === 0 && pending === 0 && <p>Paid in full. Nothing is owed and nothing is on its way back.</p>}
+        {pending > 0 && (
+          <>
+            <p className="font-semibold text-amber-800">
+              {money(pending)} refund on its way
+            </p>
+            <p className="mt-1">
+              A refund of <strong>{money(pending)}</strong> has been sent to the family&rsquo;s card or
+              bank but has not cleared yet, so it is not taken off &ldquo;Paid&rdquo; above. Once it
+              clears, the family will have paid <strong>{money(afterPaid)}</strong> and the balance
+              becomes{' '}
+              <strong className={afterBal > 0 ? 'text-amber-700' : 'text-green-700'}>
+                {afterBal < 0 ? `a ${money(-afterBal)} credit` : afterBal === 0 ? 'settled' : `${money(afterBal)} owed`}
+              </strong>
+              . The Payments card lists each refund and its status.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function RegistrationManager({
   registration,
+  familyRegistrations = [],
+  review = null,
+  awaiting = null,
   options,
   adjustmentRecords = [],
   scholarshipRequests = [],
@@ -1516,58 +1679,44 @@ export default function RegistrationManager({
         </span>
       </nav>
 
-      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-        <h1 className="text-2xl font-bold">{registration.event?.name ?? 'Registration'}</h1>
-        <span className="text-sm text-neutral-500">
-          {livePeople} {livePeople === 1 ? 'person' : 'people'} · Fees {money(total)}
-          {adjustments > 0 && (
-            <span className="text-green-700"> − {money(adjustments)} scholarships/discounts</span>
-          )}
-          {/* The number a registrar opening a family actually wants (24 Aug):
-              what is still OWED — paid and balance from the same view the
-              dashboard and Event Payments read, so the three never disagree. */}
-          {balance && (
-            <>
-              {' '}
-              · Paid {money(balance.paid_cents)} ·{' '}
-              <span
-                /* Zero is SETTLED, not neutral — the one balance a registrar
-                   is pleased to see, and it was rendered in the same grey as
-                   "we don't know" (25 Aug). Green for paid up and for a
-                   credit; amber only while money is actually outstanding. */
-                className={`font-bold ${
-                  (balance.balance_cents ?? 0) > 0 ? 'text-amber-700' : 'text-green-700'
-                }`}
-              >
-                {(balance.balance_cents ?? 0) < 0
-                  ? `Credit ${money(-balance.balance_cents)}`
-                  : `Balance ${money(balance.balance_cents)}`}
-              </span>
-              {/* Its own clause, outside the balance (0053). A refund in
-                  flight used to be subtracted from what the family had paid,
-                  so the ministry could be holding all their money while the
-                  page asked for more. */}
-              {(balance.refund_pending_cents ?? 0) > 0 && (
-                <>
-                  {' · '}
-                  <span className="font-semibold text-amber-700">
-                    {money(balance.refund_pending_cents)} refund on its way
-                  </span>
-                </>
-              )}
-            </>
-          )}{' '}
-        </span>
-        <a
-          href={`/admin/registrations/${registration.id}/statement`}
-          className="btn-outline !py-1.5 text-sm"
-        >
-          Family statement (print)
-        </a>
+      <FamilyHeader registration={registration} familyRegistrations={familyRegistrations} />
+
+      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xl font-bold">
+          {registration.event?.name ?? 'Registration'}
+          <span className="ml-2 text-base font-normal text-neutral-500">registration details</span>
+        </h2>
+        {!balance && (
+          <span className="text-sm text-neutral-500">
+            {livePeople} {livePeople === 1 ? 'person' : 'people'} · Fees {money(total)}
+            {adjustments > 0 && <> − {money(adjustments)} scholarships/discounts</>}
+          </span>
+        )}
       </div>
-      <p className="text-sm text-neutral-500 mb-6">
-        Review and update this family. Status changes and edits save immediately.
+      <p className="text-sm text-neutral-500 mb-4">
+        Review and update this family&rsquo;s registration for this event. Status changes and
+        edits save immediately.
       </p>
+
+      {/* Zero is SETTLED, not neutral — the one balance a registrar is pleased
+          to see (25 Aug). Green for paid up and for a credit; amber only
+          while money is actually outstanding. The numbers come from the same
+          view the dashboard and Event Payments read, so the three never
+          disagree (24 Aug). */}
+      <MoneySummary balance={balance} livePeople={livePeople} />
+
+      <div className="mb-6">
+        <ReviewCard
+          registrationId={registration.id}
+          participants={parts.map((p) => ({
+            id: p.id,
+            status: p.status,
+            name: `${p.person?.preferred_name || p.person?.first_name || ''} ${p.person?.last_name || ''}`.trim(),
+          }))}
+          review={review}
+          awaiting={awaiting}
+        />
+      </div>
 
       {depositShort && (
         <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">

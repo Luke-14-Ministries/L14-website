@@ -2144,3 +2144,44 @@ that touches only Markdown and LICENSE still does not build.
 
 Also noticed the same morning: the repository is now `L14-website` (renamed on GitHub); the Vercel link
 followed the rename. Nothing in the repository refers to the old name except history.
+
+---
+
+## 2026-10-15 — The registration page is about the family; the review is a decision, not a dropdown
+
+Lawrence, from the staff registration page: the event name was the title and the family was a
+breadcrumb, which reads backwards when a family is at two events. The page now opens with the
+**family** — name, the people on this registration as links to their person pages, and every event
+the household is registered for as a link to that registration — then the event, then the money.
+
+**The money is explained, not listed.** "Fees $960 − $240 · Paid $950 · Credit $230 · $470 refund
+on its way" was five true facts with no arithmetic between them. The block now runs fees, less
+scholarships and discounts, amount due, paid (net of refunds already completed), balance today —
+and a paragraph for a refund in flight that does the sum: it is not yet taken off "paid" (0053),
+and once it clears the family will have paid X and owe Y. Same view as Event Payments and the
+family dashboard, so the three cannot disagree.
+
+**Approve, waitlist, or send it back.** The review queue's number only ever dropped when a
+registrar changed each person's status in "People on this week", and "send it back for more
+information" was a note with nothing recording that it had been sent. A **Review** card at the top
+of the page now approves or waitlists everyone still submitted in one click (the deposit guard
+from 31 August still asks first) or asks the family for more information: that writes the ask as
+a note on their dashboard **and** marks the registration as waiting on the family (migration
+`0089`, two columns on `registrations` that only a registrar may move). The queue separates
+*waiting on staff* from *waiting on the family*, the nav badge counts only the first, and the
+family sees the ask in amber on their dashboard. It clears when staff say the family has
+answered, or when everyone is confirmed or waitlisted. Nothing is emailed automatically.
+
+**Refunds stay on the registration page.** Asked whether money should live only under Event
+Payments: a refund goes back against one payment, and the registration page is the one place
+that shows the payment, the person and the event it belongs to. Event Payments is the list across
+families and links in. Kept where it is.
+
+**Smaller rulings the same day.** The scholarship request's explanation is no longer labelled
+optional and no longer blocks the form: the form says that no details usually means no
+scholarship, and the reviewer sees an empty statement for what it is. The Buddy Assignments badge
+counted every non-volunteer (parents and caregivers included) while the board counts campers and
+siblings, so the nav said 19 against 4 + 7; the badge now counts what the board counts. A
+dropdown beside a pill saying the same word ("mild allergy [Mild ▾]") is now one control: the
+dropdown wears the pill's colours, on Dietary & Allergies and on each person's status. The
+bottom card of the registration page has a title and folds like the others.

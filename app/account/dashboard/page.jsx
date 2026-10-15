@@ -192,7 +192,7 @@ export default async function DashboardPage({ searchParams }) {
     ? await supabase
         .from('registrations')
         .select(
-          `id, family_notes, created_at,
+          `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
            events ( id, name, event_type, starts_on, ends_on, deposit_cents, campus_map_url ),
            registration_participants ( id, camp_role, status, fee_cents, checked_in_at,
              people ( id, first_name, last_name ) )`
@@ -992,6 +992,25 @@ export default async function DashboardPage({ searchParams }) {
                         <p className="mt-3 text-sm text-neutral-600">
                           <span className="font-semibold">Notes to staff:</span> {r.family_notes}
                         </p>
+                      )}
+
+                      {/* Staff sent this registration back for more information
+                          (0089, 15 Oct 2026). Amber, because it is the family's
+                          move; it clears when staff mark it answered. */}
+                      {r.awaiting_family_since && (
+                        <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
+                          <p className="font-bold text-amber-900">Camp staff need something from you</p>
+                          {r.awaiting_family_reason && (
+                            <p className="mt-1 text-amber-900">{r.awaiting_family_reason}</p>
+                          )}
+                          <p className="mt-1 text-xs text-amber-900">
+                            Update your registration below, or reply to{' '}
+                            <a href="mailto:registration@luke14ministries.net" className="underline">
+                              registration@luke14ministries.net
+                            </a>
+                            . Your registration is held in the meantime.
+                          </p>
+                        </div>
                       )}
 
                       {/* Notes FROM camp staff — e.g. "We added a $100

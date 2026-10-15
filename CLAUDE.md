@@ -175,6 +175,16 @@ event with `/admin/volunteers/print`. **Testing Script 5 is written** (SharePoin
 Decisions`) and is the current script; Script 4 is archived. Python 3.12 is installed on the build
 machine, so the library's `render.py` runs here.
 
+**15 October 2026 — the review decision, and `0089`.** A registration's page opens with the
+family (name, people as links to their person pages, every event the household is registered
+for), then the event, then an explained money block, then a **Review** card that approves or
+waitlists everyone still submitted in one click or sends the registration back to the family
+for more information. That last one is `0089`: two columns on `registrations`
+(`awaiting_family_since`, `awaiting_family_reason`), guarded by a trigger so only a registrar
+moves them. The review queue separates *waiting on staff* from *waiting on the family*, the nav
+badge counts only the first, and the family's dashboard shows the ask in amber. The high-water
+mark is `0089`.
+
 **Built 30 September 2026 — migration `0080`, payment plans (read before touching money).** A
 camp week's balance is due two weeks before it starts (`balanceDueOn()` in `lib/events.js`
 and `balance_due_on()` in SQL: change both together). A camp-week registration is **not
