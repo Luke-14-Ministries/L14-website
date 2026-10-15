@@ -396,7 +396,7 @@ Anything already saved is untouched.`
                 />
               </Field>
               <Field label="Date of birth">
-                <input name="date_of_birth" type="date" defaultValue={m.date_of_birth ?? ''} className={inputCls} />
+                <input name="date_of_birth" type="date" defaultValue={m.date_of_birth ?? ''} className={inputCls} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
               </Field>
               <Field label="Sex">
                 <select name="gender" defaultValue={m.gender ?? ''} className={inputCls}>
@@ -570,7 +570,7 @@ Anything already saved is untouched.`
             />
           </Field>
           <Field label="Date of birth">
-            <input name="date_of_birth" type="date" className={inputCls} />
+            <input name="date_of_birth" type="date" className={inputCls} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
           </Field>
           <Field label="Sex">
             <select name="gender" className={inputCls} defaultValue="">

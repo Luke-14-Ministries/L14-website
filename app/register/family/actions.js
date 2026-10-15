@@ -1,5 +1,6 @@
 'use server';
 
+import { dobProblem } from '@/lib/format';
 // Server action for the family registration wizard.
 //
 // The whole write now happens in ONE atomic Postgres function,
@@ -47,6 +48,13 @@ export async function submitFamilyRegistration(payload) {
   } = payload || {};
   if (!eventId || !optionId) {
     return { ok: false, error: 'Please choose a camp week before submitting.' };
+  }
+
+  // 0094: a two-digit year typed into a date box is refused here, in words,
+  // before the database refuses it in a constraint's.
+  for (const m of members || []) {
+    const bad = dobProblem(m.dob);
+    if (bad) return { ok: false, error: bad };
   }
 
   // Keep only members with a real name, and translate the role label to the enum

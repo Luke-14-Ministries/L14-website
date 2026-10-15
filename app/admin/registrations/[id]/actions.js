@@ -1,5 +1,6 @@
 'use server';
 
+import { dobProblem } from '@/lib/format';
 // Server actions for the staff registration-management screen.
 //
 // Every action re-checks that the caller is a registrar (or admin) before it
@@ -232,6 +233,10 @@ export async function updatePerson(registrationId, personId, fields, options = {
   if (!patch.first_name && 'first_name' in patch) {
     return { ok: false, error: 'A first name is required.' };
   }
+  {
+    const bad = dobProblem(patch.date_of_birth);
+    if (bad) return { ok: false, error: bad };
+  }
 
   const supabase = await createClient();
 
@@ -414,6 +419,10 @@ export async function addParticipant(registrationId, input) {
   // Staff can SELECT any person (people_select allows is_staff), so the insert
   // may safely return the new id -- the RETURNING-under-RLS pitfall that bites
   // a family creating their first household does not apply here.
+  {
+    const bad = dobProblem(input?.date_of_birth);
+    if (bad) return { ok: false, error: bad };
+  }
   const { data: person, error: personError } = await supabase
     .from('people')
     .insert({

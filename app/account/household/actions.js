@@ -1,5 +1,6 @@
 'use server';
 
+import { dobProblem } from '@/lib/format';
 // Manage Household: families edit their own household's contact info, their
 // people's basic details (incl. a phone per adult), and each person's two
 // linked caregivers. RLS is the real gate everywhere: households_update /
@@ -121,6 +122,10 @@ export async function updatePersonInfo(personId, form) {
   if (!emailLooksValid(form.email)) {
     return { ok: false, error: 'That email address doesn’t look right — please check it.' };
   }
+  {
+    const bad = dobProblem(clean(form.date_of_birth));
+    if (bad) return { ok: false, error: bad };
+  }
 
   const patch = {
     first_name: clean(form.first_name) ?? undefined,
@@ -158,6 +163,10 @@ export async function addHouseholdPerson(householdId, form) {
   const last = clean(form.last_name);
   if (!first || !last) {
     return { ok: false, error: 'Please give a first and last name.' };
+  }
+  {
+    const bad = dobProblem(clean(form.date_of_birth));
+    if (bad) return { ok: false, error: bad };
   }
   const { data, error } = await supabase
     .from('people')

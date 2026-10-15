@@ -870,7 +870,7 @@ export default function FamilyWizard({
               <div className="grid sm:grid-cols-3 gap-4">
                 <div>
                   <label className={label}>Date of birth</label>
-                  <input type="date" className={input} value={m.dob} onChange={setM(i, 'dob')} />
+                  <input type="date" className={input} value={m.dob} onChange={setM(i, 'dob')} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
                 </div>
                 <div>
                   <label className={label}>Sex</label>

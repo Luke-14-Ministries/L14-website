@@ -250,7 +250,7 @@ function PersonEditor({ registrationId, person, onDone }) {
         </div>
         <div>
           <label className={labelCls}>Date of birth</label>
-          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} />
+          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
         </div>
         <div>
           <label className={labelCls}>Sex</label>
@@ -846,7 +846,7 @@ function AddPerson({ registrationId, options }) {
         </div>
         <div>
           <label className={labelCls}>Date of birth</label>
-          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} />
+          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
         </div>
         <div>
           <label className={labelCls}>Sex</label>
