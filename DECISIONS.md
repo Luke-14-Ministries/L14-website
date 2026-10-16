@@ -2193,6 +2193,30 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-16 — The whole staff-questions document, read through by Lawrence and Larry
+
+Recorded by Granola; summary and transcript filed under *Testing notes*. The decisions, in the
+document's order, are transcribed into `Luke14-Staff-Questions.md` §3 (16 October), and every
+build they imply is in `Luke14-Build-Plan-2026-10-16.md` with an order and a size. The ones that
+change the model: **support and medical details are required before a registration submits**
+("N/A" accepted, no checkbox); **allergens become a checklist** with an "Other" box, so the
+kitchen list and buddy sheet can name people by allergen and severity; **the balance is due July 1**
+for both weeks, a published date rather than an enforced one, replacing the two-weeks-before rule;
+**prices and the two discounts become Setup settings** so Larry's 2027 numbers never wait on code;
+**a family submits without the deposit**, approval waits on it, a registrar may waive it by granting
+the $50; **a reviewer puts a hold on from Recent Changes**, and only a role change flips a person
+automatically; **two volunteers may share a camper and one volunteer several campers**, with the
+volunteers covering their own shifts; **an event is current for two weeks after it ends**, then
+archived behind a toggle; **Week 1 and Week 2 only at launch**, the Retreat switched off;
+**bookkeeping is QuickBooks Online**, exports native or CSV; **data retention has no policy and
+that is the policy** until one is written; **the refund rule stands** and the people who may issue
+one are those with payments write. Settled for good: the Campsite contract, the invitation flow for
+background checks, address lookup (leave as built), parent and guardian as one role, Stripe's
+second administrator, the Carson Springs room facts (Lodge 101–102 accessible; nurse's room one
+family; 11 RV sites, 6 at 30 A and 5 at 50 A). Still waiting on people: the buddy sheet (Katie
+and Ellen), what a program leader sees (Larry), the newsletter numbers (Ellen), who monitors the
+shared mailbox (a call), fee covers (David), Larry's prices.
+
 **Larry and Ellen's read-through of the staff questions, inked, 15 October** (the ink is kept as
 `00 Comments and Critiques\Testing notes\2026-10-15 - Larry & Ellen - Staff Questions annotated.pdf`;
 transcribed into `Luke14-Staff-Questions.md` §3). Decided: reminder emails are automatic (wording and
