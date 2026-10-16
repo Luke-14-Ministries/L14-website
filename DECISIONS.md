@@ -2209,6 +2209,13 @@ QuickBooks**, Mailchimp holds contact information for now; a periodic export to 
 fine; and the Retreat banner is top-aligned (Lawrence, from two screenshots). Each build item is on
 DO-THIS-NEXT as W52.
 
+**The domain moves to Cloudflare Registrar on launch day, not before** (Lawrence, 16 Oct). The
+transfer changes the nameservers, and that is the change the launch makes anyway, so the two
+happen in one watched DNS session; at cost, on the existing Cloudflare account under `admin@`.
+The saving over Squarespace is two or three dollars a year; the reason is one vendor fewer. Vercel's
+"free domain with Pro" is declined: a second name on an auto-renewing card, for nothing. The step
+list, mail records first, is DO-THIS-NEXT W51.
+
 **The render scripts refuse to overwrite a PDF somebody has written on.** The inked staff questions
 were overwritten by a render an hour after the read-through and recovered from SharePoint's version
 history. `render.py` and `render_checklist.py` now stamp each PDF they write and keep, rather than
