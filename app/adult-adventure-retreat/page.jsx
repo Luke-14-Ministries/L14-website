@@ -96,7 +96,7 @@ export default function AdultAdventureRetreatPage() {
             <img
               src={asset('/images/adult_adventure_screen_snip.jpeg')}
               alt=""
-              className="w-full h-auto self-center rounded-lg shadow-xl lg:scale-105 lg:origin-left"
+              className="w-full h-auto self-start rounded-lg shadow-xl lg:scale-105 lg:origin-left"
             />
           </div>
         </div>

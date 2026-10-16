@@ -100,8 +100,8 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
         </label>
         <span className="text-xs text-neutral-500">
           {clearance?.expires_on
-            ? `Expires ${clearance.expires_on} (36 months from the check date)`
-            : 'Expiry is worked out from the check date: 36 months.'}
+            ? `Expires ${clearance.expires_on} (12 months from the check date)`
+            : 'Expiry is worked out from the check date: 12 months — checks are annual.'}
         </span>
       </div>
       <div className="mt-3">

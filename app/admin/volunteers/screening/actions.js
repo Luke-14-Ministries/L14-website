@@ -30,7 +30,9 @@ import { createClient } from '@/lib/supabase/server';
 // if they choose annual -- and note it only affects checks recorded FROM THEN
 // ON, because expires_on is stored per row. Existing dates are history and are
 // deliberately left alone.
-const DEFAULT_INTERVAL_MONTHS = 36;
+// 12 months: annual Basic Plus (Larry and Ellen, 15 Oct 2026; migration 0095
+// holds the same number for the manual record). Was 36.
+const DEFAULT_INTERVAL_MONTHS = 12;
 
 function addMonths(iso, months) {
   const d = new Date(`${iso}T00:00:00Z`);
