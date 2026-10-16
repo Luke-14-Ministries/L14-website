@@ -2193,6 +2193,19 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-16, afternoon — Lawrence's answers to the build plan's questions
+
+Program leaders see **flags only** ("less is more"; revisit if they need more) and become a **Staff
+& Access preset**, held to two-factor like every staff login. The support and medical details are
+asked **inside the registration wizard**, before submit. The deposit waiver is a **$50 scholarship**
+granted after submission. The allergen checklist starts with the FDA's nine major allergens plus
+latex, insect stings, medications and **synthetic food dyes**, then "Other". "Current" means two
+weeks after an event ends, **on every staff page alike, with one shared event filter** — pills for
+current events, a search box for the archive, the 25 August design, extended to the pages that grew
+their own. The horseback waiver text Larry sent is incomplete (it stops inside the disclaimer) and is
+not entered until whole. Resend's nonprofit approval came the same afternoon; the account is on its
+first paid tier, with Mailchimp still carrying the newsletter for now.
+
 ## 2026-10-16 — The whole staff-questions document, read through by Lawrence and Larry
 
 Recorded by Granola; summary and transcript filed under *Testing notes*. The decisions, in the
