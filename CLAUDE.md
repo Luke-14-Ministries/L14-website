@@ -18,7 +18,8 @@ The reason the platform is being built rather than bought: Campsite costs the mi
 ministry's volume the fixed half is the larger half. Replacing that is the entire financial case.
 The 6%-only figure quoted in older documents is retired; see `DECISIONS.md`, 2026-08-05. Vendors are
 used only where they carry real risk we should not: payments (Stripe), database and auth
-(Supabase), hosting (Vercel), DNS and edge protection (Cloudflare), identity and documents
+(Supabase), hosting (Vercel), edge protection now and DNS plus the domain registration from launch
+day (Cloudflare), identity and documents
 (Microsoft 365).
 
 Two constraints shape every decision:
@@ -379,8 +380,10 @@ Queried directly rather than assumed. `luke14ministries.net`:
 - **Nameservers** are `ns01`–`ns04.squarespacedns.com` (running on NS1). The public site's A records
   are Squarespace's. **The existing site is Squarespace, not WordPress** — several older documents
   say otherwise and are wrong.
-- **The registrar is therefore almost certainly Squarespace.** Nameservers prove who runs DNS rather
-  than who holds the registration, so confirm it inside the Squarespace account before relying on it.
+- **The registrar is Squarespace until launch day** (confirmed on `admin@` 16 Aug). **Decided 16
+  October 2026: the domain transfers to Cloudflare Registrar in the same DNS session that points it
+  at Vercel** — the transfer changes nameservers, which is that switch anyway. Until then nobody
+  edits the registrant contact at Squarespace (60-day transfer lock). Step list: DO-THIS-NEXT W51.
 - **Mail is Microsoft 365** — MX points at `luke14ministries-net.mail.protection.outlook.com`, and a
   `MS=` verification token is present.
 - **SPF is `v=spf1 include:spf.protection.outlook.com -all`.** Note the `-all`: that is a *hard*
@@ -446,7 +449,8 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   `admin@luke14ministries.net`. Never bind a ministry account to a personal GitHub login, and
   never add `admin@` as a verified email on a personal GitHub account.
 - **Do not point the domain.** `luke14ministries.net` serves the ministry's existing **Squarespace**
-  site. Pointing it retires that site, which is a board decision, not a technical step. Phase 4.
+  site. Pointing it retires that site, which is a board decision, not a technical step. Phase 4 —
+  and on that day the registration moves to Cloudflare in the same session (DO-THIS-NEXT W51).
   (Older documents call this a WordPress site. That was wrong — see the DNS facts below.)
 - **Record decisions in `DECISIONS.md`** — one short entry per real choice, written when the
   choice is made. In six months it is the only record of why anything is the way it is.
