@@ -2193,6 +2193,28 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+**Larry and Ellen's read-through of the staff questions, inked, 15 October** (the ink is kept as
+`00 Comments and Critiques\Testing notes\2026-10-15 - Larry & Ellen - Staff Questions annotated.pdf`;
+transcribed into `Luke14-Staff-Questions.md` §3). Decided: reminder emails are automatic (wording and
+schedule to come from Katie and Ellen); the Campsite contract carries no expected charge; volunteer
+applications are reviewed by whoever manages registration; support and medical details are due at
+initial registration; two buddies may be paired with one camper, so the board's confirm-prompt stays a
+prompt; the kitchen list must name people with their severity (three peanut allergies may be two
+contact-tolerant and one anaphylactic); a registrar initiates re-review by hand, and a hold follows
+several failed payments; parent and guardian stay one role; the two-caregiver model is right;
+**background checks are annual, Basic Plus** (migration `0095`: a check is current for 12 months,
+was 36); returning registrants keep their details; events should rise to the top by date and be
+archivable at the year's turn; fee covers and giving funds go to David through Larry; **bookkeeping is
+QuickBooks**, Mailchimp holds contact information for now; a periodic export to the newsletter list is
+fine; and the Retreat banner is top-aligned (Lawrence, from two screenshots). Each build item is on
+DO-THIS-NEXT as W52.
+
+**The render scripts refuse to overwrite a PDF somebody has written on.** The inked staff questions
+were overwritten by a render an hour after the read-through and recovered from SharePoint's version
+history. `render.py` and `render_checklist.py` now stamp each PDF they write and keep, rather than
+replace, any PDF modified by hand since; `--force` overrides once the ink has been copied to Testing
+notes under a dated name.
+
 **The rule of thumb for access: default to read, grant write by name.** Lawrence, 15 Oct, for
 the access-model plan and for any question before it is built: when it is not obvious what a
 role or a person should have, they read; write is added for a named person when the job needs
