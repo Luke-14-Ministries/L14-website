@@ -251,14 +251,19 @@ filter.** `isCurrentEventRow()` in `lib/events.js` is the one test for "current"
 the event ends, a year ahead, never archived); every staff page calls it, and Medical, Event
 Payments and Awaiting review use the shared `EventFilter` (Check-In keeps dated pills on purpose;
 Rosters keeps search-only; the Overview's pills jump). `events.archived_at` is the archive mark on
-Setup. **At launch, archive the 2026 Retreat there.** **`0100`, the grants model, steps 1 and 2 of
-the plan:** `staff_grants` (profile, area, read|write) with a faithful backfill from roles, the
-presets and per-area ticks on Staff & Access, every change in `staff_access_log` as
-`grant:<area>`, `has_grant(area, level)` in SQL and `can(staff, 'read:<area>')` in
-`lib/staff.js`. **The role still decides what the database allows** -- nothing enforces on a
-grant yet; switching the ~100 RLS rules and ~90 page checks over one area at a time (verified in
-`rls_test.sql`) is step 3, then the role check retires. The vocabulary is `lib/grants.js`. The
-high-water mark is `0100`. A camp-week registration is **not
+Setup. **At launch, archive the 2026 Retreat there.** **`0100` and `0101`, the grants model, all four steps (16-17 Oct):** `staff_grants` (profile,
+area, read|write) with a faithful backfill from roles, presets and per-area ticks on Staff &
+Access, every change in `staff_access_log` as `grant:<area>`; then `0101` rewrote 53 policies and
+12 guards in place to ask `has_grant(area, level)` -- the mapping table at its head is the
+decision -- and dropped `is_registrar()` / `is_coordinator()`. **The role column now says one
+thing: `admin`** (`is_admin()`: granting, accounts, naming a leader, the doctor's dated grant);
+`registrar` and `coordinator` are labels. Pages ask `can(staff, 'read:<area>' |
+'write:<area>')`; the old names `sensitive`, `giving`, `background_checks` are aliases
+(`read:sensitive`, `read:giving`, `write:background_checks`), and `registrar` / `coordinator` /
+`door` return false. The vocabulary is `lib/grants.js`; the harness seeds grants for its
+personas. **Read `0101`'s mapping before touching a policy**: definitions of activities, slots and
+rooms are Setup write (an administrator), placements are their own areas, money reads need
+`payments` read. The high-water mark is `0101`. A camp-week registration is **not
 finished** until the family pays in full, sets up an automatic payment plan, or requests a
 scholarship (`registration_payment_routes` view; `/account/finish/[registrationId]`). The early-
 registration discount lives in its own column, `early_discount_cents`, written only by

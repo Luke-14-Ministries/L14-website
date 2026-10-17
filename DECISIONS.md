@@ -2193,6 +2193,29 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-17, early — The rules read the grants; the role check retires (0101)
+
+Build plan item 16, steps 3 and 4 of the access-model plan, the morning after step 1 and 2.
+**Rather than restating sixty policies by hand, the migration rewrites them in place from a
+mapping table**: each policy's expression is read back from the catalogue, the role token is
+replaced with the grant for that table, and the policy is altered; the same for twelve guard and
+helper functions, by name. The mapping is the decision and sits at the head of the file —
+registration, payments (write, and now *read*: an operations helper sees no money at all),
+giving, background checks (the table is write-only; the three facts stay a view every staff
+member reads), sensitive (reads; writing the support row and photos needs write), setup (every
+definition, including activities, slots and rooms, which coordinators used to define), and the
+four placements. **Two things the role still does**: `is_admin()` (granting, accounts, naming a
+leader, the doctor's dated grant) and `is_staff()` (an active row, for the broad reads every
+preset includes). A final block refuses the migration if anything still names a role function,
+then drops both. **Verification without a scratch database**: no Postgres on the build machine
+(installing `psql` is sensible and is noted), so each bot persona was impersonated inside a
+rolled-back transaction on the live database — the registrar saw money and not medical detail,
+the coordinator the reverse, the administrator everything, the family only its own rows — and
+the harness's personas now seed grants so `rls_test.sql` means what it says when it is next run.
+**The three tick boxes on Staff & Access are gone**: since the database no longer reads those
+columns, a tick there would have done nothing; Sensitive, Giving and Background checks are three
+of the ten areas under *Grants*.
+
 ## 2026-10-16, night — The grants model lands, roles kept (0100)
 
 Build plan item 16, steps 1 and 2 of the access-model plan. **The grants are recorded before
