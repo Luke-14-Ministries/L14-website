@@ -16,7 +16,7 @@ export default async function RegistrationDetailPage({ params }) {
 
   const staff = await getStaff();
   if (!staff) await bounceNonStaff(`/admin/registrations/${id}/`);
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
 
   const supabase = await createClient();
 

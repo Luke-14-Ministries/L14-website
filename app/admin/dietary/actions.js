@@ -28,7 +28,7 @@ export async function setAllergySeverity({ personId, severity }) {
   }
 
   const staff = await getStaff();
-  if (!can(staff, 'sensitive')) {
+  if (!can(staff, 'write:sensitive')) {
     return { ok: false, error: 'Setting allergy severity needs the sensitive-information permission.' };
   }
 

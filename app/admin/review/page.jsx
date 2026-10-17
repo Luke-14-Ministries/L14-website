@@ -30,7 +30,7 @@ export default async function ReviewQueuePage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/review/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
 
   // ?show=all lists every live registration; ?show=family lists the ones
   // staff sent back for more information (0089). The default is what is

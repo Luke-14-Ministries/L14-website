@@ -172,7 +172,7 @@ export default async function AdminOverview({ searchParams }) {
           Recent Changes says new people "land in the Awaiting review queue on
           the Overview" -- and a page you have to hunt for is not really a
           queue. That sentence is now a link to this card. */}
-      {can(staff, 'registrar') && reviewList.length > 0 && (
+      {can(staff, 'read:registration') && reviewList.length > 0 && (
         <div
           id="awaiting-review"
           className="scroll-mt-4 rounded-lg bg-white border border-amber-200 shadow-sm p-6 mb-8"

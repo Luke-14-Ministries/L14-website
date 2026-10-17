@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function updateEventRegistration(eventId, { published, archived = null, opensAt, closesAt }) {
   const staff = await getStaff();
-  if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
+  if (!can(staff, 'write:setup')) return { ok: false, error: 'Admins only.' };
   if (!eventId) return { ok: false, error: 'Missing event.' };
   if (opensAt && closesAt && new Date(opensAt) >= new Date(closesAt)) {
     return { ok: false, error: 'Registration would close before it opens — check the two times.' };
@@ -67,7 +67,7 @@ export async function updateEventDetails(
   }
 ) {
   const staff = await getStaff();
-  if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
+  if (!can(staff, 'write:setup')) return { ok: false, error: 'Admins only.' };
   if (!eventId) return { ok: false, error: 'Missing event.' };
 
   if (!startsOn || !endsOn) return { ok: false, error: 'An event needs a start and an end date.' };
@@ -241,7 +241,7 @@ export async function createEvent({
   copyFrom,
 }) {
   const staff = await getStaff();
-  if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
+  if (!can(staff, 'write:setup')) return { ok: false, error: 'Admins only.' };
 
   const cleanName = String(name ?? '').trim();
   if (!cleanName) return { ok: false, error: 'Give the event a name.' };

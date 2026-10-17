@@ -19,7 +19,7 @@ export default async function ProgramsPage({ searchParams }) {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/programs/');
   // Coordination, like buddies and rooming (0090, 15 Oct 2026).
-  if (!can(staff, 'coordinator')) redirect('/admin');
+  if (!can(staff, 'read:programs')) redirect('/admin');
 
   const supabase = await createClient();
 

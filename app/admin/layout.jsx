@@ -37,33 +37,33 @@ const NAV = [
   // The review queue as its own page (14 Oct 2026): every family with
   // somebody still "submitted", with the deposit / scholarship state and
   // every flag in one row. The Overview's amber number links here.
-  { href: '/admin/review', label: 'Awaiting review', need: 'registrar', ready: true },
-  { href: '/admin/rosters', label: 'Roster: Campers & Families', need: 'registrar', ready: true, group: 'events' },
-  { href: '/admin/checkin', label: 'Check-In', need: 'door', ready: true, group: 'events' },
-  { href: '/admin/changes', label: 'Recent Changes', need: 'registrar', ready: true, group: 'events' },
+  { href: '/admin/review', label: 'Awaiting review', need: 'read:registration', ready: true },
+  { href: '/admin/rosters', label: 'Roster: Campers & Families', need: 'read:registration', ready: true, group: 'events' },
+  { href: '/admin/checkin', label: 'Check-In', need: 'read:registration', ready: true, group: 'events' },
+  { href: '/admin/changes', label: 'Recent Changes', need: 'read:registration', ready: true, group: 'events' },
   { href: '/admin/dietary', label: 'Dietary & Allergies', need: 'sensitive', ready: true, group: 'events' },
   { href: '/admin/medical', label: 'Medical & Support', need: 'sensitive', ready: true, group: 'events' },
-  { href: '/admin/volunteers', label: 'Volunteers', need: 'registrar', ready: true, group: 'events' },
-  { href: '/admin/activities', label: 'Activities', need: 'coordinator', ready: true, group: 'events' },
-  { href: '/admin/buddies', label: 'Buddy Assignments', need: 'coordinator', ready: true, group: 'events' },
-  { href: '/admin/lodging', label: 'Rooms & Cabins', need: 'coordinator', ready: true, group: 'events' },
+  { href: '/admin/volunteers', label: 'Volunteers', need: 'read:registration', ready: true, group: 'events' },
+  { href: '/admin/activities', label: 'Activities', need: 'read:activities', ready: true, group: 'events' },
+  { href: '/admin/buddies', label: 'Buddy Assignments', need: 'read:buddies', ready: true, group: 'events' },
+  { href: '/admin/lodging', label: 'Rooms & Cabins', need: 'read:rooming', ready: true, group: 'events' },
   // Registrar rather than coordinator, deliberately: the write goes through
   // registration_participants' UPDATE policy, which is is_registrar(). A
   // coordinator offered this page would find Save did nothing and say
   // nothing, which is the failure this project keeps meeting.
-  { href: '/admin/programs', label: 'Programs', need: 'coordinator', ready: true, group: 'events' },
-  { href: '/admin/cancellations', label: 'Cancellations', need: 'registrar', ready: true, group: 'events' },
-  { href: '/admin/deletion-requests', label: 'Deletion requests', need: 'registrar', ready: true, group: 'events' },
+  { href: '/admin/programs', label: 'Programs', need: 'read:programs', ready: true, group: 'events' },
+  { href: '/admin/cancellations', label: 'Cancellations', need: 'read:registration', ready: true, group: 'events' },
+  { href: '/admin/deletion-requests', label: 'Deletion requests', need: 'read:registration', ready: true, group: 'events' },
   // "Scholarship Requests" wrapped to two lines, dropping its badge onto a
   // line of its own (25 Aug). Shortened to match its neighbours — Rosters,
   // Volunteers, Cancellations are all one word. The page keeps its full title.
-  { href: '/admin/scholarships', label: 'Scholarship requests', need: 'registrar', ready: true, group: 'events' },
-  { href: '/admin/payments', label: 'Event Payments', need: 'registrar', ready: true, group: 'events' },
+  { href: '/admin/scholarships', label: 'Scholarship requests', need: 'read:payments', ready: true, group: 'events' },
+  { href: '/admin/payments', label: 'Event Payments', need: 'read:payments', ready: true, group: 'events' },
   { href: '/admin/giving', label: 'Giving', need: 'giving', ready: true },
   // The newsletter list (14 Oct 2026): who has news & updates on, who joined
   // or left lately, and a CSV. Sending stays in Resend for now.
-  { href: '/admin/newsletter', label: 'Newsletter', need: 'registrar', ready: true },
-  { href: '/admin/setup', label: 'Setup', need: 'admin', ready: true },
+  { href: '/admin/newsletter', label: 'Newsletter', need: 'read:registration', ready: true },
+  { href: '/admin/setup', label: 'Setup', need: 'write:setup', ready: true },
   // Accounts subsumes the old Two-Factor Resets page: the same reset lives in
   // each row's menu, without typing an email address. /admin/security still
   // works by URL as a fallback if the table itself is ever the thing broken.
@@ -210,7 +210,7 @@ export default async function AdminLayout({ children }) {
     const { data: n } = await supabase.rpc('admin_recent_account_count', { p_days: 7 });
     recentAccounts = n ?? 0;
   }
-  if (staff && can(staff, 'registrar')) {
+  if (staff && can(staff, 'read:registration')) {
     const paymentsSince = sinceISO(7);
     const [
       { count: changesCount },
@@ -332,7 +332,7 @@ export default async function AdminLayout({ children }) {
   // participant, and the open ones are the rows with no end date. Scoped to
   // events that have not finished, so last year's camp cannot hold the badge
   // above zero for ever.
-  if (staff && can(staff, 'coordinator')) {
+  if (staff && can(staff, 'read:buddies')) {
     const today = new Date().toISOString().slice(0, 10);
     // Counts everybody the Buddies board shows, which after 0066 is every
     // camper EXCEPT those a coordinator has explicitly excused.
@@ -388,7 +388,7 @@ export default async function AdminLayout({ children }) {
   // is amber. Scoped to live events so last year's camp cannot hold it above
   // zero for ever -- the same trap the buddy badge had to avoid.
   let unplacedPeople = 0;
-  if (staff && can(staff, 'registrar')) {
+  if (staff && can(staff, 'read:programs')) {
     const today = new Date().toISOString().slice(0, 10);
     const { count } = await supabase
       .from('registration_participants')
@@ -468,7 +468,7 @@ export default async function AdminLayout({ children }) {
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             {/* Find a person or family from any staff page (14 Oct 2026).
                 A plain GET form: no script between typing and results. */}
-            {staff && can(staff, 'registrar') && (
+            {staff && can(staff, 'read:registration') && (
               <form action="/admin/search/" method="get" className="flex items-center gap-1">
                 <input
                   type="search"

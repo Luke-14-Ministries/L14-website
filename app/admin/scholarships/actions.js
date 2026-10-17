@@ -30,7 +30,7 @@ import { getStaff, can } from '@/lib/staff';
 
 async function requireRegistrar() {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) {
+  if (!can(staff, 'write:payments')) {
     return { error: 'You do not have permission to review scholarship requests.' };
   }
   return { staff };

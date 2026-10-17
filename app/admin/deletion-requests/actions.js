@@ -12,7 +12,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 
 export async function settleDeletionRequest({ requestId, status, staffNote }) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) return { ok: false, error: 'Not permitted.' };
+  if (!can(staff, 'write:registration')) return { ok: false, error: 'Not permitted.' };
   if (!requestId) return { ok: false, error: 'Which request?' };
   if (!['done', 'declined'].includes(status)) return { ok: false, error: 'That is not a way to close a request.' };
   if (!(staffNote || '').trim()) {

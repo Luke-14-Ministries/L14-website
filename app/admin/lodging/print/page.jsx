@@ -89,7 +89,7 @@ export default async function RoomListPrintPage({ searchParams }) {
 
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/lodging/print/');
-  if (!can(staff, 'coordinator')) redirect('/admin');
+  if (!can(staff, 'read:rooming')) redirect('/admin');
 
   const supabase = await createClient();
 

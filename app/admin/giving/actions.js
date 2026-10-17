@@ -14,7 +14,7 @@ const MANUAL_METHODS = ['check', 'cash', 'other'];
 
 export async function recordManualGift({ donorName, email, amountCents, fund, method, receivedOn, note }) {
   const staff = await getStaff();
-  if (!can(staff, 'giving')) {
+  if (!can(staff, 'write:giving')) {
     return { ok: false, error: 'You do not have permission to record gifts.' };
   }
   if (!MANUAL_METHODS.includes(method)) {

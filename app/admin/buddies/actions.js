@@ -112,7 +112,7 @@ export async function setBuddyRequired({ personId, required }) {
   if (!personId) return { ok: false, error: 'No person given.' };
 
   const staff = await getStaff();
-  if (!can(staff, 'sensitive')) {
+  if (!can(staff, 'write:sensitive')) {
     return {
       ok: false,
       error: 'Marking who needs a buddy needs the sensitive-information permission.',

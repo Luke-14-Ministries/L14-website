@@ -36,7 +36,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
 
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/payments/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:payments')) redirect('/admin');
 
   const supabase = await createClient();
 

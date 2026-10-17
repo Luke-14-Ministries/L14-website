@@ -18,7 +18,7 @@ export default async function CancellationsPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/cancellations/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
 
   const showHandled = params?.handled === '1';
 

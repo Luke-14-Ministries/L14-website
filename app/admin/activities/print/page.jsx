@@ -29,7 +29,7 @@ export default async function ActivityPrintPage({ searchParams }) {
 
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/activities/print/');
-  if (!can(staff, 'coordinator')) redirect('/admin');
+  if (!can(staff, 'read:activities')) redirect('/admin');
 
   const supabase = await createClient();
 

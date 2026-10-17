@@ -14,7 +14,7 @@ const esc = (v) => {
 
 export async function GET(request) {
   const staff = await getStaff();
-  if (!can(staff, 'coordinator')) {
+  if (!can(staff, 'read:buddies')) {
     return new Response('Not permitted', { status: 403 });
   }
 

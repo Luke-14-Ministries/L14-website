@@ -16,7 +16,7 @@ export const metadata = { title: 'Setup — Staff Admin' };
 export default async function SetupPage() {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/setup/');
-  if (!can(staff, 'admin')) redirect('/admin');
+  if (!can(staff, 'write:setup')) redirect('/admin');
 
   // Staff read ALL events under RLS, published or not -- that's the point:
   // this page is where "unpublished" gets seen and changed.

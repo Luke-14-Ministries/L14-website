@@ -78,9 +78,9 @@ function clean(fields, allowed) {
   return out;
 }
 
-async function requireRegistrar() {
+async function requireRegistrar(need = 'write:registration') {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) {
+  if (!can(staff, need)) {
     return { staff: null, error: 'You do not have permission to change registrations.' };
   }
   return { staff, error: null };
@@ -501,7 +501,7 @@ export async function deleteParticipantPermanently(registrationId, participantId
 // directly, with no reference to whether anybody asked. The answer to an
 // actual request is the Approve/Decline pair on the review card.
 export async function setAdjustments(registrationId, participantId, input) {
-  const { staff, error: authError } = await requireRegistrar();
+  const { staff, error: authError } = await requireRegistrar('write:payments');
   if (authError) return { ok: false, error: authError };
 
   const toCents = (v) => {
@@ -601,7 +601,7 @@ export async function setAdjustments(registrationId, participantId, input) {
 
 export async function addFamilyMessage(registrationId, body) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) return { ok: false, error: 'Not permitted.' };
+  if (!can(staff, 'write:registration')) return { ok: false, error: 'Not permitted.' };
   const text = typeof body === 'string' ? body.trim().slice(0, 1000) : '';
   if (!text) return { ok: false, error: 'Write the note first.' };
 
@@ -769,7 +769,7 @@ export async function holdRegistration(registrationId, reason = '') {
 
 export async function deleteFamilyMessage(registrationId, messageId) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) return { ok: false, error: 'Not permitted.' };
+  if (!can(staff, 'write:registration')) return { ok: false, error: 'Not permitted.' };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -803,7 +803,7 @@ export async function deleteFamilyMessage(registrationId, messageId) {
 // understand instead of a constraint violation.
 export async function refundPayment(registrationId, input) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) return { ok: false, error: 'Not permitted.' };
+  if (!can(staff, 'write:payments')) return { ok: false, error: 'Not permitted.' };
 
   const { paymentId, amountCents, feeCoverCents = 0, reason, note } = input || {};
   const amount = Math.round(Number(amountCents));
@@ -932,7 +932,7 @@ export async function refundPayment(registrationId, input) {
 // ---------------------------------------------------------------------------
 
 export async function setPlanStatus(registrationId, { action, keepsEarlyDiscount }) {
-  const { staff, error: authError } = await requireRegistrar();
+  const { staff, error: authError } = await requireRegistrar('write:payments');
   if (authError) return { ok: false, error: authError };
   const supabase = await createClient();
 

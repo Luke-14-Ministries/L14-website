@@ -52,7 +52,7 @@ const normEmail = (v) => (v || '').trim().toLowerCase();
 // what turns a claim into a fact.
 export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) return { ok: false, error: 'Not permitted.' };
+  if (!can(staff, 'write:background_checks')) return { ok: false, error: 'Not permitted.' };
   if (!Array.isArray(personIds) || personIds.length === 0) {
     return { ok: false, error: 'Nobody was selected.' };
   }
@@ -284,7 +284,7 @@ const normName = (v) => (v || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 export async function importCheckrResults(csvText, { dryRun = true } = {}) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) return { ok: false, error: 'Not permitted.' };
+  if (!can(staff, 'write:background_checks')) return { ok: false, error: 'Not permitted.' };
   if (!can(staff, 'background_checks')) return { ok: false, error: 'Not permitted.' };
 
   const rows = parseCsv(csvText || '');

@@ -15,7 +15,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/volunteers/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
 
   // Background-check records are their own grant (migration 0058). A registrar
   // without it still runs the volunteers page -- applications, review, the lot --

@@ -19,7 +19,7 @@ const MODES = ['interest', 'signup'];
 
 async function requireCoordinator() {
   const staff = await getStaff();
-  if (!can(staff, 'coordinator')) {
+  if (!can(staff, 'write:setup')) {
     return { error: 'You do not have permission to change activities.' };
   }
   return { staff };

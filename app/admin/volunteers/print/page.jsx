@@ -24,7 +24,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/volunteers/print/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
   const maySeeChecks = can(staff, 'background_checks');
 
   const supabase = await createClient();

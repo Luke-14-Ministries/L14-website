@@ -12,7 +12,7 @@ import { getStaff, can } from '@/lib/staff';
 // events_write RLS policy is the real gate.
 export async function setEventMedicalContact(eventId, name, phone) {
   const staff = await getStaff();
-  if (!can(staff, 'admin')) {
+  if (!can(staff, 'write:setup')) {
     return { ok: false, error: 'Only administrators can change the medical contact.' };
   }
   const supabase = await createClient();
@@ -31,7 +31,7 @@ export async function setEventMedicalContact(eventId, name, phone) {
 
 export async function toggleCheckIn(participantId, checkedIn) {
   const staff = await getStaff();
-  if (!can(staff, 'door')) {
+  if (!can(staff, 'write:registration')) {
     return { ok: false, error: 'You do not have permission to check people in.' };
   }
   const supabase = await createClient();

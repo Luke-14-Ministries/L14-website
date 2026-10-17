@@ -17,7 +17,7 @@ export default async function CheckinPage({ searchParams }) {
 
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/checkin/');
-  if (!can(staff, 'door')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
 
   // Parsed by parts, never through new Date(iso): a date-only string is UTC
   // midnight and renders as the day before in every US timezone.
@@ -211,7 +211,7 @@ export default async function CheckinPage({ searchParams }) {
           eventId={eventId}
           name={eventsList.find((e) => e.id === eventId)?.medical_contact_name}
           phone={eventsList.find((e) => e.id === eventId)?.medical_contact_phone}
-          canEdit={can(staff, 'admin')}
+          canEdit={can(staff, 'write:setup')}
         />
       )}
 

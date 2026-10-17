@@ -11,7 +11,7 @@ import { holdRegistration } from '@/app/admin/registrations/[id]/actions';
 
 export async function markChangesReviewed(ids) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) {
+  if (!can(staff, 'write:registration')) {
     return { ok: false, error: 'You do not have permission to review changes.' };
   }
   if (!Array.isArray(ids) || ids.length === 0) return { ok: true };
@@ -34,7 +34,7 @@ export async function markChangesReviewed(ids) {
 // hold is what a reviewer does with it, and "Reviewed" is a separate click.
 export async function holdFromChange(changeId, reason) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) {
+  if (!can(staff, 'write:registration')) {
     return { ok: false, error: 'You do not have permission to put a registration on hold.' };
   }
   const supabase = await createClient();

@@ -40,7 +40,7 @@ export default async function BuddyPrintPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/buddies/print/');
-  if (!can(staff, 'coordinator')) redirect('/admin');
+  if (!can(staff, 'read:buddies')) redirect('/admin');
 
   const supabase = await createClient();
   const eventId = typeof params?.event === 'string' ? params.event : '';

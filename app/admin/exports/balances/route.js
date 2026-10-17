@@ -13,7 +13,7 @@ const esc = (v) => {
 
 export async function GET(request) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) {
+  if (!can(staff, 'read:payments')) {
     return new Response('Not permitted', { status: 403 });
   }
 

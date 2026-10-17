@@ -23,7 +23,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/activities/');
-  if (!can(staff, 'coordinator')) redirect('/admin');
+  if (!can(staff, 'read:activities')) redirect('/admin');
 
   const supabase = await createClient();
 

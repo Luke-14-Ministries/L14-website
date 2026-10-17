@@ -14,7 +14,7 @@ const MANUAL_METHODS = ['check', 'cash', 'other'];
 
 export async function recordManualPayment({ registrationId, amountCents, method, receivedOn, note }) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) {
+  if (!can(staff, 'write:payments')) {
     return { ok: false, error: 'You do not have permission to record payments.' };
   }
   if (!registrationId) return { ok: false, error: 'Please choose a registration.' };

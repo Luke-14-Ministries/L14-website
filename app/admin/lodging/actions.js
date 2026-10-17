@@ -111,7 +111,7 @@ export async function setLodgingPublication({ eventId, publish }) {
 // Springs made that untenable: the venue changes what it lets us use, and a
 // coordinator should not have to ask the web admin to rename "Lodge 111".
 // Same shape as buddies/actions.js -- RLS (`lodgings_write`, is_coordinator())
-// is the boundary; each action ALSO checks can(staff, 'coordinator') so a
+// is the boundary; each action ALSO checks can(staff, 'write:setup') so a
 // refused write gets a sentence rather than an empty result.
 // ---------------------------------------------------------------------------
 
@@ -119,7 +119,7 @@ const KINDS = ['building', 'room', 'cabin', 'lodge', 'tent', 'rv', 'offsite'];
 
 async function requireCoordinator() {
   const staff = await getStaff();
-  if (!can(staff, 'coordinator')) {
+  if (!can(staff, 'write:setup')) {
     return { error: 'You do not have permission to change rooms and cabins.' };
   }
   return { staff };

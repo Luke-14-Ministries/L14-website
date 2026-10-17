@@ -34,7 +34,7 @@ export default async function FamilyStatementPage({ params }) {
 
   const staff = await getStaff();
   if (!staff) await bounceNonStaff(`/admin/registrations/${id}/statement/`);
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:payments')) redirect('/admin');
 
   const supabase = await createClient();
 

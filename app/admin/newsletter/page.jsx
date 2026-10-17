@@ -17,7 +17,7 @@ export const metadata = { title: 'Newsletter — Staff Admin' };
 export default async function NewsletterPage() {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/newsletter/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
 
   const supabase = await createClient();
   const [{ data: list, error }, { data: recent }] = await Promise.all([

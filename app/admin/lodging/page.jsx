@@ -17,7 +17,7 @@ export default async function LodgingPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/lodging/');
-  if (!can(staff, 'coordinator')) redirect('/admin');
+  if (!can(staff, 'read:rooming')) redirect('/admin');
 
   const supabase = await createClient();
 

@@ -25,7 +25,7 @@ export default async function PrintRostersPage({ searchParams }) {
 
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/rosters/print/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
 
   const supabase = await createClient();
   const [{ data: events }, { data: regs }, { data: consents }] = await Promise.all([

@@ -11,7 +11,7 @@ export const metadata = { title: 'Rosters — Staff Admin' };
 export default async function RostersPage() {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/rosters/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
 
   const supabase = await createClient();
 

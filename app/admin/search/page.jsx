@@ -30,7 +30,7 @@ export default async function SearchPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/search/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
 
   const q = typeof params?.q === 'string' ? params.q.trim() : '';
   const supabase = await createClient();

@@ -20,7 +20,7 @@ import { getStaff, can } from '@/lib/staff';
 async function requireCoordinator() {
   const staff = await getStaff();
   if (!staff) return { error: 'You are not signed in as staff.' };
-  if (!can(staff, 'coordinator')) {
+  if (!can(staff, 'write:programs')) {
     return {
       error:
         'Placing people into programs needs coordinator or administrator access. Ask an administrator.',

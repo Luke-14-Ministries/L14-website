@@ -22,7 +22,7 @@ export default async function BuddiesPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/buddies/');
-  if (!can(staff, 'coordinator')) redirect('/admin');
+  if (!can(staff, 'read:buddies')) redirect('/admin');
 
   const supabase = await createClient();
 

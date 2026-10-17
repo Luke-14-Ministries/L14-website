@@ -34,7 +34,7 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/scholarships/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:payments')) redirect('/admin');
 
   const showSettled = params?.settled === '1';
 

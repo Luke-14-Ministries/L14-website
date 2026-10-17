@@ -12,7 +12,7 @@ const esc = (v) => {
 
 export async function GET(request) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) {
+  if (!can(staff, 'read:registration')) {
     return new Response('Not permitted', { status: 403 });
   }
   // Build plan item 15 (the call of 16 Oct 2026, 3:32 pm): the same people in

@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function reviewVolunteerApplication(participantId, decision) {
   const staff = await getStaff();
-  if (!can(staff, 'registrar')) return { ok: false, error: 'Not permitted.' };
+  if (!can(staff, 'write:registration')) return { ok: false, error: 'Not permitted.' };
   if (!['approved', 'declined', 'applied'].includes(decision)) {
     return { ok: false, error: 'Unknown decision.' };
   }

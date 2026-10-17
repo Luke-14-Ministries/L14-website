@@ -16,7 +16,7 @@ export default async function DeletionRequestsPage({ searchParams }) {
   const params = await searchParams;
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/deletion-requests/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'read:registration')) redirect('/admin');
   const showClosed = params?.closed === '1';
 
   const supabase = await createClient();

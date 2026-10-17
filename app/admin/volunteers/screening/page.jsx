@@ -15,7 +15,7 @@ export const metadata = { title: 'Background screening — Staff Admin' };
 export default async function ScreeningPage() {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/volunteers/screening/');
-  if (!can(staff, 'registrar')) redirect('/admin');
+  if (!can(staff, 'write:background_checks')) redirect('/admin');
   // Ordering a check is at least as sensitive as reading the result, so it
   // takes the same grant (migration 0058).
   if (!can(staff, 'background_checks')) redirect('/admin/volunteers');
