@@ -89,15 +89,25 @@ export default async function DietaryPage({ searchParams }) {
             from a page filtered to one week and getting every registrant the
             ministry has ever had is not a longer list — it is the wrong list,
             and the kitchen cannot tell (25 Aug). */}
-        <a
-          href={`/admin/dietary/print${
-            eventFilter ? `?event=${eventFilter}` : showPast ? '?past=1' : ''
-          }`}
-          className="btn-outline !py-2 text-sm"
-        >
-          Kitchen list (no names)
-          {eventFilter && <span className="font-normal"> — this event</span>}
-        </a>
+        <span className="flex flex-wrap gap-2">
+          <a
+            href={`/admin/dietary/print${
+              eventFilter ? `?event=${eventFilter}` : showPast ? '?past=1' : ''
+            }`}
+            className="btn-outline !py-2 text-sm"
+          >
+            Kitchen list (no names)
+            {eventFilter && <span className="font-normal"> — this event</span>}
+          </a>
+          {/* With names and severity, grouped by allergen (Ellen, 15 Oct
+              2026): for the cook and the nurse, not the kitchen door. */}
+          <a
+            href={`/admin/dietary/by-allergen${eventFilter ? `?event=${eventFilter}` : ''}`}
+            className="btn-outline !py-2 text-sm"
+          >
+            By allergen (names)
+          </a>
+        </span>
       </div>
       <p className="text-sm text-neutral-500 mb-6">
         Everyone with dietary needs or allergies, per event — the kitchen list. This page is a

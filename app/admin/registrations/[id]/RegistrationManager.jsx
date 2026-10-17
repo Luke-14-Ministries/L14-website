@@ -12,7 +12,7 @@ import Link from 'next/link';
 // The same card the Scholarship Requests queue uses. Shared deliberately: a
 // decision has to mean the same thing wherever a registrar makes it.
 import ScholarshipReview from '@/app/admin/scholarships/ScholarshipReview';
-import { registrationHeads } from '@/lib/payments';
+import { registrationHeads, refundSuggestion, REFUND_FULL_UNTIL_DAYS } from '@/lib/payments';
 import {
   setParticipantStatus,
   updatePerson,
@@ -1123,7 +1123,7 @@ function FamilyMessages({ registrationId, messages }) {
 // makes sense -- Event Payments knows balances, not transactions. Partial is
 // the normal case (one child withdraws from three), so the amount box opens
 // pre-filled with everything still refundable and is freely editable down.
-function PaymentsCard({ registrationId, payments, stripeBase = '' }) {
+function PaymentsCard({ registrationId, payments, stripeBase = '', event = null, feePeople = 0 }) {
   const [openFor, setOpenFor] = useState(null);
 
   if (payments.length === 0) {
@@ -1276,6 +1276,8 @@ function PaymentsCard({ registrationId, payments, stripeBase = '' }) {
               <RefundForm
                 registrationId={registrationId}
                 payment={p}
+                event={event}
+                feePeople={feePeople}
                 onDone={() => setOpenFor(null)}
               />
             )}
@@ -1286,13 +1288,23 @@ function PaymentsCard({ registrationId, payments, stripeBase = '' }) {
   );
 }
 
-function RefundForm({ registrationId, payment, onDone }) {
+function RefundForm({ registrationId, payment, event = null, feePeople = 0, onDone }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
-  // Dollars as typed, defaulting to everything still refundable -- the common
-  // case is "give it all back", and the uncommon one is one keystroke away.
-  const [amount, setAmount] = useState((payment.refundableCents / 100).toFixed(2));
+  // The rule's arithmetic for THIS payment and today (lib/payments.js). A
+  // suggestion: the box opens on it, and the registrar may type anything.
+  const rule = refundSuggestion({
+    startsOn: event?.starts_on,
+    depositCents: event?.deposit_cents ?? 0,
+    feePeople,
+    refundableCents: payment.refundableCents,
+  });
+  // Dollars as typed, opening on the rule's suggestion when there is one and
+  // on everything still refundable otherwise.
+  const [amount, setAmount] = useState(
+    ((rule ? rule.suggested : payment.refundableCents) / 100).toFixed(2)
+  );
   const [feeCover, setFeeCover] = useState(false);
   const [reason, setReason] = useState('');
 
@@ -1338,6 +1350,38 @@ function RefundForm({ registrationId, payment, onDone }) {
           ? 'Pressing Refund sends this to Stripe straight away, and it goes back to the card or bank account it came from. Stripe usually shows it to the family within 5–10 days; the reference appears here as soon as it is accepted.'
           : 'This records a refund the ministry pays by check or cash. Nothing is sent anywhere automatically.'}
       </p>
+
+      {rule && (
+        <div className="mt-3 rounded border border-amber-200 bg-white px-3 py-2 text-xs text-neutral-700">
+          <p className="font-semibold text-neutral-800">The refund rule, worked for this payment</p>
+          <p className="mt-0.5">
+            The {money(event?.deposit_cents ?? 0)}-a-person deposit is kept
+            {feePeople > 0 ? ` (${money((event?.deposit_cents ?? 0) * feePeople)} for ${feePeople} ${feePeople === 1 ? 'person' : 'people'}` : ''}
+            {feePeople > 0 && rule.keep < (event?.deposit_cents ?? 0) * feePeople ? `, capped at this payment's ${money(rule.keep)})` : feePeople > 0 ? ')' : ''}
+            ; the rest is refunded in full until {REFUND_FULL_UNTIL_DAYS} days before the event and half after.
+            {' '}Today is{' '}
+            {rule.daysBefore >= 0
+              ? `${rule.daysBefore} ${rule.daysBefore === 1 ? 'day' : 'days'} before`
+              : `${-rule.daysBefore} ${-rule.daysBefore === 1 ? 'day' : 'days'} after`}{' '}
+            the start{rule.half ? ', so half' : ', so in full'}:{' '}
+            <strong>{money(payment.refundableCents)} − {money(rule.keep)} = {money(rule.rest)}</strong>
+            {rule.half ? <> → half is <strong>{money(rule.suggested)}</strong></> : null}.
+          </p>
+          <p className="mt-1 text-neutral-500">
+            A suggestion, not a lock — if an earlier refund already kept the deposit, or the
+            board decided otherwise, type the amount that is right and say why below.
+          </p>
+          {cents !== rule.suggested && (
+            <button
+              type="button"
+              onClick={() => setAmount((rule.suggested / 100).toFixed(2))}
+              className="mt-1 text-brand underline"
+            >
+              Use {money(rule.suggested)}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="block">
@@ -1625,6 +1669,7 @@ export default function RegistrationManager({
   familyRegistrations = [],
   review = null,
   awaiting = null,
+  hold = null,
   depositWaived = null,
   depositCents = 0,
   options,
@@ -1717,6 +1762,7 @@ export default function RegistrationManager({
           }))}
           review={review}
           awaiting={awaiting}
+          hold={hold}
           depositWaived={depositWaived}
           depositCents={depositCents}
         />
@@ -1774,6 +1820,8 @@ export default function RegistrationManager({
           registrationId={registration.id}
           payments={payments}
           stripeBase={stripeBase}
+          event={registration.event}
+          feePeople={livePeople}
         />
 
         <Panel title="People on this week" count={parts.length}>

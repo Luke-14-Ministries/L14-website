@@ -6,7 +6,7 @@
 import { useState, useTransition } from 'react';
 import { ALLERGEN_LABEL } from '@/lib/support';
 import { useRouter } from 'next/navigation';
-import { markChangesReviewed } from './actions';
+import { markChangesReviewed, holdFromChange } from './actions';
 
 const SOURCE_LABEL = {
   people: 'Person details',
@@ -112,6 +112,7 @@ export default function ChangesList({ groups }) {
   const [, start] = useTransition();
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   // Collapsed household groups (24 Aug): a busy review day makes this page
   // long, and a header you can fold away lets staff work family by family.
   // Groups start OPEN -- unreviewed changes are exactly what the page is for.
@@ -127,6 +128,27 @@ export default function ChangesList({ groups }) {
       else next.add(id);
       return next;
     });
+
+  // A hold from a change (0098): the registration(s) this person or household
+  // is confirmed on go back to Awaiting review, with the reason the family
+  // will read. One prompt, prefilled with what changed.
+  function hold(c) {
+    const reason = window.prompt(
+      `Put ${c.person || 'this household'}'s current registration on hold for re-review?\n\nWhy — the family sees this:`,
+      `A change to ${(FIELD_LABEL[c.field] ?? c.field).toLowerCase()} on ${c.when} needs a second look.`
+    );
+    if (reason === null) return;
+    setError('');
+    setNotice('');
+    setBusy(`hold:${c.id}`);
+    start(async () => {
+      const res = await holdFromChange(c.id, reason);
+      if (!res.ok) setError(res.error);
+      else setNotice(res.message);
+      setBusy(null);
+      router.refresh();
+    });
+  }
 
   function review(key, ids) {
     setError('');
@@ -156,6 +178,11 @@ export default function ChangesList({ groups }) {
 
   return (
     <div className="space-y-6">
+      {notice && (
+        <p className="mb-3 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
+          {notice}
+        </p>
+      )}
       {error && (
         <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
@@ -263,13 +290,23 @@ export default function ChangesList({ groups }) {
                     {c.when} {c.actor ? `· by ${c.actor}` : ''}
                   </p>
                 </div>
-                <button
-                  onClick={() => review(c.id, [c.id])}
-                  disabled={busy === c.id}
-                  className="rounded border border-neutral-300 px-3 py-1.5 font-semibold text-neutral-700 hover:border-brand hover:text-brand"
-                >
-                  {busy === c.id ? '…' : 'Reviewed ✓'}
-                </button>
+                <span className="flex flex-col items-end gap-1">
+                  <button
+                    onClick={() => review(c.id, [c.id])}
+                    disabled={busy === c.id}
+                    className="rounded border border-neutral-300 px-3 py-1.5 font-semibold text-neutral-700 hover:border-brand hover:text-brand"
+                  >
+                    {busy === c.id ? '…' : 'Reviewed ✓'}
+                  </button>
+                  <button
+                    onClick={() => hold(c)}
+                    disabled={busy === `hold:${c.id}`}
+                    title="Send this person's registration back to Awaiting review, with a reason the family sees"
+                    className="text-xs text-amber-900 underline hover:text-amber-700"
+                  >
+                    {busy === `hold:${c.id}` ? '…' : 'Put on hold…'}
+                  </button>
+                </span>
               </li>
             ))}
           </ul>

@@ -32,7 +32,15 @@ const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFract
 const when = (iso) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
-export default function ReviewCard({ registrationId, participants, review, awaiting, depositWaived = null, depositCents = 0 }) {
+export default function ReviewCard({
+  registrationId,
+  participants,
+  review,
+  awaiting,
+  hold = null,
+  depositWaived = null,
+  depositCents = 0,
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
@@ -40,6 +48,8 @@ export default function ReviewCard({ registrationId, participants, review, await
   const [reason, setReason] = useState('');
   const [waiving, setWaiving] = useState(false);
   const [waiveReason, setWaiveReason] = useState('');
+  const [holding, setHolding] = useState(false);
+  const [holdReason, setHoldReason] = useState('');
 
   const waiting = participants.filter((p) => p.status === 'submitted');
   const cls = review ? REVIEW_CLASS[review.review_class] : null;
@@ -67,9 +77,14 @@ export default function ReviewCard({ registrationId, participants, review, await
       setReason('');
       setWaiving(false);
       setWaiveReason('');
+      setHolding(false);
+      setHoldReason('');
       router.refresh();
     });
   }
+
+  // A hold (0098) is offered while somebody holds a decided place.
+  const canHold = participants.some((p) => p.status === 'confirmed' || p.status === 'waitlisted');
 
   const count = waiting.length === 0
     ? 'nobody waiting'
@@ -144,6 +159,68 @@ export default function ReviewCard({ registrationId, participants, review, await
                   {pending ? 'Saving…' : 'Waive the deposit'}
                 </button>
                 <button type="button" onClick={() => setWaiving(false)} className="text-sm underline">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {/* On hold (0098, Larry and Ellen 15-16 Oct 2026): staff's move, the
+          opposite of "waiting on the family". Everyone was put back to
+          submitted when it was set; approving or waitlisting below lifts it. */}
+      {hold?.since && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
+          <p className="font-bold text-amber-900">
+            On hold since {when(hold.since)}
+            {hold.by ? ` — ${hold.by}` : ''}
+          </p>
+          {hold.reason && <p className="mt-1 text-amber-900">&ldquo;{hold.reason}&rdquo;</p>}
+          <p className="mt-1 text-xs text-amber-900">
+            Everyone on it went back to <em>submitted</em>. Approve or waitlist below to
+            finish the re-check; the family sees the reason on their dashboard.
+          </p>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => run('lift_hold')}
+            className="btn-outline !py-1.5 mt-2 text-sm"
+          >
+            Lift the hold without deciding
+          </button>
+        </div>
+      )}
+      {!hold?.since && canHold && (
+        <div className="mb-4">
+          {!holding ? (
+            <button type="button" disabled={pending} onClick={() => setHolding(true)} className="btn-outline !py-1.5 text-sm">
+              Put on hold…
+            </button>
+          ) : (
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+              <p className="text-sm font-semibold mb-1">Put this registration on hold?</p>
+              <p className="text-xs text-neutral-600 mb-2">
+                Everyone confirmed or waitlisted goes back to <em>submitted</em> and the
+                registration returns to Awaiting review. The reason is shown to the family.
+                Nothing is emailed — write to them from Outlook if they should hear from you.
+              </p>
+              <input
+                value={holdReason}
+                onChange={(e) => setHoldReason(e.target.value)}
+                maxLength={1000}
+                placeholder="e.g. Sam's seizure plan changed — the nurse needs to look again"
+                className="w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+              />
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={pending || !holdReason.trim()}
+                  onClick={() => run('hold', { reason: holdReason })}
+                  className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+                >
+                  {pending ? 'Saving…' : 'Put on hold'}
+                </button>
+                <button type="button" onClick={() => setHolding(false)} className="text-sm underline">
                   Cancel
                 </button>
               </div>

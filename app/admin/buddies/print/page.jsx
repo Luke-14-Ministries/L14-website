@@ -100,10 +100,20 @@ export default async function BuddyPrintPage({ searchParams }) {
     byBuddy.get(a.buddy_participant_id).push(a);
   }
   const nameOf = (p) => `${p?.people?.first_name ?? ''} ${p?.people?.last_name ?? ''}`.trim();
+  // One page per PAIRING (Larry, 16 Oct 2026): a buddy with two campers gets
+  // two sheets, each about one camper, so a sheet can travel with the camper
+  // and nothing about a second camper is on it.
+  const camperOf = (a) => byId.get(a.camper_participant_id);
   const sheets = [...byBuddy.entries()]
-    .map(([buddyId, list]) => ({ buddy: byId.get(buddyId), list }))
+    .flatMap(([buddyId, list]) => list.map((a) => ({ buddy: byId.get(buddyId), list: [a] })))
     .filter((s) => s.buddy && (!only || s.buddy.id === only))
-    .sort((a, b) => nameOf(a.buddy).localeCompare(nameOf(b.buddy)));
+    .sort(
+      (a, b) =>
+        nameOf(a.buddy).localeCompare(nameOf(b.buddy)) ||
+        nameOf(camperOf(a.list[0])).localeCompare(nameOf(camperOf(b.list[0])))
+    );
+  // The "Print:" links are still one per buddy.
+  const buddies = sheets.filter((s, i, arr) => arr.findIndex((x) => x.buddy.id === s.buddy.id) === i);
 
   const supportOf = (p) => {
     const s = p?.people?.person_support;
@@ -117,17 +127,17 @@ export default async function BuddyPrintPage({ searchParams }) {
         <PrintButton />
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">
-        One page per buddy, with every camper they are paired with: who they are, the pairing
-        notes from the board, and the safety facts a buddy must not be surprised by. Hand them out
-        at orientation and collect them at the end of camp.
+        One page per pairing — the buddy, the camper, the pairing notes from the board, and the
+        safety facts a buddy must not be surprised by. A buddy with two campers gets two pages.
+        Hand them out at orientation and collect them at the end of camp.
       </p>
-      {sheets.length > 1 && (
+      {buddies.length > 1 && (
         <p className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm print:hidden">
           <span className="text-neutral-500">Print:</span>
           <a href={`/admin/buddies/print/?event=${eventId}`} className={only ? 'text-brand underline' : 'font-semibold'}>
             every buddy
           </a>
-          {sheets.map((s) => (
+          {buddies.map((s) => (
             <a
               key={s.buddy.id}
               href={`/admin/buddies/print/?event=${eventId}&buddy=${s.buddy.id}`}
@@ -144,14 +154,14 @@ export default async function BuddyPrintPage({ searchParams }) {
       )}
 
       {sheets.map((s) => (
-        <div key={s.buddy.id} className="mb-10 break-after-page last:break-after-auto">
+        <div key={s.list[0].id} className="mb-10 break-after-page last:break-after-auto">
           <div className="border-b-2 border-neutral-800 pb-2">
             <p className="text-xs uppercase tracking-wide text-neutral-500">Buddy sheet</p>
             <h2 className="text-2xl font-bold">{nameOf(s.buddy)}</h2>
             <p className="text-sm text-neutral-600">
               {event.name} · {event.starts_on} – {event.ends_on}
-              {' · '}
-              {s.list.length === 1 ? 'one camper' : `${s.list.length} campers`}
+              {' · with '}
+              {nameOf(camperOf(s.list[0]))}
             </p>
           </div>
 

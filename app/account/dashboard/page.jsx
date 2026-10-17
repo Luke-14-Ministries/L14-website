@@ -193,6 +193,7 @@ export default async function DashboardPage({ searchParams }) {
         .from('registrations')
         .select(
           `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
+           hold_since, hold_reason,
            events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url ),
            registration_participants ( id, camp_role, status, fee_cents, checked_in_at,
              people ( id, first_name, last_name ) )`
@@ -1009,6 +1010,25 @@ export default async function DashboardPage({ searchParams }) {
                               registration@luke14ministries.net
                             </a>
                             . Your registration is held in the meantime.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Staff put the registration on hold to re-check a
+                          change (0098, 16 Oct 2026). Amber, but it is staff's
+                          move: nothing is asked of the family unless staff
+                          write. */}
+                      {r.hold_since && !r.awaiting_family_since && (
+                        <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
+                          <p className="font-bold text-amber-900">Camp staff are re-checking this registration</p>
+                          {r.hold_reason && <p className="mt-1 text-amber-900">{r.hold_reason}</p>}
+                          <p className="mt-1 text-xs text-amber-900">
+                            Your places are held while they look. Nothing is needed from you
+                            unless staff get in touch; questions to{' '}
+                            <a href="mailto:registration@luke14ministries.net" className="underline">
+                              registration@luke14ministries.net
+                            </a>
+                            .
                           </p>
                         </div>
                       )}

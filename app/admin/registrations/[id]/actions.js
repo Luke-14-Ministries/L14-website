@@ -646,10 +646,16 @@ export async function reviewRegistration(registrationId, { action, reason = '', 
       const res = await setParticipantStatus(registrationId, r.id, next, { override });
       if (!res.ok) return res;
     }
-    // A decision made is no longer waiting on anybody.
+    // A decision made is no longer waiting on anybody, and lifts a hold (0098).
     const { error: clearError } = await supabase
       .from('registrations')
-      .update({ awaiting_family_since: null, awaiting_family_reason: null })
+      .update({
+        awaiting_family_since: null,
+        awaiting_family_reason: null,
+        hold_since: null,
+        hold_reason: null,
+        hold_by: null,
+      })
       .eq('id', registrationId);
     if (clearError) return { ok: false, error: clearError.message };
     revalidateAll(registrationId);
@@ -682,6 +688,23 @@ export async function reviewRegistration(registrationId, { action, reason = '', 
     return { ok: true };
   }
 
+  // A hold (0098): everyone confirmed or waitlisted goes back to submitted
+  // and the registration says why. Lifting it leaves statuses as they are --
+  // the registrar then approves or waitlists as usual.
+  if (action === 'hold') {
+    return holdRegistration(registrationId, reason);
+  }
+  if (action === 'lift_hold') {
+    const { error } = await supabase
+      .from('registrations')
+      .update({ hold_since: null, hold_reason: null, hold_by: null })
+      .eq('id', registrationId);
+    if (error) return { ok: false, error: error.message };
+    revalidateAll(registrationId);
+    revalidatePath('/admin/review');
+    return { ok: true };
+  }
+
   // Waive the deposit (0096): one definer function does the mark and the
   // scholarships and recalculates, so the page can never half-do it.
   if (action === 'waive_deposit') {
@@ -697,6 +720,51 @@ export async function reviewRegistration(registrationId, { action, reason = '', 
   }
 
   return { ok: false, error: 'Unknown review action.' };
+}
+
+// Put a registration on hold (0098; Larry and Ellen, 15-16 Oct 2026): the
+// decision is being re-made, so everyone confirmed or waitlisted goes back
+// to 'submitted' (the review queue and the nav badge count them again) and
+// the registration records when, why and who. Called from the Review card
+// and from Recent Changes. No email is sent -- by hand from Outlook, as
+// agreed on the call.
+export async function holdRegistration(registrationId, reason = '') {
+  const { error: authError } = await requireRegistrar();
+  if (authError) return { ok: false, error: authError };
+  const text = typeof reason === 'string' ? reason.trim().slice(0, 1000) : '';
+  if (!text) return { ok: false, error: 'Say why the registration is going on hold — the family sees it.' };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const now = new Date().toISOString();
+
+  const { error: partError } = await supabase
+    .from('registration_participants')
+    .update({ status: 'submitted', submitted_at: now })
+    .eq('registration_id', registrationId)
+    .in('status', ['confirmed', 'waitlisted']);
+  if (partError) return { ok: false, error: partError.message };
+
+  // A hold is staff's move, so it replaces "waiting on the family".
+  const { error } = await supabase
+    .from('registrations')
+    .update({
+      hold_since: now,
+      hold_reason: text,
+      hold_by: user?.id ?? null,
+      awaiting_family_since: null,
+      awaiting_family_reason: null,
+    })
+    .eq('id', registrationId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidateAll(registrationId);
+  revalidatePath('/admin/review');
+  revalidatePath('/admin/changes');
+  revalidatePath('/account/dashboard');
+  return { ok: true };
 }
 
 export async function deleteFamilyMessage(registrationId, messageId) {

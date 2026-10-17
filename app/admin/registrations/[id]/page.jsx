@@ -25,6 +25,7 @@ export default async function RegistrationDetailPage({ params }) {
     .select(
       `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
        deposit_waived_at, deposit_waived_by, deposit_waived_reason,
+       hold_since, hold_reason, hold_by,
        households ( id, display_name, email, phone,
                     address_line1, address_line2, city, state, postal_code,
                     home_church, how_did_you_hear, how_did_you_hear_from ),
@@ -40,6 +41,20 @@ export default async function RegistrationDetailPage({ params }) {
     .maybeSingle();
 
   if (!reg) notFound();
+
+  // Who put it on hold (0098), by name -- the family never sees this part.
+  let holdBy = null;
+  if (reg.hold_by) {
+    const { data: hb } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', reg.hold_by)
+      .maybeSingle();
+    holdBy = hb ? `${hb.first_name ?? ''} ${hb.last_name ?? ''}`.trim() || null : null;
+  }
+  const hold = reg.hold_since
+    ? { since: reg.hold_since, reason: reg.hold_reason ?? null, by: holdBy }
+    : null;
 
   // Every registration this household holds, for the header's "Registered
   // for" list (15 Oct 2026): a family at two events is one family, and the
@@ -335,6 +350,7 @@ export default async function RegistrationDetailPage({ params }) {
       familyRegistrations={familyRegistrations}
       review={reviewRow ?? null}
       awaiting={{ since: reg.awaiting_family_since ?? null, reason: reg.awaiting_family_reason ?? null }}
+      hold={hold}
       depositWaived={reg.deposit_waived_at ? { at: reg.deposit_waived_at, reason: reg.deposit_waived_reason ?? null } : null}
       depositCents={reg.events?.deposit_cents ?? 0}
       options={options ?? []}
