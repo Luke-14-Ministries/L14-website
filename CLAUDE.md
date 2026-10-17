@@ -246,8 +246,12 @@ confirmed or waitlisted goes back to `submitted`, `registration_review` carries 
 dashboard shows the reason in amber. Approve, waitlist or "lift" clear it. The refund form
 opens on `refundSuggestion()` (`lib/payments.js`: deposit kept, full to 30 days before, half
 after) as a suggestion, never a lock. `/admin/dietary/by-allergen` is the named list (Sensitive);
-buddies are many-to-many with no confirms and one buddy sheet per pairing. The high-water mark
-is `0098`. A camp-week registration is **not
+buddies are many-to-many with no confirms and one buddy sheet per pairing. **`0099`: one event
+filter.** `isCurrentEventRow()` in `lib/events.js` is the one test for "current" (two weeks after
+the event ends, a year ahead, never archived); every staff page calls it, and Medical, Event
+Payments and Awaiting review use the shared `EventFilter` (Check-In keeps dated pills on purpose;
+Rosters keeps search-only; the Overview's pills jump). `events.archived_at` is the archive mark on
+Setup. **At launch, archive the 2026 Retreat there.** The high-water mark is `0099`. A camp-week registration is **not
 finished** until the family pays in full, sets up an automatic payment plan, or requests a
 scholarship (`registration_payment_routes` view; `/account/finish/[registrationId]`). The early-
 registration discount lives in its own column, `early_discount_cents`, written only by

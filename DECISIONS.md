@@ -2193,6 +2193,25 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-16, late — One event filter everywhere; "current" is two weeks; an archive mark (0099)
+
+Build plan item 12 (the ink; the call, 3:11–3:13 pm; Lawrence, 16 Oct: review every staff page
+so event filtering is consistent, or clearly motivate a deviation). **One rule for "current"**:
+`isCurrentEventRow()` — until two weeks after the event ends (30 days before today; follow-up
+after a week is real but short), a year ahead, and never an archived event. Ten pages had their
+own copy of the comparison and two had drifted; now they share one, so no two pill rows can
+disagree. **The shared `EventFilter` on every page that is about an event**: Medical and Event
+Payments lose their hand-rolled pill rows, Awaiting review gains pills that narrow the queue.
+**Two deviations, each said on screen or in the code**: Check-In keeps its own pills with dates
+on them, because it is used standing at a door on a phone where "Week 1" and "Week 2" are
+identical without the dates and a search box is the wrong control; the Overview's table shows
+every current event at once, so its pills jump to a row and the page says so. Rosters keeps the
+search-only shape of the same component, which the 25 Aug decision already motivated. Search is
+about people, not events, and gets no filter. **An archive mark on Setup** (`archived_at`) is the
+one human override of the rule: a cancelled week or a duplicate drops out of every pill row now
+and can never be open for registration; it stays in history and in every search box. At launch
+the 2026 Retreat is archived there rather than deleted.
+
 ## 2026-10-16, late — A hold, the refund rule, the named allergen list, buddies many-to-many (0098)
 
 Build plan items 6, 7, 9, 10 and 11, with a finding on 8. **A hold** (Larry and Ellen's ink;
