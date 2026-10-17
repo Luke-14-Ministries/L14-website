@@ -2193,6 +2193,22 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-16, night — The grants model lands, roles kept (0100)
+
+Build plan item 16, steps 1 and 2 of the access-model plan. **The grants are recorded before
+they are enforced.** One migration adds the ten areas as read/write rows per staff member and
+fills them in from each person's role and ticks — faithfully, not aspirationally: an
+administrator without the Sensitive tick stays without it, everyone on staff reads the three
+background-check facts, registrars and coordinators each read what the other writes, as the
+policies already behave. Presets on Staff & Access set the ticks in one click and are adjusted
+underneath; Giving is never set by a preset; every change is in the same access log as the old
+tick boxes. **The role still decides what the database allows**, and the page says so: a preset
+therefore also sets the closest role and the legacy ticks, which is the price of landing the
+model without a flag day. Step 3 — the rules read `has_grant()` instead of `is_registrar()`,
+one area at a time, each batch verified by the test harness with the new personas — is the
+work that remains, and the reason the role column is not yet a label. Nothing a family sees
+changed.
+
 ## 2026-10-16, late — QuickBooks CSVs; a Mailchimp import CSV
 
 Build plan items 14 and 15 (the call, 3:30–3:33 pm). **QuickBooks**: Event Payments and Giving

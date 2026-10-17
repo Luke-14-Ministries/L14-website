@@ -251,7 +251,14 @@ filter.** `isCurrentEventRow()` in `lib/events.js` is the one test for "current"
 the event ends, a year ahead, never archived); every staff page calls it, and Medical, Event
 Payments and Awaiting review use the shared `EventFilter` (Check-In keeps dated pills on purpose;
 Rosters keeps search-only; the Overview's pills jump). `events.archived_at` is the archive mark on
-Setup. **At launch, archive the 2026 Retreat there.** The high-water mark is `0099`. A camp-week registration is **not
+Setup. **At launch, archive the 2026 Retreat there.** **`0100`, the grants model, steps 1 and 2 of
+the plan:** `staff_grants` (profile, area, read|write) with a faithful backfill from roles, the
+presets and per-area ticks on Staff & Access, every change in `staff_access_log` as
+`grant:<area>`, `has_grant(area, level)` in SQL and `can(staff, 'read:<area>')` in
+`lib/staff.js`. **The role still decides what the database allows** -- nothing enforces on a
+grant yet; switching the ~100 RLS rules and ~90 page checks over one area at a time (verified in
+`rls_test.sql`) is step 3, then the role check retires. The vocabulary is `lib/grants.js`. The
+high-water mark is `0100`. A camp-week registration is **not
 finished** until the family pays in full, sets up an automatic payment plan, or requests a
 scholarship (`registration_payment_routes` view; `/account/finish/[registrationId]`). The early-
 registration discount lives in its own column, `early_discount_cents`, written only by
