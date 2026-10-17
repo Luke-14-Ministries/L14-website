@@ -205,7 +205,9 @@ min/max, and `dobProblem()` in `lib/format.js` says it in words first -- a volun
 18 shows "Under 18 -- not screened" and is not counted as missing one; an address invited for two
 people is settled by name on import or listed for a human. **Background checks are annual**
 (`0095`, Larry and Ellen 15 Oct: annual Basic Plus) -- `clearance_interval_months()` is 12 and
-the importer agrees. The high-water mark is `0095`. **Rule of thumb for any access question
+the importer agrees. **16 October:** the 0080 paragraph below carries `0096` (due date, discounts
+and the deposit waiver as event settings); the build plan for the rest of the read-through is
+`01 Plans and Decisions\md files\Luke14-Build-Plan-2026-10-16.md`. **Rule of thumb for any access question
 (Lawrence, 15 Oct):** when it is not obvious what a role or person should have, default to
 read; write is granted on top, for a named person, and logged. **Background screening reads the
 household's email and phone where the person has none** — on 15 Oct none of the 15 volunteers
@@ -218,9 +220,16 @@ and `households.primary_contact_person_id`), PostgREST refused the embed with PG
 page swallowed the error. Name the key (`households!people_household_id_fkey`) on every
 people↔households embed, and never turn a query error into an empty list.
 
-**Built 30 September 2026 — migration `0080`, payment plans (read before touching money).** A
-camp week's balance is due two weeks before it starts (`balanceDueOn()` in `lib/events.js`
-and `balance_due_on()` in SQL: change both together). A camp-week registration is **not
+**Built 30 September 2026 — migration `0080`, payment plans (read before touching money).** ~~A
+camp week's balance is due two weeks before it starts~~ **Superseded 16 October (`0096`): the
+due date is `events.balance_due_on`, July 1 for the camp weeks, set on Setup; `balanceDueOn()`
+in `lib/events.js` and `balance_due_on()` in SQL both just read it, and every event read that
+feeds a due date must select the column.** The two discounts are event settings too
+(`family_discount_cents`, `family_discount_from_person`, `multi_week_discount_percent`), read
+by the same recalc functions; `recalc_event_discounts()` re-runs them after Setup saves. A
+registrar may **waive the deposit** (`waive_deposit()`: the mark on `registrations` plus a
+scholarship of the per-person deposit for each fee-paying person); `registration_review` then
+reads `deposit_paid` with the flag `deposit_waived`. The high-water mark is `0096`. A camp-week registration is **not
 finished** until the family pays in full, sets up an automatic payment plan, or requests a
 scholarship (`registration_payment_routes` view; `/account/finish/[registrationId]`). The early-
 registration discount lives in its own column, `early_discount_cents`, written only by

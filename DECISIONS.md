@@ -2193,6 +2193,22 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-16, evening — Due date, discounts and the deposit waiver become settings (0096)
+
+Build plan items 3, 4 and 5. **The balance is due July 1** for both camp weeks — Larry: "we
+publish July 1 as the due date", knowing the policy is not enforced — so the due date is now a
+date on the event, edited on Setup, and the fourteen-days-before rule from 30 September is gone
+from both the SQL and the JavaScript. Every sentence that said "two weeks before camp starts" now
+just gives the date. **The family discount and the both-weeks volunteer discount are event
+settings** read by the same recalc functions, because Larry's 2027 numbers are still being worked
+out and "probably bigger than $50" must not wait on a code change; saving them re-applies both to
+everyone already registered, which is what a rule recomputed from stored facts should do. **A
+registrar may waive the deposit** with one click: each fee-paying person is granted a scholarship
+of the per-person deposit (Larry's "we can grant you a $50 scholarship and that goes towards the
+deposit"), the registration records who and why, review treats it as deposit-received, and the
+approve guard steps aside. Awaiting review gains a *No deposit yet* filter so those families are
+worked as a group.
+
 ## 2026-10-16, afternoon — Lawrence's answers to the build plan's questions
 
 Program leaders see **flags only** ("less is more"; revisit if they need more) and become a **Staff
