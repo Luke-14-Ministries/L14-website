@@ -229,7 +229,17 @@ feeds a due date must select the column.** The two discounts are event settings 
 by the same recalc functions; `recalc_event_discounts()` re-runs them after Setup saves. A
 registrar may **waive the deposit** (`waive_deposit()`: the mark on `registrations` plus a
 scholarship of the per-person deposit for each fee-paying person); `registration_review` then
-reads `deposit_paid` with the flag `deposit_waived`. The high-water mark is `0096`. A camp-week registration is **not
+reads `deposit_paid` with the flag `deposit_waived`. **Later that night, `0097`:** a camper's
+**support and medical details are asked inside the registration wizard** (card 4) and are a
+condition of submitting -- `supportProblems()` in `lib/support.js` is the rule, applied in the
+browser and again in `submitFamilyRegistration`, which writes `person_support` off the
+read-back and stamps `details_saved_at`; the dashboard form stays for edits and the photo, and
+both render `components/SupportDetailsFields.jsx`. **Allergens are a tick list**
+(`person_support.allergens`, checked against the fixed vocabulary; `allergy_other`;
+`allergy_detail` now means "what happens"); `allergenWords()` / `allergySummary()` in
+`lib/support.js` are the one way they are printed, and a row saved before 0097 shows its free
+text as "Other: ..." until re-saved. `log_family_change()` was redefined for the two columns
+(the 0064 trap, not fallen into). The high-water mark is `0097`. A camp-week registration is **not
 finished** until the family pays in full, sets up an automatic payment plan, or requests a
 scholarship (`registration_payment_routes` view; `/account/finish/[registrationId]`). The early-
 registration discount lives in its own column, `early_discount_cents`, written only by

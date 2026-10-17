@@ -2193,6 +2193,30 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-16, night — Support details before submit; allergens as a list (0097)
+
+Build plan items 1 and 2. **A camper's support and medical details are collected in the
+registration wizard, before submit** (Larry and Ellen's ink, 15 Oct; Larry on the call:
+"that's correct"; Lawrence: "in the wizard — details are required before submit"). From 24
+August the wizard asked no medical questions and the details form on the dashboard was
+optional, which left staff planning support, meals and medical cover from forms that arrived
+the week of camp or never. Now card 4 asks per person; for a camper the marked boxes, the
+three safety yes/no questions and an emergency contact are required, with "N/A" accepted in
+any box and no "nothing to report" tick (Lawrence, 16 Oct: the point is that somebody looked).
+Volunteers and other adults keep the short version. The server applies the same rule, so a
+stale tab cannot skip it, and writes `person_support` after the people exist. The dashboard
+form stays for edits and for the photo, which is still urged rather than blocked. One
+component and one rules module serve both forms, so they cannot drift apart.
+
+**Allergens are a fixed tick list** (the call, 3:02 pm): eight major food allergens, sesame,
+latex, insect stings, medications, synthetic food dyes (Lawrence's question, kept), and
+"other" with a box. Stored as a list the database checks, so the kitchen list counts "peanut"
+once however families spell it, and the buddy sheet, the Dietary page, the person page and
+Recent Changes print the same words. One severity per person, as before. **Existing rows are
+not backfilled**: guessing codes out of free text would put words in a family's mouth on a
+list a kitchen cooks from, so the old text shows as "Other: ..." until the family saves again,
+and the form tells them why they are being asked to tick.
+
 ## 2026-10-16, evening — Due date, discounts and the deposit waiver become settings (0096)
 
 Build plan items 3, 4 and 5. **The balance is due July 1** for both camp weeks — Larry: "we

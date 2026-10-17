@@ -23,7 +23,7 @@
 //   onShowAll      called when that button is pressed
 //   idPrefix       keeps radio groups apart when several people share a page
 
-import { ALLERGENS } from '@/lib/support';
+import { ALLERGENS, hasFullerDetail } from '@/lib/support';
 import { formatPhone } from '@/lib/format';
 
 const input = 'w-full rounded border border-neutral-300 px-4 py-2.5';
@@ -111,9 +111,15 @@ export default function SupportDetailsFields({
     <span className="font-normal text-neutral-500">(required — &ldquo;N/A&rdquo; is an answer)</span>
   ) : null;
 
+  // The "About" questions (diagnosis, communication, getting around, personal
+  // care) are a camper's -- a volunteer who opens "tell us more" is not asked
+  // for a diagnosis (Testing Script 5, 9.3). Anyone who already has answers
+  // there keeps seeing them, whatever their role.
+  const aboutOpen = showAll && (isCamper || hasFullerDetail(f));
+
   return (
     <div>
-      {showAll && (
+      {aboutOpen && (
         <>
           <Heading>About {name}</Heading>
           <label className={label}>
@@ -404,8 +410,8 @@ export default function SupportDetailsFields({
         <div className="mt-5 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 text-center">
           <p className="text-sm text-neutral-700">
             We&rsquo;ve kept this short because {name} isn&rsquo;t registered as a camper. If
-            there is more we should know — medications, seizures, sleep away from home, who they
-            would like to room with — it all matters just as much.
+            there is more we should know — allergies and what they are, medications, seizures,
+            sleep away from home, who they would like to room with — it all matters just as much.
           </p>
           <button type="button" onClick={onShowAll} className="btn-outline !py-1.5 text-sm mt-3">
             Tell us more about {name}
