@@ -32,12 +32,14 @@ const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFract
 const when = (iso) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
-export default function ReviewCard({ registrationId, participants, review, awaiting }) {
+export default function ReviewCard({ registrationId, participants, review, awaiting, depositWaived = null, depositCents = 0 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState('');
+  const [waiving, setWaiving] = useState(false);
+  const [waiveReason, setWaiveReason] = useState('');
 
   const waiting = participants.filter((p) => p.status === 'submitted');
   const cls = review ? REVIEW_CLASS[review.review_class] : null;
@@ -63,6 +65,8 @@ export default function ReviewCard({ registrationId, participants, review, await
       }
       setAsking(false);
       setReason('');
+      setWaiving(false);
+      setWaiveReason('');
       router.refresh();
     });
   }
@@ -96,6 +100,57 @@ export default function ReviewCard({ registrationId, participants, review, await
         </ul>
       )}
 
+      {depositWaived && (
+        <p className="mb-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">
+          <span className="font-semibold">Deposit waived</span> on {when(depositWaived.at)}
+          {depositWaived.reason && <> — &ldquo;{depositWaived.reason}&rdquo;</>}. Each fee-paying person holds a
+          scholarship of at least the per-person deposit; the registration counts as deposit-received.
+        </p>
+      )}
+      {/* Waiving the deposit (Larry, 16 Oct 2026): the registrar grants the
+          per-person deposit as a scholarship and the registration counts as
+          deposit-received, so approval can go ahead. Offered only while the
+          deposit is actually the thing in the way. */}
+      {!depositWaived && cls && review?.review_class === 'neither' && depositCents > 0 && (
+        <div className="mb-4">
+          {!waiving ? (
+            <button type="button" disabled={pending} onClick={() => setWaiving(true)} className="btn-outline !py-1.5 text-sm">
+              Waive the deposit…
+            </button>
+          ) : (
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+              <p className="text-sm font-semibold mb-1">
+                Waive the {money(depositCents)}-per-person deposit for this family?
+              </p>
+              <p className="text-xs text-neutral-600 mb-2">
+                Each fee-paying person gets a scholarship of {money(depositCents)} (kept if they already
+                hold more), recorded with your name, and the registration counts as deposit-received.
+                The balance is otherwise unchanged.
+              </p>
+              <input
+                value={waiveReason}
+                onChange={(e) => setWaiveReason(e.target.value)}
+                maxLength={300}
+                placeholder="Reason (optional) — e.g. spoke with the family; paying at camp"
+                className="w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+              />
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => run('waive_deposit', { reason: waiveReason })}
+                  className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+                >
+                  {pending ? 'Saving…' : 'Waive the deposit'}
+                </button>
+                <button type="button" onClick={() => setWaiving(false)} className="text-sm underline">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {onFamily && (
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
           <p className="font-bold text-amber-900">Waiting on the family since {when(awaiting.since)}</p>

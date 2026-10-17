@@ -52,7 +52,11 @@ export async function updateEventRegistration(eventId, { published, opensAt, clo
 // per-person decision with a paper trail, and that is the adjustments editor.
 export async function updateEventDetails(
   eventId,
-  { startsOn, endsOn, capacity, feeDollars, earlyEndsOn, earlyDollars }
+  {
+    startsOn, endsOn, capacity, feeDollars, earlyEndsOn, earlyDollars,
+    // 0096: the due date and the two discounts, as settings.
+    balanceDueOn, familyDollars, familyFromPerson, multiWeekPercent,
+  }
 ) {
   const staff = await getStaff();
   if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
@@ -106,6 +110,32 @@ export async function updateEventDetails(
     return { ok: false, error: 'Early registration has to end before the event starts.' };
   }
 
+  // The money settings (0096). Blank due date = "staff will be in touch".
+  const dueOn = String(balanceDueOn ?? '').trim() || null;
+  if (dueOn && !/^\d{4}-\d{2}-\d{2}$/.test(dueOn)) {
+    return { ok: false, error: 'The balance-due date is not a date.' };
+  }
+  let familyCents = 0;
+  if (String(familyDollars ?? '').trim() !== '') {
+    const n = Number.parseFloat(String(familyDollars).replace(/[$,\s]/g, ''));
+    if (Number.isNaN(n) || n < 0) return { ok: false, error: 'The family discount is not an amount.' };
+    familyCents = Math.round(n * 100);
+  }
+  let fromPerson = 3;
+  if (String(familyFromPerson ?? '').trim() !== '') {
+    fromPerson = Number.parseInt(String(familyFromPerson).replace(/[^0-9]/g, ''), 10);
+    if (!Number.isInteger(fromPerson) || fromPerson < 2) {
+      return { ok: false, error: 'The family discount starts from the 2nd person at the earliest.' };
+    }
+  }
+  let pct = 0;
+  if (String(multiWeekPercent ?? '').trim() !== '') {
+    pct = Number.parseInt(String(multiWeekPercent).replace(/[^0-9]/g, ''), 10);
+    if (!Number.isInteger(pct) || pct < 0 || pct > 100) {
+      return { ok: false, error: 'The both-weeks discount is a percentage from 0 to 100.' };
+    }
+  }
+
   const { error } = await supabase
     .from('events')
     .update({
@@ -114,12 +144,26 @@ export async function updateEventDetails(
       capacity: cap,
       early_registration_ends_on: earlyEndsOn || null,
       early_registration_discount_cents: earlyCents,
+      balance_due_on: dueOn,
+      family_discount_cents: familyCents,
+      family_discount_from_person: fromPerson,
+      multi_week_discount_percent: pct,
       updated_at: new Date().toISOString(),
     })
     .eq('id', eventId);
   if (error) {
     console.error('updateEventDetails:', error.message);
     return { ok: false, error: 'Could not save the event. Please try again.' };
+  }
+  // A changed discount applies to everyone already registered -- it is a rule
+  // recomputed from stored facts (0070, 0081), not a price copied at sign-up.
+  // Never fatal: the settings have saved, and a stale discount is a visible
+  // number an administrator can re-run.
+  try {
+    const { error: recalcError } = await supabase.rpc('recalc_event_discounts', { p_event_id: eventId });
+    if (recalcError) console.error('recalc_event_discounts:', recalcError.message);
+  } catch (e) {
+    console.error('recalc_event_discounts:', e?.message);
   }
 
   if (String(feeDollars ?? '').trim() !== '') {

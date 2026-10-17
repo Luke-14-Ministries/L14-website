@@ -1625,6 +1625,8 @@ export default function RegistrationManager({
   familyRegistrations = [],
   review = null,
   awaiting = null,
+  depositWaived = null,
+  depositCents = 0,
   options,
   adjustmentRecords = [],
   scholarshipRequests = [],
@@ -1715,6 +1717,8 @@ export default function RegistrationManager({
           }))}
           review={review}
           awaiting={awaiting}
+          depositWaived={depositWaived}
+          depositCents={depositCents}
         />
       </div>
 

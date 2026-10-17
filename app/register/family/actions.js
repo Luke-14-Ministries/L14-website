@@ -203,7 +203,7 @@ export async function submitFamilyRegistration(payload) {
     const origin = host ? `${proto}://${host}` : '';
     const { data: ev } = await supabase
       .from('events')
-      .select('name, deposit_cents, event_type, starts_on')
+      .select('name, deposit_cents, event_type, starts_on, balance_due_on')
       .eq('id', eventId)
       .maybeSingle();
     const to = (family.email || '').trim() || user.email;
@@ -493,7 +493,7 @@ export async function submitFamilyRegistration(payload) {
           .maybeSingle(),
         supabase
           .from('events')
-          .select('deposit_cents, event_type, starts_on')
+          .select('deposit_cents, event_type, starts_on, balance_due_on')
           .eq('id', eventId)
           .maybeSingle(),
       ]);

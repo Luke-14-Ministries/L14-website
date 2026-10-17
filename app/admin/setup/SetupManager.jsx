@@ -60,6 +60,11 @@ function EventRow({ e }) {
   // Early registration (0080): last day + $ off per person. Blank = none.
   const [earlyEndsOn, setEarlyEndsOn] = useState(e.earlyEndsOn ?? '');
   const [early, setEarly] = useState(e.earlyCents ? (e.earlyCents / 100).toFixed(2) : '');
+  // The money settings (0096): due date, family discount, both-weeks percent.
+  const [balanceDueOn, setBalanceDueOn] = useState(e.balanceDueOn ?? '');
+  const [family, setFamily] = useState(e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '');
+  const [familyFrom, setFamilyFrom] = useState(String(e.familyFromPerson ?? 3));
+  const [multiWeek, setMultiWeek] = useState(String(e.multiWeekPercent ?? 0));
   const [detailBusy, setDetailBusy] = useState(false);
   const [detailNotice, setDetailNotice] = useState(null);
 
@@ -74,6 +79,10 @@ function EventRow({ e }) {
         feeDollars: fee,
         earlyEndsOn,
         earlyDollars: early,
+        balanceDueOn,
+        familyDollars: family,
+        familyFromPerson: familyFrom,
+        multiWeekPercent: multiWeek,
       });
       setDetailBusy(false);
       setDetailNotice(
@@ -278,6 +287,58 @@ function EventRow({ e }) {
             </p>
           </div>
 
+          {/* The money settings (0096, 16 Oct 2026). Larry: the balance is
+              due July 1 for both weeks, published not enforced; the family
+              discount is confirmed and "probably bigger than $50"; the
+              volunteer both-weeks discount is leaning 50%. Each is a number
+              here so the 2027 figures never wait on a code change. */}
+          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            <label className="text-sm">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Balance due</span>
+              <input
+                type="date"
+                value={balanceDueOn}
+                onChange={(ev) => setBalanceDueOn(ev.target.value)}
+                className="w-full rounded border border-neutral-300 px-2 py-1"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Family discount ($/person)</span>
+              <input
+                inputMode="decimal"
+                value={family}
+                onChange={(ev) => setFamily(ev.target.value)}
+                placeholder="none"
+                className="w-full rounded border border-neutral-300 px-2 py-1"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="block font-semibold text-neutral-700 mb-0.5">…from person number</span>
+              <input
+                inputMode="numeric"
+                value={familyFrom}
+                onChange={(ev) => setFamilyFrom(ev.target.value)}
+                className="w-full rounded border border-neutral-300 px-2 py-1"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Both-weeks volunteer discount (%)</span>
+              <input
+                inputMode="numeric"
+                value={multiWeek}
+                onChange={(ev) => setMultiWeek(ev.target.value)}
+                className="w-full rounded border border-neutral-300 px-2 py-1"
+              />
+            </label>
+            <p className="text-xs text-neutral-600 sm:col-span-4">
+              The due date is published to families (dashboard, statements, the confirmation
+              email); blank means &ldquo;staff will be in touch&rdquo;. The family discount comes off
+              the 3rd (or chosen) and every later fee-paying person on one registration; the
+              both-weeks discount comes off the later week for a volunteer doing both. Saving
+              re-applies both discounts to everyone already registered for this event.
+            </p>
+          </div>
+
           {/* Said plainly, because the alternative behaviour is the one people
               assume: changing a price here does NOT re-price anyone already
               registered. Their fee was copied onto their row when they signed
@@ -318,6 +379,10 @@ function EventRow({ e }) {
                 setCapacity(e.capacity == null ? '' : String(e.capacity));
                 setFee(e.feeCents == null ? '' : (e.feeCents / 100).toFixed(2));
                 setEarlyEndsOn(e.earlyEndsOn ?? '');
+                setBalanceDueOn(e.balanceDueOn ?? '');
+                setFamily(e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '');
+                setFamilyFrom(String(e.familyFromPerson ?? 3));
+                setMultiWeek(String(e.multiWeekPercent ?? 0));
                 setEarly(e.earlyCents ? (e.earlyCents / 100).toFixed(2) : '');
                 setDetailNotice(null);
               }}

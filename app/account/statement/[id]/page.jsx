@@ -59,7 +59,7 @@ export default async function MyStatementPage({ params }) {
       .select(
         `id,
          households ( display_name, email, phone, address_line1, address_line2, city, state, postal_code ),
-         events ( name, event_type, starts_on, ends_on ),
+         events ( name, event_type, starts_on, ends_on, balance_due_on ),
          registration_participants ( camp_role, status, fee_cents, scholarship_cents, discount_cents,
            people ( first_name, last_name ) )`
       )

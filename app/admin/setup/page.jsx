@@ -24,7 +24,7 @@ export default async function SetupPage() {
   const { data: events } = await supabase
     .from('events')
     .select(
-      'id, name, event_type, starts_on, ends_on, deposit_cents, location, published, registration_opens_at, registration_closes_at, capacity, early_registration_ends_on, early_registration_discount_cents, event_options ( id, fee_cents, published, participant_role )'
+      'id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, family_discount_cents, family_discount_from_person, multi_week_discount_percent, location, published, registration_opens_at, registration_closes_at, capacity, early_registration_ends_on, early_registration_discount_cents, event_options ( id, fee_cents, published, participant_role )'
     )
     .order('starts_on', { ascending: true });
 
@@ -47,6 +47,12 @@ export default async function SetupPage() {
     capacity: e.capacity,
     earlyEndsOn: e.early_registration_ends_on,
     earlyCents: e.early_registration_discount_cents ?? 0,
+    // The money settings (0096, 16 Oct 2026): a due date and two discounts an
+    // administrator edits here, so Larry's numbers never wait on code.
+    balanceDueOn: e.balance_due_on,
+    familyDiscountCents: e.family_discount_cents ?? 0,
+    familyFromPerson: e.family_discount_from_person ?? 3,
+    multiWeekPercent: e.multi_week_discount_percent ?? 0,
     // The enrollment option's fee (0069 published a second, zero-fee volunteer
     // option per event, and "the first published one" could return either).
     feeCents: enrollmentOption(e)?.fee_cents ?? null,

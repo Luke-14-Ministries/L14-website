@@ -24,6 +24,7 @@ export default async function RegistrationDetailPage({ params }) {
     .from('registrations')
     .select(
       `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
+       deposit_waived_at, deposit_waived_by, deposit_waived_reason,
        households ( id, display_name, email, phone,
                     address_line1, address_line2, city, state, postal_code,
                     home_church, how_did_you_hear, how_did_you_hear_from ),
@@ -334,6 +335,8 @@ export default async function RegistrationDetailPage({ params }) {
       familyRegistrations={familyRegistrations}
       review={reviewRow ?? null}
       awaiting={{ since: reg.awaiting_family_since ?? null, reason: reg.awaiting_family_reason ?? null }}
+      depositWaived={reg.deposit_waived_at ? { at: reg.deposit_waived_at, reason: reg.deposit_waived_reason ?? null } : null}
+      depositCents={reg.events?.deposit_cents ?? 0}
       options={options ?? []}
       adjustmentRecords={adjustmentRecords}
       familyMessages={familyMessages}

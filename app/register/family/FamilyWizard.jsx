@@ -563,8 +563,7 @@ export default function FamilyWizard({
               {result.balanceDue ? (
                 <>
                   The balance is due by{' '}
-                  <strong>{formatDueDate(result.balanceDue)}</strong>, two weeks before camp
-                  starts.
+                  <strong>{formatDueDate(result.balanceDue)}</strong>.
                 </>
               ) : (
                 'Camp staff will be in touch about the balance due date.'

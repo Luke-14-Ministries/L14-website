@@ -39,7 +39,7 @@ async function ownRegistration(supabase, userId, registrationId) {
   const { data } = await supabase
     .from('registrations')
     .select(
-      `id, events ( id, name, event_type, starts_on, deposit_cents ),
+      `id, events ( id, name, event_type, starts_on, deposit_cents, balance_due_on ),
        registration_participants ( id, person_id, status )`
     )
     .eq('id', registrationId)

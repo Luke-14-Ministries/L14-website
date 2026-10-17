@@ -153,7 +153,7 @@ export async function setParticipantStatus(
     const [{ data: reg }, { data: bal }] = await Promise.all([
       supabaseCheck
         .from('registrations')
-        .select('id, events ( deposit_cents ), registration_participants ( id, person_id, status )')
+        .select('id, deposit_waived_at, events ( deposit_cents ), registration_participants ( id, person_id, status )')
         .eq('id', registrationId)
         .maybeSingle(),
       supabaseCheck
@@ -170,7 +170,8 @@ export async function setParticipantStatus(
     });
     const paid = bal?.paid_cents ?? 0;
 
-    if (due > 0 && paid < due) {
+    // A waived deposit (0096) is not short: the registrar has already decided.
+    if (!reg?.deposit_waived_at && due > 0 && paid < due) {
       const fmt = (c) =>
         `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       return {
@@ -679,6 +680,20 @@ export async function reviewRegistration(registrationId, { action, reason = '', 
     if (error) return { ok: false, error: error.message };
     revalidateAll(registrationId);
     return { ok: true };
+  }
+
+  // Waive the deposit (0096): one definer function does the mark and the
+  // scholarships and recalculates, so the page can never half-do it.
+  if (action === 'waive_deposit') {
+    const { data: n, error } = await supabase.rpc('waive_deposit', {
+      p_registration_id: registrationId,
+      p_reason: typeof reason === 'string' ? reason.trim().slice(0, 300) : null,
+    });
+    if (error) return { ok: false, error: error.message };
+    revalidateAll(registrationId);
+    revalidatePath('/admin/payments');
+    revalidatePath('/admin/scholarships');
+    return { ok: true, count: n ?? 0 };
   }
 
   return { ok: false, error: 'Unknown review action.' };

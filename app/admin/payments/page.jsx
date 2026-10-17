@@ -51,7 +51,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       .select('registration_id, event_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents'),
     supabase
       .from('registrations')
-      .select('id, events ( id, name, event_type, starts_on, ends_on ), households ( display_name )'),
+      .select('id, events ( id, name, event_type, starts_on, ends_on, balance_due_on ), households ( display_name )'),
     supabase
       .from('payments')
       .select('registration_id, amount_cents, fee_cover_cents, method, status, received_on, created_at, note')

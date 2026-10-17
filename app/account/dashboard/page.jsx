@@ -193,7 +193,7 @@ export default async function DashboardPage({ searchParams }) {
         .from('registrations')
         .select(
           `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
-           events ( id, name, event_type, starts_on, ends_on, deposit_cents, campus_map_url ),
+           events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url ),
            registration_participants ( id, camp_role, status, fee_cents, checked_in_at,
              people ( id, first_name, last_name ) )`
         )
@@ -1233,8 +1233,7 @@ export default async function DashboardPage({ searchParams }) {
                               {balanceDueOn(r.events) ? (
                                 <>
                                   , and is due by{' '}
-                                  <strong>{formatDueDate(balanceDueOn(r.events))}</strong> — two
-                                  weeks before camp starts.
+                                  <strong>{formatDueDate(balanceDueOn(r.events))}</strong>.
                                 </>
                               ) : (
                                 '; camp staff will be in touch about the due date.'

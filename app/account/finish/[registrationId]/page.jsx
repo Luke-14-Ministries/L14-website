@@ -42,7 +42,7 @@ export default async function FinishPage({ params }) {
     .from('registrations')
     .select(
       `id, household_id, created_at,
-       events ( id, name, event_type, starts_on, ends_on, deposit_cents,
+       events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on,
                 early_registration_ends_on, early_registration_discount_cents ),
        registration_participants ( id, person_id, status, fee_cents, camp_role )`
     )
@@ -120,8 +120,7 @@ export default async function FinishPage({ params }) {
           {ev.name}. Pay in full, set up a payment plan, or request help with the fee.
           {due && (
             <>
-              {' '}The balance is due by <strong>{formatDueDate(due)}</strong>, two weeks before
-              camp starts.
+              {' '}The balance is due by <strong>{formatDueDate(due)}</strong>.
             </>
           )}
         </p>

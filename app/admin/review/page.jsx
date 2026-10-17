@@ -34,7 +34,11 @@ export default async function ReviewQueuePage({ searchParams }) {
   // ?show=all lists every live registration; ?show=family lists the ones
   // staff sent back for more information (0089). The default is what is
   // actually waiting on STAFF.
-  const show = params?.show === 'all' || params?.show === 'family' ? params.show : 'staff';
+  // ?show=nodeposit: the families still waiting on staff whose deposit is not
+  // in and who have not asked for a full scholarship -- Larry (16 Oct 2026):
+  // "grouped / filtered together", so a registrar can work that list and
+  // waive where there is a reason to.
+  const show = ['all', 'family', 'nodeposit'].includes(params?.show) ? params.show : 'staff';
   const showAll = show === 'all';
   const supabase = await createClient();
 
@@ -87,6 +91,9 @@ export default async function ReviewQueuePage({ searchParams }) {
       if (r.people.length === 0) return false;
       if (show === 'all') return true;
       if (show === 'family') return Boolean(r.awaitingSince);
+      if (show === 'nodeposit') {
+        return r.pending.length > 0 && !r.awaitingSince && (r.review?.review_class ?? 'neither') === 'neither';
+      }
       return r.pending.length > 0 && !r.awaitingSince;
     });
 
@@ -123,6 +130,14 @@ export default async function ReviewQueuePage({ searchParams }) {
             Waiting on staff
           </Link>
           <Link
+            href="/admin/review/?show=nodeposit"
+            className={`rounded-full px-3 py-1 font-semibold border ${
+              show === 'nodeposit' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
+            }`}
+          >
+            No deposit yet
+          </Link>
+          <Link
             href="/admin/review/?show=family"
             className={`rounded-full px-3 py-1 font-semibold border ${
               show === 'family' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
@@ -157,7 +172,11 @@ export default async function ReviewQueuePage({ searchParams }) {
 
       {groups.length === 0 && (
         <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          {show === 'family' ? 'Nothing is waiting on a family.' : 'Nothing waiting on staff.'}
+          {show === 'family'
+            ? 'Nothing is waiting on a family.'
+            : show === 'nodeposit'
+              ? 'Everyone waiting on staff has a deposit in, a scholarship requested, or the deposit waived.'
+              : 'Nothing waiting on staff.'}
         </p>
       )}
 
