@@ -2193,6 +2193,36 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-16, late — A hold, the refund rule, the named allergen list, buddies many-to-many (0098)
+
+Build plan items 6, 7, 9, 10 and 11, with a finding on 8. **A hold** (Larry and Ellen's ink;
+the call, 3:04–3:06 pm): when a family changes something after approval, staff want the
+registration back in front of a reviewer. "Waiting on the family" (0089) is the wrong state for
+that — it is the family's move — so a hold is its own: three columns a registrar sets, everyone
+confirmed or waitlisted goes back to *submitted* (the queue and the badge count them again),
+the reason is shown to the family in amber, and approving, waitlisting or lifting clears it.
+Offered where the reviewer is: on the Review card, and beside every row of Recent Changes with
+the reason prefilled from the change. No automatic email — by hand from Outlook, as agreed.
+**The refund rule on the form** (call, 3:36 pm): the per-person deposit is kept, the rest is
+refunded in full until 30 days before the event and half after. The form opens on that
+arithmetic, shown in full for this payment and today's date, and the registrar may type any
+other amount with a reason: a suggestion, never a lock, because the board decides exceptions and
+a form that cannot express the board's decision gets worked around. **Allergies by allergen,
+with names** (Ellen's ink): now that allergens are a list, a Sensitive-gated page groups people
+by allergen with their severity, anaphylaxis first, for the cook and the nurse; the no-names
+tally stays for the kitchen door. **Buddies are many-to-many** (call, 3:01 pm): the database
+always allowed it; the two "already has a buddy" confirms are gone, because the board shows
+every pairing and each volunteer's count, and the buddy sheet prints one page per pairing so a
+sheet can travel with the camper. **Lodging facts** (call, 2:52–2:54 pm): the nurse's room holds
+one family (capacity 2 plus young children, noted); the RV sites already carried their amperage.
+
+**Item 8, "a recant re-flags" — finding, not a fix.** The six family agreements are signed once
+per person with a date, and the site offers no way to un-tick one afterwards; a recant arrives by
+email. So there is nothing to test, and the mechanism for it is the hold above: a registrar puts
+the registration back in front of a reviewer with the reason. (The Creed on the volunteer
+application is different — it is asked on every edit and the Volunteers page flags an
+unaffirmed one, as 0062 built it.)
+
 ## 2026-10-16, night — Support details before submit; allergens as a list (0097)
 
 Build plan items 1 and 2. **A camper's support and medical details are collected in the

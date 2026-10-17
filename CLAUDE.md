@@ -239,7 +239,15 @@ both render `components/SupportDetailsFields.jsx`. **Allergens are a tick list**
 `allergy_detail` now means "what happens"); `allergenWords()` / `allergySummary()` in
 `lib/support.js` are the one way they are printed, and a row saved before 0097 shows its free
 text as "Other: ..." until re-saved. `log_family_change()` was redefined for the two columns
-(the 0064 trap, not fallen into). The high-water mark is `0097`. A camp-week registration is **not
+(the 0064 trap, not fallen into). **`0098`, the same night: a registration can be put ON
+HOLD** (`hold_since/hold_reason/hold_by`, registrar-guarded like 0089's pair): everyone
+confirmed or waitlisted goes back to `submitted`, `registration_review` carries the flag
+`on_hold`, the Review card and every row of Recent Changes offer it, and the family's
+dashboard shows the reason in amber. Approve, waitlist or "lift" clear it. The refund form
+opens on `refundSuggestion()` (`lib/payments.js`: deposit kept, full to 30 days before, half
+after) as a suggestion, never a lock. `/admin/dietary/by-allergen` is the named list (Sensitive);
+buddies are many-to-many with no confirms and one buddy sheet per pairing. The high-water mark
+is `0098`. A camp-week registration is **not
 finished** until the family pays in full, sets up an automatic payment plan, or requests a
 scholarship (`registration_payment_routes` view; `/account/finish/[registrationId]`). The early-
 registration discount lives in its own column, `early_discount_cents`, written only by
