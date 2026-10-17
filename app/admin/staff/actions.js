@@ -9,6 +9,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
+import { AREA_KEYS, PRESETS, cleanGrants, grantsForPreset } from '@/lib/grants';
 
 const ROLES = ['registrar', 'coordinator', 'admin'];
 
@@ -94,4 +95,90 @@ export async function removeStaffMember(profileId) {
   if (error) return { ok: false, error: error.message };
   revalidatePath('/admin/staff');
   return { ok: true };
+}
+
+// THE GRANTS MODEL (0100; Luke14-Access-Model-Plan). Set one person's grants
+// to exactly what was asked: areas that changed are upserted or removed, so
+// the access log (trigger) carries one row per real change and nothing for a
+// save that changed nothing. Admin-only; staff_grants_admin_write is the gate.
+export async function setStaffGrants(profileId, input) {
+  const staff = await getStaff();
+  if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
+  if (!profileId) return { ok: false, error: 'Missing person.' };
+  const wanted = cleanGrants(input);
+
+  const supabase = await createClient();
+  const { data: current, error: readError } = await supabase
+    .from('staff_grants')
+    .select('area, level')
+    .eq('profile_id', profileId);
+  if (readError) return { ok: false, error: readError.message };
+  const have = new Map((current ?? []).map((g) => [g.area, g.level]));
+
+  const upserts = [];
+  const removals = [];
+  for (const area of AREA_KEYS) {
+    const w = wanted[area] ?? null;
+    const h = have.get(area) ?? null;
+    if (w === h) continue;
+    if (w) {
+      upserts.push({
+        profile_id: profileId,
+        area,
+        level: w,
+        granted_by: staff.userId,
+        granted_at: new Date().toISOString(),
+      });
+    } else {
+      removals.push(area);
+    }
+  }
+  if (upserts.length) {
+    const { error } = await supabase.from('staff_grants').upsert(upserts, { onConflict: 'profile_id,area' });
+    if (error) return { ok: false, error: error.message };
+  }
+  if (removals.length) {
+    const { error } = await supabase.from('staff_grants').delete().eq('profile_id', profileId).in('area', removals);
+    if (error) return { ok: false, error: error.message };
+  }
+  revalidatePath('/admin/staff');
+  revalidatePath('/admin/staff/access-log');
+  return { ok: true, changed: upserts.length + removals.length };
+}
+
+// A preset in one click: the grants exactly (Giving left as it is), and --
+// until the rules switch over (plan step 3) -- the closest role and the
+// legacy Sensitive / Background-checks ticks, so the database agrees with
+// the ticks as nearly as it can today.
+export async function applyPreset(profileId, key) {
+  const staff = await getStaff();
+  if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
+  const p = PRESETS[key];
+  if (!p) return { ok: false, error: 'Unknown preset.' };
+  if (profileId === staff.userId && p.role !== 'admin') {
+    return { ok: false, error: 'You cannot take your own administrator role away. Ask another admin.' };
+  }
+
+  const supabase = await createClient();
+  const { data: current } = await supabase
+    .from('staff_grants')
+    .select('area, level')
+    .eq('profile_id', profileId);
+  const cur = {};
+  for (const g of current ?? []) cur[g.area] = g.level;
+
+  const res = await setStaffGrants(profileId, grantsForPreset(key, cur));
+  if (!res.ok) return res;
+
+  const { error } = await supabase
+    .from('staff')
+    .update({
+      role: p.role,
+      can_view_sensitive: Boolean(p.sensitive),
+      can_view_background_checks: Boolean(p.backgroundChecks),
+    })
+    .eq('profile_id', profileId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/admin/staff');
+  return { ok: true, label: p.label };
 }

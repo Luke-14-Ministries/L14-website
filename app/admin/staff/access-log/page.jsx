@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import BackLink from '@/components/BackLink';
+import { AREA_LABEL } from '@/lib/grants';
 
 export const metadata = { title: 'Access changes — Staff Admin' };
 
@@ -26,12 +27,19 @@ const FIELD_LABEL = {
 // A boolean flag reads as granted/removed, because that is what it means to a
 // person. A role reads as itself. Showing "false → true" would be accurate and
 // useless.
+// A grant (0100) reads as its two levels: none → read, read → write, write → none.
 function describe(field, from, to) {
+  if (field.startsWith('grant:')) return `${from ?? 'none'} → ${to ?? 'none'}`;
   if (field === 'role') return `${from ?? '—'} → ${to ?? '—'}`;
   if (to === 'true') return from === undefined || from === null ? 'granted' : 'granted';
   if (to === 'false') return 'removed';
   return `${from ?? '—'} → ${to ?? '—'}`;
 }
+
+const labelOf = (field) =>
+  field.startsWith('grant:')
+    ? `Grant — ${AREA_LABEL[field.slice(6)] ?? field.slice(6)}`
+    : FIELD_LABEL[field] ?? field;
 
 const name = (p) =>
   p ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Unnamed' : null;
@@ -116,7 +124,7 @@ export default async function AccessLogPage() {
                       {r.changed_at?.slice(0, 16).replace('T', ' ')}
                     </td>
                     <td className="px-3 py-2 font-semibold">{name(r.subject) ?? '—'}</td>
-                    <td className="px-3 py-2">{FIELD_LABEL[r.field] ?? r.field}</td>
+                    <td className="px-3 py-2">{labelOf(r.field)}</td>
                     <td className="px-3 py-2">
                       <span
                         className={

@@ -7,9 +7,11 @@
 // Deactivated section also offers Remove, which drops the staff row entirely
 // for helpers who have moved on (re-addable later; nothing else is touched).
 
-import { useState, useTransition } from 'react';
+import { Fragment, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateStaffMember, addStaffMember, removeStaffMember } from './actions';
+import { updateStaffMember, addStaffMember, removeStaffMember, setStaffGrants, applyPreset } from './actions';
+import { AREA_LABEL } from '@/lib/grants';
+import GrantsPanel from './GrantsPanel';
 
 const ROLE_LABEL = { registrar: 'Registrar', coordinator: 'Coordinator', admin: 'Administrator' };
 
@@ -41,7 +43,7 @@ function SortTh({ k, children, center, sortKey, sortDir, onSort }) {
   );
 }
 
-function Row({ m, selfId, busyId, onPatch, onRemove }) {
+function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
     const isSelf = m.profileId === selfId;
     const busy = busyId === m.profileId;
     return (
@@ -130,6 +132,31 @@ function Row({ m, selfId, busyId, onPatch, onRemove }) {
             className="h-4 w-4"
           />
         </td>
+        <td className="px-4 py-3 text-center">
+          {/* The grants model (0100): a summary, and the panel under the row. */}
+          {(() => {
+            const g = m.grants ?? {};
+            const w = Object.values(g).filter((v) => v === 'write').length;
+            const r = Object.values(g).filter((v) => v === 'read').length;
+            const open = openId === m.profileId;
+            return (
+              <button
+                type="button"
+                onClick={() => onToggleGrants(m.profileId)}
+                title={
+                  Object.entries(g)
+                    .map(([k, v]) => `${AREA_LABEL[k] ?? k}: ${v}`)
+                    .join('\n') || 'No grants recorded yet'
+                }
+                className={`rounded border px-2 py-1 text-xs font-semibold ${
+                  open ? 'border-brand bg-brand-light text-brand-dark' : 'border-neutral-300 text-neutral-700 hover:border-brand hover:text-brand'
+                }`}
+              >
+                {w} W · {r} R {open ? '▲' : '▾'}
+              </button>
+            );
+          })()}
+        </td>
         <td className="px-4 py-3 text-right">
           {m.active ? (
             <button
@@ -180,9 +207,22 @@ function Row({ m, selfId, busyId, onPatch, onRemove }) {
     );
 }
 
-function Table({ rows, sortKey, sortDir, onSort, selfId, busyId, onPatch, onRemove }) {
+function Table({
+  rows,
+  sortKey,
+  sortDir,
+  onSort,
+  selfId,
+  busyId,
+  onPatch,
+  onRemove,
+  openId,
+  onToggleGrants,
+  onApplyPreset,
+  onSaveGrants,
+}) {
   const sortProps = { sortKey, sortDir, onSort };
-  const rowProps = { selfId, busyId, onPatch, onRemove };
+  const rowProps = { selfId, busyId, onPatch, onRemove, openId, onToggleGrants };
   return (
     <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
       <table className="w-full text-left text-sm">
@@ -193,12 +233,31 @@ function Table({ rows, sortKey, sortDir, onSort, selfId, busyId, onPatch, onRemo
             <SortTh k="sensitive" center {...sortProps}>Sensitive</SortTh>
             <SortTh k="giving" center {...sortProps}>Giving</SortTh>
             <SortTh k="checks" center {...sortProps}>Background checks</SortTh>
+            <SortTh k="grants" center {...sortProps}>Grants</SortTh>
             <th className="px-4 py-2" />
           </tr>
         </thead>
         <tbody>
           {rows.map((m) => (
-            <Row key={m.profileId} m={m} {...rowProps} />
+            <Fragment key={m.profileId}>
+              <Row m={m} {...rowProps} />
+              {openId === m.profileId && (
+                <tr className="border-t border-neutral-100 bg-neutral-50/60">
+                  <td colSpan={7} className="px-4 py-3">
+                    {/* Keyed on the saved grants so the panel's draft resets
+                        after a save or a preset lands. */}
+                    <GrantsPanel
+                      key={JSON.stringify(m.grants ?? {})}
+                      member={m}
+                      busy={busyId === m.profileId}
+                      onApplyPreset={onApplyPreset}
+                      onSave={onSaveGrants}
+                      onClose={() => onToggleGrants(null)}
+                    />
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           ))}
         </tbody>
       </table>
@@ -241,6 +300,33 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
     start(async () => {
       const res = await updateStaffMember(profileId, changes);
       if (!res.ok) setError(res.error);
+      setBusyId(null);
+      router.refresh();
+    });
+  }
+
+  // The grants model (0100): which row's panel is open, and the two saves.
+  const [openId, setOpenId] = useState(null);
+  function saveGrants(profileId, grants) {
+    setError('');
+    setNotice('');
+    setBusyId(profileId);
+    start(async () => {
+      const res = await setStaffGrants(profileId, grants);
+      if (!res.ok) setError(res.error);
+      else setNotice(res.changed ? `Grants saved — ${res.changed} ${res.changed === 1 ? 'change' : 'changes'} logged.` : 'Nothing changed.');
+      setBusyId(null);
+      router.refresh();
+    });
+  }
+  function apply(profileId, key) {
+    setError('');
+    setNotice('');
+    setBusyId(profileId);
+    start(async () => {
+      const res = await applyPreset(profileId, key);
+      if (!res.ok) setError(res.error);
+      else setNotice(`${res.label} preset applied — grants, role and ticks set; see the access log.`);
       setBusyId(null);
       router.refresh();
     });
@@ -319,6 +405,8 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       sensitive: (a, b) => Number(b.sensitive) - Number(a.sensitive) || byName(a, b),
       giving: (a, b) => Number(b.giving) - Number(a.giving) || byName(a, b),
       checks: (a, b) => Number(b.backgroundChecks) - Number(a.backgroundChecks) || byName(a, b),
+      grants: (a, b) =>
+        Object.keys(b.grants ?? {}).length - Object.keys(a.grants ?? {}).length || byName(a, b),
     }[sortKey];
     return [...filtered].sort((a, b) => dir * cmp(a, b));
   }
@@ -344,6 +432,10 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
     busyId,
     onPatch: patch,
     onRemove: remove,
+    openId,
+    onToggleGrants: (id) => setOpenId((cur) => (id === null || cur === id ? null : id)),
+    onApplyPreset: apply,
+    onSaveGrants: saveGrants,
   };
 
   return (

@@ -39,6 +39,14 @@ export default async function StaffAccessPage() {
   // extra query because access follows the LOGIN, not the person: on 2 Sep 2026
   // a staff member appeared to have no admin access -- she had it, on a second
   // account, and nothing on this page said which address the row belonged to.
+  // The grants (0100): every staff member's areas, for the panel under each row.
+  const { data: grantRows } = await supabase.from('staff_grants').select('profile_id, area, level');
+  const grantsById = new Map();
+  for (const g of grantRows ?? []) {
+    if (!grantsById.has(g.profile_id)) grantsById.set(g.profile_id, {});
+    grantsById.get(g.profile_id)[g.area] = g.level;
+  }
+
   const { data: accounts } = await supabase.rpc('admin_list_accounts');
     const emailById = new Map((accounts ?? []).map((a) => [a.user_id, a.email]));
 
@@ -67,6 +75,7 @@ export default async function StaffAccessPage() {
     giving: r.can_view_giving === true,
     backgroundChecks: r.can_view_background_checks === true,
     active: r.active === true,
+    grants: grantsById.get(r.profile_id) ?? {},
   }));
 
   return (
@@ -160,6 +169,31 @@ export default async function StaffAccessPage() {
           grant either to themselves in one click when a task truly needs it; the point is
           that seeing this data is a deliberate choice, not something that comes along
           with other duties.
+        </p>
+      </details>
+
+      {/* The grants model (0100, 16 Oct 2026): step 1 and 2 of the plan are
+          live -- the ten areas are recorded and logged, presets set them.
+          Step 3 (the rules read the grants instead of the role) is next. */}
+      <details className="group mb-6 rounded-lg bg-white border border-brand/40 p-4 text-sm">
+        <summary className={SUMMARY}>
+          <span className="font-bold">Grants by area — the model that replaces roles (16 Oct 2026)</span>
+          <Chevron />
+        </summary>
+        <p className="text-neutral-600 mt-2">
+          Each person&rsquo;s <strong>Grants</strong> button opens ten areas — Registration info,
+          Payments &amp; scholarships, Giving, Background checks, Sensitive, Events &amp; camp
+          setup, Activities, Rooming, Buddies, Programs — each <em>read</em>, <em>write</em> or
+          nothing, with preset buttons (Administrator, Registration &amp; coordination, Finance,
+          Operations lead, Operations helper) that set them in one click. Giving is never set by a
+          preset. Every change is in the access log.
+        </p>
+        <p className="text-neutral-600 mt-2">
+          <strong>Where it stands:</strong> the grants are the plan of record, but the{' '}
+          <em>role</em> still decides what the database allows until the security rules are
+          switched over area by area (the plan&rsquo;s step 3). Applying a preset therefore also
+          sets the closest role and the Sensitive / Background-checks ticks. The plan is in
+          SharePoint: <em>Luke14-Access-Model-Plan</em>.
         </p>
       </details>
 
