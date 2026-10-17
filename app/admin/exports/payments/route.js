@@ -1,5 +1,15 @@
 // GET /admin/exports/payments — every event payment as a CSV download.
 // Registrar-gated; RLS is the backstop.
+//
+// ?format=quickbooks (build plan item 14; the call of 16 Oct 2026, 3:30 pm):
+// the same payments in the column order QuickBooks Online takes -- Date,
+// Name, Memo, Account, Amount -- one row per payment that actually moved
+// money (succeeded), a second row for a processing fee the payer covered
+// (booked with its transaction, as agreed), and negative rows for refunds.
+// Gross per payment, as the treasurer books it; Stripe's own fee is not in
+// this system and comes from Stripe's payout report. The account names are
+// placeholders until the treasurer confirms the chart of accounts -- they are
+// the one thing here that is a guess, and QuickBooks maps them on import.
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -18,9 +28,10 @@ export async function GET(request) {
   const url = new URL(request.url);
   const paystate = url.searchParams.get('paystate') || '';
   const eventFilter = url.searchParams.get('event') || '';
+  const quickbooks = url.searchParams.get('format') === 'quickbooks';
 
   const supabase = await createClient();
-  const [{ data: pays }, { data: regs }, { data: balances }] = await Promise.all([
+  const [{ data: pays }, { data: regs }, { data: balances }, { data: refunds }] = await Promise.all([
     supabase
       .from('payments')
       .select('registration_id, amount_cents, fee_cover_cents, method, status, received_on, created_at, note, payer_email, payer_name, stripe_payment_intent_id')
@@ -29,6 +40,11 @@ export async function GET(request) {
     supabase
       .from('registration_balances')
       .select('registration_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents'),
+    // Refunds, for the QuickBooks shape: money that went back out.
+    supabase
+      .from('payment_refunds')
+      .select('registration_id, amount_cents, fee_cover_cents, status, method, reason, note, refunded_on, created_at, stripe_refund_id')
+      .order('created_at'),
   ]);
   const regById = new Map((regs ?? []).map((r) => [r.id, r]));
 
@@ -76,6 +92,50 @@ export async function GET(request) {
     if (eventFilter) return ev.id === eventFilter;
     return end >= minus90 && start <= plus90;
   };
+
+  if (quickbooks) {
+    // MM/DD/YYYY, which QuickBooks Online reads without a format question.
+    const mdy = (iso) => {
+      const [y, m, d] = String(iso ?? '').slice(0, 10).split('-');
+      return y && m && d ? `${m}/${d}/${y}` : '';
+    };
+    const qb = [['Date', 'Name', 'Memo', 'Account', 'Amount']];
+    for (const p of pays ?? []) {
+      if (p.status !== 'succeeded') continue;
+      if (allowed && !allowed.has(p.registration_id)) continue;
+      const r = regById.get(p.registration_id);
+      if (!inScope(r?.events)) continue;
+      const date = mdy(p.received_on ?? p.created_at);
+      const name = r?.households?.display_name ?? '';
+      const ev = r?.events?.name ?? 'Event';
+      const memo = [ev, p.method, p.stripe_payment_intent_id, p.note].filter(Boolean).join(' — ');
+      qb.push([date, name, memo, 'Camp registration fees', ((p.amount_cents ?? 0) / 100).toFixed(2)]);
+      if ((p.fee_cover_cents ?? 0) > 0) {
+        qb.push([date, name, `${ev} — processing fee covered by the payer`, 'Processing fees covered', ((p.fee_cover_cents ?? 0) / 100).toFixed(2)]);
+      }
+    }
+    for (const f of refunds ?? []) {
+      if (f.status !== 'succeeded') continue;
+      if (allowed && !allowed.has(f.registration_id)) continue;
+      const r = regById.get(f.registration_id);
+      if (!inScope(r?.events)) continue;
+      const date = mdy(f.refunded_on ?? f.created_at);
+      const name = r?.households?.display_name ?? '';
+      const ev = r?.events?.name ?? 'Event';
+      const memo = ['Refund', ev, f.method, f.stripe_refund_id, f.reason, f.note].filter(Boolean).join(' — ');
+      qb.push([date, name, memo, 'Camp registration fees', (-(f.amount_cents ?? 0) / 100).toFixed(2)]);
+      if ((f.fee_cover_cents ?? 0) > 0) {
+        qb.push([date, name, `Refund — ${ev} — processing fee returned`, 'Processing fees covered', (-(f.fee_cover_cents ?? 0) / 100).toFixed(2)]);
+      }
+    }
+    const csvQb = '\ufeff' + qb.map((row) => row.map(esc).join(',')).join('\r\n');
+    return new Response(csvQb, {
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="luke14-event-payments-quickbooks-${new Date().toISOString().slice(0, 10)}.csv"`,
+      },
+    });
+  }
 
   for (const p of pays ?? []) {
     if (allowed && !allowed.has(p.registration_id)) continue;

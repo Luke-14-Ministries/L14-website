@@ -21,6 +21,10 @@ export async function GET(request) {
   const fTo = url.searchParams.get('to') || '';
   const fFund = url.searchParams.get('fund') || '';
   const fMethod = url.searchParams.get('method') || '';
+  // Build plan item 14: Date, Name, Memo, Account, Amount for QuickBooks
+  // Online; gifts that actually arrived (succeeded) only; the fund is the
+  // account, named as a placeholder until the treasurer confirms the chart.
+  const quickbooks = url.searchParams.get('format') === 'quickbooks';
 
   const supabase = await createClient();
   const { data: gifts } = await supabase
@@ -36,6 +40,31 @@ export async function GET(request) {
       (!fFund || g.fund === fFund) &&
       (!fMethod || g.method === fMethod)
   );
+
+  if (quickbooks) {
+    const mdy = (iso) => {
+      const [y, m, d] = String(iso ?? '').slice(0, 10).split('-');
+      return y && m && d ? `${m}/${d}/${y}` : '';
+    };
+    const qb = [['Date', 'Name', 'Memo', 'Account', 'Amount']];
+    for (const g of filtered) {
+      if (g.status !== 'succeeded') continue;
+      qb.push([
+        mdy(giftDate(g)),
+        g.donor_name ?? '',
+        [g.method, g.email, g.note].filter(Boolean).join(' — '),
+        `Donations — ${g.fund || 'General'}`,
+        ((g.amount_cents ?? 0) / 100).toFixed(2),
+      ]);
+    }
+    const csvQb = '\ufeff' + qb.map((r) => r.map(esc).join(',')).join('\r\n');
+    return new Response(csvQb, {
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="luke14-giving-quickbooks-${new Date().toISOString().slice(0, 10)}.csv"`,
+      },
+    });
+  }
 
   const rows = [['Date', 'Donor', 'Email', 'Amount', 'Fund', 'Method', 'Status', 'Note']];
   for (const g of filtered) {

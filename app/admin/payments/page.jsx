@@ -200,6 +200,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
     return s ? `?${s}` : '';
   };
   const csvHref = `/admin/exports/payments${qs()}`;
+  // QuickBooks Online shape (item 14): the same scope, money that moved.
+  const qbHref = `${csvHref}${qs() ? '&' : '?'}format=quickbooks`;
 
   return (
     <div>
@@ -215,6 +217,13 @@ export default async function AdminPaymentsPage({ searchParams }) {
           </a>
           <a href={csvHref} className="btn-outline !py-2 text-sm" title="One row per payment received">
             Payments CSV
+          </a>
+          <a
+            href={qbHref}
+            className="btn-outline !py-2 text-sm"
+            title="Date, Name, Memo, Account, Amount — succeeded payments and refunds in this scope, covered fees as their own line. Account names are placeholders until the treasurer confirms them."
+          >
+            QuickBooks CSV
           </a>
         </span>
       </div>

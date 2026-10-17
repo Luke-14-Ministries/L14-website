@@ -75,6 +75,8 @@ export default async function AdminGivingPage({ searchParams }) {
   if (fMethod) csvParams.set('method', fMethod);
   const csvQs = csvParams.toString();
   const csvHref = `/admin/exports/giving${csvQs ? `?${csvQs}` : ''}`;
+  // QuickBooks Online shape (item 14): succeeded gifts, the fund as the account.
+  const qbHref = `/admin/exports/giving?${csvQs ? `${csvQs}&` : ''}format=quickbooks`;
   const good = all.filter((g) => g.status === 'succeeded' || g.status === 'processing');
   const total = good.reduce((s, g) => s + (g.amount_cents ?? 0), 0);
   const byFund = new Map();
@@ -84,9 +86,18 @@ export default async function AdminGivingPage({ searchParams }) {
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <h2 className="text-xl font-bold">Giving</h2>
-        <a href={csvHref} className="btn-outline !py-2 text-sm">
-          Download CSV
-        </a>
+        <span className="flex flex-wrap gap-2">
+          <a href={csvHref} className="btn-outline !py-2 text-sm">
+            Download CSV
+          </a>
+          <a
+            href={qbHref}
+            className="btn-outline !py-2 text-sm"
+            title="Date, Name, Memo, Account, Amount — gifts that arrived, in this filter. Account names are placeholders until the treasurer confirms them."
+          >
+            QuickBooks CSV
+          </a>
+        </span>
       </div>
       <p className="text-sm text-neutral-500 mb-6">
         Donations — tax-deductible, and kept fully separate from camp payments (which are not).

@@ -43,9 +43,18 @@ export default async function NewsletterPage() {
     <div>
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">Newsletter</h2>
-        <a href="/admin/newsletter/export" className="btn-outline !py-2 text-sm">
-          Download CSV
-        </a>
+        <span className="flex flex-wrap gap-2">
+          <a href="/admin/newsletter/export" className="btn-outline !py-2 text-sm">
+            Download CSV
+          </a>
+          <a
+            href="/admin/newsletter/export?format=mailchimp"
+            className="btn-outline !py-2 text-sm"
+            title="Email Address, First Name, Last Name, Tags — Mailchimp's import layout, tagged 'website'"
+          >
+            Mailchimp import CSV
+          </a>
+        </span>
       </div>
       <p className="mb-5 text-sm text-neutral-500">
         Everyone with an account who has <em>Ministry news &amp; updates</em> switched on. Families
