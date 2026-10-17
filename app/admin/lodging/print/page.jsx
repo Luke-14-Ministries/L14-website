@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { eventWindow } from '@/lib/events';
+import { isCurrentEventRow } from '@/lib/events';
 import PrintButton from '@/components/PrintButton';
 
 export const metadata = { title: 'Room List — Staff Admin' };
@@ -95,15 +95,12 @@ export default async function RoomListPrintPage({ searchParams }) {
 
   const { data: events } = await supabase
     .from('events')
-    .select('id, name, starts_on, ends_on')
+    .select('id, name, starts_on, ends_on, archived_at')
     .order('starts_on');
 
   // Without ?event=, open on the same event the board opens on -- the first
   // current-or-upcoming one -- so a bare link never prints last year's camp.
-  const { cutoff, horizon } = eventWindow();
-  const fallback = (events ?? []).find(
-    (e) => (e.ends_on ?? '9999') >= cutoff && (e.starts_on ?? '0000') <= horizon
-  );
+  const fallback = (events ?? []).find(isCurrentEventRow);
   const selected =
     (typeof params?.event === 'string' && params.event) || fallback?.id || null;
   const event = (events ?? []).find((e) => e.id === selected) ?? null;

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { eventWindow } from '@/lib/events';
+import { isCurrentEventRow } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import { allergyPill } from '@/lib/format';
 import { allergySummary } from '@/lib/support';
@@ -20,7 +20,7 @@ export default async function DietaryPage({ searchParams }) {
 
   const supabase = await createClient();
   const [{ data: events }, { data: regs }] = await Promise.all([
-    supabase.from('events').select('id, name, starts_on, ends_on').order('starts_on'),
+    supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on'),
     supabase
       .from('registrations')
       .select(
@@ -70,9 +70,7 @@ export default async function DietaryPage({ searchParams }) {
   const q = typeof params?.q === 'string' ? params.q.trim().toLowerCase() : '';
   // Same window as the pill row (the same function), so the event this page
   // OPENS on is always one that has a pill.
-  const { cutoff, horizon: horizonISO } = eventWindow();
-  const isCurrent = (ev) =>
-    (ev.ends_on ?? ev.starts_on ?? '') >= cutoff && (ev.starts_on ?? '0000') <= horizonISO;
+  const isCurrent = isCurrentEventRow;
   const visibleEvents = (events ?? []).filter((ev) => {
     if (eventFilter) return ev.id === eventFilter;
     return showPast || isCurrent(ev);
@@ -131,7 +129,7 @@ export default async function DietaryPage({ searchParams }) {
           id: e.id,
           name: e.name,
           startsOn: e.starts_on,
-          endsOn: e.ends_on,
+          endsOn: e.ends_on, archivedAt: e.archived_at
         }))}
         selected={eventFilter || null}
         basePath="/admin/dietary"

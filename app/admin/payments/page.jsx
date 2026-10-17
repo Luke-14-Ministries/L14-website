@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { dateISO, balanceDueOn, formatDueDateShort, todayInMorristown } from '@/lib/events';
+import EventFilter from '@/components/EventFilter';
 import RecordPaymentForm from './RecordPaymentForm';
 import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 
@@ -51,7 +52,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       .select('registration_id, event_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents'),
     supabase
       .from('registrations')
-      .select('id, events ( id, name, event_type, starts_on, ends_on, balance_due_on ), households ( display_name )'),
+      .select('id, events ( id, name, event_type, starts_on, ends_on, archived_at, balance_due_on ), households ( display_name )'),
     supabase
       .from('payments')
       .select('registration_id, amount_cents, fee_cover_cents, method, status, received_on, created_at, note')
@@ -222,33 +223,24 @@ export default async function AdminPaymentsPage({ searchParams }) {
         and cash are entered below. Donations live on the separate Giving page.
       </p>
 
-      {/* One-tap event pills (requested 24 Aug, matching Check-In) for the
-          handful of events staff work day to day; the dropdown below remains
-          the route to time scopes and full history. Both drive the same
-          ?event= parameter. */}
-      <div className="mb-3 flex flex-wrap gap-2">
-        <a
-          href="/admin/payments"
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-            !eventFilter ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-          }`}
-        >
-          Current events
-        </a>
-        {eventOptions.slice(0, 6).map((ev) => (
-          <a
-            key={ev.id}
-            href={`/admin/payments?event=${ev.id}`}
-            className={`rounded-full px-3 py-1 text-sm font-semibold ${
-              eventFilter === ev.id
-                ? 'bg-brand text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-            }`}
-          >
-            {ev.name}
-          </a>
-        ))}
-      </div>
+      {/* The one event filter every staff page uses (16 Oct 2026): pills for
+          current events, a search box for the rest. The scope dropdown below
+          keeps the time scopes (90 days each way, full history); both drive
+          the same ?event= parameter. */}
+      <EventFilter
+        events={eventOptions.map((ev) => ({
+          id: ev.id,
+          name: ev.name,
+          startsOn: ev.starts_on,
+          endsOn: ev.ends_on,
+          archivedAt: ev.archived_at,
+        }))}
+        selected={eventFilter || null}
+        basePath="/admin/payments"
+        extraParams={{ paystate }}
+        allowAll
+        allLabel="Upcoming & recent"
+      />
 
       {/* Event scope: governs the cards, fee covers, the balances table,
           and both CSV downloads. Default keeps this a quick view of what's

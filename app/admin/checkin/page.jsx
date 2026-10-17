@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { eventWindow, staffAssigns } from '@/lib/events';
+import { staffAssigns, isCurrentEventRow } from '@/lib/events';
 import CheckinList from './CheckinList';
 import MedicalContact from './MedicalContact';
 
@@ -39,19 +39,16 @@ export default async function CheckinPage({ searchParams }) {
   const supabase = await createClient();
   const { data: events } = await supabase
     .from('events')
-    .select('id, name, event_type, starts_on, ends_on, medical_contact_name, medical_contact_phone')
+    .select('id, name, event_type, starts_on, ends_on, archived_at, medical_contact_name, medical_contact_phone')
     .order('starts_on');
-  // Check-In deliberately keeps a pill row rather than the searchable picker:
-  // it is used standing at a door on a phone, and typing is the wrong
-  // interaction there. But it had no date bounds at all, so every event the
-  // ministry has ever run was a pill. Same two edges as everywhere else
-  // (25 Aug): a 30-day grace behind, twelve months ahead.
-  const { cutoff, horizon: horizonISO } = eventWindow();
-  const eventsList = (events ?? []).filter(
-    (e) =>
-      (e.ends_on ?? e.starts_on ?? '9999') >= cutoff &&
-      (e.starts_on ?? e.ends_on ?? '0000') <= horizonISO
-  );
+  // DELIBERATE DEVIATION from the shared EventFilter (kept 16 Oct 2026, when
+  // every other staff page moved to it): Check-In is used standing at a door
+  // on a phone, so its pills carry the dates ("Week 1" and "Week 2" look the
+  // same without them) and there is no search box -- nobody checks anyone in
+  // to last year's camp. WHICH events are current is the same rule as
+  // everywhere else (isCurrentEventRow: two weeks' grace, a year ahead,
+  // never an archived one), so the pill rows can never disagree.
+  const eventsList = (events ?? []).filter(isCurrentEventRow);
   const eventId =
     typeof params?.event === 'string' && eventsList.some((e) => e.id === params.event)
       ? params.event

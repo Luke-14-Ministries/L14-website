@@ -34,7 +34,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
          registration_participants ( id, camp_role, status,
            people ( id, first_name, last_name, date_of_birth, gender, email, phone ) )`
       ),
-    supabase.from('events').select('id, name, starts_on, ends_on').order('starts_on', { ascending: false }),
+    supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on', { ascending: false }),
   ]);
 
   // Flatten to volunteer participants only.
@@ -202,7 +202,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <EventFilter
-          events={(events ?? []).map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on }))}
+          events={(events ?? []).map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }))}
           selected={eventFilter || null}
           basePath="/admin/volunteers"
           allowAll

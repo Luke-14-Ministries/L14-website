@@ -24,7 +24,7 @@ export default async function SetupPage() {
   const { data: events } = await supabase
     .from('events')
     .select(
-      'id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, family_discount_cents, family_discount_from_person, multi_week_discount_percent, location, published, registration_opens_at, registration_closes_at, capacity, early_registration_ends_on, early_registration_discount_cents, event_options ( id, fee_cents, published, participant_role )'
+      'id, name, event_type, starts_on, ends_on, archived_at, deposit_cents, balance_due_on, family_discount_cents, family_discount_from_person, multi_week_discount_percent, location, published, registration_opens_at, registration_closes_at, capacity, early_registration_ends_on, early_registration_discount_cents, event_options ( id, fee_cents, published, participant_role )'
     )
     .order('starts_on', { ascending: true });
 
@@ -42,6 +42,8 @@ export default async function SetupPage() {
     startsOn: e.starts_on,
     endsOn: e.ends_on,
     published: e.published === true,
+    // 0099: archived on Setup -- out of every current pill row, never open.
+    archivedAt: e.archived_at ?? null,
     opensAt: e.registration_opens_at,
     closesAt: e.registration_closes_at,
     capacity: e.capacity,

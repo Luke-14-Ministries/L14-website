@@ -24,8 +24,9 @@ import { eventWindow } from '@/lib/events';
 
 // "Current" has two edges, not one.
 //
-// BEHIND: a 30-day grace, the same one every staff page already used — a week
-// that finished last Tuesday is still live work.
+// BEHIND: two weeks' grace (16 Oct 2026; it was 30 days) — a week that
+// finished last Tuesday is still live work, one that finished last month is
+// the archive.
 //
 // AHEAD: twelve months (agreed 25 Aug). Without it, an event booked three
 // years out sits in the pill row from the day it is created, and a row meant
@@ -38,6 +39,8 @@ const cutoffISO = () => eventWindow().cutoff;
 const horizonISO = () => eventWindow().horizon;
 
 export function isCurrentEvent(e, cutoff = cutoffISO(), horizon = horizonISO()) {
+  // Archived on Setup (0099): never a pill, always in the search box.
+  if (e.archivedAt) return false;
   const ends = e.endsOn ?? e.startsOn ?? '9999';
   const starts = e.startsOn ?? e.endsOn ?? '0000';
   return ends >= cutoff && starts <= horizon;

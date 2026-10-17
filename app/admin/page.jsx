@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { isCurrentEventRow } from '@/lib/events';
+import EventJump from './EventJump';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -38,7 +40,9 @@ function Stat({ label, sub, value, tone, href }) {
   );
 }
 
-export default async function AdminOverview() {
+export default async function AdminOverview({ searchParams }) {
+  const params = await searchParams;
+  const showPast = params?.past === '1';
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/');
 
@@ -46,7 +50,7 @@ export default async function AdminOverview() {
 
   // As staff, row-level security returns the whole ministry, not one household.
   const [{ data: regs }, { data: parts }] = await Promise.all([
-    supabase.from('registrations').select('id, households ( display_name ), events ( name )'),
+    supabase.from('registrations').select('id, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'),
     supabase
       .from('registration_participants')
       .select('status, registration_id, people ( first_name, last_name )'),
@@ -56,11 +60,14 @@ export default async function AdminOverview() {
   const participants = parts ?? [];
 
   const regById = new Map();
+  // The event behind each name, for the current/past split and the jump pills.
+  const eventMeta = new Map();
   for (const r of registrations) {
     regById.set(r.id, {
       household: r.households?.display_name ?? 'Household',
       event: r.events?.name ?? 'Unassigned',
     });
+    if (r.events?.id) eventMeta.set(r.events.name, r.events);
   }
 
   // Per-event rollup: families, people coming (not cancelled/draft),
@@ -201,9 +208,36 @@ export default async function AdminOverview() {
             View full rosters
           </Link>
         </div>
-        {byEvent.size === 0 ? (
-          <p className="text-neutral-500">No sign-ups yet.</p>
-        ) : (
+        {/* Every CURRENT event at once (16 Oct 2026): the table is the point
+            of this page, so the shared filter's pills JUMP to a row rather
+            than hide the others. Past events are one link away. */}
+        {(() => {
+          const rowsAll = [...byEvent.entries()];
+          const isCur = (name) => {
+            const m = eventMeta.get(name);
+            return m ? isCurrentEventRow(m) : false;
+          };
+          const shownRows = showPast ? rowsAll : rowsAll.filter(([name]) => isCur(name));
+          const pastCount = rowsAll.length - rowsAll.filter(([name]) => isCur(name)).length;
+          const pills = shownRows
+            .map(([name]) => eventMeta.get(name))
+            .filter(Boolean)
+            .map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }));
+          return (
+            <>
+              {pills.length > 1 && <EventJump events={pills} />}
+              {byEvent.size === 0 ? (
+                <p className="text-neutral-500">No sign-ups yet.</p>
+              ) : shownRows.length === 0 ? (
+                <p className="text-neutral-500">
+                  No current events have sign-ups.{' '}
+                  {pastCount > 0 && (
+                    <Link href="/admin?past=1" className="text-brand underline">
+                      Show past events ({pastCount})
+                    </Link>
+                  )}
+                </p>
+              ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-neutral-500">
@@ -217,8 +251,8 @@ export default async function AdminOverview() {
                 </tr>
               </thead>
               <tbody>
-                {[...byEvent.entries()].map(([ev, r]) => (
-                  <tr key={ev} className="border-t border-neutral-100">
+                {shownRows.map(([ev, r]) => (
+                  <tr key={ev} id={eventMeta.get(ev)?.id ? `event-${eventMeta.get(ev).id}` : undefined} className="border-t border-neutral-100 target:bg-brand-light">
                     <td className="py-2 pr-4 font-medium">{ev}</td>
                     <td className="py-2 pr-4 text-right">{r.families.size}</td>
                     <td className="py-2 pr-4 text-right">{r.people}</td>
@@ -231,8 +265,25 @@ export default async function AdminOverview() {
                 ))}
               </tbody>
             </table>
+            {pastCount > 0 && !showPast && (
+              <p className="mt-2 text-xs text-neutral-500">
+                <Link href="/admin?past=1" className="underline">
+                  Show past events ({pastCount})
+                </Link>
+              </p>
+            )}
+            {showPast && (
+              <p className="mt-2 text-xs text-neutral-500">
+                <Link href="/admin" className="underline">
+                  Back to current events
+                </Link>
+              </p>
+            )}
           </div>
-        )}
+              )}
+            </>
+          );
+        })()}
         {(cancelled > 0 || draft > 0) && (
           <p className="mt-3 text-xs text-neutral-400">
             Not counted above:

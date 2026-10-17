@@ -26,7 +26,7 @@ export default async function RostersPage() {
     await Promise.all([
     supabase
       .from('events')
-      .select('id, name, starts_on, ends_on, deposit_cents')
+      .select('id, name, starts_on, ends_on, archived_at, deposit_cents')
       .order('starts_on'),
     supabase
       .from('registrations')
@@ -132,7 +132,7 @@ export default async function RostersPage() {
           id: e.id,
           name: e.name,
           startsOn: e.starts_on,
-          endsOn: e.ends_on,
+          endsOn: e.ends_on, archivedAt: e.archived_at
         }))}
         programs={(programs ?? []).map((g) => ({ id: g.id, name: g.name }))}
         rows={rows}

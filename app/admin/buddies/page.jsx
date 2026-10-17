@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { eventWindow, staffAssigns } from '@/lib/events';
+import { staffAssigns, isCurrentEventRow } from '@/lib/events';
 import { isMinor } from '@/lib/format';
 import BuddyBoard from './BuddyBoard';
 import EventFilter from '@/components/EventFilter';
@@ -28,7 +28,7 @@ export default async function BuddiesPage({ searchParams }) {
 
   const { data: allEvents } = await supabase
     .from('events')
-    .select('id, name, event_type, starts_on, ends_on, buddy_assignments_published_at')
+    .select('id, name, event_type, starts_on, ends_on, archived_at, buddy_assignments_published_at')
     .order('starts_on');
   // Retreats are sorted on arrival, not assigned here (2 Oct 2026; see
   // staffAssigns in lib/events.js).
@@ -38,10 +38,7 @@ export default async function BuddiesPage({ searchParams }) {
   // everything else by search, so no page-level "show past" toggle any more.
   // Same window as the pill row -- the same function -- so the event this page
   // OPENS on is always one that has a pill.
-  const { cutoff, horizon: horizonISO } = eventWindow();
-  const visible = (events ?? []).filter(
-    (e) => (e.ends_on ?? '9999') >= cutoff && (e.starts_on ?? '0000') <= horizonISO
-  );
+  const visible = (events ?? []).filter(isCurrentEventRow);
   // A retreat's id in the URL falls back to the first camp event rather than
   // drawing a board for something that is sorted on arrival.
   const selectedId =
@@ -182,7 +179,7 @@ export default async function BuddiesPage({ searchParams }) {
           id: e.id,
           name: e.name,
           startsOn: e.starts_on,
-          endsOn: e.ends_on,
+          endsOn: e.ends_on, archivedAt: e.archived_at
         }))}
         selected={selectedId}
         basePath="/admin/buddies"

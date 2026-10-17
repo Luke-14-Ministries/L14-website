@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { eventWindow, staffAssigns } from '@/lib/events';
+import { isCurrentEventRow, staffAssigns } from '@/lib/events';
+import EventFilter from '@/components/EventFilter';
 
 export const metadata = { title: 'Medical & Support — Staff Admin' };
 
@@ -20,7 +21,7 @@ export default async function MedicalPage({ searchParams }) {
   const [{ data: events }, { data: regs }] = await Promise.all([
     supabase
       .from('events')
-      .select('id, name, event_type, starts_on, ends_on, medical_contact_name, medical_contact_phone')
+      .select('id, name, event_type, starts_on, ends_on, archived_at, medical_contact_name, medical_contact_phone')
       .order('starts_on'),
     supabase
       .from('registrations')
@@ -67,22 +68,16 @@ export default async function MedicalPage({ searchParams }) {
   }
 
 
-  // ---- D4 (24 Aug): the page defaults to CURRENT AND UPCOMING events. Past
-  // events stay one click away rather than accumulating on screen year after
-  // year -- this is the portal-wide archiving convention: nothing is archived
-  // in the database, display just defaults to what staff are working on.
-  // A 30-day grace keeps a just-finished event visible while follow-up work
-  // is still live.
+  // The page defaults to every CURRENT event at once (a nurse plans a week,
+  // not a day); one event by its pill, and anything past by the shared
+  // filter's search box (16 Oct 2026 -- this page had its own pill row and a
+  // "show past" toggle before). Same rule as every other staff page.
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
-  const showPast = params?.past === '1';
   const q = typeof params?.q === 'string' ? params.q.trim().toLowerCase() : '';
-  const { cutoff } = eventWindow();
-  const isCurrent = (ev) => (ev.ends_on ?? ev.starts_on ?? '') >= cutoff;
   const visibleEvents = (events ?? []).filter((ev) => {
     if (eventFilter) return ev.id === eventFilter;
-    return showPast || isCurrent(ev);
+    return isCurrentEventRow(ev);
   });
-  const pastCount = (events ?? []).filter((ev) => !isCurrent(ev)).length;
   const matchesQ = (row) =>
     !q || row.name.toLowerCase().includes(q) || (row.household ?? '').toLowerCase().includes(q);
 
@@ -106,42 +101,23 @@ export default async function MedicalPage({ searchParams }) {
       </p>
 
 
-      {/* Event pills + search (24 Aug). The pills mirror Check-In; search
-          matches person or household name. */}
-      <div className="mb-3 flex flex-wrap gap-2">
-        <a
-          href="/admin/medical"
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-            !eventFilter && !showPast ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-          }`}
-        >
-          Current events
-        </a>
-        {(events ?? []).filter(isCurrent).map((ev) => (
-          <a
-            key={ev.id}
-            href={`/admin/medical?event=${ev.id}`}
-            className={`rounded-full px-3 py-1 text-sm font-semibold ${
-              eventFilter === ev.id ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-            }`}
-          >
-            {ev.name}
-          </a>
-        ))}
-        {pastCount > 0 && (
-          <a
-            href="/admin/medical?past=1"
-            className={`rounded-full px-3 py-1 text-sm font-semibold ${
-              showPast ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
-            }`}
-          >
-            Show past events ({pastCount})
-          </a>
-        )}
-      </div>
+      {/* The one event filter every staff page uses (16 Oct 2026). "All
+          current events" because the nurse plans a week, not a day. */}
+      <EventFilter
+        events={(events ?? []).map((e) => ({
+          id: e.id,
+          name: e.name,
+          startsOn: e.starts_on,
+          endsOn: e.ends_on,
+          archivedAt: e.archived_at,
+        }))}
+        selected={eventFilter || null}
+        basePath="/admin/medical"
+        extraParams={{ q }}
+        allowAll
+      />
       <form method="get" action="/admin/medical" className="mb-6 flex flex-wrap items-center gap-2">
         {eventFilter && <input type="hidden" name="event" value={eventFilter} />}
-        {showPast && <input type="hidden" name="past" value="1" />}
         <input
           type="search"
           name="q"

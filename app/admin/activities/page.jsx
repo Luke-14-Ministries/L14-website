@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { eventWindow } from '@/lib/events';
+import { isCurrentEventRow } from '@/lib/events';
 import { ActivityEditor, AddActivity, ActivityCard, SlotEditor, slotLabel } from './ActivityEditor';
 import EventFilter from '@/components/EventFilter';
 
@@ -29,7 +29,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
 
   const { data: events } = await supabase
     .from('events')
-    .select('id, name, starts_on, ends_on')
+    .select('id, name, starts_on, ends_on, archived_at')
     .order('starts_on');
 
   // Same archiving convention as the rest of the staff portal: current and
@@ -38,10 +38,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
   // rest, including reaching past events by search. Same window as the pill
   // row -- literally the same function -- so the event this page OPENS on is
   // always one that has a pill.
-  const { cutoff, horizon: horizonISO } = eventWindow();
-  const visibleEvents = (events ?? []).filter(
-    (e) => (e.ends_on ?? '9999') >= cutoff && (e.starts_on ?? '0000') <= horizonISO
-  );
+  const visibleEvents = (events ?? []).filter(isCurrentEventRow);
   const selected = params?.event || visibleEvents[0]?.id || null;
 
   const { data: activities } = selected
@@ -166,7 +163,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
           id: e.id,
           name: e.name,
           startsOn: e.starts_on,
-          endsOn: e.ends_on,
+          endsOn: e.ends_on, archivedAt: e.archived_at
         }))}
         selected={selected}
         basePath="/admin/activities"

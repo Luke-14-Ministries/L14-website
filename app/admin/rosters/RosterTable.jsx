@@ -173,6 +173,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
             name: e.name,
             startsOn: e.startsOn ?? e.starts_on ?? '',
             endsOn: e.endsOn ?? e.ends_on ?? '',
+            archivedAt: e.archivedAt ?? e.archived_at ?? null,
           }))}
           selected={fEvent || null}
           mode="search"

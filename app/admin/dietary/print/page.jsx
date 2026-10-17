@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { allergenWords } from '@/lib/support';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { eventWindow } from '@/lib/events';
+import { isCurrentEventRow } from '@/lib/events';
 import PrintButton from '@/components/PrintButton';
 
 export const metadata = { title: 'Kitchen List — Staff Admin' };
@@ -19,7 +19,7 @@ export default async function KitchenListPage({ searchParams }) {
 
   const supabase = await createClient();
   const [{ data: events }, { data: regs }] = await Promise.all([
-    supabase.from('events').select('id, name, starts_on, ends_on').order('starts_on'),
+    supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on'),
     supabase
       .from('registrations')
       .select(
@@ -62,12 +62,11 @@ export default async function KitchenListPage({ searchParams }) {
     }
   };
 
-  // The same window the Dietary page uses, so "Current events" means the same
-  // thing on the screen and on the printout: ended less than ~30 days ago.
+  // The same rule the Dietary page uses, so "Current events" means the same
+  // thing on the screen and on the printout.
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
   const showPast = params?.past === '1';
-  const { cutoff } = eventWindow();
-  const isCurrent = (ev) => (ev.ends_on ?? ev.starts_on ?? '') >= cutoff;
+  const isCurrent = isCurrentEventRow;
   const shownEvents = (events ?? []).filter((ev) => {
     if (eventFilter) return ev.id === eventFilter;
     return showPast || isCurrent(ev);

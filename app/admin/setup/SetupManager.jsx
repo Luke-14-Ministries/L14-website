@@ -29,6 +29,7 @@ const localToIso = (v) => (v ? new Date(v).toISOString() : null);
 
 function statusOf(row) {
   const now = new Date();
+  if (row.archived) return ['Archived — out of every current list', 'bg-neutral-200 text-neutral-600'];
   if (!row.published) return ['Hidden', 'bg-neutral-200 text-neutral-600'];
   if (!row.hasPublishedOption)
     return ['No published price — cannot open', 'bg-red-100 text-red-800'];
@@ -43,6 +44,7 @@ function EventRow({ e }) {
   const router = useRouter();
   const [, start] = useTransition();
   const [published, setPublished] = useState(e.published);
+  const [archived, setArchived] = useState(Boolean(e.archivedAt));
   const [opens, setOpens] = useState(isoToLocal(e.opensAt));
   const [closes, setCloses] = useState(isoToLocal(e.closesAt));
   const [busy, setBusy] = useState(false);
@@ -96,12 +98,14 @@ function EventRow({ e }) {
 
   const dirty =
     published !== e.published ||
+    archived !== Boolean(e.archivedAt) ||
     opens !== isoToLocal(e.opensAt) ||
     closes !== isoToLocal(e.closesAt);
 
   const [statusLabel, statusClass] = statusOf({
     ...e,
     published,
+    archived,
     opensAt: localToIso(opens),
     closesAt: localToIso(closes),
   });
@@ -112,6 +116,7 @@ function EventRow({ e }) {
     start(async () => {
       const res = await updateEventRegistration(e.id, {
         published,
+        archived,
         opensAt: localToIso(opens),
         closesAt: localToIso(closes),
       });
@@ -154,6 +159,20 @@ function EventRow({ e }) {
             className="h-4 w-4"
           />
           Visible on the site
+        </label>
+        {/* 0099 (16 Oct 2026). "Current" is a rule -- until two weeks after
+            the event ends -- and this is the one human override: a cancelled
+            week or a duplicate drops out of every staff page's pill row now,
+            and registration can never be open for it. It stays in history
+            and in every "Other events" search box. */}
+        <label className="inline-flex items-center gap-2 text-sm font-semibold" title="Out of every current list now; still in history and search. Registration can never be open for an archived event.">
+          <input
+            type="checkbox"
+            checked={archived}
+            onChange={(ev) => setArchived(ev.target.checked)}
+            className="h-4 w-4"
+          />
+          Archived
         </label>
         <label className="text-sm">
           <span className="block text-neutral-500 mb-0.5">Registration opens</span>

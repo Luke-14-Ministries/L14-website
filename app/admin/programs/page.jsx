@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { eventWindow, staffAssigns } from '@/lib/events';
+import { staffAssigns, isCurrentEventRow } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import ProgramBoard from './ProgramBoard';
 
@@ -24,7 +24,7 @@ export default async function ProgramsPage({ searchParams }) {
   const supabase = await createClient();
 
   const [{ data: allEvents }, { data: programs }] = await Promise.all([
-    supabase.from('events').select('id, name, event_type, starts_on, ends_on').order('starts_on'),
+    supabase.from('events').select('id, name, event_type, starts_on, ends_on, archived_at').order('starts_on'),
     supabase
       .from('programs')
       .select('id, name, description, sort_order, active')
@@ -38,10 +38,7 @@ export default async function ProgramsPage({ searchParams }) {
 
   // Same current-and-upcoming rule as the other event pages, so every staff
   // page opens on the same event.
-  const { cutoff, horizon: horizonISO } = eventWindow();
-  const visible = (events ?? []).filter(
-    (e) => (e.ends_on ?? '9999') >= cutoff && (e.starts_on ?? '0000') <= horizonISO
-  );
+  const visible = (events ?? []).filter(isCurrentEventRow);
   // A retreat's id in the URL falls back to the first camp event rather than
   // drawing a board for something that is sorted on arrival.
   const selectedId =
@@ -123,7 +120,7 @@ export default async function ProgramsPage({ searchParams }) {
           id: e.id,
           name: e.name,
           startsOn: e.starts_on,
-          endsOn: e.ends_on,
+          endsOn: e.ends_on, archivedAt: e.archived_at
         }))}
         selected={selectedId}
         basePath="/admin/programs"

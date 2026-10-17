@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { eventWindow } from '@/lib/events';
+import { isCurrentEventRow } from '@/lib/events';
 import { allergenWords } from '@/lib/support';
 import PrintButton from '@/components/PrintButton';
 
@@ -40,7 +40,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
 
   const supabase = await createClient();
   const [{ data: events }, { data: regs, error }] = await Promise.all([
-    supabase.from('events').select('id, name, starts_on, ends_on').order('starts_on'),
+    supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on'),
     supabase
       .from('registrations')
       .select(
@@ -55,9 +55,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
 
   // The same window the Dietary page uses, so "current" means the same thing.
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
-  const { cutoff, horizon } = eventWindow();
-  const isCurrent = (ev) =>
-    (ev.ends_on ?? ev.starts_on ?? '') >= cutoff && (ev.starts_on ?? '0000') <= horizon;
+  const isCurrent = isCurrentEventRow;
   const shownEvents = (events ?? []).filter((ev) => (eventFilter ? ev.id === eventFilter : isCurrent(ev)));
   const shownIds = new Set(shownEvents.map((e) => e.id));
 

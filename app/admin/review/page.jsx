@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import EventFilter from '@/components/EventFilter';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -40,6 +41,8 @@ export default async function ReviewQueuePage({ searchParams }) {
   // waive where there is a reason to.
   const show = ['all', 'family', 'nodeposit'].includes(params?.show) ? params.show : 'staff';
   const showAll = show === 'all';
+  // One event, or every current one (the shared filter, 16 Oct 2026).
+  const eventFilter = typeof params?.event === 'string' ? params.event : '';
   const supabase = await createClient();
 
   const [{ data: regs }, { data: parts }, { data: reviews }, { data: balances }] =
@@ -47,7 +50,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       supabase
         .from('registrations')
         .select(
-          'id, created_at, awaiting_family_since, awaiting_family_reason, households ( display_name ), events ( id, name, starts_on )'
+          'id, created_at, awaiting_family_since, awaiting_family_reason, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'
         ),
       supabase
         .from('registration_participants')
@@ -89,6 +92,7 @@ export default async function ReviewQueuePage({ searchParams }) {
     })
     .filter((r) => {
       if (r.people.length === 0) return false;
+      if (eventFilter && r.event?.id !== eventFilter) return false;
       if (show === 'all') return true;
       if (show === 'family') return Boolean(r.awaitingSince);
       if (show === 'nodeposit') {
@@ -96,6 +100,13 @@ export default async function ReviewQueuePage({ searchParams }) {
       }
       return r.pending.length > 0 && !r.awaitingSince;
     });
+
+  // The events on the queue, for the filter's pills.
+  const eventsForFilter = [
+    ...new Map((regs ?? []).filter((r) => r.events?.id).map((r) => [r.events.id, r.events])).values(),
+  ]
+    .sort((a, b) => String(a.starts_on ?? '').localeCompare(String(b.starts_on ?? '')))
+    .map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }));
 
   // Group by event, soonest first; registrations oldest first inside, so the
   // family that has waited longest is at the top.
@@ -122,7 +133,7 @@ export default async function ReviewQueuePage({ searchParams }) {
         <h2 className="text-xl font-bold">Awaiting review</h2>
         <div className="flex gap-2 text-sm">
           <Link
-            href="/admin/review/"
+            href={`/admin/review/${eventFilter ? `?event=${eventFilter}` : ''}`}
             className={`rounded-full px-3 py-1 font-semibold border ${
               !showAll ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
             }`}
@@ -130,7 +141,7 @@ export default async function ReviewQueuePage({ searchParams }) {
             Waiting on staff
           </Link>
           <Link
-            href="/admin/review/?show=nodeposit"
+            href={`/admin/review/?show=nodeposit${eventFilter ? `&event=${eventFilter}` : ''}`}
             className={`rounded-full px-3 py-1 font-semibold border ${
               show === 'nodeposit' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
             }`}
@@ -138,7 +149,7 @@ export default async function ReviewQueuePage({ searchParams }) {
             No deposit yet
           </Link>
           <Link
-            href="/admin/review/?show=family"
+            href={`/admin/review/?show=family${eventFilter ? `&event=${eventFilter}` : ''}`}
             className={`rounded-full px-3 py-1 font-semibold border ${
               show === 'family' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
             }`}
@@ -146,7 +157,7 @@ export default async function ReviewQueuePage({ searchParams }) {
             Waiting on the family{onFamily > 0 && ` (${onFamily})`}
           </Link>
           <Link
-            href="/admin/review/?show=all"
+            href={`/admin/review/?show=all${eventFilter ? `&event=${eventFilter}` : ''}`}
             className={`rounded-full px-3 py-1 font-semibold border ${
               showAll ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
             }`}
@@ -169,6 +180,14 @@ export default async function ReviewQueuePage({ searchParams }) {
         )}
         .
       </p>
+
+      <EventFilter
+        events={eventsForFilter}
+        selected={eventFilter || null}
+        basePath="/admin/review"
+        extraParams={{ show: show === 'staff' ? '' : show }}
+        allowAll
+      />
 
       {groups.length === 0 && (
         <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">

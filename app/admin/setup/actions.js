@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 
-export async function updateEventRegistration(eventId, { published, opensAt, closesAt }) {
+export async function updateEventRegistration(eventId, { published, archived = null, opensAt, closesAt }) {
   const staff = await getStaff();
   if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
   if (!eventId) return { ok: false, error: 'Missing event.' };
@@ -17,13 +17,20 @@ export async function updateEventRegistration(eventId, { published, opensAt, clo
   }
 
   const supabase = await createClient();
+  const patch = {
+    published: Boolean(published),
+    registration_opens_at: opensAt || null,
+    registration_closes_at: closesAt || null,
+  };
+  // The archive mark (0099). The date it was first set is kept: re-saving an
+  // archived event does not move it.
+  if (archived !== null) {
+    const { data: cur } = await supabase.from('events').select('archived_at').eq('id', eventId).maybeSingle();
+    patch.archived_at = archived ? cur?.archived_at ?? new Date().toISOString() : null;
+  }
   const { error } = await supabase
     .from('events')
-    .update({
-      published: Boolean(published),
-      registration_opens_at: opensAt || null,
-      registration_closes_at: closesAt || null,
-    })
+    .update(patch)
     .eq('id', eventId);
 
   if (error) {
@@ -35,6 +42,7 @@ export async function updateEventRegistration(eventId, { published, opensAt, clo
   revalidatePath('/admin/setup');
   revalidatePath('/register');
   revalidatePath('/register/family');
+  revalidatePath('/admin');
   return { ok: true };
 }
 
