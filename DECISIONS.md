@@ -2193,6 +2193,21 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-16, late — QuickBooks CSVs; a Mailchimp import CSV
+
+Build plan items 14 and 15 (the call, 3:30–3:33 pm). **QuickBooks**: Event Payments and Giving
+each gain a second download in the column order QuickBooks Online takes — Date, Name, Memo,
+Account, Amount — in whatever scope the page is showing. Only money that moved: succeeded
+payments, succeeded refunds as negative rows, gifts that arrived. A processing fee the payer
+covered is its own row with its transaction, which is how Larry and David book it (fee covers,
+§1.4). Gross per payment; Stripe's own fee is not in this system and comes from Stripe's payout
+report. **The account names are placeholders** ("Camp registration fees", "Processing fees
+covered", "Donations — <fund>") until the treasurer confirms the chart of accounts; QuickBooks
+maps them on import, so a wrong guess costs a dropdown, not a re-export. A second format follows
+if the first does not import cleanly. **Mailchimp**: the Newsletter page's list is also offered
+in Mailchimp's import layout (Email Address, First Name, Last Name, Tags = *website*), so Ellen
+can sync the audience by upload until the Mailchimp-or-Resend question is settled.
+
 ## 2026-10-16, late — One event filter everywhere; "current" is two weeks; an archive mark (0099)
 
 Build plan item 12 (the ink; the call, 3:11–3:13 pm; Lawrence, 16 Oct: review every staff page
