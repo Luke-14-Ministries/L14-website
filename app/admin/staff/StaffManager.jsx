@@ -94,43 +94,18 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
             ))}
           </div>
         </td>
-        <td className="px-4 py-3 text-center">
-          <input
-            type="checkbox"
-            checked={m.sensitive}
-            disabled={busy}
-            onChange={(e) => onPatch(m.profileId, { can_view_sensitive: e.target.checked })}
-            className="h-4 w-4"
-          />
-        </td>
-        <td className="px-4 py-3 text-center">
-          {/* Editable for every role, admins included (migration 0025): like
-              Sensitive, Giving is an explicit grant -- protection for the
-              room, not a barrier against the person. */}
-          <input
-            type="checkbox"
-            checked={m.giving}
-            disabled={busy}
-            onChange={(e) => onPatch(m.profileId, { can_view_giving: e.target.checked })}
-            className="h-4 w-4"
-          />
-        </td>
-        <td className="px-4 py-3 text-center">
-          {/* Background checks -- a third explicit grant (migration 0058).
-              Separate from Sensitive because knowing somebody was screened, and
-              what came back, is a different kind of knowledge from knowing their
-              medical needs, and the people who need each are not the same set.
-              Every change here is written to staff_access_log with who did it,
-              including when that is the same person. */}
-          <input
-            type="checkbox"
-            checked={m.backgroundChecks}
-            disabled={busy}
-            onChange={(e) =>
-              onPatch(m.profileId, { can_view_background_checks: e.target.checked })
-            }
-            className="h-4 w-4"
-          />
+        {/* The three tick boxes (Sensitive, Giving, Background checks) that sat
+            here until 17 Oct 2026 are three of the ten areas now, under Grants:
+            since 0101 the database reads staff_grants and not the old columns,
+            so a tick here would have done nothing. */}
+        <td className="px-4 py-3 text-center text-xs text-neutral-600">
+          {[
+            m.grants?.sensitive ? `Sensitive ${m.grants.sensitive === 'write' ? 'W' : 'R'}` : null,
+            m.grants?.giving ? `Giving ${m.grants.giving === 'write' ? 'W' : 'R'}` : null,
+            m.grants?.background_checks === 'write' ? 'Background checks W' : null,
+          ]
+            .filter(Boolean)
+            .join(' · ') || '—'}
         </td>
         <td className="px-4 py-3 text-center">
           {/* The grants model (0100): a summary, and the panel under the row. */}
@@ -229,10 +204,8 @@ function Table({
         <thead className="bg-neutral-50 text-neutral-500">
                     <tr>
             <SortTh k="name" {...sortProps}>Person</SortTh>
-            <SortTh k="role" {...sortProps}>Role</SortTh>
-            <SortTh k="sensitive" center {...sortProps}>Sensitive</SortTh>
-            <SortTh k="giving" center {...sortProps}>Giving</SortTh>
-            <SortTh k="checks" center {...sortProps}>Background checks</SortTh>
+            <SortTh k="role" {...sortProps}>Role (label)</SortTh>
+            <SortTh k="sensitive" center {...sortProps}>Need-to-know</SortTh>
             <SortTh k="grants" center {...sortProps}>Grants</SortTh>
             <th className="px-4 py-2" />
           </tr>
@@ -243,7 +216,7 @@ function Table({
               <Row m={m} {...rowProps} />
               {openId === m.profileId && (
                 <tr className="border-t border-neutral-100 bg-neutral-50/60">
-                  <td colSpan={7} className="px-4 py-3">
+                  <td colSpan={5} className="px-4 py-3">
                     {/* Keyed on the saved grants so the panel's draft resets
                         after a save or a preset lands. */}
                     <GrantsPanel
@@ -402,9 +375,8 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       name: byName,
       email: (a, b) => (a.email ?? '').localeCompare(b.email ?? ''),
       role: (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role) || byName(a, b),
-      sensitive: (a, b) => Number(b.sensitive) - Number(a.sensitive) || byName(a, b),
-      giving: (a, b) => Number(b.giving) - Number(a.giving) || byName(a, b),
-      checks: (a, b) => Number(b.backgroundChecks) - Number(a.backgroundChecks) || byName(a, b),
+      sensitive: (a, b) =>
+        Number(Boolean(b.grants?.sensitive)) - Number(Boolean(a.grants?.sensitive)) || byName(a, b),
       grants: (a, b) =>
         Object.keys(b.grants ?? {}).length - Object.keys(a.grants ?? {}).length || byName(a, b),
     }[sortKey];

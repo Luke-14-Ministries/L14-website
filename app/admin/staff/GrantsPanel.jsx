@@ -3,9 +3,9 @@
 // One staff member's grants: the ten areas, each none / read / write, and
 // the preset buttons that set them in one click (Luke14-Access-Model-Plan;
 // build plan item 16, step 2). Opens under the person's row on Staff &
-// Access. Until the rules switch over (step 3) the ROLE still decides what
-// the database allows, so a preset sets the closest role and the legacy
-// ticks too, and the note below says so.
+// Access. Since 0101 these ticks are what the database enforces; the role
+// radio beside them is a label, except that 'Administrator' is what lets a
+// person grant anything.
 
 import { useState } from 'react';
 import { AREAS, PRESETS, PRESET_LEAVES, grantsForPreset, matchingPreset } from '@/lib/grants';
@@ -62,7 +62,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
             onClick={() => {
               if (
                 window.confirm(
-                  `Apply the ${p.label} preset to ${member.name}?\n\n${p.note}\n\nThis sets every area to the preset (Giving is left as it is), and sets the role to ${p.role} with the matching Sensitive and Background-checks ticks, because the role still decides what the database allows until the rules switch over.`
+                  `Apply the ${p.label} preset to ${member.name}?\n\n${p.note}\n\nThis sets every area to the preset (Giving is left as it is) and the role label to ${p.role}.`
                 )
               ) {
                 onApplyPreset(member.profileId, key);
@@ -137,8 +137,8 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
           </button>
         )}
         <span className="text-xs text-neutral-500">
-          Until the rules switch over (plan step 3), the role on the left still decides what the
-          database allows; these ticks are the plan of record and are logged now.
+          These ticks are what the database enforces. The role on the left is a label, except
+          that <em>Administrator</em> is what lets a person grant anything.
         </span>
       </div>
     </div>

@@ -108,6 +108,18 @@ begin
     (uC, 'coordinator', false),
     (uF, 'registrar',   true);
 
+  -- Since 0101 the policies read staff_grants, not the role. These are the
+  -- rows 0100's backfill writes for each role (it ran before this seed), so
+  -- the personas mean what their names say.
+  insert into public.staff_grants (profile_id, area, level) values
+    (uR, 'registration', 'write'), (uR, 'payments', 'write'), (uR, 'background_checks', 'read'),
+    (uR, 'activities', 'read'), (uR, 'rooming', 'read'), (uR, 'buddies', 'read'), (uR, 'programs', 'read'),
+    (uC, 'registration', 'read'), (uC, 'background_checks', 'read'),
+    (uC, 'activities', 'write'), (uC, 'rooming', 'write'), (uC, 'buddies', 'write'), (uC, 'programs', 'write'),
+    (uF, 'registration', 'write'), (uF, 'payments', 'write'), (uF, 'background_checks', 'read'),
+    (uF, 'activities', 'read'), (uF, 'rooming', 'read'), (uF, 'buddies', 'read'), (uF, 'programs', 'read'),
+    (uF, 'sensitive', 'write');
+
   insert into public.households (id, display_name) values
     (gen_random_uuid(), 'Family A') returning id into hA;
   insert into public.households (id, display_name) values
