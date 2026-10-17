@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { allergySummary } from '@/lib/support';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
@@ -68,7 +69,7 @@ export default async function BuddyPrintPage({ searchParams }) {
             `id, camp_role, status, program_id,
              people ( id, first_name, last_name, preferred_name, date_of_birth,
                person_support ( communication, mobility, personal_care, behaviour_triggers,
-                 redirection_strategies, has_allergies, allergy_detail, allergy_severity,
+                 redirection_strategies, has_allergies, allergens, allergy_other, allergy_detail, allergy_severity,
                  has_seizures, seizure_detail, has_rescue_medication, rescue_medication_detail ) ),
              registrations!inner ( event_id, households ( display_name, phone ) )`
           )
@@ -190,7 +191,7 @@ export default async function BuddyPrintPage({ searchParams }) {
                   {sp?.has_allergies && (
                     <span className="rounded border border-red-700 px-2 py-0.5 font-semibold text-red-800">
                       ALLERGY{sp.allergy_severity ? ` — ${SEVERITY[sp.allergy_severity] ?? sp.allergy_severity}` : ' — severity not recorded'}
-                      {sp.allergy_detail ? `: ${sp.allergy_detail}` : ''}
+                      {allergySummary(sp) ? `: ${allergySummary(sp)}` : ''}
                     </span>
                   )}
                   {sp?.has_seizures && (

@@ -11,11 +11,15 @@
 //     "what will this cost / am I done" is always on screen
 //   - validation reported against named sections instead of step numbers
 //
-// The DEEP support profile (medications, allergies, seizure and behaviour
-// detail, emergency contact) is deliberately NOT here -- it lives in a
-// per-person form the family completes after registering
-// (/account/details/[personId]). Registration should take a few minutes and
-// secure a place; the medical detail can follow before camp.
+// The support profile (medications, allergies, seizure and behaviour detail,
+// emergency contact) is asked HERE, per person, in card 4 -- since 16 October
+// 2026 (Larry and Ellen's inked read-through, confirmed on the call). A camper
+// cannot be submitted without it; everyone else gets the short version. From
+// 24 Aug to 16 Oct it lived only in the per-person form on the dashboard
+// (/account/details/[personId]), which stays for edits and for the photo.
+// The questions themselves are components/SupportDetailsFields.jsx and the
+// rule for what a camper must answer is supportProblems() in lib/support.js,
+// both shared with that form.
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -29,6 +33,8 @@ import {
 } from '@/lib/format';
 import { submitFamilyRegistration } from './actions';
 import { formatDueDate, agreementText, formatDueDateShort } from '@/lib/events';
+import SupportDetailsFields from '@/components/SupportDetailsFields';
+import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 
 const emptyMember = {
   personId: null,
@@ -60,6 +66,10 @@ const emptyMember = {
   // the previous answer is shown so the change is a decision, not a slip.
   mediaWasNo: false,
   directoryWasNo: false,
+  // The support profile (card 4). Travels with the person, so removing or
+  // re-ordering rows never detaches it. Prefilled from person_support by the
+  // page for anyone already saved in the household.
+  support: emptySupport(null),
 };
 
 // Shown once, when a family turns a permission OFF. Written to persuade
@@ -299,6 +309,15 @@ export default function FamilyWizard({
   const total = (week?.feeCents ?? 0) * namedCount;
 
   const setF = (k) => (e) => setFamily({ ...family, [k]: e.target.value });
+  // One person's support profile. Functional update, because the fields
+  // component calls this many times between renders (a blur that tidies a
+  // phone number right after the keystroke that typed it).
+  const setSupport = (i) => (updater) =>
+    setMembers((prev) =>
+      prev.map((m, j) =>
+        j === i ? { ...m, support: updater(m.support ?? emptySupport(null)) } : m
+      )
+    );
   const setM = (i, k) => (e) => {
     const next = members.map((m, j) => (j === i ? { ...m, [k]: e.target.value } : m));
     setMembers(next);
@@ -404,6 +423,19 @@ export default function FamilyWizard({
       const names = missingRole.map((m) => `${m.firstName} ${m.lastName}`.trim()).join(', ');
       setError(`Please choose a role for: ${names} — in “Who's coming” above.`);
       return;
+    }
+    // HARD requirement (16 Oct 2026): a camper's support and medical details,
+    // and the detail behind any "yes" for everyone. Same rule as the
+    // dashboard form; the server applies it again.
+    for (const m of named) {
+      const camper = m.role === 'Camper with disability';
+      const problems = supportProblems(m.support ?? {}, { isCamper: camper });
+      if (problems.length > 0) {
+        setError(
+          `Support details for ${m.firstName.trim()}: ${problems.join('; ')} — in “Support and medical details” above.`
+        );
+        return;
+      }
     }
     // Soft requirement: date of birth. It is one of the ways family members
     // are told apart, so warn (but do not block) when it is missing.
@@ -536,6 +568,11 @@ export default function FamilyWizard({
             hid the deposit panel). "Update" and "already paid" are different
             facts, and only the second means the ask is finished. The server
             returns depositDue with the save; undefined errs toward asking. */}
+        {result.supportError && (
+          <p className="mt-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-left text-sm text-red-800">
+            {result.supportError}
+          </p>
+        )}
         {result.signatureError && (
           <p className="mt-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-left text-sm text-red-800">
             {result.signatureError}
@@ -576,13 +613,13 @@ export default function FamilyWizard({
             most of the way to useless. Whether they should GATE confirmation
             is a staff decision (Staff Questions §1); this wording is honest
             either way. */}
+        {/* Since 16 Oct 2026 the details are saved WITH the registration; the
+            one thing still asked for afterwards is a photo of each person. */}
         <p className="mt-3 text-neutral-700">
-          <strong>Also before camp:</strong> each person attending has a short
-          details form — allergies, medications, support needs and an emergency
-          contact. You&rsquo;ll find a link for each of them on your dashboard.{' '}
-          <strong>Please fill them in soon</strong> — camp staff use them to plan
-          support, meals and medical cover, and a registration isn&rsquo;t complete
-          without them.
+          <strong>Also before camp:</strong> a photo of each person attending — staff
+          use it to greet them by name at check-in. Open <em>Review support details</em>
+          for each person on your dashboard to add one, and to change anything you told us
+          today.
         </p>
         {result.signed > 0 && (
           <p className="mt-3 text-neutral-700">
@@ -811,12 +848,12 @@ export default function FamilyWizard({
               where the rest gets asked. */}
           <div className="rounded border border-brand/30 bg-brand-light/60 px-4 py-3 text-sm">
             <p className="font-semibold text-brand-dark">
-              This form asks no medical questions.
+              Names and roles here; support and medical details below.
             </p>
             <p className="mt-1 text-neutral-700">
-              Each person attending gets a short details form afterwards — medications,
-              allergy detail, what helps on a hard day, and an emergency contact. You&rsquo;ll
-              find a link for each of them on your dashboard as soon as you{' '}
+              Once a person is named, their questions — allergies, medications, what helps on a
+              hard day, an emergency contact — appear in <em>Support and medical details</em>
+              (section 4). For a camper they are required before you{' '}
               {isUpdate ? 'update' : 'submit'}.
             </p>
           </div>
@@ -942,13 +979,11 @@ export default function FamilyWizard({
                   </select>
                 </div>
               </div>
-              {/* NO medical questions here -- removed 24 Aug, by decision.
-                  The two "short version" free-text boxes that used to sit here
-                  collected unstructured text that duplicated the details form
-                  and broke its completion status. Registration secures the
-                  place; the details form (linked from the dashboard, and
-                  named in the note below) is the one collector of support,
-                  medical and dietary information. */}
+              {/* NO medical questions on this card. The two "short version"
+                  free-text boxes that sat here until 24 Aug duplicated the
+                  details form and broke its completion status. The questions
+                  are asked once, in card 4, with the same component the
+                  dashboard form uses. */}
 
               {/* Permissions live with the PERSON they are about, and each is
                   free to be "no" without affecting the registration. */}
@@ -1090,9 +1125,64 @@ export default function FamilyWizard({
         </div>
       </Card>
 
-      {/* 4 — free text. */}
+      {/* 4 — support and medical details, per person (Larry and Ellen's inked
+          read-through, 15 Oct 2026; confirmed on the 16 Oct call: "that's
+          correct"). Required for every camper before submit; the short
+          version for everyone else, with "tell us more" one click away. The
+          dashboard's per-person form stays for edits and for the photo. */}
       <Card
         n={4}
+        title="Support and medical details"
+        subtitle="Required for each camper before you submit — “N/A” is an answer in any box. Volunteers and other adults get the short version."
+      >
+        {named.length === 0 ? (
+          <p className="text-sm text-neutral-600">
+            Nobody named yet — add the people attending in &ldquo;Who&rsquo;s coming&rdquo; above,
+            and their questions appear here.
+          </p>
+        ) : (
+          <div className="space-y-6">
+            {members.map((m, i) => {
+              if (!m.firstName.trim() || !m.lastName.trim()) return null;
+              const camper = m.role === 'Camper with disability';
+              const sup = m.support ?? emptySupport(null);
+              const who = (m.preferredName || '').trim() || m.firstName.trim();
+              // Open for a camper, for anyone who already has fuller detail
+              // on file, and for anyone who asked.
+              const open = camper || sup.showAll === true || hasFullerDetail(sup);
+              return (
+                <div key={i} className="rounded border border-neutral-200 p-4">
+                  <h3 className="font-bold">
+                    {`${m.firstName} ${m.lastName}`.trim()}
+                    <span className="ml-2 text-sm font-normal text-neutral-500">
+                      {!m.role
+                        ? 'choose a role above'
+                        : camper
+                          ? 'camper — full details required'
+                          : `${m.role.toLowerCase()} — short version`}
+                    </span>
+                  </h3>
+                  <div className="mt-3">
+                    <SupportDetailsFields
+                      f={sup}
+                      setF={setSupport(i)}
+                      name={who}
+                      isCamper={camper}
+                      showAll={open}
+                      onShowAll={() => setSupport(i)((p) => ({ ...p, showAll: true }))}
+                      idPrefix={`p${i}-`}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {/* 5 — free text. */}
+      <Card
+        n={5}
         title="Anything else?"
         subtitle="Optional — anything that doesn't fit neatly above."
       >
@@ -1104,11 +1194,11 @@ export default function FamilyWizard({
         />
       </Card>
 
-      {/* 5 — the agreements. Signed once by the person filling in the form,
+      {/* 6 — the agreements. Signed once by the person filling in the form,
           and recorded for EACH person it covers (Lawrence, 30 Sep 2026). */}
       {agreements.length > 0 && (
         <Card
-          n={5}
+          n={6}
           title="Agreements"
           subtitle={
             alreadySigned

@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { allergyPill, statusPill } from '@/lib/format';
+import { allergySummary } from '@/lib/support';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 
 export const metadata = { title: 'Person — Staff Admin' };
@@ -282,7 +283,7 @@ export default async function PersonPage({ params }) {
     ? await supabase
         .from('person_support')
         .select(
-          'has_allergies, allergy_severity, allergy_detail, dietary_needs, has_seizures, has_rescue_medication, buddy_required, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship'
+          'has_allergies, allergy_severity, allergens, allergy_other, allergy_detail, dietary_needs, has_seizures, has_rescue_medication, buddy_required, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship'
         )
         .eq('person_id', personId)
         .maybeSingle()
@@ -580,7 +581,7 @@ export default async function PersonPage({ params }) {
                   );
                 })()}
               </Row>
-              {support.allergy_detail && <Row label="Detail">{support.allergy_detail}</Row>}
+              {allergySummary(support) && <Row label="Detail">{allergySummary(support)}</Row>}
               <Row label="Dietary needs">{support.dietary_needs || '—'}</Row>
               <Row label="Seizures">{support.has_seizures ? 'Yes' : 'No'}</Row>
               <Row label="Rescue medication">{support.has_rescue_medication ? 'Yes' : 'No'}</Row>

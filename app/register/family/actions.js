@@ -13,6 +13,7 @@ import { dobProblem } from '@/lib/format';
 
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { supportPatch, supportProblems } from '@/lib/support';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sendEmail, registrationConfirmationEmail } from '@/lib/email';
 import { balanceDueOn } from '@/lib/events';
@@ -87,15 +88,30 @@ export async function submitFamilyRegistration(payload) {
       mediaConsent: m.mediaConsent === '' || m.mediaConsent == null ? null : m.mediaConsent,
       directoryConsent:
         m.directoryConsent === '' || m.directoryConsent == null ? null : m.directoryConsent,
-      // No needs/diet here any more (removed 24 Aug): the wizard asks no
-      // medical questions, and the RPC's coalesce guards mean absent keys
-      // never touch what the details form has saved.
+      // The support profile (16 Oct 2026), sanitised the same way the
+      // dashboard form's save is. Not sent to the RPC -- written below, off
+      // the read-back, once the people exist. Null when a stale tab sends
+      // nothing, which the camper check below refuses.
+      support: m.support && typeof m.support === 'object' ? supportPatch(m.support) : null,
     }));
   if (mapped.length === 0) {
     return {
       ok: false,
       error: 'Please add at least one family member with a first and last name.',
     };
+  }
+
+  // A camper's support and medical details are a condition of submitting
+  // (Larry, 16 Oct 2026). The wizard says so first; this is the check a
+  // server action needs because it is a public endpoint.
+  for (const m of mapped) {
+    const problems = supportProblems(m.support ?? {}, { isCamper: m.role === 'camper' });
+    if (problems.length > 0) {
+      return {
+        ok: false,
+        error: `Support details for ${m.firstName}: ${problems.join('; ')}.`,
+      };
+    }
   }
 
   // SIGNATURES ARE PER PERSON (Lawrence, 30 Sep 2026). The person filling in
@@ -458,6 +474,55 @@ export async function submitFamilyRegistration(payload) {
     }
   }
 
+  // SUPPORT DETAILS (16 Oct 2026): written here, after the save, keyed by
+  // name against the read-back -- a person registering for the first time has
+  // no personId going in, and the RPC (money code) is left alone. Under the
+  // family's own permissions: person_support's policy is "a person in a
+  // household I belong to", which the RPC has just made true. Reported if it
+  // fails, like a signature: the family believes these are saved, and for a
+  // camper they were a condition of submitting.
+  let supportError = null;
+  try {
+    const regId = data?.registrationId;
+    const bySupportKey = new Map(
+      mapped
+        .filter((m) => m.support)
+        .map((m) => [`${m.firstName}|${m.lastName}`.toLowerCase(), m.support])
+    );
+    if (regId && bySupportKey.size > 0) {
+      const { data: parts } = await supabase
+        .from('registration_participants')
+        .select('person_id, people ( first_name, last_name )')
+        .eq('registration_id', regId);
+      const now = new Date().toISOString();
+      const seen = new Set();
+      for (const r of parts ?? []) {
+        const key = `${r.people?.first_name ?? ''}|${r.people?.last_name ?? ''}`.toLowerCase();
+        const patch = bySupportKey.get(key);
+        if (!patch || !r.person_id || seen.has(r.person_id)) continue;
+        seen.add(r.person_id);
+        const { error: supErr } = await supabase
+          .from('person_support')
+          .upsert(
+            { ...patch, person_id: r.person_id, details_saved_at: now },
+            { onConflict: 'person_id' }
+          );
+        if (supErr) {
+          console.error('support details:', supErr.message);
+          supportError =
+            'Your registration was saved, but the support details could not all be recorded. Please open each person from your dashboard and check them.';
+        }
+      }
+      revalidatePath('/admin/medical');
+      revalidatePath('/admin/dietary');
+      revalidatePath('/admin/buddies');
+    }
+  } catch (e) {
+    console.error('support details:', e?.message);
+    supportError =
+      'Your registration was saved, but the support details could not all be recorded. Please open each person from your dashboard and check them.';
+  }
+
   // The early-registration discount (0080) is recomputed too: adding someone
   // to a registration that is already on a plan earns them their share.
   try {
@@ -525,6 +590,7 @@ export async function submitFamilyRegistration(payload) {
     saved: data?.saved ?? mapped.length,
     signed,
     signatureError,
+    supportError,
     depositDue,
     depositCents,
     depositPerPersonCents,

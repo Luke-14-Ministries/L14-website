@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { eventWindow } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import { allergyPill } from '@/lib/format';
+import { allergySummary } from '@/lib/support';
 import SeverityPicker from './SeverityPicker';
 
 export const metadata = { title: 'Dietary & Allergies — Staff Admin' };
@@ -27,7 +28,7 @@ export default async function DietaryPage({ searchParams }) {
          households ( display_name, phone ),
          registration_participants ( camp_role, status,
            people ( id, first_name, last_name,
-             person_support ( dietary_needs, allergy_detail, has_allergies, allergy_severity ) ) )`
+             person_support ( dietary_needs, allergens, allergy_other, allergy_detail, has_allergies, allergy_severity ) ) )`
       ),
   ]);
 
@@ -46,7 +47,9 @@ export default async function DietaryPage({ searchParams }) {
         household: r.households?.display_name ?? '',
         phone: r.households?.phone ?? '',
         dietary: s.dietary_needs,
-        allergies: s.allergy_detail,
+        // The ticked words, then the reaction (0097); a row from before the
+        // tick list prints its free text as given.
+        allergies: allergySummary(s),
         hasAllergies: s.has_allergies,
         allergySeverity: s.allergy_severity,
       });

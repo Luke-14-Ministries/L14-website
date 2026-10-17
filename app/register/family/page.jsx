@@ -8,6 +8,7 @@ import {
   volunteerOption,
 } from '@/lib/events';
 import FamilyWizard from './FamilyWizard';
+import { emptySupport } from '@/lib/support';
 
 export const metadata = { title: 'Registration — Luke 14 Ministries' };
 
@@ -361,6 +362,23 @@ export default async function FamilyRegisterPage({ searchParams }) {
       mediaWasNo: latestConsent.get(`${p.id}:media`) === 'false',
       directoryWasNo: latestConsent.get(`${p.id}:directory`) === 'false',
     }));
+
+    // The support profile for everyone in the household (16 Oct 2026: it is
+    // asked in the wizard now), so a returning family sees last year's
+    // answers and changes what changed. RLS limits this to the household's
+    // own rows; the staff-only columns that come with '*' are harmless here
+    // and emptySupport() keeps only what the form shows.
+    const householdIds = (allPeople ?? []).map((p) => p.id);
+    const { data: supportRows } = householdIds.length
+      ? await supabase.from('person_support').select('*').in('person_id', householdIds)
+      : { data: [] };
+    const supportById = new Map((supportRows ?? []).map((r) => [r.person_id, r]));
+    for (const m of members) {
+      m.support = emptySupport(m.personId ? supportById.get(m.personId) ?? null : null);
+    }
+    for (const h of householdPeople) {
+      h.support = emptySupport(supportById.get(h.personId) ?? null);
+    }
 
     askHeardAbout = !household?.how_did_you_hear;
 

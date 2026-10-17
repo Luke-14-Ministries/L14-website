@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { allergenWords } from '@/lib/support';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { eventWindow } from '@/lib/events';
@@ -24,7 +25,7 @@ export default async function KitchenListPage({ searchParams }) {
       .select(
         `id, event_id,
          registration_participants ( status,
-           people ( person_support ( dietary_needs, allergy_detail, has_allergies, allergy_severity ) ) )`
+           people ( person_support ( dietary_needs, allergens, allergy_other, allergy_detail, has_allergies, allergy_severity ) ) )`
       ),
   ]);
 
@@ -81,8 +82,12 @@ export default async function KitchenListPage({ searchParams }) {
       const s = p.people?.person_support;
       if (!s) continue;
       let counted = false;
-      if (s.allergy_detail) {
-        addItem(r.event_id, 'allergy', s.allergy_detail, s.allergy_severity);
+      // One item per ticked allergen (0097), so "peanut" is one line however
+      // many ways families used to spell it. A pre-0097 row contributes its
+      // free text as "Other: ..." until the family saves again.
+      const words = allergenWords(s);
+      if (words.length > 0) {
+        for (const w of words) addItem(r.event_id, 'allergy', w, s.allergy_severity);
         counted = true;
       }
       if (s.dietary_needs) {

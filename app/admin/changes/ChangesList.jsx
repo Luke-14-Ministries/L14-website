@@ -4,6 +4,7 @@
 // field shown old -> new, checked off one at a time or per household.
 
 import { useState, useTransition } from 'react';
+import { ALLERGEN_LABEL } from '@/lib/support';
 import { useRouter } from 'next/navigation';
 import { markChangesReviewed } from './actions';
 
@@ -31,6 +32,8 @@ export const SAFETY_FIELDS = new Set([
   'has_rescue_medication',
   'rescue_medication_detail',
   'has_allergies',
+  'allergens',
+  'allergy_other',
   'allergy_detail',
   'medications',
 ]);
@@ -60,7 +63,9 @@ const FIELD_LABEL = {
   disabilities: 'Disabilities / needs',
   medications: 'Medications',
   dietary_needs: 'Dietary needs',
-  allergy_detail: 'Allergies',
+  allergens: 'Allergens',
+  allergy_other: 'Other allergy',
+  allergy_detail: 'Allergy — what happens',
   seizure_detail: 'Seizure plan',
   tshirt_size: 'T-shirt size',
   first_time_attending: 'First time attending',
@@ -74,8 +79,29 @@ const FIELD_LABEL = {
   directory: 'Participant directory',
 };
 
+// A logged value that is the JSON text of an array (the allergens list),
+// or null for anything else. Kept out of Value() so no JSX sits in a try.
+function parseList(v) {
+  if (typeof v !== 'string' || !v.startsWith('[')) return null;
+  try {
+    const arr = JSON.parse(v);
+    return Array.isArray(arr) ? arr : null;
+  } catch {
+    return null;
+  }
+}
+
 function Value({ v }) {
   if (v == null || v === '') return <span className="text-neutral-400 italic">empty</span>;
+  // The allergens list (0097) arrives as the JSON text of an array of codes.
+  const list = parseList(v);
+  if (list) {
+    return list.length ? (
+      <span>{list.map((c) => ALLERGEN_LABEL[c] ?? c).join(', ')}</span>
+    ) : (
+      <span className="text-neutral-400 italic">none</span>
+    );
+  }
   if (v === 'true') return <span>yes</span>;
   if (v === 'false') return <span>no</span>;
   return <span>{v}</span>;
