@@ -2193,6 +2193,20 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-18 — PostgreSQL 16 on the build machine; the harness runs again
+
+Installed through winget at Lawrence's request, as a local service on port 5432, with the
+superuser password in the standard psql password file rather than anywhere in the repository.
+`supabase/tests/run_rls_local.sh` builds a throwaway database from the Supabase stubs and every
+migration, then runs a test. **First run: all 101 migrations build cleanly from nothing**, which
+had not been checked since the ledger began at `0012`. The harness and the payment-plan seed
+had drifted — a view dropped in `0092`, the second role `0086` retired, staff with no grants
+after `0101`, anonymous counts thrown off by seeded events — and were brought up to date; the
+harness gained a section proving the grants decide (a payments read opens money and nothing
+else, a deactivated row holds nothing, the role functions are gone). `rls_test.sql`,
+`payment_plans_rules.sql` and `staff_answers_rules.sql` all pass. The in-transaction probing on
+the live database stays useful for one-off questions; the harness is the regression check.
+
 ## 2026-10-17, early — The rules read the grants; the role check retires (0101)
 
 Build plan item 16, steps 3 and 4 of the access-model plan, the morning after step 1 and 2.

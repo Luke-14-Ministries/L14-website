@@ -245,7 +245,9 @@ begin
   perform pg_temp.expect('family cannot read coupons', n, 0);
   select count(*) into n from public.message_log;
   perform pg_temp.expect('family cannot read message log', n, 0);
-  select count(*) into n from public.volunteer_clearances;
+  -- volunteer_clearances was a compatibility view, dropped in 0092; the
+  -- table behind it is person_clearances.
+  select count(*) into n from public.person_clearances;
   perform pg_temp.expect('family cannot read clearances', n, 0);
 
   ---- the sensitive tier ----------------------------------------------
@@ -311,6 +313,58 @@ begin
   perform pg_temp.expect_denied('family may NOT place into a program (0090)',
     format('select public.place_in_program(array[%L]::uuid[], null)', rpA));
 
+  ---- the grants are the access (0100 / 0101) ---------------------------
+  -- Since 0101 every staff policy asks has_grant(area, level). These checks
+  -- prove the grant, not the role label, decides -- including at runtime.
+  perform pg_temp.as_user(uC);
+  select count(*) into n from public.payments;
+  perform pg_temp.expect('coordinator (no payments grant) sees no payments', n, 0);
+  perform pg_temp.expect_denied('coordinator may NOT record a cheque',
+    format('insert into public.payments (registration_id, amount_cents, method) values (%L, 5000, ''check'')', regA));
+  perform pg_temp.expect_no_effect('coordinator may NOT edit an activity definition (setup write)',
+    'update public.activities set name = name');
+
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.payments;
+  perform pg_temp.expect('registrar (payments write) sees the cheque', n, 1);
+  select count(*) into n from public.person_clearances;
+  perform pg_temp.expect('registrar (background checks READ) cannot read the clearance table', n, 0);
+  perform pg_temp.expect_no_effect('registrar (no sensitive) may NOT edit a support record',
+    'update public.person_support set other_concerns = ''x''');
+
+  perform pg_temp.as_user(uF);
+  perform pg_temp.expect_allowed('sensitive WRITE may edit a support record',
+    format('update public.person_support set other_concerns = other_concerns where person_id = %L', pA));
+
+  -- Grant one area at runtime: exactly that area opens.
+  set local role postgres;
+  insert into public.staff_grants (profile_id, area, level) values (uC, 'payments', 'read');
+  set local role authenticated;
+  perform pg_temp.as_user(uC);
+  select count(*) into n from public.payments;
+  perform pg_temp.expect('coordinator given payments READ now sees the cheque', n, 1);
+  perform pg_temp.expect_denied('payments READ still may NOT record a cheque',
+    format('insert into public.payments (registration_id, amount_cents, method) values (%L, 5000, ''check'')', regA));
+  set local role postgres;
+  delete from public.staff_grants where profile_id = uC and area = 'payments';
+
+  -- A deactivated staff row holds nothing, whatever grants it has.
+  update public.staff set active = false where profile_id = uR;
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.payments;
+  perform pg_temp.expect('a deactivated registrar sees no payments', n, 0);
+  select count(*) into n from public.people;
+  perform pg_temp.expect('a deactivated registrar sees no people', n, 0);
+  set local role postgres;
+  update public.staff set active = true where profile_id = uR;
+  set local role authenticated;
+
+  -- The two role functions are gone (0101).
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+    where ns.nspname = 'public' and p.proname in ('is_registrar', 'is_coordinator');
+  perform pg_temp.expect('is_registrar() and is_coordinator() no longer exist', n, 0);
+
   ---- buddy visibility -------------------------------------------------
   perform pg_temp.as_user(uA);
   select count(*) into n from public.buddy_assignments;
@@ -333,11 +387,13 @@ begin
   set local role anon;
   perform set_config('request.jwt.claim.sub', '', true);
 
-  select count(*) into n from public.events;
+  -- Scoped to the harness's own event: the seed migrations publish real
+  -- events too, and anon is meant to see those.
+  select count(*) into n from public.events where id = ev;
   perform pg_temp.expect('anon sees the published event', n, 1);
-  select count(*) into n from public.event_options;
+  select count(*) into n from public.event_options where event_id = ev;
   perform pg_temp.expect('anon sees published options', n, 2);
-  select count(*) into n from public.activities;
+  select count(*) into n from public.activities where event_id = ev;
   perform pg_temp.expect('anon sees active activities', n, 1);
 
   perform pg_temp.expect_denied('anon cannot read people',
@@ -354,7 +410,7 @@ begin
   set local role postgres;
   update public.events set published = false where id = ev;
   set local role anon;
-  select count(*) into n from public.events;
+  select count(*) into n from public.events where id = ev;
   perform pg_temp.expect('anon sees nothing once the event is unpublished', n, 0);
 
   set local role authenticated;

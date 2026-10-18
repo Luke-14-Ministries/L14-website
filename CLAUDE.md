@@ -261,7 +261,10 @@ thing: `admin`** (`is_admin()`: granting, accounts, naming a leader, the doctor'
 'write:<area>')`; the old names `sensitive`, `giving`, `background_checks` are aliases
 (`read:sensitive`, `read:giving`, `write:background_checks`), and `registrar` / `coordinator` /
 `door` return false. The vocabulary is `lib/grants.js`; the harness seeds grants for its
-personas. **Read `0101`'s mapping before touching a policy**: definitions of activities, slots and
+personas. **Run the harness locally** (PostgreSQL 16 is installed on the build machine, 18 Oct):
+`bash supabase/tests/run_rls_local.sh` builds a fresh database from every migration and runs
+`rls_test.sql`; it ended `ALL CHECKS PASSED` that day, with a grants section added.
+**Read `0101`'s mapping before touching a policy**: definitions of activities, slots and
 rooms are Setup write (an administrator), placements are their own areas, money reads need
 `payments` read. The high-water mark is `0101`. A camp-week registration is **not
 finished** until the family pays in full, sets up an automatic payment plan, or requests a

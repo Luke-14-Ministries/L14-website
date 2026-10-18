@@ -1,9 +1,17 @@
 -- Test fixture for payment_plans_rules.sql and payment_plans_e2e.ts. SCRATCH DATABASE ONLY.
--- Test fixture: one family (Parent A + camper + a volunteer-second-role person), one registrar.
+-- Test fixture: one family (a camper and a parent), one registrar. The parent's zero-fee
+-- volunteer second role was removed 18 Oct 2026: 0086 allows one role per person per event.
 insert into auth.users (id, email) values
  ('00000000-0000-0000-0000-00000000000a','fam@example.org'),
  ('00000000-0000-0000-0000-00000000000b','reg@example.org');
 insert into public.staff (profile_id, role) values ('00000000-0000-0000-0000-00000000000b','registrar') on conflict do nothing;
+-- Since 0101 the rules read grants; these are what 0100's backfill gives a registrar.
+insert into public.staff_grants (profile_id, area, level) values
+ ('00000000-0000-0000-0000-00000000000b','registration','write'), ('00000000-0000-0000-0000-00000000000b','payments','write'),
+ ('00000000-0000-0000-0000-00000000000b','background_checks','read'), ('00000000-0000-0000-0000-00000000000b','activities','read'),
+ ('00000000-0000-0000-0000-00000000000b','rooming','read'), ('00000000-0000-0000-0000-00000000000b','buddies','read'),
+ ('00000000-0000-0000-0000-00000000000b','programs','read')
+on conflict do nothing;
 insert into public.households (id, display_name) values ('10000000-0000-0000-0000-000000000001','Test Family');
 insert into public.household_members (household_id, profile_id) values ('10000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000000a');
 insert into public.people (id, household_id, first_name, last_name) values
@@ -19,5 +27,4 @@ insert into public.registrations (id, household_id, event_id, created_at) values
  ('50000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','2026-11-01 15:00-05');
 insert into public.registration_participants (id, registration_id, person_id, event_option_id, camp_role, status, fee_cents, created_at) values
  ('60000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001','camper','submitted',60000,'2026-11-01 15:00-05'),
- ('60000000-0000-0000-0000-000000000002','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000001','parent_guardian','submitted',60000,'2026-11-01 15:00-05'),
- ('60000000-0000-0000-0000-000000000003','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000002','volunteer','submitted',0,'2026-11-01 15:00-05');
+ ('60000000-0000-0000-0000-000000000002','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000001','parent_guardian','submitted',60000,'2026-11-01 15:00-05');

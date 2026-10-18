@@ -17,6 +17,26 @@ have been retried every day.
 | `payment_plans_rules.sql` | The database rules: a family cannot change a fee, the early discount (paid in full, plan, failed payment, staff removing it, late registrants, the cap), charge dates, and who may do what. Rows named `expect_…` show the value they should equal; `PASS`/`FAIL` notices are checked automatically. |
 | `payment_plans_e2e.ts` | The real webhook and charger code (`functions/_shared/`) against the scratch database, with a stand-in for Stripe. It covers the deposit activating a plan, a dry run, card charges, repeated Stripe events, declines and retries, the plan stopping after three failures, a new bank account restarting it, a bank transfer clearing, a scholarship partway through, and the last charge landing on $0. It ends `ALL PASSED` or exits non-zero. |
 
+## On the build machine (Windows, PostgreSQL 16 installed 18 Oct 2026)
+
+`run_rls_local.sh` does the whole recipe against the local server on `localhost:5432`, never
+the Supabase project: it drops and recreates `l14_rls_test`, creates the three Supabase roles,
+runs `supabase_stubs.sql`, every numbered migration in order (stopping at the first error),
+then the test file you name. From Git Bash in the repository:
+
+```bash
+bash supabase/tests/run_rls_local.sh                                    # rls_test.sql
+bash supabase/tests/run_rls_local.sh supabase/tests/payment_plans_seed.sql
+"/c/Program Files/PostgreSQL/16/bin/psql.exe" -h localhost -U postgres -d l14_rls_test -f supabase/tests/payment_plans_rules.sql
+```
+
+For `staff_answers_rules.sql`, seed a fresh database the same way and run it instead of
+`payment_plans_rules.sql` (each test changes the data). The `postgres` password lives in the
+standard psql password file, `%APPDATA%\postgresql\pgpass.conf`, outside the repository.
+First full run, 18 Oct 2026: all 101 migrations build cleanly from nothing, `rls_test.sql` ends
+`ALL CHECKS PASSED`, and both rule files pass. The seed and both tests were brought up to date
+for `0086` (one role per person per event) and `0101` (grants).
+
 ## How to run them (Linux or WSL)
 
 1. Start a throwaway Postgres 16, create a database called `t2`, and run

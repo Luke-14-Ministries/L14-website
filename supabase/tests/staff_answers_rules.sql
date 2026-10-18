@@ -3,7 +3,7 @@
 -- every migration and payment_plans_seed.sql (NOT after payment_plans_rules.sql).
 \set ON_ERROR_STOP on
 \pset footer off
--- The seed: Cam (camper), Pa (parent + zero-fee volunteer second role), $600 each.
+-- The seed: Cam (camper), Pa (parent), $600 each.
 -- Add two more people, joining later, so they are the 3rd and 4th.
 insert into public.people (id, household_id, first_name, last_name) values
  ('20000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000001','Third','Kid'),
@@ -17,7 +17,7 @@ do $$ declare n int; t int; begin
   select count(*) filter (where family_discount_cents = 5000), sum(family_discount_cents)
     into n, t from public.registration_participants
    where registration_id = '50000000-0000-0000-0000-000000000001';
-  if n = 2 and t = 10000 then raise notice 'PASS 3rd and 4th people get $50, the zero-fee second role is not a person';
+  if n = 2 and t = 10000 then raise notice 'PASS 3rd and 4th people get $50';
   else raise exception 'FAIL family discount: % rows, % cents', n, t; end if;
   if (select family_discount_cents from public.registration_participants where id='60000000-0000-0000-0000-000000000004') = 5000
      and (select family_discount_cents from public.registration_participants where id='60000000-0000-0000-0000-000000000001') = 0

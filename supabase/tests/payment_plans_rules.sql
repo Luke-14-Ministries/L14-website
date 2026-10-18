@@ -122,16 +122,17 @@ do $$ begin
   raise exception 'FAIL: volunteer-only place on the free option allowed';
 exception when insufficient_privilege then raise notice 'PASS free option needs a paid place first';
 end $$;
-do $$ begin
-  update public.registration_participants set camp_role='camper' where id='60000000-0000-0000-0000-000000000003';
-  raise exception 'FAIL: free volunteer row turned into a camper';
-exception when insufficient_privilege then raise notice 'PASS role on the free option is fixed';
-end $$;
 insert into public.registration_participants (registration_id, person_id, event_option_id, camp_role, status, created_at)
 values ('50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000008','40000000-0000-0000-0000-000000000001','sibling','submitted','2026-01-01');
--- and the legitimate second role (0069) still works once they have a place
-insert into public.registration_participants (registration_id, person_id, event_option_id, camp_role, status)
-values ('50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000008','40000000-0000-0000-0000-000000000002','volunteer','submitted');
-select 'PASS second role allowed after a paid place' as ok;
+-- The second role (0069) was retired by 0086: one role per person per event,
+-- even after a paid place.
+do $$ begin
+  insert into public.registration_participants (registration_id, person_id, event_option_id, camp_role, status)
+  values ('50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000008','40000000-0000-0000-0000-000000000002','volunteer','submitted');
+  raise exception 'FAIL: a second role on the same event was allowed';
+exception when others then
+  if sqlerrm like 'FAIL:%' then raise; end if;
+  raise notice 'PASS a second role on the same event is refused (0086)';
+end $$;
 select (created_at > now() - interval '1 minute') as created_at_forced_to_now from public.registration_participants where person_id='20000000-0000-0000-0000-000000000008';
 rollback;
