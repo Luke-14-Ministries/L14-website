@@ -1,26 +1,22 @@
 # CLAUDE.md — Luke 14 Ministries website & registration platform
 
-*Reviewed for drift 2 September 2026 — every statement below was checked against the repository, the database ledger and the vendor consoles that day. Anything found wrong was corrected in place and dated.*
-
-Read this before touching anything. It is the standing brief for any Claude session working in
-this repository, and it outranks assumptions carried in from other Next.js projects.
+The standing brief for any Claude session in this repository. Read it before touching anything; it
+outranks habits carried in from other Next.js projects. **Its numbers drift — check them (see
+*Working rules*) before relying on one.** History and reasons live in `DECISIONS.md`; this file
+says what is true now and what not to break.
 
 ---
 
 ## What this project is
 
 Luke 14 Ministries is a disability ministry in Morristown, Tennessee — a registered 501(c)(3).
-This repository is the ministry's public website **and**, from Phase 1 onward, its own camp
-registration platform.
+This repository is the ministry's public website **and** its own camp registration platform.
 
-The reason the platform is being built rather than bought: Campsite costs the ministry roughly
-**7.4% all-in** — a 6% transaction rate *plus* a flat platform fee of about $249/month, and on the
-ministry's volume the fixed half is the larger half. Replacing that is the entire financial case.
-The 6%-only figure quoted in older documents is retired; see `DECISIONS.md`, 2026-08-05. Vendors are
-used only where they carry real risk we should not: payments (Stripe), database and auth
-(Supabase), hosting (Vercel), edge protection now and DNS plus the domain registration from launch
-day (Cloudflare), identity and documents
-(Microsoft 365).
+The financial case: Campsite costs the ministry about **7.4% all-in** (July 2026 statement: a 4%
+software fee, ~3% card processing and ~$41/month flat — Implementation Plan §3c). Replacing it is
+the whole case. Vendors carry only the real risk: payments (Stripe), database and auth (Supabase),
+hosting (Vercel), edge protection now and DNS plus the domain registration from launch day
+(Cloudflare), identity and documents (Microsoft 365).
 
 Two constraints shape every decision:
 
@@ -30,416 +26,259 @@ Two constraints shape every decision:
    availability drops sharply once the academic semester starts. Front-load. Do not start
    architectural rewrites in October.
 
-The full reasoning lives in `IMPLEMENTATION-PLAN.md` (SharePoint, `01 Plans and Decisions\md files`).
-The working checklist is `DO-THIS-NEXT.md` (SharePoint, `02 Accounts and Setup\md files`).
+---
+
+## Where things stand — 18 October 2026
+
+**Phase 3: built, in staff testing** on the preview site, Stripe in test mode. **Testing Script 5**
+is the current script (SharePoint, `01 Plans and Decisions`). The working checklist is
+`DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
+
+**Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
+**`0103`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
+(`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
+
+**The RLS harness.** `supabase/migrations/rls_test.sql` seeds personas (families, staff at several
+grant levels, the camp doctor, an anonymous visitor) and must end `ALL CHECKS PASSED`. Run it
+locally — PostgreSQL 16 is on the build machine: `bash supabase/tests/run_rls_local.sh` builds a
+fresh database from every migration and runs it. The other suites in `supabase/tests/`
+(`payment_plans_rules.sql`, `staff_answers_rules.sql`) run the same way. Run the harness after any
+access change; `L14_DB=<name>` gives a second copy when two runs overlap.
+
+**Auth** works end to end: sign-up → confirmation → session → dashboard, with
+`handle_new_user()` creating the `public.profiles` row; login, logout, password reset, two-factor.
+The two-factor page steps the session up to AAL2 before adding or removing a device.
+
+**Emailed links survive mail scanners and work across devices because of the button page.**
+Sign-up and reset emails point at `/auth/confirm/?token_hash=…`; pressing the button verifies the
+token server-side with `verifyOtp()`, so a scanner that fetches the page spends nothing and no code
+verifier is needed. Template wording: `supabase/EMAIL-TEMPLATE-SNIPPETS.md` (auth mail sends through
+Resend from `registration@luke14ministries.net`). Tokens still start `pkce_` — `@supabase/ssr`
+forces PKCE regardless, so there is no flow setting to protect. **Protect the templates:** pointed
+back at `/auth/callback` with `{{ .ConfirmationURL }}`, links become `?code=` links tied to one
+browser again.
+
+**Still open in the code:** the balance-reminder buttons in `app/admin/payments/page.jsx` are
+`disabled` placeholders. The public newsletter page links out to a Google Form (whether to replace it
+with an on-site sign-up is a design question). Reminder-email wording waits on staff.
+
+**Next, in order (go-live, Phase 4 — detail in DO-THIS-NEXT W51/W22):**
+
+1. **Purge ALL test data** from production. Everything after depends on it.
+2. **Live Stripe keys**, and **both** live-mode webhooks — `stripe-webhook` *and*
+   `stripe-refund-webhook`. Test endpoints do not carry over; a missed refund webhook fails
+   silently (migration `0054`). Stripe payouts set to automatic first (W44).
+3. **Vercel Pro** — required the moment live keys are in (see *Hosting*).
+4. Domain pointed and transferred to Cloudflare in one session; the four preview switches reversed
+   together; **archive the 2026 Retreat on Setup.** Board approval gates all of it.
 
 ---
 
-## Where things stand — 31 August 2026
+## Traps already fallen into — rules for code
 
-**The database is live.** Migration `0001_core_schema.sql` has been run against the Supabase
-project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Queried directly on 31 August 2026 rather
-than remembered, the live schema holds **47 base tables, 5 views and 108 row-level-security
-policies**, with **RLS enabled on all 47 of the 47 tables** and 41 functions in `public`.
-Self-check passed.
-`supabase/migrations/rls_test.sql` is the harness — it seeds **six personas** (two families, three
-staff at different access levels, and the camp doctor) plus an unauthenticated visitor, runs **41
-assertions** against them and reports `ALL CHECKS PASSED` against real Postgres. **Never edit 0001; it has been run.** New work
-goes in `0002_*.sql`.
+- **Every new table needs explicit role grants alongside its RLS policies** — RLS without
+  `grant ... to authenticated` is permission denied.
+- **Never swallow a query error, and never turn one into an empty list.** `/admin/search` returned
+  "Nothing matches" for every query for weeks because it did.
+- **`/account/*` "my data" queries scope by household membership explicitly** — never rely on RLS
+  alone; staff RLS is broad.
+- **PostgREST embeds with two foreign keys to one table are refused (PGRST201).** `people ↔
+  households` has two paths since `0037`: name the key (`households!people_household_id_fkey`) on
+  every such embed, or use separate simple lookups.
+- **Never define a component inside another component's body** — React remounts it every render
+  (it silently emptied the staff table's job-title boxes). Hoist it to module level; pass props.
+- **Adding a column to `person_support` is not finished until `log_family_change()` is
+  redefined** to include it.
+- **Never "the first published option".** `event_options.find((o) => o.published)` became a money
+  bug once an event had two options. Use `enrollmentOption()` in `lib/events.js`.
+- **Every event read that feeds a due date must select `events.balance_due_on`.**
+- **Supabase refuses every login without a captcha token**, so Claude's own browser cannot sign in
+  on localhost as things stand. For a bot round, Lawrence switches Supabase's captcha off
+  (Authentication → Attack Protection) and back on afterwards, and resets two-factor on the staff
+  bots, which re-enrol on first login (Script 4 and Script 5 rounds). Bots never solve the widget.
+- **A `SECURITY DEFINER` view must filter its own rows.** `program_roster`, `clearance_status` and
+  `registration_review` are definer on purpose; each carries its own `where`. `0098` recreated
+  `registration_review` without one and any family could read every registration's flags (fixed in
+  `0102`/`0103`). `CREATE OR REPLACE VIEW` keeps the column list but not the intent — the harness
+  checks a family sees no rows from each.
+- **A function rewritten in place must check the rewrite took.** Python on Windows writes CRLF, and a
+  multi-line `replace()` on `pg_get_functiondef()` then silently matches nothing; `0102` caught it with
+  a post-check. Prefer restating a function in full.
 
-**Authentication works end to end**, proven against the live database: sign-up → confirmation email
-→ callback → session → dashboard rendering the person's own name out of `public.profiles`, with
-`handle_new_user()` creating that row automatically. Login, logout and password reset are wired.
+**One function, one answer** — use these, do not re-derive:
 
-**Emailed links work from any device, and survive mail scanners — the button page is the fix**
-*(corrected 29 September 2026; this paragraph called the template switch an open task for weeks
-after it was done)*. Sign-up and password-reset emails point at `/auth/confirm/?token_hash=…`, a
-page with one button; pressing it verifies the token on the server with `verifyOtp()`. Scanners
-such as Outlook SafeLinks only fetch the page, so the one-time token is still unspent when the
-person arrives, and verifying needs no code verifier, so a link requested on a laptop works on a
-phone. The templates were checked from a real reset email on 29 September; their wording is in
-`supabase/EMAIL-TEMPLATE-SNIPPETS.md`, and editing them is allowed because auth email sends through
-Resend from `registration@luke14ministries.net`. The tokens still start with `pkce_` — `@supabase/ssr`
-forces PKCE in the browser client whatever it is told, so the `flowType: 'implicit'` that
-`lib/supabase/client.js` carried from 21 August never took effect and was removed. **Protect the
-templates, not a flow setting:** pointed back at `/auth/callback` with `{{ .ConfirmationURL }}`,
-the links become `?code=` links tied to one browser again. `DECISIONS.md`, 2026-09-29.
+| Question | Use |
+|---|---|
+| Is this event current? (to two weeks after it ends, a year ahead, never archived) | `isCurrentEventRow()` in `lib/events.js`; pages use the shared `EventFilter` (Check-In's dated pills, Rosters' search-only and the Overview's jump pills are deliberate exceptions) |
+| When is the balance due? | `balanceDueOn()` (`lib/events.js`) / `balance_due_on()` (SQL) — both read the event's column |
+| Agreement text for an event | `agreementText()` in `lib/events.js` (fills `{{event}}`) |
+| Background-check status shown | `clearancePill()` in `lib/format.js` |
+| Is a date of birth real? | `dobProblem()` in `lib/format.js` (a trigger on `people` refuses before 1900 or in the future) |
+| Are the support details complete? | `supportProblems()` in `lib/support.js` (browser and `submitFamilyRegistration`) |
+| How are allergies printed? | `allergenWords()` / `allergySummary()` in `lib/support.js` |
+| What refund to suggest | `refundSuggestion()` in `lib/payments.js` — a suggestion, never a lock |
+| Must a family choose a payment route? | `requiresPaymentChoice()` in `lib/plans.js` — returns `false` |
+| May this staff member…? | `can(staff, 'read:<area>' \| 'write:<area>')`, vocabulary in `lib/grants.js` |
+| May they decide a scholarship, a hand-set discount or a deposit waiver? | `can(staff, 'decide:scholarships')` / `can_decide_scholarships()` — Payments **and** Registration write (`0102`) |
 
-**Update, 26 August 2026 — the platform is built and in staff testing.** Migrations now run
-through `0061` (never edit a migration that has been run; new work goes in the next number).
-Checked on 30 August against the live ledger: the repository and production agree, with no
-applied migration missing from `supabase/migrations/`. Two caveats about that ledger, so nobody
-reads drift into it. It begins at `0012` — `0001`–`0011` were applied before the CLI ledger was
-in use. And four repository files were applied as more than one entry each (`0023`, `0028`,
-`0032`, and `0059`, whose second half is recorded as `all_screening_verdicts`), so the ledger
-carries 54 rows for 50 files. Both are expected; neither is a missing migration. *Checked again 1 September: 66 rows. `0070` is a fifth multi-entry file — the ledger holds `multi_week_discount` (the first draft, whose row-pick used a tuple `max()` that Postgres does not have) and `multi_week_discount_fix_pick` (the corrected function). The repository's `0070` already carries the corrected text, so there is no drift — an earlier note today said there was, before the file was compared to both ledger rows. `0071` (`program_leader_is_lead`) and `0072` (`program_leaders_for`) were applied through the Supabase MCP on 1 September, so their ledger names match their files for once.* Working end
-to end in Stripe test mode: family accounts and household management (per-adult phones, linked
-caregivers), the registration wizard with true edit/update mode and tracked changes (staff review
-queue at /admin/changes; role changes on a confirmed person auto-flip to re-review), card + bank
-payments with receipts (then from camp@; since 27 August from `registration@`), scholarships/discounts with a credit display ("Credit −$X"),
-printable statements (staff at /admin/registrations/[id]/statement, family at
-/account/statement/[id], donors at /admin/giving/statements — all on ministry letterhead), the
-staff admin (rosters, check-in, dietary + no-names kitchen list, medical, Event Payments with a
-90-day event scope + filtered CSVs, Giving, Staff & Access), and Resend newsletters (trial sent;
-click-tracking domain verified).
+---
 
-**Working rules learned the hard way:** every new table needs explicit role grants alongside its
-RLS policies (RLS without `grant ... to authenticated` = permission denied); never swallow query
-errors in admin pages; `/account/*` "my data" queries must scope by household membership
-explicitly, never rely on RLS alone (staff RLS is broad); PostgREST nested joins with two FKs to
-the same table are fragile — use separate simple lookups. **Never define a component inside
-another component's body** — it becomes a new type on every render and React remounts it,
-which silently emptied the staff table's job-title boxes until 16 September 2026; hoist it to
-module level and pass what it needs as props.
+## Access control — read before touching a policy
 
-**Done since that update:** the volunteer application (17 Aug); Turnstile on the public account
-forms (live on sign-up, login and password reset); and refunds end to end — `charge.refunded`
-handled by `supabase/functions/stripe-refund-webhook/`, per-family refunds through `refundPayment`
-in `app/admin/registrations/[id]/actions.js`, with the over-refund guard and the pending-refund
-accounting in migrations `0038`/`0044`/`0053`/`0054`.
+**Grants, not roles** (`0100`, `0101`). `staff_grants` holds (profile, area, read|write); every
+change is logged in `staff_access_log` as `grant:<area>`. Policies and guards ask
+`has_grant(area, level)`; **read `0101`'s mapping table before touching a policy** — it is the
+decision. Definitions of activities, slots and rooms are Setup write (an administrator);
+placements are their own areas; money reads need `payments` read. The role column means one thing,
+`admin` (`is_admin()`: granting, accounts, naming a leader, the doctor's dated grant); `registrar`
+and `coordinator` are labels. Old names `sensitive`, `giving`, `background_checks` are aliases
+(`read:sensitive`, `read:giving`, `write:background_checks`); `registrar` / `coordinator` / `door`
+return false. Presets on Staff & Access set ticks; Giving is never in a preset.
 
-**Built since, 27–29 August — six migrations the paragraph above predates.** Background screening
-stopped being a placeholder (`0056`–`0060`): `person_clearances`, screening batches, background
-checks as their own staff permission with every grant recorded in an audit log, the result detail
-learned from a real Checkr export, and a translation layer between Checkr's vocabulary and ours.
-Then `0061`, which is the one to read before touching access control — see the next section.
+**Scholarship decisions are a family act** (`0102`): they need Payments write *and* Registration
+write, so Finance (payments write, registration read) records money but does not decide.
+`registration_review` is money: rows only for Payments read (`0103`) — it stays definer, because as
+an invoker view a reviewer without Payments read would see every family as "neither". Publishing
+buddies or rooms goes through `set_event_publication()` (`0103`), which checks Buddies or Rooming
+write; the stamps live on `events`, whose own policy needs Setup write. Program leaders stay a grant
+on the Programs page; the preset Lawrence wanted (16 Oct) is not built.
 
-**Built 31 August — migrations `0062`–`0070`; `0071` and `0072` followed on 1 September (the program-lead flag, and the definer function that lets co-leaders see each other's names), and the high-water mark is now `0072`.** Volunteers
-affirm the Apostles' Creed on the volunteer application (`0062`, `0063`). Allergies carry a
-severity, in the only three terms that change what somebody does (`0064`). Program leaders got
-their table comment corrected — a second, assistant leader always worked (`0065`). Every camper is
-treated as needing a one-to-one buddy until a coordinator says otherwise, which needed a tri-state
-because "nobody decided" and "decided no" had been the same value (`0066`). Rooming preferences and
-likes/dislikes are collected (`0067`), and `0068` put those and `allergy_severity` into the change
-log — **adding a column to `person_support` is not finished until `log_family_change()` is
-redefined**, which `0064` missed and is the trap to remember.
+**Rule of thumb for any access question (Lawrence):** when it is not obvious what a role or person
+should have, default to **read**; write is granted on top, for a named person, and logged.
 
-`0069` and `0070` are the two to read before touching money. `0069` publishes a **second, zero-fee
-`event_option` per event** so one person can hold two roles at one camp (a parent who also
-volunteers, charged once). That broke an assumption four files were making —
-`event_options.find((o) => o.published)` — which became a money bug the moment an event had two
-options, because a bad draw returns the zero-fee one and sets the price. Use `enrollmentOption()`
-in `lib/events.js`; never "the first published option". `0070` adds
-`recalc_multi_week_discount()`, which applies the both-weeks discount as a **rule recomputed from
-stored facts** rather than something the wizard works out, and which **only ever touches discounts
-carrying its own `discount_reason`** — a manual staff discount is invisible to it. Whether
-volunteering must cover both weeks or just one is still with staff; the rule is three named
-constants at the top of that function.
+**Program placement is coordination** (`0090`): through `place_in_program()`, a definer function
+that touches only `program_id`; the participants table's UPDATE policy is not opened. Naming a
+leader is administrator-only, in the database as well as the app.
 
-**Next, in order:**
+**Registrar-guarded states on `registrations`:** waiting on the family (`awaiting_family_since`,
+`awaiting_family_reason`, `0089`) and on hold (`hold_since`, `hold_reason`, `hold_by`, `0098` —
+confirmed and waitlisted people go back to `submitted`; approve, waitlist or "lift" clears it).
+`registration_review` carries `on_hold`; the review queue's badge counts only *waiting on staff*.
+Staff idle logout is 60 minutes.
 
-1. **Purge ALL test data** from the production project. Everything after this depends on it.
-2. **Live Stripe keys**, and **both** live-mode webhooks — `stripe-webhook` *and*
-   `stripe-refund-webhook`. Test-mode endpoints do not carry over; a missed refund webhook fails
-   silently (see migration `0054`).
-3. **Vercel Pro.** Required the moment live keys are in — Hobby is non-commercial only. See the
-   Hosting note below.
-4. ~~**Spam protection on the contact and newsletter forms.**~~ **Half done, half moot** *(corrected
-   1 Sep)*: the contact form got Turnstile with server-side verification on 30 August
-   (`app/contact/actions.js`, `lib/turnstile.js`); the newsletter page only links out to a Google
-   Form, so there is nothing to protect. What remains is a *design* question — replace that link
-   with an on-site sign-up that writes to Resend contacts, or keep the Google Form.
+**Background checks** (`0091`–`0095`). `person_clearances.verdict` is the ministry's word (`ok`,
+`follow_up`, `not_permitted`), set by a holder of the background-checks write grant; who and when
+are stamped by trigger, the check date is required once paperwork is on file, expiry follows from
+`clearance_interval_months()` (**12** — annual Basic Plus), and every change lands in
+`clearance_review_log`. The `clearance_status` definer view gives all staff three facts: on file,
+current, verdict. Adults only — under 18 shows "Under 18 — not screened". Screening reads the
+household's email and phone where the person has none. The Checkr bulk file's header is their
+"bulk order with SMS" template, verbatim; `0093` lets the invited email stand in for a candidate id.
 
-**Done 1 September, from Lawrence's read of Testing Script 3:** buddy pills now say *buddy
-assigned — name*, *no buddy assigned* and *buddy not needed* (the words camp uses); a program can
-have one **lead** among its leaders (`0071` + `0072`, a label not a permission, shown on Programs and at the
-top of My Program); and the registration wizard says "family or group" so a group home or church
-group is not told it is in the wrong place (the data model always allowed it — a household needs no
-family relationship and a person can carry their own address).
+### Program leaders are not staff — a second kind of person reaches `/admin`
 
-**Done 8 September:** the two-factor page (`app/account/security/SecurityManager.jsx`) steps the
-session up before adding or removing a device. Supabase requires AAL2 for both, and a browser
-remembered at login sits at AAL1, so both buttons used to fail with Supabase's raw "AAL2 required"
-text — found by Lawrence while moving codes into Bitwarden. The page now asks for a current code
-inline and then continues. Testing Script 3, item 20.10.
-5. **The balance-reminder buttons in `app/admin/payments/page.jsx`** are still `disabled`
-   placeholders — "Email balance reminders (all shown)" and "Email selected families" render but
-   do nothing.
-
-**14 October 2026 — Script 4 run by bots; the review queue; migrations through `0085`.** Testing
-Script 4 was run by three automated testers against the deployed commit (notes in SharePoint,
-*Testing notes*): five defects, all fixed the same day. Then, from Lawrence's reading of Ellen and
-Katie's feedback: the review queue is its own page (`app/admin/review/`) and Event Payments shows
-money flags only; the person page carries review state, agreements, application and permissions
-per event; Buddy Assignments hides paired volunteers by default and has a CSV and one printable
-sheet per buddy; `app/admin/newsletter/` lists who has news on (`0085`); only campers choose
-activities; the support form requires the answers that decide what staff do and no longer asks
-non-campers the disability questions; a building with rooms refuses placements; the retreat page
-sends 2026 registrants to CampSite. The sidebar order is an explicit list in `layout.jsx`.
-`0084` makes the first save of support details reach Recent Changes. **Evening, the same day:**
-one role per person per event (`0086`, superseding `0069`'s parent-who-volunteers: the wizard no
-longer offers it, the database refuses it); outside-provider waivers need an uploaded confirmation
-from the family and from each volunteer (`0087`, private bucket `waiver-confirmations`); the
-Creed agreement is at version 3 (`0088`, "contact Larry" said once); the sidebar is in sections
-(one `SECTIONS` list in `layout.jsx`); `/admin/search` and a header search box; Volunteers by
-event with `/admin/volunteers/print`. **Testing Script 5 is written** (SharePoint, `01 Plans and
-Decisions`) and is the current script; Script 4 is archived. Python 3.12 is installed on the build
-machine, so the library's `render.py` runs here.
-
-**15 October 2026 — the review decision, and `0089`.** A registration's page opens with the
-family (name, people as links to their person pages, every event the household is registered
-for), then the event, then an explained money block, then a **Review** card that approves or
-waitlists everyone still submitted in one click or sends the registration back to the family
-for more information. That last one is `0089`: two columns on `registrations`
-(`awaiting_family_since`, `awaiting_family_reason`), guarded by a trigger so only a registrar
-moves them. The review queue separates *waiting on staff* from *waiting on the family*, the nav
-badge counts only the first, and the family's dashboard shows the ask in amber. **Placing people
-into programs is coordination** (`0090`): the Programs page and its writes need coordinator or
-administrator, through `place_in_program()`, a definer function that touches only `program_id`
--- the participants table's UPDATE policy stays the registrar's. Naming a leader stays
-administrator-only, now in the database as well as the app. **Background checks carry a
-verdict** (`0091`): `person_clearances.verdict` is the ministry's word (`ok`, `follow_up`,
-`not_permitted`), set from the volunteer's record by a holder of the Background-checks grant;
-who and when are stamped by trigger, the check date is required once paperwork is on file, the
-expiry follows from it by `clearance_interval_months()` (36), and every change lands in
-`clearance_review_log`. The `clearance_status` view (definer, like `program_roster`) gives every
-staff member the three facts — on file, current, verdict — and `clearancePill()` in
-`lib/format.js` is the one way they are shown. The `volunteer_clearances` compatibility view
-from `0056` is dropped (`0092`, applied once the commit was live). Staff idle logout is 60
-minutes (was 15). **The bulk order never wrote a row** until `0093`: 0029's check constraint wanted a
-Checkr candidate id on any row past not_started, which the file flow cannot have until the export
-comes back; it now accepts the invited email as the match. **A date of birth must be real**
-(`0094`): before 1900 or in the future is refused by trigger on `people`, the date boxes carry
-min/max, and `dobProblem()` in `lib/format.js` says it in words first -- a volunteer born
-"0014-02-24" had been counted as an adult. Background checks are adults only: a volunteer under
-18 shows "Under 18 -- not screened" and is not counted as missing one; an address invited for two
-people is settled by name on import or listed for a human. **Background checks are annual**
-(`0095`, Larry and Ellen 15 Oct: annual Basic Plus) -- `clearance_interval_months()` is 12 and
-the importer agrees. **16 October:** the 0080 paragraph below carries `0096` (due date, discounts
-and the deposit waiver as event settings); the build plan for the rest of the read-through is
-`01 Plans and Decisions\md files\Luke14-Build-Plan-2026-10-16.md`. **Rule of thumb for any access question
-(Lawrence, 15 Oct):** when it is not obvious what a role or person should have, default to
-read; write is granted on top, for a named person, and logged. **Background screening reads the
-household's email and phone where the person has none** — on 15 Oct none of the 15 volunteers
-carried an email of their own and every household did — and the Checkr bulk file's header is
-their "bulk order with SMS" template, verbatim. The access-model plan lives at
-`01 Plans and Decisions\md files\Luke14-Access-Model-Plan.md`; one open staff question (→ Ellen)
-asks how the recent checks were actually run, since Larry recalls SSNs being entered by hand. **Also that day: `/admin/search` had returned "Nothing matches" for every query
-since it shipped** — `people → households` has two paths since `0037` (`people.household_id`
-and `households.primary_contact_person_id`), PostgREST refused the embed with PGRST201, and the
-page swallowed the error. Name the key (`households!people_household_id_fkey`) on every
-people↔households embed, and never turn a query error into an empty list.
-
-**Built 30 September 2026 — migration `0080`, payment plans (read before touching money).** ~~A
-camp week's balance is due two weeks before it starts~~ **Superseded 16 October (`0096`): the
-due date is `events.balance_due_on`, July 1 for the camp weeks, set on Setup; `balanceDueOn()`
-in `lib/events.js` and `balance_due_on()` in SQL both just read it, and every event read that
-feeds a due date must select the column.** The two discounts are event settings too
-(`family_discount_cents`, `family_discount_from_person`, `multi_week_discount_percent`), read
-by the same recalc functions; `recalc_event_discounts()` re-runs them after Setup saves. A
-registrar may **waive the deposit** (`waive_deposit()`: the mark on `registrations` plus a
-scholarship of the per-person deposit for each fee-paying person); `registration_review` then
-reads `deposit_paid` with the flag `deposit_waived`. **Later that night, `0097`:** a camper's
-**support and medical details are asked inside the registration wizard** (card 4) and are a
-condition of submitting -- `supportProblems()` in `lib/support.js` is the rule, applied in the
-browser and again in `submitFamilyRegistration`, which writes `person_support` off the
-read-back and stamps `details_saved_at`; the dashboard form stays for edits and the photo, and
-both render `components/SupportDetailsFields.jsx`. **Allergens are a tick list**
-(`person_support.allergens`, checked against the fixed vocabulary; `allergy_other`;
-`allergy_detail` now means "what happens"); `allergenWords()` / `allergySummary()` in
-`lib/support.js` are the one way they are printed, and a row saved before 0097 shows its free
-text as "Other: ..." until re-saved. `log_family_change()` was redefined for the two columns
-(the 0064 trap, not fallen into). **`0098`, the same night: a registration can be put ON
-HOLD** (`hold_since/hold_reason/hold_by`, registrar-guarded like 0089's pair): everyone
-confirmed or waitlisted goes back to `submitted`, `registration_review` carries the flag
-`on_hold`, the Review card and every row of Recent Changes offer it, and the family's
-dashboard shows the reason in amber. Approve, waitlist or "lift" clear it. The refund form
-opens on `refundSuggestion()` (`lib/payments.js`: deposit kept, full to 30 days before, half
-after) as a suggestion, never a lock. `/admin/dietary/by-allergen` is the named list (Sensitive);
-buddies are many-to-many with no confirms and one buddy sheet per pairing. **`0099`: one event
-filter.** `isCurrentEventRow()` in `lib/events.js` is the one test for "current" (two weeks after
-the event ends, a year ahead, never archived); every staff page calls it, and Medical, Event
-Payments and Awaiting review use the shared `EventFilter` (Check-In keeps dated pills on purpose;
-Rosters keeps search-only; the Overview's pills jump). `events.archived_at` is the archive mark on
-Setup. **At launch, archive the 2026 Retreat there.** **`0100` and `0101`, the grants model, all four steps (16-17 Oct):** `staff_grants` (profile,
-area, read|write) with a faithful backfill from roles, presets and per-area ticks on Staff &
-Access, every change in `staff_access_log` as `grant:<area>`; then `0101` rewrote 53 policies and
-12 guards in place to ask `has_grant(area, level)` -- the mapping table at its head is the
-decision -- and dropped `is_registrar()` / `is_coordinator()`. **The role column now says one
-thing: `admin`** (`is_admin()`: granting, accounts, naming a leader, the doctor's dated grant);
-`registrar` and `coordinator` are labels. Pages ask `can(staff, 'read:<area>' |
-'write:<area>')`; the old names `sensitive`, `giving`, `background_checks` are aliases
-(`read:sensitive`, `read:giving`, `write:background_checks`), and `registrar` / `coordinator` /
-`door` return false. The vocabulary is `lib/grants.js`; the harness seeds grants for its
-personas. **Run the harness locally** (PostgreSQL 16 is installed on the build machine, 18 Oct):
-`bash supabase/tests/run_rls_local.sh` builds a fresh database from every migration and runs
-`rls_test.sql`; it ended `ALL CHECKS PASSED` that day, with a grants section added.
-**Read `0101`'s mapping before touching a policy**: definitions of activities, slots and
-rooms are Setup write (an administrator), placements are their own areas, money reads need
-`payments` read. The high-water mark is `0101`. A camp-week registration is **not
-finished** until the family pays in full, sets up an automatic payment plan, or requests a
-scholarship (`registration_payment_routes` view; `/account/finish/[registrationId]`). The early-
-registration discount lives in its own column, `early_discount_cents`, written only by
-`recalc_early_registration_discount()`. Plans are created only by `stripe-plans-webhook`, and
-families can read them but not write them. The daily `charge-payment-plans` function charges
-what falls due, sharing its logic with the webhook through `supabase/functions/_shared/`.
-`0080` also stops families editing money columns on `registration_participants`, which they
-could do before. Switch-on steps are in `supabase/PAYMENT-PLANS-SETUP.md`; tests are in
-`supabase/tests/`. Not live until those steps are done.
-
-**Built 30 September 2026, later — migration `0081`, Lawrence's answers to the staff
-questions.** Read `DECISIONS.md` (same date) before touching registration or money.
-- **"Not finished" is switched off.** A family submits with nothing paid.
-  `requiresPaymentChoice()` in `lib/plans.js` returns `false`, and every banner, pill and
-  column keys off it. Plans and pay-in-full stay on offer at `/account/finish/`, now titled
-  "Ways to pay".
-- **The deposit is needed for staff approval**, unless the family requests a full scholarship.
-  Staff work from three classes in the `registration_review` view: deposit received
-  (`succeeded` money only), full scholarship requested, or neither. The view also carries flags:
-  deposit short, photo permission declined, Creed not affirmed. The classes and flags show on
-  Event Payments and on each registration.
-- **Three automatic discounts stack**, each in its own column and each capped at what the
-  person still owes:
-  - both weeks, `discount_cents` (`0070`);
-  - early registration, `early_discount_cents` (`0080`);
-  - family, `family_discount_cents` (`0081`). The 3rd and later person on a registration gets
-    $50 off, written only by `recalc_family_discount()`. Run it before the early recalc
-    (`recalcEarly()` does both).
-- **Agreements are signed per person.**
-  - One `agreement_signatures` row per person per agreement, with `signer_role` set to `self`,
-    `parent_guardian`, `legal_guardian` or `authorized_adult`. The last needs the signer's
-    explicit affirmation.
-  - The rows are written by `app/register/family/actions.js`, not the RPC. People added later
-    are signed for then. Old household-wide rows still cover whoever was on the registration
-    when they were signed.
-  - Version 2 agreements contain `{{event}}`, filled in by `agreementText()` in
-    `lib/events.js`.
-  - The scholarship and payment-by-check agreements are retired.
-- **Volunteers arrive a day early** for orientation: `events.volunteer_arrives_on`.
-- **Families can ask for their data to be deleted** at `/account/delete-data`. Staff work the
-  queue at `/admin/deletion-requests`; nothing is deleted automatically.
-- Tests: `supabase/tests/staff_answers_rules.sql`, run on a scratch database like the 0080 ones.
-
-### Program leaders are not staff — a second kind of person now reaches `/admin`
-
-Added 29 August in migration `0061`, and easy to miss: a **program leader** has **no row in
-`staff`**, no role, and none of the permissions in `lib/staff.js`. Reading that file alone would
-tell you they do not exist. What they have is a grant in `program_leaders` naming one program at
-one event, and the only thing it buys is the right to read the `program_roster` **view**, filtered
-to that program.
-
-Three things follow, and all three are deliberate:
+A **program leader** has **no row in `staff`**, no role, and none of the permissions in
+`lib/staff.js`. What they have is a grant in `program_leaders` naming one program at one event, and
+the only thing it buys is the right to read the `program_roster` **view**, filtered to that program.
+One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a permission.
 
 - **The view is the permission.** `program_roster` carries names, ages, a buddy, and *flags* for
   allergies and support needs — never the narrative columns. `0061` deliberately adds **no** policy
-  to `registration_participants`, `people` or `person_support`: an earlier draft did, and it was
-  removed, because a leader who can select the participant row can select every column on it.
-- **`program_roster` is a `SECURITY DEFINER` view, and that is intended.** It has to be, since a
-  leader holds no read on the tables underneath. It is safe because the view's own
-  `where public.is_staff() or public.leads_program(...)` is the row filter. Supabase's advisor
-  reports this as its one ERROR-level finding; the entry accepting it is in `DECISIONS.md`,
-  30 August. Do not "fix" it by switching it to `SECURITY INVOKER` — that silently empties every
+  to `registration_participants`, `people` or `person_support`: a leader who can select the
+  participant row can select every column on it.
+- **`program_roster` is a `SECURITY DEFINER` view, and that is intended.** A leader holds no read on
+  the tables underneath; the view's own `where public.is_staff() or public.leads_program(...)` is the
+  row filter. Supabase's advisor reports it as an ERROR; the acceptance is in `DECISIONS.md`,
+  30 August. **Do not "fix" it by switching to `SECURITY INVOKER`** — that silently empties every
   leader's roster.
-- **Leaders are held to the two-factor rule too**, in `app/admin/layout.jsx`. That is a decision,
-  not an oversight: what they see is a list of disabled children's first names.
+- **Leaders are held to the two-factor rule too**, in `app/admin/layout.jsx` — what they see is a
+  list of disabled children's first names.
 
-**Still mock:** the newsletter page links out to a Google Form. **The contact form is no longer
-mock** — it sends through Resend to `info@` with Turnstile on it (30 August), which retires both
-the "still mock" line and half of item 4 in the list above.
+---
+
+## Money — read before touching it
+
+- **Discounts are rules recomputed from stored facts, each in its own column, each capped at what
+  the person owes:** both weeks `discount_cents` (`recalc_multi_week_discount()`, `0070`), early
+  registration `early_discount_cents` (`recalc_early_registration_discount()`, `0080`), family
+  `family_discount_cents` (`recalc_family_discount()`, `0081`; run before the early recalc —
+  `recalcEarly()` does both). Each recalc **touches only discounts carrying its own
+  `discount_reason`**; a manual staff discount is invisible to it. Amounts are event settings
+  (`family_discount_cents`, `family_discount_from_person`, `multi_week_discount_percent`, `0096`);
+  `recalc_event_discounts()` re-runs them after Setup saves. Whether volunteering must cover both
+  weeks is still with staff — named constants at the top of `recalc_multi_week_discount()`.
+- **Due date** is `events.balance_due_on` (July 1 for the camp weeks, set on Setup, `0096`).
+- **Submitting needs nothing paid; approval needs the deposit** ($50 per person) or a full-scholarship
+  request. `registration_review` gives three classes (deposit received — `succeeded` money only;
+  full scholarship requested; neither) and flags (deposit short, photo permission declined, Creed
+  not affirmed). Someone who may decide scholarships can **waive the deposit** (`waive_deposit()`:
+  the mark plus a per-person deposit scholarship, a pending request left pending — `0103`; the view
+  then reads `deposit_paid` with `deposit_waived`, and no page asks the family for it).
+- **One role per person per event** (`0086`); the wizard does not offer a second and the database
+  refuses it.
+- **Payment plans** (`0080`): created only by `stripe-plans-webhook`; families read, never write; the
+  daily `charge-payment-plans` function shares logic with the webhook via
+  `supabase/functions/_shared/`. Families cannot edit money columns on `registration_participants`.
+  **Not live until `supabase/PAYMENT-PLANS-SETUP.md` is done.** Plans and pay-in-full are offered at
+  `/account/finish/[registrationId]` ("Ways to pay"; `registration_payment_routes` view).
+- **Refunds:** `charge.refunded` → `supabase/functions/stripe-refund-webhook/`; per-family refunds via
+  `refundPayment` in `app/admin/registrations/[id]/actions.js`; the over-refund guard and
+  pending-refund accounting are `0038`/`0044`/`0053`/`0054`.
+- **Agreements are signed per person:** one `agreement_signatures` row per person per agreement,
+  `signer_role` = `self` | `parent_guardian` | `legal_guardian` | `authorized_adult` (the last needs
+  the signer's explicit affirmation). Written by `app/register/family/actions.js`, not the RPC;
+  people added later are signed for then; old household-wide rows still cover whoever was on the
+  registration when signed. The scholarship and pay-by-check agreements are retired. The Creed
+  agreement is at version 3 (`0088`).
+
+**Registration details.** A camper's support and medical details are asked inside the wizard
+(card 4) and are a condition of submitting (`0097`; `submitFamilyRegistration` writes
+`person_support` and stamps `details_saved_at`); `components/SupportDetailsFields.jsx` serves the
+wizard and the dashboard form. Allergens are a tick list (`person_support.allergens`, fixed
+vocabulary, `allergy_other`; `allergy_detail` means "what happens"); rows saved before `0097` show
+"Other: …" until re-saved. Outside-provider waivers need an uploaded confirmation (`0087`, private
+bucket `waiver-confirmations`). Volunteers arrive a day early (`events.volunteer_arrives_on`).
+Data-deletion requests: `/account/delete-data` → `/admin/deletion-requests`; nothing is deleted
+automatically.
 
 ---
 
 ## Stack
 
-Next.js 16 (App Router, JavaScript — not TypeScript; upgraded from 15 on 16 September 2026, see
-`DECISIONS.md`), Tailwind CSS, deployed on Vercel. Supabase (Postgres + Auth) from Phase 1. Stripe
-from Phase 2. The request-time hook at the repository root is `proxy.js` — Next 16's name for what
-was `middleware.js`; older comments that say "the middleware" mean that file.
-
-`app/` holds routes, `components/` shared UI, `lib/` helpers, `public/` static assets.
+Next.js 16 (App Router, **JavaScript — not TypeScript**), Tailwind CSS, Vercel; Supabase (Postgres +
+Auth); Stripe. The request-time hook is `proxy.js` (Next 16's name for `middleware.js`; comments
+saying "the middleware" mean it). `app/` routes, `components/` shared UI, `lib/` helpers, `public/`
+static assets. `.github/workflows/build.yml` lints and builds every push to `main`.
 
 ---
 
 ## Blocking facts — read these before writing code
 
-### `output: 'export'` is gone — do not put it back (done 5 August 2026)
+- **`output: 'export'` is gone — do not put it back.** It disables all server code. `next.config.mjs`
+  carries `trailingSlash: true` and nothing else; **`trailingSlash` stays** (removing it turns
+  `/about/` into `/about` across every link). Anything calling this site a "static export" is out of
+  date.
+- **GitHub Pages is retired — do not revive it.** Hosting is Vercel only, through its GitHub
+  integration. The repository is `https://github.com/luke-14-ministries/website.git` (formerly
+  `luke-14-ministries.github.io`; GitHub redirects). The `Production` environment under Settings →
+  Environments is **Vercel's** — leave it alone. **`build.yml` is not a deploy workflow**; if it
+  ever grows a step that uploads, publishes or deploys, something has gone wrong.
+- **`NEXT_PUBLIC_BASE_PATH` must stay unset on Vercel.** Setting it breaks every link and image and
+  looks like a CSS problem. `asset()` in `lib/site.js` still reads it and returns paths unchanged —
+  known dead weight in 16 files, not a bug to fix.
+- **The site is deliberately hidden from search engines — do not "fix" this.** Four switches:
+  `public/robots.txt` (`Disallow: /`); `app/layout.jsx` `robots: { index: false, follow: false }`;
+  the `"(Preview Build)"` title suffix in `app/layout.jsx`; `components/PreviewBanner.jsx`.
+  **All four are reversed together in Phase 4, at launch, and only with board approval.** One early
+  publishes a mock-up; one forgotten fails silently for months. Treat them as one checklist item.
 
-`next.config.mjs` now carries `trailingSlash: true` and nothing else. `output: 'export'`,
-`basePath` and `images: { unoptimized: true }` were removed together in commit `eaef8d5`, the
-opening commit of the Phase 1 sprint.
+### What is in DNS *(verified 7 August 2026)*
 
-`output: 'export'` compiles the site to flat HTML and disables **all** server code — no API
-routes, no server actions, no database calls, no Stripe. It blocked every item in Phase 1. The
-other two were GitHub Pages accommodations: `basePath` served the site from a subfolder, and a
-static export cannot run Next's image optimiser.
+`luke14ministries.net`:
 
-`trailingSlash: true` **stays.** It is a URL preference, not a hosting accommodation — removing
-it turns `/about/` into `/about` across every link in the site.
-
-Anything in older documentation calling this site a "static export" is out of date.
-
-### GitHub Pages is retired — do not revive it (done 5 August 2026)
-
-Hosting is Vercel, and only Vercel. On 5 August, in order: Pages was unpublished in repository
-Settings, `.github/workflows/deploy.yml` was deleted (commit `8ea87ce`), the leftover
-`github-pages` environment was removed, and the repository was renamed from
-`luke-14-ministries.github.io` to **`website`**. That old name was not decorative — a repository
-named `<org>.github.io` is what *tells* GitHub to serve it as the organization's Pages site.
-
-The `Production` environment that remains under Settings → Environments belongs to **Vercel**,
-which creates it through the deployments API. Leave it alone.
-
-**`.github/workflows/build.yml` exists again from 30 August 2026, and it is NOT a deploy
-workflow.** It runs `npm ci`, `npm run lint` and `npm run build` on every push to `main`, and
-publishes nothing anywhere. Vercel still does all deploying, through its GitHub integration and
-not through any file in this repository. The distinction matters because the last workflow file
-here *was* a Pages deployer, so a future reader finding `.github/workflows/` again could
-reasonably assume Pages had crept back. It has not. If that file ever grows a step that uploads,
-publishes or deploys, something has gone wrong.
-
-The repository is `https://github.com/luke-14-ministries/website.git`. GitHub redirects the old
-URL, so an out-of-date clone still works, but new instructions should use the new name.
-
-`lib/site.js` still exports an `asset()` helper that prefixes paths with
-`NEXT_PUBLIC_BASE_PATH`. That variable is unset on Vercel, so it returns paths unchanged; it is
-used in 16 files and was deliberately left in place rather than risk a typo across all of them
-for no functional gain. Known dead weight, not a bug to fix urgently.
-
-### `NEXT_PUBLIC_BASE_PATH` must stay **unset** on Vercel
-
-It exists so a site can be served from a subfolder, which GitHub Pages needed and Vercel does
-not. Setting it on Vercel breaks every
-link and every image, and it fails in a way that looks like a CSS problem rather than a config
-problem — which is how it eats an afternoon. Leave it out of the Vercel environment variables
-entirely.
-
-### The site is deliberately hidden from search engines — do not "fix" this
-
-**Four** switches, all intentional while this is a preview:
-
-- `public/robots.txt` — `Disallow: /`
-- `app/layout.jsx` — `robots: { index: false, follow: false }`
-- `app/layout.jsx` — the title suffix `"(Preview Build)"`
-- `components/PreviewBanner.jsx` — the red PREVIEW banner
-
-**All four are reversed together in Phase 4, at launch, and only with board approval.** Reversing
-any of them early publishes a mock-up as if it were the real site. Forgetting one at launch fails
-*silently* — the site simply never appears in search results and nobody notices for months. Treat
-it as a single four-part checklist item.
-
----
-
-### What is actually in DNS today *(verified 7 August 2026)*
-
-Queried directly rather than assumed. `luke14ministries.net`:
-
-- **Nameservers** are `ns01`–`ns04.squarespacedns.com` (running on NS1). The public site's A records
-  are Squarespace's. **The existing site is Squarespace, not WordPress** — several older documents
-  say otherwise and are wrong.
-- **The registrar is Squarespace until launch day** (confirmed on `admin@` 16 Aug). **Decided 16
-  October 2026: the domain transfers to Cloudflare Registrar in the same DNS session that points it
-  at Vercel** — the transfer changes nameservers, which is that switch anyway. Until then nobody
-  edits the registrant contact at Squarespace (60-day transfer lock). Step list: DO-THIS-NEXT W51.
-- **Mail is Microsoft 365** — MX points at `luke14ministries-net.mail.protection.outlook.com`, and a
-  `MS=` verification token is present.
-- **SPF is `v=spf1 include:spf.protection.outlook.com -all`.** Note the `-all`: that is a *hard*
-  fail, so any sender not listed is rejected outright. Adding a new sender (Resend) means editing
-  this exact line, and an error here silently breaks every staff email the ministry sends. Change it
-  carefully, with someone watching, and never as the last task of a session.
-- **DMARC exists but does nothing**: `v=DMARC1; p=none`, with no `rua=` reporting address, so nobody
-  is being told who sends as the ministry.
-- **No Mailchimp, no other bulk sender is authorised on this domain.** The newsletter is therefore
-  going out either through Squarespace's own campaigns or from a vendor's from-address.
+- **Nameservers** `ns01`–`ns04.squarespacedns.com`; the public site is **Squarespace, not
+  WordPress** (older documents are wrong).
+- **The registrar is Squarespace until launch day**, when the domain transfers to Cloudflare
+  Registrar in the same DNS session that points it at Vercel. Until then nobody edits the registrant
+  contact at Squarespace (60-day transfer lock). Steps: DO-THIS-NEXT W51.
+- **Mail is Microsoft 365** — MX `luke14ministries-net.mail.protection.outlook.com`, plus an `MS=`
+  verification token.
+- **SPF is `v=spf1 include:spf.protection.outlook.com -all`** — a *hard* fail. Adding a sender means
+  editing this exact line; an error silently breaks every staff email. Change it carefully, with
+  someone watching, and never as the last task of a session.
+- **DMARC exists but does nothing**: `v=DMARC1; p=none`, no `rua=` reporting address.
+- **No Mailchimp or other bulk sender is authorised on this domain.**
 
 ---
 
@@ -490,36 +329,30 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
 ## Working rules
 
 - **Never let OneDrive or SharePoint sync this repository.** It corrupts `.git`. The working copy
-  lives at `C:\dev\luke14` for exactly this reason. Documents go to SharePoint; code does not.
+  lives at `C:\dev\luke14`. Documents go to SharePoint; code does not.
 - **Ownership is the ministry's, not a person's.** Production accounts are created under
   `admin@luke14ministries.net`. Never bind a ministry account to a personal GitHub login, and
   never add `admin@` as a verified email on a personal GitHub account.
-- **Do not point the domain.** `luke14ministries.net` serves the ministry's existing **Squarespace**
-  site. Pointing it retires that site, which is a board decision, not a technical step. Phase 4 —
-  and on that day the registration moves to Cloudflare in the same session (DO-THIS-NEXT W51).
-  (Older documents call this a WordPress site. That was wrong — see the DNS facts below.)
-- **Record decisions in `DECISIONS.md`** — one short entry per real choice, written when the
-  choice is made. In six months it is the only record of why anything is the way it is.
-- **Check this file's numbers before trusting them, and correct them when they are wrong.**
-  It has now drifted twice: eight ways over nineteen days to 26 August, then four more ways in
-  the four days after it was corrected. The pattern is specific and worth naming — the documents
-  that are *regenerated* show no drift at all, and the one that is *edited by hand* drifts every
-  time. Two commands settle most of it in ten seconds, and a session that is about to rely on a
-  number here should run them rather than quote the paragraph:
+- **Do not point the domain.** `luke14ministries.net` serves the ministry's **Squarespace** site;
+  pointing it retires that site — a board decision, Phase 4, and on that day the registration moves
+  to Cloudflare in the same session (DO-THIS-NEXT W51).
+- **Record decisions in `DECISIONS.md`** — one short entry per real choice, written when it is made,
+  newest at the bottom. Dated narrative goes there, not here.
+- **Check this file's numbers before trusting them, and fix any that are wrong in the same
+  session.** The hand-edited document drifts; the regenerated ones do not. Two commands settle most
+  of it:
 
   ```powershell
   (Get-ChildItem supabase\migrations -Filter '0*.sql').Name | Select-Object -Last 2  # the real high-water mark
-  git log -1 --date=short --format=%ad                                              # how old "where things stand" actually is
+  git log -1 --date=short --format=%ad                                              # how old "where things stand" is
   ```
 
-  The filter matters: the folder also holds `README.md` and `rls_test.sql`, and both sort after every
-  numbered file (digits collate before letters), so an unfiltered listing's last two entries are
-  always those two housekeeping files, never the actual high-water mark.
-
-  A claim about what is *built* is the one that cannot be checked this way and goes stale
-  hardest — "nothing writes them yet" was true when written and false four days later. When you
-  find one wrong, fix it in the same session; leaving it is how the next reader inherits it as
-  fact.
+  The filter matters: `README.md` and `rls_test.sql` in that folder sort after every numbered file.
+  A claim about what is *built* cannot be checked this way and goes stale hardest.
+- **SharePoint documents: edit the Markdown, regenerate the PDF** with `md files\render.py`
+  (`render_checklist.py` for testing scripts). **The ink guard:** a PDF changed by a person since the
+  script last wrote it (ink, comments) is not overwritten. Copy it to
+  `00 Comments and Critiques\Testing notes` under a dated name **before** re-running with `--force`.
 - **Commit in small, described steps.** The commit log is documentation for a future volunteer.
 - **Ask before adding a dependency.** Every package is something someone has to keep updated.
 - Commit identity is the ministry account, not a personal address. Check `git config user.email`
@@ -527,62 +360,40 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
 
 ---
 
-## Phase roadmap (short form)
+## Phase roadmap
 
-- **Phase 0 — now.** Accounts, ownership, vault, register, governance. Mostly not code.
-- **Phase 1 — August sprint. Complete.** Removing `output: 'export'` (5 August), the Supabase
-  schema with RLS, family sign-up and login, the registration wizard writing to real storage, and
-  Stripe end to end in **test mode** with fake money — all shipped. See "Where things stand"
-  above, which is the authoritative account.
-- **Phase 2. Complete, and well past the original scope.** Rosters, payment status and the
-  background-check flag were the ask. Delivered instead: the full staff admin (rosters, check-in,
-  dietary and kitchen lists, medical, Event Payments with filtered CSVs, Giving, Staff & Access),
-  the change-review queue, scholarships and discounts, printable statements on letterhead,
-  refunds, cancellation requests, lodging assignments, activities with capacity guards, the
-  volunteer application, and Resend newsletters.
-- **Phase 3.** Review by real people on the preview URL. Still test keys, still no real families.
-- **Phase 4 — launch.** Vercel Pro, live Stripe keys, domain pointed, and all four preview
-  switches reversed together. Board approval gates this phase.
-
-Sections 5 and 9 of `IMPLEMENTATION-PLAN.md` describe Phase 1 in full.
+- **Phase 0** — accounts, ownership, vault, register, governance. Done except printed recovery codes.
+- **Phases 1–2** — the core (schema with RLS, sign-up, wizard, Stripe test mode) and the full staff
+  admin. **Complete.**
+- **Phase 3 — now.** Review by real people on the preview URL. Test keys, no real families.
+- **Phase 4 — launch.** Vercel Pro, live Stripe keys, domain pointed, all four preview switches
+  reversed together. Board approval gates it.
 
 ---
 
-## Hosting note
+## Hosting
 
-Vercel's free **Hobby** plan is the right plan for building, and it is legitimate for Phases 1–3.
-It is **not** legitimate at launch: Hobby is non-commercial only, and Vercel's fair-use terms
-count "any method of requesting or processing payment from visitors of the site," adding
-explicitly that asking for donations counts too. Being a 501(c)(3) does not change it — the test
-is what the site *does*. Hobby is also a single seat, which conflicts with the two-admins-on-
-everything rule. **Pro ($20/developer seat/month, viewer seats free) becomes necessary the moment
-Stripe switches to live keys.** Plan §8 has the full reasoning.
+Vercel **Hobby** is legitimate for Phases 1–3, **not at launch**: it is non-commercial only, and
+Vercel's terms count "any method of requesting or processing payment" — donations included. Being a
+501(c)(3) does not change it. Hobby is also one seat. **Pro ($20/developer seat/month, viewer seats
+free) is required the moment Stripe switches to live keys.** Implementation Plan §8.
 
 ---
 
 ## Where the documentation lives
 
-- `GLOSSARY.md` — **the words this project uses, in plain English, for people who are not
-  developers**, and the vocabulary to use when explaining anything to them (lint, push, branch,
-  migration, grant, drift, and this project's own terms). When a non-technical team member asks
-  what a word means, answer in its terms and point them at `Luke14-Glossary.pdf` at the library
-  root. SharePoint, `md files`. Added 2 September 2026.
-- `IMPLEMENTATION-PLAN.md` — why, and the full phase plan. SharePoint, `01 Plans and Decisions\md files`.
-- `DO-THIS-NEXT.md` — the ordered working checklist. SharePoint, `02 Accounts and Setup\md files`.
-- `Luke14-Account-Register.xlsx` — every account, who owns it, who the second admin is. No
-  passwords, ever. SharePoint, `02 Accounts and Setup`.
-- Web-admin handbook — SharePoint, for the second admin.
-- `CONTRIBUTING.md` — repository conventions.
-- `DECISIONS.md` — the running decision log.
+SharePoint library *Luke 14 Ministries Team Site — Website* (Markdown in each folder's `md files\`):
 
----
+- `GLOSSARY.md` (root `md files\`) — the project's words in plain English. When a non-technical team
+  member asks what a word means, answer in its terms and point them at `Luke14-Glossary.pdf`.
+- `IMPLEMENTATION-PLAN.md` — why, and the phase plan (`01 Plans and Decisions`).
+- `Luke14-Staff-Questions.md` — open questions (§1) and what staff decided (`01`).
+- `Luke14-Access-Model-Plan.md`, `Luke14-Build-Plan-2026-10-16.md` — the grants model; the
+  16 October build list (`01`).
+- `Luke14-Testing-Script-5.md` — the current test script (`01`).
+- `DO-THIS-NEXT.md` — the ordered working checklist (`02 Accounts and Setup`).
+- `Luke14-Account-Register.xlsx` — every account, owner and second admin; no passwords, ever (`02`).
+- `Luke14-Web-Admin-Handbook.md` — procedures, for the second admin (root).
 
-*Last updated 31 August 2026 — schema at 47 tables / 5 views / 108 policies / 41 functions
-(queried, not remembered), migrations through `0072`; the Creed, allergy severity, the buddy
-default, and the two money migrations (`0069`, `0070`).
-30 August 2026 — background screening built out, program leaders added as a non-staff role.
-26 August 2026 — refunds live, Phases 1 and 2 complete.
-9 August 2026 — schema run, auth layer working.
-7 August 2026 — DNS verified (Squarespace, not WordPress).
-5 August 2026 — GitHub Pages retired, repository renamed to `website`,
-static-export config removed.*
+Repository: `CONTRIBUTING.md` (conventions), `DECISIONS.md` (the decision log),
+`supabase/PAYMENT-PLANS-SETUP.md`, `supabase/EMAIL-TEMPLATE-SNIPPETS.md`.

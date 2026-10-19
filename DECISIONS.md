@@ -2193,6 +2193,78 @@ grant changes are logged. Everyone on staff sees three facts — on file, curren
 a definer view, so the Buddy board stops telling coordinators without the grant that nobody has
 been checked. Larry's "not permitted" is red wherever a name appears.
 
+## 2026-10-18 — Campsite's real cost: the July statement, not the directories
+
+The 5 August entry framed Campsite as "6% plus about $249 a month, the fixed half the larger half"
+from four directory listings, and said to amend it when the ministry's own invoice arrived. The July
+2026 merchant statement (Implementation Plan §3c) is that evidence: **$862.62 on $11,628.40 across 39
+transactions — 7.42% all-in**: a 4.0% software fee on volume, about 3.0% card processing, and about
+**$41 a month flat**. The fixed costs are a wash against ours, so **the whole saving is the rate**,
+and there is still no minimum season size before the switch pays. The 5 August reasoning about a
+fixed fee removing the threshold does not hold; its conclusion (the project pays at any volume)
+still does, for the rate's sake. CLAUDE.md said "$249/month" until today.
+
+## 2026-10-18 — Carried over from CLAUDE.md when it was trimmed
+
+CLAUDE.md was rewritten from dated update paragraphs into a current-state brief (6,252 → about 3,600
+words). These four paragraphs were the only history it held that this log did not, so they are kept
+here word for word.
+
+**Built 31 August — migrations `0062`–`0070`; `0071` and `0072` followed on 1 September (the program-lead flag, and the definer function that lets co-leaders see each other's names), and the high-water mark is now `0072`.** Volunteers
+affirm the Apostles' Creed on the volunteer application (`0062`, `0063`). Allergies carry a
+severity, in the only three terms that change what somebody does (`0064`). Program leaders got
+their table comment corrected — a second, assistant leader always worked (`0065`). Every camper is
+treated as needing a one-to-one buddy until a coordinator says otherwise, which needed a tri-state
+because "nobody decided" and "decided no" had been the same value (`0066`). Rooming preferences and
+likes/dislikes are collected (`0067`), and `0068` put those and `allergy_severity` into the change
+log — **adding a column to `person_support` is not finished until `log_family_change()` is
+redefined**, which `0064` missed and is the trap to remember.
+
+`0069` and `0070` are the two to read before touching money. `0069` publishes a **second, zero-fee
+`event_option` per event** so one person can hold two roles at one camp (a parent who also
+volunteers, charged once). That broke an assumption four files were making —
+`event_options.find((o) => o.published)` — which became a money bug the moment an event had two
+options, because a bad draw returns the zero-fee one and sets the price. Use `enrollmentOption()`
+in `lib/events.js`; never "the first published option". `0070` adds
+`recalc_multi_week_discount()`, which applies the both-weeks discount as a **rule recomputed from
+stored facts** rather than something the wizard works out, and which **only ever touches discounts
+carrying its own `discount_reason`** — a manual staff discount is invisible to it. Whether
+volunteering must cover both weeks or just one is still with staff; the rule is three named
+constants at the top of that function.
+
+**Next, in order:**
+
+1. **Purge ALL test data** from the production project. Everything after this depends on it.
+2. **Live Stripe keys**, and **both** live-mode webhooks — `stripe-webhook` *and*
+   `stripe-refund-webhook`. Test-mode endpoints do not carry over; a missed refund webhook fails
+   silently (see migration `0054`).
+3. **Vercel Pro.** Required the moment live keys are in — Hobby is non-commercial only. See the
+   Hosting note below.
+4. ~~**Spam protection on the contact and newsletter forms.**~~ **Half done, half moot** *(corrected
+   1 Sep)*: the contact form got Turnstile with server-side verification on 30 August
+   (`app/contact/actions.js`, `lib/turnstile.js`); the newsletter page only links out to a Google
+   Form, so there is nothing to protect. What remains is a *design* question — replace that link
+   with an on-site sign-up that writes to Resend contacts, or keep the Google Form.
+
+**Done 1 September, from Lawrence's read of Testing Script 3:** buddy pills now say *buddy
+assigned — name*, *no buddy assigned* and *buddy not needed* (the words camp uses); a program can
+have one **lead** among its leaders (`0071` + `0072`, a label not a permission, shown on Programs and at the
+top of My Program); and the registration wizard says "family or group" so a group home or church
+group is not told it is in the wrong place (the data model always allowed it — a household needs no
+family relationship and a person can carry their own address).
+
+**Done 8 September:** the two-factor page (`app/account/security/SecurityManager.jsx`) steps the
+session up before adding or removing a device. Supabase requires AAL2 for both, and a browser
+remembered at login sits at AAL1, so both buttons used to fail with Supabase's raw "AAL2 required"
+text — found by Lawrence while moving codes into Bitwarden. The page now asks for a current code
+inline and then continues. Testing Script 3, item 20.10.
+
+**Done since that update:** the volunteer application (17 Aug); Turnstile on the public account
+forms (live on sign-up, login and password reset); and refunds end to end — `charge.refunded`
+handled by `supabase/functions/stripe-refund-webhook/`, per-family refunds through `refundPayment`
+in `app/admin/registrations/[id]/actions.js`, with the over-refund guard and the pending-refund
+accounting in migrations `0038`/`0044`/`0053`/`0054`.
+
 ## 2026-10-18 — PostgreSQL 16 on the build machine; the harness runs again
 
 Installed through winget at Lawrence's request, as a local service on port 5432, with the
