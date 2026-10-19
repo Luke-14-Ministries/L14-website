@@ -347,6 +347,7 @@ export default async function RegistrationDetailPage({ params }) {
     <>
     <RegistrationManager
       registration={registration}
+      canSeeMoney={can(staff, 'read:payments')}
       familyRegistrations={familyRegistrations}
       review={reviewRow ?? null}
       awaiting={{ since: reg.awaiting_family_since ?? null, reason: reg.awaiting_family_reason ?? null }}

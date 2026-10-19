@@ -85,6 +85,9 @@ export default async function KitchenListPage({ searchParams }) {
       // many ways families used to spell it. A pre-0097 row contributes its
       // free text as "Other: ..." until the family saves again.
       const words = allergenWords(s);
+      // An allergy with no words is still an allergy (18 Oct review: an
+      // anaphylactic volunteer with nothing ticked vanished from the list).
+      if (s.has_allergies && words.length === 0) words.push('Allergy — not specified');
       if (words.length > 0) {
         for (const w of words) addItem(r.event_id, 'allergy', w, s.allergy_severity);
         counted = true;

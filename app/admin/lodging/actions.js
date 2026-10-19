@@ -11,7 +11,15 @@ import { getStaff, can } from '@/lib/staff';
 // Place one person. UNIQUE on registration_participant_id makes this an
 // upsert: moving someone from Cabin 2 to Cabin 3 edits their row rather than
 // leaving them in two beds at once.
+// Placements need Rooming write (0101); defining rooms needs Setup write.
+async function requireRoomingWrite() {
+  const staff = await getStaff();
+  return can(staff, 'write:rooming') ? null : 'Placing people in rooms needs Rooming write.';
+}
+
 export async function assignLodging({ participantId, lodgingId, note }) {
+  const denied = await requireRoomingWrite();
+  if (denied) return { ok: false, error: denied };
   if (!participantId || !lodgingId) {
     return { ok: false, error: 'Pick both a person and a place.' };
   }
@@ -63,6 +71,8 @@ export async function assignLodging({ participantId, lodgingId, note }) {
 }
 
 export async function unassignLodging({ participantId }) {
+  const denied = await requireRoomingWrite();
+  if (denied) return { ok: false, error: denied };
   if (!participantId) return { ok: false, error: 'Nothing to remove.' };
 
   const supabase = await createClient();
@@ -87,11 +97,17 @@ export async function unassignLodging({ participantId }) {
 export async function setLodgingPublication({ eventId, publish }) {
   if (!eventId) return { ok: false, error: 'No event.' };
 
+  const denied = await requireRoomingWrite();
+  if (denied) return { ok: false, error: denied };
+
+  // Through the definer function (0103), for the same reason as buddies.
   const supabase = await createClient();
-  const { error } = await supabase
-    .from('events')
-    .update({ lodging_assignments_published_at: publish ? new Date().toISOString() : null })
-    .eq('id', eventId);
+  const { data: found, error } = await supabase.rpc('set_event_publication', {
+    p_event_id: eventId,
+    p_kind: 'lodging',
+    p_publish: Boolean(publish),
+  });
+  if (!error && !found) return { ok: false, error: 'That event was not found.' };
 
   if (error) {
     console.error('setLodgingPublication:', error.message);
@@ -205,6 +221,28 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
   const supabase = await createClient();
 
   if (id) {
+    // A rename gets the same one-name-per-building check as a new room
+    // (18 Oct review: renaming skipped it).
+    const { data: cur } = await supabase
+      .from('lodgings')
+      .select('event_id, parent_id')
+      .eq('id', id)
+      .maybeSingle();
+    if (cur && row.name) {
+      let dup = supabase
+        .from('lodgings')
+        .select('id')
+        .eq('event_id', cur.event_id)
+        .eq('active', true)
+        .ilike('name', row.name)
+        .neq('id', id)
+        .limit(1);
+      dup = cur.parent_id ? dup.eq('parent_id', cur.parent_id) : dup.is('parent_id', null);
+      const { data: dupRows } = await dup;
+      if (dupRows && dupRows.length > 0) {
+        return { ok: false, error: `There is already a place called "${row.name}" here.` };
+      }
+    }
     const { data, error: dbError } = await supabase
       .from('lodgings')
       .update({ ...row, updated_at: new Date().toISOString() })

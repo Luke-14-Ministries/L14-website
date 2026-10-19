@@ -15,7 +15,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { supportPatch } from '@/lib/support';
+import { supportPatch, supportProblems } from '@/lib/support';
 
 export async function savePersonSupport(personId, fields) {
   const user = await getCurrentUser();
@@ -28,13 +28,27 @@ export async function savePersonSupport(personId, fields) {
   // else. It is set by the two family forms (this one and the wizard) and
   // nowhere else -- inferring completion from content once marked people
   // "done" who had never seen a form.
+  // A camper's required answers are checked here as well as in the browser
+  // (18 Oct review: this save had no server-side check).
+  const supabase = await createClient();
+  const { data: camperRows } = await supabase
+    .from('registration_participants')
+    .select('id')
+    .eq('person_id', personId)
+    .eq('camp_role', 'camper')
+    .neq('status', 'cancelled')
+    .limit(1);
+  const problems = supportProblems(fields ?? {}, { isCamper: Boolean(camperRows?.length) });
+  if (problems.length > 0) {
+    return { ok: false, error: `Please fill in: ${problems.join('; ')}.` };
+  }
+
   const patch = {
     ...supportPatch(fields),
     person_id: personId,
     details_saved_at: new Date().toISOString(),
   };
 
-  const supabase = await createClient();
   const { error } = await supabase
     .from('person_support')
     .upsert(patch, { onConflict: 'person_id' });

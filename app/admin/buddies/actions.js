@@ -11,7 +11,17 @@ import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 
+// Every write here needs Buddies write (0101 enforces it in the database;
+// 18 Oct review: the actions never asked, so a read-only reviewer was
+// offered buttons that failed with a vague message).
+async function requireBuddiesWrite() {
+  const staff = await getStaff();
+  return can(staff, 'write:buddies') ? null : 'Changing buddy pairings needs Buddies write.';
+}
+
 export async function assignBuddy({ eventId, camperParticipantId, buddyParticipantId, note }) {
+  const denied = await requireBuddiesWrite();
+  if (denied) return { ok: false, error: denied };
   if (!eventId || !camperParticipantId || !buddyParticipantId) {
     return { ok: false, error: 'Pick both a camper and a buddy.' };
   }
@@ -48,6 +58,8 @@ export async function assignBuddy({ eventId, camperParticipantId, buddyParticipa
 // with whom during a week is exactly the sort of thing someone needs to
 // reconstruct afterwards, and a delete makes that unanswerable.
 export async function unassignBuddy({ assignmentId }) {
+  const denied = await requireBuddiesWrite();
+  if (denied) return { ok: false, error: denied };
   if (!assignmentId) return { ok: false, error: 'Nothing to remove.' };
 
   const supabase = await createClient();
@@ -74,16 +86,24 @@ export async function unassignBuddy({ assignmentId }) {
 export async function setBuddyPublication({ eventId, publish }) {
   if (!eventId) return { ok: false, error: 'No event.' };
 
+  const denied = await requireBuddiesWrite();
+  if (denied) return { ok: false, error: denied };
+
+  // Through a definer function that checks Buddies write (0103): the stamp
+  // lives on events, whose own policy needs Setup write, so a direct update
+  // by a coordinator matched nothing and reported success.
   const supabase = await createClient();
-  const { error } = await supabase
-    .from('events')
-    .update({ buddy_assignments_published_at: publish ? new Date().toISOString() : null })
-    .eq('id', eventId);
+  const { data: found, error } = await supabase.rpc('set_event_publication', {
+    p_event_id: eventId,
+    p_kind: 'buddies',
+    p_publish: Boolean(publish),
+  });
 
   if (error) {
     console.error('setBuddyPublication:', error.message);
     return { ok: false, error: 'That could not be changed.' };
   }
+  if (!found) return { ok: false, error: 'That event was not found.' };
 
   revalidatePath('/admin/buddies');
   revalidatePath('/account/dashboard');

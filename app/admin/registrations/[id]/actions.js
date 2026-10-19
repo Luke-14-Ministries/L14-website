@@ -221,6 +221,25 @@ export async function setParticipantStatus(
   }
   await recalcEarly(registrationId);
 
+  // A hold (0098) ends when the re-check is finished, whether by Approve all
+  // or one person at a time: once nobody on the registration is still
+  // submitted, it is lifted (18 Oct review).
+  if (status !== 'submitted') {
+    const supabase3 = await createClient();
+    const { count } = await supabase3
+      .from('registration_participants')
+      .select('id', { count: 'exact', head: true })
+      .eq('registration_id', registrationId)
+      .eq('status', 'submitted');
+    if ((count ?? 0) === 0) {
+      await supabase3
+        .from('registrations')
+        .update({ hold_since: null, hold_reason: null, hold_by: null })
+        .eq('id', registrationId)
+        .not('hold_since', 'is', null);
+    }
+  }
+
   revalidateAll(registrationId);
   return { ok: true };
 }
@@ -501,7 +520,8 @@ export async function deleteParticipantPermanently(registrationId, participantId
 // directly, with no reference to whether anybody asked. The answer to an
 // actual request is the Approve/Decline pair on the review card.
 export async function setAdjustments(registrationId, participantId, input) {
-  const { staff, error: authError } = await requireRegistrar('write:payments');
+  // Scholarships and hand-set discounts are decisions, not bookkeeping (0102).
+  const { staff, error: authError } = await requireRegistrar('decide:scholarships');
   if (authError) return { ok: false, error: authError };
 
   const toCents = (v) => {

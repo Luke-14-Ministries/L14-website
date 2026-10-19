@@ -136,12 +136,13 @@ export async function updateEventDetails(
       return { ok: false, error: 'The family discount starts from the 2nd person at the earliest.' };
     }
   }
-  let pct = 0;
-  if (String(multiWeekPercent ?? '').trim() !== '') {
-    pct = Number.parseInt(String(multiWeekPercent).replace(/[^0-9]/g, ''), 10);
-    if (!Number.isInteger(pct) || pct < 0 || pct > 100) {
-      return { ok: false, error: 'The both-weeks discount is a percentage from 0 to 100.' };
-    }
+  // Blank is not zero (18 Oct review: an emptied box silently saved 0%).
+  if (String(multiWeekPercent ?? '').trim() === '') {
+    return { ok: false, error: 'Give the both-weeks discount as a percentage — 0 for none.' };
+  }
+  const pct = Number.parseInt(String(multiWeekPercent).replace(/[^0-9]/g, ''), 10);
+  if (!Number.isInteger(pct) || pct < 0 || pct > 100) {
+    return { ok: false, error: 'The both-weeks discount is a percentage from 0 to 100.' };
   }
 
   const { error } = await supabase

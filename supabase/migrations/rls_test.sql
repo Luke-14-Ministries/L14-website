@@ -360,6 +360,50 @@ begin
   update public.staff set active = true where profile_id = uR;
   set local role authenticated;
 
+  -- Deciding a scholarship needs Payments AND Registration write (0102):
+  -- Finance (payments W, registration R) records money but does not decide.
+  set local role postgres;
+  insert into public.staff_grants (profile_id, area, level) values (uC, 'payments', 'write');
+  set local role authenticated;
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_denied('Finance-shaped grants may NOT grant a scholarship (0102)',
+    format('insert into public.scholarships (registration_participant_id, granted_cents, status) values (%L, 5000, ''granted'')', rpA));
+  -- Without Registration write the participant row is invisible to an
+  -- update, so this touches nothing rather than raising.
+  perform pg_temp.expect_no_effect('Finance-shaped grants may NOT set scholarship_cents (0102)',
+    format('update public.registration_participants set scholarship_cents = 5000 where id = %L', rpA));
+  set local role postgres;
+  delete from public.staff_grants where profile_id = uC and area = 'payments';
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_allowed('payments W + registration W may grant a scholarship (0102)',
+    format('insert into public.scholarships (registration_participant_id, granted_cents, status) values (%L, 5000, ''granted'')', rpA));
+
+  -- registration_review runs with its owner's rights; its row filter (0102)
+  -- is the only thing between a family and every registration's flags.
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.registration_review;
+  perform pg_temp.expect('family sees no registration_review rows (0102)', n, 0);
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.registration_review;
+  perform pg_temp.expect('registrar sees both registrations in registration_review', n, (select count(*) from public.registrations));
+
+  -- Publishing buddies is the Buddies area's act, through a definer function
+  -- (0103); the stamp lives on events, whose policy needs Setup write.
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_allowed('Buddies write may publish buddy assignments (0103)',
+    format('select public.set_event_publication(%L, ''buddies'', true)', ev));
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('Buddies read may NOT publish buddy assignments (0103)',
+    format('select public.set_event_publication(%L, ''buddies'', false)', ev));
+  select count(*) into n from public.registration_review;
+  perform pg_temp.expect('payments-read registrar still sees registration_review (0103)', n, (select count(*) from public.registrations));
+  perform pg_temp.as_user(uC);
+  select count(*) into n from public.registration_review;
+  perform pg_temp.expect('no payments grant, no registration_review rows (0103)', n, 0);
+  perform pg_temp.expect_allowed('Buddies write may unpublish again (0103)',
+    format('select public.set_event_publication(%L, ''buddies'', false)', ev));
+
   -- The two role functions are gone (0101).
   select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
     where ns.nspname = 'public' and p.proname in ('is_registrar', 'is_coordinator');

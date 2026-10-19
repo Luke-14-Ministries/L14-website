@@ -16,7 +16,7 @@ import { revalidatePath } from 'next/cache';
 import { supportPatch, supportProblems } from '@/lib/support';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sendEmail, registrationConfirmationEmail } from '@/lib/email';
-import { balanceDueOn } from '@/lib/events';
+import { balanceDueOn, registrationOpen, OPEN_EVENT_COLUMNS } from '@/lib/events';
 import { requiresPaymentChoice } from '@/lib/plans';
 
 // Wizard's human-readable roles -> the camp_role enum in 0001_core_schema.sql.
@@ -93,6 +93,9 @@ export async function submitFamilyRegistration(payload) {
       // the read-back, once the people exist. Null when a stale tab sends
       // nothing, which the camper check below refuses.
       support: m.support && typeof m.support === 'object' ? supportPatch(m.support) : null,
+      // The answers as given, for the check below: supportPatch turns an
+      // unanswered yes/no into false, which would pass it (18 Oct review).
+      rawSupport: m.support && typeof m.support === 'object' ? m.support : null,
     }));
   if (mapped.length === 0) {
     return {
@@ -105,7 +108,7 @@ export async function submitFamilyRegistration(payload) {
   // (Larry, 16 Oct 2026). The wizard says so first; this is the check a
   // server action needs because it is a public endpoint.
   for (const m of mapped) {
-    const problems = supportProblems(m.support ?? {}, { isCamper: m.role === 'camper' });
+    const problems = supportProblems(m.rawSupport ?? {}, { isCamper: m.role === 'camper' });
     if (problems.length > 0) {
       return {
         ok: false,
@@ -156,6 +159,22 @@ export async function submitFamilyRegistration(payload) {
   }
 
   const supabase = await createClient();
+
+  // A NEW registration needs the event open (published, inside its window,
+  // not archived). The page already hides closed events; this is the check a
+  // public endpoint needs (18 Oct review: a family could register for an
+  // archived event by calling the action). Editing an existing registration
+  // after close stays allowed.
+  {
+    const [{ data: ev }, { data: existingReg }] = await Promise.all([
+      supabase.from('events').select(OPEN_EVENT_COLUMNS).eq('id', eventId).maybeSingle(),
+      supabase.from('registrations').select('id').eq('event_id', eventId).limit(1),
+    ]);
+    if (!existingReg?.length && !registrationOpen(ev)) {
+      return { ok: false, error: 'Registration for that event is not open.' };
+    }
+  }
+
   const { data, error } = await supabase.rpc('submit_family_registration', {
     payload: {
       family,

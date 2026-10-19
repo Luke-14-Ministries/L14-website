@@ -1123,7 +1123,7 @@ function FamilyMessages({ registrationId, messages }) {
 // makes sense -- Event Payments knows balances, not transactions. Partial is
 // the normal case (one child withdraws from three), so the amount box opens
 // pre-filled with everything still refundable and is freely editable down.
-function PaymentsCard({ registrationId, payments, stripeBase = '', event = null, feePeople = 0 }) {
+function PaymentsCard({ registrationId, payments, stripeBase = '', event = null, feePeople = 0, depositWaived = false }) {
   const [openFor, setOpenFor] = useState(null);
 
   if (payments.length === 0) {
@@ -1278,6 +1278,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                 payment={p}
                 event={event}
                 feePeople={feePeople}
+                depositWaived={depositWaived}
                 onDone={() => setOpenFor(null)}
               />
             )}
@@ -1288,17 +1289,21 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
   );
 }
 
-function RefundForm({ registrationId, payment, event = null, feePeople = 0, onDone }) {
+function RefundForm({ registrationId, payment, event = null, feePeople = 0, depositWaived = false, onDone }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
   // The rule's arithmetic for THIS payment and today (lib/payments.js). A
   // suggestion: the box opens on it, and the registrar may type anything.
+  // Today on the ministry's calendar (Morristown), not UTC: after 8 pm
+  // Eastern the UTC date is tomorrow, which moves the 30-day line by a day.
+  // A waived deposit was never paid, so there is none to keep.
   const rule = refundSuggestion({
     startsOn: event?.starts_on,
-    depositCents: event?.deposit_cents ?? 0,
+    depositCents: depositWaived ? 0 : event?.deposit_cents ?? 0,
     feePeople,
     refundableCents: payment.refundableCents,
+    today: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date()),
   });
   // Dollars as typed, opening on the rule's suggestion when there is one and
   // on everything still refundable otherwise.
@@ -1671,6 +1676,9 @@ export default function RegistrationManager({
   awaiting = null,
   hold = null,
   depositWaived = null,
+  // Payments read (0101/0103). Without it the balances read as $0 paid, so
+  // the money block, the deposit warning and the payments card are hidden.
+  canSeeMoney = true,
   depositCents = 0,
   options,
   adjustmentRecords = [],
@@ -1701,7 +1709,9 @@ export default function RegistrationManager({
   const depositEach = registration.event?.deposit_cents ?? 0;
   const depositDue = depositEach * livePeople;
   const depositPaid = balance?.paid_cents ?? 0;
-  const depositShort = depositEach > 0 && livePeople > 0 && depositPaid < depositDue;
+  // A waived deposit (0096) is not short (18 Oct review: the page showed both).
+  const depositShort =
+    canSeeMoney && !depositWaived && depositEach > 0 && livePeople > 0 && depositPaid < depositDue;
   const adjustments = parts.reduce(
     (s, p) => s + (p.scholarship_cents ?? 0) + (p.discount_cents ?? 0),
     0
@@ -1750,7 +1760,7 @@ export default function RegistrationManager({
           while money is actually outstanding. The numbers come from the same
           view the dashboard and Event Payments read, so the three never
           disagree (24 Aug). */}
-      <MoneySummary balance={balance} livePeople={livePeople} />
+      {canSeeMoney && <MoneySummary balance={balance} livePeople={livePeople} />}
 
       <div className="mb-6">
         <ReviewCard
@@ -1816,13 +1826,14 @@ export default function RegistrationManager({
 
         <AgreementsCard signatures={signatures} />
 
-        <PaymentsCard
+        {canSeeMoney && <PaymentsCard
           registrationId={registration.id}
           payments={payments}
           stripeBase={stripeBase}
           event={registration.event}
           feePeople={livePeople}
-        />
+          depositWaived={Boolean(depositWaived)}
+        />}
 
         <Panel title="People on this week" count={parts.length}>
           <p className="text-sm text-neutral-500 mb-2">

@@ -22,7 +22,7 @@ cd "$(dirname "$0")/../.."
 
 PSQL="${PSQL:-/c/Program Files/PostgreSQL/16/bin/psql.exe}"
 [ -x "$PSQL" ] || PSQL="$(command -v psql)"
-DB=l14_rls_test
+DB="${L14_DB:-l14_rls_test}"   # L14_DB=other_name to run two at once
 TEST="${1:-supabase/migrations/rls_test.sql}"
 q() { "$PSQL" -h localhost -U postgres -v ON_ERROR_STOP=1 -q -X "$@"; }
 

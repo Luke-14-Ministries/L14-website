@@ -193,7 +193,7 @@ export default async function DashboardPage({ searchParams }) {
         .from('registrations')
         .select(
           `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
-           hold_since, hold_reason,
+           hold_since, hold_reason, deposit_waived_at,
            events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url ),
            registration_participants ( id, camp_role, status, fee_cents, checked_in_at,
              people ( id, first_name, last_name ) )`
@@ -834,10 +834,10 @@ export default async function DashboardPage({ searchParams }) {
                   const nothingPaid =
                     bal && (bal.paid_cents ?? 0) === 0 && clearing === 0;
                   const depositDue =
-                    depositCents > 0 && nothingPaid && (bal?.balance_cents ?? 0) > 0;
+                    !r.deposit_waived_at && depositCents > 0 && nothingPaid && (bal?.balance_cents ?? 0) > 0;
                   const owes = (bal?.balance_cents ?? 0) > 0;
-                  // Two weeks before a camp week starts (30 Sep 2026); null
-                  // for other events, whose pill stays as it was.
+                  // The event's own date (0096); null for events without one,
+                  // whose pill stays as it was.
                   const dueOn = balanceDueOn(r.events);
 
                   // The balance pill comes first on EVERY card that owes
@@ -1231,6 +1231,8 @@ export default async function DashboardPage({ searchParams }) {
                         const nothingPaid =
                           b && (b.paid_cents ?? 0) === 0 && (pendingByReg.get(r.id) ?? 0) === 0;
                         if (!(dep > 0 && nothingPaid && (b?.balance_cents ?? 0) > 0)) return null;
+                        // Waived by staff (0096): nothing is asked.
+                        if (r.deposit_waived_at) return null;
                         // Camp weeks ask for the deposit through "choose how
                         // to pay" (and a plan takes it as its first payment).
                         if (unfinished(r) || planByReg.get(r.id)) return null;

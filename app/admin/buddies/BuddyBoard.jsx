@@ -74,6 +74,9 @@ export default function BuddyBoard({
   campers,
   otherCampers = [],
   canMark = false,
+  // Buddies write (0101). Without it the board is read-only: no publish,
+  // pair or remove controls (Script 5, 13.44).
+  canEdit = true,
   volunteers,
   assignments,
 }) {
@@ -291,13 +294,15 @@ export default function BuddyBoard({
           >
             Print buddy sheets
           </a>
-          <button
-            onClick={togglePublish}
-            disabled={pending}
-            className={publishedAt ? 'btn-outline !py-2' : 'btn-primary !py-2'}
-          >
-            {publishedAt ? 'Unpublish' : 'Publish assignments'}
-          </button>
+          {canEdit && (
+            <button
+              onClick={togglePublish}
+              disabled={pending}
+              className={publishedAt ? 'btn-outline !py-2' : 'btn-primary !py-2'}
+            >
+              {publishedAt ? 'Unpublish' : 'Publish assignments'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -385,13 +390,13 @@ export default function BuddyBoard({
                         >
                           <span className="font-semibold">{v?.name ?? 'volunteer'}</span>
                           {v && <ClearanceBadge clearance={v.clearance} />}
-                          <button
+                          {canEdit && <button
                             onClick={() => doUnassign(a.id)}
                             disabled={pending}
                             className="ml-auto text-xs font-semibold text-brand underline"
                           >
                             Remove
-                          </button>
+                          </button>}
                         </li>
                       );
                     })}
@@ -456,7 +461,7 @@ export default function BuddyBoard({
                         </ul>
                       )}
                     </div>
-                  ) : (
+                  ) : canEdit ? (
                     <button
                       onClick={() => setPicking(c.participantId)}
                       disabled={pending}
@@ -464,7 +469,7 @@ export default function BuddyBoard({
                     >
                       {mine.length === 0 ? 'Assign a buddy' : 'Add another buddy'}
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             );

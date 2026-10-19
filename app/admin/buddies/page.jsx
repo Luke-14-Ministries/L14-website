@@ -194,7 +194,8 @@ export default async function BuddiesPage({ searchParams }) {
           publishedAt={selected.buddy_assignments_published_at}
           campers={campers}
           otherCampers={otherCampers}
-          canMark={can(staff, 'sensitive')}
+          canMark={can(staff, 'write:sensitive')}
+          canEdit={can(staff, 'write:buddies')}
           volunteers={volunteers}
           assignments={assignments}
         />
