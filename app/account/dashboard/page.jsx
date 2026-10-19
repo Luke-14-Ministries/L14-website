@@ -10,6 +10,7 @@ import { registrationDepositCents, registrationHeads } from '@/lib/payments';
 import { balanceDueOn, formatDueDate, formatDueDateShort } from '@/lib/events';
 import { requiresPaymentChoice, offersPaymentPlan } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
+import { emptySupport, supportProblems } from '@/lib/support';
 
 export const metadata = { title: 'Dashboard' };
 
@@ -312,7 +313,9 @@ export default async function DashboardPage({ searchParams }) {
     const [{ data: supportRows }, { data: photoRows }] = await Promise.all([
       supabase
         .from('person_support')
-        .select('person_id, details_saved_at, emergency_contact_name, emergency_contact_phone')
+        // Every column: a camper's required answers (lib/support.js) are
+        // checked here too, so the family hears before Update refuses them.
+        .select('*')
         .in('person_id', personIds),
       supabase.from('person_photos').select('person_id').in('person_id', personIds),
     ]);
@@ -326,6 +329,13 @@ export default async function DashboardPage({ searchParams }) {
       if (!hasPhoto.has(row.person_id)) missing.push('a photo');
       if (!row.emergency_contact_name?.trim() || !row.emergency_contact_phone?.trim()) {
         missing.push('an emergency contact');
+      }
+      // A camper's required support details (16 Oct 2026). The wizard refuses
+      // to update a registration until they are in, so say it here first.
+      const person = attendingPeople.find((ap) => ap.id === row.person_id);
+      const isCamper = (person?.roles ?? []).some((r) => r.role === 'camper');
+      if (isCamper && supportProblems(emptySupport(row), { isCamper: true }).length > 0) {
+        missing.push('the support details a camper needs');
       }
       supportStatus.set(row.person_id, missing.length ? 'incomplete' : 'complete');
       if (missing.length) supportMissing.set(row.person_id, missing);

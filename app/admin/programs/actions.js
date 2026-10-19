@@ -23,7 +23,7 @@ async function requireCoordinator() {
   if (!can(staff, 'write:programs')) {
     return {
       error:
-        'Placing people into programs needs coordinator or administrator access. Ask an administrator.',
+        'Placing people into programs needs Programs write. Ask an administrator.',
     };
   }
   return { staff };

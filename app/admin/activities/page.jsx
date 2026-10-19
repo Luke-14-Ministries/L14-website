@@ -24,6 +24,8 @@ export default async function AdminActivitiesPage({ searchParams }) {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/activities/');
   if (!can(staff, 'read:activities')) redirect('/admin');
+  // Defining activities, times and capacity is Events & camp setup (0101).
+  const canDefine = can(staff, 'write:setup');
 
   const supabase = await createClient();
 
@@ -215,7 +217,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                   const extra = [...waiverByKey.entries()]
                     .filter(([k]) => k.startsWith(`${a.id}:`))
                     .map(([k, v]) => ({ participantId: k.split(':')[1], ...v }))
-                    .filter((v) => !signedUpIds.has(v.participantId))
+                    .filter((v) => !signedUpIds.has(v.participantId) && v.role !== 'camper')
                     .sort((x, y) => x.name.localeCompare(y.name));
                   if (extra.length === 0) return null;
                   return (
@@ -303,21 +305,21 @@ export default async function AdminActivitiesPage({ searchParams }) {
                   </ul>
                 )}
 
-                <SlotEditor
+                {canDefine && <SlotEditor
                   activity={a}
                   slots={slotsByActivity.get(a.id) ?? []}
                   eventStart={visibleEvents.find((e) => e.id === selected)?.starts_on ?? ''}
                   eventEnd={visibleEvents.find((e) => e.id === selected)?.ends_on ?? ''}
-                />
+                />}
 
-                <ActivityEditor activity={a} />
+                {canDefine && <ActivityEditor activity={a} />}
               </ActivityCard>
             );
           })}
         </div>
       )}
 
-      {selected && (
+      {selected && canDefine && (
         <div className="mt-6">
           <AddActivity
             eventId={selected}

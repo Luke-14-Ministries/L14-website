@@ -106,6 +106,10 @@ export default function LodgingBoard({
   lodgings,
   people,
   assignments,
+  // Rooming write (0101). Without it the board is read-only; Set up rooms
+  // needs Setup write as well (Script 5 role gates).
+  canPlace = true,
+  canSetUp = true,
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -426,10 +430,10 @@ export default function LodgingBoard({
                   pending={pending}
                   accessWarning={needsAccess(p) && !lodging.accessible}
                   moving={placing === p.participantId}
-                  onMove={() =>
+                  onMove={canPlace ? () =>
                     setPlacing((cur) => (cur === p.participantId ? null : p.participantId))
-                  }
-                  onRemove={() => doRemove(p.participantId)}
+                  : undefined}
+                  onRemove={canPlace ? () => doRemove(p.participantId) : undefined}
                 />
               ))}
             </ul>
@@ -507,13 +511,15 @@ export default function LodgingBoard({
           <a href={`/admin/lodging/print/?event=${eventId}`} className="btn-outline !py-2">
             Print room list
           </a>
-          <button
-            onClick={togglePublish}
-            disabled={pending}
-            className={publishedAt ? 'btn-outline !py-2' : 'btn-primary !py-2'}
-          >
-            {publishedAt ? 'Unpublish' : 'Publish assignments'}
-          </button>
+          {canPlace && (
+            <button
+              onClick={togglePublish}
+              disabled={pending}
+              className={publishedAt ? 'btn-outline !py-2' : 'btn-primary !py-2'}
+            >
+              {publishedAt ? 'Unpublish' : 'Publish assignments'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -574,7 +580,7 @@ export default function LodgingBoard({
                 {householdName}
                 {group.length > 1 && ` · ${group.length} people`}
               </span>
-              {group.length > 1 && (
+              {canPlace && group.length > 1 && (
                 <button
                   onClick={() => {
                     setPlacing(null);
@@ -599,7 +605,7 @@ export default function LodgingBoard({
                       setPlacingGroup(null);
                       setPlacing(p.participantId);
                     }}
-                    disabled={pending}
+                    disabled={pending || !canPlace}
                     className={`flex w-full flex-wrap items-center gap-2 rounded border px-3 py-2 text-left text-sm disabled:opacity-50 ${
                       placing === p.participantId
                         ? 'border-brand bg-brand-light font-semibold'

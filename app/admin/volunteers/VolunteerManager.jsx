@@ -229,7 +229,7 @@ function CheckrPanel({ clearance, email }) {
   );
 }
 
-function VolunteerRow({ row, maySeeChecks }) {
+function VolunteerRow({ row, maySeeChecks, canReview = true }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   // Arriving from the roster (25 Aug). A staff member looking at a volunteer
@@ -405,7 +405,7 @@ function VolunteerRow({ row, maySeeChecks }) {
             </div>
           )}
 
-          {app && app.status !== 'withdrawn' && (
+          {canReview && app && app.status !== 'withdrawn' && (
             <div className="flex flex-wrap gap-2">
               {app.status !== 'approved' && (
                 <button onClick={() => review('approved')} disabled={pending} className="btn-primary !py-1.5 text-sm">
@@ -444,7 +444,7 @@ function VolunteerRow({ row, maySeeChecks }) {
   );
 }
 
-export default function VolunteerManager({ groups, maySeeChecks = false }) {
+export default function VolunteerManager({ groups, maySeeChecks = false, canReview = true }) {
   const total = groups.reduce((s, g) => s + g.rows.length, 0);
   const needsReview = groups.reduce(
     (s, g) => s + g.rows.filter((r) => r.app?.status === 'applied').length,
@@ -526,7 +526,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false }) {
           </h3>
           <div>
             {g.rows.map((r) => (
-              <VolunteerRow key={r.participantId} row={r} maySeeChecks={maySeeChecks} />
+              <VolunteerRow key={r.participantId} row={r} maySeeChecks={maySeeChecks} canReview={canReview} />
             ))}
           </div>
         </div>

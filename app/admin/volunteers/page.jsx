@@ -216,7 +216,8 @@ export default async function AdminVolunteersPage({ searchParams }) {
           Print volunteer list
         </a>
       </div>
-      <VolunteerManager groups={shownGroups} maySeeChecks={maySeeChecks} />
+      <VolunteerManager
+          canReview={can(staff, 'write:registration')} groups={shownGroups} maySeeChecks={maySeeChecks} />
     </div>
   );
 }

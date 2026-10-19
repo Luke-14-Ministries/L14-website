@@ -137,6 +137,7 @@ export default async function ProgramsPage({ searchParams }) {
           people={people}
           leaders={leaders}
           canGrant={can(staff, 'admin')}
+          canPlace={can(staff, 'write:programs')}
         />
       )}
     </div>

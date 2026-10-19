@@ -60,7 +60,7 @@ export default async function MyStatementPage({ params }) {
         `id,
          households ( display_name, email, phone, address_line1, address_line2, city, state, postal_code ),
          events ( name, event_type, starts_on, ends_on, balance_due_on ),
-         registration_participants ( camp_role, status, fee_cents, scholarship_cents, discount_cents,
+         registration_participants ( camp_role, status, fee_cents, scholarship_cents, discount_cents, early_discount_cents, family_discount_cents,
            people ( first_name, last_name ) )`
       )
       .eq('id', id)
@@ -146,8 +146,11 @@ export default async function MyStatementPage({ params }) {
         </thead>
         <tbody>
           {parts.map((p, i) => {
-            const due =
-              (p.fee_cents ?? 0) - (p.scholarship_cents ?? 0) - (p.discount_cents ?? 0);
+            // Every discount column (both weeks, early, family) -- the rows
+            // must add up to the total underneath (18 Oct review).
+            const disc =
+              (p.discount_cents ?? 0) + (p.early_discount_cents ?? 0) + (p.family_discount_cents ?? 0);
+            const due = (p.fee_cents ?? 0) - (p.scholarship_cents ?? 0) - disc;
             return (
               <tr key={i} className="border-b border-neutral-200">
                 <td className="py-1 pr-3 font-medium">
@@ -159,7 +162,7 @@ export default async function MyStatementPage({ params }) {
                   {(p.scholarship_cents ?? 0) > 0 ? `−${money(p.scholarship_cents)}` : '—'}
                 </td>
                 <td className="py-1 text-right">
-                  {(p.discount_cents ?? 0) > 0 ? `−${money(p.discount_cents)}` : '—'}
+                  {disc > 0 ? `−${money(disc)}` : '—'}
                 </td>
                 <td className="py-1 text-right font-semibold">{money(due)}</td>
               </tr>

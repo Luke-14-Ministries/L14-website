@@ -40,6 +40,10 @@ export default function ReviewCard({
   hold = null,
   depositWaived = null,
   depositCents = 0,
+  // Registration write / scholarship decision (0101, 0102). Without them the
+  // card shows the state and offers nothing to press.
+  canWrite = true,
+  canDecide = true,
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -126,7 +130,7 @@ export default function ReviewCard({
           per-person deposit as a scholarship and the registration counts as
           deposit-received, so approval can go ahead. Offered only while the
           deposit is actually the thing in the way. */}
-      {!depositWaived && cls && review?.review_class === 'neither' && depositCents > 0 && (
+      {canDecide && !depositWaived && cls && review?.review_class === 'neither' && depositCents > 0 && (
         <div className="mb-4">
           {!waiving ? (
             <button type="button" disabled={pending} onClick={() => setWaiving(true)} className="btn-outline !py-1.5 text-sm">
@@ -180,17 +184,17 @@ export default function ReviewCard({
             Everyone on it went back to <em>submitted</em>. Approve or waitlist below to
             finish the re-check; the family sees the reason on their dashboard.
           </p>
-          <button
+          {canWrite && <button
             type="button"
             disabled={pending}
             onClick={() => run('lift_hold')}
             className="btn-outline !py-1.5 mt-2 text-sm"
           >
             Lift the hold without deciding
-          </button>
+          </button>}
         </div>
       )}
-      {!hold?.since && canHold && (
+      {canWrite && !hold?.since && canHold && (
         <div className="mb-4">
           {!holding ? (
             <button type="button" disabled={pending} onClick={() => setHolding(true)} className="btn-outline !py-1.5 text-sm">
@@ -236,18 +240,22 @@ export default function ReviewCard({
             Not counted as waiting on staff while this is set. Their edits still arrive in Recent
             Changes.
           </p>
-          <button
+          {canWrite && <button
             type="button"
             disabled={pending}
             onClick={() => run('answered')}
             className="btn-outline !py-1.5 mt-2 text-sm"
           >
             The family has answered — back to staff
-          </button>
+          </button>}
         </div>
       )}
 
-      {waiting.length === 0 ? (
+      {!canWrite ? (
+        <p className="text-sm text-neutral-600">
+          Read only — approving, waitlisting and asking the family need Registration write.
+        </p>
+      ) : waiting.length === 0 ? (
         <p className="text-sm text-neutral-600">
           Nobody on this registration is waiting on review. Each person&rsquo;s status is in{' '}
           <em>People on this week</em>.

@@ -77,7 +77,7 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
       {done ? (
         <p className="text-green-800">
           <span className="font-semibold">Confirmation received</span> — uploaded{' '}
-          {String(done.uploaded_at ?? '').slice(0, 10)}. Staff can see it.{' '}
+          {done.uploaded_at ? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date(done.uploaded_at)) : ''}. Staff can see it.{' '}
           <label className="cursor-pointer underline">
             Replace
             <input type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" className="hidden" onChange={onPick} disabled={busy} />
@@ -86,7 +86,7 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
       ) : (
         <p className="text-amber-900">
           <span className="font-semibold">
-            Once you have completed {providerName || "the provider's"} form, upload their confirmation
+            Once you have completed the form for {providerName || 'the provider'}, upload their confirmation
           </span>{' '}
           — a screenshot, a photo of the signed page, or the PDF they sent. Staff need this before
           the day; a verbal &ldquo;done&rdquo; is not enough.{' '}

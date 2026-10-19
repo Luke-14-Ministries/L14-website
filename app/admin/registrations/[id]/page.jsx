@@ -348,6 +348,8 @@ export default async function RegistrationDetailPage({ params }) {
     <RegistrationManager
       registration={registration}
       canSeeMoney={can(staff, 'read:payments')}
+      canWrite={can(staff, 'write:registration')}
+      canDecide={can(staff, 'decide:scholarships')}
       familyRegistrations={familyRegistrations}
       review={reviewRow ?? null}
       awaiting={{ since: reg.awaiting_family_since ?? null, reason: reg.awaiting_family_reason ?? null }}
@@ -363,7 +365,7 @@ export default async function RegistrationDetailPage({ params }) {
       stripeBase={stripeBase}
       scholarshipRequests={scholarshipRequests}
     />
-    <StaffPlanPanel
+    {can(staff, 'read:payments') && <StaffPlanPanel
       registrationId={id}
       route={routeRow?.route ?? null}
       plan={planRow ?? null}
@@ -371,7 +373,7 @@ export default async function RegistrationDetailPage({ params }) {
       earlyDiscountCents={balanceRow?.early_discount_cents ?? 0}
       familyDiscountCents={balanceRow?.family_discount_cents ?? 0}
       requiresChoice={requiresPaymentChoice(reg.events)}
-    />
+    />}
     </>
   );
 }

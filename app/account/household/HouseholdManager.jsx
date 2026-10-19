@@ -36,6 +36,11 @@ function Field({ label, children }) {
 
 const inputCls = 'w-full rounded border border-neutral-300 px-3 py-2';
 
+// Today on the ministry's calendar, not UTC (after 8 pm Eastern UTC is tomorrow).
+function todayEastern() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+}
+
 export default function HouseholdManager({
   household,
   members,
@@ -396,7 +401,7 @@ Anything already saved is untouched.`
                 />
               </Field>
               <Field label="Date of birth">
-                <input name="date_of_birth" type="date" defaultValue={m.date_of_birth ?? ''} className={inputCls} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
+                <input name="date_of_birth" type="date" defaultValue={m.date_of_birth ?? ''} className={inputCls} min="1900-01-01" max={todayEastern()} />
               </Field>
               <Field label="Sex">
                 <select name="gender" defaultValue={m.gender ?? ''} className={inputCls}>
@@ -570,7 +575,7 @@ Anything already saved is untouched.`
             />
           </Field>
           <Field label="Date of birth">
-            <input name="date_of_birth" type="date" className={inputCls} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
+            <input name="date_of_birth" type="date" className={inputCls} min="1900-01-01" max={todayEastern()} />
           </Field>
           <Field label="Sex">
             <select name="gender" className={inputCls} defaultValue="">

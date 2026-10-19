@@ -21,7 +21,16 @@ function ClearanceBadge({ clearance }) {
   );
 }
 
-function SupportNotes({ support }) {
+function SupportNotes({ support, canSee = true }) {
+  // Without Sensitive read the database returns nothing; that is "hidden",
+  // not "missing" (Script 5 role gates, 18 Oct 2026).
+  if (!support && !canSee) {
+    return (
+      <p className="mt-1 text-sm text-neutral-500">
+        Support details hidden — they need the Sensitive grant.
+      </p>
+    );
+  }
   if (!support) {
     return (
       <p className="mt-1 text-sm text-amber-800">
@@ -77,6 +86,7 @@ export default function BuddyBoard({
   // Buddies write (0101). Without it the board is read-only: no publish,
   // pair or remove controls (Script 5, 13.44).
   canEdit = true,
+  canSeeSupport = true,
   volunteers,
   assignments,
 }) {
@@ -377,7 +387,7 @@ export default function BuddyBoard({
                   </p>
                 )}
 
-                <SupportNotes support={c.support} />
+                <SupportNotes support={c.support} canSee={canSeeSupport} />
 
                 {mine.length > 0 && (
                   <ul className="mt-3 space-y-1">
@@ -438,7 +448,7 @@ export default function BuddyBoard({
                         </p>
                       ) : (
                         <ul className="grid gap-1 sm:grid-cols-2">
-                          {volunteers.filter((v) => !hidePaired || (loadByVolunteer.get(v.participantId) ?? 0) === 0).map((v) => {
+                          {volunteers.filter((v) => v.personId !== c.personId && (!hidePaired || (loadByVolunteer.get(v.participantId) ?? 0) === 0)).map((v) => {
                             const load = loadByVolunteer.get(v.participantId) ?? 0;
                             return (
                               <li key={v.participantId}>

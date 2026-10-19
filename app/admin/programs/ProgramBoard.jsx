@@ -42,6 +42,8 @@ export default function ProgramBoard({
   people,
   leaders,
   canGrant,
+  // Programs write (0101); without it the board is read-only.
+  canPlace = true,
 }) {
   const [filter, setFilter] = useState('unplaced');
   const [search, setSearch] = useState('');
@@ -233,7 +235,7 @@ export default function ProgramBoard({
           <button
             type="button"
             onClick={placeMany}
-            disabled={pending}
+            disabled={pending || !canPlace}
             className="btn-primary px-3 py-1 text-sm"
           >
             {pending ? 'Saving…' : 'Place them'}
@@ -313,7 +315,7 @@ export default function ProgramBoard({
                   <select
                     value={p.programId ?? ''}
                     onChange={(e) => placeOne(p.participantId, e.target.value)}
-                    disabled={pending}
+                    disabled={pending || !canPlace}
                     className={`rounded border px-2 py-1 text-sm ${
                       p.programId ? 'border-neutral-300' : 'border-amber-400 bg-amber-50'
                     }`}

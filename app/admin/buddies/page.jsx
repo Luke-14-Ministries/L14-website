@@ -196,6 +196,7 @@ export default async function BuddiesPage({ searchParams }) {
           otherCampers={otherCampers}
           canMark={can(staff, 'write:sensitive')}
           canEdit={can(staff, 'write:buddies')}
+          canSeeSupport={can(staff, 'read:sensitive')}
           volunteers={volunteers}
           assignments={assignments}
         />

@@ -349,7 +349,14 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
 }
 
 // --- one participant row ------------------------------------------------------
-function ParticipantRow({ registrationId, participant, awaitingScholarship = false }) {
+function ParticipantRow({
+  registrationId,
+  participant,
+  awaitingScholarship = false,
+  canWrite = true,
+  canSeeMoney = true,
+  canDecide = true,
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
@@ -412,11 +419,11 @@ function ParticipantRow({ registrationId, participant, awaitingScholarship = fal
             </span>
           </p>
           <p className="text-sm text-neutral-500">
-            {money(participant.fee_cents)}
-            {(participant.scholarship_cents ?? 0) > 0 && (
+            {canSeeMoney && money(participant.fee_cents)}
+            {canSeeMoney && (participant.scholarship_cents ?? 0) > 0 && (
               <span className="text-green-700"> − {money(participant.scholarship_cents)} scholarship</span>
             )}
-            {(participant.discount_cents ?? 0) > 0 && (
+            {canSeeMoney && (participant.discount_cents ?? 0) > 0 && (
               <span className="text-green-700">
                 {' '}
                 &minus; {money(participant.discount_cents)} discount
@@ -431,7 +438,8 @@ function ParticipantRow({ registrationId, participant, awaitingScholarship = fal
                 )}
               </span>
             )}
-            {p.date_of_birth ? ` · b. ${p.date_of_birth}` : ' · no DOB on file'}
+            {canSeeMoney ? ' · ' : ''}
+            {p.date_of_birth ? `b. ${p.date_of_birth}` : 'no DOB on file'}
             {participant.tshirt_size ? ` · ${participant.tshirt_size}` : ''}
           </p>
           {/* Surfaced on the summary line, not hidden behind the editor: a
@@ -472,25 +480,38 @@ function ParticipantRow({ registrationId, participant, awaitingScholarship = fal
             </p>
           )}
         </div>
-        <StatusControl registrationId={registrationId} participant={participant} />
+        {canWrite ? (
+          <StatusControl registrationId={registrationId} participant={participant} />
+        ) : (
+          <span className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-700">
+            {participant.status}
+          </span>
+        )}
       </div>
 
+      {(canWrite || canDecide) && (
       <div className="mt-2 flex flex-wrap gap-3 text-sm">
         {/* Each panel is named by what is IN it, and closes by name.
             "Edit details" and "Enrollment details" sat side by side saying
             almost the same thing (25 Aug), and all three closed to a bare
             "Close" -- so with two panels open the page offered two identical
             links that did different things. */}
-        <button onClick={() => setEditing((v) => !v)} className="text-brand underline">
-          {editing ? 'Close personal details' : 'Personal details'}
-        </button>
-        <button onClick={() => setAdjusting((v) => !v)} className="text-brand underline">
-          {adjusting ? 'Close scholarship / discount' : 'Scholarship / discount'}
-        </button>
-        <button onClick={() => setEnrolling((v) => !v)} className="text-brand underline">
-          {enrolling ? 'Close enrollment details' : 'Enrollment details'}
-        </button>
-        {isCancelled ? (
+        {canWrite && (
+          <button onClick={() => setEditing((v) => !v)} className="text-brand underline">
+            {editing ? 'Close personal details' : 'Personal details'}
+          </button>
+        )}
+        {canDecide && (
+          <button onClick={() => setAdjusting((v) => !v)} className="text-brand underline">
+            {adjusting ? 'Close scholarship / discount' : 'Scholarship / discount'}
+          </button>
+        )}
+        {canWrite && (
+          <button onClick={() => setEnrolling((v) => !v)} className="text-brand underline">
+            {enrolling ? 'Close enrollment details' : 'Enrollment details'}
+          </button>
+        )}
+        {!canWrite ? null : isCancelled ? (
           <>
             <button onClick={restore} disabled={pending} className="text-brand underline">
               {pending ? 'Working…' : 'Restore'}
@@ -505,6 +526,7 @@ function ParticipantRow({ registrationId, participant, awaitingScholarship = fal
           </button>
         )}
       </div>
+      )}
       <ErrorNote>{error}</ErrorNote>
 
       {editing && (
@@ -1049,7 +1071,7 @@ function HouseholdEditor({ registrationId, household }) {
 
 // Short notes TO the family — shown on their dashboard the moment they're
 // saved. Kept separate from the staff-internal registration notes.
-function FamilyMessages({ registrationId, messages }) {
+function FamilyMessages({ registrationId, messages, canWrite = true }) {
   const router = useRouter();
   const [body, setBody] = useState('');
   const [pending, setPending] = useState(false);
@@ -1091,15 +1113,17 @@ function FamilyMessages({ registrationId, messages }) {
                 <span>
                   {m.author} · {m.at}
                 </span>
-                <button onClick={() => remove(m.id)} className="text-red-700 underline">
-                  Remove
-                </button>
+                {canWrite && (
+                  <button onClick={() => remove(m.id)} className="text-red-700 underline">
+                    Remove
+                  </button>
+                )}
               </p>
             </li>
           ))}
         </ul>
       )}
-      <div className="flex gap-2">
+      {canWrite && <div className="flex gap-2">
         <input
           value={body}
           onChange={(e) => setBody(e.target.value)}
@@ -1110,7 +1134,7 @@ function FamilyMessages({ registrationId, messages }) {
         <button onClick={add} disabled={pending || !body.trim()} className="btn-primary !py-2 text-sm">
           {pending ? 'Saving…' : 'Post note'}
         </button>
-      </div>
+      </div>}
       <ErrorNote>{error}</ErrorNote>
     </Panel>
   );
@@ -1679,6 +1703,11 @@ export default function RegistrationManager({
   // Payments read (0101/0103). Without it the balances read as $0 paid, so
   // the money block, the deposit warning and the payments card are hidden.
   canSeeMoney = true,
+  // Registration write (0101). Without it the page is read-only: no status
+  // menus, editors, add/cancel, notes or review buttons (Script 5 role gates).
+  canWrite = true,
+  // Payments + Registration write (0102): the scholarship / discount editor.
+  canDecide = true,
   depositCents = 0,
   options,
   adjustmentRecords = [],
@@ -1775,6 +1804,8 @@ export default function RegistrationManager({
           hold={hold}
           depositWaived={depositWaived}
           depositCents={depositCents}
+          canWrite={canWrite}
+          canDecide={canDecide}
         />
       </div>
 
@@ -1822,7 +1853,7 @@ export default function RegistrationManager({
           </div>
         )}
 
-        <HouseholdEditor registrationId={registration.id} household={registration.household} />
+        {canWrite && <HouseholdEditor registrationId={registration.id} household={registration.household} />}
 
         <AgreementsCard signatures={signatures} />
 
@@ -1859,6 +1890,9 @@ export default function RegistrationManager({
                         registrationId={registration.id}
                         participant={p}
                         awaitingScholarship={awaitingScholarship.has(p.id)}
+                        canWrite={canWrite}
+                        canSeeMoney={canSeeMoney}
+                        canDecide={canDecide}
                       />
                     ))}
                   </div>
@@ -1872,11 +1906,14 @@ export default function RegistrationManager({
                     registrationId={registration.id}
                     participant={p}
                     awaitingScholarship={awaitingScholarship.has(p.id)}
+                    canWrite={canWrite}
+                    canSeeMoney={canSeeMoney}
+                    canDecide={canDecide}
                   />
                 ))}
             </div>
           )}
-          <AddPerson registrationId={registration.id} options={options} />
+          {canWrite && <AddPerson registrationId={registration.id} options={options} />}
 
           {/* Decisions ALREADY made — history, not work. Anything still
               waiting on an answer is at the top of the page instead, because
@@ -1932,7 +1969,7 @@ export default function RegistrationManager({
           )}
         </Panel>
 
-        <FamilyMessages registrationId={registration.id} messages={familyMessages} />
+        <FamilyMessages registrationId={registration.id} messages={familyMessages} canWrite={canWrite} />
 
         {registration.family_notes && (
           <Panel title="Notes from the family">

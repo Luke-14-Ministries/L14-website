@@ -187,6 +187,8 @@ export default async function LodgingPage({ searchParams }) {
           lodgings={lodgings}
           people={people}
           assignments={assignments}
+          canPlace={can(staff, 'write:rooming')}
+          canSetUp={can(staff, 'write:setup')}
         />
       )}
 
