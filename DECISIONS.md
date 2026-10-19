@@ -2609,3 +2609,18 @@ each proven:
 Left for go-live (W57): Supabase auth settings (leaked-password check, length, redirect list,
 point-in-time recovery), the live Stripe key in Production only, rate limits on the contact and
 giving forms (Vercel firewall), DMARC reporting, and enforcing the content security policy.
+
+## 2026-10-18, night — Lawrence's answers: the nurse's number, the whole deposit, duplicates (0109)
+
+- **The camp's medical contact is for the people at that event.** It lived on `events`, which
+  anyone can read for a published event through the public API. It is now
+  `event_medical_contacts`, read by staff, an active leader at the event, or a household with
+  someone registered and not cancelled. Those families see it on their dashboard.
+- **"Deposit received" means the whole deposit**: $50 per fee-paying person, or a waiver. A part
+  payment reads *No full deposit yet* and keeps the *Deposit short* flag. Two test registrations
+  changed class.
+- **Staff "Add a person" offers a possible duplicate** (same first and last name in the household,
+  unless both dates of birth are known and differ) instead of creating a second person.
+- **A failing payment plan is not held automatically.** Lawrence was unsure; the default stands,
+  as recommended: three failed tries stop the plan and email staff and family, and a reviewer
+  holds the registration by hand when it warrants. It is in Staff Questions §1.1 for Larry.
