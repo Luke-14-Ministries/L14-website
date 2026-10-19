@@ -3,6 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
+import { dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Background screening — Staff Admin' };
 
@@ -124,7 +125,7 @@ export default async function ScreeningPage() {
       blockedBecause =
         'no email address on file for them or their household, and Checkr needs one to send the invitation';
     } else if (waiting) {
-      blockedBecause = `already invited${c.order_batch ? ` on ${c.order_batch.slice(0, 10)}` : ''} — waiting on Checkr`;
+      blockedBecause = `already invited${c.order_batch ? ` on ${dayInMorristown(c.order_batch)}` : ''} — waiting on Checkr`;
     }
 
     candidates.push({

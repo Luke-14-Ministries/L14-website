@@ -7,6 +7,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { assignBuddy, unassignBuddy, setBuddyPublication, setBuddyRequired } from './actions';
 import { clearancePill } from '@/lib/format';
+import { dayInMorristown } from '@/lib/events';
 
 // One pill, shared with Volunteers (lib/format.js, 0091): no record is not
 // the same as a failed check, on file is not the same as OK, and the
@@ -172,16 +173,16 @@ export default function BuddyBoard({
 
 
     // The clearance warning fires at the moment of the decision, which is the
-    // only moment it can change one.
-    const c = volunteer.clearance;
-    if (!c || !c.cleared) {
-      const why = !c
-        ? 'has no background check on file'
-        : c.expired
-          ? 'has an EXPIRED background check'
-          : `has a background check that is not cleared (${c.status ?? 'pending'})`;
+    // only moment it can change one. Its words are the pill's (clearancePill,
+    // lib/format.js), so the question can never disagree with the badge
+    // beside the name. It read the old view's cleared / expired / status
+    // fields, which clearance_status does not have, and said "not cleared
+    // (pending)" for people whose pill said "No background check on file"
+    // (Script 5, 18 Oct 2026).
+    const pill = clearancePill(volunteer.clearance);
+    if (pill.key !== 'ok') {
       const ok = window.confirm(
-        `${volunteer.name} ${why}.\n\nPair them with ${camper.name} anyway?\n\n(Clearances often arrive after pairing is drafted — this is a warning, not a rule. It must not still be true in the week before camp.)`
+        `${volunteer.name}: ${pill.text}.\n\nPair them with ${camper.name} anyway?\n\n(Clearances often arrive after pairing is drafted — this is a warning, not a rule. It must not still be true in the week before camp.)`
       );
       if (!ok) return;
     }
@@ -284,7 +285,7 @@ export default function BuddyBoard({
             )}
           </p>
           <p className="text-sm text-neutral-500">
-            {publishedAt && `Published ${publishedAt.slice(0, 10)}`}
+            {publishedAt && `Published ${dayInMorristown(publishedAt)}`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { sinceISO } from '@/lib/events';
+import { sinceISO, dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Newsletter — Staff Admin' };
 
@@ -109,7 +109,7 @@ export default async function NewsletterPage() {
                 <tr key={r.profile_id} className="border-b border-neutral-100">
                   <td className="px-3 py-2">{r.name}</td>
                   <td className="px-3 py-2 text-neutral-600">{r.email}</td>
-                  <td className="px-3 py-2 text-neutral-500">{String(r.since ?? '').slice(0, 10)}</td>
+                  <td className="px-3 py-2 text-neutral-500">{dayInMorristown(r.since)}</td>
                 </tr>
               ))}
             </tbody>
@@ -134,7 +134,7 @@ export default async function NewsletterPage() {
                   <span>
                     {`${r.profiles?.first_name ?? ''} ${r.profiles?.last_name ?? ''}`.trim() || 'Someone'}
                   </span>
-                  <span className="text-xs text-neutral-500">{String(r.changed_at).slice(0, 10)}</span>
+                  <span className="text-xs text-neutral-500">{dayInMorristown(r.changed_at)}</span>
                 </li>
               ))}
             </ul>

@@ -6,6 +6,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { assignLodging, unassignLodging, setLodgingPublication } from './actions';
+import { dayInMorristown } from '@/lib/events';
 
 const KIND_LABEL = {
   cabin: 'Cabin',
@@ -502,7 +503,7 @@ export default function LodgingBoard({
           <p className="text-sm text-neutral-500">
             {people.length - unplaced.length} of {people.length} placed · {unplaced.length} to
             go
-            {publishedAt && ` · published ${publishedAt.slice(0, 10)}`}
+            {publishedAt && ` · published ${dayInMorristown(publishedAt)}`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -542,7 +543,7 @@ export default function LodgingBoard({
           <p className="mt-2 rounded border border-brand bg-brand-light px-3 py-2 text-sm">
             Placing the whole{' '}
             <span className="font-semibold">{placingGroup[0]?.household}</span> household —{' '}
-            {placingGroup.length} people. Choose a room below.{' '}
+            {placingGroup.length} {placingGroup.length === 1 ? 'person' : 'people'}. Choose a room below.{' '}
             <button
               onClick={() => setPlacingGroup(null)}
               className="underline font-semibold"

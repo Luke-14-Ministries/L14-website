@@ -141,15 +141,30 @@ export async function setStaffGrants(profileId, input) {
     const { error } = await supabase.from('staff_grants').delete().eq('profile_id', profileId).in('area', removals);
     if (error) return { ok: false, error: error.message };
   }
+  // The three old staff columns follow the grants on every save. Nothing in
+  // the database reads them since 0101 (can_view_sensitive() is
+  // has_grant('sensitive', 'read')), but they were only written by a preset,
+  // so a Sensitive grant removed by hand left can_view_sensitive = true and
+  // the header kept saying "Sensitive access" (Script 5, 18 Oct 2026). The
+  // trigger logs a column only when it actually changes.
+  const { error: syncError } = await supabase
+    .from('staff')
+    .update({
+      can_view_sensitive: Boolean(wanted.sensitive),
+      can_view_giving: Boolean(wanted.giving),
+      can_view_background_checks: wanted.background_checks === 'write',
+    })
+    .eq('profile_id', profileId);
+  if (syncError) return { ok: false, error: syncError.message };
   revalidatePath('/admin/staff');
   revalidatePath('/admin/staff/access-log');
-  return { ok: true, changed: upserts.length + removals.length };
+  // The saved grants go back to the page so the row shows them at once.
+  return { ok: true, changed: upserts.length + removals.length, grants: wanted };
 }
 
-// A preset in one click: the grants exactly (Giving left as it is), and --
-// until the rules switch over (plan step 3) -- the closest role and the
-// legacy Sensitive / Background-checks ticks, so the database agrees with
-// the ticks as nearly as it can today.
+// A preset in one click: the grants exactly (Giving left as it is) and the
+// role label. setStaffGrants keeps the old Sensitive / Giving /
+// Background-checks columns in step with the grants.
 export async function applyPreset(profileId, key) {
   const staff = await getStaff();
   if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
@@ -170,15 +185,8 @@ export async function applyPreset(profileId, key) {
   const res = await setStaffGrants(profileId, grantsForPreset(key, cur));
   if (!res.ok) return res;
 
-  const { error } = await supabase
-    .from('staff')
-    .update({
-      role: p.role,
-      can_view_sensitive: Boolean(p.sensitive),
-      can_view_background_checks: Boolean(p.backgroundChecks),
-    })
-    .eq('profile_id', profileId);
+  const { error } = await supabase.from('staff').update({ role: p.role }).eq('profile_id', profileId);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/admin/staff');
-  return { ok: true, label: p.label };
+  return { ok: true, label: p.label, role: p.role, grants: res.grants };
 }

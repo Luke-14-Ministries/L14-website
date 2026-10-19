@@ -3,11 +3,11 @@
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { csvCell } from '@/lib/csv';
+import { todayInMorristown } from '@/lib/events';
 
-const esc = (v) => {
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
+// Quoting and spreadsheet-formula safety: lib/csv.js.
+const esc = csvCell;
 
 export async function GET(request) {
   const staff = await getStaff();
@@ -23,7 +23,7 @@ export async function GET(request) {
   const fStatus = url.searchParams.get('status') || '';
 
   const supabase = await createClient();
-  const [{ data: regs }, { data: consents }, { data: sigs }] = await Promise.all([
+  const [regRes, consentRes, sigRes] = await Promise.all([
     supabase
       .from('registrations')
       .select(
@@ -37,6 +37,20 @@ export async function GET(request) {
     supabase.from('person_current_consents').select('person_id, kind, granted'),
     supabase.from('agreement_signatures').select('registration_id, signed_at'),
   ]);
+  // Never an empty file that looks like "no registrations" (CLAUDE.md: never
+  // turn a query error into an empty list; audit L9).
+  const failed = regRes.error ?? consentRes.error ?? sigRes.error;
+  if (failed) {
+    console.error('rosters export:', failed.message);
+    return new Response('The roster could not be read. Nothing was exported; please try again.', { status: 500 });
+  }
+  const regs = regRes.data;
+  const consents = consentRes.data;
+  const sigs = sigRes.data;
+
+  // Dates on the ministry's calendar, not UTC (an evening signature is not
+  // tomorrow's).
+  const day = (ts) => (ts ? todayInMorristown(Date.parse(ts)) : '');
 
   const consentOf = new Map();
   for (const c of consents ?? []) consentOf.set(`${c.person_id}:${c.kind}`, c.granted);
@@ -87,11 +101,11 @@ export async function GET(request) {
         yn(p.first_time_attending),
         yn(p.people?.id ? consentOf.get(`${p.people.id}:media`) : undefined),
         yn(p.people?.id ? consentOf.get(`${p.people.id}:directory`) : undefined),
-        (signedOn.get(r.id) ?? '').slice(0, 10),
+        day(signedOn.get(r.id)),
         r.households?.how_did_you_hear ?? '',
         r.family_notes ?? '',
         ((p.fee_cents ?? 0) / 100).toFixed(2),
-        (p.submitted_at ?? p.created_at ?? '').slice(0, 10),
+        day(p.submitted_at ?? p.created_at),
         p.checked_in_at
           ? new Date(p.checked_in_at).toLocaleString('en-US', {
               timeZone: 'America/New_York',
@@ -112,7 +126,7 @@ export async function GET(request) {
   return new Response(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="luke14-rosters-${new Date().toISOString().slice(0, 10)}.csv"`,
+      'Content-Disposition': `attachment; filename="luke14-rosters-${todayInMorristown()}.csv"`,
     },
   });
 }

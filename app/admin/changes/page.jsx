@@ -18,7 +18,8 @@ const fmtWhen = (ts) =>
     : '';
 
 // Tracked changes: every edit a FAMILY makes (Manage Household, wizard
-// resubmits) is logged field-by-field by database triggers (migration 0013).
+// resubmits) is logged field-by-field by database triggers (migration 0013),
+// and so are STAFF edits to identity fields (0046) and safety fields (0068).
 // Staff review here without confirmed statuses being disturbed. Support/
 // medical change rows are RLS-hidden from staff without the sensitive grant.
 //
@@ -47,7 +48,7 @@ export default async function RecentChangesPage() {
   const personIds = [...new Set(list.map((r) => r.person_id).filter(Boolean))];
   const actorIds = [...new Set(list.map((r) => r.actor_profile_id).filter(Boolean))];
 
-  const [{ data: households }, { data: people }, { data: actors }] = await Promise.all([
+  const [{ data: households }, { data: people }, { data: actors }, { data: staffActors }] = await Promise.all([
     householdIds.length
       ? supabase.from('households').select('id, display_name').in('id', householdIds)
       : Promise.resolve({ data: [] }),
@@ -57,7 +58,15 @@ export default async function RecentChangesPage() {
     actorIds.length
       ? supabase.from('profiles').select('id, first_name, last_name').in('id', actorIds)
       : Promise.resolve({ data: [] }),
+    // Which of those are staff (staff_select lets staff read the list), so a
+    // staff member's edit says so: the log keeps staff edits to names, dates
+    // of birth and the safety fields (0046, 0068). Staff now, not
+    // necessarily staff when they made the edit -- the trigger asks the same.
+    actorIds.length
+      ? supabase.from('staff').select('profile_id').in('profile_id', actorIds)
+      : Promise.resolve({ data: [] }),
   ]);
+  const staffActorIds = new Set((staffActors ?? []).map((s) => s.profile_id));
 
   const householdName = new Map((households ?? []).map((h) => [h.id, h.display_name]));
   const personName = new Map(
@@ -86,6 +95,7 @@ export default async function RecentChangesPage() {
       when: fmtWhen(r.changed_at),
       person: r.person_id ? personName.get(r.person_id) ?? '' : '',
       actor: r.actor_profile_id ? actorName.get(r.actor_profile_id) ?? '' : '',
+      actorIsStaff: staffActorIds.has(r.actor_profile_id),
     });
   }
 
@@ -93,7 +103,8 @@ export default async function RecentChangesPage() {
     <div>
       <h2 className="text-xl font-bold mb-1">Recent Changes</h2>
       <p className="text-sm text-neutral-500 mb-1">
-        Every edit a family makes to their own information, shown old → new.
+        Every edit a family makes to their own information, and staff edits to names, dates of
+        birth and safety details, shown old → new with who made each.
       </p>
       {/* The nuance lives behind a labeled disclosure: visible enough for the
           volunteer who's here twice a season, collapsed to one line for the

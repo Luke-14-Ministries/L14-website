@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow } from '@/lib/events';
+import { isCurrentEventRow, dayInMorristown } from '@/lib/events';
 import { ActivityEditor, AddActivity, ActivityCard, SlotEditor, slotLabel } from './ActivityEditor';
 import EventFilter from '@/components/EventFilter';
 
@@ -283,7 +283,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                               href={w.url ?? '#'}
                               target="_blank"
                               rel="noopener noreferrer"
-                              title={`Provider confirmation uploaded ${String(w.uploadedAt).slice(0, 10)} — opens the file`}
+                              title={`Provider confirmation uploaded ${dayInMorristown(w.uploadedAt)} — opens the file`}
                               className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 underline"
                             >
                               confirmation ✓

@@ -9,6 +9,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
+import { todayInMorristown } from '@/lib/events';
 
 const MANUAL_METHODS = ['check', 'cash', 'other'];
 
@@ -33,7 +34,7 @@ export async function recordManualGift({ donorName, email, amountCents, fund, me
     fund: fund || 'General Operating Fund',
     method,
     status: 'succeeded',
-    received_on: receivedOn || new Date().toISOString().slice(0, 10),
+    received_on: receivedOn || todayInMorristown(),
     recorded_by: staff.userId,
     note: note?.trim() ? note.trim() : null,
   });

@@ -7,7 +7,7 @@ import RegistrationCard from './RegistrationCard';
 import CancelRequest from './CancelRequest';
 import SupportDetailsCard from './SupportDetailsCard';
 import { registrationDepositCents, registrationHeads } from '@/lib/payments';
-import { balanceDueOn, formatDueDate, formatDueDateShort } from '@/lib/events';
+import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from '@/lib/events';
 import { requiresPaymentChoice, offersPaymentPlan } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
 import { emptySupport, supportProblems } from '@/lib/support';
@@ -175,7 +175,9 @@ export default async function DashboardPage({ searchParams }) {
       if (!row.storage_path) continue;
       const { data: signed } = await supabase.storage
         .from('person-photos')
-        .createSignedUrl(row.storage_path, 3600);
+        // 15 minutes, not an hour (Script 5, 18 Oct 2026): a child's photo link
+        // should not outlive the visit. Each page load signs fresh ones.
+        .createSignedUrl(row.storage_path, 900);
       if (signed?.signedUrl) photoUrlByPerson.set(row.person_id, signed.signedUrl);
     }
   }
@@ -586,7 +588,7 @@ export default async function DashboardPage({ searchParams }) {
     failed: ['Failed — not received', 'bg-red-100 text-red-800'],
     refunded: ['Refunded', 'bg-neutral-200 text-neutral-600'],
   };
-  const payDate = (p) => (p.received_on ?? (p.created_at || '').slice(0, 10)) || '';
+  const payDate = (p) => dayInMorristown(p.received_on ?? p.created_at);
 
   // Order, settled 25 Aug after a first attempt got it backwards.
   //
@@ -750,9 +752,10 @@ export default async function DashboardPage({ searchParams }) {
                   the dashboard names them each time and points at the switch. */}
               {(() => {
                 const grants = [
-                  staff.can_view_sensitive && 'Sensitive',
-                  staff.can_view_giving && 'Giving',
-                  staff.can_view_background_checks && 'Background checks',
+                  // The grants (0100), not the old staff columns, which can lag.
+                  staff.grants?.sensitive && 'Sensitive',
+                  staff.grants?.giving && 'Giving',
+                  staff.grants?.background_checks === 'write' && 'Background checks',
                 ].filter(Boolean);
                 return (
                   <>
@@ -1055,7 +1058,7 @@ export default async function DashboardPage({ searchParams }) {
                               <li key={i}>
                                 {m.body}{' '}
                                 <span className="text-xs text-neutral-500">
-                                  · {(m.created_at ?? '').slice(0, 10)}
+                                  · {dayInMorristown(m.created_at)}
                                 </span>
                               </li>
                             ))}
@@ -1104,7 +1107,7 @@ export default async function DashboardPage({ searchParams }) {
                               {(refundsByReg.get(r.id) ?? []).map((rf, i) => (
                                 <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-1">
                                   <span className="text-neutral-700">
-                                    {(rf.refunded_on ?? rf.created_at ?? '').slice(0, 10)} · Refunded{' '}
+                                    {dayInMorristown(rf.refunded_on ?? rf.created_at)} · Refunded{' '}
                                     <span className="font-semibold">{money(rf.amount_cents)}</span>
                                     {(rf.fee_cover_cents ?? 0) > 0 && (
                                       <span className="text-neutral-500">
@@ -1412,7 +1415,7 @@ export default async function DashboardPage({ searchParams }) {
                   return (
                     <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="text-neutral-700">
-                        {(g.received_on ?? (g.created_at || '').slice(0, 10)) || ''} ·{' '}
+                        {dayInMorristown(g.received_on ?? g.created_at)} ·{' '}
                         <span className="font-semibold">{money(g.amount_cents)}</span>
                         <span className="text-neutral-500"> — {g.fund}</span>
                       </span>

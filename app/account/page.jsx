@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import LoginForm from './LoginForm';
+import { safeNextPath } from '@/lib/site';
 
 export const metadata = { title: 'My Account' };
 
@@ -31,12 +32,9 @@ export default async function AccountPage({ searchParams }) {
     const mfaPending =
       aal?.currentLevel === 'aal1' && aal?.nextLevel === 'aal2';
     if (!mfaPending) {
-      const rawNext = typeof params?.next === 'string' ? params.next : '';
-      const dest =
-        rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
-          ? rawNext
-          : '/account/dashboard/';
-      redirect(dest);
+      // The shared check (lib/site.js). This copy missed a slash-backslash path and sent a
+      // signed-in visitor off-site (security audit, 18 Oct 2026).
+      redirect(safeNextPath(params?.next));
     }
   }
 

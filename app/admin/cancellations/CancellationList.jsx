@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { settleCancellation } from './actions';
+import { dayInMorristown } from '@/lib/events';
 
 const STATUS = {
   open: ['Open', 'bg-amber-100 text-amber-800'],
@@ -66,10 +67,10 @@ function Row({ row }) {
       )}
 
       <p className="mt-2 text-xs text-neutral-500">
-        Asked {(row.requestedAt ?? '').slice(0, 10)}
+        Asked {dayInMorristown(row.requestedAt)}
         {row.phone && <> · {row.phone}</>}
         {row.email && <> · {row.email}</>}
-        {row.handledAt && <> · settled {row.handledAt.slice(0, 10)}</>}
+        {row.handledAt && <> · settled {dayInMorristown(row.handledAt)}</>}
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">

@@ -444,19 +444,22 @@ export default async function AdminLayout({ children }) {
                 ? 'Program Leader'
                 : (ROLE_INFO[staff.role] ?? {}).label ?? staff.role}
             </span>
-            {staff?.can_view_sensitive && (
+            {/* The pills follow the GRANTS (0100), not the old staff columns:
+                a Sensitive grant removed by hand left can_view_sensitive
+                true and the header still said so (Script 5, 18 Oct 2026). */}
+            {staff?.grants?.sensitive && (
               <span className="rounded-full bg-neutral-200 text-neutral-700 px-2.5 py-0.5 text-xs font-semibold">
                 Sensitive access
               </span>
             )}
-            {staff?.can_view_giving && (
+            {staff?.grants?.giving && (
               <span className="rounded-full bg-neutral-200 text-neutral-700 px-2.5 py-0.5 text-xs font-semibold">
                 Giving
               </span>
             )}
             {/* The third grant gets a pill like the other two (15 Oct 2026);
                 it had none since 0058. */}
-            {staff?.can_view_background_checks && (
+            {staff?.grants?.background_checks === 'write' && (
               <span className="rounded-full bg-neutral-200 text-neutral-700 px-2.5 py-0.5 text-xs font-semibold">
                 Background checks
               </span>
@@ -469,7 +472,7 @@ export default async function AdminLayout({ children }) {
                   .map((l) => l.programName)
                   .join(', ')} — you see who is in your program, and nothing else.`
               : (ROLE_INFO[staff.role] ?? {}).blurb ?? 'Staff access.'}
-            {staff?.can_view_sensitive ? ' Plus medical & support details.' : ''}
+            {staff?.grants?.sensitive ? ' Plus medical & support details.' : ''}
           </p>
           </div>
 
@@ -533,19 +536,20 @@ export default async function AdminLayout({ children }) {
               '/admin/my-program': myProgramCount,
             }}
             badgeTitles={{
-              '/admin/review': 'new sign-ups waiting to be confirmed or waitlisted',
+              // [one, many]: AdminNav picks by the count.
+              '/admin/review': ['new sign-up waiting to be confirmed or waitlisted', 'new sign-ups waiting to be confirmed or waitlisted'],
               '/admin/accounts': 'created in the last 7 days',
-              '/admin/cancellations': 'families waiting to hear back',
-              '/admin/deletion-requests': 'families asking for their data to be deleted',
-              '/admin/scholarships': 'families waiting on a decision about the fee',
-              '/admin/buddies': 'campers who asked for a buddy and still have nobody',
-              '/admin/payments': 'payments in the last 7 days',
-              '/admin/programs': 'people on a roster with no program yet',
-              '/admin/my-program': 'people in your program',
+              '/admin/cancellations': ['family waiting to hear back', 'families waiting to hear back'],
+              '/admin/deletion-requests': ['family asking for its data to be deleted', 'families asking for their data to be deleted'],
+              '/admin/scholarships': ['family waiting on a decision about the fee', 'families waiting on a decision about the fee'],
+              '/admin/buddies': ['camper who asked for a buddy and still has nobody', 'campers who asked for a buddy and still have nobody'],
+              '/admin/payments': ['payment in the last 7 days', 'payments in the last 7 days'],
+              '/admin/programs': ['person on a roster with no program yet', 'people on a roster with no program yet'],
+              '/admin/my-program': ['person in your program', 'people in your program'],
             }}
             redBadges={{ '/admin/volunteers': volunteersMissingCheck }}
             redBadgeTitles={{
-              '/admin/volunteers': 'adult volunteers without a current background check marked OK',
+              '/admin/volunteers': ['adult volunteer without a current background check marked OK', 'adult volunteers without a current background check marked OK'],
             }}
             />
           </div>

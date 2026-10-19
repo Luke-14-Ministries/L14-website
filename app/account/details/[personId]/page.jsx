@@ -50,7 +50,9 @@ export default async function PersonDetailsPage({ params }) {
   if (photoRow?.storage_path) {
     const { data: signed } = await supabase.storage
       .from('person-photos')
-      .createSignedUrl(photoRow.storage_path, 3600);
+      // 15 minutes, not an hour (Script 5, 18 Oct 2026): a child's photo link
+      // should not outlive the visit. Each page load signs fresh ones.
+      .createSignedUrl(photoRow.storage_path, 900);
     photoUrl = signed?.signedUrl ?? null;
   }
 

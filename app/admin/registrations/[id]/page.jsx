@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import RegistrationManager from './RegistrationManager';
 import StaffPlanPanel from './StaffPlanPanel';
 import { requiresPaymentChoice } from '@/lib/plans';
+import { dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Registration — Staff Admin' };
 
@@ -190,7 +191,7 @@ export default async function RegistrationDetailPage({ params }) {
     id: m.id,
     body: m.body,
     author: authorNames.get(m.created_by) ?? 'Staff',
-    at: (m.created_at ?? '').slice(0, 10),
+    at: dayInMorristown(m.created_at),
   }));
 
   // Current media / directory answers for these people, and the agreements

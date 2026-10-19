@@ -35,7 +35,7 @@ const TSHIRT_SIZES = [
 // The folding card every section of this page uses, StaffPlanPanel included.
 import Panel from './Panel';
 import ReviewCard from './ReviewCard';
-import { eventDateRange } from '@/lib/events';
+import { eventDateRange, dayInMorristown, todayInMorristown } from '@/lib/events';
 
 const SIGNER_ROLE_LABEL = {
   // "for themselves" was a mis-caption, not just terse: the option it
@@ -250,7 +250,7 @@ function PersonEditor({ registrationId, person, onDone }) {
         </div>
         <div>
           <label className={labelCls}>Date of birth</label>
-          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
+          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={todayInMorristown()} />
         </div>
         <div>
           <label className={labelCls}>Sex</label>
@@ -709,7 +709,7 @@ function ConsentRow({ label, help, record, disabled, onSet }) {
       </span>
       {record?.recorded_at && (
         <span className="text-xs text-neutral-500">
-          {record.recorded_at.slice(0, 10)}
+          {dayInMorristown(record.recorded_at)}
           {record.recorded_as === 'staff' ? ' · entered by staff' : ' · from the family'}
         </span>
       )}
@@ -868,7 +868,7 @@ function AddPerson({ registrationId, options }) {
         </div>
         <div>
           <label className={labelCls}>Date of birth</label>
-          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
+          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={todayInMorristown()} />
         </div>
         <div>
           <label className={labelCls}>Sex</label>
@@ -1177,7 +1177,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                 )}
                 <span className="text-neutral-500">
                   {' '}· {PAY_METHOD_LABEL[p.method] ?? p.method}
-                  {' '}· {(p.received_on ?? p.created_at ?? '').slice(0, 10)}
+                  {' '}· {dayInMorristown(p.received_on ?? p.created_at)}
                 </span>
               </span>
               <span className="flex items-center gap-2">
@@ -1246,7 +1246,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                   <li key={r.id} className="text-neutral-600">
                     Refunded <strong>{money(r.amount_cents)}</strong>
                     {(r.fee_cover_cents ?? 0) > 0 && ` + ${money(r.fee_cover_cents)} fee`}
-                    {' '}· {(r.refunded_on ?? r.created_at ?? '').slice(0, 10)}
+                    {' '}· {dayInMorristown(r.refunded_on ?? r.created_at)}
                     {' '}· <span className="italic">{r.reason || 'no reason recorded'}</span>
                     {/* `reason` is written for the family -- it is printed on
                         their dashboard. `note` is where a refund that arrived
@@ -1948,7 +1948,7 @@ export default function RegistrationManager({
                       {' — '}
                       {outcome}
                       {r.grantedBy && <> · by {r.grantedBy}</>}
-                      {r.at && <> · {String(r.at).slice(0, 10)}</>}
+                      {r.at && <> · {dayInMorristown(r.at)}</>}
                       {/* Two different people's words, kept apart since 0048.
                           The staff note used to overwrite the family's
                           statement, so granting an award erased the reason it

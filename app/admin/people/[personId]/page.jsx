@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { allergyPill, statusPill } from '@/lib/format';
 import { allergySummary } from '@/lib/support';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
+import { dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Person — Staff Admin' };
 
@@ -175,7 +176,7 @@ export default async function PersonPage({ params }) {
     guardian: 'as guardian',
     account_holder: 'as the account holder',
   };
-  const fmtDate = (iso) => (iso ? String(iso).slice(0, 10) : '');
+  const fmtDate = (iso) => dayInMorristown(iso);
 
   // Cabin names for rooms, so "Room 3" reads as "Oak Cabin · Room 3". A room
   // points at its cabin; a cabin points at nothing.
@@ -468,7 +469,10 @@ export default async function PersonPage({ params }) {
                 )}
                 <span className="ml-2 text-xs text-neutral-500">
                   {fmtDate(c.recorded_at)}
-                  {c.recorded_as ? ` · ${c.recorded_as}` : ''}
+                  {/* recorded_as holds the signing vocabulary (all_registered,
+                      self, guardian) or 'staff'; the registration page says it
+                      the same way (Script 5: the raw words were showing). */}
+                  {c.recorded_as === 'staff' ? ' · entered by staff' : c.recorded_as ? ' · from the family' : ''}
                 </span>
               </Row>
             ))

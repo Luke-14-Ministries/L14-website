@@ -4,6 +4,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { shortEventName } from '@/lib/events';
 import { statusPill } from '@/lib/format';
+import { searchWords, ilikeContains } from '@/lib/search';
 
 export const metadata = { title: 'Search — Staff Admin' };
 
@@ -47,7 +48,11 @@ export default async function SearchPage({ searchParams }) {
     // "Nothing matches" for every search from the day it shipped (found by
     // Lawrence, 15 Oct 2026, searching "acorn leaf"). CLAUDE.md's rule about
     // two FKs to the same table, learned again.
-    const words = q.split(/\s+/).filter(Boolean).slice(0, 4);
+    //
+    // Typed text goes inside an .or() filter string: lib/search.js escapes
+    // LIKE's % and _ (so "alastair_laptest" finds itself) and turns the
+    // filter syntax , ( ) " into word breaks (Script 5, 18 Oct 2026).
+    const words = searchWords(q).map(ilikeContains).filter(Boolean);
     let query = supabase
       .from('people')
       .select(
@@ -57,13 +62,12 @@ export default async function SearchPage({ searchParams }) {
            registrations ( id, events ( id, name, starts_on ) ) )`
       )
       .limit(60);
-    for (const w of words) {
-      const like = `%${w.replace(/[%_]/g, '')}%`;
+    for (const like of words) {
       query = query.or(
         `first_name.ilike.${like},last_name.ilike.${like},preferred_name.ilike.${like},email.ilike.${like}`
       );
     }
-    const { data, error } = await query;
+    const { data, error } = words.length ? await query : { data: [], error: null };
     // Shown, not swallowed: an empty list and a broken query must not look
     // the same to the person searching.
     if (error) throw new Error(`Search failed: ${error.message}`);
@@ -73,13 +77,13 @@ export default async function SearchPage({ searchParams }) {
   // Households whose own name or email matches, for the case where the family
   // name is known but no person's is.
   let households = [];
-  if (q.length >= 2) {
-    const like = `%${q.replace(/[%_]/g, '')}%`;
+  const householdLike = ilikeContains(q);
+  if (q.length >= 2 && householdLike) {
     // Same two-path problem in the other direction: name the key.
     const { data, error } = await supabase
       .from('households')
       .select('id, display_name, email, people!people_household_id_fkey ( id, first_name, last_name )')
-      .or(`display_name.ilike.${like},email.ilike.${like}`)
+      .or(`display_name.ilike.${householdLike},email.ilike.${householdLike}`)
       .limit(20);
     if (error) throw new Error(`Search failed: ${error.message}`);
     households = data ?? [];

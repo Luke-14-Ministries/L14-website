@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { reviewVolunteerApplication, setVolunteerClearance } from './actions';
 import { clearancePill, CLEARANCE_VERDICT_LABEL, isMinor } from '@/lib/format';
+import { dayInMorristown } from '@/lib/events';
 
 const APP_CHIP = {
   applied: ['Applied — needs review', 'bg-amber-100 text-amber-800'],
@@ -99,7 +100,9 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded border border-neutral-300 px-2 py-1" />
         </label>
         <span className="text-xs text-neutral-500">
-          {clearance?.expires_on
+          {/* No check date, no expiry: 0108 clears expires_on with the date,
+              and a row saved before it may still carry an old one. */}
+          {clearance?.background_check_date && clearance?.expires_on
             ? `Expires ${clearance.expires_on} (12 months from the check date)`
             : 'Expiry is worked out from the check date: 12 months — checks are annual.'}
         </span>
@@ -136,7 +139,7 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
           )}
           {clearance?.verdict_at && (
             <span className="text-xs text-neutral-500">
-              Verdict ({CLEARANCE_VERDICT_LABEL[clearance.verdict] ?? clearance.verdict}) by {clearance.verdictByName ?? 'staff'} · {whenLocal(clearance.verdict_at)}
+              Verdict ({clearance.verdict ? CLEARANCE_VERDICT_LABEL[clearance.verdict] ?? clearance.verdict : 'Not decided'}) by {clearance.verdictByName ?? 'staff'} · {whenLocal(clearance.verdict_at)}
             </span>
           )}
         </div>
@@ -209,7 +212,7 @@ function CheckrPanel({ clearance, email }) {
         <dl className="mt-3 grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
           <div>
             <dt className="font-semibold text-neutral-500">Invited</dt>
-            <dd>{clearance?.invitation_sent_at?.slice(0, 10) ?? '—'}</dd>
+            <dd>{dayInMorristown(clearance?.invitation_sent_at) || '—'}</dd>
           </div>
           <div>
             <dt className="font-semibold text-neutral-500">Report completed</dt>

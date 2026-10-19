@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
-import { balanceDueOn, formatDueDateShort } from '@/lib/events';
+import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'My Statement — Luke 14 Ministries' };
 
@@ -188,7 +188,7 @@ export default async function MyStatementPage({ params }) {
           <tbody>
             {goodPays.map((p, i) => (
               <tr key={i} className="border-b border-neutral-200">
-                <td className="py-1 pr-3">{p.received_on ?? (p.created_at || '').slice(0, 10)}</td>
+                <td className="py-1 pr-3">{dayInMorristown(p.received_on ?? p.created_at)}</td>
                 <td className="py-1 pr-3">{METHOD_LABEL[p.method] ?? p.method}</td>
                 <td className="py-1 pr-3">
                   {p.status === 'processing' ? 'clearing the bank' : 'received'}

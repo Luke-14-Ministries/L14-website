@@ -3,6 +3,7 @@ import { allergySummary } from '@/lib/support';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
+import { todayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Buddy sheets — Staff Admin' };
 
@@ -245,7 +246,7 @@ export default async function BuddyPrintPage({ searchParams }) {
           <p className="mt-6 border-t border-neutral-300 pt-2 text-xs text-neutral-500">
             Questions about anything here go to the coordinator or the camp nurse, not the family
             directly. This sheet is for you alone: keep it with you, and hand it back at the end of
-            camp. Printed {new Date().toISOString().slice(0, 10)} · Luke 14 Ministries.
+            camp. Printed {todayInMorristown()} · Luke 14 Ministries.
           </p>
         </div>
       ))}

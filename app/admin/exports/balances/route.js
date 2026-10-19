@@ -5,11 +5,11 @@
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { csvCell } from '@/lib/csv';
+import { todayInMorristown, inPaymentsScope } from '@/lib/events';
 
-const esc = (v) => {
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
+// Quoting and spreadsheet-formula safety: lib/csv.js.
+const esc = csvCell;
 
 export async function GET(request) {
   const staff = await getStaff();
@@ -26,25 +26,15 @@ export async function GET(request) {
     supabase
       .from('registration_balances')
       .select('registration_id, event_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents'),
-    supabase.from('registrations').select('id, events ( id, name, starts_on, ends_on ), households ( display_name, email, phone )'),
+    supabase.from('registrations').select('id, events ( id, name, starts_on, ends_on, archived_at ), households ( display_name, email, phone )'),
   ]);
   const regById = new Map((regs ?? []).map((r) => [r.id, r]));
 
   // Same event scope as the Event Payments page: '' = upcoming + recent
-  // (90 days each way), 'upcoming', 'recent', 'all', or one event's id.
-  const today = new Date().toISOString().slice(0, 10);
-  const plus90 = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
-  const minus90 = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
-  const inScope = (ev) => {
-    if (eventFilter === 'all') return true;
-    if (!ev) return !eventFilter;
-    const start = ev.starts_on ?? '';
-    const end = ev.ends_on ?? ev.starts_on ?? '';
-    if (eventFilter === 'upcoming') return end >= today && start <= plus90;
-    if (eventFilter === 'recent') return end < today && end >= minus90;
-    if (eventFilter) return ev.id === eventFilter;
-    return end >= minus90 && start <= plus90;
-  };
+  // (90 days each way), 'upcoming', 'recent', 'all', or one event's id --
+  // one function for both (lib/events.js); archived events are in no time
+  // scope.
+  const inScope = (ev) => inPaymentsScope(ev, eventFilter);
 
   const matches = (b) => {
     if (!inScope(regById.get(b.registration_id)?.events)) return false;
@@ -86,7 +76,7 @@ export async function GET(request) {
   return new Response(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="luke14-balances-${new Date().toISOString().slice(0, 10)}.csv"`,
+      'Content-Disposition': `attachment; filename="luke14-balances-${todayInMorristown()}.csv"`,
     },
   });
 }

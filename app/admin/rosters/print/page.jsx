@@ -82,7 +82,7 @@ export default async function PrintRostersPage({ searchParams }) {
             <h2 className="text-lg font-bold border-b-2 border-neutral-800 pb-1 mb-2">
               {ev.name}{' '}
               <span className="font-normal text-sm">
-                ({ev.starts_on} – {ev.ends_on}) · {rows.length} people
+                ({ev.starts_on} – {ev.ends_on}) · {rows.length} {rows.length === 1 ? 'person' : 'people'}
               </span>
             </h2>
             <table className="w-full text-sm border-collapse">

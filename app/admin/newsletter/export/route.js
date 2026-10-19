@@ -4,11 +4,11 @@
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { csvCell } from '@/lib/csv';
+import { dayInMorristown, todayInMorristown } from '@/lib/events';
 
-const esc = (v) => {
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
+// Quoting and spreadsheet-formula safety: lib/csv.js.
+const esc = csvCell;
 
 export async function GET(request) {
   const staff = await getStaff();
@@ -34,11 +34,11 @@ export async function GET(request) {
       if (!r.email) continue;
       rows.push([r.email, r.first_name ?? '', r.last_name ?? '', 'website']);
     } else {
-      rows.push([r.first_name ?? '', r.last_name ?? '', r.email ?? '', String(r.since ?? '').slice(0, 10)]);
+      rows.push([r.first_name ?? '', r.last_name ?? '', r.email ?? '', dayInMorristown(r.since)]);
     }
   }
   const csv = rows.map((r) => r.map(esc).join(',')).join('\r\n');
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = todayInMorristown();
   if (mailchimp) {
     return new Response(csv, {
       headers: {

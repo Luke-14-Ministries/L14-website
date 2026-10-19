@@ -8,6 +8,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { createDonationCheckout } from './actions';
 import { coverFeeCents, dollars } from '@/lib/payments';
+import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
 
 const presets = [25, 50, 100, 250, 500];
 const funds = [
@@ -26,6 +27,10 @@ export default function GivingForm({ signedInEmail }) {
   const [coverFee, setCoverFee] = useState(false);
   const [error, setError] = useState('');
   const [pending, start] = useTransition();
+  // The bot check (as on the contact form). Tokens are single use, so any
+  // failed attempt bumps the widget for a fresh one.
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const [captchaBump, setCaptchaBump] = useState(0);
 
   const effective = custom ? Number(custom) || 0 : amount;
   const baseCents = Math.round(effective * 100);
@@ -38,15 +43,22 @@ export default function GivingForm({ signedInEmail }) {
   function submit(e) {
     e.preventDefault();
     setError('');
+    if (turnstileEnabled && !captchaToken) {
+      setError('Please complete the “I am human” check just above the button.');
+      return;
+    }
     start(async () => {
       const res = await createDonationCheckout({
         amountCents: baseCents,
         fund,
         method,
         coverFee,
+        captchaToken,
       });
       if (!res.ok) {
         setError(res.error);
+        setCaptchaToken(null);
+        setCaptchaBump((n) => n + 1);
         return;
       }
       window.location.href = res.url;
@@ -182,6 +194,8 @@ export default function GivingForm({ signedInEmail }) {
           your donation)</span>
         </span>
       </label>
+
+      <Turnstile onToken={setCaptchaToken} resetKey={captchaBump} action="donate" />
 
       {error && (
         <p className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">

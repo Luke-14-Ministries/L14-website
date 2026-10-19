@@ -5,6 +5,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { markBatchOrdered, importCheckrResults, rebuildBatchCsv, unsendBatch } from './actions';
+import { dayInMorristown } from '@/lib/events';
 
 // Hand a CSV to the browser. The file never goes near a server we control,
 // which is the point: it holds email addresses. The link is put in the page
@@ -78,7 +79,7 @@ export default function ScreeningBoard({ candidates }) {
     });
   }
   function unsend(batch, n) {
-    if (!window.confirm(`Mark these ${n} as NOT sent? They go back to never checked and will be offered for the next batch. Do this only if the file never reached Checkr.`)) return;
+    if (!window.confirm(`${n === 1 ? 'Mark this 1 person' : `Mark these ${n}`} as NOT sent? They go back to never checked and will be offered for the next batch. Do this only if the file never reached Checkr.`)) return;
     setBatchNote(null);
     start(async () => {
       const r = await unsendBatch(batch);
@@ -242,7 +243,7 @@ export default function ScreeningBoard({ candidates }) {
               {batches.map(([batch, people]) => (
                 <li key={batch} className="flex flex-wrap items-center gap-3">
                   <span>
-                    <strong>{String(batch).slice(0, 10)}</strong> · {people.length}{' '}
+                    <strong>{dayInMorristown(batch)}</strong> · {people.length}{' '}
                     {people.length === 1 ? 'person' : 'people'}
                     <span className="text-neutral-500"> — {people.map((p) => p.name).join(', ')}</span>
                   </span>

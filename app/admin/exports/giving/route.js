@@ -3,11 +3,11 @@
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { csvCell } from '@/lib/csv';
+import { dayInMorristown, todayInMorristown } from '@/lib/events';
 
-const esc = (v) => {
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
+// Quoting and spreadsheet-formula safety: lib/csv.js.
+const esc = csvCell;
 
 export async function GET(request) {
   const staff = await getStaff();
@@ -32,7 +32,7 @@ export async function GET(request) {
     .select('donor_name, email, amount_cents, fund, method, status, received_on, created_at, note')
     .order('created_at');
 
-  const giftDate = (g) => g.received_on ?? (g.created_at ?? '').slice(0, 10);
+  const giftDate = (g) => dayInMorristown(g.received_on ?? g.created_at);
   const filtered = (gifts ?? []).filter(
     (g) =>
       (!fFrom || giftDate(g) >= fFrom) &&
@@ -43,7 +43,7 @@ export async function GET(request) {
 
   if (quickbooks) {
     const mdy = (iso) => {
-      const [y, m, d] = String(iso ?? '').slice(0, 10).split('-');
+      const [y, m, d] = dayInMorristown(iso).split('-');
       return y && m && d ? `${m}/${d}/${y}` : '';
     };
     const qb = [['Date', 'Name', 'Memo', 'Account', 'Amount']];
@@ -61,7 +61,7 @@ export async function GET(request) {
     return new Response(csvQb, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="luke14-giving-quickbooks-${new Date().toISOString().slice(0, 10)}.csv"`,
+        'Content-Disposition': `attachment; filename="luke14-giving-quickbooks-${todayInMorristown()}.csv"`,
       },
     });
   }
@@ -69,7 +69,7 @@ export async function GET(request) {
   const rows = [['Date', 'Donor', 'Email', 'Amount', 'Fund', 'Method', 'Status', 'Note']];
   for (const g of filtered) {
     rows.push([
-      g.received_on ?? (g.created_at ?? '').slice(0, 10),
+      giftDate(g),
       g.donor_name ?? '',
       g.email ?? '',
       ((g.amount_cents ?? 0) / 100).toFixed(2),
@@ -85,7 +85,7 @@ export async function GET(request) {
   return new Response(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="luke14-giving-${new Date().toISOString().slice(0, 10)}.csv"`,
+      'Content-Disposition': `attachment; filename="luke14-giving-${todayInMorristown()}.csv"`,
     },
   });
 }

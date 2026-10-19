@@ -32,7 +32,7 @@ import {
   emailLooksValid,
 } from '@/lib/format';
 import { submitFamilyRegistration } from './actions';
-import { formatDueDate, agreementText, formatDueDateShort } from '@/lib/events';
+import { formatDueDate, agreementText, formatDueDateShort, todayInMorristown } from '@/lib/events';
 import SupportDetailsFields from '@/components/SupportDetailsFields';
 import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 
@@ -906,7 +906,7 @@ export default function FamilyWizard({
               <div className="grid sm:grid-cols-3 gap-4">
                 <div>
                   <label className={label}>Date of birth</label>
-                  <input type="date" className={input} value={m.dob} onChange={setM(i, 'dob')} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} />
+                  <input type="date" className={input} value={m.dob} onChange={setM(i, 'dob')} min="1900-01-01" max={todayInMorristown()} />
                 </div>
                 <div>
                   <label className={label}>Sex</label>

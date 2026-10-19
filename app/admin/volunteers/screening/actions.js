@@ -20,6 +20,8 @@
 import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { csvPlainText } from '@/lib/csv';
+import { dayInMorristown, todayInMorristown } from '@/lib/events';
 
 // How long a check stands before the person is due again.
 //
@@ -148,12 +150,13 @@ function buildCheckrCsv(rows, byId) {
       const rawPhone = (p?.phone ?? '').trim() || (p?.households?.phone ?? '').trim();
       let phone = rawPhone.replace(/\D/g, '');
       if (phone.length === 11 && phone.startsWith('1')) phone = phone.slice(1);
-      const first = (p?.first_name ?? '').replace(/[",\n]/g, ' ').trim();
+      // No quoting in Checkr's format; formula characters dropped (lib/csv.js).
+      const first = csvPlainText(p?.first_name);
       return `${r.invited_email},${first},${phone}`;
     }),
   ].join('\r\n');
 }
-const batchFilename = (batch, n) => `luke14-checkr-${String(batch).slice(0, 10)}-${n}.csv`;
+const batchFilename = (batch, n) => `luke14-checkr-${dayInMorristown(batch)}-${n}.csv`;
 
 // The same file again, for a batch already recorded as sent (Lawrence,
 // 15 Oct 2026: "the ability to re-download should be possible"). Reads only;
@@ -489,7 +492,7 @@ export async function importCheckrResults(csvText, { dryRun = true } = {}) {
     const status = finished ? mapped ?? 'consider' : 'pending';
     const completedOn =
       (iDone !== -1 && (r[iDone] || '').trim().slice(0, 10)) ||
-      new Date().toISOString().slice(0, 10);
+      todayInMorristown();
 
     // Verdict words only. What was found stays in the report in SharePoint.
     const screenings = {};

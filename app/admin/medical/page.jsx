@@ -138,7 +138,7 @@ export default async function MedicalPage({ searchParams }) {
         return (
           <div key={ev.id} className="mb-10">
             <h3 className="text-lg font-bold mb-1">
-              {ev.name} <span className="text-sm font-normal text-neutral-500">· {rows.length} people</span>
+              {ev.name} <span className="text-sm font-normal text-neutral-500">· {rows.length} {rows.length === 1 ? 'person' : 'people'}</span>
             </h3>
             <p className="text-sm mb-3">
               <span aria-hidden>⚕️ </span>

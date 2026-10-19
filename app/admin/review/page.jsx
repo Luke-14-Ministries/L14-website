@@ -5,6 +5,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 import { statusPill } from '@/lib/format';
+import { dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Awaiting review — Staff Admin' };
 
@@ -232,7 +233,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                           {r.household}
                         </Link>
                         <div className="text-xs text-neutral-500">
-                          registered {String(r.created ?? '').slice(0, 10)}
+                          registered {dayInMorristown(r.created)}
                         </div>
                       </td>
                       <td className="px-3 py-2.5">
@@ -287,7 +288,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                             {r.awaitingSince && (
                               <li className="text-xs text-neutral-700" title={r.awaitingReason ?? ''}>
                                 <span className="font-semibold">Waiting on the family</span> since{' '}
-                                {String(r.awaitingSince).slice(0, 10)}
+                                {dayInMorristown(r.awaitingSince)}
                                 {r.awaitingReason && (
                                   <span className="block max-w-xs truncate text-neutral-500">
                                     &ldquo;{r.awaitingReason}&rdquo;

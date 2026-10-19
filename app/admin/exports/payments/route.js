@@ -13,11 +13,11 @@
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { csvCell } from '@/lib/csv';
+import { dayInMorristown, todayInMorristown, inPaymentsScope } from '@/lib/events';
 
-const esc = (v) => {
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
+// Quoting and spreadsheet-formula safety: lib/csv.js.
+const esc = csvCell;
 
 export async function GET(request) {
   const staff = await getStaff();
@@ -36,7 +36,7 @@ export async function GET(request) {
       .from('payments')
       .select('registration_id, amount_cents, fee_cover_cents, method, status, received_on, created_at, note, payer_email, payer_name, stripe_payment_intent_id')
       .order('created_at'),
-    supabase.from('registrations').select('id, events ( id, name, starts_on, ends_on ), households ( display_name )'),
+    supabase.from('registrations').select('id, events ( id, name, starts_on, ends_on, archived_at ), households ( display_name )'),
     supabase
       .from('registration_balances')
       .select('registration_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents'),
@@ -78,25 +78,15 @@ export async function GET(request) {
      'Paid by', 'Payer email', 'Stripe reference', 'Note'],
   ];
   // Same event scope as the Event Payments page: '' = upcoming + recent
-  // (90 days each way), 'upcoming', 'recent', 'all', or one event's id.
-  const today = new Date().toISOString().slice(0, 10);
-  const plus90 = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
-  const minus90 = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
-  const inScope = (ev) => {
-    if (eventFilter === 'all') return true;
-    if (!ev) return !eventFilter;
-    const start = ev.starts_on ?? '';
-    const end = ev.ends_on ?? ev.starts_on ?? '';
-    if (eventFilter === 'upcoming') return end >= today && start <= plus90;
-    if (eventFilter === 'recent') return end < today && end >= minus90;
-    if (eventFilter) return ev.id === eventFilter;
-    return end >= minus90 && start <= plus90;
-  };
+  // (90 days each way), 'upcoming', 'recent', 'all', or one event's id --
+  // one function for both (lib/events.js); archived events are in no time
+  // scope.
+  const inScope = (ev) => inPaymentsScope(ev, eventFilter);
 
   if (quickbooks) {
     // MM/DD/YYYY, which QuickBooks Online reads without a format question.
     const mdy = (iso) => {
-      const [y, m, d] = String(iso ?? '').slice(0, 10).split('-');
+      const [y, m, d] = dayInMorristown(iso).split('-');
       return y && m && d ? `${m}/${d}/${y}` : '';
     };
     const qb = [['Date', 'Name', 'Memo', 'Account', 'Amount']];
@@ -132,7 +122,7 @@ export async function GET(request) {
     return new Response(csvQb, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="luke14-event-payments-quickbooks-${new Date().toISOString().slice(0, 10)}.csv"`,
+        'Content-Disposition': `attachment; filename="luke14-event-payments-quickbooks-${todayInMorristown()}.csv"`,
       },
     });
   }
@@ -142,7 +132,7 @@ export async function GET(request) {
     const r = regById.get(p.registration_id);
     if (!inScope(r?.events)) continue;
     rows.push([
-      p.received_on ?? (p.created_at ?? '').slice(0, 10),
+      dayInMorristown(p.received_on ?? p.created_at),
       r?.households?.display_name ?? '',
       r?.events?.name ?? '',
       ((p.amount_cents ?? 0) / 100).toFixed(2),
@@ -161,7 +151,7 @@ export async function GET(request) {
   return new Response(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="luke14-event-payments-${new Date().toISOString().slice(0, 10)}.csv"`,
+      'Content-Disposition': `attachment; filename="luke14-event-payments-${todayInMorristown()}.csv"`,
     },
   });
 }

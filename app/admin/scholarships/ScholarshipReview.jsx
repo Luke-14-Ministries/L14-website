@@ -15,6 +15,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { grantScholarship, declineScholarship } from './actions';
+import { dayInMorristown } from '@/lib/events';
 
 const money = (c) =>
   typeof c === 'number' ? `$${(c / 100).toFixed(2)}` : '—';
@@ -144,7 +145,7 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
       )}
 
       <p className="mt-2 text-xs text-neutral-500">
-        {row.requestedAt && <>Asked {String(row.requestedAt).slice(0, 10)}</>}
+        {row.requestedAt && <>Asked {dayInMorristown(row.requestedAt)}</>}
         {/* An open request that already carries a decision is a family asking
             a second time after being turned down. Saying "answered" about a
             row that is plainly still waiting would be the screen contradicting
@@ -153,7 +154,7 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
           <>
             {' '}
             · {isOpen ? 'previously answered' : 'answered'}{' '}
-            {String(row.reviewedAt).slice(0, 10)}
+            {dayInMorristown(row.reviewedAt)}
           </>
         )}
         {row.reviewedBy && <> by {row.reviewedBy}</>}

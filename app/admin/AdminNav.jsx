@@ -76,6 +76,10 @@ const BADGE_TONE = {
 // not merely waiting but WRONG until somebody acts -- today, volunteers
 // without a background check (Lawrence, 15 Oct 2026: "12 / 15"). Amber then
 // red, side by side, each with its own tooltip.
+// A badge title is a phrase after the number, or [one, many] so a count of
+// 1 reads "1 family waiting" and not "1 families waiting" (Script 5).
+const badgeWords = (t, n, fallback) => (Array.isArray(t) ? t[n === 1 ? 0 : 1] : t ?? fallback);
+
 export default function AdminNav({
   top = [],
   sections = [],
@@ -127,7 +131,7 @@ export default function AdminNav({
           <span className="flex shrink-0 items-center gap-1">
             {(badges[n.href] ?? 0) > 0 && (
               <span
-                title={`${badges[n.href]} ${badgeTitles[n.href] ?? 'needing review'}`}
+                title={`${badges[n.href]} ${badgeWords(badgeTitles[n.href], badges[n.href], 'needing review')}`}
                 className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
                   BADGE_TONE[n.href] === 'window'
                     ? 'bg-blue-100 text-blue-800'
@@ -139,7 +143,7 @@ export default function AdminNav({
             )}
             {(redBadges[n.href] ?? 0) > 0 && (
               <span
-                title={`${redBadges[n.href]} ${redBadgeTitles[n.href] ?? 'needing attention'}`}
+                title={`${redBadges[n.href]} ${badgeWords(redBadgeTitles[n.href], redBadges[n.href], 'needing attention')}`}
                 className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800"
               >
                 {redBadges[n.href]}

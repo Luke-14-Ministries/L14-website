@@ -6,11 +6,11 @@
 import { getStaff, can } from '@/lib/staff';
 import { clearancePill } from '@/lib/format';
 import { createClient } from '@/lib/supabase/server';
+import { csvCell } from '@/lib/csv';
+import { dayInMorristown, todayInMorristown } from '@/lib/events';
 
-const esc = (v) => {
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
+// Quoting and spreadsheet-formula safety: lib/csv.js.
+const esc = csvCell;
 
 export async function GET(request) {
   const staff = await getStaff();
@@ -88,13 +88,13 @@ export async function GET(request) {
       name(v),
       v?.registrations?.households?.display_name ?? '',
       v ? clearanceWord.get(v.people?.id) ?? 'no check on file' : '',
-      a.started_at ? String(a.started_at).slice(0, 10) : '',
+      dayInMorristown(a.started_at),
       a.note ?? '',
     ]);
   }
 
   const csv = rows.map((r) => r.map(esc).join(',')).join('\r\n');
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = todayInMorristown();
   const slug = (event?.name ?? 'event').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
   return new Response(csv, {
     headers: {

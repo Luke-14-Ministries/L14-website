@@ -266,6 +266,16 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       : [];
   const exact = accounts.find((a) => a.email.toLowerCase() === needle) ?? null;
 
+  // WHAT WAS JUST SAVED, shown at once (Script 5, 18 Oct 2026). After a
+  // preset the role radio and the "n W · n R" button kept their old values
+  // until a reload, though the save had landed. Each successful action
+  // records what it saved for that person here, and the rows read it over
+  // the server's list; the refresh below still brings everything else.
+  const [saved, setSaved] = useState({});
+  const remember = (profileId, fields) =>
+    setSaved((cur) => ({ ...cur, [profileId]: { ...(cur[profileId] ?? {}), ...fields } }));
+  const shown = members.map((m) => (saved[m.profileId] ? { ...m, ...saved[m.profileId] } : m));
+
   function patch(profileId, changes) {
     setError('');
     setNotice('');
@@ -273,6 +283,12 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
     start(async () => {
       const res = await updateStaffMember(profileId, changes);
       if (!res.ok) setError(res.error);
+      else {
+        const fields = {};
+        if (changes.role !== undefined) fields.role = changes.role;
+        if (changes.active !== undefined) fields.active = !!changes.active;
+        if (Object.keys(fields).length) remember(profileId, fields);
+      }
       setBusyId(null);
       router.refresh();
     });
@@ -286,6 +302,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
     setBusyId(profileId);
     start(async () => {
       const res = await setStaffGrants(profileId, grants);
+      if (res.ok && res.grants) remember(profileId, { grants: res.grants });
       if (!res.ok) setError(res.error);
       else setNotice(res.changed ? `Grants saved — ${res.changed} ${res.changed === 1 ? 'change' : 'changes'} logged.` : 'Nothing changed.');
       setBusyId(null);
@@ -298,6 +315,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
     setBusyId(profileId);
     start(async () => {
       const res = await applyPreset(profileId, key);
+      if (res.ok) remember(profileId, { role: res.role, ...(res.grants ? { grants: res.grants } : {}) });
       if (!res.ok) setError(res.error);
       else setNotice(`${res.label} preset applied — grants, role and ticks set; see the access log.`);
       setBusyId(null);
@@ -312,7 +330,14 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
     start(async () => {
       const res = await removeStaffMember(m.profileId);
       if (!res.ok) setError(res.error);
-      else setNotice(`${m.name} removed from staff. Their account and records are untouched.`);
+      else {
+        setNotice(`${m.name} removed from staff. Their account and records are untouched.`);
+        setSaved((cur) => {
+          const next = { ...cur };
+          delete next[m.profileId];
+          return next;
+        });
+      }
       setBusyId(null);
       router.refresh();
     });
@@ -330,14 +355,16 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       else {
         setNotice(`${res.name} added to staff.`);
         setAddEmail('');
+        // Adding again can change an existing row's role: the list decides.
+        setSaved({});
       }
       setAdding(false);
       router.refresh();
     });
   }
 
-      const activeMembers = members.filter((m) => m.active);
-  const inactiveMembers = members.filter((m) => !m.active);
+      const activeMembers = shown.filter((m) => m.active);
+  const inactiveMembers = shown.filter((m) => !m.active);
 
   // ORDER IS THE USER'S, NOT THE DATABASE'S. The rows arrived ordered by role
   // and then by nothing in particular, so a person could change position after

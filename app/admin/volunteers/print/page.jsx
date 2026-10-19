@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { clearancePill } from '@/lib/format';
+import { clearancePill, isMinor } from '@/lib/format';
+import { todayInMorristown } from '@/lib/events';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
@@ -37,7 +38,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
         `id, event_id,
          households ( display_name, email, phone ),
          registration_participants ( id, camp_role, status,
-           people ( id, first_name, last_name, email, phone ) )`
+           people ( id, first_name, last_name, email, phone, date_of_birth ) )`
       ),
     supabase.from('events').select('id, name, starts_on, ends_on').order('starts_on', { ascending: false }),
   ]);
@@ -65,8 +66,15 @@ export default async function VolunteerPrintPage({ searchParams }) {
       : Promise.resolve({ data: [] }),
   ]);
   const appByPart = new Map((apps ?? []).map((a) => [a.registration_participant_id, a]));
-  const today = new Date().toISOString().slice(0, 10);
-  const checkWord = new Map((clearances ?? []).map((c) => [c.person_id, clearancePill(c).text]));
+  const today = todayInMorristown();
+  const clearanceByPerson = new Map((clearances ?? []).map((c) => [c.person_id, c]));
+  // The same words as the Volunteers page (VolunteerManager): under 18 is
+  // "not screened", not a missing check; no row is "No background check on
+  // file" (Script 5: this list never set `minor` and said "none on file").
+  const checkWord = (person) => {
+    const c = clearanceByPerson.get(person?.id) ?? null;
+    return clearancePill(isMinor(person?.date_of_birth) ? { ...(c ?? {}), minor: true } : c, today).text;
+  };
 
   const groups = (events ?? [])
     .filter((ev) => !eventFilter || ev.id === eventFilter)
@@ -129,7 +137,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
                     <td className="py-1 pr-2">{a ? (a.first_time_volunteering ? 'yes' : 'no') : '—'}</td>
                     <td className="py-1 pr-2">{a ? STATUS[a.status] ?? a.status : 'No application yet'}</td>
                     <td className="py-1 pr-2">{a ? (a.creed_affirmed ? 'affirmed' : 'NOT affirmed') : '—'}</td>
-                    {maySeeChecks && <td className="py-1 pr-2">{checkWord.get(v.person?.id) ?? 'none on file'}</td>}
+                    {maySeeChecks && <td className="py-1 pr-2">{checkWord(v.person)}</td>}
                   </tr>
                 );
               })}

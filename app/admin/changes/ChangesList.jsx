@@ -67,6 +67,30 @@ const FIELD_LABEL = {
   allergy_other: 'Other allergy',
   allergy_detail: 'Allergy — what happens',
   seizure_detail: 'Seizure plan',
+  // The rest of person_support's logged columns (log_family_change, 0097).
+  // Script 5 found has_allergies, allergy_severity and buddy_required shown
+  // as raw column names.
+  has_allergies: 'Has allergies',
+  allergy_severity: 'How serious the allergy is',
+  has_seizures: 'Has seizures',
+  has_rescue_medication: 'Has rescue medication',
+  rescue_medication_detail: 'Rescue medication',
+  daily_living_supports: 'Daily routine',
+  mobility: 'Getting around',
+  personal_care: 'Personal care',
+  communication: 'Communication',
+  behaviour_triggers: 'What makes things harder',
+  redirection_strategies: 'What helps them settle',
+  sleep_notes: 'Night-time notes',
+  has_sleep_disturbance: 'Sleep disturbance',
+  other_concerns: 'Other concerns',
+  rooming_preferences: 'Rooming preferences',
+  likes_dislikes: 'Likes and dislikes',
+  has_caregiver: 'Brings a caregiver',
+  buddy_required: 'Needs a one-to-one buddy',
+  emergency_contact_name: 'Emergency contact',
+  emergency_contact_phone: 'Emergency contact phone',
+  emergency_contact_relationship: 'Emergency contact relationship',
   tshirt_size: 'T-shirt size',
   first_time_attending: 'First time attending',
   how_did_you_hear: 'How they heard about us',
@@ -287,7 +311,7 @@ export default function ChangesList({ groups }) {
                     </span>
                   </p>
                   <p className="mt-0.5 text-xs text-neutral-500">
-                    {c.when} {c.actor ? `· by ${c.actor}` : ''}
+                    {c.when} {c.actor ? `· by ${c.actor}${c.actorIsStaff ? ' (staff)' : ''}` : ''}
                   </p>
                 </div>
                 <span className="flex flex-col items-end gap-1">

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
+import { dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Giving Statements — Staff Admin' };
 
@@ -40,7 +41,7 @@ export default async function GivingStatementsPage({ searchParams }) {
     .eq('status', 'succeeded')
     .order('received_on');
 
-  const giftDate = (g) => g.received_on ?? (g.created_at ?? '').slice(0, 10);
+  const giftDate = (g) => dayInMorristown(g.received_on ?? g.created_at);
   const inRange = (gifts ?? []).filter((g) => giftDate(g) >= from && giftDate(g) <= to);
 
   // Group by donor: email is the identity when present, else the name.

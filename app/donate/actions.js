@@ -15,6 +15,7 @@ import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
 import { coverFeeCents } from '@/lib/payments';
+import { verifyTurnstile } from '@/lib/turnstile';
 
 // NOT exported: a 'use server' file may only export async functions -- any
 // other export crashes the page at runtime. The form keeps its own copy of
@@ -27,7 +28,12 @@ const FUNDS = [
   'Wheels for Kenya',
 ];
 
-export async function createDonationCheckout({ amountCents, fund, method, coverFee }) {
+// The largest gift taken online (security audit L2, 18 Oct 2026). Above it,
+// card testers get an easy probe and Stripe answers with its own raw error;
+// a gift that size is a conversation with the ministry anyway.
+const MAX_GIFT_CENTS = 50_000_00;
+
+export async function createDonationCheckout({ amountCents, fund, method, coverFee, captchaToken }) {
   const stripe = getStripe();
   if (!stripe) {
     return { ok: false, error: 'Online giving is not switched on yet. Please check back soon.' };
@@ -38,6 +44,12 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
   const base = Math.round(Number(amountCents));
   if (!Number.isFinite(base) || base < 100) {
     return { ok: false, error: 'Please enter a gift of at least $1.00.' };
+  }
+  if (base > MAX_GIFT_CENTS) {
+    return {
+      ok: false,
+      error: 'For a gift over $50,000, please contact the ministry and we will arrange it with you directly.',
+    };
   }
   const chosenFund = FUNDS.includes(fund) ? fund : FUNDS[0];
 
@@ -52,6 +64,14 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
   const total = base + fee; // all of it is the gift
 
   const h = await headers();
+  // The bot check, as on the contact form (lib/turnstile.js). Gift checkout
+  // needs no login, so without it the page is a free card-testing endpoint.
+  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
+  const check = await verifyTurnstile(captchaToken, ip);
+  if (!check.ok) {
+    return { ok: false, error: 'That check timed out. Please tick the box again and press Give.', retryCaptcha: true };
+  }
+
   const host = h.get('host');
   const proto = h.get('x-forwarded-proto') || 'https';
   const origin = host ? `${proto}://${host}` : '';
@@ -86,6 +106,8 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
     });
     return { ok: true, url: session.url };
   } catch (e) {
-    return { ok: false, error: e?.message || 'Could not start the gift. Please try again.' };
+    // The detail to the log; the donor gets words (audit L4).
+    console.error('createDonationCheckout:', e?.type, e?.code, e?.message);
+    return { ok: false, error: 'We could not start the gift. Please try again in a minute.' };
   }
 }

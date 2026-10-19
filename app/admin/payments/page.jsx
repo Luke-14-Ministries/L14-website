@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { dateISO, balanceDueOn, formatDueDateShort, todayInMorristown } from '@/lib/events';
+import { balanceDueOn, formatDueDateShort, todayInMorristown, dayInMorristown, inPaymentsScope } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import RecordPaymentForm from './RecordPaymentForm';
 import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
@@ -86,19 +86,9 @@ export default async function AdminPaymentsPage({ searchParams }) {
   //   'recent'   ended within the last 90 days
   //   'all'      full history
   //   <uuid>     one specific event
-  const today = dateISO(0);
-  const plus90 = dateISO(90);
-  const minus90 = dateISO(-90);
-  const inScope = (ev) => {
-    if (eventFilter === 'all') return true;
-    if (!ev) return !eventFilter; // registrations with no event: default + all only
-    const start = ev.starts_on ?? '';
-    const end = ev.ends_on ?? ev.starts_on ?? '';
-    if (eventFilter === 'upcoming') return end >= today && start <= plus90;
-    if (eventFilter === 'recent') return end < today && end >= minus90;
-    if (eventFilter) return ev.id === eventFilter;
-    return end >= minus90 && start <= plus90;
-  };
+  // An archived event is in none of the time scopes (inPaymentsScope, built
+  // on isCurrentEventRow -- lib/events.js); 'all' and a chosen event keep it.
+  const inScope = (ev) => inPaymentsScope(ev, eventFilter);
   const SCOPE_LABEL = {
     '': 'Upcoming & recent events (90 days each way)',
     upcoming: 'Upcoming events (next 90 days)',
@@ -543,7 +533,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                     <span className="min-w-0">
                       <span className="font-medium">{r?.households?.display_name ?? 'Household'}</span>{' '}
                       <span className="text-neutral-500">
-                        · {p.received_on ?? (p.created_at || '').slice(0, 10)} · {METHOD_LABEL[p.method] ?? p.method}
+                        · {dayInMorristown(p.received_on ?? p.created_at)} · {METHOD_LABEL[p.method] ?? p.method}
                       </span>
                       <br />
                       <span className="font-semibold">{money(p.amount_cents)}</span>

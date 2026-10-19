@@ -22,6 +22,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { setActivityChoice } from './actions';
 import WaiverUpload from './WaiverUpload';
+import { dayInMorristown } from '@/lib/events';
 
 function Availability({ activity }) {
   if (activity.booking_mode === 'interest' || activity.capacity == null) return null;
@@ -211,7 +212,7 @@ function ActivityRow({ person, activity }) {
       {needsProvider && isOn && existing?.waiver_acknowledged_at && (
         <p className="mt-1 ml-7 text-xs text-neutral-500">
           You confirmed you understand their form is yours to complete, on{' '}
-          {existing.waiver_acknowledged_at.slice(0, 10)}.
+          {dayInMorristown(existing.waiver_acknowledged_at)}.
         </p>
       )}
 

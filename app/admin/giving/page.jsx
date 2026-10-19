@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import RecordGiftForm from './RecordGiftForm';
+import { dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Giving — Staff Admin' };
 
@@ -45,7 +46,7 @@ export default async function AdminGivingPage({ searchParams }) {
 
   // Filter by date (received_on, falling back to created date), fund, method.
   // Totals below reflect the filtered set, and the CSV carries the same filters.
-  const giftDate = (g) => g.received_on ?? (g.created_at || '').slice(0, 10);
+  const giftDate = (g) => dayInMorristown(g.received_on ?? g.created_at);
   const allGifts = gifts ?? [];
   const fundOptions = [...new Set(allGifts.map((g) => g.fund).filter(Boolean))].sort();
   const all = allGifts.filter(
@@ -192,7 +193,7 @@ export default async function AdminGivingPage({ searchParams }) {
                   <span className="min-w-0">
                     <span className="font-medium">{g.donor_name || g.email || 'Anonymous'}</span>{' '}
                     <span className="text-neutral-500">
-                      · {g.received_on ?? (g.created_at || '').slice(0, 10)} · {g.fund}
+                      · {giftDate(g)} · {g.fund}
                     </span>
                     <br />
                     <span className="font-semibold">{money(g.amount_cents)}</span>

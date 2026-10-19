@@ -159,7 +159,7 @@ export default async function DietaryPage({ searchParams }) {
         return (
           <div key={ev.id} className="mb-10">
             <h3 className="text-lg font-bold mb-3">
-              {ev.name} <span className="text-sm font-normal text-neutral-500">· {rows.length} people</span>
+              {ev.name} <span className="text-sm font-normal text-neutral-500">· {rows.length} {rows.length === 1 ? 'person' : 'people'}</span>
             </h3>
             {rows.length === 0 ? (
               <p className="text-neutral-500 text-sm">No dietary needs or allergies recorded.</p>

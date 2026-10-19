@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
-import { balanceDueOn, formatDueDateShort } from '@/lib/events';
+import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Family Statement — Staff Admin' };
 
@@ -170,7 +170,7 @@ export default async function FamilyStatementPage({ params }) {
           <tbody>
             {goodPays.map((p, i) => (
               <tr key={i} className="border-b border-neutral-200">
-                <td className="py-1 pr-3">{p.received_on ?? (p.created_at || '').slice(0, 10)}</td>
+                <td className="py-1 pr-3">{dayInMorristown(p.received_on ?? p.created_at)}</td>
                 <td className="py-1 pr-3">{METHOD_LABEL[p.method] ?? p.method}</td>
                 <td className="py-1 pr-3">
                   {p.status === 'processing' ? 'clearing the bank' : 'received'}

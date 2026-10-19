@@ -91,7 +91,9 @@ export default async function ManageHouseholdPage() {
       if (!row.storage_path) continue;
       const { data: signed } = await supabase.storage
         .from('person-photos')
-        .createSignedUrl(row.storage_path, 3600);
+        // 15 minutes, not an hour (Script 5, 18 Oct 2026): a child's photo link
+        // should not outlive the visit. Each page load signs fresh ones.
+        .createSignedUrl(row.storage_path, 900);
       if (signed?.signedUrl) photoUrlByPerson[row.person_id] = signed.signedUrl;
     }
   }
