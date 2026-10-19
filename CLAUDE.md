@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`). The working checkl
 `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0103`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0107`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -43,7 +43,7 @@ ledger begins at `0012` (`0001`–`0011` predate it) and some files are more tha
 grant levels, the camp doctor, an anonymous visitor) and must end `ALL CHECKS PASSED`. Run it
 locally — PostgreSQL 16 is on the build machine: `bash supabase/tests/run_rls_local.sh` builds a
 fresh database from every migration and runs it. The other suites in `supabase/tests/`
-(`payment_plans_rules.sql`, `staff_answers_rules.sql`) run the same way. Run the harness after any
+(`payment_plans_rules.sql`, `staff_answers_rules.sql`, `refunds_rules.sql`) run the same way. Run the harness after any
 access change; `L14_DB=<name>` gives a second copy when two runs overlap.
 
 **Auth** works end to end: sign-up → confirmation → session → dashboard, with
@@ -102,6 +102,11 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
   `registration_review` without one and any family could read every registration's flags (fixed in
   `0102`/`0103`). `CREATE OR REPLACE VIEW` keeps the column list but not the intent — the harness
   checks a family sees no rows from each.
+- **A `SECURITY DEFINER` trigger sees `current_user` as its owner.** A guard that asks "is the caller
+  staff / a family?" inside one never fires; `0105`'s guards are invoker functions for that reason
+  (the harness caught it).
+- **A `need` with a colon is split into level and area by `can()`.** `decide:scholarships` is handled
+  before the split; it was refused for everyone until 18 Oct. A new compound need goes there too.
 - **A function rewritten in place must check the rewrite took.** Python on Windows writes CRLF, and a
   multi-line `replace()` on `pg_get_functiondef()` then silently matches nothing; `0102` caught it with
   a post-check. Prefer restating a function in full.
@@ -125,6 +130,13 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 ---
 
 ## Access control — read before touching a policy
+
+**Staff access needs a strong session** (`0104`, `0106`): `is_staff()`, `is_admin()`, `has_grant()`,
+`leads_program()` and the doctor's access all require `session_is_strong()` — a code-verified
+session (`aal2`) or one registered from a remembered browser (`mark_session_trusted()`; 30 days for
+families, 7 for staff). A password alone reaches nothing staff can see. **When probing the live
+database by hand, a staff persona's JWT claims need `"aal":"aal2"`.** `getStaff().strong` mirrors it
+in the app; the middleware holds every signed-in page and server action to the code step.
 
 **Grants, not roles** (`0100`, `0101`). `staff_grants` holds (profile, area, read|write); every
 change is logged in `staff_access_log` as `grant:<area>`. Policies and guards ask
@@ -214,7 +226,10 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   `/account/finish/[registrationId]` ("Ways to pay"; `registration_payment_routes` view).
 - **Refunds:** `charge.refunded` → `supabase/functions/stripe-refund-webhook/`; per-family refunds via
   `refundPayment` in `app/admin/registrations/[id]/actions.js`; the over-refund guard and
-  pending-refund accounting are `0038`/`0044`/`0053`/`0054`.
+  pending-refund accounting are `0038`/`0044`/`0053`/`0054`. Since `0107` the row is reserved before
+  Stripe is called (the guard locks the payment), each form sends a one-time `request_key`, and the
+  webhook fills the reserved row (`metadata.refund_row_id`). A payment's status never moves back to
+  processing once received, refunded or failed.
 - **Agreements are signed per person:** one `agreement_signatures` row per person per agreement,
   `signer_role` = `self` | `parent_guardian` | `legal_guardian` | `authorized_adult` (the last needs
   the signer's explicit affirmation). Written by `app/register/family/actions.js`, not the RPC;
@@ -246,7 +261,8 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
 ## Blocking facts — read these before writing code
 
 - **`output: 'export'` is gone — do not put it back.** It disables all server code. `next.config.mjs`
-  carries `trailingSlash: true` and nothing else; **`trailingSlash` stays** (removing it turns
+  carries `trailingSlash: true` and the security headers (the content security policy is
+  report-only until a test round shows no reports); **`trailingSlash` stays** (removing it turns
   `/about/` into `/about` across every link). Anything calling this site a "static export" is out of
   date.
 - **GitHub Pages is retired — do not revive it.** Hosting is Vercel only, through its GitHub

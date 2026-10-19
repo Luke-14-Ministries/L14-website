@@ -2551,3 +2551,61 @@ never returned a result: the `people → households` embed has two paths since `
 refused it (PGRST201), and the page logged the error and showed "Nothing matches". Two rules
 restated: name the foreign key on any people↔households embed, and a query error is thrown, never
 rendered as an empty list.
+
+## 2026-10-18 — Scholarship decisions, review rows and family write guards (0102, 0103, 0105)
+
+**Deciding a scholarship is a family act** (`0102`): it needs Payments write *and* Registration
+write. Finance (Payments write, Registration read) records money but does not decide. The same
+rule covers a hand-set discount and a deposit waiver. **`registration_review` is money** (`0103`):
+it returns rows only to Payments read and stays a definer view, with its own `where`. `0098` had
+recreated it without one, and any family could read every registration's flags. Publishing
+buddies or rooms goes through `set_event_publication()`.
+
+**What a family may write is now written down in triggers** (`0105`, from the audit's database
+pass, each hole proven on a rolled-back transaction first). A family cannot join another
+household, set staff columns on a registration, register for an unpublished, closed or archived
+event, move a registration to another household, edit staff decisions on scholarships,
+volunteer applications or cancellations, or point a person at someone else's login. A trap
+recorded for the next person: **a `SECURITY DEFINER` trigger sees `current_user` as its owner**, so
+the guards were silent until the harness caught it. They are invoker functions.
+
+## 2026-10-18 — Staff access needs a code-verified session; a week's remembered browser; a yearly password (0104, 0106)
+
+A stolen staff password used directly against the API used to be enough: the code step lived only
+in the pages. Now `is_staff()`, `is_admin()`, `has_grant()`, `leads_program()` and the doctor's
+dated access all require `session_is_strong()`. That means a session that entered a code (`aal2`),
+or one the database registered from a remembered browser (`mark_session_trusted()`). With a
+password alone the person is a signed-in family member with no household.
+
+Lawrence's choices the same evening: **a remembered browser lasts 30 days for families and 7 for
+staff, program leaders and the doctor**, enforced in the database; **staff change their password
+once a year**, dated from `profiles.password_changed_at`. Resetting someone's two-factor moved from
+an edge function into `admin_reset_mfa()`: it needs a code-verified session, refuses your own
+account and is logged. For anyone probing the live database by hand, a staff persona's claims
+need `"aal":"aal2"` or it sees nothing.
+
+## 2026-10-18 — The security audit's fixes (0107)
+
+Three audits ran on 18 Oct (code, database, policies; DO-THIS-NEXT W57). Fixed the same night,
+each proven:
+
+- **Money.** A refund could be paid twice on a double click. The row is now reserved before Stripe
+  is called, the guard locks the payment row, each refund form carries a one-time key, and Stripe
+  gets an idempotency key. Fee cover is capped across refunds. The refund webhook fills the
+  reserved row and splits a dashboard refund into refund and fee cover. A payment never moves back
+  to *processing* once received, refunded or failed, whatever order Stripe's events arrive in.
+- **Access.** `can(staff, 'decide:scholarships')` had always returned false: the read/write split
+  caught the colon first. No administrator could set a scholarship (Script 5, 13.4). The access
+  log never had a select grant, so Access changes always failed. Families who turned two-factor on
+  were only held to it on four paths. The rule now covers every signed-in page and every server
+  action.
+- **The browser.** Security headers (no framing, nosniff, a referrer policy, a permissions policy)
+  and a content security policy in report-only mode until a test round shows no reports. The
+  `?next=` check refuses control characters and backslashes. Every CSV cell starting `= + - @` is
+  prefixed so Excel shows it as text. Gifts over $50,000 are refused online, and the giving form
+  has the *I am human* check. Analytics no longer report staff or family pages. Next.js went to
+  16.3.8, a patch release.
+
+Left for go-live (W57): Supabase auth settings (leaked-password check, length, redirect list,
+point-in-time recovery), the live Stripe key in Production only, rate limits on the contact and
+giving forms (Vercel firewall), DMARC reporting, and enforcing the content security policy.
