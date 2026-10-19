@@ -443,29 +443,83 @@ export async function addParticipant(registrationId, input) {
     const bad = dobProblem(input?.date_of_birth);
     if (bad) return { ok: false, error: bad };
   }
-  const { data: person, error: personError } = await supabase
-    .from('people')
-    .insert({
-      household_id: reg.household_id,
-      first_name: first,
-      last_name: last,
-      date_of_birth: input?.date_of_birth ? input.date_of_birth : null,
-      gender: (input?.gender || '').trim() || null,
-    })
-    .select('id')
-    .single();
-  if (personError) return { ok: false, error: personError.message };
+  // A possible duplicate is offered, not silently created (Lawrence, 18 Oct
+  // 2026; Script 5 8.3). The household's people with the same first and last
+  // name -- ignoring case and spacing, and not when both dates of birth are
+  // known and differ -- come back to the form, which offers "use this person"
+  // or "add as a new person anyway". Using the existing person means 0086's
+  // one-role-per-event rule refuses a second role instead of a second person
+  // quietly appearing.
+  let personId = null;
+  if (input?.existing_person_id) {
+    const { data: existing, error: exError } = await supabase
+      .from('people')
+      .select('id')
+      .eq('id', input.existing_person_id)
+      .eq('household_id', reg.household_id)
+      .maybeSingle();
+    if (exError) return { ok: false, error: exError.message };
+    if (!existing) return { ok: false, error: 'That person is not in this household.' };
+    personId = existing.id;
+  } else if (!input?.confirm_new) {
+    const { data: same, error: sameError } = await supabase
+      .from('people')
+      .select('id, first_name, last_name, date_of_birth')
+      .eq('household_id', reg.household_id);
+    if (sameError) return { ok: false, error: sameError.message };
+    const norm = (v) => String(v ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const dob = input?.date_of_birth || null;
+    const matches = (same ?? []).filter(
+      (q) =>
+        norm(q.first_name) === norm(first) &&
+        norm(q.last_name) === norm(last) &&
+        !(dob && q.date_of_birth && q.date_of_birth !== dob)
+    );
+    if (matches.length > 0) {
+      return {
+        ok: false,
+        duplicates: matches.map((q) => ({
+          id: q.id,
+          name: `${q.first_name} ${q.last_name}`,
+          date_of_birth: q.date_of_birth,
+        })),
+        error: 'This household already has someone by that name. Is it the same person?',
+      };
+    }
+  }
+
+  if (!personId) {
+    const { data: person, error: personError } = await supabase
+      .from('people')
+      .insert({
+        household_id: reg.household_id,
+        first_name: first,
+        last_name: last,
+        date_of_birth: input?.date_of_birth ? input.date_of_birth : null,
+        gender: (input?.gender || '').trim() || null,
+      })
+      .select('id')
+      .single();
+    if (personError) return { ok: false, error: personError.message };
+    personId = person.id;
+  }
 
   const { error: partError } = await supabase.from('registration_participants').insert({
     registration_id: registrationId,
-    person_id: person.id,
+    person_id: personId,
     event_option_id: optionId,
     camp_role: role,
     status: 'submitted',
     submitted_at: new Date().toISOString(),
     fee_cents: fee,
   });
-  if (partError) return { ok: false, error: partError.message };
+  if (partError) {
+    // 0086: one role per person per event.
+    if (/one role|already/i.test(partError.message)) {
+      return { ok: false, error: 'That person is already at this event in another role. Change their role on their existing row instead.' };
+    }
+    return { ok: false, error: partError.message };
+  }
   await recalcEarly(registrationId);
 
   revalidateAll(registrationId);

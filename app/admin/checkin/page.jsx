@@ -39,7 +39,7 @@ export default async function CheckinPage({ searchParams }) {
   const supabase = await createClient();
   const { data: events } = await supabase
     .from('events')
-    .select('id, name, event_type, starts_on, ends_on, archived_at, medical_contact_name, medical_contact_phone')
+    .select('id, name, event_type, starts_on, ends_on, archived_at, event_medical_contacts ( name, phone )')
     .order('starts_on');
   // DELIBERATE DEVIATION from the shared EventFilter (kept 16 Oct 2026, when
   // every other staff page moved to it): Check-In is used standing at a door
@@ -48,7 +48,7 @@ export default async function CheckinPage({ searchParams }) {
   // to last year's camp. WHICH events are current is the same rule as
   // everywhere else (isCurrentEventRow: two weeks' grace, a year ahead,
   // never an archived one), so the pill rows can never disagree.
-  const eventsList = (events ?? []).filter(isCurrentEventRow);
+  const eventsList = (events ?? []).map(withMedicalContact).filter((e) => isCurrentEventRow(e));
   const eventId =
     typeof params?.event === 'string' && eventsList.some((e) => e.id === params.event)
       ? params.event
@@ -224,4 +224,12 @@ export default async function CheckinPage({ searchParams }) {
       )}
     </div>
   );
+}
+
+// The medical contact lives in its own table since 0109 (readable only by
+// staff, leaders and households registered for the event). Flattened back to
+// the two names the page has always used.
+function withMedicalContact(ev) {
+  const mc = Array.isArray(ev.event_medical_contacts) ? ev.event_medical_contacts[0] : ev.event_medical_contacts;
+  return { ...ev, medical_contact_name: mc?.name ?? null, medical_contact_phone: mc?.phone ?? null };
 }

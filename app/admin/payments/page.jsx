@@ -174,7 +174,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     ['scholarship', 'Scholarship/discount'],
     ['deposit_paid', 'To review: deposit received'],
     ['full_scholarship', 'To contact: full scholarship'],
-    ['neither', 'No deposit yet'],
+    ['neither', 'No full deposit yet'],
     ['flagged', 'Deposit short'],
     ['credit', 'Credit to settle'],
   ];

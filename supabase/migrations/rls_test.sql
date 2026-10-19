@@ -217,6 +217,7 @@ declare
   hA uuid; hB uuid; pA uuid; pB uuid; ev uuid; regA uuid;
   rpA uuid; rpB uuid; agr uuid;
   n bigint;
+  oldStatus text;
 begin
   select v into uA from t where k='uA';   select v into uB from t where k='uB';
   select v into uR from t where k='uR';   select v into uC from t where k='uC';
@@ -487,6 +488,33 @@ begin
   select count(*) into n from public.buddy_assignments;
   perform pg_temp.expect('B sees only assignments involving B', n, 1);
 
+  ---- the event's medical contact (0109) ------------------------------
+  set local role postgres;
+  insert into public.event_medical_contacts (event_id, name, phone) values (ev, 'Nurse Test', '555-0100');
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.event_medical_contacts where event_id = ev;
+  perform pg_temp.expect('a registered family sees the medical contact', n, 1);
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.event_medical_contacts where event_id = ev;
+  perform pg_temp.expect('staff see the medical contact', n, 1);
+  perform pg_temp.as_user(uD);
+  select count(*) into n from public.event_medical_contacts where event_id = ev;
+  perform pg_temp.expect('someone not at the event does not see the medical contact', n, 0);
+  set local role postgres;
+  select status into oldStatus from public.registration_participants where id = rpB;
+  update public.registration_participants set status = 'cancelled' where id = rpB;
+  set local role authenticated;
+  perform pg_temp.as_user(uB);
+  select count(*) into n from public.event_medical_contacts where event_id = ev;
+  perform pg_temp.expect('a family whose people are all cancelled does not see it', n, 0);
+  set local role postgres;
+  update public.registration_participants set status = oldStatus where id = rpB;
+  select count(*) into n from information_schema.columns
+   where table_schema = 'public' and table_name = 'events' and column_name like 'medical_contact%';
+  perform pg_temp.expect('the medical contact is no longer on events', n, 0);
+  set local role authenticated;
+
   ---- anonymous visitors ----------------------------------------------
   -- anon has SELECT granted on the catalogue tables so a public "our
   -- camps" page can render. Everything else must be invisible.
@@ -512,6 +540,8 @@ begin
     'select count(*) from public.registrations');
   perform pg_temp.expect_denied('anon cannot read coupons',
     'select count(*) from public.coupons');
+  perform pg_temp.expect_denied('anon cannot read the medical contact',
+    'select count(*) from public.event_medical_contacts');
 
   set local role postgres;
   update public.events set published = false where id = ev;

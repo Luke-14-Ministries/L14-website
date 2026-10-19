@@ -8,21 +8,25 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 
-// Set an event's medical contact (camp doctor / nurse). Admin-only; the
-// events_write RLS policy is the real gate.
+// Set an event's medical contact (camp doctor / nurse). Setup write; the
+// event_medical_contacts policy (0109) is the real gate. Its own table, so
+// only staff, leaders and registered households can read it.
 export async function setEventMedicalContact(eventId, name, phone) {
   const staff = await getStaff();
   if (!can(staff, 'write:setup')) {
     return { ok: false, error: 'Only administrators can change the medical contact.' };
   }
   const supabase = await createClient();
-  const { error } = await supabase
-    .from('events')
-    .update({
-      medical_contact_name: String(name ?? '').trim() || null,
-      medical_contact_phone: String(phone ?? '').trim() || null,
-    })
-    .eq('id', eventId);
+  const { error } = await supabase.from('event_medical_contacts').upsert(
+    {
+      event_id: eventId,
+      name: String(name ?? '').trim() || null,
+      phone: String(phone ?? '').trim() || null,
+      updated_at: new Date().toISOString(),
+      updated_by: staff.userId ?? null,
+    },
+    { onConflict: 'event_id' }
+  );
   if (error) return { ok: false, error: error.message };
   revalidatePath('/admin/checkin');
   revalidatePath('/admin/medical');

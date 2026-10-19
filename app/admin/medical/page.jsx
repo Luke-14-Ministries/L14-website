@@ -21,7 +21,7 @@ export default async function MedicalPage({ searchParams }) {
   const [{ data: events }, { data: regs }] = await Promise.all([
     supabase
       .from('events')
-      .select('id, name, event_type, starts_on, ends_on, archived_at, medical_contact_name, medical_contact_phone')
+      .select('id, name, event_type, starts_on, ends_on, archived_at, event_medical_contacts ( name, phone )')
       .order('starts_on'),
     supabase
       .from('registrations')
@@ -74,7 +74,7 @@ export default async function MedicalPage({ searchParams }) {
   // "show past" toggle before). Same rule as every other staff page.
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
   const q = typeof params?.q === 'string' ? params.q.trim().toLowerCase() : '';
-  const visibleEvents = (events ?? []).filter((ev) => {
+  const visibleEvents = (events ?? []).map(withMedicalContact).filter((ev) => {
     if (eventFilter) return ev.id === eventFilter;
     return isCurrentEventRow(ev);
   });
@@ -236,4 +236,12 @@ export default async function MedicalPage({ searchParams }) {
       })}
     </div>
   );
+}
+
+// The medical contact lives in its own table since 0109 (readable only by
+// staff, leaders and households registered for the event). Flattened back to
+// the two names the page has always used.
+function withMedicalContact(ev) {
+  const mc = Array.isArray(ev.event_medical_contacts) ? ev.event_medical_contacts[0] : ev.event_medical_contacts;
+  return { ...ev, medical_contact_name: mc?.name ?? null, medical_contact_phone: mc?.phone ?? null };
 }

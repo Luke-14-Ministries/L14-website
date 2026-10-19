@@ -817,6 +817,8 @@ function AddPerson({ registrationId, options }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
+  // Possible duplicates the server found in this household (8.3).
+  const [dupes, setDupes] = useState([]);
   const [f, setF] = useState({
     first_name: '',
     last_name: '',
@@ -827,12 +829,15 @@ function AddPerson({ registrationId, options }) {
   });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  function add() {
+  function add(extra = {}) {
     setError('');
     start(async () => {
-      const res = await addParticipant(registrationId, f);
-      if (!res.ok) setError(res.error);
-      else {
+      const res = await addParticipant(registrationId, { ...f, ...extra });
+      if (!res.ok) {
+        setError(res.error);
+        setDupes(res.duplicates ?? []);
+      } else {
+        setDupes([]);
         router.refresh();
         setF({
           first_name: '',
@@ -901,8 +906,26 @@ function AddPerson({ registrationId, options }) {
         </div>
       </div>
       <ErrorNote>{error}</ErrorNote>
+      {dupes.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {dupes.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => add({ existing_person_id: d.id })}
+              disabled={pending}
+              className="btn-primary !py-1.5 text-sm"
+            >
+              Use {d.name}
+              {d.date_of_birth ? ` (born ${d.date_of_birth})` : ''}
+            </button>
+          ))}
+          <button onClick={() => add({ confirm_new: true })} disabled={pending} className="btn-outline !py-1.5 text-sm">
+            Add as a new person anyway
+          </button>
+        </div>
+      )}
       <div className="mt-3 flex gap-2">
-        <button onClick={add} disabled={pending} className="btn-primary !py-1.5 text-sm">
+        <button onClick={() => add()} disabled={pending} className="btn-primary !py-1.5 text-sm">
           {pending ? 'Adding…' : 'Add person'}
         </button>
         <button onClick={() => setOpen(false)} disabled={pending} className="btn-outline !py-1.5 text-sm">

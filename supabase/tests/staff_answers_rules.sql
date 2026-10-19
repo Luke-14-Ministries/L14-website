@@ -145,3 +145,20 @@ do $$ declare n int; begin
   else raise exception 'FAIL family handled its own request'; end if;
 end $$;
 rollback;
+
+-- 0109: "deposit received" means the whole deposit (Lawrence, 18 Oct 2026).
+-- Registration ...03 has one fee-paying person: a $10 payment is short.
+insert into public.payments (id, registration_id, amount_cents, method, status)
+values ('70000000-0000-0000-0000-0000000000d1','50000000-0000-0000-0000-000000000003',1000,'check','succeeded');
+do $$ declare c text; f text[]; exp int; begin
+  select review_class, flags, deposit_expected_cents into c, f, exp
+    from public.registration_review where registration_id='50000000-0000-0000-0000-000000000003';
+  if c = 'neither' and 'deposit_short' = any(f) then raise notice 'PASS a short deposit is not a received deposit (expected %)', exp;
+  else raise exception 'FAIL short deposit: class %, flags %', c, f; end if;
+  insert into public.payments (registration_id, amount_cents, method, status)
+  values ('50000000-0000-0000-0000-000000000003', greatest(exp - 1000, 0), 'check', 'succeeded');
+  select review_class, flags into c, f
+    from public.registration_review where registration_id='50000000-0000-0000-0000-000000000003';
+  if c = 'deposit_paid' and not ('deposit_short' = any(f)) then raise notice 'PASS the whole deposit is a received deposit';
+  else raise exception 'FAIL full deposit: class %, flags %', c, f; end if;
+end $$;

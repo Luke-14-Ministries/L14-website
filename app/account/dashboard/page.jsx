@@ -197,7 +197,8 @@ export default async function DashboardPage({ searchParams }) {
         .select(
           `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
            hold_since, hold_reason, deposit_waived_at,
-           events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url ),
+           events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url,
+                    event_medical_contacts ( name, phone ) ),
            registration_participants ( id, camp_role, status, fee_cents, checked_in_at,
              people ( id, first_name, last_name ) )`
         )
@@ -901,6 +902,26 @@ export default async function DashboardPage({ searchParams }) {
                       status={status}
                       defaultOpen={defaultOpen}
                     >
+                      {/* The camp's medical contact, for the people going
+                          (0109): the database returns it only to a household
+                          with someone registered and not cancelled. */}
+                      {(() => {
+                        const raw = r.events?.event_medical_contacts;
+                        const mc = Array.isArray(raw) ? raw[0] : raw;
+                        if (isPast(r) || !(mc?.name || mc?.phone)) return null;
+                        return (
+                          <p className="mt-3 text-sm text-neutral-700">
+                            <span className="font-semibold">Medical contact at camp:</span>{' '}
+                            {mc.name}
+                            {mc.name && mc.phone ? ' · ' : ''}
+                            {mc.phone && (
+                              <a href={`tel:${mc.phone.replace(/[^0-9+]/g, '')}`} className="text-brand underline">
+                                {mc.phone}
+                              </a>
+                            )}
+                          </p>
+                        );
+                      })()}
                       <ul className="mt-3 divide-y divide-neutral-100">
                         {parts.map((p, i) => {
                           const [label, cls] = STATUS[p.status] ?? STATUS.submitted;
