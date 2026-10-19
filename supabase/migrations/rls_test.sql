@@ -201,7 +201,7 @@ $$;
 do $$
 declare
   uA uuid; uB uuid; uR uuid; uC uuid; uF uuid; uD uuid;
-  hA uuid; pA uuid; pB uuid; ev uuid; regA uuid;
+  hA uuid; hB uuid; pA uuid; pB uuid; ev uuid; regA uuid;
   rpA uuid; rpB uuid; agr uuid;
   n bigint;
 begin
@@ -209,6 +209,7 @@ begin
   select v into uR from t where k='uR';   select v into uC from t where k='uC';
   select v into uF from t where k='uF';   select v into uD from t where k='uD';
   select v into hA from t where k='hA';   select v into pA from t where k='pA';
+  select v into hB from t where k='hB';
   select v into pB from t where k='pB';   select v into ev from t where k='ev';
   select v into regA from t where k='regA';
   select v into rpA from t where k='rpA'; select v into rpB from t where k='rpB';
@@ -403,6 +404,29 @@ begin
   perform pg_temp.expect('no payments grant, no registration_review rows (0103)', n, 0);
   perform pg_temp.expect_allowed('Buddies write may unpublish again (0103)',
     format('select public.set_event_publication(%L, ''buddies'', false)', ev));
+
+  -- Household membership (0105, audit F1): nobody joins someone else's household.
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('family may NOT join another household (0105)',
+    format('insert into public.household_members (household_id, profile_id, role) values (%L, %L, ''owner'')', hB, uA));
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('staff may NOT add themselves to a household (0105)',
+    format('insert into public.household_members (household_id, profile_id, role) values (%L, %L, ''owner'')', hB, uR));
+  -- Staff decisions are pinned on a family's insert (0105, F3).
+  set local role postgres;
+  delete from public.scholarships where registration_participant_id = rpA;
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_allowed('family may request a scholarship (0105)',
+    format('insert into public.scholarships (registration_participant_id, requested_cents, granted_cents, status, staff_note) values (%L, 1000, 49500, ''granted'', ''forged'')', rpA));
+  set local role postgres;
+  select count(*) into n from public.scholarships
+   where registration_participant_id = rpA and requested_cents = 1000 and status = 'requested' and granted_cents = 0 and staff_note is null;
+  set local role authenticated;
+  perform pg_temp.expect('a family''s forged scholarship decision is stored as a plain request (0105)', n, 1);
+  -- Check-in is a staff fact (0105, F5).
+  perform pg_temp.expect_denied('family may NOT check its own camper in (0105)',
+    format('update public.registration_participants set checked_in_at = now() where id = %L', rpA));
 
   -- The two role functions are gone (0101).
   select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace

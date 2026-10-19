@@ -85,6 +85,11 @@ insert into public.scholarships (registration_participant_id, requested_cents, s
  values ('60000000-0000-0000-0000-000000000021', 60000, 'requested');
 insert into public.person_consents (person_id, kind, granted) values ('20000000-0000-0000-0000-000000000031','media',false);
 
+-- registration_review shows rows only to someone with Payments read on a
+-- code-verified session (0103/0106): read it as the seed's registrar.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', false);
+select set_config('request.jwt.claims', '{"aal":"aal2"}', false);
+
 do $$ declare a text; b text; c text; f text[]; begin
   select review_class into a from public.registration_review where registration_id='50000000-0000-0000-0000-000000000001';
   select review_class into b from public.registration_review where registration_id='50000000-0000-0000-0000-000000000002';
