@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getStaff, can } from '@/lib/staff';
+import { passwordIsStale, getStaff, can } from '@/lib/staff';
 import { getProgramLeadership } from '@/lib/programs';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sinceISO, STAFF_ASSIGNED_TYPES } from '@/lib/events';
@@ -147,6 +147,19 @@ export default async function AdminLayout({ children }) {
   // other families' data behind a second factor, so an unknown answer is "no".
   if (factorError || !hasVerifiedFactor) {
     redirect('/account/security?required=1');
+  }
+
+  // Staff change their password once a year (Lawrence, 18 Oct 2026). The date
+  // is stamped when a password is set (0104); the clock started that day.
+  if (staff) {
+    const { data: pw } = await supabase
+      .from('profiles')
+      .select('password_changed_at')
+      .eq('id', staff.userId)
+      .maybeSingle();
+    if (passwordIsStale(pw?.password_changed_at)) {
+      redirect('/account/reset-password/?reason=annual');
+    }
   }
 
   // The person's own name, so the header shows clearly WHO is signed in --

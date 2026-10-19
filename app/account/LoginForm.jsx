@@ -20,7 +20,10 @@ import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
 // their skip at login; passing the code once more writes the cookie and
 // brings them fully into the new scheme.
 const TRUST_KEY = 'l14_mfa_trust';
+// 30 days for families; 7 for staff, program leaders and the camp doctor
+// (Lawrence, 18 Oct 2026). The database enforces the 7 (0104).
 const TRUST_DAYS = 30;
+const TRUST_DAYS_STAFF = 7;
 
 async function sha256Hex(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -118,18 +121,19 @@ export default function LoginForm() {
     const legacy = user ? readTrustStore()[user.id] : null;
     if (legacy?.token && legacy.exp > Date.now()) candidates.push(legacy.token);
     for (const token of candidates) {
-      const hash = await sha256Hex(token);
-      const { data: device } = await supabase
-        .from('mfa_trusted_devices')
-        .select('id, expires_at')
-        .eq('token_hash', hash)
-        .maybeSingle();
-      if (device && new Date(device.expires_at).getTime() > Date.now()) {
-        supabase
+      // Ask the database, as the middleware does (0104): it checks the token,
+      // the 7-day limit for staff, and registers this session as trusted. If
+      // the two disagreed, the code step and the middleware would bounce a
+      // remembered staff browser between them.
+      const { data: ok } = await supabase.rpc('mark_session_trusted', { p_token: token });
+      if (ok === true) {
+        const hash = await sha256Hex(token);
+        const { data: device } = await supabase
           .from('mfa_trusted_devices')
-          .update({ last_used_at: new Date().toISOString() })
-          .eq('id', device.id)
-          .then(() => {});
+          .select('id, expires_at')
+          .eq('token_hash', hash)
+          .maybeSingle();
+        if (!device) continue;
         // Whichever store the token came from, make sure the COOKIE holds it
         // now -- the middleware trusts only the cookie, so a browser trusted
         // under the old localStorage scheme would otherwise pass here, get
@@ -345,10 +349,16 @@ export default function LoginForm() {
         crypto.getRandomValues(bytes);
         const token = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
         const hash = await sha256Hex(token);
-        const expires = new Date(Date.now() + TRUST_DAYS * 24 * 60 * 60 * 1000);
         const {
           data: { user },
         } = await supabase.auth.getUser();
+        // Staff remember for 7 days; the database would stop honouring a staff
+        // device after 7 anyway, so the cookie should not promise 30.
+        const { data: staffRow } = user
+          ? await supabase.from('staff').select('active').eq('profile_id', user.id).maybeSingle()
+          : { data: null };
+        const days = staffRow?.active ? TRUST_DAYS_STAFF : TRUST_DAYS;
+        const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
         if (user) {
           const { error: insError } = await supabase.from('mfa_trusted_devices').insert({
             profile_id: user.id,
@@ -463,8 +473,8 @@ export default function LoginForm() {
             className="mt-0.5"
           />
           <span>
-            Remember this browser for {TRUST_DAYS} days — your password is still
-            required, but not the code.{' '}
+            Remember this browser for {TRUST_DAYS} days ({TRUST_DAYS_STAFF} for staff) — your
+            password is still required, but not the code.{' '}
             <span className="text-neutral-500">
               (Leave unchecked on a shared or public computer.)
             </span>

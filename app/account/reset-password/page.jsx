@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import ResetPasswordForm from './ResetPasswordForm';
 
 export const metadata = { title: 'Set a New Password' };
@@ -10,7 +11,10 @@ export default function ResetPasswordPage() {
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-md mx-auto">
         <h1 className="text-4xl font-bold text-center mb-8">New Password</h1>
-        <ResetPasswordForm />
+        {/* The form reads ?reason=annual, which needs a Suspense boundary. */}
+        <Suspense fallback={null}>
+          <ResetPasswordForm />
+        </Suspense>
       </div>
     </section>
   );

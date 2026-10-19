@@ -1,14 +1,14 @@
 'use client';
 
-// Admin control to reset a locked-out user's two-factor. It calls the
-// admin-reset-mfa Edge Function, which re-checks that the caller is an admin
-// server-side -- this form is a convenience, not the security boundary.
+// Admin control to reset a locked-out user's two-factor. It calls
+// resetMfaByEmail (./actions.js), which goes through admin_reset_mfa(): a
+// code-verified session, never your own account, and logged (0104). The
+// admin-reset-mfa Edge Function it used before is retired.
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { resetMfaByEmail } from './actions';
 
 export default function AdminMfaReset() {
-  const supabase = createClient();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null); // { ok, message }
@@ -17,23 +17,11 @@ export default function AdminMfaReset() {
     e.preventDefault();
     setBusy(true);
     setResult(null);
-    const { data, error } = await supabase.functions.invoke('admin-reset-mfa', {
-      body: { email: email.trim() },
-    });
+    const data = await resetMfaByEmail(email.trim()).catch(() => ({
+      ok: false,
+      error: 'Could not reset two-factor. Please try again.',
+    }));
     setBusy(false);
-
-    if (error) {
-      // functions.invoke wraps a non-2xx as an error; try to surface the body.
-      let message = 'Could not reset two-factor. Please try again.';
-      try {
-        const body = await error.context?.json?.();
-        if (body?.error) message = body.error;
-      } catch {
-        /* fall back to the generic message */
-      }
-      setResult({ ok: false, message });
-      return;
-    }
 
     if (data?.ok) {
       setResult({

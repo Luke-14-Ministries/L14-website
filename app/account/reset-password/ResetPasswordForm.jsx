@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ResetPasswordForm() {
@@ -10,6 +10,7 @@ export default function ResetPasswordForm() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const router = useRouter();
+  const annual = useSearchParams().get('reason') === 'annual';
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -29,6 +30,11 @@ export default function ResetPasswordForm() {
       setBusy(false);
       return;
     }
+    // The annual-change clock (0104). Never fatal: the password is changed.
+    await supabase.rpc('stamp_password_changed').then(
+      () => {},
+      () => {}
+    );
 
     // The reset link already signed them in, so there is nothing further to
     // do -- send them into the account area.
@@ -43,8 +49,9 @@ export default function ResetPasswordForm() {
     >
       <h2 className="text-2xl font-bold mb-1">Set a new password</h2>
       <p className="text-sm text-neutral-500 mb-5">
-        You&rsquo;re signed in from the link in your email. Choose a new
-        password and you&rsquo;re done.
+        {annual
+          ? 'Staff passwords are changed once a year. Choose a new one to carry on — at least 10 characters, and not one you use anywhere else.'
+          : <>You&rsquo;re signed in from the link in your email. Choose a new password and you&rsquo;re done.</>}
       </p>
 
       {error && (
