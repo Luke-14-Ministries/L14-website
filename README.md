@@ -1,9 +1,8 @@
-# Luke 14 Ministries — Website Rebuild (Preview)
+# Luke 14 Ministries — website and registration platform (preview)
 
-A recreation of [luke14ministries.net](https://luke14ministries.net) plus mockups of the new
-accounts platform (Camp Celebrate registration for families & volunteers, and online giving).
-Every page shows a red **PREVIEW / TEST BUILD** banner so camp administrators know it is not
-the official site.
+The ministry's public website (a rebuild of [luke14ministries.net](https://luke14ministries.net))
+and its own camp registration, family-account, giving and staff-admin platform. Every page shows a
+red **PREVIEW / TEST BUILD** banner until launch, so nobody mistakes it for the official site.
 
 **Live preview:** <https://luke14-ministries.vercel.app>
 
@@ -14,16 +13,13 @@ npm ci             # installs the exact tested versions; use this, not npm insta
 npm run dev        # http://localhost:3000
 ```
 
-Requires **Node.js 24 LTS** — the same major version Vercel builds with, which is deliberate:
-matching it locally is what stops "it built on my machine" from being a different answer to
-"it built on Vercel."
+Requires **Node.js 24 LTS** — the same major version Vercel builds with, so "it built on my
+machine" and "it built on Vercel" are the same answer.
 
-**You also need `.env.local` before either command does anything useful.** This step was missing
-from these instructions until 30 August 2026, and its absence does not fail gracefully: the site
-compiles fine and then dies at the end of `npm run build` with
-`@supabase/ssr: Your project's URL and API key are required`, naming a Supabase settings page
-rather than the file you actually forgot. The fastest fix, which never puts a key on the
-clipboard or in a chat window:
+**You also need `.env.local` before either command does anything useful.** Without it the site
+compiles and then dies at the end of `npm run build` with
+`@supabase/ssr: Your project's URL and API key are required`. The fastest fix, which never puts a
+key on the clipboard or in a chat window:
 
 ```powershell
 npx vercel login
@@ -45,59 +41,47 @@ only Markdown documents is skipped, by the `ignoreCommand` in `vercel.json`. Not
 hand, and there is no deploy workflow in this repository to maintain — Vercel's GitHub integration
 does the watching.
 
-There *is* one GitHub Action, added 30 August 2026: `.github/workflows/build.yml`. It lints and
-builds on every push to `main` and deploys nothing — it exists so a broken build arrives as an
-email in about three minutes rather than as a stale preview site somebody notices days later. It
-needs no secrets.
+There *is* one GitHub Action: `.github/workflows/build.yml`. It lints and builds on every push to
+`main` and deploys nothing — it exists so a broken build arrives as an email in about three minutes
+rather than as a stale preview somebody notices days later. It needs no secrets.
 
-`NEXT_PUBLIC_BASE_PATH` must stay **unset** on Vercel. It exists only so a site can be served
-from a subfolder; setting it breaks every link and every image, and it fails in a way that
-looks like a styling problem rather than a configuration one.
-
-Until 5 August 2026 this repository was named `luke-14-ministries.github.io` and published to
-GitHub Pages by `.github/workflows/deploy.yml`. Pages is unpublished, the workflow is deleted,
-and `output: 'export'` is out of `next.config.mjs` — a static export cannot run server code,
-which blocked every part of the registration platform.
+`NEXT_PUBLIC_BASE_PATH` must stay **unset** on Vercel. Setting it breaks every link and every image,
+and it fails in a way that looks like a styling problem rather than a configuration one. The site is
+not a static export and GitHub Pages is retired; do not revive either.
 
 ## What's here
 
-- **Recreated pages** — Home, Mission & Story, Leadership, Resources, Camp Celebrate (+ Camper
-  Info, Volunteer Info, Camp Memories), Luke 14 Party, Wheels for Kenya, The Hazelnut Movement,
-  Adult Adventure Retreat, Donate, Pray, Newsletter, Host a Speaker, Contact. Content captured
-  verbatim from the live site (July 2026). All 126 photos are self-hosted in `public/images/`
-  (downloaded at 2500px from the original site), so the site is fully standalone. Camp Memories
-  embeds the original YouTube highlight videos per year; Luke 14 Party and Wheels for Kenya
-  include their full photo galleries.
-- **New platform mockups** (UI only, nothing saved/charged):
-  - `/account` — login · `/account/signup` — account creation (family or volunteer path)
-  - `/account/dashboard` — sample dashboard: registrations, household, giving history
-  - `/register/family` — 4-step family registration wizard
-  - `/register/volunteer` — volunteer application
-  - `/donate` — original content + new online giving form (one-time/monthly, fund designation)
+**Phase 3 — built, in staff testing.** Next.js 16 on Vercel, Supabase (Postgres, auth, row-level
+security), Stripe in test mode. The public pages recreate the current site (photos self-hosted in
+`public/images/`). The platform is real, not a mock-up: family accounts and households, the
+registration wizard with tracked edits, card and bank payments with receipts, payment plans (switched on by
+`supabase/PAYMENT-PLANS-SETUP.md`), scholarships, discounts and refunds, the volunteer application with background checks by Checkr
+file export, giving with year-end statements, and the staff admin — rosters, check-in, dietary and
+medical lists, rooms, buddies, activities, programs, Event Payments, Giving, and Staff & Access,
+where each staff member holds read or write grants on ten areas. Migrations run through `0107`
+(`supabase/migrations/`); the row-level security harness runs with
+`bash supabase/tests/run_rls_local.sh` and must end `ALL CHECKS PASSED`.
 
-## Roadmap to the live platform
+**Payments:** Stripe's nonprofit rate (2.2% + 30¢ on domestic cards) was granted account-wide on
+18 August 2026 — registration included; it holds while at least 80% of the account's volume is
+gifts, so giving stays on the same account (`DECISIONS.md`, 2026-08-18). Test keys only until launch.
 
-1. **Done — 5 August 2026.** Hosting moved to Vercel; `output: 'export'` removed, so server
-   code is possible at all.
-2. Gather admin feedback on the flows via the Vercel preview.
-3. Backend: Supabase (auth + database) — real accounts, saved registrations, admin views,
-   with row-level security enforced in the database rather than in application code.
-4. Payments: Stripe (camp fees + donations, recurring giving, receipts). Test keys only until
-   launch. The nonprofit discount does **not** apply to registration fees.
-5. Before going public on the ministry's own domain, reverse all four preview switches
-   together: `components/PreviewBanner.jsx` out of `app/layout.jsx`, `public/robots.txt`, the
-   `robots: { index: false }` block in `app/layout.jsx`, and the "(Preview Build)" title
-   suffix. Board approval gates this. Missing one fails silently — the site simply never
-   appears in search results.
+**Before launch (Phase 4, board approval required):** purge all test data, a security audit, live
+Stripe keys with **both** live webhooks, Vercel Pro, the domain pointed, and all four preview
+switches reversed together — `components/PreviewBanner.jsx`, `public/robots.txt`, the
+`robots: { index: false }` block in `app/layout.jsx`, and the "(Preview Build)" title suffix.
+Missing one fails silently.
 
-## Content notes (gaps found during capture)
+**Where to read more:** `CLAUDE.md` (the standing brief — what is true now and what not to break),
+`DECISIONS.md` (why), `CONTRIBUTING.md` (how to work), `supabase/PAYMENT-PLANS-SETUP.md`. The
+ordered checklist (`DO-THIS-NEXT`), plans, staff questions and testing scripts live in the
+ministry's SharePoint library.
 
-- Video embeds (Luke 14 Party 2022 highlights, Wheels for Kenya 2024) and the Camp Memories
-  photo galleries are client-rendered on Squarespace and couldn't be captured — placeholders used.
-- The original contact form's fields didn't render in capture; a standard Name/Email/Subject/
-  Message form is used.
-- Pray/Newsletter/Kenya signups still link to the existing Google Forms; Hazelnut/speaker
-  bookings still link to the existing Airtable forms (all functional).
+## Content notes
+
+- Some Squarespace video embeds and galleries could not be captured — placeholders are used.
+- Pray, Newsletter and Kenya sign-ups still link to the existing Google Forms; Hazelnut and speaker
+  bookings to the existing Airtable forms.
 
 ## Project documentation
 

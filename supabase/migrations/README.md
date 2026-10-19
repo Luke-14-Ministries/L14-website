@@ -37,18 +37,21 @@ A migration that runs without error proves the syntax was valid. It proves nothi
 about whether the security policies actually keep one family's data away from another
 family. Those are different questions, and only the second one matters.
 
-So `rls_test.sql` seeds four made-up people — two parents in two different households, a
-registrar, and a stranger who belongs to nowhere — and then checks, forty-two times, that
-each of them can see exactly what they should and nothing else. If any check fails the
-script raises an error and stops.
+So `rls_test.sql` seeds six made-up personas — two families in different households, a
+registrar, a coordinator, a staff member with the Sensitive grant, and the camp doctor — plus
+an anonymous visitor, and then checks, statement by statement, that each of them can see
+exactly what they should and nothing else. If any check fails the script raises an error and
+stops; a clean run ends `ALL CHECKS PASSED`.
 
 It is **not** run against the real Supabase project. It is a test fixture: it creates fake
 users and fake registrations, and it is meant for a throwaway local Postgres. Running it
-against production would put junk data in the database.
+against production would put junk data in the database. On the build machine (PostgreSQL 16),
+`bash supabase/tests/run_rls_local.sh` builds a fresh database from every migration and runs
+it; `supabase/tests/README.md` has the detail.
 
 It is kept in the repository because the next person to change a policy needs a way to find
 out whether they broke something. Change a policy, run the harness against a scratch
-database, see whether all forty-two still pass.
+database, see whether every check still passes.
 
 The first time this harness was run it caught a real hole: families could read the staff-only
 notes on their own registration. Column-level permissions in Postgres do not work the way

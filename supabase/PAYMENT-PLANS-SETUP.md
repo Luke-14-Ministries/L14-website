@@ -6,11 +6,11 @@ at launch: test and live mode have separate webhooks and separate secrets.
 
 ## What families will see (camp weeks only)
 
-- After registering, a **"choose how to pay"** step. The registration is not finished
-  until the family picks one of three options:
+- After registering, a **"choose how to pay"** step offering three options. (Since `0081` it is
+  offered, not required: submitting needs nothing paid, and approval waits on the deposit.)
   - **Pay in full.**
   - **Payment plan:** the deposit now, then automatic charges monthly or twice a month
-    until the due date (two weeks before camp starts).
+    until the due date (the event's `balance_due_on` — July 1 for the camp weeks, `0096`).
   - **Request a scholarship.**
 - **Early registration:** $X off per person for anyone registered by the early date,
   once the family pays in full or starts a plan. A scholarship request alone does not
