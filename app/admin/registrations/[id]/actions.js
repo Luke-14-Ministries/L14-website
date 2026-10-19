@@ -825,7 +825,7 @@ export async function refundPayment(registrationId, input) {
   const staff = await getStaff();
   if (!can(staff, 'write:payments')) return { ok: false, error: 'Not permitted.' };
 
-  const { paymentId, amountCents, feeCoverCents = 0, reason, note } = input || {};
+  const { paymentId, amountCents, feeCoverCents = 0, reason, note, requestKey } = input || {};
   const amount = Math.round(Number(amountCents));
   const feeCover = Math.round(Number(feeCoverCents) || 0);
 
@@ -851,7 +851,7 @@ export async function refundPayment(registrationId, input) {
 
   const { data: priorRefunds } = await supabase
     .from('payment_refunds')
-    .select('amount_cents, status')
+    .select('amount_cents, fee_cover_cents, status')
     .eq('payment_id', paymentId);
   const alreadyRefunded = (priorRefunds ?? [])
     .filter((r) => r.status === 'pending' || r.status === 'succeeded')
@@ -867,24 +867,65 @@ export async function refundPayment(registrationId, input) {
           : `The most that can still be refunded on this payment is $${(refundable / 100).toFixed(2)}.`,
     };
   }
-  if (feeCover > (payment.fee_cover_cents ?? 0)) {
-    return { ok: false, error: 'That is more than the processing-fee contribution on this payment.' };
+  const feeAlready = (priorRefunds ?? [])
+    .filter((r) => r.status === 'pending' || r.status === 'succeeded')
+    .reduce((s, r) => s + (r.fee_cover_cents ?? 0), 0);
+  if (feeCover > (payment.fee_cover_cents ?? 0) - feeAlready) {
+    return { ok: false, error: 'That is more than the processing-fee contribution left on this payment.' };
   }
 
-  // Stripe first, database second. If Stripe refuses, nothing is recorded and
-  // the family's balance is untouched -- whereas recording first and failing
-  // second would show a refund that never happened.
-  let stripeRefundId = null;
-  let status = 'succeeded';
-  let method = 'check';
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const row = {
+    payment_id: paymentId,
+    registration_id: registrationId,
+    amount_cents: amount,
+    fee_cover_cents: feeCover,
+    reason: (reason || '').trim(),
+    note: (note || '').trim() || null,
+    refunded_by: staff.userId ?? null,
+    refunded_on: today,
+    // One per refund form (RefundForm makes it when it opens). The database
+    // keeps it unique among live refunds, so pressing Refund twice, or in two
+    // tabs, records and sends one refund (0107).
+    request_key: typeof requestKey === 'string' && requestKey ? requestKey.slice(0, 100) : null,
+  };
 
-  if (payment.stripe_payment_intent_id) {
-    const stripe = getStripe();
-    if (!stripe) {
-      return { ok: false, error: 'Stripe is not configured, so this payment cannot be refunded here.' };
+  // A check or cash refund moves no money here: record it and finish.
+  if (!payment.stripe_payment_intent_id) {
+    const { error: insertError } = await supabase
+      .from('payment_refunds')
+      .insert({ ...row, method: 'check', status: 'succeeded' });
+    if (insertError) {
+      console.error('refundPayment insert:', insertError.message);
+      return { ok: false, error: refundRefusal(insertError), duplicate: insertError.code === '23505' };
     }
-    try {
-      const refund = await stripe.refunds.create({
+    return finishRefund(supabase, registrationId, paymentId, amount, refundable, 'succeeded', null);
+  }
+
+  const stripe = getStripe();
+  if (!stripe) {
+    return { ok: false, error: 'Stripe is not configured, so this payment cannot be refunded here.' };
+  }
+
+  // RESERVE first (0107): the over-refund guard runs, and holds a lock on the
+  // payment, before any money moves. If Stripe then refuses, the reservation
+  // is cancelled and the balance is as it was.
+  const { data: reserved, error: reserveError } = await supabase
+    .from('payment_refunds')
+    .insert({ ...row, method: 'stripe', status: 'pending' })
+    .select('id')
+    .single();
+  if (reserveError || !reserved) {
+    console.error('refundPayment reserve:', reserveError?.message);
+    // `duplicate` tells the form to keep its key: pressing again must not
+    // become a second refund.
+    return { ok: false, error: refundRefusal(reserveError), duplicate: reserveError?.code === '23505' };
+  }
+
+  let refund;
+  try {
+    refund = await stripe.refunds.create(
+      {
         payment_intent: payment.stripe_payment_intent_id,
         // Stripe's own cut is not returned, so the fee contribution is added
         // to what the family gets back only when staff have chosen to.
@@ -893,45 +934,75 @@ export async function refundPayment(registrationId, input) {
         metadata: {
           registration_id: registrationId,
           payment_id: paymentId,
+          // The refund webhook fills THIS row rather than adding another.
+          refund_row_id: reserved.id,
           recorded_reason: (reason || '').slice(0, 400),
         },
-      });
-      stripeRefundId = refund.id;
-      method = 'stripe';
-      // Stripe returns 'succeeded' for cards almost always, and 'pending' for
-      // bank refunds that take days. Either way the money is committed, and
-      // the balance view counts both.
-      status = refund.status === 'succeeded' ? 'succeeded' : 'pending';
-    } catch (e) {
-      return { ok: false, error: `Stripe refused the refund: ${e?.message ?? 'unknown error'}` };
-    }
-  }
-
-  const { error: insertError } = await supabase.from('payment_refunds').insert({
-    payment_id: paymentId,
-    registration_id: registrationId,
-    amount_cents: amount,
-    fee_cover_cents: feeCover,
-    status,
-    reason: (reason || '').trim(),
-    note: (note || '').trim() || null,
-    method,
-    stripe_refund_id: stripeRefundId,
-    refunded_by: staff.userId ?? null,
-    refunded_on: new Date().toISOString().slice(0, 10),
-  });
-  if (insertError) {
-    // The money may already have left Stripe at this point, so this must be
-    // loud rather than swallowed.
-    console.error('refundPayment insert:', insertError.message, { stripeRefundId });
+      },
+      // Same key, same refund: a retry after a dropped connection gets the
+      // refund Stripe already made instead of a second one.
+      { idempotencyKey: `refund:${reserved.id}` }
+    );
+  } catch (e) {
+    console.error('refundPayment stripe:', e?.type, e?.code, e?.message);
+    await supabase.from('payment_refunds').update({ status: 'canceled' }).eq('id', reserved.id);
     return {
       ok: false,
-      error: stripeRefundId
-        ? `Stripe issued refund ${stripeRefundId}, but recording it here failed: ${insertError.message}. Tell an administrator — the balance is now wrong.`
-        : `The refund could not be recorded: ${insertError.message}`,
+      error: 'Stripe did not accept the refund, so nothing was sent and nothing was recorded. Check the payment in Stripe, then try again.',
     };
   }
 
+  // Stripe returns 'succeeded' for cards almost always, and 'pending' for
+  // bank refunds that take days. Either way the money is committed, and the
+  // balance view counts both. The webhook may already have filled the row.
+  const status = refund.status === 'succeeded' ? 'succeeded' : 'pending';
+  const { error: fillError } = await supabase
+    .from('payment_refunds')
+    .update({ stripe_refund_id: refund.id, status })
+    .eq('id', reserved.id);
+  if (fillError?.code === '23505') {
+    // The refund webhook got there first and recorded its own row for this
+    // refund. Keep that one, give it the registrar's words and the split
+    // between refund and fee, and release the reservation -- one row, not two.
+    await supabase.from('payment_refunds').update({ status: 'canceled' }).eq('id', reserved.id);
+    await supabase
+      .from('payment_refunds')
+      .update({
+        amount_cents: amount,
+        fee_cover_cents: feeCover,
+        reason: row.reason,
+        note: row.note,
+        refunded_by: row.refunded_by,
+      })
+      .eq('stripe_refund_id', refund.id);
+  } else if (fillError) {
+    // The money has left; the reservation still counts it (pending), so the
+    // balance is right, but the Stripe reference is missing. Loud, not lost.
+    console.error('refundPayment fill:', fillError.message, { refund: refund.id, row: reserved.id });
+    return {
+      ok: false,
+      error: `Stripe issued refund ${refund.id} and it is counted on the balance, but its reference could not be saved. Tell an administrator.`,
+    };
+  }
+
+  return finishRefund(supabase, registrationId, paymentId, amount, refundable, status, refund.id);
+}
+
+// What a registrar is told when the database refuses a refund. The detail goes
+// to the server log; the screen gets words (audit L4).
+function refundRefusal(error) {
+  const m = error?.message ?? '';
+  if (error?.code === '23505') {
+    return 'This refund has already been sent. Refresh the page to see it.';
+  }
+  if (/exceed/i.test(m)) {
+    return 'That would refund more than this payment has left. Refresh the page — another refund may have just been recorded.';
+  }
+  if (/status/i.test(m)) return 'This payment has not been received, so there is nothing to refund yet.';
+  return 'The refund could not be recorded. Nothing was sent. Please try again, or tell an administrator.';
+}
+
+async function finishRefund(supabase, registrationId, paymentId, amount, refundable, status, stripeRefundId) {
   // A payment refunded down to nothing is marked refunded, so the payments
   // list stops presenting it as money the ministry holds.
   if (amount >= refundable) {

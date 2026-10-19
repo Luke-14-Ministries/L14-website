@@ -1336,6 +1336,9 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
   );
   const [feeCover, setFeeCover] = useState(false);
   const [reason, setReason] = useState('');
+  // One key per refund attempt (0107): pressing Refund twice, or in two tabs,
+  // sends one refund. A refused attempt gets a fresh key for the retry.
+  const [requestKey, setRequestKey] = useState(() => crypto.randomUUID());
 
   const cents = Math.round((parseFloat(amount) || 0) * 100);
   const feeCents = feeCover ? payment.fee_cover_cents ?? 0 : 0;
@@ -1348,9 +1351,11 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
         amountCents: cents,
         feeCoverCents: feeCents,
         reason,
+        requestKey,
       });
       if (!res.ok) {
         setError(res.error);
+        if (!res.duplicate) setRequestKey(crypto.randomUUID());
         return;
       }
       onDone();

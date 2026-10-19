@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
 
       const { data: payment } = await admin
         .from('payments')
-        .select('id, registration_id, amount_cents, fee_cover_cents')
+        .select('id, registration_id, amount_cents, fee_cover_cents, status')
         .eq('stripe_payment_intent_id', intentId)
         .maybeSingle();
 
@@ -153,11 +153,33 @@ Deno.serve(async (req) => {
 
       const status = mapStatus(r.status);
 
-      const { data: existing } = await admin
+      let { data: existing } = await admin
         .from('payment_refunds')
         .select('id, status')
         .eq('stripe_refund_id', r.id)
         .maybeSingle();
+
+      // A refund from our own staff screen reserves its row BEFORE calling
+      // Stripe and names it in metadata (0107). If this event beats the screen
+      // to filling in the Stripe id, fill that row -- never add a second one,
+      // which would count the refund twice on the family's balance.
+      const rowId = (r.metadata as Record<string, string> | null)?.refund_row_id;
+      if (!existing && rowId) {
+        const { data: reserved } = await admin
+          .from('payment_refunds')
+          .select('id, status, stripe_refund_id')
+          .eq('id', rowId)
+          .eq('payment_id', payment.id)
+          .maybeSingle();
+        if (reserved && !reserved.stripe_refund_id) {
+          const { error } = await admin
+            .from('payment_refunds')
+            .update({ stripe_refund_id: r.id, status })
+            .eq('id', reserved.id);
+          if (error) return fail('refund-fill', error.message, 500);
+          existing = { id: reserved.id, status };
+        }
+      }
 
       if (existing) {
         // Only the things Stripe is authoritative about. `reason` and `note`
@@ -173,11 +195,31 @@ Deno.serve(async (req) => {
           );
         }
       } else {
+        // Issued in the Stripe dashboard. Stripe's amount can include the
+        // family's processing-fee contribution, which we keep in its own
+        // column; the part beyond what is left of the payment is fee cover
+        // (audit M3). Otherwise a full dashboard refund of payment + fee was
+        // refused by the over-refund guard and never recorded.
+        const { data: prior } = await admin
+          .from('payment_refunds')
+          .select('amount_cents, fee_cover_cents, status')
+          .eq('payment_id', payment.id);
+        const live = (prior ?? []).filter((x) => x.status === 'pending' || x.status === 'succeeded');
+        const baseLeft = Math.max(
+          0,
+          (payment.amount_cents ?? 0) - live.reduce((t, x) => t + (x.amount_cents ?? 0), 0)
+        );
+        const feeLeft = Math.max(
+          0,
+          (payment.fee_cover_cents ?? 0) - live.reduce((t, x) => t + (x.fee_cover_cents ?? 0), 0)
+        );
+        const base = Math.min(r.amount, baseLeft) || r.amount;
+        const fee = Math.min(r.amount - Math.min(r.amount, baseLeft), feeLeft);
         const { error } = await admin.from('payment_refunds').insert({
           payment_id: payment.id,
           registration_id: payment.registration_id,
-          amount_cents: r.amount,
-          fee_cover_cents: 0,
+          amount_cents: base,
+          fee_cover_cents: fee,
           status,
           method: 'stripe',
           // `reason` is printed on the FAMILY's dashboard, so it is written
@@ -195,8 +237,9 @@ Deno.serve(async (req) => {
           // The over-refund guard (migration 0044) can legitimately refuse
           // this. That means Stripe and our records genuinely disagree, which
           // a human has to look at -- so say so loudly and do NOT retry.
+          // ALERT is the word to search the function's logs for.
           console.error(
-            `[stripe-refund-webhook] could not record refund ${r.id} for payment ${payment.id}: ${error.message}`
+            `[stripe-refund-webhook] ALERT could not record refund ${r.id} (${r.amount} cents) for payment ${payment.id}: ${error.message}`
           );
           continue;
         }
@@ -216,10 +259,16 @@ Deno.serve(async (req) => {
         .filter((x) => x.status === 'pending' || x.status === 'succeeded')
         .reduce((s, x) => s + (x.amount_cents ?? 0), 0);
       const fullyRefunded = refundedTotal >= (payment.amount_cents ?? 0);
-      await admin
-        .from('payments')
-        .update({ status: fullyRefunded ? 'refunded' : 'succeeded' })
-        .eq('id', payment.id);
+      // Only between received and refunded. A payment still clearing
+      // ('processing', a bank debit refunded before it landed) is not made
+      // "received" by a refund event; the payment webhook settles it.
+      if (payment.status === 'succeeded' || payment.status === 'refunded') {
+        const next = fullyRefunded ? 'refunded' : 'succeeded';
+        if (next !== payment.status) {
+          const { error } = await admin.from('payments').update({ status: next }).eq('id', payment.id);
+          if (error) return fail('payment-status', error.message, 500);
+        }
+      }
 
       handled += 1;
     }
