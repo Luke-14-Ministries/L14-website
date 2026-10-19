@@ -17,10 +17,23 @@
 
 \set ON_ERROR_STOP on
 
+-- Every persona signs in with two-factor (aal2) unless a test says otherwise:
+-- since 0106 staff, leader and doctor access needs a strong session.
 create or replace function pg_temp.as_user(u uuid) returns void
 language plpgsql as $$
 begin
   perform set_config('request.jwt.claim.sub', u::text, true);
+  perform set_config('request.jwt.claims', '{"aal":"aal2"}', true);
+end;
+$$;
+
+-- A password-only session (aal1), optionally with a session id.
+create or replace function pg_temp.as_user_aal1(u uuid, sid text default null) returns void
+language plpgsql as $$
+begin
+  perform set_config('request.jwt.claim.sub', u::text, true);
+  perform set_config('request.jwt.claims',
+    json_build_object('aal', 'aal1', 'session_id', sid)::text, true);
 end;
 $$;
 
@@ -427,6 +440,31 @@ begin
   -- Check-in is a staff fact (0105, F5).
   perform pg_temp.expect_denied('family may NOT check its own camper in (0105)',
     format('update public.registration_participants set checked_in_at = now() where id = %L', rpA));
+
+  -- Two-factor in the database (0106, audit H1): a password-only staff session
+  -- is nobody; a session registered from a remembered browser counts.
+  perform pg_temp.as_user_aal1(uR);
+  select count(*) into n from public.people;
+  perform pg_temp.expect('registrar on a password-only session sees no people (0106)', n, 0);
+  select count(*) into n from public.payments;
+  perform pg_temp.expect('registrar on a password-only session sees no payments (0106)', n, 0);
+  perform pg_temp.as_user_aal1(uF);
+  select count(*) into n from public.person_support;
+  perform pg_temp.expect('sensitive staff on a password-only session see no support records (0106)', n, 0);
+  set local role postgres;
+  insert into public.mfa_trusted_sessions (session_id, profile_id, expires_at)
+    values ('11111111-1111-4111-8111-111111111111', uR, now() + interval '1 day');
+  set local role authenticated;
+  perform pg_temp.as_user_aal1(uR, '11111111-1111-4111-8111-111111111111');
+  select count(*) into n from public.people;
+  perform pg_temp.expect('a registered remembered-browser session counts (0106)', n, 3);
+  perform pg_temp.as_user_aal1(uR, '22222222-2222-4222-8222-222222222222');
+  select count(*) into n from public.people;
+  perform pg_temp.expect('an unregistered session id does not (0106)', n, 0);
+  -- The family's own records do not depend on two-factor.
+  perform pg_temp.as_user_aal1(uA);
+  select count(*) into n from public.people where household_id = hA;
+  perform pg_temp.expect('a family on a password-only session still sees its own people (0106)', n, 2);
 
   -- The two role functions are gone (0101).
   select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
