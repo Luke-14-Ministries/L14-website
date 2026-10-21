@@ -30,7 +30,7 @@ export default async function ScholarshipPage({ params }) {
   const householdIds = (memberships ?? []).map((m) => m.household_id);
   if (householdIds.length === 0) notFound();
 
-  const { data: reg } = await supabase
+  const { data: reg, error: regError } = await supabase
     .from('registrations')
     .select(
       `id, household_id,
@@ -42,6 +42,8 @@ export default async function ScholarshipPage({ params }) {
     .eq('id', registrationId)
     .in('household_id', householdIds)
     .maybeSingle();
+  // CLAUDE.md: never swallow a query error -- a dropped one read as a 404.
+  if (regError) throw new Error(`Scholarship page: ${regError.message}`);
   if (!reg) notFound();
 
   // The scholarship agreement moved here from the registration form (24 Aug):

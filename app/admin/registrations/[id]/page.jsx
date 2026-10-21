@@ -21,7 +21,7 @@ export default async function RegistrationDetailPage({ params }) {
 
   const supabase = await createClient();
 
-  const { data: reg } = await supabase
+  const { data: reg, error: regError } = await supabase
     .from('registrations')
     .select(
       `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
@@ -42,6 +42,8 @@ export default async function RegistrationDetailPage({ params }) {
     .eq('id', id)
     .maybeSingle();
 
+  // CLAUDE.md: never swallow a query error -- a dropped one read as a 404.
+  if (regError) throw new Error(`Registration page: ${regError.message}`);
   if (!reg) notFound();
 
   // Money lives in participant_money (0114), one row per participant, and the

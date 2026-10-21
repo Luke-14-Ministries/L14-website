@@ -38,7 +38,7 @@ export default async function FamilyStatementPage({ params }) {
 
   const supabase = await createClient();
 
-  const [{ data: reg }, { data: pays }, { data: bal }] = await Promise.all([
+  const [{ data: reg, error: regError }, { data: pays, error: paysError }, { data: bal, error: balError }] = await Promise.all([
     supabase
       .from('registrations')
       .select(
@@ -63,6 +63,11 @@ export default async function FamilyStatementPage({ params }) {
       .maybeSingle(),
   ]);
 
+  // A dropped error read as "no such registration" (a transient failure showed as a 404
+  // on 21 Oct 2026). CLAUDE.md: never swallow a query error.
+  if (regError) throw new Error(`Statement (staff): ${regError.message}`);
+  if (paysError) throw new Error(`Statement (staff) payments: ${paysError.message}`);
+  if (balError) throw new Error(`Statement (staff) balance: ${balError.message}`);
   if (!reg) notFound();
 
   const h = reg.households ?? {};
