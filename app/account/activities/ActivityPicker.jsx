@@ -148,7 +148,7 @@ function ActivityRow({ person, activity }) {
               return (
                 <label
                   key={sl.id}
-                  className={`flex items-center gap-2 rounded border px-3 py-1.5 text-sm ${
+                  className={`flex items-center gap-2 rounded-sm border px-3 py-1.5 text-sm ${
                     mine ? 'border-brand bg-brand-light font-semibold' : 'border-neutral-200'
                   } ${soldOut ? 'opacity-60' : 'cursor-pointer'}`}
                 >

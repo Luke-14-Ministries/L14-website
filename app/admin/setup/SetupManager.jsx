@@ -220,7 +220,7 @@ function EventRow({ e }) {
 
       {notice && (
         <p
-          className={`mt-2 rounded border px-3 py-2 text-sm ${
+          className={`mt-2 rounded-sm border px-3 py-2 text-sm ${
             notice.ok
               ? 'border-green-300 bg-green-50 text-green-800'
               : 'border-red-300 bg-red-50 text-red-800'
@@ -371,7 +371,7 @@ function EventRow({ e }) {
 
           {detailNotice && (
             <p
-              className={`mt-2 rounded border px-3 py-2 text-sm ${
+              className={`mt-2 rounded-sm border px-3 py-2 text-sm ${
                 detailNotice.ok
                   ? 'border-green-300 bg-green-50 text-green-800'
                   : 'border-red-300 bg-red-50 text-red-800'
@@ -674,7 +674,7 @@ function NewEventPanel({ events }) {
 
       {notice && (
         <p
-          className={`mt-2 rounded border px-3 py-2 text-sm ${
+          className={`mt-2 rounded-sm border px-3 py-2 text-sm ${
             notice.ok
               ? 'border-green-300 bg-green-50 text-green-800'
               : 'border-red-300 bg-red-50 text-red-800'

@@ -1485,7 +1485,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
           onChange={(e) => setReason(e.target.value)}
           placeholder="Withdrew from Week 1 — family illness"
           aria-required="true"
-          className={`w-full rounded border px-2 py-1 bg-white ${
+          className={`w-full rounded-sm border px-2 py-1 bg-white ${
             reason.trim() ? 'border-neutral-300' : 'border-red-300'
           }`}
         />

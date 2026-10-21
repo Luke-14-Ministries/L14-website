@@ -47,7 +47,7 @@ const ROLE_SHORT = {
 function PersonChip({ person, onRemove, onMove, pending, accessWarning, moving }) {
   return (
     <li
-      className={`flex flex-wrap items-center gap-2 rounded border px-3 py-1.5 text-sm ${sexTint(
+      className={`flex flex-wrap items-center gap-2 rounded-sm border px-3 py-1.5 text-sm ${sexTint(
         person.gender
       )}`}
     >
@@ -607,7 +607,7 @@ export default function LodgingBoard({
                       setPlacing(p.participantId);
                     }}
                     disabled={pending || !canPlace}
-                    className={`flex w-full flex-wrap items-center gap-2 rounded border px-3 py-2 text-left text-sm disabled:opacity-50 ${
+                    className={`flex w-full flex-wrap items-center gap-2 rounded-sm border px-3 py-2 text-left text-sm disabled:opacity-50 ${
                       placing === p.participantId
                         ? 'border-brand bg-brand-light font-semibold'
                         : `${sexTint(p.gender)} hover:bg-neutral-50`

@@ -16,7 +16,7 @@ import { coverFeeCents, dollars } from '@/lib/payments';
 function Radio({ name, value, cur, set, children }) {
   return (
     <label
-      className={`flex-1 cursor-pointer rounded border px-3 py-2 text-sm ${
+      className={`flex-1 cursor-pointer rounded-sm border px-3 py-2 text-sm ${
         cur === value ? 'border-brand bg-brand-light font-semibold' : 'border-neutral-300'
       }`}
     >

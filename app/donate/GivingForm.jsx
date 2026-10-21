@@ -125,7 +125,7 @@ export default function GivingForm({ signedInEmail }) {
               setAmount(p);
               setCustom('');
             }}
-            className={`rounded border py-2.5 font-semibold ${
+            className={`rounded-sm border py-2.5 font-semibold ${
               !custom && amount === p
                 ? 'bg-brand text-white border-brand'
                 : 'border-neutral-300 hover:border-brand'
@@ -164,7 +164,7 @@ export default function GivingForm({ signedInEmail }) {
         ].map(([v, label, sub]) => (
           <label
             key={v}
-            className={`flex-1 cursor-pointer rounded border px-3 py-2 text-sm text-center ${
+            className={`flex-1 cursor-pointer rounded-sm border px-3 py-2 text-sm text-center ${
               method === v ? 'border-brand bg-brand-light' : 'border-neutral-300'
             }`}
           >

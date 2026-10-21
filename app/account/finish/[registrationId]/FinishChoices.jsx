@@ -30,7 +30,7 @@ function Choice({ value, cur, set, title, children }) {
 function Pill({ value, cur, set, children }) {
   return (
     <label
-      className={`flex-1 cursor-pointer rounded border px-3 py-2 text-sm text-center ${
+      className={`flex-1 cursor-pointer rounded-sm border px-3 py-2 text-sm text-center ${
         cur === value ? 'border-brand bg-brand-light font-semibold' : 'border-neutral-300'
       }`}
     >

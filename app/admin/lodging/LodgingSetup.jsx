@@ -375,7 +375,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
           {message && (
             <p
               role="status"
-              className={`mb-3 rounded border px-3 py-2 text-sm ${
+              className={`mb-3 rounded-sm border px-3 py-2 text-sm ${
                 message.tone === 'good'
                   ? 'border-green-300 bg-green-50 text-green-900'
                   : 'border-red-300 bg-red-50 text-red-800'

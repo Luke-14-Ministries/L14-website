@@ -125,7 +125,7 @@ export default async function NewsletterPage() {
               {(recent ?? []).map((r, i) => (
                 <li key={i} className="flex flex-wrap items-baseline gap-x-2">
                   <span
-                    className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
+                    className={`rounded-sm px-1.5 py-0.5 text-xs font-semibold ${
                       r.email_news ? 'bg-green-100 text-green-800' : 'bg-neutral-200 text-neutral-700'
                     }`}
                   >

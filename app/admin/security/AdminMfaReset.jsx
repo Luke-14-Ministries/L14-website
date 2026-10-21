@@ -68,7 +68,7 @@ export default function AdminMfaReset() {
 
       {result && (
         <p
-          className={`mt-5 rounded border px-4 py-3 ${
+          className={`mt-5 rounded-sm border px-4 py-3 ${
             result.ok
               ? 'border-green-300 bg-green-50 text-green-800'
               : 'border-red-300 bg-red-50 text-red-800'

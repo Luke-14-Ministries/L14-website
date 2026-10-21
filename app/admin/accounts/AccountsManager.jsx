@@ -258,7 +258,7 @@ export default function AccountsManager({
 
       {notice && (
         <p
-          className={`mb-4 rounded border px-4 py-3 ${
+          className={`mb-4 rounded-sm border px-4 py-3 ${
             notice.ok
               ? 'border-green-300 bg-green-50 text-green-800'
               : 'border-red-300 bg-red-50 text-red-800'

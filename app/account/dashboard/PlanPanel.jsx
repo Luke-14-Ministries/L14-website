@@ -36,7 +36,7 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
 
   return (
     <div
-      className={`mt-4 rounded border px-4 py-3 text-sm ${
+      className={`mt-4 rounded-sm border px-4 py-3 text-sm ${
         failed ? 'border-red-300 bg-red-50 text-red-900' : 'border-neutral-200 bg-neutral-50'
       }`}
     >

@@ -253,7 +253,7 @@ export default function ProgramBoard({
       {message && (
         <p
           role="status"
-          className={`mb-3 rounded border px-3 py-2 text-sm ${
+          className={`mb-3 rounded-sm border px-3 py-2 text-sm ${
             message.tone === 'good'
               ? 'border-green-300 bg-green-50 text-green-900'
               : 'border-red-300 bg-red-50 text-red-800'
@@ -316,7 +316,7 @@ export default function ProgramBoard({
                     value={p.programId ?? ''}
                     onChange={(e) => placeOne(p.participantId, e.target.value)}
                     disabled={pending || !canPlace}
-                    className={`rounded border px-2 py-1 text-sm ${
+                    className={`rounded-sm border px-2 py-1 text-sm ${
                       p.programId ? 'border-neutral-300' : 'border-amber-400 bg-amber-50'
                     }`}
                   >
@@ -525,7 +525,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
       {message && (
         <p
           role="status"
-          className={`mt-3 rounded border px-3 py-2 text-sm ${
+          className={`mt-3 rounded-sm border px-3 py-2 text-sm ${
             message.tone === 'good'
               ? 'border-green-300 bg-green-50 text-green-900'
               : message.tone === 'warn'

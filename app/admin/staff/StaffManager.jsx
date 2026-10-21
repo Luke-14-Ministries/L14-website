@@ -117,7 +117,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
                     .map(([k, v]) => `${AREA_LABEL[k] ?? k}: ${v}`)
                     .join('\n') || 'No grants recorded yet'
                 }
-                className={`rounded border px-2 py-1 text-xs font-semibold ${
+                className={`rounded-sm border px-2 py-1 text-xs font-semibold ${
                   open ? 'border-brand bg-brand-light text-brand-dark' : 'border-neutral-300 text-neutral-700 hover:border-brand hover:text-brand'
                 }`}
               >

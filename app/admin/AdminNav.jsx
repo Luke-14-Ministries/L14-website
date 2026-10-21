@@ -118,7 +118,7 @@ export default function AdminNav({
         // onto a line of its own, which read as a stray number under the item
         // rather than a count on it (25 Aug). Now the label takes the room it
         // needs and the badge holds its place at the end.
-        className={`flex items-center justify-between gap-2 rounded px-3 py-2 font-medium hover:bg-brand-light/60 ${
+        className={`flex items-center justify-between gap-2 rounded-sm px-3 py-2 font-medium hover:bg-brand-light/60 ${
           indent ? 'ml-4' : ''
         } ${
           isActive(n.href)

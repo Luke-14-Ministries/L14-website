@@ -55,7 +55,7 @@ function YesNo({ id, question, value, onChange, required = false, children }) {
         ].map(([labelText, v]) => (
           <label
             key={labelText}
-            className={`cursor-pointer rounded border px-4 py-1.5 text-sm font-semibold ${
+            className={`cursor-pointer rounded-sm border px-4 py-1.5 text-sm font-semibold ${
               value === v
                 ? 'border-brand bg-brand-light text-brand-dark'
                 : 'border-neutral-300 text-neutral-600'
@@ -233,7 +233,7 @@ export default function SupportDetailsFields({
                     allergy_severity: prev.allergy_severity === val ? '' : val,
                   }))
                 }
-                className={`rounded border px-3 py-2 text-left text-sm ${
+                className={`rounded-sm border px-3 py-2 text-left text-sm ${
                   on
                     ? 'border-brand bg-brand-light font-semibold text-brand-dark'
                     : 'border-neutral-300 bg-white hover:border-neutral-400'
