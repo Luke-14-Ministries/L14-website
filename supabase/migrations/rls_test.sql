@@ -215,7 +215,7 @@ do $$
 declare
   uA uuid; uB uuid; uR uuid; uC uuid; uF uuid; uD uuid;
   hA uuid; hB uuid; pA uuid; pB uuid; ev uuid; regA uuid;
-  rpA uuid; rpB uuid; agr uuid;
+  rpA uuid; rpB uuid; agr uuid; pNew uuid; optGen uuid;
   n bigint;
   oldStatus text;
 begin
@@ -289,6 +289,28 @@ begin
 
   ---- family write limits ----------------------------------------------
   perform pg_temp.as_user(uA);
+  -- 0113: a family's new participant is never born confirmed
+  -- a general (unpinned) option, as the real camp weeks have
+  set local role postgres;
+  insert into public.event_options (event_id, name, fee_cents, published) values (ev, 'General', 10000, true) returning id into optGen;
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  insert into public.people (household_id, first_name, last_name) values (hA, 'Newest', 'AAA') returning id into pNew;
+  insert into public.registration_participants (registration_id, person_id, event_option_id, camp_role, status, confirmed_at)
+    values (regA, pNew, optGen, 'camper', 'confirmed', now());
+  select count(*) into n from public.registration_participants
+   where registration_id = regA and person_id = pNew and status = 'submitted' and confirmed_at is null and submitted_at is not null;
+  perform pg_temp.expect('a family-inserted "confirmed" row is stored as submitted', n, 1);
+  set local role postgres;
+  delete from public.registration_participants where person_id = pNew;
+  delete from public.people where id = pNew;
+  delete from public.event_options where id = optGen;
+  set local role authenticated;
+  -- 0113: the review stamp on a support row is staff's
+  perform pg_temp.as_user(uA);
+  update public.person_support set reviewed_at = now(), reviewed_by = uR where person_id = pA;
+  select count(*) into n from public.person_support where person_id = pA and reviewed_at is not null;
+  perform pg_temp.expect('a family cannot stamp its own support row as reviewed', n, 0);
   perform pg_temp.expect_allowed('family may submit own participant',
     format('update public.registration_participants set status=''submitted'' where id=%L', rpA));
   perform pg_temp.expect_denied('family may NOT confirm own participant',
@@ -487,6 +509,16 @@ begin
   perform pg_temp.as_user(uB);
   select count(*) into n from public.buddy_assignments;
   perform pg_temp.expect('B sees only assignments involving B', n, 1);
+
+  ---- linking a login to a household is the administrator's (0113) -----
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('registration write cannot attach a login to another household',
+    format('insert into public.household_members (household_id, profile_id, role) values (%L, %L, ''adult'')', hB, uD));
+  ---- confirming a signature is registration write (0113) ----------------
+  perform pg_temp.as_user(uC);
+  update public.agreement_signatures set status = 'confirmed_external' where person_id = pA;
+  get diagnostics n = row_count;
+  perform pg_temp.expect('a coordinator cannot confirm signatures', n, 0);
 
   ---- a populated household is never self-claimed (0110) ---------------
   set local role postgres;
