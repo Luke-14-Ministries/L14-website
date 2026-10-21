@@ -162,17 +162,16 @@ export async function setStaffGrants(profileId, input) {
   return { ok: true, changed: upserts.length + removals.length, grants: wanted };
 }
 
-// A preset in one click: the grants exactly (Giving left as it is) and the
-// role label. setStaffGrants keeps the old Sensitive / Giving /
-// Background-checks columns in step with the grants.
+// A preset in one click: the grants exactly (Giving left as it is).
+// setStaffGrants keeps the old Sensitive / Giving / Background-checks columns
+// in step with the grants. A preset never touches the administrator tick
+// (until 21 Oct 2026 it set the role too, so applying "Registration &
+// coordination" to an administrator quietly took the power away).
 export async function applyPreset(profileId, key) {
   const staff = await getStaff();
   if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
   const p = PRESETS[key];
   if (!p) return { ok: false, error: 'Unknown preset.' };
-  if (profileId === staff.userId && p.role !== 'admin') {
-    return { ok: false, error: 'You cannot take your own administrator role away. Ask another admin.' };
-  }
 
   const supabase = await createClient();
   const { data: current } = await supabase
@@ -184,9 +183,6 @@ export async function applyPreset(profileId, key) {
 
   const res = await setStaffGrants(profileId, grantsForPreset(key, cur));
   if (!res.ok) return res;
-
-  const { error } = await supabase.from('staff').update({ role: p.role }).eq('profile_id', profileId);
-  if (error) return { ok: false, error: error.message };
   revalidatePath('/admin/staff');
-  return { ok: true, label: p.label, role: p.role, grants: res.grants };
+  return { ok: true, label: p.label, grants: res.grants };
 }

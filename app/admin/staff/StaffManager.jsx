@@ -198,7 +198,7 @@ function Table({
         <thead className="bg-neutral-50 text-neutral-500">
                     <tr>
             <SortTh k="name" {...sortProps}>Person</SortTh>
-            <SortTh k="role" center {...sortProps}>Administrator</SortTh>
+            <SortTh k="role" center {...sortProps}>Administrator — grants access</SortTh>
             <SortTh k="grants" center {...sortProps}>Grants</SortTh>
             <th className="px-4 py-2" />
           </tr>
@@ -312,7 +312,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       const res = await applyPreset(profileId, key);
       if (res.ok) remember(profileId, { role: res.role, ...(res.grants ? { grants: res.grants } : {}) });
       if (!res.ok) setError(res.error);
-      else setNotice(`${res.label} preset applied — grants, role and ticks set; see the access log.`);
+      else setNotice(`${res.label} preset applied — the areas are set, the administrator tick is not touched; see the access log.`);
       setBusyId(null);
       router.refresh();
     });

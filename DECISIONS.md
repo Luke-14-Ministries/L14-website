@@ -2809,3 +2809,16 @@ walk with the bot accounts passed; the security re-check found no logic change, 
 outside Tailwind's own tree, four fewer audit advisories, headers unchanged and the CSP untouched
 (v4's `@property` rules live in the stylesheet file). The reason to take it now: a CSS-first
 config a volunteer can read, a faster build, and Dependabot stops proposing it every Monday.
+
+## 2026-10-21 — The "Administrator" preset becomes "Every area, read and write"
+
+On Staff & Access the column tick *Administrator* is one power — granting, accounts, naming a
+leader, the doctor's dated access — and the preset of the same name was nine areas at write plus
+that tick. One word, two meanings, and the preset quietly set the tick. Lawrence asked whether to
+rename the tick ("Super Admin") or drop the preset. Neither: a "super" admin implies a ladder that
+does not exist, and dropping the preset makes an administrator a tick plus nine hand-set grants.
+The preset is now **Every area, read and write** and **no preset touches the administrator tick or
+the role column** (applying *Registration & coordination* to an administrator used to take the power
+away). The column reads *Administrator — grants access*. Two independent facts per person: which
+areas, and whether they can grant. Resetting someone's two-factor stays administrator-only, in the
+database (`admin_reset_mfa`: `is_admin()`, a code entered just now, never your own) and the app.
