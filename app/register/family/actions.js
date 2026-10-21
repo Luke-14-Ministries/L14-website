@@ -287,9 +287,12 @@ export async function submitFamilyRegistration(payload) {
   // (registration_id in my_registration_ids()), so this runs under exactly the
   // permissions the rest of the submit does.
   //
-  // fee_cents 0 — the person is charged once, on their first role. See 0069
-  // and the DECISIONS.md entry: a zero is easier to audit than two numbers that
-  // must always cancel.
+  // No fee is sent. Since 0114 a participant's money lives on participant_money
+  // and the family never writes it: a database trigger creates the row with the
+  // event option's fee, and the second-role option is the zero-fee one (0069),
+  // so the person is still charged once, on their first role. See the
+  // DECISIONS.md entry: a zero is easier to audit than two numbers that must
+  // always cancel.
   //
   // Never fatal. The registration is already saved; a missing second role is a
   // thing staff can add, where a failed submit is a family with no place.
@@ -354,7 +357,6 @@ export async function submitFamilyRegistration(payload) {
           event_option_id: volunteerOptionId,
           camp_role: 'volunteer',
           status: 'submitted',
-          fee_cents: 0,
           submitted_at: new Date().toISOString(),
           furthest_step: 5,
         }));

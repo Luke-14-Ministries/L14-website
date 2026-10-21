@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
 import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
+import { participantMoney } from '@/lib/payments';
 
 export const metadata = { title: 'My Statement — Luke 14 Ministries' };
 
@@ -60,7 +61,8 @@ export default async function MyStatementPage({ params }) {
         `id,
          households ( display_name, email, phone, address_line1, address_line2, city, state, postal_code ),
          events ( name, event_type, starts_on, ends_on, balance_due_on ),
-         registration_participants ( camp_role, status, fee_cents, scholarship_cents, discount_cents, early_discount_cents, family_discount_cents,
+         registration_participants ( id, camp_role, status,
+           participant_money ( fee_cents, scholarship_cents, discount_cents, early_discount_cents, family_discount_cents ),
            people ( first_name, last_name ) )`
       )
       .eq('id', id)
@@ -146,20 +148,39 @@ export default async function MyStatementPage({ params }) {
         </thead>
         <tbody>
           {parts.map((p, i) => {
+            // The person's money is on participant_money (0114), read through
+            // the embed above. A family always sees its own rows; if one is
+            // missing the row prints dashes rather than a $0 fee that looks
+            // like a real figure on a printed statement (participantMoney
+            // logs the miss).
+            const m = participantMoney(p, 'statement');
+            if (!m) {
+              return (
+                <tr key={i} className="border-b border-neutral-200">
+                  <td className="py-1 pr-3 font-medium">
+                    {p.people?.first_name} {p.people?.last_name}
+                  </td>
+                  <td className="py-1 pr-3">{ROLE_LABEL[p.camp_role] ?? p.camp_role}</td>
+                  <td className="py-1 text-right">—</td>
+                  <td className="py-1 text-right">—</td>
+                  <td className="py-1 text-right">—</td>
+                  <td className="py-1 text-right font-semibold">—</td>
+                </tr>
+              );
+            }
             // Every discount column (both weeks, early, family) -- the rows
             // must add up to the total underneath (18 Oct review).
-            const disc =
-              (p.discount_cents ?? 0) + (p.early_discount_cents ?? 0) + (p.family_discount_cents ?? 0);
-            const due = (p.fee_cents ?? 0) - (p.scholarship_cents ?? 0) - disc;
+            const disc = m.discount_cents + m.early_discount_cents + m.family_discount_cents;
+            const due = m.fee_cents - m.scholarship_cents - disc;
             return (
               <tr key={i} className="border-b border-neutral-200">
                 <td className="py-1 pr-3 font-medium">
                   {p.people?.first_name} {p.people?.last_name}
                 </td>
                 <td className="py-1 pr-3">{ROLE_LABEL[p.camp_role] ?? p.camp_role}</td>
-                <td className="py-1 text-right">{money(p.fee_cents)}</td>
+                <td className="py-1 text-right">{money(m.fee_cents)}</td>
                 <td className="py-1 text-right">
-                  {(p.scholarship_cents ?? 0) > 0 ? `−${money(p.scholarship_cents)}` : '—'}
+                  {m.scholarship_cents > 0 ? `−${money(m.scholarship_cents)}` : '—'}
                 </td>
                 <td className="py-1 text-right">
                   {disc > 0 ? `−${money(disc)}` : '—'}

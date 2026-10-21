@@ -6,7 +6,7 @@ import PayPanel from './PayPanel';
 import RegistrationCard from './RegistrationCard';
 import CancelRequest from './CancelRequest';
 import SupportDetailsCard from './SupportDetailsCard';
-import { registrationDepositCents, registrationHeads } from '@/lib/payments';
+import { registrationDepositCents, registrationHeads, participantMoney } from '@/lib/payments';
 import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from '@/lib/events';
 import { requiresPaymentChoice, offersPaymentPlan } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
@@ -199,7 +199,8 @@ export default async function DashboardPage({ searchParams }) {
            hold_since, hold_reason, deposit_waived_at,
            events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url,
                     event_medical_contacts ( name, phone ) ),
-           registration_participants ( id, camp_role, status, fee_cents, checked_in_at,
+           registration_participants ( id, camp_role, status, checked_in_at,
+             participant_money ( fee_cents ),
              people ( id, first_name, last_name ) )`
         )
         .in('household_id', householdIds)
@@ -831,7 +832,15 @@ export default async function DashboardPage({ searchParams }) {
               <div className="space-y-4">
                 {regs.map((r) => {
                   const parts = r.registration_participants ?? [];
-                  const total = parts.reduce((s, p) => s + (p.fee_cents ?? 0), 0);
+                  // Each person's fee is on participant_money (0114), read
+                  // through the embed above. A family always sees its own
+                  // rows, so a missing object is a fault, not a free place:
+                  // the title bar then says "—" instead of a total that is
+                  // quietly too small (participantMoney logs the miss).
+                  const moneyRows = parts.map((p) => participantMoney(p, 'dashboard'));
+                  const total = moneyRows.every(Boolean)
+                    ? moneyRows.reduce((s, m) => s + m.fee_cents, 0)
+                    : null;
 
                   // What this registration still wants, said on the title bar
                   // so a COLLAPSED card is still honest about it. Computed
@@ -898,7 +907,7 @@ export default async function DashboardPage({ searchParams }) {
                         const n = registrationHeads(parts);
                         return `${n} ${n === 1 ? 'person' : 'people'}`;
                       })()}
-                      totalLabel={money(total)}
+                      totalLabel={total == null ? '—' : money(total)}
                       status={status}
                       defaultOpen={defaultOpen}
                     >

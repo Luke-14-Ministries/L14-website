@@ -98,7 +98,7 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
             )}
           </h2>
           <p className="text-sm text-neutral-500">
-            Fee {money(row.feeCents)}
+            Fee {row.feeCents == null ? '—' : money(row.feeCents)}
             {granted && (
               <span className="text-green-700 font-semibold">
                 {' '}
@@ -140,7 +140,9 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
               className="w-32 rounded border border-neutral-300 px-3 py-2"
               placeholder="0"
             />
-            <span className="text-sm text-neutral-500">of {money(row.feeCents)}</span>
+            <span className="text-sm text-neutral-500">
+              of {row.feeCents == null ? '—' : money(row.feeCents)}
+            </span>
           </div>
           <p className="mt-1 text-xs text-neutral-500">
             Leave it blank if you&rsquo;d rather not name a number — staff will work it out with

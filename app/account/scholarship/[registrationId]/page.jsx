@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import ScholarshipForm from './ScholarshipForm';
 import BackBar from '@/components/BackBar';
+import { participantMoney } from '@/lib/payments';
 
 export const metadata = { title: 'Scholarship Request — Luke 14 Ministries' };
 
@@ -25,7 +26,8 @@ export default async function ScholarshipPage({ params }) {
     .select(
       `id, household_id,
        events ( name, starts_on ),
-       registration_participants ( id, status, fee_cents, camp_role,
+       registration_participants ( id, status, camp_role,
+         participant_money ( fee_cents ),
          people ( first_name, last_name ) )`
     )
     .eq('id', registrationId)
@@ -92,7 +94,10 @@ export default async function ScholarshipPage({ params }) {
       // who this person is on the registration, and a family with several
       // people has to guess.
       role: p.camp_role ?? null,
-      feeCents: p.fee_cents ?? 0,
+      // The fee is on participant_money (0114). null, never 0, when the row
+      // is missing: the form then shows "—" rather than "Fee $0", which would
+      // tell a family there is nothing to ask help with.
+      feeCents: participantMoney(p, 'scholarship')?.fee_cents ?? null,
       requestedCents: s?.requested_cents ?? null,
       grantedCents: s?.granted_cents ?? 0,
       status: s?.status ?? null,

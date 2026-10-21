@@ -44,7 +44,7 @@ export default async function FinishPage({ params }) {
       `id, household_id, created_at,
        events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on,
                 early_registration_ends_on, early_registration_discount_cents ),
-       registration_participants ( id, person_id, status, fee_cents, camp_role )`
+       registration_participants ( id, person_id, status, camp_role )`
     )
     .eq('id', registrationId)
     .in('household_id', householdIds)
