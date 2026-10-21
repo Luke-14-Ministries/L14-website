@@ -2669,3 +2669,15 @@ project, so it refuses everything: expected until `PAYMENT-PLANS-SETUP.md` is do
 go-live list beside the refund webhook. The content security policy stays report-only until a
 clean test round. The firewall rate limit on the contact and giving forms is set in Vercel's
 dashboard (the API refuses a project with no saved configuration).
+
+## 2026-10-20, late — A grant is not a request (0112); the rate limit is on
+
+The screen test of the new Script 5 items found the one thing the database probes could not: a
+$1 scholarship granted by staff to a person whose family had never asked turned the registration
+into *Full scholarship requested*, which approves without a deposit. The review view had read a
+scholarship row with no requested amount as a request for everything owed. A requested row now
+counts what was asked for; a granted row counts what was granted; nothing else counts.
+
+The contact and giving forms are rate-limited at Vercel's edge, five posts a minute per address,
+the floor under a Turnstile that fails open. Set in the dashboard (the API refuses a project with
+no saved configuration) and proven: the sixth post in a minute is refused.
