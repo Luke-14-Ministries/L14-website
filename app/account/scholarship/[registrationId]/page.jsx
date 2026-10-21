@@ -21,6 +21,15 @@ export default async function ScholarshipPage({ params }) {
 
   const supabase = await createClient();
 
+  // Scoped to the caller's own households explicitly (CLAUDE.md: never rely
+  // on RLS alone for "my data" reads) -- 21 Oct 2026.
+  const { data: memberships } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('profile_id', user.id);
+  const householdIds = (memberships ?? []).map((m) => m.household_id);
+  if (householdIds.length === 0) notFound();
+
   const { data: reg } = await supabase
     .from('registrations')
     .select(
@@ -31,6 +40,7 @@ export default async function ScholarshipPage({ params }) {
          people ( first_name, last_name ) )`
     )
     .eq('id', registrationId)
+    .in('household_id', householdIds)
     .maybeSingle();
   if (!reg) notFound();
 
