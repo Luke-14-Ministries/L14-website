@@ -123,6 +123,20 @@ export async function setActivityChoice({
     return { ok: false, error: `That person could not be read: ${partError.message}` };
   }
   if (!participant) return { ok: false, error: 'That person is not on one of your registrations.' };
+  // Explicit household scope, not RLS alone (CLAUDE.md): staff who are also a
+  // family read every participant, and must still sign only for their own.
+  const { data: { user } = {} } = await supabase.auth.getUser();
+  const { data: memberships, error: memError } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('profile_id', user?.id ?? '00000000-0000-0000-0000-000000000000');
+  if (memError) {
+    console.error('setActivityChoice memberships:', memError.message);
+    return { ok: false, error: `Your household could not be read: ${memError.message}` };
+  }
+  if (!(memberships ?? []).some((m) => m.household_id === participant.registrations?.household_id)) {
+    return { ok: false, error: 'That person is not on one of your registrations.' };
+  }
 
   // Signup windows, checked on the server because a page left open overnight
   // is the normal way a closed window gets a late write.
