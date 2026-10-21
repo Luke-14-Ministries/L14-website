@@ -112,7 +112,7 @@ export default async function StaffAccessPage() {
           <em>Operations lead</em>: the door, rooms, activities and buddies; no money.{' '}
           <em>Operations helper</em>: reads what is needed to move people around camp safely,
           writes nothing. A preset is a starting point; any area can be adjusted by hand. No preset
-          makes an administrator: that is the tick in the <em>Administrator — grants access</em>
+          makes an administrator: that is the tick in the <em>Administrator — grants access</em>{' '}
           column, and it alone can grant, add or remove staff, name a program leader, or reset two-factor.
         </p>
         <p className="text-neutral-600 mt-3">
