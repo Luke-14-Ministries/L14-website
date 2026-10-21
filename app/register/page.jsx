@@ -83,7 +83,7 @@ export default async function RegisterPage() {
               return (
                 <div
                   key={p.key}
-                  className="rounded-lg border border-neutral-200 bg-white shadow-sm p-6"
+                  className="rounded-lg border border-neutral-200 bg-white shadow-xs p-6"
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h2 className="text-xl font-bold">{p.key}</h2>
@@ -103,7 +103,7 @@ export default async function RegisterPage() {
                   <div className="mt-4 flex flex-wrap items-center gap-4">
                     <Link
                       href={`/register/family/?program=${encodeURIComponent(p.key)}`}
-                      className="btn-primary !py-2"
+                      className="btn-primary py-2!"
                     >
                       Register your family or group
                     </Link>

@@ -203,12 +203,12 @@ export default function ChangesList({ groups }) {
   return (
     <div className="space-y-6">
       {notice && (
-        <p className="mb-3 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
+        <p className="mb-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
           {notice}
         </p>
       )}
       {error && (
-        <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
@@ -232,7 +232,7 @@ export default function ChangesList({ groups }) {
       )}
 
       {shown.map((g) => (
-        <div key={g.householdId ?? 'unknown'} className="rounded-lg bg-white border border-neutral-200 shadow-sm">
+        <div key={g.householdId ?? 'unknown'} className="rounded-lg bg-white border border-neutral-200 shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-3">
             <button
               type="button"
@@ -263,7 +263,7 @@ export default function ChangesList({ groups }) {
             <button
               onClick={() => review(g.householdId, g.changes.map((c) => c.id))}
               disabled={busy === g.householdId}
-              className="btn-outline !py-1.5 text-sm"
+              className="btn-outline py-1.5! text-sm"
             >
               {busy === g.householdId ? '…' : 'Mark all reviewed'}
             </button>
@@ -302,11 +302,11 @@ export default function ChangesList({ groups }) {
                     </span>
                   </p>
                   <p className="mt-0.5">
-                    <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-800 line-through decoration-red-300">
+                    <span className="rounded-sm bg-red-50 px-1.5 py-0.5 text-red-800 line-through decoration-red-300">
                       <Value v={c.oldValue} />
                     </span>
                     <span className="mx-2 text-neutral-400">→</span>
-                    <span className="rounded bg-green-50 px-1.5 py-0.5 text-green-800">
+                    <span className="rounded-sm bg-green-50 px-1.5 py-0.5 text-green-800">
                       <Value v={c.newValue} />
                     </span>
                   </p>
@@ -318,7 +318,7 @@ export default function ChangesList({ groups }) {
                   <button
                     onClick={() => review(c.id, [c.id])}
                     disabled={busy === c.id}
-                    className="rounded border border-neutral-300 px-3 py-1.5 font-semibold text-neutral-700 hover:border-brand hover:text-brand"
+                    className="rounded-sm border border-neutral-300 px-3 py-1.5 font-semibold text-neutral-700 hover:border-brand hover:text-brand"
                   >
                     {busy === c.id ? '…' : 'Reviewed ✓'}
                   </button>

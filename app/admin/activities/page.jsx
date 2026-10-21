@@ -150,7 +150,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
             the ones you are looking at — same rule as the kitchen list. */}
         <a
           href={`/admin/activities/print/${selected ? `?event=${selected}` : ''}`}
-          className="btn-outline !py-2 text-sm"
+          className="btn-outline py-2! text-sm"
         >
           Print activity sheets
         </a>
@@ -250,7 +250,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                             and not "who is on the 2 o'clock", which is the
                             question the day is actually run from. */}
                         {p.slotId && slotById.get(p.slotId) && (
-                          <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-semibold text-neutral-700">
+                          <span className="rounded-sm bg-neutral-100 px-1.5 py-0.5 text-xs font-semibold text-neutral-700">
                             {slotLabel(slotById.get(p.slotId))}
                           </span>
                         )}

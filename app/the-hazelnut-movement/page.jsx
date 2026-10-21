@@ -73,13 +73,13 @@ export default function HazelnutMovementPage() {
           <img
             src={asset('/images/IMG_9248.jpg')}
             alt="Hazelnut Movement program"
-            className="rounded-lg shadow w-full h-72 object-cover"
+            className="rounded-lg shadow-sm w-full h-72 object-cover"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={asset('/images/IMG_9247.jpg')}
             alt="Hazelnut Movement program"
-            className="rounded-lg shadow w-full h-72 object-cover"
+            className="rounded-lg shadow-sm w-full h-72 object-cover"
           />
         </div>
 
@@ -174,7 +174,7 @@ export default function HazelnutMovementPage() {
             <img
               src={asset('/images/IMG_0710.jpg')}
               alt="Julia Erman"
-              className="rounded-lg shadow w-full h-80 object-cover object-top"
+              className="rounded-lg shadow-sm w-full h-80 object-cover object-top"
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -224,13 +224,13 @@ export default function HazelnutMovementPage() {
           <img
             src={asset('/images/P2070845__281_29.jpeg')}
             alt="Kids programming"
-            className="rounded-lg shadow w-full h-64 object-cover"
+            className="rounded-lg shadow-sm w-full h-64 object-cover"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={asset('/images/C0735049-811C-481C-A7C8-72D443391391__281_29.jpeg')}
             alt="Kids programming"
-            className="rounded-lg shadow w-full h-64 object-cover"
+            className="rounded-lg shadow-sm w-full h-64 object-cover"
           />
         </div>
       </section>
@@ -271,7 +271,7 @@ export default function HazelnutMovementPage() {
           <img
             src={asset('/images/IMG_4641.png')}
             alt="The Hazelnut Takeover Assembly"
-            className="mt-10 rounded-lg shadow w-full"
+            className="mt-10 rounded-lg shadow-sm w-full"
           />
         </div>
       </section>
@@ -284,7 +284,7 @@ export default function HazelnutMovementPage() {
         <img
           src={asset('/images/IMG_6763.jpeg')}
           alt="Church program"
-          className="rounded-lg shadow w-full mb-8"
+          className="rounded-lg shadow-sm w-full mb-8"
         />
         <div className="prose-site">
           <p className="font-bold">
@@ -345,13 +345,13 @@ export default function HazelnutMovementPage() {
           <img
             src={asset('/images/IMG_4735.jpeg')}
             alt="Church program"
-            className="rounded-lg shadow w-full h-64 object-cover"
+            className="rounded-lg shadow-sm w-full h-64 object-cover"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={asset('/images/IMG_3401.jpg')}
             alt="Church program"
-            className="rounded-lg shadow w-full h-64 object-cover"
+            className="rounded-lg shadow-sm w-full h-64 object-cover"
           />
         </div>
       </section>
@@ -397,13 +397,13 @@ export default function HazelnutMovementPage() {
             <img
               src={asset('/images/tempImageuBFyHu.jpg')}
               alt="Community program"
-              className="rounded-lg shadow w-full h-64 object-cover"
+              className="rounded-lg shadow-sm w-full h-64 object-cover"
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={asset('/images/tempImage3gs7hu.jpg')}
               alt="Community program"
-              className="rounded-lg shadow w-full h-64 object-cover"
+              className="rounded-lg shadow-sm w-full h-64 object-cover"
             />
           </div>
         </div>
@@ -418,7 +418,7 @@ export default function HazelnutMovementPage() {
         <img
           src={asset('/images/C0735049-811C-481C-A7C8-72D443391391.jpg')}
           alt="Books for Educators"
-          className="rounded-lg shadow w-full mb-8"
+          className="rounded-lg shadow-sm w-full mb-8"
         />
         <h3 className="text-xl font-bold uppercase mb-4">What We Do</h3>
         <div className="prose-site">
@@ -504,13 +504,13 @@ export default function HazelnutMovementPage() {
             <img
               src={asset('/images/P2140153.png')}
               alt="Hazelnut Movement books"
-              className="rounded-lg shadow w-full h-64 object-cover"
+              className="rounded-lg shadow-sm w-full h-64 object-cover"
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={asset('/images/B5C7DD63-1654-438E-94E7-FD55B426D2F1.jpg')}
               alt="Hazelnut Movement books"
-              className="rounded-lg shadow w-full h-64 object-cover"
+              className="rounded-lg shadow-sm w-full h-64 object-cover"
             />
           </div>
         </div>

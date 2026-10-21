@@ -35,7 +35,7 @@ export default async function ScreeningPage() {
 
   if (liveEventIds.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-6">
+      <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
         <BackLink href="/admin/volunteers" label="Back to Volunteers" />
         <h1 className="text-2xl font-bold mb-1">Background screening</h1>
         <p className="text-neutral-600">
@@ -166,7 +166,7 @@ export default async function ScreeningPage() {
   candidates.sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-6">
+    <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <BackLink href="/admin/volunteers" label="Back to Volunteers" />
       <h1 className="text-2xl font-bold mb-1">Background screening</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-prose">

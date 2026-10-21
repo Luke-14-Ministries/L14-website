@@ -71,7 +71,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
             onBlur={(e) => {
               if (e.target.value.trim() !== m.title) onPatch(m.profileId, { title: e.target.value });
             }}
-            className="mt-1 block w-full max-w-[14rem] rounded border border-neutral-200 px-2 py-1 text-xs"
+            className="mt-1 block w-full max-w-56 rounded-sm border border-neutral-200 px-2 py-1 text-xs"
           />
         </td>
         {/* Until 21 Oct 2026 this was three radios -- Registrar, Coordinator,
@@ -137,7 +137,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
               }}
               disabled={busy || isSelf}
               title={isSelf ? 'You cannot deactivate yourself.' : undefined}
-              className="rounded border border-neutral-300 px-3 py-1.5 text-sm font-semibold text-neutral-700 hover:border-red-400 hover:text-red-700 disabled:opacity-40"
+              className="rounded-sm border border-neutral-300 px-3 py-1.5 text-sm font-semibold text-neutral-700 hover:border-red-400 hover:text-red-700 disabled:opacity-40"
             >
               {busy ? '…' : 'Deactivate'}
             </button>
@@ -146,7 +146,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
               <button
                 onClick={() => onPatch(m.profileId, { active: true })}
                 disabled={busy}
-                className="rounded border border-green-300 bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-800"
+                className="rounded-sm border border-green-300 bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-800"
               >
                 {busy ? '…' : 'Reactivate'}
               </button>
@@ -165,7 +165,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
                   }
                 }}
                 disabled={busy}
-                className="rounded border border-neutral-300 px-3 py-1.5 text-sm font-semibold text-neutral-600 hover:border-red-400 hover:text-red-700 disabled:opacity-40"
+                className="rounded-sm border border-neutral-300 px-3 py-1.5 text-sm font-semibold text-neutral-600 hover:border-red-400 hover:text-red-700 disabled:opacity-40"
               >
                 {busy ? '…' : 'Remove'}
               </button>
@@ -406,7 +406,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
   // Said once at the top, because it is the mistake that actually happens:
   // access is granted to a LOGIN, and a person with two logins has it on one.
   const loginNote = (
-    <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+    <p className="mb-3 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
       <strong>Access belongs to the login, not the person.</strong> The address under each name is
       the account that has this access. Somebody who signs in with a different address — a second
       email, a personal one — will see no staff area at all, even though they are listed here. If
@@ -433,12 +433,12 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
   return (
     <div>
       {error && (
-        <p className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
       {notice && (
-        <p className="mb-3 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p className="mb-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
           {notice}
         </p>
       )}
@@ -446,14 +446,14 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
                   {loginNote}
 
       <div className="mb-3 flex flex-wrap items-end gap-3 text-sm">
-        <label className="block flex-1 min-w-[14rem]">
+        <label className="block flex-1 min-w-56">
           <span className="block text-xs font-semibold text-neutral-600 mb-1">Filter by name or email</span>
           <input
             type="search"
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
             placeholder="start typing…"
-            className="w-full rounded border border-neutral-300 px-3 py-1.5"
+            className="w-full rounded-sm border border-neutral-300 px-3 py-1.5"
           />
         </label>
         <label className="block">
@@ -461,7 +461,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="rounded border border-neutral-300 px-3 py-1.5"
+            className="rounded-sm border border-neutral-300 px-3 py-1.5"
           >
             <option value="">Everyone</option>
             <option value="admin">Administrators</option>
@@ -482,7 +482,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
         </div>
       )}
 
-      <div className="mt-8 rounded-lg bg-white border border-neutral-200 shadow-sm p-6 max-w-lg">
+      <div className="mt-8 rounded-lg bg-white border border-neutral-200 shadow-xs p-6 max-w-lg">
         <h3 className="font-bold mb-1">Add a staff member</h3>
         <p className="text-sm text-neutral-500 mb-3">
           They need an account on the site first (created the same way families do). Start typing
@@ -493,7 +493,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
             under the box once an account is picked, and bottom-alignment
             dropped the Role select and the button to meet it (2 Sep). */}
         <form onSubmit={submitAdd} className="flex flex-wrap items-start gap-3">
-          <label className="block flex-1 min-w-[14rem]">
+          <label className="block flex-1 min-w-56">
             <span className="block text-sm font-semibold mb-1">
               Email <span className="text-red-600">*</span>
             </span>
@@ -509,7 +509,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
               onFocus={() => setPickerOpen(true)}
               onBlur={() => setTimeout(() => setPickerOpen(false), 150)}
               autoComplete="off"
-              className="w-full rounded border border-neutral-300 px-3 py-2"
+              className="w-full rounded-sm border border-neutral-300 px-3 py-2"
               placeholder="start typing a name or email"
               role="combobox"
               aria-autocomplete="list"
@@ -520,7 +520,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
               <ul
                 id="add-staff-picker"
                 role="listbox"
-                className="mt-1 max-h-64 overflow-auto rounded border border-neutral-200 bg-white text-sm shadow-sm"
+                className="mt-1 max-h-64 overflow-auto rounded-sm border border-neutral-200 bg-white text-sm shadow-xs"
               >
                 {matches.length === 0 ? (
                   <li className={`px-3 py-2 ${addError ? 'text-red-700' : 'text-neutral-500'}`}>
@@ -577,7 +577,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
             />
             Administrator
           </label>
-          <button type="submit" disabled={adding} className="btn-primary !py-2">
+          <button type="submit" disabled={adding} className="btn-primary py-2!">
             {adding ? 'Adding…' : 'Add to staff'}
           </button>
         </form>

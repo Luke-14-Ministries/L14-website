@@ -5,7 +5,7 @@ import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
 import { sendContactMessage } from './actions';
 
 const FIELD =
-  'w-full rounded border border-neutral-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand';
+  'w-full rounded-sm border border-neutral-300 px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-brand';
 
 export default function ContactForm() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -51,7 +51,7 @@ export default function ContactForm() {
     return (
       <div
         role="status"
-        className="rounded border border-brand bg-brand-light px-5 py-6 text-brand-dark"
+        className="rounded-sm border border-brand bg-brand-light px-5 py-6 text-brand-dark"
       >
         <p className="text-lg font-bold">Thank you — your message is on its way.</p>
         <p className="mt-2">
@@ -137,7 +137,7 @@ export default function ContactForm() {
       {error && (
         <p
           role="alert"
-          className="rounded border border-red-300 bg-red-50 px-4 py-3 font-semibold text-red-800"
+          className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 font-semibold text-red-800"
         >
           {error}
         </p>

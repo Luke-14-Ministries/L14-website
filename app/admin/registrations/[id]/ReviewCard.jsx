@@ -100,7 +100,7 @@ export default function ReviewCard({
     <Panel title="Review" count={count} id="review">
       {cls && (
         <p className="text-sm mb-3">
-          <span className={`inline-block rounded px-2 py-0.5 font-semibold ${cls.cls}`}>{cls.label}</span>{' '}
+          <span className={`inline-block rounded-sm px-2 py-0.5 font-semibold ${cls.cls}`}>{cls.label}</span>{' '}
           <span className="text-neutral-600">
             {cls.hint}
             {review.deposit_expected_cents > 0 && (
@@ -120,7 +120,7 @@ export default function ReviewCard({
       )}
 
       {depositWaived && (
-        <p className="mb-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">
+        <p className="mb-3 rounded-sm border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">
           <span className="font-semibold">Deposit waived</span> on {when(depositWaived.at)}
           {depositWaived.reason && <> — &ldquo;{depositWaived.reason}&rdquo;</>}. Each fee-paying person holds a
           scholarship of at least the per-person deposit; the registration counts as deposit-received.
@@ -133,7 +133,7 @@ export default function ReviewCard({
       {canDecide && !depositWaived && cls && review?.review_class === 'neither' && depositCents > 0 && (
         <div className="mb-4">
           {!waiving ? (
-            <button type="button" disabled={pending} onClick={() => setWaiving(true)} className="btn-outline !py-1.5 text-sm">
+            <button type="button" disabled={pending} onClick={() => setWaiving(true)} className="btn-outline py-1.5! text-sm">
               Waive the deposit…
             </button>
           ) : (
@@ -151,14 +151,14 @@ export default function ReviewCard({
                 onChange={(e) => setWaiveReason(e.target.value)}
                 maxLength={300}
                 placeholder="Reason (optional) — e.g. spoke with the family; paying at camp"
-                className="w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
                   disabled={pending}
                   onClick={() => run('waive_deposit', { reason: waiveReason })}
-                  className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+                  className="btn-primary py-1.5! text-sm disabled:opacity-50"
                 >
                   {pending ? 'Saving…' : 'Waive the deposit'}
                 </button>
@@ -188,7 +188,7 @@ export default function ReviewCard({
             type="button"
             disabled={pending}
             onClick={() => run('lift_hold')}
-            className="btn-outline !py-1.5 mt-2 text-sm"
+            className="btn-outline py-1.5! mt-2 text-sm"
           >
             Lift the hold without deciding
           </button>}
@@ -197,7 +197,7 @@ export default function ReviewCard({
       {canWrite && !hold?.since && canHold && (
         <div className="mb-4">
           {!holding ? (
-            <button type="button" disabled={pending} onClick={() => setHolding(true)} className="btn-outline !py-1.5 text-sm">
+            <button type="button" disabled={pending} onClick={() => setHolding(true)} className="btn-outline py-1.5! text-sm">
               Put on hold…
             </button>
           ) : (
@@ -213,14 +213,14 @@ export default function ReviewCard({
                 onChange={(e) => setHoldReason(e.target.value)}
                 maxLength={1000}
                 placeholder="e.g. Sam's seizure plan changed — the nurse needs to look again"
-                className="w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
                   disabled={pending || !holdReason.trim()}
                   onClick={() => run('hold', { reason: holdReason })}
-                  className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+                  className="btn-primary py-1.5! text-sm disabled:opacity-50"
                 >
                   {pending ? 'Saving…' : 'Put on hold'}
                 </button>
@@ -244,7 +244,7 @@ export default function ReviewCard({
             type="button"
             disabled={pending}
             onClick={() => run('answered')}
-            className="btn-outline !py-1.5 mt-2 text-sm"
+            className="btn-outline py-1.5! mt-2 text-sm"
           >
             The family has answered — back to staff
           </button>}
@@ -275,7 +275,7 @@ export default function ReviewCard({
               type="button"
               disabled={pending}
               onClick={() => run('approve')}
-              className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+              className="btn-primary py-1.5! text-sm disabled:opacity-50"
             >
               {pending ? 'Saving…' : `Approve ${waiting.length === 1 ? 'this person' : `all ${waiting.length}`}`}
             </button>
@@ -283,7 +283,7 @@ export default function ReviewCard({
               type="button"
               disabled={pending}
               onClick={() => run('waitlist')}
-              className="btn-outline !py-1.5 text-sm"
+              className="btn-outline py-1.5! text-sm"
             >
               Waitlist {waiting.length === 1 ? 'this person' : `all ${waiting.length}`}
             </button>
@@ -292,7 +292,7 @@ export default function ReviewCard({
                 type="button"
                 disabled={pending}
                 onClick={() => setAsking(true)}
-                className="btn-outline !py-1.5 text-sm"
+                className="btn-outline py-1.5! text-sm"
               >
                 Ask the family for more information…
               </button>
@@ -310,7 +310,7 @@ export default function ReviewCard({
                 onChange={(e) => setReason(e.target.value)}
                 maxLength={1000}
                 placeholder="e.g. Please add Sam's seizure plan under Medical, and tell us who is coming as caregiver."
-                className="w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
               <p className="mt-1 text-xs text-neutral-500">
                 Sent to the family as a note on their dashboard, and recorded here as the reason
@@ -322,7 +322,7 @@ export default function ReviewCard({
                   type="button"
                   disabled={pending || !reason.trim()}
                   onClick={() => run('ask', { reason })}
-                  className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+                  className="btn-primary py-1.5! text-sm disabled:opacity-50"
                 >
                   Send and mark as waiting on the family
                 </button>
@@ -335,7 +335,7 @@ export default function ReviewCard({
         </>
       )}
       {error && (
-        <p className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+        <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
       )}
     </Panel>
   );

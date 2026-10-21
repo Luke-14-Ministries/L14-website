@@ -200,17 +200,17 @@ export default async function AdminPaymentsPage({ searchParams }) {
         <span className="flex gap-2">
           <a
             href={`/admin/exports/balances${qs()}`}
-            className="btn-outline !py-2 text-sm"
+            className="btn-outline py-2! text-sm"
             title="One row per family: fees, scholarships, paid, balance"
           >
             Balances CSV
           </a>
-          <a href={csvHref} className="btn-outline !py-2 text-sm" title="One row per payment received">
+          <a href={csvHref} className="btn-outline py-2! text-sm" title="One row per payment received">
             Payments CSV
           </a>
           <a
             href={qbHref}
-            className="btn-outline !py-2 text-sm"
+            className="btn-outline py-2! text-sm"
             title="Date, Name, Memo, Account, Amount — succeeded payments and refunds in this scope, covered fees as their own line. Account names are placeholders until the treasurer confirms them."
           >
             QuickBooks CSV
@@ -250,7 +250,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
           id="event-scope"
           name="event"
           defaultValue={eventFilter}
-          className="rounded border border-neutral-300 px-2 py-1"
+          className="rounded-sm border border-neutral-300 px-2 py-1"
         >
           <option value="">Upcoming &amp; recent events (90 days each way)</option>
           <option value="upcoming">Upcoming events (next 90 days)</option>
@@ -265,7 +265,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
           </optgroup>
         </select>
         {paystate && <input type="hidden" name="paystate" value={paystate} />}
-        <button type="submit" className="btn-outline !py-1 !px-3">Apply</button>
+        <button type="submit" className="btn-outline py-1! px-3!">Apply</button>
       </form>
 
       <h3 className="font-semibold text-neutral-700 mb-2">
@@ -279,7 +279,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
         {[...events.entries()].map(([name, e]) => (
-          <div key={name} className="rounded-lg bg-white border border-neutral-200 shadow-sm p-5">
+          <div key={name} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
             <h4 className="font-bold mb-2">{name}</h4>
             <dl className="text-sm space-y-1">
               <div className="flex justify-between"><dt className="text-neutral-500">Fees (net of assistance)</dt><dd className="font-semibold">{money(e.fees)}</dd></div>
@@ -291,7 +291,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
             </dl>
           </div>
         ))}
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-5">
+        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
           <h4 className="font-bold mb-2">Fee covers</h4>
           <div className="text-2xl font-bold">{money(feeCoverTotal)}</div>
           <p className="text-xs text-neutral-500 mt-1">
@@ -347,7 +347,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
             type="button"
             disabled
             title="Planned — not active yet"
-            className="cursor-not-allowed rounded border border-dashed border-neutral-300 px-3 py-1 text-neutral-400"
+            className="cursor-not-allowed rounded-sm border border-dashed border-neutral-300 px-3 py-1 text-neutral-400"
           >
             {label}
           </button>
@@ -401,7 +401,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                     {!dueOn ? (
                       <span className="text-neutral-400">—</span>
                     ) : overdue ? (
-                      <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-800">
+                      <span className="rounded-sm bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-800">
                         Overdue · {formatDueDateShort(dueOn)}
                       </span>
                     ) : (
@@ -414,7 +414,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                       if (!rt) return <span className="text-neutral-400">—</span>;
                       if (rt.route === 'none') {
                         return requiresPaymentChoice(r?.events) ? (
-                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800">
+                          <span className="rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800">
                             Not finished
                           </span>
                         ) : (
@@ -444,7 +444,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                           {c && (
                             <span
                               title={c.hint}
-                              className={`inline-block whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold ${c.cls}`}
+                              className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-0.5 text-xs font-semibold ${c.cls}`}
                             >
                               {c.label}
                             </span>
@@ -476,7 +476,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                         (refunds work in Stripe today). */}
                     <details className="relative inline-block text-left">
                       <summary
-                        className="cursor-pointer select-none list-none rounded border border-neutral-300 px-2 py-0.5 font-bold text-neutral-600 hover:border-brand [&::-webkit-details-marker]:hidden"
+                        className="cursor-pointer select-none list-none rounded-sm border border-neutral-300 px-2 py-0.5 font-bold text-neutral-600 hover:border-brand [&::-webkit-details-marker]:hidden"
                         title="Actions for this family"
                       >
                         ⋯
@@ -520,7 +520,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <RecordPaymentForm registrations={regOptions} />
 
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
           <h4 className="font-bold mb-3">Recent activity</h4>
           {(pays ?? []).length === 0 ? (
             <p className="text-neutral-500 text-sm">No payments yet.</p>

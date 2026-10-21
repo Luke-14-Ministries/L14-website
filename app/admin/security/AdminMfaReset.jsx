@@ -59,7 +59,7 @@ export default function AdminMfaReset() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="name@luke14ministries.net"
-          className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-4"
+          className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
         />
         <button type="submit" disabled={busy} className="btn-primary">
           {busy ? 'Resetting…' : 'Reset two-factor'}

@@ -79,7 +79,7 @@ export default function AdultAdventureRetreatPage() {
               </dl>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
-                <a href={CURRENT_REGISTRATION} className="btn-gold !px-8">
+                <a href={CURRENT_REGISTRATION} className="btn-gold px-8!">
                   Register for the 2026 Retreat
                 </a>
                 <span className="text-white/80">
@@ -129,7 +129,7 @@ export default function AdultAdventureRetreatPage() {
             </p>
           </div>
           <div className="mt-8">
-            <a href={CURRENT_REGISTRATION} className="btn-primary !px-8">
+            <a href={CURRENT_REGISTRATION} className="btn-primary px-8!">
               Register for the 2026 Retreat
             </a>
           </div>

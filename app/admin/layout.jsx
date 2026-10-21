@@ -491,18 +491,18 @@ export default async function AdminLayout({ children }) {
                   name="q"
                   placeholder="Find a person or family"
                   aria-label="Search people and families"
-                  className="w-80 max-w-full rounded border border-neutral-300 px-3 py-1.5 text-sm"
+                  className="w-80 max-w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
                 />
-                <button type="submit" className="btn-outline !py-1.5 text-sm">
+                <button type="submit" className="btn-outline py-1.5! text-sm">
                   Search
                 </button>
               </form>
             )}
-            <Link href="/account/dashboard/" className="btn-outline !py-1.5 text-sm">
+            <Link href="/account/dashboard/" className="btn-outline py-1.5! text-sm">
               My Dashboard
             </Link>
             <form action="/auth/signout/" method="post">
-              <button type="submit" className="btn-outline !py-1.5 text-sm">
+              <button type="submit" className="btn-outline py-1.5! text-sm">
                 Log Out
               </button>
             </form>

@@ -44,12 +44,12 @@ export default async function NewsletterPage() {
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">Newsletter</h2>
         <span className="flex flex-wrap gap-2">
-          <a href="/admin/newsletter/export" className="btn-outline !py-2 text-sm">
+          <a href="/admin/newsletter/export" className="btn-outline py-2! text-sm">
             Download CSV
           </a>
           <a
             href="/admin/newsletter/export?format=mailchimp"
-            className="btn-outline !py-2 text-sm"
+            className="btn-outline py-2! text-sm"
             title="Email Address, First Name, Last Name, Tags — Mailchimp's import layout, tagged 'website'"
           >
             Mailchimp import CSV
@@ -64,24 +64,24 @@ export default async function NewsletterPage() {
       </p>
 
       {error && (
-        <p className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
           The list could not be loaded. Check the server log for admin_newsletter_list.
         </p>
       )}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
           <div className="text-3xl font-bold">{subscribed.length}</div>
           {/* No "N opted out" under it (Lawrence, 15 Oct 2026): somebody who
               has news off is simply not on the list, and a count of them
               with no names is a question, not information. */}
           <div className="text-sm font-semibold text-neutral-700">on the list</div>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
           <div className="text-3xl font-bold text-green-700">{joined}</div>
           <div className="text-sm font-semibold text-neutral-700">joined in the last 30 days</div>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
           <div className="text-3xl font-bold text-neutral-500">{left}</div>
           <div className="text-sm font-semibold text-neutral-700">left in the last 30 days</div>
         </div>

@@ -180,7 +180,7 @@ function EventRow({ e }) {
             type="datetime-local"
             value={opens}
             onChange={(ev) => setOpens(ev.target.value)}
-            className="rounded border border-neutral-300 px-2 py-1"
+            className="rounded-sm border border-neutral-300 px-2 py-1"
           />
         </label>
         <label className="text-sm">
@@ -189,14 +189,14 @@ function EventRow({ e }) {
             type="datetime-local"
             value={closes}
             onChange={(ev) => setCloses(ev.target.value)}
-            className="rounded border border-neutral-300 px-2 py-1"
+            className="rounded-sm border border-neutral-300 px-2 py-1"
           />
         </label>
         <button
           type="button"
           onClick={save}
           disabled={!dirty || busy}
-          className="btn-primary !py-1.5 disabled:opacity-40"
+          className="btn-primary py-1.5! disabled:opacity-40"
         >
           {busy ? 'Saving…' : 'Save'}
         </button>
@@ -247,7 +247,7 @@ function EventRow({ e }) {
                 type="date"
                 value={startsOn}
                 onChange={(ev) => setStartsOn(ev.target.value)}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -256,7 +256,7 @@ function EventRow({ e }) {
                 type="date"
                 value={endsOn}
                 onChange={(ev) => setEndsOn(ev.target.value)}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -266,7 +266,7 @@ function EventRow({ e }) {
                 value={capacity}
                 onChange={(ev) => setCapacity(ev.target.value)}
                 placeholder="no limit"
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -275,7 +275,7 @@ function EventRow({ e }) {
                 inputMode="decimal"
                 value={fee}
                 onChange={(ev) => setFee(ev.target.value)}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
           </div>
@@ -287,7 +287,7 @@ function EventRow({ e }) {
                 type="date"
                 value={earlyEndsOn}
                 onChange={(ev) => setEarlyEndsOn(ev.target.value)}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -297,7 +297,7 @@ function EventRow({ e }) {
                 value={early}
                 onChange={(ev) => setEarly(ev.target.value)}
                 placeholder="none"
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <p className="text-xs text-neutral-600 sm:col-span-2 self-end">
@@ -318,7 +318,7 @@ function EventRow({ e }) {
                 type="date"
                 value={balanceDueOn}
                 onChange={(ev) => setBalanceDueOn(ev.target.value)}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -328,7 +328,7 @@ function EventRow({ e }) {
                 value={family}
                 onChange={(ev) => setFamily(ev.target.value)}
                 placeholder="none"
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -337,7 +337,7 @@ function EventRow({ e }) {
                 inputMode="numeric"
                 value={familyFrom}
                 onChange={(ev) => setFamilyFrom(ev.target.value)}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -346,7 +346,7 @@ function EventRow({ e }) {
                 inputMode="numeric"
                 value={multiWeek}
                 onChange={(ev) => setMultiWeek(ev.target.value)}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <p className="text-xs text-neutral-600 sm:col-span-4">
@@ -386,7 +386,7 @@ function EventRow({ e }) {
               type="button"
               onClick={saveDetails}
               disabled={detailBusy}
-              className="btn-primary !py-1.5 text-sm disabled:opacity-40"
+              className="btn-primary py-1.5! text-sm disabled:opacity-40"
             >
               {detailBusy ? 'Saving…' : 'Save event details'}
             </button>
@@ -517,7 +517,7 @@ function NewEventPanel({ events }) {
   return (
     <div className="mb-6">
       {!open ? (
-        <button type="button" onClick={() => setOpen(true)} className="btn-primary !py-1.5 text-sm">
+        <button type="button" onClick={() => setOpen(true)} className="btn-primary py-1.5! text-sm">
           + New event
         </button>
       ) : (
@@ -530,7 +530,7 @@ function NewEventPanel({ events }) {
               <select
                 value={f.copyFrom}
                 onChange={(ev) => chooseSource(ev.target.value)}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               >
                 <option value="">A blank event</option>
                 {events.map((e) => (
@@ -572,7 +572,7 @@ function NewEventPanel({ events }) {
                 value={f.name}
                 onChange={set('name')}
                 placeholder="Camp Celebrate 2028 — Week 1"
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -581,7 +581,7 @@ function NewEventPanel({ events }) {
                 type="date"
                 value={f.startsOn}
                 onChange={set('startsOn')}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -590,7 +590,7 @@ function NewEventPanel({ events }) {
                 type="date"
                 value={f.endsOn}
                 onChange={set('endsOn')}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -599,7 +599,7 @@ function NewEventPanel({ events }) {
                 inputMode="decimal"
                 value={f.fee}
                 onChange={set('fee')}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -608,7 +608,7 @@ function NewEventPanel({ events }) {
                 inputMode="decimal"
                 value={f.deposit}
                 onChange={set('deposit')}
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -618,7 +618,7 @@ function NewEventPanel({ events }) {
                 value={f.capacity}
                 onChange={set('capacity')}
                 placeholder="no limit"
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
             <label className="text-sm">
@@ -627,7 +627,7 @@ function NewEventPanel({ events }) {
                 value={f.location}
                 onChange={set('location')}
                 placeholder="optional"
-                className="w-full rounded border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
           </div>
@@ -652,7 +652,7 @@ function NewEventPanel({ events }) {
               type="button"
               onClick={submit}
               disabled={busy}
-              className="btn-primary !py-1.5 text-sm disabled:opacity-40"
+              className="btn-primary py-1.5! text-sm disabled:opacity-40"
             >
               {busy ? 'Creating…' : 'Create event'}
             </button>

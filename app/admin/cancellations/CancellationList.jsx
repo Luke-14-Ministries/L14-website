@@ -39,7 +39,7 @@ function Row({ row }) {
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-lg font-bold">
           {row.household}
@@ -61,7 +61,7 @@ function Row({ row }) {
       </p>
 
       {row.reason && (
-        <p className="mt-2 rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
+        <p className="mt-2 rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
           &ldquo;{row.reason}&rdquo;
         </p>
       )}
@@ -76,7 +76,7 @@ function Row({ row }) {
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Link
           href={`/admin/registrations/${row.registrationId}`}
-          className="btn-outline !py-1.5 text-sm"
+          className="btn-outline py-1.5! text-sm"
         >
           Open the registration
         </Link>
@@ -95,21 +95,21 @@ function Row({ row }) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Spoke to Dana; cancelled both places, refunded the deposit."
-            className="w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+            className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
           />
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
           <div className="mt-3 flex flex-wrap gap-3">
             <button
               onClick={() => settle('actioned')}
               disabled={pending}
-              className="btn-primary !py-1.5 text-sm"
+              className="btn-primary py-1.5! text-sm"
             >
               {pending ? 'Saving…' : 'Handled — places cancelled'}
             </button>
             <button
               onClick={() => settle('declined')}
               disabled={pending}
-              className="btn-outline !py-1.5 text-sm"
+              className="btn-outline py-1.5! text-sm"
             >
               Handled — staying after all
             </button>

@@ -73,7 +73,7 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
   }
 
   return (
-    <div className="mt-2 ml-7 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
+    <div className="mt-2 ml-7 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
       {done ? (
         <p className="text-green-800">
           <span className="font-semibold">Confirmation received</span> — uploaded{' '}
@@ -90,7 +90,7 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
           </span>{' '}
           — a screenshot, a photo of the signed page, or the PDF they sent. Staff need this before
           the day; a verbal &ldquo;done&rdquo; is not enough.{' '}
-          <label className="btn-outline !py-1 !px-2 cursor-pointer text-xs">
+          <label className="btn-outline py-1! px-2! cursor-pointer text-xs">
             {busy ? 'Uploading…' : 'Choose file'}
             <input type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" className="hidden" onChange={onPick} disabled={busy} />
           </label>

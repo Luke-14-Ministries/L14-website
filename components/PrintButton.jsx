@@ -9,7 +9,7 @@
 // silently do not get it.
 export default function PrintButton({ label = 'Print' }) {
   return (
-    <button onClick={() => window.print()} className="btn-primary !py-2">
+    <button onClick={() => window.print()} className="btn-primary py-2!">
       {label}
     </button>
   );

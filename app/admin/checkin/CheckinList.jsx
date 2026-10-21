@@ -57,7 +57,7 @@ export default function CheckinList({ rows }) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Find a name or family…"
-          className="flex-1 min-w-[14rem] rounded border border-neutral-300 px-4 py-2.5"
+          className="flex-1 min-w-56 rounded-sm border border-neutral-300 px-4 py-2.5"
         />
         <span className="text-sm font-semibold text-neutral-600">
           {arrived} / {rows.length} arrived
@@ -65,7 +65,7 @@ export default function CheckinList({ rows }) {
       </div>
 
       {error && (
-        <p className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
@@ -136,7 +136,7 @@ export default function CheckinList({ rows }) {
               className={
                 r.checkedInAt
                   ? 'rounded-lg bg-green-100 text-green-800 px-4 py-2.5 font-semibold border border-green-300'
-                  : 'btn-primary !py-2.5'
+                  : 'btn-primary py-2.5!'
               }
             >
               {/* Time AND date (25 Aug). A camp week runs several days and

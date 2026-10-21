@@ -453,7 +453,7 @@ export default function LodgingBoard({
             <button
               onClick={() => doAssignGroup(placingGroup, lodging)}
               disabled={pending}
-              className="mt-3 btn-primary !py-1 text-xs"
+              className="mt-3 btn-primary py-1! text-xs"
             >
               Place all {placingGroup.length} of the {placingGroup[0]?.household} here
             </button>
@@ -463,7 +463,7 @@ export default function LodgingBoard({
             <button
               onClick={() => doAssign(peopleById.get(placing), lodging)}
               disabled={pending}
-              className="mt-3 btn-outline !py-1 text-xs"
+              className="mt-3 btn-outline py-1! text-xs"
             >
               {placedIds.has(placing) ? 'Move' : 'Place'} {peopleById.get(placing)?.name} here
             </button>
@@ -484,7 +484,7 @@ export default function LodgingBoard({
   return (
     <div>
       {error && (
-        <p className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
+        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
@@ -509,14 +509,14 @@ export default function LodgingBoard({
         <div className="flex flex-wrap items-center gap-2">
           {/* Carries the event through, same rule as the kitchen list and the
               activity sheets: the paper says what the screen said. */}
-          <a href={`/admin/lodging/print/?event=${eventId}`} className="btn-outline !py-2">
+          <a href={`/admin/lodging/print/?event=${eventId}`} className="btn-outline py-2!">
             Print room list
           </a>
           {canPlace && (
             <button
               onClick={togglePublish}
               disabled={pending}
-              className={publishedAt ? 'btn-outline !py-2' : 'btn-primary !py-2'}
+              className={publishedAt ? 'btn-outline py-2!' : 'btn-primary py-2!'}
             >
               {publishedAt ? 'Unpublish' : 'Publish assignments'}
             </button>
@@ -540,7 +540,7 @@ export default function LodgingBoard({
             this card, so say plainly what is in hand — otherwise the only
             feedback is a button caption changing somewhere off screen. */}
         {placingGroup && placingGroup.length > 0 && (
-          <p className="mt-2 rounded border border-brand bg-brand-light px-3 py-2 text-sm">
+          <p className="mt-2 rounded-sm border border-brand bg-brand-light px-3 py-2 text-sm">
             Placing the whole{' '}
             <span className="font-semibold">{placingGroup[0]?.household}</span> household —{' '}
             {placingGroup.length} {placingGroup.length === 1 ? 'person' : 'people'}. Choose a room below.{' '}
@@ -554,7 +554,7 @@ export default function LodgingBoard({
         )}
 
         {placing && placedIds.has(placing) && (
-          <p className="mt-2 rounded border border-brand bg-brand-light px-3 py-2 text-sm">
+          <p className="mt-2 rounded-sm border border-brand bg-brand-light px-3 py-2 text-sm">
             Moving <span className="font-semibold">{peopleById.get(placing)?.name}</span> —
             choose their new place below.{' '}
             <button onClick={() => setPlacing(null)} className="underline font-semibold">

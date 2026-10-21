@@ -27,7 +27,7 @@ export default async function DonateThankYouPage({ searchParams }) {
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-md mx-auto">
-        <div className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8 text-center">
+        <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8 text-center">
           <div className="text-4xl mb-2">💛</div>
           <h1 className="text-2xl font-bold mb-3">Thank you for your gift!</h1>
           <p className="text-neutral-700">
@@ -53,10 +53,10 @@ export default async function DonateThankYouPage({ searchParams }) {
             for this contribution.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href="/" className="btn-primary !py-2">
+            <Link href="/" className="btn-primary py-2!">
               Back to the site
             </Link>
-            <Link href="/account/dashboard/" className="btn-outline !py-2">
+            <Link href="/account/dashboard/" className="btn-outline py-2!">
               My giving history
             </Link>
           </div>

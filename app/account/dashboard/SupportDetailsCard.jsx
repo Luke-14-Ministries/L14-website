@@ -19,7 +19,7 @@ export default function SupportDetailsCard({ allDone = false, count = 0, childre
 
   if (!open) {
     return (
-      <div className="mb-8 rounded-lg bg-white border border-neutral-200 shadow-sm px-6 py-4">
+      <div className="mb-8 rounded-lg bg-white border border-neutral-200 shadow-xs px-6 py-4">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -39,7 +39,7 @@ export default function SupportDetailsCard({ allDone = false, count = 0, childre
   }
 
   return (
-    <div className="mb-8 rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+    <div className="mb-8 rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
       {allDone && (
         <div className="mb-3 flex justify-end">
           <button

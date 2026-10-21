@@ -24,7 +24,7 @@ export default async function VolunteerPage() {
           <p className="text-center text-neutral-600 mt-3 mb-8">
             Camp Celebrate volunteers: $495 per week, and worth every minute.
           </p>
-          <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6 mb-6">
+          <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6 mb-6">
             <h2 className="text-lg font-bold mb-3">How volunteering works</h2>
             <ol className="list-decimal pl-5 space-y-2 text-neutral-700">
               <li>
@@ -45,7 +45,7 @@ export default async function VolunteerPage() {
             </ol>
           </div>
           <div className="text-center">
-            <Link href="/account/signup/?next=/register/volunteer/" className="btn-primary !px-8">
+            <Link href="/account/signup/?next=/register/volunteer/" className="btn-primary px-8!">
               Create an account
             </Link>
             <p className="mt-4 text-neutral-600">
@@ -99,7 +99,7 @@ export default async function VolunteerPage() {
       <section className="bg-neutral-50 py-12">
         <div className="container-site max-w-3xl mx-auto">
           <h1 className="text-4xl font-bold text-center">Volunteer with Us</h1>
-          <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6 mt-8">
+          <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6 mt-8">
             <h2 className="text-lg font-bold mb-2">First, register for the week</h2>
             <p className="text-neutral-700 mb-4">
               The application attaches to a registration, so start there: register for the week
@@ -109,7 +109,7 @@ export default async function VolunteerPage() {
               back here (we&rsquo;ll also remind you on your dashboard).
             </p>
             <div>
-              <Link href="/register/family" className="btn-primary !px-8">
+              <Link href="/register/family" className="btn-primary px-8!">
                 Register now
               </Link>
               <p className="mt-3 text-sm text-neutral-600">

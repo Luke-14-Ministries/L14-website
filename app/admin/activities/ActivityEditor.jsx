@@ -48,7 +48,7 @@ export const slotLabel = (s) =>
     s.label ? ` · ${s.label}` : ''
   }`;
 
-const input = 'w-full rounded border border-neutral-300 px-2 py-1 text-sm';
+const input = 'w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm';
 const label = 'block text-xs font-semibold text-neutral-700 mb-0.5';
 
 function Fields({ f, set }) {
@@ -209,7 +209,7 @@ export function ActivityEditor({ activity }) {
             <button
               onClick={() => run(() => updateActivity(activity.id, { ...f, active: f.active }))}
               disabled={pending}
-              className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+              className="btn-primary py-1.5! text-sm disabled:opacity-50"
             >
               {pending ? 'Saving…' : 'Save'}
             </button>
@@ -262,7 +262,7 @@ export function AddActivity({ eventId, eventName }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="btn-outline !py-2 text-sm">
+      <button onClick={() => setOpen(true)} className="btn-outline py-2! text-sm">
         + Add an activity to {eventName || 'this event'}
       </button>
     );
@@ -275,7 +275,7 @@ export function AddActivity({ eventId, eventName }) {
       {/* Said here because the obvious next question after "Sign-up" is "where
           do I put the times?" and the answer is "not yet" (25 Aug). */}
       {f.mode === 'signup' && (
-        <p className="mt-3 rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+        <p className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
           <span className="font-semibold">Times come afterwards.</span> If this one runs in
           sittings — a trip that goes out four times, a chair that takes one person at a time —
           add it first, then open it and use <span className="font-semibold">Times</span>. You
@@ -298,7 +298,7 @@ export function AddActivity({ eventId, eventName }) {
             });
           }}
           disabled={pending}
-          className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+          className="btn-primary py-1.5! text-sm disabled:opacity-50"
         >
           {pending ? 'Adding…' : 'Add it'}
         </button>
@@ -341,7 +341,7 @@ export function ActivityCard({
   const total = signedUp + interested;
 
   return (
-    <div className="rounded-lg bg-white border border-neutral-200 shadow-sm">
+    <div className="rounded-lg bg-white border border-neutral-200 shadow-xs">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -458,7 +458,7 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
           {slots.map((s) => (
             <li
               key={s.id}
-              className="flex flex-wrap items-center gap-2 rounded border border-neutral-200 px-3 py-1.5 text-sm"
+              className="flex flex-wrap items-center gap-2 rounded-sm border border-neutral-200 px-3 py-1.5 text-sm"
             >
               <span className="font-medium">{slotLabel(s)}</span>
               <span className="text-xs text-neutral-500">
@@ -532,7 +532,7 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
         <button
           onClick={() => run(() => createSlot(activity.id, f))}
           disabled={pending}
-          className="btn-outline !py-1.5 text-sm disabled:opacity-50"
+          className="btn-outline py-1.5! text-sm disabled:opacity-50"
         >
           {pending ? 'Adding…' : 'Add this time'}
         </button>
@@ -614,7 +614,7 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
               })
             }
             disabled={pending}
-            className="mt-3 btn-primary !py-1.5 text-sm disabled:opacity-50"
+            className="mt-3 btn-primary py-1.5! text-sm disabled:opacity-50"
           >
             {pending ? 'Making…' : 'Make these times'}
           </button>

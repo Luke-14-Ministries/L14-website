@@ -357,11 +357,11 @@ export default function SecurityManager({ required }) {
     router.refresh();
   }
 
-  const inputCls = 'w-full rounded border border-neutral-300 px-4 py-2.5';
+  const inputCls = 'w-full rounded-sm border border-neutral-300 px-4 py-2.5';
   const isSvgMarkup = enrolling?.qr && enrolling.qr.trim().startsWith('<svg');
 
   return (
-    <div className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8">
+    <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
       <h2 className="text-2xl font-bold mb-1">Two-factor authentication</h2>
       <p className="text-sm text-neutral-500 mb-5">
         A second step at login — a 6-digit code from an app on your phone — so a
@@ -369,7 +369,7 @@ export default function SecurityManager({ required }) {
       </p>
 
       {required && factors.length === 0 && !enrolling && !adding && (
-        <p className="mb-5 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+        <p className="mb-5 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
           <strong>Staff accounts must turn this on.</strong> Because staff can see
           other families&rsquo; information, two-factor is required before you can
           open the staff area. It takes about a minute to set up below.
@@ -377,7 +377,7 @@ export default function SecurityManager({ required }) {
       )}
 
       {error && (
-        <p role="alert" className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+        <p role="alert" className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
           {error}
         </p>
       )}
@@ -521,7 +521,7 @@ export default function SecurityManager({ required }) {
         </form>
       ) : factors.length > 0 ? (
         <div>
-          <div className="mb-4 rounded border border-green-300 bg-green-50 px-4 py-3 text-green-800">
+          <div className="mb-4 rounded-sm border border-green-300 bg-green-50 px-4 py-3 text-green-800">
             <p className="font-semibold">
               Two-factor is <span className="font-bold uppercase tracking-wide">on</span>.
             </p>
@@ -537,16 +537,16 @@ export default function SecurityManager({ required }) {
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 min-w-[10rem] rounded border border-neutral-300 px-3 py-1.5 text-sm"
+                      className="flex-1 min-w-40 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
                       autoFocus
                     />
-                    <button onClick={saveRename} disabled={busy} className="btn-primary !py-1.5 text-sm">
+                    <button onClick={saveRename} disabled={busy} className="btn-primary py-1.5! text-sm">
                       {busy ? 'Saving…' : 'Save'}
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
                       disabled={busy}
-                      className="btn-outline !py-1.5 text-sm"
+                      className="btn-outline py-1.5! text-sm"
                     >
                       Cancel
                     </button>

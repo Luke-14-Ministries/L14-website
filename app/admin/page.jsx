@@ -26,7 +26,7 @@ function Stat({ label, sub, value, tone, href }) {
       <div className="text-xs text-neutral-500">{sub}</div>
     </>
   );
-  const cls = `block rounded-lg bg-white border shadow-sm p-5 ${
+  const cls = `block rounded-lg bg-white border shadow-xs p-5 ${
     tone === 'amber' ? 'border-amber-300' : 'border-neutral-200'
   }`;
   // A number that is also the way to the work (14 Oct 2026): "37 awaiting
@@ -175,7 +175,7 @@ export default async function AdminOverview({ searchParams }) {
       {can(staff, 'read:registration') && reviewList.length > 0 && (
         <div
           id="awaiting-review"
-          className="scroll-mt-4 rounded-lg bg-white border border-amber-200 shadow-sm p-6 mb-8"
+          className="scroll-mt-4 rounded-lg bg-white border border-amber-200 shadow-xs p-6 mb-8"
         >
           <h3 className="font-bold mb-1">New registrations awaiting review</h3>
           <p className="text-sm text-neutral-500 mb-3">
@@ -201,10 +201,10 @@ export default async function AdminOverview({ searchParams }) {
         </div>
       )}
 
-      <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+      <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <h3 className="font-bold">By event</h3>
-          <Link href="/admin/rosters" className="btn-outline !py-1.5 text-sm">
+          <Link href="/admin/rosters" className="btn-outline py-1.5! text-sm">
             View full rosters
           </Link>
         </div>

@@ -22,7 +22,7 @@ export default function Panel({ title, count = null, children, defaultOpen = tru
   // most in the fewest characters for that card.
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div id={id} className="rounded-lg bg-white border border-neutral-200 shadow-sm scroll-mt-4">
+    <div id={id} className="rounded-lg bg-white border border-neutral-200 shadow-xs scroll-mt-4">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

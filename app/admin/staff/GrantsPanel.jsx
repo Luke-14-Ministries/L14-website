@@ -123,7 +123,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
           type="button"
           disabled={busy || !dirty}
           onClick={() => onSave(member.profileId, grants)}
-          className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+          className="btn-primary py-1.5! text-sm disabled:opacity-50"
         >
           {busy ? 'Saving…' : 'Save grants'}
         </button>

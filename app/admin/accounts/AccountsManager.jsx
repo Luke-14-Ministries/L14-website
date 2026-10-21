@@ -191,7 +191,7 @@ export default function AccountsManager({
   return (
     <div>
       {loadError && (
-        <p className="mb-4 rounded border border-red-300 bg-red-50 text-red-800 px-4 py-3">
+        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 text-red-800 px-4 py-3">
           The account list could not be loaded. Refresh the page; if it keeps
           happening, check the server logs for admin_list_accounts.
         </p>
@@ -204,7 +204,7 @@ export default function AccountsManager({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name, email, or household…"
-          className="rounded border border-neutral-300 px-3 py-2 w-72 max-w-full"
+          className="rounded-sm border border-neutral-300 px-3 py-2 w-72 max-w-full"
         />
         <div className="flex flex-wrap gap-1.5">
           {FILTERS.map((f) => (
@@ -229,7 +229,7 @@ export default function AccountsManager({
 
       {/* Batch bar appears only when something is selected */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 mb-3 rounded border border-amber-300 bg-amber-50 px-4 py-2.5">
+        <div className="flex items-center gap-3 mb-3 rounded-sm border border-amber-300 bg-amber-50 px-4 py-2.5">
           <span className="text-sm font-semibold text-amber-900">
             {selected.size} selected
           </span>
@@ -242,7 +242,7 @@ export default function AccountsManager({
                 rows: rows.filter((r) => selected.has(r.user_id)),
               })
             }
-            className="btn-outline !py-1 text-sm"
+            className="btn-outline py-1! text-sm"
           >
             Remove logins…
           </button>
@@ -320,17 +320,17 @@ export default function AccountsManager({
                     <div className="font-medium text-neutral-900">
                       {name || <span className="text-neutral-400">No name</span>}
                       {isSelf && (
-                        <span className="ml-1.5 text-xs rounded bg-neutral-200 px-1.5 py-0.5 align-middle">you</span>
+                        <span className="ml-1.5 text-xs rounded-sm bg-neutral-200 px-1.5 py-0.5 align-middle">you</span>
                       )}
                       {a.staff_role && a.staff_active !== false && (
-                        <span className="ml-1.5 text-xs rounded bg-blue-100 text-blue-800 px-1.5 py-0.5 align-middle">
+                        <span className="ml-1.5 text-xs rounded-sm bg-blue-100 text-blue-800 px-1.5 py-0.5 align-middle">
                           {a.staff_role}
                         </span>
                       )}
                       {!a.email_confirmed_at && (
                         <span
                           title="Never confirmed their email address"
-                          className="ml-1.5 text-xs rounded bg-amber-100 text-amber-800 px-1.5 py-0.5 align-middle"
+                          className="ml-1.5 text-xs rounded-sm bg-amber-100 text-amber-800 px-1.5 py-0.5 align-middle"
                         >
                           unconfirmed
                         </span>
@@ -363,7 +363,7 @@ export default function AccountsManager({
                         is nothing to go wrong in script. */}
                     <details data-row-menu className="relative inline-block text-left">
                       <summary
-                        className="cursor-pointer select-none list-none rounded border border-neutral-300 px-2 py-0.5 font-bold text-neutral-600 hover:border-brand [&::-webkit-details-marker]:hidden"
+                        className="cursor-pointer select-none list-none rounded-sm border border-neutral-300 px-2 py-0.5 font-bold text-neutral-600 hover:border-brand [&::-webkit-details-marker]:hidden"
                         title={`Actions for ${a.email}`}
                       >
                         ⋯
@@ -456,7 +456,7 @@ export default function AccountsManager({
             <strong>not</strong> automatically reconnect to the old records.
           </p>
           {confirm.rows.some((r) => (r.registration_count ?? 0) > 0) && (
-            <p className="text-sm rounded border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 mb-3">
+            <p className="text-sm rounded-sm border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 mb-3">
               {confirm.rows.length === 1
                 ? `${confirm.rows[0].email} belongs to a household with ${confirm.rows[0].registration_count} registration${confirm.rows[0].registration_count === 1 ? '' : 's'}.`
                 : 'At least one selected account belongs to a household with registrations.'}{' '}
@@ -470,7 +470,7 @@ export default function AccountsManager({
             ))}
           </ul>
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={() => setConfirm(null)} className="btn-outline !py-1.5">
+            <button type="button" onClick={() => setConfirm(null)} className="btn-outline py-1.5!">
               Cancel
             </button>
             <button
@@ -482,7 +482,7 @@ export default function AccountsManager({
                   (r) => `Removed ${r.removed} ${r.removed === 1 ? 'login' : 'logins'}.`
                 )
               }
-              className="btn-primary !py-1.5"
+              className="btn-primary py-1.5!"
             >
               {busy ? 'Removing…' : 'Remove'}
             </button>
@@ -499,7 +499,7 @@ export default function AccountsManager({
         <Modal onClose={() => setConfirm(null)}>
           <h2 className="text-lg font-bold mb-2">Link this login to a household</h2>
           <p className="text-sm text-neutral-700 mb-3">
-            Connects <strong className="break-words">{confirm.row.email}</strong> to
+            Connects <strong className="wrap-break-word">{confirm.row.email}</strong> to
             an existing family, giving it access to that household&rsquo;s
             registrations, payments and records. Do this only after
             you&rsquo;ve confirmed who you&rsquo;re talking to &mdash; by
@@ -514,7 +514,7 @@ export default function AccountsManager({
             onChange={(e) =>
               setConfirm({ ...confirm, householdId: e.target.value, personId: '' })
             }
-            className="w-full rounded border border-neutral-300 px-3 py-2 mb-4 bg-white"
+            className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-4 bg-white"
           >
             <option value="">Choose a household…</option>
             {households.map((h) => (
@@ -548,7 +548,7 @@ export default function AccountsManager({
                     id="link-person"
                     value={confirm.personId ?? ''}
                     onChange={(e) => setConfirm({ ...confirm, personId: e.target.value })}
-                    className="w-full rounded border border-neutral-300 px-3 py-2 mb-1 bg-white"
+                    className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-1 bg-white"
                   >
                     <option value="">Don&rsquo;t mark anyone — just link the household</option>
                     {candidates.map((pp) => (
@@ -567,7 +567,7 @@ export default function AccountsManager({
               );
             })()}
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={() => setConfirm(null)} className="btn-outline !py-1.5">
+            <button type="button" onClick={() => setConfirm(null)} className="btn-outline py-1.5!">
               Cancel
             </button>
             <button
@@ -587,7 +587,7 @@ export default function AccountsManager({
                     }${confirm.personId ? ', and marked which family member they are' : ''}.`
                 )
               }
-              className="btn-primary !py-1.5"
+              className="btn-primary py-1.5!"
             >
               {busy ? 'Linking…' : 'Link login'}
             </button>
@@ -614,11 +614,11 @@ export default function AccountsManager({
           <input
             value={confirm.typed}
             onChange={(e) => setConfirm({ ...confirm, typed: e.target.value })}
-            className="w-full rounded border border-neutral-300 px-3 py-2 mb-4 font-mono"
+            className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-4 font-mono"
             autoFocus
           />
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={() => setConfirm(null)} className="btn-outline !py-1.5">
+            <button type="button" onClick={() => setConfirm(null)} className="btn-outline py-1.5!">
               Cancel
             </button>
             <button
@@ -630,7 +630,7 @@ export default function AccountsManager({
                   () => `Deleted ${confirm.row.household_name ?? 'the household'} and all its data.`
                 )
               }
-              className="rounded bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-semibold px-4 py-1.5"
+              className="rounded-sm bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-semibold px-4 py-1.5"
             >
               {busy ? 'Deleting…' : 'Delete everything'}
             </button>

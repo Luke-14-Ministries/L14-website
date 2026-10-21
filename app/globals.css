@@ -1,6 +1,56 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-brand: #2a6f77;
+  --color-brand-dark: #1d4e54;
+  --color-brand-light: #e8f2f3;
+  --color-brand-gold: #d99a2b;
+
+  --font-heading: Georgia, Cambria, 'Times New Roman', serif;
+  --font-body: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility container-site {
+  @apply mx-auto max-w-6xl px-4 sm:px-6;
+}
+
+@utility btn {
+  @apply inline-block rounded-sm px-6 py-3 font-semibold transition-colors;
+}
+
+@utility btn-primary {
+  @apply btn bg-brand text-white hover:bg-brand-dark;
+}
+
+@utility btn-outline {
+  @apply btn border-2 border-brand text-brand hover:bg-brand hover:text-white;
+}
+
+@utility btn-gold {
+  @apply btn bg-brand-gold text-white hover:bg-amber-600;
+}
+
+@utility prose-site {
+  @apply space-y-4 leading-relaxed text-lg;
+}
 
 @layer base {
   html {
@@ -11,26 +61,5 @@
   }
   h1, h2, h3, h4 {
     @apply font-heading;
-  }
-}
-
-@layer components {
-  .container-site {
-    @apply mx-auto max-w-6xl px-4 sm:px-6;
-  }
-  .btn {
-    @apply inline-block rounded px-6 py-3 font-semibold transition-colors;
-  }
-  .btn-primary {
-    @apply btn bg-brand text-white hover:bg-brand-dark;
-  }
-  .btn-outline {
-    @apply btn border-2 border-brand text-brand hover:bg-brand hover:text-white;
-  }
-  .btn-gold {
-    @apply btn bg-brand-gold text-white hover:bg-amber-600;
-  }
-  .prose-site {
-    @apply space-y-4 leading-relaxed text-lg;
   }
 }

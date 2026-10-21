@@ -47,7 +47,7 @@ export default function HostASpeakerPage() {
         <img
           src={asset('/images/tempImage2Ytu2q.jpg')}
           alt="Luke 14 Ministries speaker"
-          className="mt-10 rounded-lg shadow w-full"
+          className="mt-10 rounded-lg shadow-sm w-full"
         />
       </section>
 
@@ -186,7 +186,7 @@ export default function HostASpeakerPage() {
           <img
             src={asset('/images/tempImageUC97ga.jpg')}
             alt="Luke 14 Ministries team"
-            className="mt-12 rounded-lg shadow w-full"
+            className="mt-12 rounded-lg shadow-sm w-full"
           />
         </div>
       </section>

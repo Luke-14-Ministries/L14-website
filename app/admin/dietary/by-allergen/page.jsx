@@ -131,7 +131,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
                     · {list.length}
                   </span>
                 </h3>
-                <ul className="mt-1 divide-y divide-neutral-200 border border-neutral-200 rounded">
+                <ul className="mt-1 divide-y divide-neutral-200 border border-neutral-200 rounded-sm">
                   {[...list]
                     .sort((a, b) => (SEV_RANK[b.severity] ?? 0) - (SEV_RANK[a.severity] ?? 0) || a.name.localeCompare(b.name))
                     .map((x, i) => (

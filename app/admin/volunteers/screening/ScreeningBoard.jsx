@@ -124,7 +124,7 @@ export default function ScreeningBoard({ candidates }) {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h2 className="text-xl font-bold">1 · Who is due</h2>
         <p className="mt-1 mb-4 max-w-prose text-sm text-neutral-500">
           Adult volunteers with no background check on file, or whose background check has expired.
@@ -137,11 +137,11 @@ export default function ScreeningBoard({ candidates }) {
             due person is missing an email or a date of birth is a to-do list,
             and the page said the first when it meant the second. */}
         {orderable.length === 0 && blocked.length === 0 ? (
-          <p className="rounded border border-green-200 bg-green-50 px-4 py-3 text-green-900">
+          <p className="rounded-sm border border-green-200 bg-green-50 px-4 py-3 text-green-900">
             Nobody is due. Every adult volunteer has a background check on file that is still in date.
           </p>
         ) : orderable.length === 0 ? (
-          <p className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+          <p className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
             {blocked.length} {blocked.length === 1 ? 'person is' : 'people are'} due a background check,
             but none can be ordered yet — each is missing something listed below.
           </p>
@@ -153,7 +153,7 @@ export default function ScreeningBoard({ candidates }) {
                 onClick={() =>
                   setPicked(allPicked ? new Set() : new Set(orderable.map((c) => c.personId)))
                 }
-                className="btn-outline !py-1.5 text-sm"
+                className="btn-outline py-1.5! text-sm"
               >
                 {allPicked ? 'Select none' : `Select all ${orderable.length}`}
               </button>
@@ -184,7 +184,7 @@ export default function ScreeningBoard({ candidates }) {
                       {c.emailIsHousehold && ' (household address)'}
                     </span>
                     {c.sharesEmailWith?.length > 0 && (
-                      <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
+                      <span className="ml-2 rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
                         same inbox as {c.sharesEmailWith.join(' and ')} — two invitations, each opens their own
                       </span>
                     )}
@@ -222,7 +222,7 @@ export default function ScreeningBoard({ candidates }) {
         )}
 
         {blocked.length > 0 && (
-          <div className="mt-5 rounded border border-amber-300 bg-amber-50 px-4 py-3">
+          <div className="mt-5 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3">
             <p className="font-semibold text-amber-900">
               {blocked.length} {blocked.length === 1 ? 'person cannot' : 'people cannot'} be ordered yet
             </p>
@@ -237,7 +237,7 @@ export default function ScreeningBoard({ candidates }) {
         )}
 
         {batches.length > 0 && (
-          <div className="mt-5 rounded border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">
+          <div className="mt-5 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">
             <p className="font-semibold text-neutral-800">Batches sent, still waiting on Checkr</p>
             <ul className="mt-1.5 space-y-2">
               {batches.map(([batch, people]) => (
@@ -251,7 +251,7 @@ export default function ScreeningBoard({ candidates }) {
                     type="button"
                     disabled={busy}
                     onClick={() => downloadAgain(batch)}
-                    className="btn-outline !py-1 !px-3 text-xs"
+                    className="btn-outline py-1! px-3! text-xs"
                   >
                     Download the file again
                   </button>
@@ -271,7 +271,7 @@ export default function ScreeningBoard({ candidates }) {
         )}
       </section>
 
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h2 className="text-xl font-bold">2 · Upload it to Checkr</h2>
         <ol className="mt-2 max-w-prose list-decimal space-y-1 pl-5 text-sm text-neutral-700">
           <li>
@@ -294,17 +294,17 @@ export default function ScreeningBoard({ candidates }) {
           </li>
         </ol>
         {result?.ok && (
-          <p className="mt-3 rounded border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-900">
+          <p className="mt-3 rounded-sm border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-900">
             {result.ordered} recorded as sent. The file is in your downloads.
           </p>
         )}
         {result && !result.ok && (
-          <p className="mt-3 rounded border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
+          <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
             {result.error}
           </p>
         )}
         {result?.skipped?.length > 0 && (
-          <div className="mt-3 rounded border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+          <div className="mt-3 rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
             <p className="font-semibold">Left out of the file:</p>
             <ul className="mt-1 space-y-0.5">
               {result.skipped.map((s, i) => <li key={i}>{s}</li>)}
@@ -313,7 +313,7 @@ export default function ScreeningBoard({ candidates }) {
         )}
       </section>
 
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h2 className="text-xl font-bold">3 · Bring the results back</h2>
         <p className="mt-1 mb-3 max-w-prose text-sm text-neutral-500">
           Export the reports from Checkr and choose the file here (or paste its contents).
@@ -346,26 +346,26 @@ export default function ScreeningBoard({ candidates }) {
           onChange={(e) => setCsvText(e.target.value)}
           rows={5}
           placeholder="…or paste the whole CSV here, heading row and all"
-          className="w-full rounded border border-neutral-300 px-3 py-2 font-mono text-xs"
+          className="w-full rounded-sm border border-neutral-300 px-3 py-2 font-mono text-xs"
         />
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={doPreview}
             disabled={busy || !csvText.trim()}
-            className="btn-outline !py-2 disabled:opacity-50"
+            className="btn-outline py-2! disabled:opacity-50"
           >
             Check the file first
           </button>
           {preview?.ok && preview.dryRun && preview.willUpdate > 0 && (
-            <button type="button" onClick={doImport} disabled={busy} className="btn-primary !py-2">
+            <button type="button" onClick={doImport} disabled={busy} className="btn-primary py-2!">
               Apply {preview.willUpdate} {preview.willUpdate === 1 ? 'result' : 'results'}
             </button>
           )}
         </div>
 
         {preview && !preview.ok && (
-          <p className="mt-3 rounded border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
+          <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
             {preview.error}
           </p>
         )}
@@ -373,7 +373,7 @@ export default function ScreeningBoard({ candidates }) {
         {preview?.ok && (
           <div className="mt-4 space-y-3 text-sm">
             {!preview.dryRun && (
-              <p className="rounded border border-green-200 bg-green-50 px-4 py-2 text-green-900">
+              <p className="rounded-sm border border-green-200 bg-green-50 px-4 py-2 text-green-900">
                 {preview.updated} updated.
               </p>
             )}
@@ -400,7 +400,7 @@ export default function ScreeningBoard({ candidates }) {
                   but silently absorbing a word we do not understand is how a
                   future Checkr change gets missed. Say it. */}
               {preview.unrecognised?.length > 0 && (
-                <p className="mt-1 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
+                <p className="mt-1 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
                   Checkr used {preview.unrecognised.length === 1 ? 'a verdict' : 'verdicts'} this
                   screen has not seen before —{' '}
                   <strong>{preview.unrecognised.join(', ')}</strong>. Those rows are being treated
@@ -409,7 +409,7 @@ export default function ScreeningBoard({ candidates }) {
                 </p>
               )}
               {preview.superseded > 0 && (
-                <p className="mt-1 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-blue-900">
+                <p className="mt-1 rounded-sm border border-blue-200 bg-blue-50 px-3 py-2 text-blue-900">
                   <strong>{preview.superseded}</strong>{' '}
                   {preview.superseded === 1 ? 'row is' : 'rows are'} an{' '}
                   <strong>older report</strong> for somebody who also has a newer one in this
@@ -419,7 +419,7 @@ export default function ScreeningBoard({ candidates }) {
                 </p>
               )}
               {preview.byName > 0 && (
-                <p className="mt-1 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
+                <p className="mt-1 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
                   <strong>{preview.byName}</strong> matched on <strong>name</strong>, not on the
                   address we sent. Checkr&rsquo;s export carries whoever ordered the check in the
                   email column, so anything ordered by hand can only be matched by name — read
@@ -480,7 +480,7 @@ export default function ScreeningBoard({ candidates }) {
               </ul>
             </div>
             {preview.unmatched.length > 0 && (
-              <div className="rounded border border-amber-300 bg-amber-50 px-4 py-2 text-amber-900">
+              <div className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 text-amber-900">
                 <p className="font-semibold">{preview.unmatched.length} row(s) matched nobody</p>
                 <p className="mt-0.5 text-xs">
                   Usually somebody ordered before this screen existed. Listed so a short

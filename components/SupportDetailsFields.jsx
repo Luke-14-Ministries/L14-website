@@ -26,7 +26,7 @@
 import { ALLERGENS, hasFullerDetail } from '@/lib/support';
 import { formatPhone } from '@/lib/format';
 
-const input = 'w-full rounded border border-neutral-300 px-4 py-2.5';
+const input = 'w-full rounded-sm border border-neutral-300 px-4 py-2.5';
 const label = 'block font-semibold mb-1.5 mt-4 first:mt-0';
 
 function Heading({ children, hint }) {
@@ -178,7 +178,7 @@ export default function SupportDetailsFields({
             sheet and the Dietary page all count "peanut" once. */}
         <label className={label}>Which ones? Tick all that apply.</label>
         {legacyAllergyText && (
-          <p className="mb-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <p className="mb-2 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
             You told us before: &ldquo;{f.allergy_detail.trim()}&rdquo;. Please tick the matching
             boxes — we now keep a list so the kitchen reads the same words for everyone.
           </p>
@@ -413,7 +413,7 @@ export default function SupportDetailsFields({
             there is more we should know — allergies and what they are, medications, seizures,
             sleep away from home, who they would like to room with — it all matters just as much.
           </p>
-          <button type="button" onClick={onShowAll} className="btn-outline !py-1.5 text-sm mt-3">
+          <button type="button" onClick={onShowAll} className="btn-outline py-1.5! text-sm mt-3">
             Tell us more about {name}
           </button>
         </div>

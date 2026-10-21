@@ -134,7 +134,7 @@ export default function PayPanel({
   if (!open) {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        <button onClick={() => setOpen(true)} className="btn-primary !py-2">
+        <button onClick={() => setOpen(true)} className="btn-primary py-2!">
           {depositFirst ? `Pay deposit — ${dollars(deposit)}` : `Pay ${dollars(full)}`}
         </button>
         {clearing > 0 && (
@@ -180,7 +180,7 @@ export default function PayPanel({
               placeholder="0.00"
               value={customAmount}
               onChange={(e) => setCustomAmount(e.target.value)}
-              className="w-32 rounded border border-neutral-300 px-3 py-1.5 text-sm"
+              className="w-32 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
               autoFocus
             />
             <span className="text-xs text-neutral-500">
@@ -231,7 +231,7 @@ export default function PayPanel({
       )}
 
       {error && (
-        <p className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
@@ -240,11 +240,11 @@ export default function PayPanel({
         <button
           onClick={go}
           disabled={pending || (kind === 'custom' && customCents < 100)}
-          className="btn-primary !py-2"
+          className="btn-primary py-2!"
         >
           {pending ? 'Starting…' : `Continue — ${dollars(total)}`}
         </button>
-        <button onClick={() => setOpen(false)} disabled={pending} className="btn-outline !py-2">
+        <button onClick={() => setOpen(false)} disabled={pending} className="btn-outline py-2!">
           Cancel
         </button>
       </div>
@@ -256,7 +256,7 @@ export default function PayPanel({
         <summary className="cursor-pointer text-brand underline">
           Prefer to mail a check?
         </summary>
-        <div className="mt-2 rounded border border-neutral-200 bg-white p-3 text-neutral-700">
+        <div className="mt-2 rounded-sm border border-neutral-200 bg-white p-3 text-neutral-700">
           <p>
             Make it payable to <strong>Luke 14 Ministries</strong> and mail it to:
           </p>

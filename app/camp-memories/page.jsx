@@ -41,7 +41,7 @@ export default function CampMemoriesPage() {
                   <iframe
                     src={`https://www.youtube.com/embed/${video}`}
                     title={`Camp Celebrate ${year} highlights`}
-                    className="absolute inset-0 h-full w-full rounded"
+                    className="absolute inset-0 h-full w-full rounded-sm"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />

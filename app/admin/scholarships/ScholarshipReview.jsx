@@ -93,7 +93,7 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
     <div
       className={`rounded-lg border p-5 ${
         isOpen
-          ? 'border-amber-300 bg-amber-50 shadow-sm'
+          ? 'border-amber-300 bg-amber-50 shadow-xs'
           : 'border-neutral-200 bg-white'
       }`}
     >
@@ -143,7 +143,7 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
       </p>
 
       {row.familyStatement ? (
-        <p className="mt-2 rounded border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800">
+        <p className="mt-2 rounded-sm border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800">
           &ldquo;{row.familyStatement}&rdquo;
         </p>
       ) : (
@@ -202,7 +202,7 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
             </div>
             <div>
@@ -223,7 +223,7 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="e.g. Board hardship fund; spoke with the family by phone"
-                className="w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
             </div>
           </div>
@@ -234,14 +234,14 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
             <button
               onClick={approve}
               disabled={pending}
-              className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+              className="btn-primary py-1.5! text-sm disabled:opacity-50"
             >
               {pending ? 'Saving…' : 'Approve this award'}
             </button>
             <button
               onClick={decline}
               disabled={pending}
-              className="btn-outline !py-1.5 text-sm disabled:opacity-50"
+              className="btn-outline py-1.5! text-sm disabled:opacity-50"
             >
               Decline
             </button>

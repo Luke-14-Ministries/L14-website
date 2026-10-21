@@ -15,7 +15,7 @@ export default function LinkExpiredPage() {
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-md mx-auto">
-        <div className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8">
+        <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
           <h1 className="text-3xl font-bold mb-3">That link didn&rsquo;t work</h1>
           <p className="text-neutral-700">
             Email links work once and expire after about an hour. This one has
@@ -41,7 +41,7 @@ export default function LinkExpiredPage() {
             If it keeps happening, email{' '}
             <a
               href="mailto:info@luke14ministries.net"
-              className="text-brand underline break-words"
+              className="text-brand underline wrap-break-word"
             >
               info@luke14ministries.net
             </a>{' '}
@@ -55,10 +55,10 @@ export default function LinkExpiredPage() {
             and we&rsquo;ll get you in.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/account" className="btn-primary !py-2">
+            <Link href="/account" className="btn-primary py-2!">
               Log In
             </Link>
-            <Link href="/account/forgot-password" className="btn-outline !py-2">
+            <Link href="/account/forgot-password" className="btn-outline py-2!">
               Send a New Link
             </Link>
           </div>

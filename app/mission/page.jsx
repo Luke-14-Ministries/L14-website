@@ -52,7 +52,7 @@ export default function MissionPage() {
         <img
           src={asset('/images/DSC_0915.jpg')}
           alt="Camp Celebrate families"
-          className="mt-10 rounded-lg shadow w-full"
+          className="mt-10 rounded-lg shadow-sm w-full"
         />
       </section>
     </>

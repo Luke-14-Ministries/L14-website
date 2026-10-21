@@ -210,7 +210,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
         />
         <a
           href={`/admin/volunteers/print/${eventFilter ? `?event=${eventFilter}` : ''}`}
-          className="btn-outline !py-2 text-sm"
+          className="btn-outline py-2! text-sm"
           title="The volunteer list as a printable sheet: who, which event, where they want to serve, and where their application stands."
         >
           Print volunteer list

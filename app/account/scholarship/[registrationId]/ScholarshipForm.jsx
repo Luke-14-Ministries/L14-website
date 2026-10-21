@@ -86,7 +86,7 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
   const chip = row.status ? STATUS[row.status] : null;
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white shadow-sm p-6">
+    <div className="rounded-lg border border-neutral-200 bg-white shadow-xs p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <h2 className="text-lg font-bold">
@@ -120,7 +120,7 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
           balance. If something has changed, please contact the office rather than editing this.
         </p>
       ) : !open ? (
-        <button onClick={() => setOpen(true)} className="btn-outline !py-1.5 text-sm mt-3">
+        <button onClick={() => setOpen(true)} className="btn-outline py-1.5! text-sm mt-3">
           {row.status === 'withdrawn' ? 'Ask again' : `Request help for ${row.name}`}
         </button>
       ) : (
@@ -137,7 +137,7 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
               inputMode="numeric"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-32 rounded border border-neutral-300 px-3 py-2"
+              className="w-32 rounded-sm border border-neutral-300 px-3 py-2"
               placeholder="0"
             />
             <span className="text-sm text-neutral-500">
@@ -156,7 +156,7 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
             rows={3}
             value={statement}
             onChange={(e) => setStatement(e.target.value)}
-            className="w-full rounded border border-neutral-300 px-3 py-2"
+            className="w-full rounded-sm border border-neutral-300 px-3 py-2"
           />
           <p className="mt-1 text-xs text-neutral-500">
             A sentence is plenty. Staff decide from what is written here, so a request with
@@ -165,13 +165,13 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
           </p>
 
           {error && (
-            <p role="alert" className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+            <p role="alert" className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
               {error}
             </p>
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button onClick={save} disabled={busy} className="btn-primary !py-2 text-sm">
+            <button onClick={save} disabled={busy} className="btn-primary py-2! text-sm">
               {busy ? 'Saving…' : row.status === 'requested' ? 'Update request' : 'Send request'}
             </button>
             {row.status === 'requested' && (
@@ -218,7 +218,7 @@ export default function ScholarshipForm({
       {agreement && (
         <div
           className={`rounded-lg border p-5 ${
-            agreementSigned ? 'border-green-300 bg-green-50' : 'border-neutral-200 bg-white shadow-sm'
+            agreementSigned ? 'border-green-300 bg-green-50' : 'border-neutral-200 bg-white shadow-xs'
           }`}
         >
           <p className="font-bold">{agreement.title}</p>
@@ -251,7 +251,7 @@ export default function ScholarshipForm({
                   </label>
                   <input
                     id="schol-signer"
-                    className="w-full rounded border border-neutral-300 px-3 py-2"
+                    className="w-full rounded-sm border border-neutral-300 px-3 py-2"
                     value={signerName}
                     onChange={(e) => setSignerName(e.target.value)}
                     placeholder={contactName || 'Your full name'}

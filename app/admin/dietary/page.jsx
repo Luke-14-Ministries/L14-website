@@ -92,7 +92,7 @@ export default async function DietaryPage({ searchParams }) {
             href={`/admin/dietary/print${
               eventFilter ? `?event=${eventFilter}` : showPast ? '?past=1' : ''
             }`}
-            className="btn-outline !py-2 text-sm"
+            className="btn-outline py-2! text-sm"
           >
             Kitchen list (no names)
             {eventFilter && <span className="font-normal"> — this event</span>}
@@ -101,7 +101,7 @@ export default async function DietaryPage({ searchParams }) {
               2026): for the cook and the nurse, not the kitchen door. */}
           <a
             href={`/admin/dietary/by-allergen${eventFilter ? `?event=${eventFilter}` : ''}`}
-            className="btn-outline !py-2 text-sm"
+            className="btn-outline py-2! text-sm"
           >
             By allergen (names)
           </a>
@@ -113,7 +113,7 @@ export default async function DietaryPage({ searchParams }) {
       </p>
       {/* Staff may set severity (ruling 29 Sep 2026, Testing Script 3 §13.3) --
           with this reminder in view rather than a dialog in the way. */}
-      <p className="mb-6 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+      <p className="mb-6 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
         <strong>Severity is a medical fact, not a reading of the text.</strong> The amber box beside
         each allergy lets staff record or correct <em>Mild / Severe / Anaphylaxis</em> — set it only
         from what the family or the camp doctor has told you, and say so in the notes. It changes
@@ -144,9 +144,9 @@ export default async function DietaryPage({ searchParams }) {
           name="q"
           defaultValue={q}
           placeholder="Find a person or household…"
-          className="w-64 rounded border border-neutral-300 px-3 py-1.5 text-sm"
+          className="w-64 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
         />
-        <button type="submit" className="btn-outline !py-1.5 text-sm">Search</button>
+        <button type="submit" className="btn-outline py-1.5! text-sm">Search</button>
         {q && (
           <a href="/admin/dietary" className="text-sm text-brand underline">
             Clear

@@ -45,7 +45,7 @@ export default function WheelsForKenyaPage() {
         <img
           src={asset('/images/Kenya_2018_0380.jpg')}
           alt="Kenya_2018_0380.jpg"
-          className="mt-10 rounded-lg shadow w-full"
+          className="mt-10 rounded-lg shadow-sm w-full"
         />
       </section>
 
@@ -189,7 +189,7 @@ export default function WheelsForKenyaPage() {
               key={image.src}
               src={image.src}
               alt={image.alt}
-              className="rounded-lg shadow w-full h-64 object-cover"
+              className="rounded-lg shadow-sm w-full h-64 object-cover"
             />
           ))}
         </div>

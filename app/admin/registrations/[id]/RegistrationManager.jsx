@@ -112,14 +112,14 @@ const money = (c) =>
   `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const inputCls =
-  'w-full rounded border border-neutral-300 px-3 py-1.5 text-sm';
+  'w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm';
 const labelCls = 'block text-xs font-semibold text-neutral-500 mb-1';
 
 // A tiny inline banner used by every sub-form to show a save error.
 function ErrorNote({ children }) {
   if (!children) return null;
   return (
-    <p className="mt-2 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+    <p className="mt-2 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
       {children}
     </p>
   );
@@ -275,10 +275,10 @@ function PersonEditor({ registrationId, person, onDone }) {
       </div>
       <ErrorNote>{error}</ErrorNote>
       <div className="mt-3 flex gap-2">
-        <button onClick={() => save()} disabled={pending} className="btn-primary !py-1.5 text-sm">
+        <button onClick={() => save()} disabled={pending} className="btn-primary py-1.5! text-sm">
           {pending ? 'Saving…' : 'Save changes'}
         </button>
-        <button onClick={onDone} disabled={pending} className="btn-outline !py-1.5 text-sm">
+        <button onClick={onDone} disabled={pending} className="btn-outline py-1.5! text-sm">
           Cancel
         </button>
       </div>
@@ -337,10 +337,10 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
       </div>
       <ErrorNote>{error}</ErrorNote>
       <div className="mt-3 flex gap-2">
-        <button onClick={() => save()} disabled={pending} className="btn-primary !py-1.5 text-sm">
+        <button onClick={() => save()} disabled={pending} className="btn-primary py-1.5! text-sm">
           {pending ? 'Saving…' : 'Save'}
         </button>
-        <button onClick={onDone} disabled={pending} className="btn-outline !py-1.5 text-sm">
+        <button onClick={onDone} disabled={pending} className="btn-outline py-1.5! text-sm">
           Cancel
         </button>
       </div>
@@ -615,7 +615,7 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
   }
 
   return (
-    <div className="mt-3 rounded border border-neutral-200 bg-neutral-50 p-4 text-sm">
+    <div className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 p-4 text-sm">
       {/* Two separate things in one panel, and testing asked the fair question
           -- why are they grouped at all? Because they share one trait that
           matters more than their subject: both are answers the FAMILY gave on
@@ -636,7 +636,7 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
           <select
             value={tshirt}
             onChange={(e) => setTshirt(e.target.value)}
-            className="rounded border border-neutral-300 px-2 py-1 bg-white"
+            className="rounded-sm border border-neutral-300 px-2 py-1 bg-white"
           >
             <option value="">— not answered —</option>
             {TSHIRT_SIZES.map((s) => (
@@ -649,14 +649,14 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
           <select
             value={firstTime}
             onChange={(e) => setFirstTime(e.target.value)}
-            className="rounded border border-neutral-300 px-2 py-1 bg-white"
+            className="rounded-sm border border-neutral-300 px-2 py-1 bg-white"
           >
             <option value="">— not answered —</option>
             <option value="true">Yes</option>
             <option value="false">No — been before</option>
           </select>
         </label>
-        <button onClick={saveEnrollment} disabled={pending} className="btn-primary !py-1.5 text-sm">
+        <button onClick={saveEnrollment} disabled={pending} className="btn-primary py-1.5! text-sm">
           {pending ? 'Saving…' : saved ? 'Saved ✓' : 'Save'}
         </button>
       </div>
@@ -718,7 +718,7 @@ function ConsentRow({ label, help, record, disabled, onSet }) {
           type="button"
           onClick={() => onSet(true)}
           disabled={disabled || value === true}
-          className="btn-outline !py-1 !px-3 text-xs disabled:opacity-40"
+          className="btn-outline py-1! px-3! text-xs disabled:opacity-40"
         >
           Set yes
         </button>
@@ -726,7 +726,7 @@ function ConsentRow({ label, help, record, disabled, onSet }) {
           type="button"
           onClick={() => onSet(false)}
           disabled={disabled || value === false}
-          className="btn-outline !py-1 !px-3 text-xs disabled:opacity-40"
+          className="btn-outline py-1! px-3! text-xs disabled:opacity-40"
         >
           Set no
         </button>
@@ -853,7 +853,7 @@ function AddPerson({ registrationId, options }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="btn-outline !py-2 text-sm mt-4">
+      <button onClick={() => setOpen(true)} className="btn-outline py-2! text-sm mt-4">
         + Add a person to this week
       </button>
     );
@@ -913,22 +913,22 @@ function AddPerson({ registrationId, options }) {
               key={d.id}
               onClick={() => add({ existing_person_id: d.id })}
               disabled={pending}
-              className="btn-primary !py-1.5 text-sm"
+              className="btn-primary py-1.5! text-sm"
             >
               Use {d.name}
               {d.date_of_birth ? ` (born ${d.date_of_birth})` : ''}
             </button>
           ))}
-          <button onClick={() => add({ confirm_new: true })} disabled={pending} className="btn-outline !py-1.5 text-sm">
+          <button onClick={() => add({ confirm_new: true })} disabled={pending} className="btn-outline py-1.5! text-sm">
             Add as a new person anyway
           </button>
         </div>
       )}
       <div className="mt-3 flex gap-2">
-        <button onClick={() => add()} disabled={pending} className="btn-primary !py-1.5 text-sm">
+        <button onClick={() => add()} disabled={pending} className="btn-primary py-1.5! text-sm">
           {pending ? 'Adding…' : 'Add person'}
         </button>
-        <button onClick={() => setOpen(false)} disabled={pending} className="btn-outline !py-1.5 text-sm">
+        <button onClick={() => setOpen(false)} disabled={pending} className="btn-outline py-1.5! text-sm">
           Cancel
         </button>
       </div>
@@ -983,7 +983,7 @@ function HouseholdEditor({ registrationId, household }) {
 
   if (!editing) {
     return (
-      <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+      <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold">{household.display_name}</h2>
@@ -1020,7 +1020,7 @@ function HouseholdEditor({ registrationId, household }) {
   }
 
   return (
-    <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+    <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
       <h2 className="text-lg font-bold mb-3">Edit household</h2>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
@@ -1081,10 +1081,10 @@ function HouseholdEditor({ registrationId, household }) {
       </div>
       <ErrorNote>{error}</ErrorNote>
       <div className="mt-3 flex gap-2">
-        <button onClick={() => save()} disabled={pending} className="btn-primary !py-1.5 text-sm">
+        <button onClick={() => save()} disabled={pending} className="btn-primary py-1.5! text-sm">
           {pending ? 'Saving…' : 'Save changes'}
         </button>
-        <button onClick={() => setEditing(false)} disabled={pending} className="btn-outline !py-1.5 text-sm">
+        <button onClick={() => setEditing(false)} disabled={pending} className="btn-outline py-1.5! text-sm">
           Cancel
         </button>
       </div>
@@ -1130,7 +1130,7 @@ function FamilyMessages({ registrationId, messages, canWrite = true }) {
       {messages.length > 0 && (
         <ul className="mb-4 space-y-2">
           {messages.map((m) => (
-            <li key={m.id} className="rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">
+            <li key={m.id} className="rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">
               <p className="text-neutral-800 whitespace-pre-wrap">{m.body}</p>
               <p className="mt-1 flex items-center justify-between text-xs text-neutral-500">
                 <span>
@@ -1151,10 +1151,10 @@ function FamilyMessages({ registrationId, messages, canWrite = true }) {
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Write a short note the family will see…"
-          className="flex-1 rounded border border-neutral-300 px-3 py-2 text-sm"
+          className="flex-1 rounded-sm border border-neutral-300 px-3 py-2 text-sm"
           maxLength={1000}
         />
-        <button onClick={add} disabled={pending || !body.trim()} className="btn-primary !py-2 text-sm">
+        <button onClick={add} disabled={pending || !body.trim()} className="btn-primary py-2! text-sm">
           {pending ? 'Saving…' : 'Post note'}
         </button>
       </div>}
@@ -1175,7 +1175,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
 
   if (payments.length === 0) {
     return (
-      <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+      <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
         <h2 className="text-lg font-bold mb-1">Payments</h2>
         <p className="text-sm text-neutral-500">Nothing has been paid on this registration yet.</p>
       </div>
@@ -1219,7 +1219,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                   <button
                     type="button"
                     onClick={() => setOpenFor(openFor === p.id ? null : p.id)}
-                    className="btn-outline !py-1 !px-3 text-sm"
+                    className="btn-outline py-1! px-3! text-sm"
                   >
                     {/* "Refund…" read as unfinished rather than as "opens a
                         form" (flagged twice, 25 Aug), and "Cancel" beside a
@@ -1398,7 +1398,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
         : '';
 
   return (
-    <div className="mt-3 rounded border border-amber-300 bg-amber-50 p-4">
+    <div className="mt-3 rounded-sm border border-amber-300 bg-amber-50 p-4">
       <p className="text-sm font-semibold text-amber-900">
         Refund from this {PAY_METHOD_LABEL[payment.method] ?? payment.method} payment
       </p>
@@ -1409,7 +1409,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
       </p>
 
       {rule && (
-        <div className="mt-3 rounded border border-amber-200 bg-white px-3 py-2 text-xs text-neutral-700">
+        <div className="mt-3 rounded-sm border border-amber-200 bg-white px-3 py-2 text-xs text-neutral-700">
           <p className="font-semibold text-neutral-800">The refund rule, worked for this payment</p>
           <p className="mt-0.5">
             The {money(event?.deposit_cents ?? 0)}-a-person deposit is kept
@@ -1449,7 +1449,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-28 rounded border border-neutral-300 px-2 py-1 bg-white"
+              className="w-28 rounded-sm border border-neutral-300 px-2 py-1 bg-white"
             />
           </span>
         </label>
@@ -1492,7 +1492,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
       </label>
 
       {error && (
-        <p className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
@@ -1507,7 +1507,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
           onClick={submit}
           disabled={pending || Boolean(blockedBecause)}
           title={blockedBecause || `Refund ${money(cents + feeCents)}`}
-          className="btn-primary !py-1.5 text-sm disabled:opacity-50"
+          className="btn-primary py-1.5! text-sm disabled:opacity-50"
         >
           {pending ? 'Refunding…' : `Refund ${money(cents + feeCents)}`}
         </button>
@@ -1559,7 +1559,7 @@ function PeopleLine({ participants }) {
 function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true }) {
   const others = familyRegistrations.filter((r) => r.id !== registration.id);
   return (
-    <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-sm">
+    <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-xs">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">
@@ -1573,7 +1573,7 @@ function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true })
             sends the staffer back to the Overview (21 Oct screen walk). */}
         {canSeeMoney && <a
           href={`/admin/registrations/${registration.id}/statement`}
-          className="btn-outline !py-1.5 text-sm"
+          className="btn-outline py-1.5! text-sm"
         >
           Family statement (print)
         </a>}
@@ -1591,7 +1591,7 @@ function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true })
                 {eventDateRange(registration.event.starts_on, registration.event.ends_on)}
               </span>
             )}
-            <span className="rounded bg-brand/10 px-1.5 py-0.5 text-xs font-semibold text-brand-dark">
+            <span className="rounded-sm bg-brand/10 px-1.5 py-0.5 text-xs font-semibold text-brand-dark">
               this page
             </span>
           </li>
@@ -1670,7 +1670,7 @@ function MoneySummary({ balance, livePeople }) {
   const balanceCls = bal > 0 ? 'text-amber-700' : 'text-green-700';
 
   return (
-    <div className="mb-6 grid gap-4 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-sm md:grid-cols-2">
+    <div className="mb-6 grid gap-4 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-xs md:grid-cols-2">
       <div className="space-y-1 text-sm">
         <MoneyRow label="Fees" note={`${livePeople} ${livePeople === 1 ? 'person' : 'people'}`} value={money(fee)} />
         {scholarship > 0 && <MoneyRow label="− Scholarships" value={money(scholarship)} cls="text-green-700" />}

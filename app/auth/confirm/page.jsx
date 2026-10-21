@@ -89,7 +89,7 @@ export default async function ConfirmPage({ searchParams }) {
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-md mx-auto">
-        <div className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8 text-center">
+        <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8 text-center">
           <h1 className="text-3xl font-bold mb-3">
             {isRecovery ? 'Reset your password' : 'Confirm your email address'}
           </h1>

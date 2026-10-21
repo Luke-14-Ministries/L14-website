@@ -80,7 +80,7 @@ export default function ResourcesPage() {
           {resources.map((resource) => (
             <div
               key={resource.title}
-              className="bg-white rounded-lg shadow overflow-hidden flex flex-col"
+              className="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

@@ -88,7 +88,7 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
   }
 
   return (
-    <div className="mt-2 rounded border border-neutral-200 bg-neutral-50 p-3 text-sm">
+    <div className="mt-2 rounded-sm border border-neutral-200 bg-neutral-50 p-3 text-sm">
       <p className="font-semibold text-neutral-700 mb-2">Background check record</p>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex items-center gap-2">
@@ -97,7 +97,7 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
         </label>
         <label className="block">
           <span className="block text-xs font-semibold text-neutral-500 mb-0.5">Check date (required when on file)</span>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded border border-neutral-300 px-2 py-1" />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-sm border border-neutral-300 px-2 py-1" />
         </label>
         <span className="text-xs text-neutral-500">
           {/* No check date, no expiry: 0108 clears expires_on with the date,
@@ -126,10 +126,10 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
           onChange={(e) => setNote(e.target.value)}
           maxLength={500}
           placeholder="Note (optional) — e.g. spoke with Larry 14 Oct; cleared to serve with a buddy"
-          className="mt-2 w-full rounded border border-neutral-300 px-2 py-1"
+          className="mt-2 w-full rounded-sm border border-neutral-300 px-2 py-1"
         />
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <button onClick={save} disabled={pending} className="btn-primary !py-1.5 text-sm">
+          <button onClick={save} disabled={pending} className="btn-primary py-1.5! text-sm">
             {pending ? 'Saving…' : 'Save record'}
           </button>
           {clearance?.paperwork_marked_at && (
@@ -175,7 +175,7 @@ function CheckrPanel({ clearance, email }) {
   const started = status !== 'not_started';
 
   return (
-    <div className="mt-3 rounded border border-dashed border-neutral-300 bg-white p-3">
+    <div className="mt-3 rounded-sm border border-dashed border-neutral-300 bg-white p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold text-neutral-700">
           Checkr background check{' '}
@@ -199,7 +199,7 @@ function CheckrPanel({ clearance, email }) {
           type="button"
           disabled
           title="Not available yet — needs a Checkr account administrator and an API key. See the Staff Questions log, section 8."
-          className="btn-outline !py-1 !px-3 text-sm opacity-50 cursor-not-allowed"
+          className="btn-outline py-1! px-3! text-sm opacity-50 cursor-not-allowed"
         >
           Send background-check invitation
         </button>
@@ -332,7 +332,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
           <span title={pill.title} className={`rounded-full px-2.5 py-0.5 font-semibold ${pill.cls}`}>
             {pill.text}
           </span>
-          <button type="button" onClick={() => setOpen((o) => !o)} className="btn-outline !py-1 !px-3">
+          <button type="button" onClick={() => setOpen((o) => !o)} className="btn-outline py-1! px-3!">
             {open ? 'Close' : 'Details'}
           </button>
         </span>
@@ -411,7 +411,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
           {canReview && app && app.status !== 'withdrawn' && (
             <div className="flex flex-wrap gap-2">
               {app.status !== 'approved' && (
-                <button onClick={() => review('approved')} disabled={pending} className="btn-primary !py-1.5 text-sm">
+                <button onClick={() => review('approved')} disabled={pending} className="btn-primary py-1.5! text-sm">
                   Approve
                 </button>
               )}
@@ -419,7 +419,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 <button
                   onClick={() => review('declined')}
                   disabled={pending}
-                  className="rounded border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50"
+                  className="rounded-sm border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50"
                 >
                   Decline
                 </button>
@@ -435,7 +435,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
               email={person?.email || household?.email}
             />
           ) : (
-            <p className="mt-4 rounded border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
+            <p className="mt-4 rounded-sm border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
               The pill above is all you can see: on file, current, and the verdict. The record
               itself (dates, what Checkr said, who decided) is kept by administrators. Ask one if
               something looks wrong.
@@ -475,7 +475,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
             bulk upload takes a whole list at once -- so it gets its own screen
             rather than a button on every row. */}
         {maySeeChecks && (
-          <Link href="/admin/volunteers/screening" className="btn-outline !py-2 shrink-0">
+          <Link href="/admin/volunteers/screening" className="btn-outline py-2! shrink-0">
             Background screening
           </Link>
         )}
@@ -517,7 +517,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
       )}
 
       {groups.map((g) => (
-        <div key={g.event.id} className="rounded-lg bg-white border border-neutral-200 shadow-sm p-5 mb-6">
+        <div key={g.event.id} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5 mb-6">
           <h3 className="font-bold">
             {g.event.name}
             {g.event.starts_on && (

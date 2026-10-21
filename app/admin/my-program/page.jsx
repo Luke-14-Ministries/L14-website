@@ -124,7 +124,7 @@ export default async function MyProgramPage({ searchParams }) {
       {/* Said once, plainly, at the top -- so that a leader who wonders where
           the allergy details are does not go hunting, or worse, ask a family
           directly. */}
-      <div className="mb-5 rounded border border-brand/30 bg-brand-light/50 px-4 py-3 text-sm">
+      <div className="mb-5 rounded-sm border border-brand/30 bg-brand-light/50 px-4 py-3 text-sm">
         <strong>What the flags mean.</strong> A marker here tells you there is
         something to ask about — it does not tell you what. Allergy details,
         medications and support plans stay with the camp coordinator, who will
@@ -142,12 +142,12 @@ export default async function MyProgramPage({ searchParams }) {
       </div>
 
       {rows.length === 0 ? (
-        <p className="rounded border border-neutral-200 bg-white p-6 text-neutral-500">
+        <p className="rounded-sm border border-neutral-200 bg-white p-6 text-neutral-500">
           Nobody has been placed in {current.programName} for {current.eventName} yet. This page
           fills up as the coordinator assigns people — there is nothing for you to do here.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
+        <div className="overflow-x-auto rounded-sm border border-neutral-200 bg-white">
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-left">
               <tr>

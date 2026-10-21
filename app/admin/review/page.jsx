@@ -255,7 +255,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                                   {p.people?.first_name} {p.people?.last_name}
                                 </span>
                                 <span className="text-neutral-400">· {p.camp_role?.replace('_', '/')}</span>
-                                <span className={`rounded px-1.5 py-0.5 font-semibold ${pill.cls}`}>
+                                <span className={`rounded-sm px-1.5 py-0.5 font-semibold ${pill.cls}`}>
                                   {pill.text}
                                 </span>
                               </li>
@@ -267,7 +267,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                         {cls ? (
                           <span
                             title={cls.hint}
-                            className={`inline-block whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
+                            className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
                           >
                             {cls.label}
                           </span>

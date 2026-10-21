@@ -28,7 +28,7 @@ export default async function PaySuccessPage({ searchParams }) {
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-md mx-auto">
-        <div className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8 text-center">
+        <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8 text-center">
           <div className="text-4xl mb-2">{pending ? '⏳' : '✅'}</div>
           <h1 className="text-2xl font-bold mb-3">
             {pending ? 'Payment on its way' : 'Thank you — payment received'}
@@ -49,7 +49,7 @@ export default async function PaySuccessPage({ searchParams }) {
             Registration payments for camp and other ministry events cover event costs (food,
             lodging, and activities) and are not tax-deductible.
           </p>
-          <Link href="/account/dashboard/" className="btn-primary !py-2 mt-6 inline-block">
+          <Link href="/account/dashboard/" className="btn-primary py-2! mt-6 inline-block">
             Back to my dashboard
           </Link>
         </div>

@@ -362,12 +362,12 @@ export default function LoginForm() {
   if (mfa) {
     return (
       <form
-        className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8"
+        className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8"
         onSubmit={handleVerify}
       >
         <h2 className="text-2xl font-bold mb-1">Enter your code</h2>
         {searchParams.get('verify') && !error && (
-          <p className="mb-4 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+          <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
             For your security, this page needs your two-factor code before
             continuing.
           </p>
@@ -406,7 +406,7 @@ export default function LoginForm() {
               value={mfa.factorId}
               onChange={(e) => startChallenge(e.target.value)}
               disabled={busy}
-              className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-4"
+              className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
             >
               {mfa.labels.map((l) => (
                 <option key={l.id} value={l.id}>
@@ -418,7 +418,7 @@ export default function LoginForm() {
         )}
 
         {error && (
-          <p role="alert" className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+          <p role="alert" className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
             {error}
           </p>
         )}
@@ -437,7 +437,7 @@ export default function LoginForm() {
           autoFocus
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-4 tracking-widest"
+          className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4 tracking-widest"
           placeholder="123456"
         />
         <label className="flex items-start gap-2 text-sm mb-6">
@@ -465,7 +465,7 @@ export default function LoginForm() {
   // --- the password step ----------------------------------------------------
   return (
     <form
-      className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8"
+      className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8"
       onSubmit={handleSubmit}
     >
       <h2 className="text-2xl font-bold mb-1">Log In</h2>
@@ -475,7 +475,7 @@ export default function LoginForm() {
       </p>
 
       {timedOut && !error && (
-        <p className="mb-4 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+        <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
           You were signed out after a period of inactivity. Please log in again.
         </p>
       )}
@@ -483,7 +483,7 @@ export default function LoginForm() {
       {error && (
         <p
           role="alert"
-          className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800"
+          className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800"
         >
           {error}
         </p>
@@ -504,7 +504,7 @@ export default function LoginForm() {
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-4"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
       />
       <label className="block font-semibold mb-1.5" htmlFor="login-password">
         Password
@@ -517,7 +517,7 @@ export default function LoginForm() {
         required
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-4"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
       />
 
       <Turnstile

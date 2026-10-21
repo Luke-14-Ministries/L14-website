@@ -107,7 +107,7 @@ export default function LeadershipPage() {
           {leaders.map((leader) => (
             <div
               key={leader.name}
-              className="bg-white rounded-lg shadow overflow-hidden flex flex-col"
+              className="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

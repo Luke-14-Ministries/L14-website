@@ -155,7 +155,7 @@ export default function AdminNav({
     ) : (
       <span
         title="Coming soon"
-        className={`block rounded px-3 py-2 text-neutral-400 cursor-default ${indent ? 'ml-4' : ''}`}
+        className={`block rounded-sm px-3 py-2 text-neutral-400 cursor-default ${indent ? 'ml-4' : ''}`}
       >
         {n.label} <span className="text-xs">· soon</span>
       </span>
@@ -182,7 +182,7 @@ export default function AdminNav({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex w-full items-center justify-between rounded px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:bg-neutral-200 text-left"
+              className="flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:bg-neutral-200 text-left"
             >
               <span>{sec.label}</span>
               <span aria-hidden className={`text-xs transition-transform ${open ? 'rotate-90' : ''}`}>
