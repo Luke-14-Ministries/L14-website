@@ -185,7 +185,7 @@ export default async function AgreementsPage() {
         </div>
 
         {queryError && (
-          <p className="rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+          <p className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
             We couldn&rsquo;t load your agreements: {queryError}
           </p>
         )}
@@ -200,7 +200,7 @@ export default async function AgreementsPage() {
             {[...byEvent.entries()].map(([eventName, { event, rows, byAgreement }]) => (
               <div
                 key={eventName}
-                className="rounded-lg border border-neutral-200 bg-white shadow-sm p-6 sm:p-8 print:border-0 print:shadow-none print:p-0"
+                className="rounded-lg border border-neutral-200 bg-white shadow-xs p-6 sm:p-8 print:border-0 print:shadow-none print:p-0"
               >
                 <h2 className="text-xl font-bold">{eventName}</h2>
                 <p className="mt-1 text-sm text-neutral-600">
@@ -212,7 +212,7 @@ export default async function AgreementsPage() {
                   {[...byAgreement.values()].map(({ agreement, sigs }) => {
                     const people = sigs.filter((x) => x.people);
                     return (
-                      <div key={sigs[0].id} className="rounded border border-neutral-200 p-4">
+                      <div key={sigs[0].id} className="rounded-sm border border-neutral-200 p-4">
                         <p className="font-bold">
                           {agreement?.title}{' '}
                           <span className="font-normal text-xs text-neutral-500">
@@ -249,7 +249,7 @@ export default async function AgreementsPage() {
         )}
 
         {currentConsents.length > 0 && (
-          <div className="mt-8 rounded-lg border border-neutral-200 bg-white shadow-sm p-6 sm:p-8 print:border-0 print:shadow-none print:p-0">
+          <div className="mt-8 rounded-lg border border-neutral-200 bg-white shadow-xs p-6 sm:p-8 print:border-0 print:shadow-none print:p-0">
             <h2 className="text-xl font-bold">Permissions</h2>
             <p className="mt-1 text-sm text-neutral-600">
               These are choices, not agreements — you can change either one at any

@@ -46,9 +46,9 @@ export default function PageHero({ image, title, subtitle, children, variant = '
     >
       <div className="absolute inset-0 bg-black/45" />
       <div className="relative container-site py-16">
-        <h1 className="text-4xl sm:text-5xl font-bold drop-shadow">{title}</h1>
+        <h1 className="text-4xl sm:text-5xl font-bold drop-shadow-sm">{title}</h1>
         {subtitle && (
-          <p className="mt-4 text-xl sm:text-2xl drop-shadow">{subtitle}</p>
+          <p className="mt-4 text-xl sm:text-2xl drop-shadow-sm">{subtitle}</p>
         )}
         {children}
       </div>

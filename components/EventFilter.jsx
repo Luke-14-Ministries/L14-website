@@ -194,7 +194,7 @@ export default function EventFilter({
               // boxes at py-1.5 is why the roster header never lined up.
               className={
                 searchOnly
-                  ? `rounded border px-3 py-1.5 text-sm bg-white ${
+                  ? `rounded-sm border px-3 py-1.5 text-sm bg-white ${
                       selectedPast
                         ? 'border-brand text-brand-dark font-semibold'
                         : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
@@ -223,7 +223,7 @@ export default function EventFilter({
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Type to filter — a name, or a year"
-                  className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+                  className="w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm"
                 />
                 <ul className="mt-2 max-h-64 overflow-y-auto">
                   {searchOnly && allowAll && (
@@ -234,7 +234,7 @@ export default function EventFilter({
                           setOpen(false);
                           choose(null);
                         }}
-                        className={`block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-neutral-100 ${
+                        className={`block w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-neutral-100 ${
                           !selected ? 'font-bold text-brand' : ''
                         }`}
                       >
@@ -255,7 +255,7 @@ export default function EventFilter({
                             setOpen(false);
                             choose(e.id);
                           }}
-                          className={`block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-neutral-100 ${
+                          className={`block w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-neutral-100 ${
                             e.id === selected ? 'font-bold text-brand' : ''
                           }`}
                         >
@@ -276,7 +276,7 @@ export default function EventFilter({
                       setOpen(false);
                       choose(current[0]?.id ?? null);
                     }}
-                    className="mt-2 w-full rounded px-2 py-1 text-left text-sm text-neutral-600 underline"
+                    className="mt-2 w-full rounded-sm px-2 py-1 text-left text-sm text-neutral-600 underline"
                   >
                     Back to current events
                   </button>

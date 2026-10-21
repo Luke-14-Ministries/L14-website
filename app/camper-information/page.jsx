@@ -61,7 +61,7 @@ export default function CamperInformationPage() {
         <img
           src={asset('/images/20210720_195424.jpg')}
           alt="Camp Celebrate"
-          className="mt-12 rounded-lg shadow w-full"
+          className="mt-12 rounded-lg shadow-sm w-full"
         />
       </section>
 
@@ -95,7 +95,7 @@ export default function CamperInformationPage() {
           <img
             src={asset('/images/DSC_0945.jpg')}
             alt="Camp Celebrate"
-            className="mt-10 rounded-lg shadow w-full"
+            className="mt-10 rounded-lg shadow-sm w-full"
           />
         </div>
       </section>
@@ -135,7 +135,7 @@ export default function CamperInformationPage() {
         <img
           src={asset('/images/20210721_140401.jpg')}
           alt="Camp Celebrate"
-          className="mt-10 rounded-lg shadow w-full"
+          className="mt-10 rounded-lg shadow-sm w-full"
         />
       </section>
 
@@ -168,7 +168,7 @@ export default function CamperInformationPage() {
           <img
             src={asset('/images/DSC_0060.jpg')}
             alt="Camp Celebrate"
-            className="mt-10 rounded-lg shadow w-full"
+            className="mt-10 rounded-lg shadow-sm w-full"
           />
         </div>
       </section>

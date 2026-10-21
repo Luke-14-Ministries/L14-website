@@ -41,7 +41,7 @@ const KIND_LABEL = {
   rv: 'RV site',
 };
 
-const inputCls = 'w-full rounded border border-neutral-300 px-2 py-1 text-sm';
+const inputCls = 'w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm';
 const labelCls = 'block text-xs font-medium text-neutral-600';
 
 // Plain HTML form, read once on submit. Uncontrolled on purpose: a row that
@@ -73,7 +73,7 @@ function LodgingForm({ initial, kinds, submitLabel, onSubmit, onCancel, pending 
         e.preventDefault();
         onSubmit(readFields(e.currentTarget));
       }}
-      className="rounded border border-neutral-300 bg-white p-3"
+      className="rounded-sm border border-neutral-300 bg-white p-3"
     >
       <div className="grid gap-2 sm:grid-cols-6">
         <div className="sm:col-span-2">
@@ -172,7 +172,7 @@ function LodgingForm({ initial, kinds, submitLabel, onSubmit, onCancel, pending 
         </div>
       </div>
       <div className="mt-2 flex items-center gap-3">
-        <button type="submit" disabled={pending} className="btn-primary !px-3 !py-1 text-sm">
+        <button type="submit" disabled={pending} className="btn-primary px-3! py-1! text-sm">
           {pending ? 'Saving…' : submitLabel}
         </button>
         <button type="button" onClick={onCancel} className="text-sm underline">
@@ -375,7 +375,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
           {message && (
             <p
               role="status"
-              className={`mb-3 rounded border px-3 py-2 text-sm ${
+              className={`mb-3 rounded-sm border px-3 py-2 text-sm ${
                 message.tone === 'good'
                   ? 'border-green-300 bg-green-50 text-green-900'
                   : 'border-red-300 bg-red-50 text-red-800'
@@ -405,7 +405,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
                   setAddingUnder('root');
                 }}
                 disabled={pending}
-                className="btn-outline !px-3 !py-1 text-sm"
+                className="btn-outline px-3! py-1! text-sm"
               >
                 + Add a building / place
               </button>
@@ -419,7 +419,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
               first does not have. */}
           {otherEvents.length > 0 &&
             (active.length === 0 ? (
-              <div className="mb-4 flex flex-wrap items-end gap-2 rounded border border-brand/30 bg-brand-light/50 px-3 py-2">
+              <div className="mb-4 flex flex-wrap items-end gap-2 rounded-sm border border-brand/30 bg-brand-light/50 px-3 py-2">
                 <div>
                   <label className={labelCls} htmlFor="copy-from">
                     Copy rooms from another event&hellip;
@@ -428,7 +428,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
                     id="copy-from"
                     value={copyFrom}
                     onChange={(e) => setCopyFrom(e.target.value)}
-                    className="rounded border border-neutral-300 px-2 py-1 text-sm"
+                    className="rounded-sm border border-neutral-300 px-2 py-1 text-sm"
                   >
                     <option value="">— choose an event —</option>
                     {otherEvents.map((e) => (
@@ -443,7 +443,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
                   type="button"
                   onClick={copy}
                   disabled={pending || !copyFrom}
-                  className="btn-primary !px-3 !py-1 text-sm disabled:opacity-50"
+                  className="btn-primary px-3! py-1! text-sm disabled:opacity-50"
                 >
                   {pending ? 'Copying…' : 'Copy them here'}
                 </button>
@@ -459,7 +459,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
             {roots.map((root) => {
               const kids = childrenOf.get(root.id) ?? [];
               return (
-                <div key={root.id} className="rounded border border-neutral-200 bg-neutral-50 px-3 py-2">
+                <div key={root.id} className="rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2">
                   <LodgingLine
                     lodging={root}
                     depth={0}

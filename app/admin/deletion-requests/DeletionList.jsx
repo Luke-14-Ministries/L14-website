@@ -16,7 +16,7 @@ function Row({ r }) {
       if (!res.ok) setError(res.error);
     });
   return (
-    <li className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+    <li className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
       <p className="font-semibold">
         {r.household} · {SCOPE[r.scope]}
       </p>
@@ -29,7 +29,7 @@ function Row({ r }) {
       {r.status === 'requested' ? (
         <div className="mt-3 space-y-2">
           <textarea
-            className="w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+            className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
             rows={2}
             placeholder="What was deleted, and what is kept and why. The family sees this."
             value={note}
@@ -37,10 +37,10 @@ function Row({ r }) {
           />
           {error && <p className="text-sm text-red-700">{error}</p>}
           <div className="flex gap-2">
-            <button type="button" className="btn-primary !py-1.5" disabled={pending} onClick={() => go('done')}>
+            <button type="button" className="btn-primary py-1.5!" disabled={pending} onClick={() => go('done')}>
               Mark done
             </button>
-            <button type="button" className="btn-outline !py-1.5" disabled={pending} onClick={() => go('declined')}>
+            <button type="button" className="btn-outline py-1.5!" disabled={pending} onClick={() => go('declined')}>
               Close without deleting
             </button>
           </div>

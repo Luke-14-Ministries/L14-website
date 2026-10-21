@@ -52,7 +52,7 @@ export default function Luke14PartyPage() {
           <img
             src={asset('/images/DSC_1034.jpg')}
             alt="DSC_1034.JPG"
-            className="rounded-lg shadow w-full mb-10"
+            className="rounded-lg shadow-sm w-full mb-10"
           />
           <h2 className="text-3xl font-bold mb-6">
             The Greatest Party Around!
@@ -76,7 +76,7 @@ export default function Luke14PartyPage() {
       </section>
 
       <section className="container-site py-14 max-w-3xl mx-auto text-center">
-        <p className="text-2xl sm:text-3xl font-heading leading-relaxed">
+        <p className="text-2xl sm:text-3xl font-heading leading-relaxed sm:leading-9">
           &ldquo;But when you give a banquet, invite the poor, the crippled,
           the lame, the blind, and you will be blessed.&rdquo;
         </p>
@@ -107,7 +107,7 @@ export default function Luke14PartyPage() {
               key={image.src}
               src={image.src}
               alt={image.alt}
-              className="rounded-lg shadow w-full h-64 object-cover"
+              className="rounded-lg shadow-sm w-full h-64 object-cover"
             />
           ))}
         </div>

@@ -102,10 +102,10 @@ export default async function SearchPage({ searchParams }) {
           name="q"
           defaultValue={q}
           placeholder="A name, part of a name, or an email"
-          className="w-80 max-w-full rounded border border-neutral-300 px-3 py-2"
+          className="w-80 max-w-full rounded-sm border border-neutral-300 px-3 py-2"
           autoFocus
         />
-        <button type="submit" className="btn-primary !py-2">
+        <button type="submit" className="btn-primary py-2!">
           Search
         </button>
         <span className="text-sm text-neutral-500">
@@ -171,7 +171,7 @@ export default async function SearchPage({ searchParams }) {
                                   {shortEventName(ev?.name ?? 'Event')}
                                 </Link>
                                 <span className="text-neutral-500">{ROLE_LABEL[r.camp_role] ?? r.camp_role}</span>
-                                <span className={`rounded px-1.5 py-0.5 font-semibold ${pill.cls}`}>{pill.text}</span>
+                                <span className={`rounded-sm px-1.5 py-0.5 font-semibold ${pill.cls}`}>{pill.text}</span>
                               </li>
                             );
                           })}
@@ -191,7 +191,7 @@ export default async function SearchPage({ searchParams }) {
           <h3 className="font-semibold text-neutral-700 mb-2">Families</h3>
           <ul className="space-y-1 text-sm">
             {households.map((h) => (
-              <li key={h.id} className="rounded border border-neutral-200 bg-white px-3 py-2">
+              <li key={h.id} className="rounded-sm border border-neutral-200 bg-white px-3 py-2">
                 <span className="font-medium">{h.display_name}</span>
                 {h.email && <span className="ml-2 text-xs text-neutral-500">{h.email}</span>}
                 <span className="ml-2 text-xs text-neutral-500">

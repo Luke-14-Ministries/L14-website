@@ -67,7 +67,7 @@ export default function CancelRequest({ registrationId, people = [], openRequest
             .map((p) => p.name)
             .join(', ') || 'selected people';
     return (
-      <div className="mt-4 rounded border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm">
+      <div className="mt-4 rounded-sm border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm">
         <p className="font-semibold">Cancellation requested — {who}</p>
         <p className="mt-1 text-neutral-700">
           Camp staff have this and will be in touch. Nothing is cancelled yet, and any
@@ -97,7 +97,7 @@ export default function CancelRequest({ registrationId, people = [], openRequest
   }
 
   return (
-    <div className="mt-4 rounded border border-neutral-300 bg-neutral-50 p-4">
+    <div className="mt-4 rounded-sm border border-neutral-300 bg-neutral-50 p-4">
       <p className="font-semibold">Ask to cancel</p>
       <p className="mt-1 text-sm text-neutral-700">
         This sends a note to camp staff — it does <strong>not</strong> cancel anything by
@@ -133,14 +133,14 @@ export default function CancelRequest({ registrationId, people = [], openRequest
         rows={3}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
+        className="mt-1 w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
         placeholder="A short note is plenty. If cost is the problem, say so — the ministry would rather help than lose you."
       />
 
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button onClick={send} disabled={pending} className="btn-primary !py-1.5 text-sm">
+        <button onClick={send} disabled={pending} className="btn-primary py-1.5! text-sm">
           {pending ? 'Sending…' : 'Send request'}
         </button>
         <button

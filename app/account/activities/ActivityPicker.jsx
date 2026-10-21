@@ -148,7 +148,7 @@ function ActivityRow({ person, activity }) {
               return (
                 <label
                   key={sl.id}
-                  className={`flex items-center gap-2 rounded border px-3 py-1.5 text-sm ${
+                  className={`flex items-center gap-2 rounded-sm border px-3 py-1.5 text-sm ${
                     mine ? 'border-brand bg-brand-light font-semibold' : 'border-neutral-200'
                   } ${soldOut ? 'opacity-60' : 'cursor-pointer'}`}
                 >
@@ -236,7 +236,7 @@ export default function ActivityPicker({ person, activities }) {
   }).length;
 
   return (
-    <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+    <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
         <h3 className="text-lg font-bold">{person.name}</h3>
         <span className="text-sm text-neutral-500">

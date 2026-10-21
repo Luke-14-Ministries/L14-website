@@ -37,7 +37,7 @@ export default function WheelsForKenyaPage() {
       />
 
       <section className="container-site py-14 max-w-3xl mx-auto text-center">
-        <h2 className="text-2xl sm:text-3xl font-bold leading-snug">
+        <h2 className="text-2xl sm:text-3xl font-bold leading-snug sm:leading-9">
           Our Wheels for Kenya program is responsible for organizing and
           carrying out a wheelchair distribution program across Kenya.
         </h2>
@@ -45,7 +45,7 @@ export default function WheelsForKenyaPage() {
         <img
           src={asset('/images/Kenya_2018_0380.jpg')}
           alt="Kenya_2018_0380.jpg"
-          className="mt-10 rounded-lg shadow w-full"
+          className="mt-10 rounded-lg shadow-sm w-full"
         />
       </section>
 
@@ -189,7 +189,7 @@ export default function WheelsForKenyaPage() {
               key={image.src}
               src={image.src}
               alt={image.alt}
-              className="rounded-lg shadow w-full h-64 object-cover"
+              className="rounded-lg shadow-sm w-full h-64 object-cover"
             />
           ))}
         </div>

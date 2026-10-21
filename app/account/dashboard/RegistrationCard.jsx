@@ -56,14 +56,14 @@ export default function RegistrationCard({
           : 'bg-neutral-100 text-neutral-600';
 
   return (
-    <div className="rounded border border-neutral-200">
+    <div className="rounded-sm border border-neutral-200">
       {/* A real button, not a clickable div: it has to be reachable by keyboard
           and announce its own state, since it governs everything below it. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-neutral-50 rounded"
+        className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-neutral-50 rounded-sm"
       >
         <span className="flex min-w-0 items-center gap-2">
           <span

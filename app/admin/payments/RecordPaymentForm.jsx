@@ -8,7 +8,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { recordManualPayment } from './actions';
 
-const inputCls = 'w-full rounded border border-neutral-300 px-3 py-1.5 text-sm';
+const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm';
 const labelCls = 'block text-xs font-semibold text-neutral-500 mb-1';
 
 export default function RecordPaymentForm({ registrations }) {
@@ -56,7 +56,7 @@ export default function RecordPaymentForm({ registrations }) {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+    <form onSubmit={submit} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
       <h3 className="font-bold mb-1">Record a check or cash payment</h3>
       <p className="text-sm text-neutral-500 mb-4">
         For money that arrived by mail or in person. Online card and bank payments record
@@ -122,17 +122,17 @@ export default function RecordPaymentForm({ registrations }) {
       </div>
 
       {error && (
-        <p className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
       {done && (
-        <p className="mt-3 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p className="mt-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
           {done}
         </p>
       )}
 
-      <button type="submit" disabled={pending} className="btn-primary !py-2 mt-4">
+      <button type="submit" disabled={pending} className="btn-primary py-2! mt-4">
         {pending ? 'Recording…' : 'Record payment'}
       </button>
     </form>

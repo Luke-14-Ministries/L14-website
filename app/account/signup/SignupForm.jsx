@@ -118,13 +118,13 @@ export default function SignupForm() {
 
   return (
     <form
-      className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8"
+      className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8"
       onSubmit={handleSubmit}
     >
       {error && (
         <p
           role="alert"
-          className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800"
+          className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800"
         >
           {error}
         </p>
@@ -135,19 +135,19 @@ export default function SignupForm() {
           <label className="block font-semibold mb-1.5" htmlFor="su-first">
             First name
           </label>
-          <input id="su-first" autoComplete="given-name" required value={form.first} onChange={set('first')} className="w-full rounded border border-neutral-300 px-4 py-2.5" />
+          <input id="su-first" autoComplete="given-name" required value={form.first} onChange={set('first')} className="w-full rounded-sm border border-neutral-300 px-4 py-2.5" />
         </div>
         <div>
           <label className="block font-semibold mb-1.5" htmlFor="su-last">
             Last name
           </label>
-          <input id="su-last" autoComplete="family-name" required value={form.last} onChange={set('last')} className="w-full rounded border border-neutral-300 px-4 py-2.5" />
+          <input id="su-last" autoComplete="family-name" required value={form.last} onChange={set('last')} className="w-full rounded-sm border border-neutral-300 px-4 py-2.5" />
         </div>
       </div>
       <label className="block font-semibold mb-1.5 mt-4" htmlFor="su-email">
         Email
       </label>
-      <input id="su-email" type="email" autoComplete="email" required value={form.email} onChange={set('email')} className="w-full rounded border border-neutral-300 px-4 py-2.5" />
+      <input id="su-email" type="email" autoComplete="email" required value={form.email} onChange={set('email')} className="w-full rounded-sm border border-neutral-300 px-4 py-2.5" />
       <label className="block font-semibold mb-1.5 mt-4" htmlFor="su-phone">
         Phone
       </label>
@@ -162,7 +162,7 @@ export default function SignupForm() {
         // 10-digit US number exactly as typed.
         onBlur={() => setForm((f) => ({ ...f, phone: formatPhone(f.phone) }))}
         aria-describedby={phoneLooksShort ? 'su-phone-hint' : undefined}
-        className="w-full rounded border border-neutral-300 px-4 py-2.5"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5"
       />
       {phoneLooksShort && (
         <p id="su-phone-hint" className="mt-1.5 text-sm text-amber-800">
@@ -173,7 +173,7 @@ export default function SignupForm() {
       <label className="block font-semibold mb-1.5 mt-4" htmlFor="su-password">
         Password
       </label>
-      <input id="su-password" type="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={set('password')} className="w-full rounded border border-neutral-300 px-4 py-2.5" />
+      <input id="su-password" type="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={set('password')} className="w-full rounded-sm border border-neutral-300 px-4 py-2.5" />
       <p className="mt-1.5 text-sm text-neutral-500">
         At least 8 characters.
       </p>

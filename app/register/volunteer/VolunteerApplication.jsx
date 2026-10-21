@@ -26,7 +26,7 @@ const STATUS_CHIP = {
   withdrawn: ['Withdrawn', 'bg-neutral-200 text-neutral-600'],
 };
 
-const input = 'w-full rounded border border-neutral-300 px-4 py-2.5';
+const input = 'w-full rounded-sm border border-neutral-300 px-4 py-2.5';
 const label = 'block font-semibold mb-1.5 mt-4 first:mt-0';
 
 export default function VolunteerApplication({
@@ -135,7 +135,7 @@ export default function VolunteerApplication({
   const chip = existing ? STATUS_CHIP[existing.status] : null;
 
   return (
-    <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+    <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
       {/* min-w-0 flex-1 on the text, shrink-0 on the controls. Without them a
           longer event name ("Camp Celebrate 2027 — Week 1 (…)") pushed the
           status chip and the button onto a second line, so two cards on the
@@ -164,7 +164,7 @@ export default function VolunteerApplication({
               {chip[0]}
             </span>
           )}
-          <button type="button" onClick={() => setOpen((o) => !o)} className="btn-outline !py-1.5 text-sm">
+          <button type="button" onClick={() => setOpen((o) => !o)} className="btn-outline py-1.5! text-sm">
             {open ? 'Close' : existing ? 'View / edit' : 'Start application'}
           </button>
         </span>
@@ -324,17 +324,17 @@ export default function VolunteerApplication({
           )}
 
           {error && (
-            <p role="alert" className="mt-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm px-3 py-2">
+            <p role="alert" className="mt-3 rounded-sm bg-red-50 border border-red-200 text-red-800 text-sm px-3 py-2">
               {error}
             </p>
           )}
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <button onClick={save} disabled={pending} className="btn-primary !py-2">
+            <button onClick={save} disabled={pending} className="btn-primary py-2!">
               {pending ? 'Saving…' : existing ? 'Save & resubmit for review' : 'Submit application'}
             </button>
             {existing && existing.status !== 'withdrawn' && (
-              <button onClick={withdraw} disabled={pending} className="btn-outline !py-2">
+              <button onClick={withdraw} disabled={pending} className="btn-outline py-2!">
                 Withdraw
               </button>
             )}

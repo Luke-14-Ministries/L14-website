@@ -71,7 +71,7 @@ export default async function AccessLogPage() {
   ).length;
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-6">
+    <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <BackLink href="/admin/staff" label="Back to Staff &amp; Access" />
       <h1 className="text-2xl font-bold mb-1">Access changes</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-prose">
@@ -82,14 +82,14 @@ export default async function AccessLogPage() {
       </p>
 
       {error && (
-        <p className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
           The log could not be read: {error.message}. This is a failure to load, not
           an empty log — do not read it as “nothing has changed”.
         </p>
       )}
 
       {!error && selfGrants > 0 && (
-        <p className="mb-4 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <strong>{selfGrants}</strong>{' '}
           {selfGrants === 1 ? 'permission was' : 'permissions were'} granted by
           somebody to their own account. That is allowed — an administrator has to

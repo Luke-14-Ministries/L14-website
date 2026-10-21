@@ -234,7 +234,7 @@ export default function BuddyBoard({
   return (
     <div>
       {error && (
-        <p className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
+        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
           {error}
         </p>
       )}
@@ -293,14 +293,14 @@ export default function BuddyBoard({
               orientation (14 Oct 2026). Both carry the event. */}
           <a
             href={`/admin/buddies/export?event=${eventId}`}
-            className="btn-outline !py-2 text-sm"
+            className="btn-outline py-2! text-sm"
             title="Every pairing for this event as a CSV: camper, buddy, household, check status."
           >
             Download CSV
           </a>
           <a
             href={`/admin/buddies/print/?event=${eventId}`}
-            className="btn-outline !py-2 text-sm"
+            className="btn-outline py-2! text-sm"
             title="One printable sheet per buddy, with their camper's details, to hand out at orientation."
           >
             Print buddy sheets
@@ -309,7 +309,7 @@ export default function BuddyBoard({
             <button
               onClick={togglePublish}
               disabled={pending}
-              className={publishedAt ? 'btn-outline !py-2' : 'btn-primary !py-2'}
+              className={publishedAt ? 'btn-outline py-2!' : 'btn-primary py-2!'}
             >
               {publishedAt ? 'Unpublish' : 'Publish assignments'}
             </button>
@@ -328,7 +328,7 @@ export default function BuddyBoard({
             return (
               <div
                 key={c.participantId}
-                className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm"
+                className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="text-lg font-bold">
@@ -397,7 +397,7 @@ export default function BuddyBoard({
                       return (
                         <li
                           key={a.id}
-                          className="flex flex-wrap items-center gap-2 rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm"
+                          className="flex flex-wrap items-center gap-2 rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm"
                         >
                           <span className="font-semibold">{v?.name ?? 'volunteer'}</span>
                           {v && <ClearanceBadge clearance={v.clearance} />}
@@ -416,7 +416,7 @@ export default function BuddyBoard({
 
                 <div className="mt-3">
                   {picking === c.participantId ? (
-                    <div className="rounded border border-neutral-200 p-3">
+                    <div className="rounded-sm border border-neutral-200 p-3">
                       <div className="mb-2 flex items-center justify-between">
                         <p className="text-sm font-semibold">Choose a buddy for {c.name}</p>
                         <button
@@ -456,7 +456,7 @@ export default function BuddyBoard({
                                 <button
                                   onClick={() => doAssign(c, v)}
                                   disabled={pending}
-                                  className="flex w-full flex-wrap items-center gap-2 rounded border border-neutral-200 px-3 py-2 text-left text-sm hover:bg-brand-light disabled:opacity-50"
+                                  className="flex w-full flex-wrap items-center gap-2 rounded-sm border border-neutral-200 px-3 py-2 text-left text-sm hover:bg-brand-light disabled:opacity-50"
                                 >
                                   <span className="font-medium">{v.name}</span>
                                   <ClearanceBadge clearance={v.clearance} />
@@ -476,7 +476,7 @@ export default function BuddyBoard({
                     <button
                       onClick={() => setPicking(c.participantId)}
                       disabled={pending}
-                      className="btn-outline !py-1.5 text-sm"
+                      className="btn-outline py-1.5! text-sm"
                     >
                       {mine.length === 0 ? 'Assign a buddy' : 'Add another buddy'}
                     </button>

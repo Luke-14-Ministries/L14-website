@@ -108,17 +108,17 @@ export default function StaffPlanPanel({
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {plan.status === 'active' && (
-              <button type="button" disabled={pending} onClick={() => run('pause')} className="btn-outline !py-1.5">
+              <button type="button" disabled={pending} onClick={() => run('pause')} className="btn-outline py-1.5!">
                 Pause plan
               </button>
             )}
             {['paused', 'failed'].includes(plan.status) && (
-              <button type="button" disabled={pending} onClick={() => run('resume')} className="btn-outline !py-1.5">
+              <button type="button" disabled={pending} onClick={() => run('resume')} className="btn-outline py-1.5!">
                 {plan.status === 'failed' ? 'Retry and resume plan' : 'Resume plan'}
               </button>
             )}
             {!['cancelled', 'completed'].includes(plan.status) && !confirmCancel && (
-              <button type="button" disabled={pending} onClick={() => setConfirmCancel(true)} className="btn-outline !py-1.5 text-red-700">
+              <button type="button" disabled={pending} onClick={() => setConfirmCancel(true)} className="btn-outline py-1.5! text-red-700">
                 Cancel plan…
               </button>
             )}
@@ -136,7 +136,7 @@ export default function StaffPlanPanel({
           </div>
 
           {confirmCancel && (
-            <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm">
+            <div className="mt-3 rounded-sm border border-red-200 bg-red-50 p-3 text-sm">
               <p className="font-semibold">Cancel this payment plan?</p>
               <p className="mt-1">No more automatic charges will be made. Payments already taken stay.</p>
               <label className="mt-2 flex items-center gap-1">
@@ -148,7 +148,7 @@ export default function StaffPlanPanel({
                   type="button"
                   disabled={pending}
                   onClick={() => run('cancel', { keepsEarlyDiscount: keep })}
-                  className="btn-primary !py-1.5 !bg-red-700"
+                  className="btn-primary py-1.5! bg-red-700!"
                 >
                   Cancel plan
                 </button>

@@ -208,7 +208,7 @@ export default function ProgramBoard({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search a name or family…"
-          className="rounded border border-neutral-300 px-3 py-1.5 text-sm"
+          className="rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
         />
         <span className="text-sm text-neutral-500">
           {rows.length} shown · {selected.size} selected
@@ -216,14 +216,14 @@ export default function ProgramBoard({
       </div>
 
       {selected.size > 0 && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded border border-brand/30 bg-brand-light/50 px-3 py-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-sm border border-brand/30 bg-brand-light/50 px-3 py-2">
           <span className="text-sm font-medium">
             Place {selected.size} {selected.size === 1 ? 'person' : 'people'} in
           </span>
           <select
             value={bulkProgram}
             onChange={(e) => setBulkProgram(e.target.value)}
-            className="rounded border border-neutral-300 px-2 py-1 text-sm"
+            className="rounded-sm border border-neutral-300 px-2 py-1 text-sm"
           >
             <option value="">— no program —</option>
             {programs.map((p) => (
@@ -253,7 +253,7 @@ export default function ProgramBoard({
       {message && (
         <p
           role="status"
-          className={`mb-3 rounded border px-3 py-2 text-sm ${
+          className={`mb-3 rounded-sm border px-3 py-2 text-sm ${
             message.tone === 'good'
               ? 'border-green-300 bg-green-50 text-green-900'
               : 'border-red-300 bg-red-50 text-red-800'
@@ -263,7 +263,7 @@ export default function ProgramBoard({
         </p>
       )}
 
-      <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
+      <div className="overflow-x-auto rounded-sm border border-neutral-200 bg-white">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left">
             <tr>
@@ -316,7 +316,7 @@ export default function ProgramBoard({
                     value={p.programId ?? ''}
                     onChange={(e) => placeOne(p.participantId, e.target.value)}
                     disabled={pending || !canPlace}
-                    className={`rounded border px-2 py-1 text-sm ${
+                    className={`rounded-sm border px-2 py-1 text-sm ${
                       p.programId ? 'border-neutral-300' : 'border-amber-400 bg-amber-50'
                     }`}
                   >
@@ -427,7 +427,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
         {programs.map((p) => {
           const list = byProgram.get(p.id) ?? [];
           return (
-            <div key={p.id} className="rounded border border-neutral-200 bg-white p-3">
+            <div key={p.id} className="rounded-sm border border-neutral-200 bg-white p-3">
               <div className="font-semibold">{p.name}</div>
               {list.length === 0 ? (
                 <div className="mt-1 text-sm text-neutral-500">No leader named.</div>
@@ -490,7 +490,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="they must already have an account"
-              className="rounded border border-neutral-300 px-3 py-1.5 text-sm"
+              className="rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
             />
           </div>
           <div>
@@ -502,7 +502,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
               required
               value={programId}
               onChange={(e) => setProgramId(e.target.value)}
-              className="rounded border border-neutral-300 px-2 py-1.5 text-sm"
+              className="rounded-sm border border-neutral-300 px-2 py-1.5 text-sm"
             >
               <option value="">— choose —</option>
               {programs.map((p) => (
@@ -525,7 +525,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
       {message && (
         <p
           role="status"
-          className={`mt-3 rounded border px-3 py-2 text-sm ${
+          className={`mt-3 rounded-sm border px-3 py-2 text-sm ${
             message.tone === 'good'
               ? 'border-green-300 bg-green-50 text-green-900'
               : message.tone === 'warn'

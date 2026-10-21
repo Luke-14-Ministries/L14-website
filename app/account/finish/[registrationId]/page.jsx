@@ -126,7 +126,7 @@ export default async function FinishPage({ params }) {
         </p>
 
         {done ? (
-          <div className="rounded border border-green-300 bg-green-50 px-4 py-3 text-green-900">
+          <div className="rounded-sm border border-green-300 bg-green-50 px-4 py-3 text-green-900">
             <p className="font-semibold">You&rsquo;re all set.</p>
             <p className="mt-1 text-sm">
               {route.route === 'plan' && 'Your payment plan is in place. Its schedule is on your dashboard.'}
@@ -135,7 +135,7 @@ export default async function FinishPage({ params }) {
               {route.route === 'scholarship' &&
                 'Your scholarship request is with camp staff. They will be in touch.'}
             </p>
-            <Link href="/account/dashboard/" className="btn-primary mt-3 inline-block !py-2">
+            <Link href="/account/dashboard/" className="btn-primary mt-3 inline-block py-2!">
               Go to my dashboard
             </Link>
           </div>

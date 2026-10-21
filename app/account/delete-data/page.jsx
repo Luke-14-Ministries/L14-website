@@ -43,7 +43,7 @@ export default async function DeleteDataPage() {
         time even after the rest is gone, and staff will tell you what those are.
       </p>
       {(requests ?? []).length > 0 && (
-        <ul className="mt-6 divide-y divide-neutral-200 rounded border border-neutral-200 bg-white text-sm">
+        <ul className="mt-6 divide-y divide-neutral-200 rounded-sm border border-neutral-200 bg-white text-sm">
           {requests.map((r) => (
             <li key={r.id} className="px-4 py-3">
               <span className="font-semibold">{SCOPE[r.scope]}</span> · requested{' '}
@@ -54,7 +54,7 @@ export default async function DeleteDataPage() {
           ))}
         </ul>
       )}
-      <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         {open ? (
           <p className="text-neutral-700">Your request is with staff. They will be in touch.</p>
         ) : (

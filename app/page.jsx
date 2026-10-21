@@ -51,7 +51,7 @@ const actions = [
 
 function ImageCard({ title, href, image, tall }) {
   return (
-    <Link href={href} className="group relative block overflow-hidden rounded-lg shadow">
+    <Link href={href} className="group relative block overflow-hidden rounded-lg shadow-sm">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={image}
@@ -61,7 +61,7 @@ function ImageCard({ title, href, image, tall }) {
         }`}
       />
       <div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors" />
-      <h2 className="absolute inset-x-0 bottom-6 text-center text-white text-2xl sm:text-3xl font-bold drop-shadow">
+      <h2 className="absolute inset-x-0 bottom-6 text-center text-white text-2xl sm:text-3xl font-bold drop-shadow-sm">
         {title}
       </h2>
     </Link>
@@ -80,7 +80,7 @@ export default function HomePage() {
       >
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative container-site py-20 text-center">
-          <h1 className="mx-auto max-w-4xl text-3xl sm:text-4xl lg:text-[2.6rem] leading-snug font-bold text-white drop-shadow">
+          <h1 className="mx-auto max-w-4xl text-3xl sm:text-4xl lg:text-[2.6rem] leading-snug sm:leading-10 font-bold text-white drop-shadow-sm">
             Luke 14 Ministries helps families and individuals affected by
             disability find community and connection to Jesus through His
             church.

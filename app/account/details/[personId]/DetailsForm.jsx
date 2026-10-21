@@ -20,7 +20,7 @@ import { savePersonSupport } from './actions';
 
 function Card({ n, title, subtitle, children }) {
   return (
-    <section className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
+    <section className="rounded-lg border border-neutral-200 shadow-xs bg-white p-6 sm:p-8">
       <div className="flex items-baseline gap-3 mb-1">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-white text-sm font-bold">
           {n}
@@ -160,12 +160,12 @@ export default function DetailsForm({
       </Card>
 
       {error && (
-        <p role="alert" className="rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+        <p role="alert" className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
           {error}
         </p>
       )}
 
-      <div className="sticky bottom-0 z-20 -mx-4 sm:mx-0 border-t border-neutral-200 bg-white/95 backdrop-blur px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] sm:rounded-lg sm:border">
+      <div className="sticky bottom-0 z-20 -mx-4 sm:mx-0 border-t border-neutral-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] sm:rounded-lg sm:border">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-neutral-600">
             {isCamper
@@ -186,7 +186,7 @@ export default function DetailsForm({
               saved={saved}
               onClick={save}
               label="Save details"
-              className="!py-2"
+              className="py-2!"
             />
           </div>
         </div>

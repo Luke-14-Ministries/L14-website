@@ -88,12 +88,12 @@ export default async function AdminGivingPage({ searchParams }) {
       <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <h2 className="text-xl font-bold">Giving</h2>
         <span className="flex flex-wrap gap-2">
-          <a href={csvHref} className="btn-outline !py-2 text-sm">
+          <a href={csvHref} className="btn-outline py-2! text-sm">
             Download CSV
           </a>
           <a
             href={qbHref}
-            className="btn-outline !py-2 text-sm"
+            className="btn-outline py-2! text-sm"
             title="Date, Name, Memo, Account, Amount — gifts that arrived, in this filter. Account names are placeholders until the treasurer confirms them."
           >
             QuickBooks CSV
@@ -111,15 +111,15 @@ export default async function AdminGivingPage({ searchParams }) {
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 rounded-lg bg-white border border-neutral-200 p-4">
         <label className="block text-sm">
           <span className="block font-semibold mb-1">From</span>
-          <input type="date" name="from" defaultValue={fFrom} className="rounded border border-neutral-300 px-2 py-1.5" />
+          <input type="date" name="from" defaultValue={fFrom} className="rounded-sm border border-neutral-300 px-2 py-1.5" />
         </label>
         <label className="block text-sm">
           <span className="block font-semibold mb-1">To</span>
-          <input type="date" name="to" defaultValue={fTo} className="rounded border border-neutral-300 px-2 py-1.5" />
+          <input type="date" name="to" defaultValue={fTo} className="rounded-sm border border-neutral-300 px-2 py-1.5" />
         </label>
         <label className="block text-sm">
           <span className="block font-semibold mb-1">Fund</span>
-          <select name="fund" defaultValue={fFund} className="rounded border border-neutral-300 px-2 py-1.5 bg-white">
+          <select name="fund" defaultValue={fFund} className="rounded-sm border border-neutral-300 px-2 py-1.5 bg-white">
             <option value="">All funds</option>
             {fundOptions.map((f) => (
               <option key={f} value={f}>{f}</option>
@@ -128,20 +128,20 @@ export default async function AdminGivingPage({ searchParams }) {
         </label>
         <label className="block text-sm">
           <span className="block font-semibold mb-1">Method</span>
-          <select name="method" defaultValue={fMethod} className="rounded border border-neutral-300 px-2 py-1.5 bg-white">
+          <select name="method" defaultValue={fMethod} className="rounded-sm border border-neutral-300 px-2 py-1.5 bg-white">
             <option value="">All methods</option>
             {Object.entries(METHOD_LABEL).map(([v, l]) => (
               <option key={v} value={v}>{l}</option>
             ))}
           </select>
         </label>
-        <button type="submit" className="btn-primary !py-1.5 text-sm">Apply</button>
+        <button type="submit" className="btn-primary py-1.5! text-sm">Apply</button>
         {(fFrom || fTo || fFund || fMethod) && (
           <a href="/admin/giving" className="text-sm text-neutral-500 underline">Clear</a>
         )}
         <a
           href={`/admin/giving/statements${csvQs ? `?${csvQs}` : ''}`}
-          className="btn-outline !py-1.5 text-sm ml-auto"
+          className="btn-outline py-1.5! text-sm ml-auto"
         >
           Year-end statements
         </a>
@@ -154,15 +154,15 @@ export default async function AdminGivingPage({ searchParams }) {
         {!fFrom && !fTo && <> — set From and To above for a period.</>}
       </p>
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-5">
+        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
           <div className="text-2xl font-bold">{money(total)}</div>
           <div className="text-sm text-neutral-500">Total gifts (incl. clearing) · {periodLabel}</div>
         </div>
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-5">
+        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
           <div className="text-2xl font-bold">{good.length}</div>
           <div className="text-sm text-neutral-500">Gifts recorded · {periodLabel}</div>
         </div>
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-5">
+        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
           <div className="text-sm font-semibold mb-1">By fund <span className="font-normal text-neutral-500">· {periodLabel}</span></div>
           {byFund.size === 0 ? (
             <p className="text-sm text-neutral-500">No gifts yet.</p>
@@ -182,7 +182,7 @@ export default async function AdminGivingPage({ searchParams }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <RecordGiftForm />
 
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
           <h3 className="font-bold mb-3">Recent gifts</h3>
           {all.length === 0 ? (
             <p className="text-neutral-500 text-sm">No gifts yet.</p>

@@ -44,10 +44,10 @@ export default function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8">
+      <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
         <h2 className="text-2xl font-bold mb-3">Check your email</h2>
         <p className="text-neutral-700">
-          If there is an account for <strong className="break-words">{email}</strong>,
+          If there is an account for <strong className="wrap-break-word">{email}</strong>,
           a link to set a new password is on its way. It works once and expires
           after an hour.
         </p>
@@ -55,7 +55,7 @@ export default function ForgotPasswordForm() {
           No email after a few minutes? Check your spam folder, and make sure
           the address above is the one you signed up with.
         </p>
-        <Link href="/account" className="btn-outline !py-2 mt-6 inline-block">
+        <Link href="/account" className="btn-outline py-2! mt-6 inline-block">
           Back to Log In
         </Link>
       </div>
@@ -64,7 +64,7 @@ export default function ForgotPasswordForm() {
 
   return (
     <form
-      className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8"
+      className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8"
       onSubmit={handleSubmit}
     >
       <h2 className="text-2xl font-bold mb-1">Reset your password</h2>
@@ -82,11 +82,11 @@ export default function ForgotPasswordForm() {
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-4"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
       />
 
       {error && (
-        <p role="alert" className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p role="alert" className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
         </p>
       )}

@@ -36,7 +36,7 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
 
   return (
     <div
-      className={`mt-4 rounded border px-4 py-3 text-sm ${
+      className={`mt-4 rounded-sm border px-4 py-3 text-sm ${
         failed ? 'border-red-300 bg-red-50 text-red-900' : 'border-neutral-200 bg-neutral-50'
       }`}
     >
@@ -77,7 +77,7 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
       )}
 
       {canChange && !changing && (
-        <button type="button" onClick={() => setChanging(true)} className="btn-outline mt-2 !py-1.5">
+        <button type="button" onClick={() => setChanging(true)} className="btn-outline mt-2 py-1.5!">
           Change card or bank account
         </button>
       )}
@@ -86,12 +86,12 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value)}
-            className="rounded border border-neutral-300 px-2 py-1.5"
+            className="rounded-sm border border-neutral-300 px-2 py-1.5"
           >
             <option value="bank">Bank account</option>
             <option value="card">Card</option>
           </select>
-          <button type="button" onClick={go} disabled={pending} className="btn-primary !py-1.5">
+          <button type="button" onClick={go} disabled={pending} className="btn-primary py-1.5!">
             {pending ? 'Opening…' : 'Continue to secure page'}
           </button>
           <button type="button" onClick={() => setChanging(false)} className="text-sm underline">

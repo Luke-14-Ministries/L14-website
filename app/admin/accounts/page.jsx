@@ -44,7 +44,7 @@ export default async function AccountsPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-6">
+    <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <h1 className="text-2xl font-bold mb-1">Accounts</h1>
       {/* max-w-prose caps this at a 65-character measure, as everywhere else
           in the staff pages: text run to the full width of this card is hard

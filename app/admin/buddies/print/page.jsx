@@ -200,24 +200,24 @@ export default async function BuddyPrintPage({ searchParams }) {
                     the two detail lines (allergy detail, seizure detail). */}
                 <div className="mt-2 flex flex-wrap gap-2 text-sm">
                   {sp?.has_allergies && (
-                    <span className="rounded border border-red-700 px-2 py-0.5 font-semibold text-red-800">
+                    <span className="rounded-sm border border-red-700 px-2 py-0.5 font-semibold text-red-800">
                       ALLERGY{sp.allergy_severity ? ` — ${SEVERITY[sp.allergy_severity] ?? sp.allergy_severity}` : ' — severity not recorded'}
                       {allergySummary(sp) ? `: ${allergySummary(sp)}` : ''}
                     </span>
                   )}
                   {sp?.has_seizures && (
-                    <span className="rounded border border-red-700 px-2 py-0.5 font-semibold text-red-800">
+                    <span className="rounded-sm border border-red-700 px-2 py-0.5 font-semibold text-red-800">
                       SEIZURES{sp.seizure_detail ? `: ${sp.seizure_detail}` : ''}
                     </span>
                   )}
                   {sp?.has_rescue_medication && (
-                    <span className="rounded border border-red-700 px-2 py-0.5 font-semibold text-red-800">
+                    <span className="rounded-sm border border-red-700 px-2 py-0.5 font-semibold text-red-800">
                       RESCUE MEDICATION — the nurse holds it
                       {sp.rescue_medication_detail ? `: ${sp.rescue_medication_detail}` : ''}
                     </span>
                   )}
                   {!sp && (
-                    <span className="rounded border border-amber-600 px-2 py-0.5 font-semibold text-amber-800">
+                    <span className="rounded-sm border border-amber-600 px-2 py-0.5 font-semibold text-amber-800">
                       No support details on file — ask the coordinator before camp
                     </span>
                   )}

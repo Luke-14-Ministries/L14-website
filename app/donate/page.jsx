@@ -67,7 +67,7 @@ export default async function DonatePage() {
                 </a>
                 .
               </p>
-              <p className="bg-brand-light rounded p-4">
+              <p className="bg-brand-light rounded-sm p-4">
                 We also welcome donations of camp supplies for Camp Celebrate,
                 medical supplies for our Wheels for Kenya program, and supplies
                 for our Luke 14 Party. If you have something you are interested

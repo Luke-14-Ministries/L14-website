@@ -103,7 +103,7 @@ export default async function PrintRostersPage({ searchParams }) {
                       {r.person}
                       {r.noPhoto && (
                         <span
-                          className="ml-1 rounded border border-neutral-800 px-1 text-[10px] font-bold uppercase"
+                          className="ml-1 rounded-sm border border-neutral-800 px-1 text-[10px] leading-5 font-bold uppercase"
                           title="Family asked us not to feature them in published photos"
                         >
                           no photo

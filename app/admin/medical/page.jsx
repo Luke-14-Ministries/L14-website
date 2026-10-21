@@ -123,9 +123,9 @@ export default async function MedicalPage({ searchParams }) {
           name="q"
           defaultValue={q}
           placeholder="Find a person or household…"
-          className="w-64 rounded border border-neutral-300 px-3 py-1.5 text-sm"
+          className="w-64 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
         />
-        <button type="submit" className="btn-outline !py-1.5 text-sm">Search</button>
+        <button type="submit" className="btn-outline py-1.5! text-sm">Search</button>
         {q && (
           <a href="/admin/medical" className="text-sm text-brand underline">
             Clear

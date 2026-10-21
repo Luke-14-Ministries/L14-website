@@ -288,7 +288,9 @@ automatically.
 
 ## Stack
 
-Next.js 16 (App Router, **JavaScript — not TypeScript**), Tailwind CSS, Vercel; Supabase (Postgres +
+Next.js 16 (App Router, **JavaScript — not TypeScript**), Tailwind CSS 4 (CSS-first: the brand
+colours and fonts are `@theme` tokens in `app/globals.css`, `lib/` is scanned by its `@source` line,
+there is no `tailwind.config.js`), Vercel; Supabase (Postgres +
 Auth); Stripe. The request-time hook is `proxy.js` (Next 16's name for `middleware.js`; comments
 saying "the middleware" mean it). `app/` routes, `components/` shared UI, `lib/` helpers, `public/`
 static assets. `.github/workflows/build.yml` lints and builds every push to `main`.

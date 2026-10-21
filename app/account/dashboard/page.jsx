@@ -83,7 +83,7 @@ function SoonButton({ children }) {
       type="button"
       disabled
       title="Coming soon"
-      className="btn-outline !py-2 opacity-40 cursor-not-allowed"
+      className="btn-outline py-2! opacity-40 cursor-not-allowed"
     >
       {children}
     </button>
@@ -663,8 +663,8 @@ export default async function DashboardPage({ searchParams }) {
                       href={`/account/details/${p.id}/`}
                       className={
                         state === 'empty'
-                          ? 'btn-primary !py-1.5 text-sm'
-                          : 'btn-outline !py-1.5 text-sm'
+                          ? 'btn-primary py-1.5! text-sm'
+                          : 'btn-outline py-1.5! text-sm'
                       }
                     >
                       {/* Each button names the form it opens (15 Oct 2026):
@@ -705,7 +705,7 @@ export default async function DashboardPage({ searchParams }) {
           </div>
           {/* A form, not a link. See app/auth/signout/route.js for why. */}
           <form action="/auth/signout/" method="post">
-            <button type="submit" className="btn-outline !py-2">
+            <button type="submit" className="btn-outline py-2!">
               Log Out
             </button>
           </form>
@@ -737,7 +737,7 @@ export default async function DashboardPage({ searchParams }) {
                 serve, and start the volunteer review.
               </p>
             </div>
-            <Link href="/register/volunteer" className="btn-primary !py-2">
+            <Link href="/register/volunteer" className="btn-primary py-2!">
               Complete the volunteer application
             </Link>
           </div>
@@ -787,7 +787,7 @@ export default async function DashboardPage({ searchParams }) {
                 );
               })()}
             </div>
-            <Link href="/admin" className="btn-primary !py-2 shrink-0">
+            <Link href="/admin" className="btn-primary py-2! shrink-0">
               Go to Staff Area
             </Link>
           </div>
@@ -818,13 +818,13 @@ export default async function DashboardPage({ searchParams }) {
         <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
           <div className="contents lg:flex lg:flex-col lg:gap-6 lg:col-span-2">
           {/* Registrations -- real */}
-          <div className={`rounded-lg bg-white border border-neutral-200 shadow-sm p-6 ${donorFirst ? 'order-3' : 'order-1'}`}>
+          <div className={`rounded-lg bg-white border border-neutral-200 shadow-xs p-6 ${donorFirst ? 'order-3' : 'order-1'}`}>
             <h2 className="text-xl font-bold mb-4">My Registrations</h2>
 
             {regs.length === 0 ? (
-              <div className="rounded border border-dashed border-neutral-300 p-6 text-center text-neutral-600">
+              <div className="rounded-sm border border-dashed border-neutral-300 p-6 text-center text-neutral-600">
                 <p>You haven&rsquo;t registered anyone yet.</p>
-                <Link href="/register/" className="btn-primary !py-2 mt-4 inline-block">
+                <Link href="/register/" className="btn-primary py-2! mt-4 inline-block">
                   Register for an Event
                 </Link>
               </div>
@@ -1079,7 +1079,7 @@ export default async function DashboardPage({ searchParams }) {
                       {/* Notes FROM camp staff — e.g. "We added a $100
                           scholarship credit to your registration on 8/17." */}
                       {(msgsByReg.get(r.id) ?? []).length > 0 && (
-                        <div className="mt-3 rounded border border-brand/30 bg-brand-light/50 p-3">
+                        <div className="mt-3 rounded-sm border border-brand/30 bg-brand-light/50 p-3">
                           <p className="text-sm font-semibold text-brand-dark mb-1">
                             Notes from camp staff
                           </p>
@@ -1100,7 +1100,7 @@ export default async function DashboardPage({ searchParams }) {
                           its status -- including any fee-cover amount, recorded
                           separately because it never counts toward the balance. */}
                       {(paymentsByReg.get(r.id) ?? []).length > 0 && (
-                        <div className="mt-4 rounded border border-neutral-100 bg-neutral-50 p-3">
+                        <div className="mt-4 rounded-sm border border-neutral-100 bg-neutral-50 p-3">
                           <p className="text-sm font-semibold mb-2">Payments</p>
                           <ul className="divide-y divide-neutral-100 text-sm">
                             {(paymentsByReg.get(r.id) ?? []).map((p, i) => {
@@ -1183,7 +1183,7 @@ export default async function DashboardPage({ searchParams }) {
                         if (reductions === 0) return null;
                         const bal = b.balance_cents ?? 0;
                         return (
-                          <div className="mt-3 rounded border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm max-w-xs">
+                          <div className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm max-w-xs">
                             <div className="flex justify-between py-0.5">
                               <span className="text-neutral-500">Fees</span>
                               <span>{money(b.fee_cents)}</span>
@@ -1234,13 +1234,13 @@ export default async function DashboardPage({ searchParams }) {
                           payment choice. Replaces the deposit banner below,
                           because the deposit is now part of that choice. */}
                       {unfinished(r) && (
-                        <div className="mt-4 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <div className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                           <p className="font-semibold">Your registration isn&rsquo;t finished yet.</p>
                           <p className="mt-1">
                             Choose how you&rsquo;ll pay: in full, with a payment plan, or by
                             requesting help with the fee.
                           </p>
-                          <Link href={`/account/finish/${r.id}/`} className="btn-primary mt-2 inline-block !py-2">
+                          <Link href={`/account/finish/${r.id}/`} className="btn-primary mt-2 inline-block py-2!">
                             Choose how to pay
                           </Link>
                         </div>
@@ -1280,7 +1280,7 @@ export default async function DashboardPage({ searchParams }) {
                         // to pay" (and a plan takes it as its first payment).
                         if (unfinished(r) || planByReg.get(r.id)) return null;
                         return (
-                          <div className="mt-4 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                          <div className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                             <p className="font-semibold">
                               A {money(dep)} deposit is needed before staff can approve this registration
                               {heads > 1
@@ -1341,7 +1341,7 @@ export default async function DashboardPage({ searchParams }) {
                             <Link
                               href={`/account/finish/${r.id}/`}
                               title="Pay in full, or spread the balance with automatic payments."
-                              className="btn-outline !py-2"
+                              className="btn-outline py-2!"
                             >
                               Payment plan
                             </Link>
@@ -1349,14 +1349,14 @@ export default async function DashboardPage({ searchParams }) {
                         <Link
                           href={`/account/scholarship/${r.id}`}
                           title="Ask for help with the fee. It will not affect anyone's place."
-                          className="btn-outline !py-2"
+                          className="btn-outline py-2!"
                         >
                           Request help with the fee
                         </Link>
                         <Link
                           href={`/account/statement/${r.id}`}
                           title="A printable statement: fees, scholarships, payments, and balance."
-                          className="btn-outline !py-2"
+                          className="btn-outline py-2!"
                         >
                           Statement
                         </Link>
@@ -1366,7 +1366,7 @@ export default async function DashboardPage({ searchParams }) {
                         <Link
                           href={`/register/family/?event=${r.events?.id ?? ''}`}
                           title="Opens your saved registration so you can make changes."
-                          className="btn-outline !py-2"
+                          className="btn-outline py-2!"
                         >
                           Edit Registration
                         </Link>
@@ -1384,7 +1384,7 @@ export default async function DashboardPage({ searchParams }) {
                           <Link
                             href="/account/activities/"
                             title="Choose activities for your campers; volunteers upload outside providers' confirmations here too."
-                            className="btn-outline !py-2"
+                            className="btn-outline py-2!"
                           >
                             Choose activities
                           </Link>
@@ -1395,7 +1395,7 @@ export default async function DashboardPage({ searchParams }) {
                         <Link
                           href="/account/agreements/"
                           title="The agreements you signed for this registration, with the exact wording."
-                          className="btn-outline !py-2"
+                          className="btn-outline py-2!"
                         >
                           Signed agreements
                         </Link>
@@ -1415,7 +1415,7 @@ export default async function DashboardPage({ searchParams }) {
                     </RegistrationCard>
                   );
                 })}
-                <Link href="/register/family" className="btn-outline !py-2 inline-block">
+                <Link href="/register/family" className="btn-outline py-2! inline-block">
                   New Registration
                 </Link>
               </div>
@@ -1423,7 +1423,7 @@ export default async function DashboardPage({ searchParams }) {
           </div>
 
           {/* Giving -- real history, giving-first for donors */}
-          <div className={`rounded-lg bg-white border border-neutral-200 shadow-sm p-6 ${donorFirst ? 'order-1' : 'order-3'}`}>
+          <div className={`rounded-lg bg-white border border-neutral-200 shadow-xs p-6 ${donorFirst ? 'order-1' : 'order-3'}`}>
             <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
               <h2 className="text-xl font-bold">My Giving</h2>
               {givenTotal > 0 && (
@@ -1470,7 +1470,7 @@ export default async function DashboardPage({ searchParams }) {
                   history, and here is where a new gift goes"), while the header
                   button serves people anywhere on the site. One consistent
                   label, logged in or not, donor or not. */}
-              <Link href="/donate" className="btn-gold !py-2">
+              <Link href="/donate" className="btn-gold py-2!">
                 Make a New Gift
               </Link>
               <SoonButton>Manage Recurring Gift</SoonButton>
@@ -1482,7 +1482,7 @@ export default async function DashboardPage({ searchParams }) {
 
           <div className="contents lg:flex lg:flex-col lg:gap-6">
           {/* Household -- real */}
-          <div className={`rounded-lg bg-white border border-neutral-200 shadow-sm p-6 ${donorFirst ? 'order-4' : 'order-2'}`}>
+          <div className={`rounded-lg bg-white border border-neutral-200 shadow-xs p-6 ${donorFirst ? 'order-4' : 'order-2'}`}>
             <h2 className="text-xl font-bold mb-4">My Household</h2>
             {householdError ? (
               <p className="text-amber-800">
@@ -1539,14 +1539,14 @@ export default async function DashboardPage({ searchParams }) {
               </ul>
             )}
             <div className="mt-4">
-              <Link href="/account/household/" className="btn-outline !py-2 inline-block">
+              <Link href="/account/household/" className="btn-outline py-2! inline-block">
                 Manage Household
               </Link>
             </div>
           </div>
 
           {/* Account settings -- change password works today */}
-          <div className={`rounded-lg bg-white border border-neutral-200 shadow-sm p-6 ${donorFirst ? 'order-2' : 'order-4'}`}>
+          <div className={`rounded-lg bg-white border border-neutral-200 shadow-xs p-6 ${donorFirst ? 'order-2' : 'order-4'}`}>
             <h2 className="text-xl font-bold mb-4">My Account Settings</h2>
             <ul className="space-y-2 text-neutral-700">
               <li>

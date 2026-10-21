@@ -134,13 +134,13 @@ components/             Shared UI pieces reused across pages.
 public/                 Served verbatim. public/images/logo.png is /images/logo.png.
 lib/                    Shared helper code.
 next.config.mjs         Build configuration. Rarely needs touching.
-tailwind.config.js      Design tokens — colors, fonts, spacing scale.
+app/globals.css         Design tokens (brand colours, fonts) in its @theme block.
 .gitattributes          Line-ending normalization. Do not remove.
 ```
 
 Styling is [Tailwind CSS](https://tailwindcss.com/): utility classes applied directly
 in the markup rather than a separate stylesheet. Change shared colors and fonts in
-`tailwind.config.js` so they stay consistent everywhere.
+the `@theme` block of `app/globals.css` so they stay consistent everywhere.
 
 ### Adding a page
 

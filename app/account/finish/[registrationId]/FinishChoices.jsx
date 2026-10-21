@@ -30,7 +30,7 @@ function Choice({ value, cur, set, title, children }) {
 function Pill({ value, cur, set, children }) {
   return (
     <label
-      className={`flex-1 cursor-pointer rounded border px-3 py-2 text-sm text-center ${
+      className={`flex-1 cursor-pointer rounded-sm border px-3 py-2 text-sm text-center ${
         cur === value ? 'border-brand bg-brand-light font-semibold' : 'border-neutral-300'
       }`}
     >
@@ -80,14 +80,14 @@ export default function FinishChoices({
   return (
     <div className="space-y-3">
       {early && (
-        <p className="rounded border border-green-300 bg-green-50 px-4 py-2 text-sm text-green-900">
+        <p className="rounded-sm border border-green-300 bg-green-50 px-4 py-2 text-sm text-green-900">
           You registered early, so you save <strong>{dollars(earlySavingCents)}</strong>
           {earlyEndsOn ? ` (early registration ends ${formatDueDateShort(earlyEndsOn)})` : ''} when you
           pay in full or set up a payment plan.
         </p>
       )}
       {planPending && (
-        <p className="rounded border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+        <p className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
           A payment plan was started but the deposit didn&rsquo;t go through, so it isn&rsquo;t set up
           yet. You can try again below.
         </p>
@@ -176,7 +176,7 @@ export default function FinishChoices({
             type="button"
             onClick={go}
             disabled={pending || (route === 'plan' && !agreed)}
-            className="btn-primary !py-2 disabled:opacity-50"
+            className="btn-primary py-2! disabled:opacity-50"
           >
             {pending
               ? 'Opening secure checkout…'
@@ -188,7 +188,7 @@ export default function FinishChoices({
       )}
 
       {route === 'scholarship' && (
-        <Link href={`/account/scholarship/${registrationId}/`} className="btn-primary inline-block !py-2">
+        <Link href={`/account/scholarship/${registrationId}/`} className="btn-primary inline-block py-2!">
           Go to the scholarship request
         </Link>
       )}

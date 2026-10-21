@@ -44,7 +44,7 @@ export default function ResetPasswordForm() {
 
   return (
     <form
-      className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8"
+      className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8"
       onSubmit={handleSubmit}
     >
       <h2 className="text-2xl font-bold mb-1">Set a new password</h2>
@@ -57,7 +57,7 @@ export default function ResetPasswordForm() {
       {error && (
         <p
           role="alert"
-          className="mb-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800"
+          className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800"
         >
           {error}
         </p>
@@ -74,7 +74,7 @@ export default function ResetPasswordForm() {
         minLength={8}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-4"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
       />
       <label className="block font-semibold mb-1.5" htmlFor="rp-confirm">
         Confirm new password
@@ -87,7 +87,7 @@ export default function ResetPasswordForm() {
         minLength={8}
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
-        className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-6"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-6"
       />
       <button type="submit" className="btn-primary w-full" disabled={busy}>
         {busy ? 'Saving…' : 'Save New Password'}

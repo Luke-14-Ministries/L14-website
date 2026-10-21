@@ -9,7 +9,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateMyProfile, requestLoginEmailChange, setEmailNews } from './actions';
 
-const inputCls = 'w-full rounded border border-neutral-300 px-3 py-2';
+const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-2';
 
 // One save-status line per form, given the entry for its form from `msg`.
 //
@@ -50,7 +50,7 @@ export default function ContactManager({ email, profile }) {
     <div className="space-y-6">
       {/* Name & personal phone */}
       <form
-        className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6"
+        className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6"
         onSubmit={(e) => {
           e.preventDefault();
           const f = Object.fromEntries(new FormData(e.currentTarget));
@@ -85,14 +85,14 @@ export default function ContactManager({ email, profile }) {
           </label>
         </div>
         <div className="mt-4 flex items-center gap-3">
-          <button type="submit" className="btn-primary !py-2">Save</button>
+          <button type="submit" className="btn-primary py-2!">Save</button>
           <Status s={msg.profile} />
         </div>
       </form>
 
       {/* Login email */}
       <form
-        className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6"
+        className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6"
         onSubmit={(e) => {
           e.preventDefault();
           const f = Object.fromEntries(new FormData(e.currentTarget));
@@ -110,7 +110,7 @@ export default function ContactManager({ email, profile }) {
             <span className="block text-sm font-semibold mb-1">New email address</span>
             <input name="new_email" type="email" required className={inputCls} />
           </label>
-          <button type="submit" className="btn-outline !py-2">Send confirmation</button>
+          <button type="submit" className="btn-outline py-2!">Send confirmation</button>
         </div>
         <div className="mt-2">
           <Status s={msg.email} />
@@ -118,7 +118,7 @@ export default function ContactManager({ email, profile }) {
       </form>
 
       {/* Email preferences */}
-      <div id="email-preferences" className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+      <div id="email-preferences" className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
         <h2 className="text-lg font-bold mb-1">Email preferences</h2>
         <p className="text-sm text-neutral-500 mb-4">
           Receipts, registration confirmations, and account emails always send — this only

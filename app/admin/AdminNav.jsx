@@ -118,7 +118,7 @@ export default function AdminNav({
         // onto a line of its own, which read as a stray number under the item
         // rather than a count on it (25 Aug). Now the label takes the room it
         // needs and the badge holds its place at the end.
-        className={`flex items-center justify-between gap-2 rounded px-3 py-2 font-medium hover:bg-brand-light/60 ${
+        className={`flex items-center justify-between gap-2 rounded-sm px-3 py-2 font-medium hover:bg-brand-light/60 ${
           indent ? 'ml-4' : ''
         } ${
           isActive(n.href)
@@ -155,7 +155,7 @@ export default function AdminNav({
     ) : (
       <span
         title="Coming soon"
-        className={`block rounded px-3 py-2 text-neutral-400 cursor-default ${indent ? 'ml-4' : ''}`}
+        className={`block rounded-sm px-3 py-2 text-neutral-400 cursor-default ${indent ? 'ml-4' : ''}`}
       >
         {n.label} <span className="text-xs">· soon</span>
       </span>
@@ -182,7 +182,7 @@ export default function AdminNav({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex w-full items-center justify-between rounded px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:bg-neutral-200 text-left"
+              className="flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:bg-neutral-200 text-left"
             >
               <span>{sec.label}</span>
               <span aria-hidden className={`text-xs transition-transform ${open ? 'rotate-90' : ''}`}>

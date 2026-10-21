@@ -250,10 +250,10 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
           />
         </div>
         <div className="mt-3 flex gap-3">
-          <button type="button" onClick={saveFramed} disabled={busy} className="btn-primary !py-1.5 text-sm">
+          <button type="button" onClick={saveFramed} disabled={busy} className="btn-primary py-1.5! text-sm">
             {busy ? 'Saving…' : 'Use this photo'}
           </button>
-          <button type="button" onClick={cancelFraming} disabled={busy} className="btn-outline !py-1.5 text-sm">
+          <button type="button" onClick={cancelFraming} disabled={busy} className="btn-outline py-1.5! text-sm">
             Cancel
           </button>
         </div>
@@ -291,7 +291,7 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
             button is simply not shown -- `capture` there opens a file dialog
             anyway, which would be two buttons doing one thing. */}
         <div className="flex flex-wrap gap-2">
-          <label className="btn-outline !py-1.5 text-sm cursor-pointer inline-block">
+          <label className="btn-outline py-1.5! text-sm cursor-pointer inline-block">
             {preview ? 'Choose a different file' : 'Choose a file'}
             <input
               ref={fileRef}
@@ -303,7 +303,7 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
             />
           </label>
           {isTouchDevice && (
-            <label className="btn-outline !py-1.5 text-sm cursor-pointer inline-block">
+            <label className="btn-outline py-1.5! text-sm cursor-pointer inline-block">
               Take a photo
               <input
                 type="file"

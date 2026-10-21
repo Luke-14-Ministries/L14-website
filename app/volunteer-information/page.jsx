@@ -68,7 +68,7 @@ export default function VolunteerInformationPage() {
           <img
             src={asset('/images/20210720_201746.jpg')}
             alt="Camp Celebrate volunteers"
-            className="rounded-lg shadow w-full mb-8"
+            className="rounded-lg shadow-sm w-full mb-8"
           />
           <h2 className="text-3xl font-bold mb-6">Location, Dates, Schedule</h2>
           <div className="prose-site">
@@ -94,7 +94,7 @@ export default function VolunteerInformationPage() {
         <img
           src={asset('/images/DSC_0597.jpg')}
           alt="Camp Celebrate volunteers"
-          className="rounded-lg shadow w-full mb-8"
+          className="rounded-lg shadow-sm w-full mb-8"
         />
         <h2 className="text-3xl font-bold mb-6">Cost</h2>
         <p className="text-4xl font-bold text-brand mb-6">$495 a week</p>
@@ -119,7 +119,7 @@ export default function VolunteerInformationPage() {
           <img
             src={asset('/images/DSC_0340.jpg')}
             alt="Camp Celebrate volunteers"
-            className="rounded-lg shadow w-full mb-8"
+            className="rounded-lg shadow-sm w-full mb-8"
           />
           <h2 className="text-3xl font-bold mb-6">What to Expect</h2>
           <div className="prose-site">
@@ -151,7 +151,7 @@ export default function VolunteerInformationPage() {
         <img
           src={asset('/images/DSC_0382.jpg')}
           alt="Camp Celebrate volunteers"
-          className="rounded-lg shadow w-full mb-8"
+          className="rounded-lg shadow-sm w-full mb-8"
         />
         <h2 className="text-3xl font-bold mb-6">What to Bring</h2>
         <ul className="list-disc pl-6 space-y-2 text-lg text-neutral-700">

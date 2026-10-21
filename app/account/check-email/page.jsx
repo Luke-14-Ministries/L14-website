@@ -13,14 +13,14 @@ export default async function CheckEmailPage({ searchParams }) {
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-md mx-auto">
-        <div className="rounded-lg border border-neutral-200 shadow bg-white p-6 sm:p-8">
+        <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
           <h1 className="text-3xl font-bold mb-3">Check your email</h1>
           <p className="text-neutral-700">
             We&rsquo;ve sent a confirmation link
             {email ? (
               <>
                 {' '}
-                to <strong className="break-words">{email}</strong>
+                to <strong className="wrap-break-word">{email}</strong>
               </>
             ) : null}
             . Open it to finish setting up your account and continue to
@@ -54,7 +54,7 @@ export default async function CheckEmailPage({ searchParams }) {
                 and naming one of them safelists a third of what we send. Every
                 mail client accepts a domain in its safe-senders list. */}
             and add{' '}
-            <strong className="break-words">@luke14ministries.net</strong>{' '}
+            <strong className="wrap-break-word">@luke14ministries.net</strong>{' '}
             to your contacts or safe senders. That keeps our emails &mdash;
             receipts, reminders, statements &mdash; out of spam for good.
           </p>
@@ -66,7 +66,7 @@ export default async function CheckEmailPage({ searchParams }) {
             Still nothing? Email us at{' '}
             <a
               href="mailto:info@luke14ministries.net"
-              className="text-brand underline break-words"
+              className="text-brand underline wrap-break-word"
             >
               info@luke14ministries.net
             </a>{' '}
@@ -79,7 +79,7 @@ export default async function CheckEmailPage({ searchParams }) {
             and we&rsquo;ll sort it out with you.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/account" className="btn-outline !py-2">
+            <Link href="/account" className="btn-outline py-2!">
               Back to Log In
             </Link>
           </div>

@@ -51,7 +51,7 @@ export default function CampCelebratePage() {
             has the details, dates, and its own registration button.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-4">
-            <Link href="/camper-information" className="btn-primary !px-8">
+            <Link href="/camper-information" className="btn-primary px-8!">
               Campers &amp; Families
             </Link>
             <Link
@@ -124,7 +124,7 @@ export default function CampCelebratePage() {
       <section className="container-site pb-14">
         <div className="grid gap-8 sm:grid-cols-2">
           {features.map((f) => (
-            <div key={f.title} className="rounded-lg overflow-hidden shadow bg-white">
+            <div key={f.title} className="rounded-lg overflow-hidden shadow-sm bg-white">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={f.image} alt={f.title} className="h-64 w-full object-cover" />
               <div className="p-6">

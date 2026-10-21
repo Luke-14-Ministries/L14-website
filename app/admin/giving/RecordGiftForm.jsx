@@ -16,7 +16,7 @@ const FUNDS = [
   'Wheels for Kenya',
 ];
 
-const inputCls = 'w-full rounded border border-neutral-300 px-3 py-1.5 text-sm';
+const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm';
 const labelCls = 'block text-xs font-semibold text-neutral-500 mb-1 whitespace-nowrap';
 
 export default function RecordGiftForm() {
@@ -61,7 +61,7 @@ export default function RecordGiftForm() {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6">
+    <form onSubmit={submit} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
       <h3 className="font-bold mb-1">Record a mailed or cash gift</h3>
       <p className="text-sm text-neutral-500 mb-4">
         The donor&rsquo;s email links the gift to their giving history if they have (or later
@@ -108,13 +108,13 @@ export default function RecordGiftForm() {
       </div>
 
       {error && (
-        <p className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+        <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
       )}
       {done && (
-        <p className="mt-3 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">{done}</p>
+        <p className="mt-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">{done}</p>
       )}
 
-      <button type="submit" disabled={pending} className="btn-primary !py-2 mt-4">
+      <button type="submit" disabled={pending} className="btn-primary py-2! mt-4">
         {pending ? 'Recording…' : 'Record gift'}
       </button>
     </form>

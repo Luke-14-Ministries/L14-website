@@ -6,7 +6,7 @@
 
 export default function PrintButton() {
   return (
-    <button type="button" onClick={() => window.print()} className="btn-primary !py-2">
+    <button type="button" onClick={() => window.print()} className="btn-primary py-2!">
       Print / Save as PDF
     </button>
   );

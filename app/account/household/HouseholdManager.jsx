@@ -34,7 +34,7 @@ function Field({ label, children }) {
   );
 }
 
-const inputCls = 'w-full rounded border border-neutral-300 px-3 py-2';
+const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-2';
 
 // Today on the ministry's calendar, not UTC (after 8 pm Eastern UTC is tomorrow).
 function todayEastern() {
@@ -196,7 +196,7 @@ Anything already saved is untouched.`
       {/* Household contact card */}
       <form
         data-card="hh"
-        className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6"
+        className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6"
         onInput={markDirty('hh')}
         onSubmit={(e) => {
           e.preventDefault();
@@ -220,7 +220,7 @@ Anything already saved is untouched.`
             happens to match a person's name (the usual case for a household of
             one) they read as duplicates of each other. Testing hit exactly
             this, 25 Aug. */}
-        <p className="mb-4 rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+        <p className="mb-4 rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
           This section is about the <strong>household</strong> — the phone and email camp
           staff use to reach your family, and where post is sent. Each person&rsquo;s own
           phone and email live on their card further down, and are only used if staff need
@@ -309,7 +309,7 @@ Anything already saved is untouched.`
             busy={state.hh?.busy}
             saved={state.hh?.saved}
             label="Save household info"
-            className="!py-2"
+            className="py-2!"
           />
           {(state.hh?.dirty || state.hh?.error) && (
             <button
@@ -337,7 +337,7 @@ Anything already saved is untouched.`
           <form
             key={m.id}
             data-card={m.id}
-            className="rounded-lg bg-white border border-neutral-200 shadow-sm p-6"
+            className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6"
             onInput={markDirty(m.id)}
             onSubmit={(e) => {
               e.preventDefault();
@@ -364,7 +364,7 @@ Anything already saved is untouched.`
                 have to open a per-event form to change a face. Same component,
                 same storage path, so a photo added in either place is the
                 same photo. */}
-            <div className="mt-3 rounded border border-neutral-200 bg-neutral-50 p-4">
+            <div className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 p-4">
               <PhotoUpload
                 personId={m.id}
                 personName={m.first_name}
@@ -442,7 +442,7 @@ Anything already saved is untouched.`
                 nobody confirmed — which is how DoubleFaci ended up looking
                 like a saved answer. Absent means absent. */}
             {caregiversOpen[m.id] ?? (hasSaved || !isAdult) ? (
-              <div className="mt-4 rounded border border-neutral-200 bg-neutral-50 p-4">
+              <div className="mt-4 rounded-sm border border-neutral-200 bg-neutral-50 p-4">
                 <p className="text-sm font-semibold mb-2">
                   Linked caregivers
                   {!hasSaved && defaults.length > 0 && (
@@ -493,7 +493,7 @@ Anything already saved is untouched.`
                 type="submit"
                 busy={state[m.id]?.busy}
                 saved={state[m.id]?.saved}
-                className="!py-2"
+                className="py-2!"
               />
               {(state[m.id]?.dirty || state[m.id]?.error) && (
                 <button
@@ -591,7 +591,7 @@ Anything already saved is untouched.`
             busy={state.add?.busy}
             saved={state.add?.saved}
             label="Add to my household"
-            className="!py-2"
+            className="py-2!"
           />
           {state.add?.error && <span className="text-sm text-red-700">{state.add.error}</span>}
           {state.add?.saved && (
@@ -614,7 +614,7 @@ Anything already saved is untouched.`
           pb-24 on the wrapper keeps it from covering the last card's own Save
           button, which would be a poor joke. */}
       {dirtyKeys.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-amber-300 bg-amber-50/95 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-amber-300 bg-amber-50/95 backdrop-blur-sm">
           <div className="container-site mx-auto flex flex-wrap items-center justify-between gap-3 py-3">
             <span className="text-sm font-semibold text-amber-900">
               {dirtyKeys.length} {dirtyKeys.length === 1 ? 'card has' : 'cards have'}{' '}
@@ -628,7 +628,7 @@ Anything already saved is untouched.`
               >
                 Discard
               </button>
-              <button type="button" onClick={saveAll} className="btn-primary !py-1.5 text-sm">
+              <button type="button" onClick={saveAll} className="btn-primary py-1.5! text-sm">
                 Save all
               </button>
             </span>

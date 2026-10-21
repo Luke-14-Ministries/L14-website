@@ -44,7 +44,7 @@ const TSHIRT_ORDER = [
   'Adult S', 'Adult M', 'Adult L', 'Adult XL', 'Adult 2XL', 'Adult 3XL',
 ];
 
-const selectCls = 'rounded border border-neutral-300 px-3 py-1.5 text-sm bg-white';
+const selectCls = 'rounded-sm border border-neutral-300 px-3 py-1.5 text-sm bg-white';
 
 // Small pill used for the per-person flags column.
 function Flag({ tone, children, title }) {
@@ -57,7 +57,7 @@ function Flag({ tone, children, title }) {
           ? 'bg-blue-100 text-blue-800'
           : 'bg-neutral-200 text-neutral-600';
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`} title={title}>
+    <span className={`rounded-full px-2 py-0.5 text-[11px] leading-5 font-semibold ${cls}`} title={title}>
       {children}
     </span>
   );
@@ -224,10 +224,10 @@ export default function RosterTable({ events, rows, programs = [] }) {
             {families} {families === 1 ? 'family' : 'families'} · {filtered.length}{' '}
             {filtered.length === 1 ? 'person' : 'people'}
           </span>
-          <a href={csvHref} className="btn-outline !py-1.5 text-sm">
+          <a href={csvHref} className="btn-outline py-1.5! text-sm">
             Download CSV
           </a>
-          <a href={printHref} className="btn-outline !py-1.5 text-sm">
+          <a href={printHref} className="btn-outline py-1.5! text-sm">
             Print view
           </a>
         </div>
@@ -246,7 +246,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                 {shirtCounts.ordered.map(([size, n]) => (
                   <span
                     key={size}
-                    className="rounded border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-sm"
+                    className="rounded-sm border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-sm"
                   >
                     {/* "× n", because a bare number beside a size read as part
                         of the size ("Youth M 1") in testing. */}
@@ -301,7 +301,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
             that works in every browser on every machine. Printing and the
             CSV are the other two ways out, and both are one click away. */}
         <p className="mb-2 text-xs text-neutral-500">
-          More columns than fit? Hold <kbd className="rounded border border-neutral-300 bg-neutral-50 px-1">Shift</kbd>{' '}
+          More columns than fit? Hold <kbd className="rounded-sm border border-neutral-300 bg-neutral-50 px-1">Shift</kbd>{' '}
           and scroll to move sideways — the name column stays put. Print view and the CSV
           both include every column.
         </p>
@@ -390,7 +390,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                         means three of them. */}
                     {r.depositShort && (
                       <div
-                        className="mt-1 inline-block rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900"
+                        className="mt-1 inline-block rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900"
                         title={`Deposit is $${((r.depositDue ?? 0) / 100).toFixed(2)} for this family; $${((r.depositPaid ?? 0) / 100).toFixed(2)} received.`}
                       >
                         deposit short — ${((r.depositPaid ?? 0) / 100).toFixed(0)} of $
@@ -398,11 +398,11 @@ export default function RosterTable({ events, rows, programs = [] }) {
                       </div>
                     )}
                     {r.familyNote && (
-                      <details className="mt-1 max-w-[22rem]">
-                        <summary className="cursor-pointer rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900 marker:text-amber-700">
+                      <details className="mt-1 max-w-88">
+                        <summary className="cursor-pointer rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900 marker:text-amber-700">
                           Note from the family
                         </summary>
-                        <p className="mt-1 whitespace-pre-wrap rounded border border-amber-200 bg-amber-50/60 px-2 py-1 text-xs text-amber-900">
+                        <p className="mt-1 whitespace-pre-wrap rounded-sm border border-amber-200 bg-amber-50/60 px-2 py-1 text-xs text-amber-900">
                           {r.familyNote}
                         </p>
                       </details>

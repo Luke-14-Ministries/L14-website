@@ -67,7 +67,7 @@ export default function GivingForm({ signedInEmail }) {
 
   return (
     <form
-      className="rounded-lg border border-neutral-200 shadow p-6 sm:p-8 bg-white"
+      className="rounded-lg border border-neutral-200 shadow-sm p-6 sm:p-8 bg-white"
       onSubmit={submit}
     >
       <h3 className="text-2xl font-bold mb-4">Give Online</h3>
@@ -77,12 +77,12 @@ export default function GivingForm({ signedInEmail }) {
           but anyone who might want their giving history in one place gets the
           chance to log in first and come straight back here. */}
       {signedInEmail ? (
-        <p className="mb-5 rounded border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-800">
+        <p className="mb-5 rounded-sm border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-800">
           Signed in as <strong>{signedInEmail}</strong> — this gift will be saved
           to your giving history and receipts.
         </p>
       ) : (
-        <div className="mb-5 rounded border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+        <div className="mb-5 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
           <p>
             <strong>Giving as a guest</strong> — quick and easy, with a receipt
             emailed to you.
@@ -102,7 +102,7 @@ export default function GivingForm({ signedInEmail }) {
         </div>
       )}
 
-      <div className="flex rounded overflow-hidden border border-brand mb-5">
+      <div className="flex rounded-sm overflow-hidden border border-brand mb-5">
         <button type="button" className="flex-1 py-2.5 font-semibold bg-brand text-white">
           One-Time
         </button>
@@ -125,7 +125,7 @@ export default function GivingForm({ signedInEmail }) {
               setAmount(p);
               setCustom('');
             }}
-            className={`rounded border py-2.5 font-semibold ${
+            className={`rounded-sm border py-2.5 font-semibold ${
               !custom && amount === p
                 ? 'bg-brand text-white border-brand'
                 : 'border-neutral-300 hover:border-brand'
@@ -142,14 +142,14 @@ export default function GivingForm({ signedInEmail }) {
         placeholder="Custom amount"
         value={custom}
         onChange={(e) => setCustom(e.target.value)}
-        className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-5"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-5"
       />
 
       <label className="block font-semibold mb-1.5">Designate my gift to</label>
       <select
         value={fund}
         onChange={(e) => setFund(e.target.value)}
-        className="w-full rounded border border-neutral-300 px-4 py-2.5 mb-5"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-5"
       >
         {funds.map((f) => (
           <option key={f}>{f}</option>
@@ -164,7 +164,7 @@ export default function GivingForm({ signedInEmail }) {
         ].map(([v, label, sub]) => (
           <label
             key={v}
-            className={`flex-1 cursor-pointer rounded border px-3 py-2 text-sm text-center ${
+            className={`flex-1 cursor-pointer rounded-sm border px-3 py-2 text-sm text-center ${
               method === v ? 'border-brand bg-brand-light' : 'border-neutral-300'
             }`}
           >
@@ -198,7 +198,7 @@ export default function GivingForm({ signedInEmail }) {
       <Turnstile onToken={setCaptchaToken} resetKey={captchaBump} action="donate" />
 
       {error && (
-        <p className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       )}

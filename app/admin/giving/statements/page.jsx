@@ -74,17 +74,17 @@ export default async function GivingStatementsPage({ searchParams }) {
         <form method="get" className="mb-2 flex flex-wrap items-end gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm">
           <label className="block">
             <span className="block font-semibold mb-1">From</span>
-            <input type="date" name="from" defaultValue={from} className="rounded border border-neutral-300 px-2 py-1.5" />
+            <input type="date" name="from" defaultValue={from} className="rounded-sm border border-neutral-300 px-2 py-1.5" />
           </label>
           <label className="block">
             <span className="block font-semibold mb-1">To</span>
-            <input type="date" name="to" defaultValue={to} className="rounded border border-neutral-300 px-2 py-1.5" />
+            <input type="date" name="to" defaultValue={to} className="rounded-sm border border-neutral-300 px-2 py-1.5" />
           </label>
-          <label className="block flex-1 min-w-[12rem]">
+          <label className="block flex-1 min-w-48">
             <span className="block font-semibold mb-1">One donor (name or email, optional)</span>
-            <input name="donor" defaultValue={donorFilter} placeholder="leave blank for all donors" className="w-full rounded border border-neutral-300 px-2 py-1.5" />
+            <input name="donor" defaultValue={donorFilter} placeholder="leave blank for all donors" className="w-full rounded-sm border border-neutral-300 px-2 py-1.5" />
           </label>
-          <button type="submit" className="btn-primary !py-1.5">Apply</button>
+          <button type="submit" className="btn-primary py-1.5!">Apply</button>
         </form>
         <p className="text-sm text-neutral-500">
           {donorList.length} {donorList.length === 1 ? 'donor' : 'donors'} · {from} to {to} · each

@@ -1,7 +1,71 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
+/*
+  lib/ IS scanned, and that is not optional. Tailwind only generates a class
+  it has literally seen in a scanned file, so a helper that RETURNS class
+  names is invisible unless its file is scanned.
+
+  Added 31 Aug 2026, the day it bit: allergyPill in lib/format.js returns the
+  severity colours for the Dietary page, and every pill rendered grey. The
+  text was right, the logic was right, the classes simply did not exist in
+  the stylesheet — and nothing errors, which is what makes it hard to see.
+  The pill it replaced had been written inline in JSX, so it had always
+  worked.
+
+  Tailwind 4 (Oct 2026) scans every file under the project root that git
+  does not ignore, so app/, components/ and lib/ are all covered without a
+  list (tailwind.config.js and its `content` array are gone). This line
+  keeps lib/ a stated fact rather than a default somebody could narrow.
+*/
+@source '../lib';
+
+/* Design tokens — the brand colours and font stacks that used to live in
+   tailwind.config.js. `--color-brand` gives bg-brand, text-brand,
+   border-brand and so on; `--font-heading` gives font-heading. */
+@theme {
+  --color-brand: #2a6f77;
+  --color-brand-dark: #1d4e54;
+  --color-brand-light: #e8f2f3;
+  --color-brand-gold: #d99a2b;
+
+  --font-heading: Georgia, Cambria, 'Times New Roman', serif;
+  --font-body: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/*
+  Tailwind 3 → 4 compatibility (upgrade guide, "Preflight changes"). Three
+  defaults changed in v4; these rules keep the site drawing as it did on 3.4
+  so that a bare `border`, a placeholder or a button needs no new class.
+
+  - Border colour: v3 defaulted every border to gray-200, v4 to currentcolor.
+    Hundreds of `border` / `border-t` / `divide-y` here rely on the grey.
+  - Placeholder text: v3 used gray-400, v4 uses the text colour at 50%.
+  - Buttons: v3 gave them a pointer cursor, v4 the browser default arrow.
+
+  If we ever want to drop these, every element that depends on them needs
+  an explicit border-*, placeholder:* or cursor-* utility first.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Site-wide base styles. */
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -14,23 +78,32 @@
   }
 }
 
-@layer components {
-  .container-site {
-    @apply mx-auto max-w-6xl px-4 sm:px-6;
-  }
-  .btn {
-    @apply inline-block rounded px-6 py-3 font-semibold transition-colors;
-  }
-  .btn-primary {
-    @apply btn bg-brand text-white hover:bg-brand-dark;
-  }
-  .btn-outline {
-    @apply btn border-2 border-brand text-brand hover:bg-brand hover:text-white;
-  }
-  .btn-gold {
-    @apply btn bg-brand-gold text-white hover:bg-amber-600;
-  }
-  .prose-site {
-    @apply space-y-4 leading-relaxed text-lg;
-  }
+/*
+  Shared classes. These were `@layer components` rules on Tailwind 3; v4
+  registers them with @utility instead, which is what lets `.btn-primary`
+  @apply `.btn`, and lets them take variants (hover:btn-outline) and be
+  overridden by a plain utility on the same element (`btn px-2`), as before.
+*/
+@utility container-site {
+  @apply mx-auto max-w-6xl px-4 sm:px-6;
+}
+
+@utility btn {
+  @apply inline-block rounded-sm px-6 py-3 font-semibold transition-colors;
+}
+
+@utility btn-primary {
+  @apply btn bg-brand text-white hover:bg-brand-dark;
+}
+
+@utility btn-outline {
+  @apply btn border-2 border-brand text-brand hover:bg-brand hover:text-white;
+}
+
+@utility btn-gold {
+  @apply btn bg-brand-gold text-white hover:bg-amber-600;
+}
+
+@utility prose-site {
+  @apply space-y-4 leading-relaxed text-lg;
 }

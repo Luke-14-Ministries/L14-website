@@ -12,7 +12,7 @@ import Link from 'next/link';
 // floating variant needs to watch the scroll position.
 
 export const BACK_PILL =
-  'inline-flex items-center rounded-full border border-neutral-300 bg-white px-4 py-1.5 text-sm font-semibold text-brand shadow-sm hover:bg-neutral-50';
+  'inline-flex items-center rounded-full border border-neutral-300 bg-white px-4 py-1.5 text-sm font-semibold text-brand shadow-xs hover:bg-neutral-50';
 
 export default function BackLink({
   href = '/account/dashboard/',

@@ -323,7 +323,7 @@ export default async function PersonPage({ params }) {
       </p>
 
       {!sensitive && (
-        <p className="mt-4 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           <strong>Some of this person&rsquo;s information is hidden.</strong> Allergies,
           medical flags and the emergency contact need the <em>sensitive information</em>{' '}
           permission. An administrator grants it on Staff &amp; Access.
@@ -338,7 +338,7 @@ export default async function PersonPage({ params }) {
             (parts ?? []).map((p) => {
               const place = placeFor(p.id);
               return (
-                <div key={p.id} className="mb-3 last:mb-0 rounded border border-neutral-200 p-3">
+                <div key={p.id} className="mb-3 last:mb-0 rounded-sm border border-neutral-200 p-3">
                   {/* The event name IS the link to the registration (31 Aug).
                       It was a fifth row saying "Open the registration", which
                       is a whole line spent on a verb — and it made this card
@@ -397,7 +397,7 @@ export default async function PersonPage({ params }) {
                         {cls ? (
                           <span
                             title={cls.hint}
-                            className={`rounded px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
+                            className={`rounded-sm px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
                           >
                             {cls.label}
                           </span>

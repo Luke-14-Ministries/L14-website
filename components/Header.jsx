@@ -54,7 +54,7 @@ export default function Header() {
           {nav.map((group) => (
             <DesktopDropdown key={group.label} group={group} />
           ))}
-          <Link href="/donate" className="btn-gold ml-3 !py-2">
+          <Link href="/donate" className="btn-gold ml-3 py-2!">
             Donate
           </Link>
         </nav>

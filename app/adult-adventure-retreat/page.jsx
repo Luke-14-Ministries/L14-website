@@ -51,7 +51,7 @@ export default function AdultAdventureRetreatPage() {
               >
                 Camp Celebrate
               </p>
-              <h1 className="mt-2 text-4xl sm:text-5xl font-bold leading-tight">
+              <h1 className="mt-2 text-4xl sm:text-5xl font-bold leading-tight sm:leading-none">
                 Adult Adventure Retreat
               </h1>
               <p className="mt-4 text-xl text-white/90">
@@ -79,7 +79,7 @@ export default function AdultAdventureRetreatPage() {
               </dl>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
-                <a href={CURRENT_REGISTRATION} className="btn-gold !px-8">
+                <a href={CURRENT_REGISTRATION} className="btn-gold px-8!">
                   Register for the 2026 Retreat
                 </a>
                 <span className="text-white/80">
@@ -129,7 +129,7 @@ export default function AdultAdventureRetreatPage() {
             </p>
           </div>
           <div className="mt-8">
-            <a href={CURRENT_REGISTRATION} className="btn-primary !px-8">
+            <a href={CURRENT_REGISTRATION} className="btn-primary px-8!">
               Register for the 2026 Retreat
             </a>
           </div>

@@ -147,12 +147,12 @@ const ageOn = (dobISO, onISO) => {
   return age;
 };
 
-const input = 'w-full rounded border border-neutral-300 px-4 py-2.5';
+const input = 'w-full rounded-sm border border-neutral-300 px-4 py-2.5';
 const label = 'block font-semibold mb-1.5 mt-4 first:mt-0';
 
 function Card({ n, title, subtitle, children }) {
   return (
-    <section className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
+    <section className="rounded-lg border border-neutral-200 shadow-xs bg-white p-6 sm:p-8">
       <div className="flex items-baseline gap-3 mb-1">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-white text-sm font-bold">
           {n}
@@ -569,19 +569,19 @@ export default function FamilyWizard({
             facts, and only the second means the ask is finished. The server
             returns depositDue with the save; undefined errs toward asking. */}
         {result.supportError && (
-          <p className="mt-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-left text-sm text-red-800">
+          <p className="mt-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-left text-sm text-red-800">
             {result.supportError}
           </p>
         )}
         {result.signatureError && (
-          <p className="mt-4 rounded border border-red-300 bg-red-50 px-4 py-3 text-left text-sm text-red-800">
+          <p className="mt-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-left text-sm text-red-800">
             {result.signatureError}
           </p>
         )}
         {/* The deposit is required for APPROVAL, not to submit (Lawrence,
             30 Sep 2026) -- unless the family asks for a full scholarship. */}
         {result.depositDue !== false && (
-          <div className="mt-4 rounded border border-amber-300 bg-amber-50 px-4 py-3 text-left text-amber-900">
+          <div className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-left text-amber-900">
             <p className="font-semibold">
               {/* The family's own figure, from the save. "$50" was a literal
                   here until 14 Oct 2026, so a family of five read "$50" and
@@ -668,7 +668,7 @@ export default function FamilyWizard({
           {weeks.map((w, i) => (
             <label
               key={w.optionId}
-              className="flex items-center justify-between gap-3 rounded border border-neutral-300 p-3 cursor-pointer has-[:checked]:border-brand has-[:checked]:bg-brand-light"
+              className="flex items-center justify-between gap-3 rounded-sm border border-neutral-300 p-3 cursor-pointer has-checked:border-brand has-checked:bg-brand-light"
             >
               <span className="flex items-center gap-3">
                 <input
@@ -699,7 +699,7 @@ export default function FamilyWizard({
             already on this week would otherwise see an empty form and build a
             second, half-finished registration beside the real one. */}
         {alreadyRegisteredHere && (
-          <p className="mt-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
+          <p className="mt-3 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
             <span className="font-semibold">
               You already have a registration for this session
             </span>{' '}
@@ -846,7 +846,7 @@ export default function FamilyWizard({
               person (reported 25 Aug). It is the most important thing on this
               card that is not a field: what this form does NOT ask for, and
               where the rest gets asked. */}
-          <div className="rounded border border-brand/30 bg-brand-light/60 px-4 py-3 text-sm">
+          <div className="rounded-sm border border-brand/30 bg-brand-light/60 px-4 py-3 text-sm">
             <p className="font-semibold text-brand-dark">
               Names and roles here; support and medical details below.
             </p>
@@ -862,7 +862,7 @@ export default function FamilyWizard({
               Requested in testing (24 Aug): the primary contact is usually
               attending, and typing your own name twice on one form is the
               kind of small silliness people notice. */}
-          <label className="flex items-center gap-3 rounded border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 cursor-pointer">
+          <label className="flex items-center gap-3 rounded-sm border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 cursor-pointer">
             <input
               type="checkbox"
               className="h-4 w-4"
@@ -876,7 +876,7 @@ export default function FamilyWizard({
             </span>
           </label>
           {members.map((m, i) => (
-            <div key={i} className="rounded border border-neutral-200 p-4">
+            <div key={i} className="rounded-sm border border-neutral-200 p-4">
               <div className="flex justify-between items-center">
                 <h3 className="font-bold">
                   {m.firstName.trim() || m.lastName.trim()
@@ -987,7 +987,7 @@ export default function FamilyWizard({
 
               {/* Permissions live with the PERSON they are about, and each is
                   free to be "no" without affecting the registration. */}
-              <div className="mt-4 space-y-3 rounded bg-neutral-50 p-4">
+              <div className="mt-4 space-y-3 rounded-sm bg-neutral-50 p-4">
                 <p className="text-sm font-semibold text-neutral-700">
                   Permissions for {m.firstName.trim() || 'this person'}
                 </p>
@@ -1023,14 +1023,14 @@ export default function FamilyWizard({
                     {/* Unticking flags the registration for staff review
                         (Lawrence, 30 Sep 2026) -- it never blocks it. */}
                     {m.mediaConsent !== 'true' && (
-                      <span className="mt-1 block rounded bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-900">
+                      <span className="mt-1 block rounded-sm bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-900">
                         Photo permission is off for {m.firstName.trim() || 'this person'}. A
                         staff member will look at this with you. If you&rsquo;re uncomfortable,
                         please contact Larry at larry@luke14ministries.net.
                       </span>
                     )}
                     {m.mediaWasNo && m.mediaConsent === 'true' && (
-                      <span className="mt-1 block rounded bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-900">
+                      <span className="mt-1 block rounded-sm bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-900">
                         Last time you told us you&rsquo;d rather we didn&rsquo;t. We ask
                         again each year in case you feel differently now — uncheck if
                         your preference hasn&rsquo;t changed.
@@ -1056,7 +1056,7 @@ export default function FamilyWizard({
                       nothing else about your registration changes.
                     </span>
                     {m.directoryWasNo && m.directoryConsent === 'true' && (
-                      <span className="mt-1 block rounded bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-900">
+                      <span className="mt-1 block rounded-sm bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-900">
                         Last time you asked to be left out. We ask again each year in
                         case you feel differently now — uncheck if your answer
                         hasn&rsquo;t changed.
@@ -1078,7 +1078,7 @@ export default function FamilyWizard({
             const available = householdPeople.filter((p) => !onForm.has(p.personId));
             if (available.length === 0) return null;
             return (
-              <div className="rounded border border-neutral-200 bg-neutral-50 p-4">
+              <div className="rounded-sm border border-neutral-200 bg-neutral-50 p-4">
                                 <p className="text-sm font-semibold">Already in your household</p>
                 <p className="mt-0.5 text-xs text-neutral-600">
                   Tap to add them to this registration — no need to type them in again.
@@ -1113,7 +1113,7 @@ export default function FamilyWizard({
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              className="btn-outline !py-2"
+              className="btn-outline py-2!"
               onClick={() => setMembers([...members, { ...emptyMember }])}
             >
               + Add someone new
@@ -1151,7 +1151,7 @@ export default function FamilyWizard({
               // on file, and for anyone who asked.
               const open = camper || sup.showAll === true || hasFullerDetail(sup);
               return (
-                <div key={i} className="rounded border border-neutral-200 p-4">
+                <div key={i} className="rounded-sm border border-neutral-200 p-4">
                   <h3 className="font-bold">
                     {`${m.firstName} ${m.lastName}`.trim()}
                     <span className="ml-2 text-sm font-normal text-neutral-500">
@@ -1207,7 +1207,7 @@ export default function FamilyWizard({
           }
         >
           {alreadySigned ? (
-            <div className="rounded border border-green-300 bg-green-50 px-4 py-3">
+            <div className="rounded-sm border border-green-300 bg-green-50 px-4 py-3">
               <p className="text-green-900">
                 Signed by <strong>{signedAlready.signerName}</strong> on{' '}
                 {new Date(signedAlready.signedAt).toLocaleDateString('en-US', {
@@ -1230,7 +1230,7 @@ export default function FamilyWizard({
           ) : (
             <>
               {signedNames.size > 0 && (
-                <p className="mb-3 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
+                <p className="mb-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
                   Already signed for on this registration:{' '}
                   {named
                     .filter((m) => signedNames.has(personKey(m)))
@@ -1243,7 +1243,7 @@ export default function FamilyWizard({
                 {agreements.map((a) => (
                   <label
                     key={a.key}
-                    className="block rounded border border-neutral-300 p-4 cursor-pointer has-[:checked]:border-brand has-[:checked]:bg-brand-light"
+                    className="block rounded-sm border border-neutral-300 p-4 cursor-pointer has-checked:border-brand has-checked:bg-brand-light"
                   >
                     <span className="flex items-start gap-3">
                       <input
@@ -1268,9 +1268,9 @@ export default function FamilyWizard({
                 ))}
               </div>
 
-              <div className="mt-6 rounded border border-neutral-300 bg-neutral-50 p-4">
+              <div className="mt-6 rounded-sm border border-neutral-300 bg-neutral-50 p-4">
                 <p className={label}>Who you are signing for</p>
-                <ul className="mt-1 divide-y divide-neutral-200 rounded border border-neutral-200 bg-white text-sm">
+                <ul className="mt-1 divide-y divide-neutral-200 rounded-sm border border-neutral-200 bg-white text-sm">
                   {toSign.map((m) => {
                     const k = personKey(m);
                     const name = `${m.firstName.trim()} ${m.lastName.trim()}`;
@@ -1283,7 +1283,7 @@ export default function FamilyWizard({
                           <span className="text-neutral-600">As their parent or legal guardian</span>
                         ) : (
                           <select
-                            className="rounded border border-neutral-300 px-2 py-1"
+                            className="rounded-sm border border-neutral-300 px-2 py-1"
                             value={capacityFor[k] ?? ''}
                             onChange={(e) => setCapacityFor({ ...capacityFor, [k]: e.target.value })}
                           >
@@ -1350,7 +1350,7 @@ export default function FamilyWizard({
 
       {/* The running total and the way out, pinned to the bottom of the
           viewport so a long scroll never hides either. */}
-      <div className="sticky bottom-0 z-20 -mx-4 sm:mx-0 border-t border-neutral-200 bg-white/95 backdrop-blur px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] sm:rounded-lg sm:border">
+      <div className="sticky bottom-0 z-20 -mx-4 sm:mx-0 border-t border-neutral-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] sm:rounded-lg sm:border">
         {/* The ONLY copy of this message (25 Aug). It lives here because this
             is where the person is looking when they press the button; the
             standalone copy that used to sit above showed the same sentence
@@ -1358,7 +1358,7 @@ export default function FamilyWizard({
         {error && (
           <p
             role="alert"
-            className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+            className="mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
           >
             {error}
           </p>
@@ -1385,7 +1385,7 @@ export default function FamilyWizard({
             </Link>
             <button
               type="button"
-              className="btn-gold !py-2 disabled:opacity-50"
+              className="btn-gold py-2! disabled:opacity-50"
               disabled={busy || namedCount === 0}
               title={namedCount === 0 ? 'Add at least one person first' : undefined}
               onClick={handleSubmit}
