@@ -2740,3 +2740,26 @@ the role column means one thing, administrator. The page now says so: one **Admi
 per row and the grants panel; the Need-to-know column, which repeated the grants summary, is
 gone; adding a staff member asks only whether they are an administrator, and the preset is
 applied on the row that appears. The role column keeps a harmless label for everyone else.
+
+## 2026-10-21, overnight — A person's money gets its own table (0114)
+
+Lawrence, on the sweep's finding that any staff member could read fees and scholarships whatever
+their Payments grant: "a big rewrite is ok if best, long run." It is the best long-run answer, so
+it was built overnight on the branch `money-table` for his review in the morning, not merged.
+
+**What changed.** The six money columns leave `registration_participants` for
+`participant_money`, one row per participant, with one rule: readable by the family it belongs to
+and by Payments read, written by nobody who is signed in. The fee is filled by a trigger from the
+event option, and re-copied when the option changes (refused if the new fee is below what has
+already been granted: a decision is never erased silently). Staff decisions go through one
+function, `set_participant_adjustments()`, which needs Payments and Registration write, caps at the
+fee, writes the discount reason verbatim, logs to the money log and re-runs the family and early
+discount rules. The balances view joins the new table, so a staffer without Payments read now gets
+no row at all, and every page that read a fee reads the embed instead — 26 files, built by three
+builders against one written contract, with every SQL suite green on a fresh local build.
+
+**Why a table and not column privileges.** Postgres column grants are per role, not per person;
+there is one signed-in role. Row-level rules are the only per-person rules the database has, and
+rows are what a table gives. The old columns were also the busiest thing in the schema to reason
+about: the 0105 and 0111 guards existed to stop families and insiders writing them. With no
+signed-in writer at all, those branches are gone.

@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`). The working checkl
 `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0113`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0114`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -240,8 +240,20 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   `supabase/functions/_shared/`. Families cannot edit money columns on `registration_participants`.
   **Not live until `supabase/PAYMENT-PLANS-SETUP.md` is done.** Plans and pay-in-full are offered at
   `/account/finish/[registrationId]` ("Ways to pay"; `registration_payment_routes` view).
+- **A person's money lives in `participant_money`** (`0114`, one row per participant:
+  `fee_cents`, `scholarship_cents`, `discount_cents`, `discount_reason`, `early_discount_cents`,
+  `family_discount_cents`), **not on `registration_participants`** — those columns are gone. Read it
+  through the embed `participant_money ( … )` on any participants select; the row is visible to the
+  family it belongs to and to Payments read, and **null means "not yours to see", never zero**.
+  Nobody signed in writes it: the fee is filled by a definer trigger from the event option (and
+  re-copied when the option changes); staff decisions go through
+  `set_participant_adjustments(participant, scholarship, discount, reason)` (Payments **and**
+  Registration write; capped at the fee; the reason is written verbatim, so pass the current one
+  back when only the scholarship changes); the discount rules and `waive_deposit()` run as owner.
+  `registration_balances` joins it and so **returns no row** to staff without Payments read — a
+  `.maybeSingle()` caller shows "—", never 0, and the deposit check asks for the full deposit.
 - **The money audit trail** (`0111`): every write to `payments`, `payment_refunds`, `payment_plans`,
-  `coupons` and `coupon_redemptions` lands in `money_change_log` (administrators read it). A
+  `coupons`, `coupon_redemptions` and `participant_money` lands in `money_change_log` (administrators read it). A
   refund row is edited only while pending and its money never changes; a payment with a refund on
   file stays with its family; `payments.status` follows the refunds on file. **Plans are created
   only by Stripe's webhook** — staff change status, the early-discount decision, the cancel stamps
