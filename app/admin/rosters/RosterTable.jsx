@@ -57,7 +57,7 @@ function Flag({ tone, children, title }) {
           ? 'bg-blue-100 text-blue-800'
           : 'bg-neutral-200 text-neutral-600';
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`} title={title}>
+    <span className={`rounded-full px-2 py-0.5 text-[11px] leading-5 font-semibold ${cls}`} title={title}>
       {children}
     </span>
   );

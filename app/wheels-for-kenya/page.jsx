@@ -37,7 +37,7 @@ export default function WheelsForKenyaPage() {
       />
 
       <section className="container-site py-14 max-w-3xl mx-auto text-center">
-        <h2 className="text-2xl sm:text-3xl font-bold leading-snug">
+        <h2 className="text-2xl sm:text-3xl font-bold leading-snug sm:leading-9">
           Our Wheels for Kenya program is responsible for organizing and
           carrying out a wheelchair distribution program across Kenya.
         </h2>

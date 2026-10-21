@@ -331,7 +331,7 @@ export default function ScreeningBoard({ candidates }) {
           <input
             type="file"
             accept=".csv,text/csv"
-            className="text-sm"
+            className="text-sm file:mr-3 file:rounded-sm file:border file:border-neutral-300 file:bg-neutral-100 file:px-2 file:py-0.5 file:text-sm file:font-semibold"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (!file) return;

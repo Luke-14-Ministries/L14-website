@@ -80,7 +80,7 @@ export default function HomePage() {
       >
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative container-site py-20 text-center">
-          <h1 className="mx-auto max-w-4xl text-3xl sm:text-4xl lg:text-[2.6rem] leading-snug font-bold text-white drop-shadow-sm">
+          <h1 className="mx-auto max-w-4xl text-3xl sm:text-4xl lg:text-[2.6rem] leading-snug sm:leading-10 font-bold text-white drop-shadow-sm">
             Luke 14 Ministries helps families and individuals affected by
             disability find community and connection to Jesus through His
             church.

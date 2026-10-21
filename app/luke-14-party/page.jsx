@@ -76,7 +76,7 @@ export default function Luke14PartyPage() {
       </section>
 
       <section className="container-site py-14 max-w-3xl mx-auto text-center">
-        <p className="text-2xl sm:text-3xl font-heading leading-relaxed">
+        <p className="text-2xl sm:text-3xl font-heading leading-relaxed sm:leading-9">
           &ldquo;But when you give a banquet, invite the poor, the crippled,
           the lame, the blind, and you will be blessed.&rdquo;
         </p>

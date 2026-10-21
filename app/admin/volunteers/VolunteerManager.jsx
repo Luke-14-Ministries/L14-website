@@ -179,7 +179,7 @@ function CheckrPanel({ clearance, email }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold text-neutral-700">
           Checkr background check{' '}
-          <span className="ml-1 rounded-full bg-neutral-200 px-2 py-0.5 text-[11px] font-semibold text-neutral-600">
+          <span className="ml-1 rounded-full bg-neutral-200 px-2 py-0.5 text-[11px] leading-5 font-semibold text-neutral-600">
             not connected yet
           </span>
         </p>

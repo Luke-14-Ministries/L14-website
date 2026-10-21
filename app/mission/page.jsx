@@ -6,7 +6,7 @@ export default function MissionPage() {
     <>
       <section className="bg-brand-dark text-white py-16">
         <div className="container-site text-center max-w-3xl mx-auto">
-          <p className="text-2xl sm:text-3xl font-heading leading-relaxed">
+          <p className="text-2xl sm:text-3xl font-heading leading-relaxed sm:leading-9">
             &ldquo;Go out quickly to the streets and lanes of the city, and
             bring in the poor and crippled and blind and lame...Go out to the
             highways and hedges and compel people to come in, that my house may

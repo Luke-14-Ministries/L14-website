@@ -491,7 +491,7 @@ export default async function AdminLayout({ children }) {
                   name="q"
                   placeholder="Find a person or family"
                   aria-label="Search people and families"
-                  className="w-80 max-w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
+                  className="w-80 max-w-full rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm"
                 />
                 <button type="submit" className="btn-outline py-1.5! text-sm">
                   Search
