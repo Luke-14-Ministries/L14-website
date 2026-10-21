@@ -58,7 +58,7 @@ registration wizard with tracked edits, card and bank payments with receipts, pa
 `supabase/PAYMENT-PLANS-SETUP.md`), scholarships, discounts and refunds, the volunteer application with background checks by Checkr
 file export, giving with year-end statements, and the staff admin — rosters, check-in, dietary and
 medical lists, rooms, buddies, activities, programs, Event Payments, Giving, and Staff & Access,
-where each staff member holds read or write grants on ten areas. Migrations run through `0114`
+where each staff member holds read or write grants on ten areas. Migrations run through `0115`
 (`supabase/migrations/`); the row-level security harness runs with
 `bash supabase/tests/run_rls_local.sh` and must end `ALL CHECKS PASSED`.
 
