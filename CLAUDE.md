@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`). The working checkl
 `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0112`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0113`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -157,6 +157,13 @@ an invoker view a reviewer without Payments read would see every family as "neit
 buddies or rooms goes through `set_event_publication()` (`0103`), which checks Buddies or Rooming
 write; the stamps live on `events`, whose own policy needs Setup write. Program leaders stay a grant
 on the Programs page; the preset Lawrence wanted (16 Oct) is not built.
+
+**Since `0113`:** a family's new participant row is `draft` or `submitted`, never confirmed, and
+`submitted_at` is set by the database; attaching a login to a household is the administrator's,
+through `admin_link_login_to_household()`; confirming an agreement signature is Registration write;
+`message_log` is read-only for staff; `pay_in_full_amount()` needs Payments read or your own
+registration. Staff without Payments read can still read the money columns on
+`registration_participants` and the balance views (a question for Lawrence, Staff Questions §1.1).
 
 **Rule of thumb for any access question (Lawrence):** when it is not obvious what a role or person
 should have, default to **read**; write is granted on top, for a named person, and logged.

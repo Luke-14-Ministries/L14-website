@@ -2681,3 +2681,37 @@ counts what was asked for; a granted row counts what was granted; nothing else c
 The contact and giving forms are rate-limited at Vercel's edge, five posts a minute per address,
 the floor under a Turnstile that fails open. Set in the dashboard (the API refuses a project with
 no saved configuration) and proven: the sixth post in a minute is refused.
+
+## 2026-10-21 — The privilege sweep: the matrix, and what it moved (0113)
+
+The third tester did what nobody had: enumerated every table, policy, grant and function, then
+built an empirical matrix of what ten kinds of person (anonymous; two families; a volunteer; a
+coordinator, a registrar and an administrator, each with and without a code-verified session)
+could actually read, change, add and delete, cell by cell, in rolled-back transactions. The
+boundary held: no cross-family read or write anywhere, nothing at all for staff without a code,
+anonymous visitors see the public catalogue only. Where the cells disagreed with 0101's mapping,
+`0113` moved them:
+
+- **A family's new participant is never born confirmed.** The UPDATE path had been guarded since
+  0105; INSERT was not, so a family could add a child already "confirmed" and skip review.
+- **Attaching a login to a household is the administrator's**, through the logged, populated-
+  household-refusing `admin_link_login_to_household()`; Registration write no longer does it by
+  hand. Nothing in the site used that path.
+- **Confirming an agreement signature is Registration write**, not any staff member.
+- A family cannot stamp its own support row as reviewed, or back-date its submission.
+- `message_log` is read-only for staff; the edge functions write it.
+- `pay_in_full_amount()` answers for Payments read or your own registration; it had run as owner
+  for any staff member and so leaked a family's real balance to staff who may not see payments.
+- Six helper functions are no longer callable by anonymous visitors.
+
+**A question the sweep raised, for Lawrence (Staff Questions §1.1).** Every active staff member
+can read the money columns on the participants table and the balance views, whatever their
+Payments grant; a coordinator sees fees and scholarships, and a "paid" figure of $0 because the
+payments themselves are hidden. 0101 says an operations helper sees no money. Hiding those
+columns from staff without Payments read is a column-level change on the busiest table; the
+pages already show "—" to them. Left as it is until he answers.
+
+**Advisors.** Beyond the three accepted definer views, the security advisor lists only generic
+"definer function callable" notes and the leaked-password switch (W20, Lawrence's). The
+performance advisor's four per-row `auth.uid()` policies are fixed; the 60 unindexed foreign
+keys and 11 unused indexes wait for real traffic to say which matter.
