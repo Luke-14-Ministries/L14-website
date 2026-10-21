@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { safeNextPath } from '@/lib/site';
 import { createClient } from '@/lib/supabase/client';
 import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
+import { rememberBrowser, trustedBrowserCheck } from './trust-actions';
 
 // --- Trusted browser ("remember this browser for 30 days") -----------------
 // The password is still required at every login; only the 6-digit code is
@@ -30,15 +31,8 @@ async function sha256Hex(text) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function readTrustCookie() {
-  const m = document.cookie.match(/(?:^|;\s*)l14_mfa_trust=([^;]*)/);
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
-function writeTrustCookie(token, expires) {
-  document.cookie =
-    `l14_mfa_trust=${encodeURIComponent(token)}; path=/; expires=${expires.toUTCString()}; SameSite=Lax; Secure`;
-}
+// The cookie itself is written and read on the server (trust-actions.js), as
+// an HttpOnly cookie no page script can see -- security audit, 21 Oct 2026.
 
 function readTrustStore() {
   try {
@@ -112,37 +106,18 @@ export default function LoginForm() {
 
   const supabase = createClient();
 
-  // Is this browser trusted for the signed-in user? Cookie first (the form
-  // the middleware can also verify), then the legacy localStorage slot.
+  // Is this browser trusted for the signed-in user? The server checks the
+  // HttpOnly cookie (which this script cannot read) and any token left in the
+  // legacy localStorage slot, asks the database (mark_session_trusted, 0104)
+  // and moves a valid legacy token into the cookie so the middleware agrees.
   async function isTrustedBrowser(user) {
-    const candidates = [];
-    const cookieToken = readTrustCookie();
-    if (cookieToken) candidates.push(cookieToken);
     const legacy = user ? readTrustStore()[user.id] : null;
-    if (legacy?.token && legacy.exp > Date.now()) candidates.push(legacy.token);
-    for (const token of candidates) {
-      // Ask the database, as the middleware does (0104): it checks the token,
-      // the 7-day limit for staff, and registers this session as trusted. If
-      // the two disagreed, the code step and the middleware would bounce a
-      // remembered staff browser between them.
-      const { data: ok } = await supabase.rpc('mark_session_trusted', { p_token: token });
-      if (ok === true) {
-        const hash = await sha256Hex(token);
-        const { data: device } = await supabase
-          .from('mfa_trusted_devices')
-          .select('id, expires_at')
-          .eq('token_hash', hash)
-          .maybeSingle();
-        if (!device) continue;
-        // Whichever store the token came from, make sure the COOKIE holds it
-        // now -- the middleware trusts only the cookie, so a browser trusted
-        // under the old localStorage scheme would otherwise pass here, get
-        // sent onward, and be bounced right back, forever.
-        writeTrustCookie(token, new Date(device.expires_at));
-        return true;
-      }
+    const legacyTokens = legacy?.token && legacy.exp > Date.now() ? [legacy.token] : [];
+    try {
+      return (await trustedBrowserCheck(legacyTokens)) === true;
+    } catch {
+      return false;
     }
-    return false;
   }
 
   // The code step names the account and the device it expects a code from.
@@ -367,9 +342,9 @@ export default function LoginForm() {
             expires_at: expires.toISOString(),
           });
           if (!insError) {
-            // Cookie first -- the middleware checks it. localStorage kept as
+            // The cookie is set by the server, HttpOnly. localStorage kept as
             // a same-browser backup in case cookies get cleared selectively.
-            writeTrustCookie(token, expires);
+            await rememberBrowser(token, expires.toISOString());
             const store = readTrustStore();
             store[user.id] = { token, exp: expires.getTime() };
             writeTrustStore(store);
