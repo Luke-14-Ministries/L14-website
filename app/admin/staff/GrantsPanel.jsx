@@ -62,7 +62,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
             onClick={() => {
               if (
                 window.confirm(
-                  `Apply the ${p.label} preset to ${member.name}?\n\n${p.note}\n\nThis sets every area to the preset (Giving is left as it is) and the role label to ${p.role}.`
+                  `Apply the ${p.label} preset to ${member.name}?\n\n${p.note}\n\nThis sets every area to the preset (Giving is left as it is). The Administrator tick is not touched.`
                 )
               ) {
                 onApplyPreset(member.profileId, key);

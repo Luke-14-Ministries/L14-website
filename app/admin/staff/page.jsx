@@ -105,13 +105,15 @@ export default async function StaffAccessPage() {
         </summary>
         <p className="text-neutral-600 mt-3">
           <span className="font-semibold">The presets.</span>{' '}
-          <em>Administrator</em>: every area, and the only one that can grant.{' '}
+          <em>Every area, read and write</em>: all nine areas at write.{' '}
           <em>Registration &amp; coordination</em>: families, money and placements.{' '}
           <em>Finance</em>: records payments and refunds, reads names and events; scholarship
           decisions need Registration write too, so they stay with Registration &amp; coordination.{' '}
           <em>Operations lead</em>: the door, rooms, activities and buddies; no money.{' '}
           <em>Operations helper</em>: reads what is needed to move people around camp safely,
-          writes nothing. A preset is a starting point; any area can be adjusted by hand.
+          writes nothing. A preset is a starting point; any area can be adjusted by hand. No preset
+          makes an administrator: that is the tick in the <em>Administrator — grants access</em>
+          column, and it alone can grant, add or remove staff, name a program leader, or reset two-factor.
         </p>
         <p className="text-neutral-600 mt-3">
           <span className="font-semibold">The ten areas.</span>{' '}
