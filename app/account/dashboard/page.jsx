@@ -704,13 +704,12 @@ export default async function DashboardPage({ searchParams }) {
             <p className="text-neutral-500">Signed in as {user.email}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {/* Staff door -- only when this login is also active staff. Up here
-                beside the name and Log Out, in the dark brand colour, so it
-                reads as part of who you are and not as one more registration
-                card (Lawrence, 21 Oct 2026). The bracket names every grant
-                this login holds (2 Sep): a grant left on is a screen that
-                shows medical or donor detail to anyone looking over a
-                shoulder. */}
+            {/* Staff door -- only when this login is also active staff: one
+                dark button beside Log Out, so it stays on the name's line and
+                reads as part of who you are, not as one more registration card
+                (Lawrence, 21 Oct 2026). The grants this login holds are the
+                tooltip (2 Sep): a grant left on is a screen that shows medical
+                or donor detail to anyone looking over a shoulder. */}
             {staff &&
               (() => {
                 const grants = [
@@ -719,22 +718,15 @@ export default async function DashboardPage({ searchParams }) {
                   staff.grants?.giving && 'Giving',
                   staff.grants?.background_checks === 'write' && 'Background checks',
                 ].filter(Boolean);
+                const held = [staff.title || STAFF_ROLE_LABEL[staff.role] || staff.role, ...grants].join(' · ');
                 return (
-                  <div className="flex flex-wrap items-center gap-3 rounded-lg bg-brand-dark px-4 py-2 text-white">
-                    <p className="text-sm">
-                      <span className="font-semibold">Staff access</span>{' '}
-                      <span className="text-white/80">
-                        [{staff.title || STAFF_ROLE_LABEL[staff.role] || staff.role}
-                        {grants.length > 0 ? ` · ${grants.join(' · ')}` : ''}]
-                      </span>
-                    </p>
-                    <Link
-                      href="/admin"
-                      className="rounded-sm bg-white px-3 py-1.5 text-sm font-semibold text-brand-dark hover:bg-brand-light"
-                    >
-                      Go to Staff Area
-                    </Link>
-                  </div>
+                  <Link
+                    href="/admin"
+                    title={`Staff access: ${held}`}
+                    className="rounded-sm bg-brand-dark px-5 py-2 font-semibold text-white hover:bg-brand"
+                  >
+                    Staff Area
+                  </Link>
                 );
               })()}
             {/* A form, not a link. See app/auth/signout/route.js for why. */}
