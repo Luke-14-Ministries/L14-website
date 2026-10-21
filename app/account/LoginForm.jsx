@@ -254,8 +254,16 @@ export default function LoginForm() {
       // turns this form into a way of finding out who has an account here.
       // The captcha token is spent on any attempt, so a retry needs a new one
       // -- otherwise the second try fails on the token, not the password, and
-      // the message above becomes a lie.
-      setError('That email and password did not match. Please try again.');
+      // the message above becomes a lie. A captcha refusal is the one case
+      // named: it says nothing about the account, and "wrong password" would
+      // send someone with a stuck widget off to reset a password that is fine
+      // (seen 21 Oct 2026).
+      const captchaFailed = signInError.code === 'captcha_failed' || /captcha/i.test(signInError.message ?? '');
+      setError(
+        captchaFailed
+          ? 'The "I am human" check did not go through. Please try it again.'
+          : 'That email and password did not match. Please try again.'
+      );
       setBusy(false);
       setCaptchaBump((n) => n + 1);
       return;
