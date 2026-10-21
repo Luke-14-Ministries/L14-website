@@ -162,3 +162,24 @@ do $$ declare c text; f text[]; exp int; begin
   if c = 'deposit_paid' and not ('deposit_short' = any(f)) then raise notice 'PASS the whole deposit is a received deposit';
   else raise exception 'FAIL full deposit: class %, flags %', c, f; end if;
 end $$;
+
+-- 0112: a staff grant with no family request is not a "full scholarship requested".
+-- Registration ...03's person (fee 60000) gets a $1 grant and nothing else.
+insert into public.scholarships (registration_participant_id, requested_cents, granted_cents, status)
+values ('60000000-0000-0000-0000-000000000031', null, 100, 'granted');
+do $$ declare c text; begin
+  select review_class into c from public.registration_review where registration_id='50000000-0000-0000-0000-000000000003';
+  if c = 'deposit_paid' then raise notice 'PASS a $1 staff grant leaves the class alone (deposit was paid above)';
+  elsif c = 'full_scholarship' then raise exception 'FAIL a $1 grant read as a full scholarship request';
+  else raise notice 'PASS a $1 staff grant leaves the class alone (%)', c; end if;
+end $$;
+delete from public.payments where registration_id='50000000-0000-0000-0000-000000000003';
+do $$ declare c text; begin
+  select review_class into c from public.registration_review where registration_id='50000000-0000-0000-0000-000000000003';
+  if c <> 'neither' then raise exception 'FAIL with no deposit and a $1 grant the class is %', c; end if;
+  raise notice 'PASS with no deposit and a $1 grant the class is neither';
+  update public.scholarships set status='requested', requested_cents=null where registration_participant_id='60000000-0000-0000-0000-000000000031';
+  select review_class into c from public.registration_review where registration_id='50000000-0000-0000-0000-000000000003';
+  if c <> 'full_scholarship' then raise exception 'FAIL a family request for everything is %', c; end if;
+  raise notice 'PASS a family request for everything still reads full_scholarship';
+end $$;

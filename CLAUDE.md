@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`). The working checkl
 `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0111`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0112`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -218,7 +218,8 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
 - **Due date** is `events.balance_due_on` (July 1 for the camp weeks, set on Setup, `0096`).
 - **Submitting needs nothing paid; approval needs the deposit** ($50 per person) or a full-scholarship
   request. `registration_review` gives three classes (deposit received — `succeeded` money only;
-  full scholarship requested; neither) and flags (deposit short, photo permission declined, Creed
+  full scholarship requested — what the family **asked** for, or what staff granted, never a
+  grant read as a request (`0112`); neither) and flags (deposit short, photo permission declined, Creed
   not affirmed). Someone who may decide scholarships can **waive the deposit** (`waive_deposit()`:
   the mark plus a per-person deposit scholarship, a pending request left pending — `0103`; the view
   then reads `deposit_paid` with `deposit_waived`, and no page asks the family for it).

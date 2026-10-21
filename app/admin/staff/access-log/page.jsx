@@ -75,8 +75,8 @@ export default async function AccessLogPage() {
       <BackLink href="/admin/staff" label="Back to Staff &amp; Access" />
       <h1 className="text-2xl font-bold mb-1">Access changes</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-prose">
-        Every change to what a staff member may see or do — role, the three
-        sensitive permissions, and whether their account is active. Written
+        Every change to what a staff member may see or do — their grants on
+        each area, the role label, and whether their account is active. Written
         automatically and cannot be edited or deleted by anyone, including an
         administrator. Most recent 200.
       </p>

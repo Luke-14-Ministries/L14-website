@@ -34,10 +34,6 @@ const FUNDS = [
 const MAX_GIFT_CENTS = 50_000_00;
 
 export async function createDonationCheckout({ amountCents, fund, method, coverFee, captchaToken }) {
-  const stripe = getStripe();
-  if (!stripe) {
-    return { ok: false, error: 'Online giving is not switched on yet. Please check back soon.' };
-  }
   if (method !== 'card' && method !== 'bank') {
     return { ok: false, error: 'Please choose a payment method.' };
   }
@@ -52,6 +48,12 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
     };
   }
   const chosenFund = FUNDS.includes(fund) ? fund : FUNDS[0];
+  // After the amount checks, so the cap's own sentence shows even where Stripe
+  // is not configured (a local test machine).
+  const stripe = getStripe();
+  if (!stripe) {
+    return { ok: false, error: 'Online giving is not switched on yet. Please check back soon.' };
+  }
 
   // Logged in? Link the gift to them (and let Stripe pre-fill their email).
   // Not logged in is fine -- Stripe collects the email at checkout.
