@@ -12,6 +12,7 @@ export default async function RostersPage() {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/rosters/');
   if (!can(staff, 'read:registration')) redirect('/admin');
+  const seesMoney = can(staff, 'read:payments');
 
   const supabase = await createClient();
 
@@ -74,8 +75,10 @@ export default async function RostersPage() {
       .length;
     const each = depositByEvent.get(r.event_id) ?? 0;
     const due = each * live;
+    // Only judged by someone who can see payments (0111): the balances view
+    // shows $0 to everyone else, which would flag every family as short.
     const paid = paidByReg.get(r.id) ?? 0;
-    const depositShort = each > 0 && live > 0 && paid < due;
+    const depositShort = seesMoney && each > 0 && live > 0 && paid < due;
 
     for (const p of r.registration_participants ?? []) {
       const pid = p.people?.id;

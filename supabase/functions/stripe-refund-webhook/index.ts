@@ -142,9 +142,31 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (!payment) {
-        // Very likely a refunded DONATION (gifts live in their own table) or a
-        // payment made outside this system. Logged, not treated as an error --
-        // returning non-200 would make Stripe retry forever.
+        // A refunded DONATION (gifts live in their own table): a gift given
+        // back in full is marked refunded so it leaves the year-end statement
+        // (audit L3). A part refund of a gift is rare and is logged for a
+        // person to settle by hand. Anything else is a payment made outside
+        // this system: logged, not an error -- returning non-200 would make
+        // Stripe retry forever.
+        const { data: gift } = await admin
+          .from('gifts')
+          .select('id, amount_cents, status')
+          .eq('stripe_payment_intent_id', intentId)
+          .maybeSingle();
+        if (gift) {
+          const gStatus = mapStatus(r.status);
+          if (gStatus === 'succeeded' && r.amount >= (gift.amount_cents ?? 0) && gift.status !== 'refunded') {
+            const { error } = await admin.from('gifts').update({ status: 'refunded' }).eq('id', gift.id);
+            if (error) return fail('gift-refund', error.message, 500);
+            console.log(`[stripe-refund-webhook] gift ${gift.id} refunded in full (${r.id})`);
+          } else if (gStatus === 'succeeded') {
+            console.error(
+              `[stripe-refund-webhook] ALERT part refund of gift ${gift.id}: ${r.amount} of ${gift.amount_cents} cents (${r.id}) - settle by hand`
+            );
+          }
+          handled += 1;
+          continue;
+        }
         console.log(
           `[stripe-refund-webhook] no event payment for intent ${intentId} (refund ${r.id}) - ignoring`
         );

@@ -110,6 +110,10 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      // Stripe's shortest expiry. The amount is fixed when the page is made,
+      // so a page left open in a second tab could be paid after the first
+      // one was (audit L4): half an hour bounds that window.
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       payment_method_types: method === 'bank' ? ['us_bank_account'] : ['card'],
       // A Stripe customer to keep the saved payment method on.
       customer_creation: 'always',

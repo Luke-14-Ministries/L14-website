@@ -46,6 +46,10 @@ export default async function ReviewQueuePage({ searchParams }) {
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
   const supabase = await createClient();
 
+  // Money only for those who may read it (0111): the balances view runs with
+  // the caller's rights and shows $0 paid to everyone else, which reads as a
+  // family that has not paid.
+  const seesMoney = can(staff, 'read:payments');
   const [{ data: regs }, { data: parts }, { data: reviews }, { data: balances }] =
     await Promise.all([
       supabase
@@ -59,7 +63,9 @@ export default async function ReviewQueuePage({ searchParams }) {
       supabase
         .from('registration_review')
         .select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents'),
-      supabase.from('registration_balances').select('registration_id, paid_cents, balance_cents, fee_cents'),
+      seesMoney
+        ? supabase.from('registration_balances').select('registration_id, paid_cents, balance_cents, fee_cents')
+        : Promise.resolve({ data: [] }),
     ]);
 
   const reviewByReg = new Map((reviews ?? []).map((r) => [r.registration_id, r]));
@@ -302,12 +308,20 @@ export default async function ReviewQueuePage({ searchParams }) {
                       {/* The family name is the link to the registration; an
                           "Open →" beside it was the same link twice (15 Oct). */}
                       <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                        <div>{money(r.balance?.paid_cents)}</div>
-                        <div className="text-xs text-neutral-500">
-                          {(r.balance?.balance_cents ?? 0) < 0
-                            ? `${money(-r.balance.balance_cents)} credit`
-                            : `${money(r.balance?.balance_cents)} owed`}
-                        </div>
+                        {seesMoney ? (
+                          <>
+                            <div>{money(r.balance?.paid_cents)}</div>
+                            <div className="text-xs text-neutral-500">
+                              {(r.balance?.balance_cents ?? 0) < 0
+                                ? `${money(-r.balance.balance_cents)} credit`
+                                : `${money(r.balance?.balance_cents)} owed`}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-neutral-400" title="Payments read is needed to see money">
+                            &mdash;
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

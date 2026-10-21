@@ -79,3 +79,89 @@ begin
 end $$;
 rollback;
 \echo ALL REFUND CHECKS PASSED
+
+-- 0111: the insider and family limits from the 20 Oct money audit.
+begin;
+insert into public.payments (id, registration_id, amount_cents, fee_cover_cents, method, status, received_on, stripe_payment_intent_id)
+values ('70000000-0000-0000-0000-0000000000f2','50000000-0000-0000-0000-000000000001',10000,0,'card','succeeded','2026-10-01','pi_test_0111');
+insert into public.payment_refunds (id, payment_id, registration_id, amount_cents, status, method, stripe_refund_id)
+values ('71000000-0000-0000-0000-0000000000f2','70000000-0000-0000-0000-0000000000f2','50000000-0000-0000-0000-000000000001',10000,'succeeded','stripe','re_test_0111');
+do $$ declare s text; n int; begin
+  -- 8. the payment settled itself from the refund on file
+  select status into s from public.payments where id='70000000-0000-0000-0000-0000000000f2';
+  if s <> 'refunded' then raise exception 'FAIL 8: % after a full refund', s; end if;
+  raise notice 'PASS 8 a fully refunded payment is marked refunded by the database';
+
+  -- 3. a signed-in Payments-write insider cannot cancel a succeeded refund or change its money
+  perform set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true);
+  perform set_config('request.jwt.claims','{"aal":"aal2"}',true);
+  set local role authenticated;
+  begin
+    update public.payment_refunds set status='canceled' where id='71000000-0000-0000-0000-0000000000f2';
+    raise exception 'FAIL 3a: succeeded refund cancelled';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+    raise notice 'PASS 3a a settled refund is not cancelled by hand (%)', sqlerrm;
+  end;
+  begin
+    update public.payment_refunds set amount_cents=1 where id='71000000-0000-0000-0000-0000000000f2';
+    raise exception 'FAIL 3b: refund amount changed';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+    raise notice 'PASS 3b a refund''s amount does not change';
+  end;
+  update public.payment_refunds set note='a word from the registrar' where id='71000000-0000-0000-0000-0000000000f2';
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'FAIL 3c: note edit refused'; end if;
+  raise notice 'PASS 3c the registrar''s words may still be edited';
+
+  -- 4. plans are not inserted by hand
+  begin
+    insert into public.payment_plans (registration_id, schedule, status, stripe_customer_id, stripe_payment_method_id)
+    values ('50000000-0000-0000-0000-000000000001','monthly','active','cus_x','pm_x');
+    raise exception 'FAIL 4: plan inserted by hand';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+    raise notice 'PASS 4 a plan cannot be entered by hand';
+  end;
+
+  -- 5. scholarship + discount capped at the fee
+  begin
+    update public.registration_participants set scholarship_cents=99999 where id='60000000-0000-0000-0000-000000000001';
+    raise exception 'FAIL 5: scholarship over the fee accepted';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+    raise notice 'PASS 5 scholarship capped at the fee';
+  end;
+
+  -- 6. coupons: no signed-in writer
+  begin
+    insert into public.coupons (code, amount_off_cents) values ('X', 100);
+    raise exception 'FAIL 6: coupon written';
+  exception when insufficient_privilege then
+    raise notice 'PASS 6 coupons have no signed-in writer';
+  end;
+
+  -- 7. the audit trail saw the note edit
+  reset role;
+  select count(*) into n from public.money_change_log where table_name='payment_refunds' and row_id='71000000-0000-0000-0000-0000000000f2' and op='UPDATE';
+  if n < 1 then raise exception 'FAIL 7: no log row'; end if;
+  raise notice 'PASS 7 money_change_log recorded the edit (% rows)', n;
+
+  -- 1. a family cannot run the discount rules on another registration
+  perform set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',true);
+  perform set_config('request.jwt.claims','{"aal":"aal1"}',true);
+  set local role authenticated;
+  begin
+    perform public.recalc_early_registration_discount('50000000-0000-0000-0000-000000000002');
+    raise exception 'FAIL 1: recalc on another family allowed';
+  exception when raise_exception then
+    if sqlerrm like 'FAIL%' then raise; end if;
+    raise notice 'PASS 1 the discount rules refuse another family''s registration';
+  end;
+  perform public.recalc_early_registration_discount('50000000-0000-0000-0000-000000000001');
+  raise notice 'PASS 1b ... and run for the family''s own';
+  reset role;
+end $$;
+rollback;
+\echo ALL 0111 CHECKS PASSED

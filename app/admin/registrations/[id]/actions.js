@@ -150,7 +150,10 @@ export async function setParticipantStatus(
   // happen, which is worse than the thing it prevents.
   if (status === 'confirmed' && options.override !== true) {
     const supabaseCheck = await createClient();
-    const [{ data: reg }, { data: bal }] = await Promise.all([
+    // What has really been paid, for ANY staff member (0111). The balances
+    // view runs with the caller's own rights, so a reviewer without Payments
+    // read saw $0 paid on every family and was told to confirm twice.
+    const [{ data: reg }, { data: bal }, { data: paidReal }] = await Promise.all([
       supabaseCheck
         .from('registrations')
         .select('id, deposit_waived_at, events ( deposit_cents ), registration_participants ( id, person_id, status )')
@@ -161,14 +164,18 @@ export async function setParticipantStatus(
         .select('paid_cents, balance_cents')
         .eq('registration_id', registrationId)
         .maybeSingle(),
+      supabaseCheck.rpc('registration_paid_cents', { p_registration_id: registrationId }),
     ]);
 
+    const paid = Number(paidReal ?? bal?.paid_cents ?? 0);
+    // The view's balance counts only the payments the caller may see; put the
+    // real figure back in.
+    const owed = (bal?.balance_cents ?? 0) + (bal?.paid_cents ?? 0) - paid;
     const due = registrationDepositCents({
       perPersonCents: reg?.events?.deposit_cents,
       participants: reg?.registration_participants,
-      balanceCents: bal?.balance_cents,
+      balanceCents: owed,
     });
-    const paid = bal?.paid_cents ?? 0;
 
     // A waived deposit (0096) is not short: the registrar has already decided.
     if (!reg?.deposit_waived_at && due > 0 && paid < due) {
@@ -1057,11 +1064,14 @@ function refundRefusal(error) {
 }
 
 async function finishRefund(supabase, registrationId, paymentId, amount, refundable, status, stripeRefundId) {
-  // A payment refunded down to nothing is marked refunded, so the payments
-  // list stops presenting it as money the ministry holds.
-  if (amount >= refundable) {
-    await supabase.from('payments').update({ status: 'refunded' }).eq('id', paymentId);
-  }
+  // payments.status now follows the refunds on file in the database (0111):
+  // the client update this used to make never reached a card payment (the
+  // staff policy covers check/cash rows only), so a fully refunded card
+  // payment stayed "received" on the Payments page.
+  // The early-registration discount depends on what has been paid, so it is
+  // re-run after money goes back (audit M2: it used to wait for the next
+  // caller, whoever that was).
+  await recalcEarly(registrationId);
 
   revalidatePath(`/admin/registrations/${registrationId}`);
   revalidatePath('/admin/payments');
