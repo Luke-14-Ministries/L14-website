@@ -169,8 +169,11 @@ export async function setParticipantStatus(
 
     const paid = Number(paidReal ?? bal?.paid_cents ?? 0);
     // The view's balance counts only the payments the caller may see; put the
-    // real figure back in.
-    const owed = (bal?.balance_cents ?? 0) + (bal?.paid_cents ?? 0) - paid;
+    // real figure back in. Since 0114 the view returns NO row to a reviewer
+    // without Payments read; then the balance is unknown and must not read as
+    // zero (which would make the deposit "nothing due" and wave the family
+    // through) -- the full per-person deposit is asked for instead.
+    const owed = bal ? (bal.balance_cents ?? 0) + (bal.paid_cents ?? 0) - paid : Number.POSITIVE_INFINITY;
     const due = registrationDepositCents({
       perPersonCents: reg?.events?.deposit_cents,
       participants: reg?.registration_participants,
