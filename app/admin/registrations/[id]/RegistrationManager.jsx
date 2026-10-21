@@ -1556,7 +1556,7 @@ function PeopleLine({ participants }) {
 // on this registration as links to their person pages, every event this
 // household is registered for as a link to that registration, and only then
 // this registration's details.
-function FamilyHeader({ registration, familyRegistrations }) {
+function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true }) {
   const others = familyRegistrations.filter((r) => r.id !== registration.id);
   return (
     <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-sm">
@@ -1569,12 +1569,14 @@ function FamilyHeader({ registration, familyRegistrations }) {
             <PeopleLine participants={registration.participants ?? []} />
           </p>
         </div>
-        <a
+        {/* The statement is money; without Payments read the page it opens
+            sends the staffer back to the Overview (21 Oct screen walk). */}
+        {canSeeMoney && <a
           href={`/admin/registrations/${registration.id}/statement`}
           className="btn-outline !py-1.5 text-sm"
         >
           Family statement (print)
-        </a>
+        </a>}
       </div>
 
       <div className="mt-4 border-t border-neutral-100 pt-3">
@@ -1798,7 +1800,7 @@ export default function RegistrationManager({
         </span>
       </nav>
 
-      <FamilyHeader registration={registration} familyRegistrations={familyRegistrations} />
+      <FamilyHeader registration={registration} familyRegistrations={familyRegistrations} canSeeMoney={canSeeMoney} />
 
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xl font-bold">
