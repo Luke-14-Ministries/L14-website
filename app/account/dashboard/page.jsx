@@ -703,12 +703,47 @@ export default async function DashboardPage({ searchParams }) {
             </h1>
             <p className="text-neutral-500">Signed in as {user.email}</p>
           </div>
-          {/* A form, not a link. See app/auth/signout/route.js for why. */}
-          <form action="/auth/signout/" method="post">
-            <button type="submit" className="btn-outline py-2!">
-              Log Out
-            </button>
-          </form>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Staff door -- only when this login is also active staff. Up here
+                beside the name and Log Out, in the dark brand colour, so it
+                reads as part of who you are and not as one more registration
+                card (Lawrence, 21 Oct 2026). The bracket names every grant
+                this login holds (2 Sep): a grant left on is a screen that
+                shows medical or donor detail to anyone looking over a
+                shoulder. */}
+            {staff &&
+              (() => {
+                const grants = [
+                  // The grants (0100), not the old staff columns, which can lag.
+                  staff.grants?.sensitive && 'Sensitive',
+                  staff.grants?.giving && 'Giving',
+                  staff.grants?.background_checks === 'write' && 'Background checks',
+                ].filter(Boolean);
+                return (
+                  <div className="flex flex-wrap items-center gap-3 rounded-lg bg-brand-dark px-4 py-2 text-white">
+                    <p className="text-sm">
+                      <span className="font-semibold">Staff access</span>{' '}
+                      <span className="text-white/80">
+                        [{staff.title || STAFF_ROLE_LABEL[staff.role] || staff.role}
+                        {grants.length > 0 ? ` · ${grants.join(' · ')}` : ''}]
+                      </span>
+                    </p>
+                    <Link
+                      href="/admin"
+                      className="rounded-sm bg-white px-3 py-1.5 text-sm font-semibold text-brand-dark hover:bg-brand-light"
+                    >
+                      Go to Staff Area
+                    </Link>
+                  </div>
+                );
+              })()}
+            {/* A form, not a link. See app/auth/signout/route.js for why. */}
+            <form action="/auth/signout/" method="post">
+              <button type="submit" className="btn-outline py-2!">
+                Log Out
+              </button>
+            </form>
+          </div>
         </div>
 
         {payCancelled && (
@@ -743,42 +778,6 @@ export default async function DashboardPage({ searchParams }) {
           </div>
         )}
 
-
-        {/* Staff door -- only when this login is also active staff. */}
-        {staff && (
-          <div className="mb-8 rounded-lg border border-brand/30 bg-brand-light p-5 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              {/* Every grant this login holds, not only Sensitive (2 Sep), named
-                  in the bracket: a grant left on is a screen that shows medical
-                  or donor detail to anyone looking over a shoulder. */}
-              {(() => {
-                const grants = [
-                  // The grants (0100), not the old staff columns, which can lag.
-                  staff.grants?.sensitive && 'Sensitive',
-                  staff.grants?.giving && 'Giving',
-                  staff.grants?.background_checks === 'write' && 'Background checks',
-                ].filter(Boolean);
-                return (
-                  <>
-                    <p className="font-semibold text-brand-dark">
-                      You also have staff access{' '}
-                      <span className="text-neutral-700">
-                        [{staff.title || STAFF_ROLE_LABEL[staff.role] || staff.role}
-                        {grants.length > 0 ? ` · ${grants.join(' · ')}` : ''}]
-                      </span>
-                    </p>
-                    {/* Just the heading and the door (Lawrence, 21 Oct 2026):
-                        the bracket already names the grants, and any sentence
-                        under it read as padding. */}
-                  </>
-                );
-              })()}
-            </div>
-            <Link href="/admin" className="btn-primary py-2! shrink-0">
-              Go to Staff Area
-            </Link>
-          </div>
-        )}
 
         {!allDetailsDone && supportCard}
 
