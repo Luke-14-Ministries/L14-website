@@ -2787,3 +2787,25 @@ peer ranges for every package. Accepted because both plugins were proved to run 
 a throwaway file), lint is 0 errors with the same nine warnings, the site builds, and the linter
 never ships to anyone. The line goes the day the two plugins publish ESLint 10 support. Supersedes
 Dependabot's pull request 4.
+
+## 2026-10-21 — Tailwind CSS 3 → 4 (W58)
+
+Taken on a branch with the official codemod (`npx @tailwindcss/upgrade`, 114 files) plus hand fixes:
+26 bare `rounded` inside template literals the codemod skips, `@source '../lib'` (the 31 August
+lesson: helpers in `lib/` return class names), and three compatibility rules from the upgrade guide
+in `@layer base` (bare `border` stays gray-200, placeholders gray-400, buttons keep the pointer).
+The brand colours and font stacks are `@theme` tokens in `app/globals.css`; `tailwind.config.js` and
+`autoprefixer` are gone. Proof: 82 full-page screenshots of every page per persona, shot on
+Tailwind 3 the same morning, pixel-diffed against the same pages on the branch — 55 identical;
+the remaining 27 are explained to the pixel (two by test data, six by date inputs 2px shorter
+under v4's cross-browser normalisation, the rest by v4's OKLCH palette shades and sub-pixel text at
+under 1.5%). Four v4 behaviour changes were pinned back to the look staff approved: `leading-*`
+now wins over `sm:text-*` (five headings), small pills under `text-sm` inherit a proportional
+line-height (`leading-5` added), the admin search box is transparent (`bg-white`), and the native
+file-picker button on Screening lost its border (`file:` utilities). Accepted, not pinned: the
+palette shades (red-600 is #e7000b, was #dc2626 — pinning per shade is a hack a volunteer would
+not understand; the brand colours are unchanged) and the date inputs. A 35-screen functional
+walk with the bot accounts passed; the security re-check found no logic change, no new package
+outside Tailwind's own tree, four fewer audit advisories, headers unchanged and the CSP untouched
+(v4's `@property` rules live in the stylesheet file). The reason to take it now: a CSS-first
+config a volunteer can read, a faster build, and Dependabot stops proposing it every Monday.
