@@ -2822,3 +2822,21 @@ the role column** (applying *Registration & coordination* to an administrator us
 away). The column reads *Administrator — grants access*. Two independent facts per person: which
 areas, and whether they can grant. Resetting someone's two-factor stays administrator-only, in the
 database (`admin_reset_mfa`: `is_admin()`, a code entered just now, never your own) and the app.
+
+## 2026-10-21 — The Horseback Riding Waiver, and the first agreement tied to an activity
+
+Horseback riding is run by the camp itself, with horses brought by friends as volunteers — no
+outfitter, no form of theirs to link to (0041 left that open). So the waiver is the ministry's own,
+one paragraph the length of the Emergency Consent: a warning that tracks T.C.A. § 44-20-103 (the
+section that protects an equine activity *sponsor*; the sign wording § 44-20-105 mandates names
+only paid professionals, and we use none — checked against the Tennessee Code on 21 October, enacted
+1992, never amended), the horse risks, a release including ordinary negligence, the rules, and a line
+that the Emergency Consent and Hold Harmless already signed apply. It is signed per rider on the
+Activities page, with the same three signer roles as the wizard, through the schema's unused
+per-activity hook (`agreement_requirements.activity_id`, 0001 §13) — `0116`. Larry's feedback
+becomes version 2. Named parties are avoided on purpose (the horses' owners and the grounds are
+classes), so the text does not change when the people do. Known to the attorney: Tennessee does
+not enforce a parent's pre-injury release of a minor's own claim (*Childress*, 1989; *Blackwell*,
+2017); the statute's inherent-risk bar and insurance are the real protection for a child's claim.
+Follow-ups, not built: a Setup screen for per-activity requirements (`create_event()` copies
+event-scoped rows only); a staff "verified" mark and staff upload for outfitter confirmations.

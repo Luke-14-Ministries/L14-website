@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`). The working checkl
 `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0115`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0116`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -272,7 +272,12 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   the signer's explicit affirmation). Written by `app/register/family/actions.js`, not the RPC;
   people added later are signed for then; old household-wide rows still cover whoever was on the
   registration when signed. The scholarship and pay-by-check agreements are retired. The Creed
-  agreement is at version 3 (`0088`).
+  agreement is at version 3 (`0088`). An agreement can also be a condition of **one activity**
+  (`agreement_requirements.activity_id`, first used in `0116` for the Horseback Riding Waiver): the
+  Activities page opens it when the rider is ticked onto the activity and saves the signup only with
+  the signature (`app/account/activities/actions.js`, scoped to the caller's household). A horseback
+  activity on a new event needs its requirement row by hand — `create_event()` copies event-scoped
+  rows only, and Setup has no screen for requirements.
 
 **Registration details.** A camper's support and medical details are asked inside the wizard
 (card 4) and are a condition of submitting (`0097`; `submitFamilyRegistration` writes
