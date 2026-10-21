@@ -2763,3 +2763,14 @@ there is one signed-in role. Row-level rules are the only per-person rules the d
 rows are what a table gives. The old columns were also the busiest thing in the schema to reason
 about: the 0105 and 0111 guards existed to stop families and insiders writing them. With no
 signed-in writer at all, those branches are gone.
+
+## 2026-10-21 — Stripe library 22 → 23, Dependabot's first pull request
+
+Reviewed before merging: the breaking changes are to Node 18 (we build on 24), to Payment Intent
+parameters the site does not use (it uses Checkout Sessions and Refunds), to V2 money-management
+types, and to a webhook helper the edge functions never called; the pinned API version moves to
+Stripe's 2026-09-30 release, and the fields the site reads from a session and a refund (`url`,
+`id`, `status`) are unchanged. Lint and build pass. Taken on main rather than through the pull
+request, which Dependabot closes itself. The edge functions import Stripe separately (Deno) and
+are untouched. The other open Dependabot requests, Tailwind 4 and ESLint 10, are major rewrites
+of tooling and wait for a quiet week.
