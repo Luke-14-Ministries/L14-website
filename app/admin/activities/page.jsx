@@ -79,12 +79,42 @@ export default async function AdminActivitiesPage({ searchParams }) {
         .from('activity_signups')
         .select(
           `activity_id, slot_id, status, waiver_acknowledged_at, added_source,
-           registration_participants ( id, camp_role,
+           registration_participants ( id, camp_role, person_id, registration_id,
              people ( first_name, last_name ),
              registrations ( households ( display_name ) ) )`
         )
         .in('activity_id', activityIds)
     : { data: [] };
+
+  // The ministry's own waiver on an activity (0116, horseback): which
+  // activities carry one, and who has signed it on which registration. Staff
+  // read every signature row, so "NOT signed" here is a fact, not a guess.
+  const { data: reqRows, error: reqError } = activityIds.length
+    ? await supabase
+        .from('agreement_requirements')
+        .select('activity_id, agreements ( id, title, active, delivery )')
+        .in('activity_id', activityIds)
+        .eq('is_required', true)
+    : { data: [], error: null };
+  if (reqError) throw new Error(`Activity agreements: ${reqError.message}`);
+  const agreementByActivity = new Map();
+  for (const r of reqRows ?? []) {
+    const a = r.agreements;
+    if (!a?.active || a.delivery !== 'internal_document') continue;
+    if (!agreementByActivity.has(r.activity_id)) agreementByActivity.set(r.activity_id, a);
+  }
+  const agreementIds = [...new Set([...agreementByActivity.values()].map((a) => a.id))];
+  const { data: sigRows, error: sigError } = agreementIds.length
+    ? await supabase
+        .from('agreement_signatures')
+        .select('agreement_id, person_id, registration_id, signed_at')
+        .in('agreement_id', agreementIds)
+        .not('person_id', 'is', null)
+    : { data: [], error: null };
+  if (sigError) throw new Error(`Activity waiver signatures: ${sigError.message}`);
+  const signedAtByKey = new Map(
+    (sigRows ?? []).map((s) => [`${s.agreement_id}:${s.person_id}:${s.registration_id}`, s.signed_at])
+  );
 
   // Outfitter confirmations (0087): one file per person per activity. Signed
   // URLs are minted here, server-side, for ten minutes -- the bucket is
@@ -138,6 +168,14 @@ export default async function AdminActivitiesPage({ searchParams }) {
       status: s.status,
       acknowledged: Boolean(s.waiver_acknowledged_at),
       source: s.added_source,
+      // When this person signed the activity's own waiver on this
+      // registration, or null; undefined where the activity has none.
+      waiverSignedAt: (() => {
+        const agr = agreementByActivity.get(s.activity_id);
+        if (!agr) return undefined;
+        const rp = s.registration_participants;
+        return signedAtByKey.get(`${agr.id}:${rp?.person_id}:${rp?.registration_id}`) ?? null;
+      })(),
     });
   }
   for (const list of byActivity.values()) list.sort((a, b) => a.name.localeCompare(b.name));
@@ -258,6 +296,27 @@ export default async function AdminActivitiesPage({ searchParams }) {
                         {p.status === 'interested' && (
                           <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">
                             interested
+                          </span>
+                        )}
+                        {/* The activity's own waiver (0116): signed on the
+                            site, per rider, or not -- a signup added by staff
+                            can exist without one. */}
+                        {p.waiverSignedAt !== undefined && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              p.waiverSignedAt
+                                ? 'bg-neutral-100 text-neutral-600'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                            title={
+                              p.waiverSignedAt
+                                ? `${agreementByActivity.get(a.id)?.title ?? 'Waiver'} signed on the site`
+                                : `${agreementByActivity.get(a.id)?.title ?? 'Waiver'} has not been signed on the site`
+                            }
+                          >
+                            {p.waiverSignedAt
+                              ? `Waiver signed ${dayInMorristown(p.waiverSignedAt)}`
+                              : 'Waiver NOT signed'}
                           </span>
                         )}
                         {a.provider_name && p.status === 'signed_up' && (

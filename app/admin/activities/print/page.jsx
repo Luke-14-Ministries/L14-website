@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
+import { dayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Activity Sheets — Staff Admin' };
 
@@ -72,7 +73,7 @@ export default async function ActivityPrintPage({ searchParams }) {
         .from('activity_signups')
         .select(
           `activity_id, slot_id, status,
-           registration_participants ( id, camp_role,
+           registration_participants ( id, camp_role, person_id, registration_id,
              people ( first_name, last_name, preferred_name,
                person_support ( has_allergies, has_seizures, has_rescue_medication, buddy_required ) ),
              registrations ( households ( display_name ) ) )`
@@ -91,8 +92,39 @@ export default async function ActivityPrintPage({ searchParams }) {
     : { data: [] };
   const hasWaiver = new Set((waiverRows ?? []).map((w) => `${w.activity_id}:${w.registration_participant_id}`));
 
+  // The ministry's own waiver (0116, horseback): on an activity that carries
+  // one the sheet gets a Waiver column -- signed on the site, with the date,
+  // or NOT signed -- so the riding staff know before anyone is on a horse.
+  const { data: reqRows, error: reqError } = activityIds.length
+    ? await supabase
+        .from('agreement_requirements')
+        .select('activity_id, agreements ( id, active, delivery )')
+        .in('activity_id', activityIds)
+        .eq('is_required', true)
+    : { data: [], error: null };
+  if (reqError) throw new Error(`Activity agreements: ${reqError.message}`);
+  const agreementIdByActivity = new Map();
+  for (const r of reqRows ?? []) {
+    const a = r.agreements;
+    if (!a?.active || a.delivery !== 'internal_document') continue;
+    if (!agreementIdByActivity.has(r.activity_id)) agreementIdByActivity.set(r.activity_id, a.id);
+  }
+  const agreementIds = [...new Set(agreementIdByActivity.values())];
+  const { data: sigRows, error: sigError } = agreementIds.length
+    ? await supabase
+        .from('agreement_signatures')
+        .select('agreement_id, person_id, registration_id, signed_at')
+        .in('agreement_id', agreementIds)
+        .not('person_id', 'is', null)
+    : { data: [], error: null };
+  if (sigError) throw new Error(`Activity waiver signatures: ${sigError.message}`);
+  const signedAtByKey = new Map(
+    (sigRows ?? []).map((s) => [`${s.agreement_id}:${s.person_id}:${s.registration_id}`, s.signed_at])
+  );
+
   const shape = (g) => {
     const rp = g.registration_participants;
+    const agreementId = agreementIdByActivity.get(g.activity_id);
     const pe = rp?.people;
     const s = Array.isArray(pe?.person_support) ? pe.person_support[0] : pe?.person_support;
     const base = `${pe?.first_name ?? ''} ${pe?.last_name ?? ''}`.trim();
@@ -110,6 +142,11 @@ export default async function ActivityPrintPage({ searchParams }) {
       ),
       waiver: providerIds.has(g.activity_id)
         ? hasWaiver.has(`${g.activity_id}:${rp?.id}`) ? 'yes' : 'no'
+        : null,
+      // The site's own waiver: the day it was signed, '' for not signed, null
+      // where the activity has none (the column is then left off the sheet).
+      signed: agreementId
+        ? dayInMorristown(signedAtByKey.get(`${agreementId}:${rp?.person_id}:${rp?.registration_id}`) ?? '')
         : null,
     };
   };
@@ -151,7 +188,9 @@ export default async function ActivityPrintPage({ searchParams }) {
       .filter(Boolean)
       .join(' · ');
 
-  const Register = ({ rows }) =>
+  // waiverColumn: the activity carries the site's own waiver (0116), so the
+  // sheet says per rider whether it is signed. Left off every other sheet.
+  const Register = ({ rows, waiverColumn = false }) =>
     rows.length === 0 ? (
       <p className="text-sm text-neutral-500">Nobody signed up.</p>
     ) : (
@@ -162,6 +201,7 @@ export default async function ActivityPrintPage({ searchParams }) {
             <th className="py-1 pr-3">Name</th>
             <th className="py-1 pr-3">Family</th>
             <th className="py-1">Support</th>
+            {waiverColumn && <th className="py-1 pl-3">Waiver</th>}
           </tr>
         </thead>
         <tbody>
@@ -188,6 +228,15 @@ export default async function ActivityPrintPage({ searchParams }) {
                   <span className="ml-2 text-xs font-semibold">· NO provider confirmation</span>
                 )}
               </td>
+              {waiverColumn && (
+                <td className="py-1.5 pl-3">
+                  {r.signed ? (
+                    <span className="text-xs">signed {r.signed}</span>
+                  ) : (
+                    <span className="text-xs font-semibold">NOT signed</span>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -246,7 +295,7 @@ export default async function ActivityPrintPage({ searchParams }) {
             {a.description && <p className="mb-3 text-sm text-neutral-600">{a.description}</p>}
 
             {slots.length === 0 ? (
-              <Register rows={loose} />
+              <Register rows={loose} waiverColumn={agreementIdByActivity.has(a.id)} />
             ) : (
               slots.map((sl) => (
                 <div key={sl.id} className="mb-5 break-inside-avoid">
@@ -258,7 +307,7 @@ export default async function ActivityPrintPage({ searchParams }) {
                       {sl.capacity ? ` of ${sl.capacity}` : ''} signed up
                     </span>
                   </p>
-                  <Register rows={bySlot.get(sl.id) ?? []} />
+                  <Register rows={bySlot.get(sl.id) ?? []} waiverColumn={agreementIdByActivity.has(a.id)} />
                 </div>
               ))
             )}
@@ -269,7 +318,7 @@ export default async function ActivityPrintPage({ searchParams }) {
             {slots.length > 0 && loose.length > 0 && (
               <div className="mt-4">
                 <p className="mb-1 text-sm font-semibold">No sitting chosen</p>
-                <Register rows={loose} />
+                <Register rows={loose} waiverColumn={agreementIdByActivity.has(a.id)} />
               </div>
             )}
           </div>
