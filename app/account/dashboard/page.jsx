@@ -748,10 +748,9 @@ export default async function DashboardPage({ searchParams }) {
         {staff && (
           <div className="mb-8 rounded-lg border border-brand/30 bg-brand-light p-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              {/* Every grant this login holds, not only Sensitive (2 Sep). The
-                  point is the reminder: a grant left on is a screen that shows
-                  medical or donor detail to anyone looking over a shoulder, so
-                  the dashboard names them each time and points at the switch. */}
+              {/* Every grant this login holds, not only Sensitive (2 Sep), named
+                  in the bracket: a grant left on is a screen that shows medical
+                  or donor detail to anyone looking over a shoulder. */}
               {(() => {
                 const grants = [
                   // The grants (0100), not the old staff columns, which can lag.
@@ -768,22 +767,9 @@ export default async function DashboardPage({ searchParams }) {
                         {grants.length > 0 ? ` · ${grants.join(' · ')}` : ''}]
                       </span>
                     </p>
-                    {/* Two short sentences (Lawrence, 21 Oct 2026: the old
-                        three-line version was wordy and "this" had no clear
-                        antecedent). */}
-                    <p className="text-sm text-neutral-600">
-                      This is your family&rsquo;s page; everyone else&rsquo;s is in the staff area.
-                    </p>
-                    {grants.length > 0 && (
-                      <p className="mt-1 text-sm text-neutral-600">
-                        Your <strong>{grants.join(', ')}</strong> grant{grants.length === 1 ? ' is' : 's are'} on.
-                        Switch {grants.length === 1 ? 'it' : 'them'} off on{' '}
-                        <Link href="/admin/staff" className="underline">
-                          Staff &amp; Access
-                        </Link>{' '}
-                        when you don&rsquo;t need {grants.length === 1 ? 'it' : 'them'}.
-                      </p>
-                    )}
+                    {/* Just the heading and the door (Lawrence, 21 Oct 2026):
+                        the bracket already names the grants, and any sentence
+                        under it read as padding. */}
                   </>
                 );
               })()}
