@@ -2715,3 +2715,19 @@ pages already show "—" to them. Left as it is until he answers.
 "definer function callable" notes and the leaked-password switch (W20, Lawrence's). The
 performance advisor's four per-row `auth.uid()` policies are fixed; the 60 unindexed foreign
 keys and 11 unused indexes wait for real traffic to say which matter.
+
+## 2026-10-21 — Staff money columns stay where they are; a Supabase deadline that needs nothing
+
+**Lawrence, on the sweep's question:** a rewrite is fine if it is the best long-run answer, and
+leaving it is fine if the current state is secure. It is secure where it counts: nobody can move
+money, and nobody reaches children's data they should not. What remains is that a staff member
+without Payments read (today, only the Operations helper preset) could read fee and scholarship
+amounts through the API, though every page shows them "—". The clean fix, a separate money
+table with its own rules, touches every page that prints a fee; CLAUDE.md says no architectural
+rewrites in October, and this is one. **Decided: leave it, revisit after launch.** Written down so
+the next audit does not re-find it.
+
+**Supabase's 30 October change** (new tables in `public` no longer get Data API grants
+automatically) needs nothing here. Every migration since the first has granted explicitly, and
+the one table without a grant, `mfa_trusted_sessions`, is reached only through its functions by
+design. CLAUDE.md's first trap already says it; the date is now on it.

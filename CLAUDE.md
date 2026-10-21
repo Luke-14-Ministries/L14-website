@@ -80,7 +80,9 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 ## Traps already fallen into — rules for code
 
 - **Every new table needs explicit role grants alongside its RLS policies** — RLS without
-  `grant ... to authenticated` is permission denied.
+  `grant ... to authenticated` is permission denied. Since 30 October 2026 Supabase grants nothing
+  automatically to new tables, so this is the rule for every migration, not a habit. The one table
+  without a grant, `mfa_trusted_sessions`, is reached only through its functions, on purpose.
 - **Never swallow a query error, and never turn one into an empty list.** `/admin/search` returned
   "Nothing matches" for every query for weeks because it did.
 - **`/account/*` "my data" queries scope by household membership explicitly** — never rely on RLS
@@ -163,7 +165,8 @@ on the Programs page; the preset Lawrence wanted (16 Oct) is not built.
 through `admin_link_login_to_household()`; confirming an agreement signature is Registration write;
 `message_log` is read-only for staff; `pay_in_full_amount()` needs Payments read or your own
 registration. Staff without Payments read can still read the money columns on
-`registration_participants` and the balance views (a question for Lawrence, Staff Questions §1.1).
+`registration_participants` and the balance views: **decided, 21 Oct, to leave until after launch**
+(the pages show "—"; the clean fix is a separate money table, an October rewrite).
 
 **Rule of thumb for any access question (Lawrence):** when it is not obvious what a role or person
 should have, default to **read**; write is granted on top, for a named person, and logged.
