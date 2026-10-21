@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`). The working checkl
 `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0109`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0111`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -66,9 +66,11 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 **Next, in order (go-live, Phase 4 — detail in DO-THIS-NEXT W51/W22):**
 
 1. **Purge ALL test data** from production. Everything after depends on it.
-2. **Live Stripe keys**, and **both** live-mode webhooks — `stripe-webhook` *and*
-   `stripe-refund-webhook`. Test endpoints do not carry over; a missed refund webhook fails
-   silently (migration `0054`). Stripe payouts set to automatic first (W44).
+2. **Live Stripe keys**, and **all three** live-mode webhooks — `stripe-webhook`,
+   `stripe-refund-webhook` and `stripe-plans-webhook` (with `STRIPE_PLANS_WEBHOOK_SECRET` and
+   `CRON_SECRET` set; the plans endpoint refuses everything until then). Test endpoints do not
+   carry over; a missed refund webhook fails silently (migration `0054`). Stripe payouts are
+   automatic, daily, no minimum balance (W44, 20 Oct).
 3. ~~Vercel Pro~~ — done, 20 Oct 2026 (see *Hosting*).
 4. Domain pointed and transferred to Cloudflare in one session; the four preview switches reversed
    together; **archive the 2026 Retreat on Setup.** Board approval gates all of it.
@@ -227,6 +229,16 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   `supabase/functions/_shared/`. Families cannot edit money columns on `registration_participants`.
   **Not live until `supabase/PAYMENT-PLANS-SETUP.md` is done.** Plans and pay-in-full are offered at
   `/account/finish/[registrationId]` ("Ways to pay"; `registration_payment_routes` view).
+- **The money audit trail** (`0111`): every write to `payments`, `payment_refunds`, `payment_plans`,
+  `coupons` and `coupon_redemptions` lands in `money_change_log` (administrators read it). A
+  refund row is edited only while pending and its money never changes; a payment with a refund on
+  file stays with its family; `payments.status` follows the refunds on file. **Plans are created
+  only by Stripe's webhook** — staff change status, the early-discount decision, the cancel stamps
+  and the note. **Coupons have no signed-in writer** until a screen exists. Scholarship plus
+  hand-set discount is capped at the fee in the database. The discount rules (`recalc_*`) run for
+  staff, the family's own registration or a server-side caller; the "both weeks" volunteer
+  discount needs volunteer rows staff have **confirmed**. `registration_paid_cents()` is the
+  deposit question for any staff member (the balances view runs with the caller's rights).
 - **Refunds:** `charge.refunded` → `supabase/functions/stripe-refund-webhook/`; per-family refunds via
   `refundPayment` in `app/admin/registrations/[id]/actions.js`; the over-refund guard and
   pending-refund accounting are `0038`/`0044`/`0053`/`0054`. Since `0107` the row is reserved before

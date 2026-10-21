@@ -2624,3 +2624,48 @@ giving forms (Vercel firewall), DMARC reporting, and enforcing the content secur
 - **A failing payment plan is not held automatically.** Lawrence was unsure; the default stands,
   as recommended: three failed tries stop the plan and email staff and family, and a reviewer
   holds the registration by hand when it warrants. It is in Staff Questions §1.1 for Larry.
+
+## 2026-10-20 — The adversarial audit: nobody outside can move money; the insider paths close (0110, 0111)
+
+Lawrence asked for a "think like a hacker" round after a talk: unconventional use, injection in the
+login fields, and above all whether anyone, malicious or careless, could reach real money. Three
+testers worked from the database and the code (the captcha was on, so no screens); each finding
+had to be proven on a rolled-back probe, a response code, or a line plus the input that breaks it.
+
+**What held.** Every cross-family read and write was refused. A staff password alone reaches
+nothing. Every webhook refuses unsigned input. Amounts are computed on the server. The refund
+guards from `0107` refused over-refunds by a cent, duplicate submits, refunds of failed payments.
+
+**What a family could tilt, now closed (`0111`).** The discount rules could be run by anyone on
+anyone's registration (deterministic, but the caller chose when); the "both weeks" volunteer
+discount counted a volunteer the family had named before staff approved one; a declined
+scholarship request could be re-opened. Now the rules run for staff, the family's own registration
+or a server-side caller; the volunteer discount needs confirmed volunteer rows; a decided request
+stays decided.
+
+**What an insider could do through the API with no screen and no log, now closed.** Cancel a
+succeeded Stripe refund (the money had gone; the balance forgot it); rewrite a refund's amount;
+move a payment to another family; insert a payment plan naming another family's saved card, which
+the daily charger would have charged; set a scholarship above the fee; write coupons. Refund rows
+are now edited only while pending and their money never changes; a payment with a refund stays
+put; plans come only from Stripe's webhook; the cap is in the database; coupons have no signed-in
+writer until a screen exists; and `money_change_log` records every write to payments, refunds,
+plans and coupons with who made it. **The principle:** a right the screens never use is still a
+right, and it gets a guard and a log like any other.
+
+**Two defects found on the way.** A card payment refunded in full stayed "received" (the staff
+client may not update card rows, so the flip silently did nothing): payments.status now follows
+the refunds on file for every writer. Staff without Payments read saw "$0 paid" on every family
+and were told to confirm twice: `registration_paid_cents()` answers the deposit question for any
+staff member, and the review and roster pages show money only to Payments read.
+
+**Smaller.** Gifts never move back from received, and a gift refunded in full is marked so. A
+checkout page expires after 30 minutes (two tabs could both be paid). The sign-up form no longer
+says whether an address has an account. A household with people can never be self-claimed
+(`0110`). The login-email change speaks in our own words.
+
+**Not built, recorded.** `stripe-plans-webhook` runs without its signing secret on the test
+project, so it refuses everything: expected until `PAYMENT-PLANS-SETUP.md` is done, and now on the
+go-live list beside the refund webhook. The content security policy stays report-only until a
+clean test round. The firewall rate limit on the contact and giving forms is set in Vercel's
+dashboard (the API refuses a project with no saved configuration).
