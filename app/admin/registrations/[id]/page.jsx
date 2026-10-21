@@ -32,8 +32,9 @@ export default async function RegistrationDetailPage({ params }) {
                     home_church, how_did_you_hear, how_did_you_hear_from ),
        events ( id, name, event_type, starts_on, ends_on, deposit_cents ),
        registration_participants (
-         id, camp_role, status, fee_cents, scholarship_cents, discount_cents, discount_reason,
+         id, camp_role, status,
          tshirt_size, first_time_attending,
+         participant_money ( fee_cents, scholarship_cents, discount_cents, discount_reason ),
          people ( id, first_name, last_name, preferred_name, date_of_birth,
                   gender, email, phone )
        )`
@@ -42,6 +43,14 @@ export default async function RegistrationDetailPage({ params }) {
     .maybeSingle();
 
   if (!reg) notFound();
+
+  // Money lives in participant_money (0114), one row per participant, and the
+  // database shows it only to Payments readers and the family itself. For a
+  // staff member without Payments read the embed is null -- not zero, not
+  // "no fee", but "not yours to see". Every number below is read through this
+  // helper so a null stays null all the way to the screen, where it is drawn
+  // as "—". Defaulting it to 0 here would tell a reviewer the camp is free.
+  const moneyOf = (p) => p?.participant_money ?? null;
 
   // Who put it on hold (0098), by name -- the family never sees this part.
   let holdBy = null;
@@ -150,8 +159,10 @@ export default async function RegistrationDetailPage({ params }) {
             'Person',
           // The participant row below already carries the role badge.
           roleLabel: null,
-          feeCents: part?.fee_cents ?? 0,
-          discountCents: part?.discount_cents ?? 0,
+          // null when this staffer may not read money (see moneyOf above);
+          // the card then shows "—" instead of a $0 fee.
+          feeCents: moneyOf(part)?.fee_cents ?? null,
+          discountCents: moneyOf(part)?.discount_cents ?? null,
           requestedCents: s.requested_cents,
           grantedCents: s.granted_cents ?? 0,
           status: s.status,
@@ -296,10 +307,13 @@ export default async function RegistrationDetailPage({ params }) {
         id: p.id,
         camp_role: p.camp_role,
         status: p.status,
-        fee_cents: p.fee_cents,
-        scholarship_cents: p.scholarship_cents,
-        discount_cents: p.discount_cents,
-        discount_reason: p.discount_reason,
+        // Flattened from participant_money so the client component keeps
+        // its column names; each is null when the money is not this
+        // staffer's to see (canSeeMoney below is false in the same case).
+        fee_cents: moneyOf(p)?.fee_cents ?? null,
+        scholarship_cents: moneyOf(p)?.scholarship_cents ?? null,
+        discount_cents: moneyOf(p)?.discount_cents ?? null,
+        discount_reason: moneyOf(p)?.discount_reason ?? null,
         tshirt_size: p.tshirt_size,
         first_time_attending: p.first_time_attending,
         // null here means never asked. Kept distinct from false all the way

@@ -39,7 +39,13 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
   const [note, setNote] = useState('');
 
   const isOpen = row.status === 'requested';
-  const room = Math.max(0, (row.feeCents ?? 0) - (row.discountCents ?? 0));
+  // A null fee means this staffer may not read money (0114): the card is also
+  // shown on the registration page, which only needs Registration read. The
+  // fee is then drawn as "—", and the amount arithmetic is skipped -- a null
+  // summed as 0 would advertise a free place and "up to $0 can be awarded".
+  const feeKnown = row.feeCents != null;
+  const room = feeKnown ? Math.max(0, row.feeCents - (row.discountCents ?? 0)) : 0;
+  const feeText = feeKnown ? money(row.feeCents) : '—';
 
   function run(fn) {
     setError('');
@@ -124,14 +130,14 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
         {row.requestedCents ? (
           <>
             Asked for <span className="font-semibold">{money(row.requestedCents)}</span> toward a{' '}
-            {money(row.feeCents)} fee
+            {feeText} fee
           </>
         ) : (
           <>
-            Asked for help without naming an amount · fee {money(row.feeCents)}
+            Asked for help without naming an amount · fee {feeText}
           </>
         )}
-        {(row.discountCents ?? 0) > 0 && (
+        {feeKnown && (row.discountCents ?? 0) > 0 && (
           <> · {money(row.discountCents)} already discounted, so up to {money(room)} can be awarded</>
         )}
       </p>

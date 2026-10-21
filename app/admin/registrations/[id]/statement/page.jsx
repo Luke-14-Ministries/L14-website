@@ -45,7 +45,8 @@ export default async function FamilyStatementPage({ params }) {
         `id,
          households ( display_name, email, phone, address_line1, address_line2, city, state, postal_code ),
          events ( name, event_type, starts_on, ends_on, balance_due_on ),
-         registration_participants ( camp_role, status, fee_cents, scholarship_cents, discount_cents,
+         registration_participants ( camp_role, status,
+           participant_money ( fee_cents, scholarship_cents, discount_cents ),
            people ( first_name, last_name ) )`
       )
       .eq('id', id)
@@ -131,20 +132,23 @@ export default async function FamilyStatementPage({ params }) {
         </thead>
         <tbody>
           {parts.map((p, i) => {
+            // Money is its own table since 0114, embedded per person. This
+            // page is gated on Payments read, so the row is always here.
+            const m = p.participant_money ?? {};
             const due =
-              (p.fee_cents ?? 0) - (p.scholarship_cents ?? 0) - (p.discount_cents ?? 0);
+              (m.fee_cents ?? 0) - (m.scholarship_cents ?? 0) - (m.discount_cents ?? 0);
             return (
               <tr key={i} className="border-b border-neutral-200">
                 <td className="py-1 pr-3 font-medium">
                   {p.people?.first_name} {p.people?.last_name}
                 </td>
                 <td className="py-1 pr-3">{ROLE_LABEL[p.camp_role] ?? p.camp_role}</td>
-                <td className="py-1 text-right">{money(p.fee_cents)}</td>
+                <td className="py-1 text-right">{money(m.fee_cents)}</td>
                 <td className="py-1 text-right">
-                  {(p.scholarship_cents ?? 0) > 0 ? `−${money(p.scholarship_cents)}` : '—'}
+                  {(m.scholarship_cents ?? 0) > 0 ? `−${money(m.scholarship_cents)}` : '—'}
                 </td>
                 <td className="py-1 text-right">
-                  {(p.discount_cents ?? 0) > 0 ? `−${money(p.discount_cents)}` : '—'}
+                  {(m.discount_cents ?? 0) > 0 ? `−${money(m.discount_cents)}` : '—'}
                 </td>
                 <td className="py-1 text-right font-semibold">{money(due)}</td>
               </tr>

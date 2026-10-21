@@ -1747,7 +1747,13 @@ export default function RegistrationManager({
   stripeBase = '',
 }) {
   const parts = registration.participants ?? [];
-  const total = parts.reduce((s, p) => s + (p.fee_cents ?? 0), 0);
+  // Money (0114) arrives as null for a staffer without Payments read -- the
+  // database withholds it, the page does not. A null is "not yours to see",
+  // never a free place, so the header fee line below is drawn only when every
+  // person's money is actually here; summing nulls as zeros would say "Fees
+  // $0.00" to a reviewer who simply cannot read money.
+  const moneyKnown = parts.every((p) => p.fee_cents != null);
+  const total = moneyKnown ? parts.reduce((s, p) => s + (p.fee_cents ?? 0), 0) : null;
   // Which people are waiting on a decision about the fee, so their row can say
   // so where a registrar is already looking.
   const awaitingScholarship = new Set(scholarshipRequests.map((r) => r.participantId));
@@ -1769,10 +1775,9 @@ export default function RegistrationManager({
   // A waived deposit (0096) is not short (18 Oct review: the page showed both).
   const depositShort =
     canSeeMoney && !depositWaived && depositEach > 0 && livePeople > 0 && depositPaid < depositDue;
-  const adjustments = parts.reduce(
-    (s, p) => s + (p.scholarship_cents ?? 0) + (p.discount_cents ?? 0),
-    0
-  );
+  const adjustments = moneyKnown
+    ? parts.reduce((s, p) => s + (p.scholarship_cents ?? 0) + (p.discount_cents ?? 0), 0)
+    : 0;
 
   return (
     <div>
@@ -1800,10 +1805,18 @@ export default function RegistrationManager({
           {registration.event?.name ?? 'Registration'}
           <span className="ml-2 text-base font-normal text-neutral-500">registration details</span>
         </h2>
+        {/* Without Payments read the balances view returns no row at all
+            (0114), so this fallback line is what such a staffer sees: the head
+            count, and the fees only when the money came through. */}
         {!balance && (
           <span className="text-sm text-neutral-500">
-            {livePeople} {livePeople === 1 ? 'person' : 'people'} · Fees {money(total)}
-            {adjustments > 0 && <> − {money(adjustments)} scholarships/discounts</>}
+            {livePeople} {livePeople === 1 ? 'person' : 'people'}
+            {canSeeMoney && moneyKnown && (
+              <>
+                {' '}· Fees {money(total)}
+                {adjustments > 0 && <> − {money(adjustments)} scholarships/discounts</>}
+              </>
+            )}
           </span>
         )}
       </div>

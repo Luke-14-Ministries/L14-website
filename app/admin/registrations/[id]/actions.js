@@ -429,19 +429,20 @@ export async function addParticipant(registrationId, input) {
   if (regError) return { ok: false, error: regError.message };
   if (!reg) return { ok: false, error: 'Registration not found.' };
 
-  // The fee is copied from the option at the moment of adding. The old
-  // early-bird PRICE is retired (0080): early registration is now a flat
-  // per-person discount worked out by recalc_early_registration_discount(),
-  // the same for staff-added and family-added people.
+  // The option must exist -- a friendlier answer than the foreign-key error.
+  // Its fee is NOT read here: since 0114 a trigger on registration_participants
+  // copies the option's fee into participant_money the moment the row is
+  // inserted, the same for staff-added and family-added people, so nothing in
+  // the app sets a fee. (The old early-bird PRICE is retired, 0080: early
+  // registration is a flat per-person discount from
+  // recalc_early_registration_discount().)
   const { data: opt, error: optError } = await supabase
     .from('event_options')
-    .select('fee_cents')
+    .select('id')
     .eq('id', optionId)
     .maybeSingle();
   if (optError) return { ok: false, error: optError.message };
   if (!opt) return { ok: false, error: 'That camp option no longer exists.' };
-
-  const fee = opt.fee_cents;
 
   // Staff can SELECT any person (people_select allows is_staff), so the insert
   // may safely return the new id -- the RETURNING-under-RLS pitfall that bites
@@ -518,7 +519,7 @@ export async function addParticipant(registrationId, input) {
     camp_role: role,
     status: 'submitted',
     submitted_at: new Date().toISOString(),
-    fee_cents: fee,
+    // No fee_cents: the participant_money trigger fills it (0114).
   });
   if (partError) {
     // 0086: one role per person per event.
@@ -569,11 +570,14 @@ export async function deleteParticipantPermanently(registrationId, participantId
   return { ok: true };
 }
 
-// Scholarships & fee adjustments. The amounts live on the participant row
-// (registration_participants.scholarship_cents / discount_cents) -- that is
-// what the registration_balances view subtracts, so granting here flows into
-// every balance, statement, and the family's dashboard automatically. A
-// scholarships row is kept alongside as the audit trail (who granted what,
+// Scholarships & fee adjustments. The amounts live in participant_money
+// (0114; scholarship_cents / discount_cents, one row per participant) -- that
+// is what the registration_balances view subtracts, so granting here flows
+// into every balance, statement, and the family's dashboard automatically.
+// Nobody signed in may write that table directly: the only door is the
+// set_participant_adjustments() function, which checks the caller may decide
+// scholarships, refuses a total above the fee, and logs to money_change_log.
+// A scholarships row is kept alongside as the audit trail (who granted what,
 // when, and the staff note -- NOT the family's statement, which belongs to
 // the family and is never overwritten here).
 //
@@ -599,24 +603,37 @@ export async function setAdjustments(registrationId, participantId, input) {
 
   const supabase = await createClient();
 
+  // The current discount and its reason. The reason is how the discount
+  // rules tell their own work apart: recalc_multi_week_discount() and friends
+  // touch only a discount carrying THEIR reason (0070/0080/0081), and a null
+  // reason means a person set it by hand. So: a discount the registrar left
+  // as it was keeps its reason, and a rule will still keep it up to date; a
+  // discount they changed is now a hand-set one and the reason is cleared,
+  // so no rule quietly overwrites what they typed.
   const { data: part, error: readError } = await supabase
     .from('registration_participants')
-    .select('id, fee_cents')
+    .select('id, participant_money ( discount_cents, discount_reason )')
     .eq('id', participantId)
     .maybeSingle();
   if (readError) return { ok: false, error: readError.message };
   if (!part) return { ok: false, error: 'That participant no longer exists.' };
-  if (scholarship + discount > (part.fee_cents ?? 0)) {
-    return {
-      ok: false,
-      error: 'Scholarship plus discount cannot exceed the fee for this person.',
-    };
+  const current = part.participant_money;
+  if (!current) {
+    // Someone who may decide holds Payments write, so the money row is theirs
+    // to read; its absence means the row was never created, not a gate.
+    return { ok: false, error: 'This person has no fee record yet. Try again in a moment.' };
   }
+  const reason = discount === (current.discount_cents ?? 0) ? current.discount_reason ?? null : null;
 
-  const { error } = await supabase
-    .from('registration_participants')
-    .update({ scholarship_cents: scholarship, discount_cents: discount })
-    .eq('id', participantId);
+  // The fee cap is checked by the function, in the database, with the words
+  // the editor shows ("Scholarship plus discount cannot exceed the fee for
+  // this person.") -- so its message is passed through as it is.
+  const { error } = await supabase.rpc('set_participant_adjustments', {
+    p_participant_id: participantId,
+    p_scholarship_cents: scholarship,
+    p_discount_cents: discount,
+    p_discount_reason: reason,
+  });
   if (error) return { ok: false, error: error.message };
 
   // Audit trail in the scholarships table (one row per participant).

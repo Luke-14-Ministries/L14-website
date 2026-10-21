@@ -491,7 +491,16 @@ export default function RosterTable({ events, rows, programs = [] }) {
                       )}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-right">{money(r.fee)}</td>
+                  {/* null = this staffer may not read money (0114), not a free place. */}
+                  <td className="px-4 py-2 text-right">
+                    {r.fee == null ? (
+                      <span className="text-neutral-400" title="Payments read is needed to see money">
+                        &mdash;
+                      </span>
+                    ) : (
+                      money(r.fee)
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-neutral-600">{r.submitted ? dayInMorristown(r.submitted) : '—'}</td>
                   {!fEvent && (
                     <td className="px-4 py-2 text-neutral-600 whitespace-nowrap" title={eventName(r.eventId)}>

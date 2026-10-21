@@ -72,16 +72,21 @@ export async function grantScholarship({ registrationId, participantId, amount, 
 
   const supabase = await createClient();
 
+  // Money is its own table since 0114, embedded here. Someone who may decide
+  // holds Payments write, so the row is theirs to read; a missing one means
+  // the participant has no fee record at all, which is a fault, not a gate.
   const { data: part, error: readError } = await supabase
     .from('registration_participants')
-    .select('id, fee_cents, discount_cents')
+    .select('id, participant_money ( fee_cents, discount_cents, discount_reason )')
     .eq('id', participantId)
     .maybeSingle();
   if (readError) return { ok: false, error: readError.message };
   if (!part) return { ok: false, error: 'That person is no longer on this registration.' };
+  const current = part.participant_money;
+  if (!current) return { ok: false, error: 'This person has no fee record yet. Try again in a moment.' };
 
-  const discount = part.discount_cents ?? 0;
-  const fee = part.fee_cents ?? 0;
+  const discount = current.discount_cents ?? 0;
+  const fee = current.fee_cents ?? 0;
   if (cents + discount > fee) {
     // Same rule the adjustments editor enforces, stated in the numbers the
     // registrar is actually looking at rather than in the abstract.
@@ -95,14 +100,21 @@ export async function grantScholarship({ registrationId, participantId, amount, 
     };
   }
 
-  // The amount lives on the participant row -- that is what
+  // The amount lives in participant_money -- that is what
   // registration_balances subtracts, so granting here flows into the family's
   // balance, their dashboard, and the printable statement with no further
-  // steps.
-  const { error: partError } = await supabase
-    .from('registration_participants')
-    .update({ scholarship_cents: cents })
-    .eq('id', participantId);
+  // steps. Nobody signed in may write that table; set_participant_adjustments()
+  // is the one door (it re-checks the fee cap and logs to money_change_log).
+  // It sets scholarship AND discount together, so the discount and its reason
+  // are passed back exactly as they are: the reason is how the discount
+  // rules recognise their own work (0070/0080/0081), and dropping it would
+  // turn a rule's discount into a hand-set one.
+  const { error: partError } = await supabase.rpc('set_participant_adjustments', {
+    p_participant_id: participantId,
+    p_scholarship_cents: cents,
+    p_discount_cents: discount,
+    p_discount_reason: current.discount_reason ?? null,
+  });
   if (partError) return { ok: false, error: partError.message };
 
   // The scholarships row is the decision record. family_statement is NOT
@@ -184,12 +196,26 @@ export async function declineScholarship({ registrationId, participantId, note }
     .eq('id', existing.id);
   if (error) return { ok: false, error: error.message };
 
-  // Anything previously awarded comes off the participant row, so the balance
-  // and the decision can never disagree.
-  const { error: partError } = await supabase
+  // Anything previously awarded comes off the person's money row, so the
+  // balance and the decision can never disagree. Through the one function
+  // that may write participant_money (0114), with the discount and its
+  // reason carried through untouched -- see grantScholarship for why.
+  const { data: part, error: readError } = await supabase
     .from('registration_participants')
-    .update({ scholarship_cents: 0 })
-    .eq('id', participantId);
+    .select('id, participant_money ( discount_cents, discount_reason )')
+    .eq('id', participantId)
+    .maybeSingle();
+  if (readError) return { ok: false, error: `Recorded as declined, but the person could not be read: ${readError.message}` };
+  const current = part?.participant_money;
+  if (!current) {
+    return { ok: false, error: 'Recorded as declined, but this person has no fee record to clear.' };
+  }
+  const { error: partError } = await supabase.rpc('set_participant_adjustments', {
+    p_participant_id: participantId,
+    p_scholarship_cents: 0,
+    p_discount_cents: current.discount_cents ?? 0,
+    p_discount_reason: current.discount_reason ?? null,
+  });
   if (partError) {
     return {
       ok: false,

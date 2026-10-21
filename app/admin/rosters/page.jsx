@@ -34,8 +34,9 @@ export default async function RostersPage() {
       .select(
         `id, event_id, created_at, family_notes,
          households ( display_name, email, phone ),
-         registration_participants ( id, camp_role, status, fee_cents, submitted_at, created_at,
+         registration_participants ( id, camp_role, status, submitted_at, created_at,
            tshirt_size, first_time_attending, program_id,
+           participant_money ( fee_cents ),
            people ( id, first_name, last_name, gender ) )`
       )
       .order('created_at'),
@@ -97,7 +98,10 @@ export default async function RostersPage() {
         sex: p.people?.gender ?? '',
         role: p.camp_role,
         status: p.status,
-        fee: p.fee_cents ?? 0,
+        // From participant_money (0114): the database hands it only to
+        // Payments readers, so for anyone else the embed is null and the
+        // table draws "—". Never defaulted to 0 -- a $0 fee is a claim.
+        fee: p.participant_money?.fee_cents ?? null,
         submitted: p.submitted_at ?? p.created_at ?? '',
         tshirt: p.tshirt_size ?? '',
         programId: p.program_id ?? '',

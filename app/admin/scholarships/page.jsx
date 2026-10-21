@@ -49,7 +49,8 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
       `id, registration_participant_id, requested_cents, granted_cents, status,
        family_statement, staff_note, reviewed_by, reviewed_at, created_at,
        registration_participants!inner (
-         id, camp_role, status, fee_cents, discount_cents,
+         id, camp_role, status,
+         participant_money ( fee_cents, discount_cents ),
          people ( first_name, last_name ),
          registrations!inner (
            id,
@@ -95,8 +96,11 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
       roleLabel: ROLE_LABEL[part.camp_role] ?? part.camp_role ?? '',
       household: reg.households?.display_name ?? '',
       eventName: reg.events?.name ?? '',
-      feeCents: part.fee_cents ?? 0,
-      discountCents: part.discount_cents ?? 0,
+      // From participant_money (0114). This page needs Payments read, so the
+      // embed is present; null is kept rather than turned into 0 all the
+      // same, because the card draws a null as "—", never as a free place.
+      feeCents: part.participant_money?.fee_cents ?? null,
+      discountCents: part.participant_money?.discount_cents ?? null,
       requestedCents: r.requested_cents,
       grantedCents: r.granted_cents ?? 0,
       status: r.status,

@@ -30,8 +30,9 @@ export async function GET(request) {
         `id, event_id, family_notes, events ( name ),
          households ( display_name, email, phone, how_did_you_hear,
                       address_line1, city, state, postal_code ),
-         registration_participants ( camp_role, status, fee_cents, submitted_at, created_at, checked_in_at,
+         registration_participants ( camp_role, status, submitted_at, created_at, checked_in_at,
            tshirt_size, first_time_attending,
+           participant_money ( fee_cents ),
            people ( id, first_name, last_name, date_of_birth, gender ) )`
       ),
     supabase.from('person_current_consents').select('person_id, kind, granted'),
@@ -104,7 +105,12 @@ export async function GET(request) {
         day(signedOn.get(r.id)),
         r.households?.how_did_you_hear ?? '',
         r.family_notes ?? '',
-        ((p.fee_cents ?? 0) / 100).toFixed(2),
+        // The fee comes from participant_money (0114), which the database
+        // shows only to Payments readers. This export is Registration-gated,
+        // so for anyone else the embed is null and the cell is left blank --
+        // the same "we cannot say" an empty consent cell means above, and
+        // never 0.00, which a spreadsheet would add up as a free place.
+        p.participant_money ? ((p.participant_money.fee_cents ?? 0) / 100).toFixed(2) : '',
         day(p.submitted_at ?? p.created_at),
         p.checked_in_at
           ? new Date(p.checked_in_at).toLocaleString('en-US', {
