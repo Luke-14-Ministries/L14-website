@@ -26,6 +26,16 @@ export default async function CheckEmailPage({ searchParams }) {
             . Open it to finish setting up your account and continue to
             registration.
           </p>
+          {/* The same page whether the address is new or already registered
+              (security audit, 20 Oct 2026): the form must not reveal which.
+              So this paragraph is where someone with an account learns why no
+              email is coming. */}
+          <p className="mt-4 text-neutral-600 text-sm">
+            <strong>Already have an account with this address?</strong> Then no
+            new email is sent &mdash;{' '}
+            <a href="/account/" className="text-brand underline">log in</a> instead, or use{' '}
+            <a href="/account/forgot-password/" className="text-brand underline">Forgot password</a>.
+          </p>
           <p className="mt-4 text-neutral-600 text-sm">
             The link works once and expires after about an hour, so it&rsquo;s
             best to open it now. If it doesn&rsquo;t arrive within a few

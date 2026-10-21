@@ -43,7 +43,13 @@ export async function requestLoginEmailChange(newEmail) {
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ email });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    // Words of our own (security audit, 20 Oct 2026): Supabase's message can
+    // say whether the new address already has an account, which would make
+    // this form a way to test addresses.
+    console.error('requestLoginEmailChange:', error.message);
+    return { ok: false, error: 'That address could not be used. Check it, or try a different one.' };
+  }
   return {
     ok: true,
     message: `Confirmation sent to ${email}. Your login email changes once you click the link in that message.`,

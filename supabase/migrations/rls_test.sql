@@ -488,6 +488,17 @@ begin
   select count(*) into n from public.buddy_assignments;
   perform pg_temp.expect('B sees only assignments involving B', n, 1);
 
+  ---- a populated household is never self-claimed (0110) ---------------
+  set local role postgres;
+  delete from public.household_members where household_id = hB;   -- B now has people but no login
+  set local role authenticated;
+  perform pg_temp.as_user(uD);
+  perform pg_temp.expect_denied('a stranger cannot claim a household that has people',
+    format('insert into public.household_members (household_id, profile_id, role) values (%L, %L, ''owner'')', hB, uD));
+  set local role postgres;
+  insert into public.household_members (household_id, profile_id, role) values (hB, uB, 'owner');
+  set local role authenticated;
+
   ---- the event's medical contact (0109) ------------------------------
   set local role postgres;
   insert into public.event_medical_contacts (event_id, name, phone) values (ev, 'Nurse Test', '555-0100');

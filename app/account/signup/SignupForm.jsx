@@ -98,22 +98,11 @@ export default function SignupForm() {
     }
 
     // Supabase does not error when the email is already registered -- that would
-    // let someone probe which addresses have accounts. Instead it returns a user
-    // whose identities array is empty. That is how we catch a duplicate sign-up
-    // and point the person to logging in, rather than silently showing a "check
-    // your email" screen for a confirmation link that will never arrive.
-    if (
-      data?.user &&
-      Array.isArray(data.user.identities) &&
-      data.user.identities.length === 0
-    ) {
-      setError(
-        'An account already exists for this email. Please log in instead, or use “Forgot password” if you need to reset it.'
-      );
-      setBusy(false);
-      setCaptchaBump((n) => n + 1);
-      return;
-    }
+    // let anyone test an address and learn whether a family is known to a
+    // disability ministry. Until 20 Oct 2026 this form undid that protection by
+    // spotting the empty `identities` array and saying "an account already
+    // exists" (security audit). Now both cases land on the same "check your
+    // email" page, which also says what to do if you already have an account.
 
     // confirmation ON  -> no session yet; they must click the emailed link.
     // confirmation OFF -> signed in immediately. Confirmation stays ON here.
