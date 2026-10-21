@@ -165,12 +165,13 @@ begin
   insert into public.registrations (household_id, event_id) values (hA, ev) returning id into regA;
   insert into public.registrations (household_id, event_id) values (hB, ev) returning id into regB;
 
-  insert into public.registration_participants (registration_id, person_id, event_option_id, fee_cents)
-    values (regA, pA, optCamper, 49500) returning id into rpA;
-  insert into public.registration_participants (registration_id, person_id, event_option_id, fee_cents)
-    values (regB, pB, optCamper, 49500) returning id into rpB;
-  insert into public.registration_participants (registration_id, person_id, event_option_id, fee_cents)
-    values (regA, pVol, optVol, 0) returning id into rpVol;
+  -- 0114: the fee lives on participant_money, filled by trigger from the option.
+  insert into public.registration_participants (registration_id, person_id, event_option_id)
+    values (regA, pA, optCamper) returning id into rpA;
+  insert into public.registration_participants (registration_id, person_id, event_option_id)
+    values (regB, pB, optCamper) returning id into rpB;
+  insert into public.registration_participants (registration_id, person_id, event_option_id)
+    values (regA, pVol, optVol) returning id into rpVol;
 
   insert into public.registration_notes (registration_id, body)
     values (regA, 'staff only comment');
@@ -216,7 +217,7 @@ declare
   uA uuid; uB uuid; uR uuid; uC uuid; uF uuid; uD uuid;
   hA uuid; hB uuid; pA uuid; pB uuid; ev uuid; regA uuid;
   rpA uuid; rpB uuid; agr uuid; pNew uuid; optGen uuid;
-  n bigint;
+  n bigint; m bigint;
   oldStatus text;
 begin
   select v into uA from t where k='uA';   select v into uB from t where k='uB';
@@ -301,6 +302,11 @@ begin
   select count(*) into n from public.registration_participants
    where registration_id = regA and person_id = pNew and status = 'submitted' and confirmed_at is null and submitted_at is not null;
   perform pg_temp.expect('a family-inserted "confirmed" row is stored as submitted', n, 1);
+  -- 0114: the money row is created by the definer trigger, fee from the option.
+  select count(*) into n from public.participant_money pm
+    join public.registration_participants rp on rp.id = pm.participant_id
+   where rp.person_id = pNew and pm.fee_cents = 10000 and pm.scholarship_cents = 0 and pm.discount_cents = 0;
+  perform pg_temp.expect('a family-inserted participant gets its money row with the option''s fee (0114)', n, 1);
   set local role postgres;
   delete from public.registration_participants where person_id = pNew;
   delete from public.people where id = pNew;
@@ -405,10 +411,9 @@ begin
   perform pg_temp.as_user(uC);
   perform pg_temp.expect_denied('Finance-shaped grants may NOT grant a scholarship (0102)',
     format('insert into public.scholarships (registration_participant_id, granted_cents, status) values (%L, 5000, ''granted'')', rpA));
-  -- Without Registration write the participant row is invisible to an
-  -- update, so this touches nothing rather than raising.
-  perform pg_temp.expect_no_effect('Finance-shaped grants may NOT set scholarship_cents (0102)',
-    format('update public.registration_participants set scholarship_cents = 5000 where id = %L', rpA));
+  -- 0114: the only way to a scholarship amount is set_participant_adjustments().
+  perform pg_temp.expect_denied('Finance-shaped grants may NOT set a scholarship amount (0102/0114)',
+    format('select public.set_participant_adjustments(%L, 5000, 0)', rpA));
   set local role postgres;
   delete from public.staff_grants where profile_id = uC and area = 'payments';
   set local role authenticated;
@@ -556,6 +561,91 @@ begin
   select count(*) into n from information_schema.columns
    where table_schema = 'public' and table_name = 'events' and column_name like 'medical_contact%';
   perform pg_temp.expect('the medical contact is no longer on events', n, 0);
+  set local role authenticated;
+
+  ---- participant_money (0114) ----------------------------------------
+  -- What a person owes is readable by the family it belongs to and by
+  -- Payments read; written only by owner-run code.
+  set local role postgres;
+  select count(*) into n from public.registration_participants;   -- as postgres: every row
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  select count(*) into m from public.participant_money;
+  perform pg_temp.expect('family sees its own participant_money rows', m, 2);
+  select count(*) into m from public.participant_money where participant_id = rpB;
+  perform pg_temp.expect('family sees none of another family''s money', m, 0);
+  perform pg_temp.expect_denied('family may NOT insert participant_money',
+    format('insert into public.participant_money (participant_id, fee_cents) values (%L, 1)', rpA));
+  perform pg_temp.expect_denied('family may NOT update participant_money',
+    format('update public.participant_money set fee_cents = 0 where participant_id = %L', rpA));
+  perform pg_temp.expect_denied('family may NOT delete participant_money',
+    format('delete from public.participant_money where participant_id = %L', rpA));
+  perform pg_temp.as_user(uC);
+  select count(*) into m from public.participant_money;
+  perform pg_temp.expect('coordinator (no Payments) sees no participant_money', m, 0);
+  select count(*) into m from public.registration_balances;
+  perform pg_temp.expect('coordinator (no Payments) gets no registration_balances rows', m, 0);
+  perform pg_temp.expect_denied('coordinator may NOT decide a scholarship (0114)',
+    format('select public.set_participant_adjustments(%L, 100, 0)', rpA));
+  perform pg_temp.as_user(uR);
+  select count(*) into m from public.participant_money;
+  perform pg_temp.expect('registrar (Payments read) sees every participant_money row', m, n);
+  select count(*) into m from public.registration_balances;
+  perform pg_temp.expect('registrar sees every registration in registration_balances', m, (select count(*) from public.registrations));
+  perform pg_temp.expect_denied('scholarship plus discount may NOT exceed the fee (0114)',
+    format('select public.set_participant_adjustments(%L, 49000, 1000)', rpA));
+  begin
+    perform public.set_participant_adjustments(rpA, 49000, 1000);
+    raise exception 'FAIL: the cap did not fire';
+  exception when raise_exception then
+    if sqlerrm <> 'Scholarship plus discount cannot exceed the fee for this person.' then
+      raise exception 'FAIL: the cap''s message was: %', sqlerrm;
+    end if;
+  end;
+  perform pg_temp.expect_denied('a negative amount is refused (0114)',
+    format('select public.set_participant_adjustments(%L, -1, 0)', rpA));
+  perform pg_temp.expect_allowed('payments W + registration W may set a scholarship and discount (0114)',
+    format('select public.set_participant_adjustments(%L, 5000, 1000, null)', rpA));
+  select count(*) into m from public.participant_money
+   where participant_id = rpA and scholarship_cents = 5000 and discount_cents = 1000 and discount_reason is null;
+  perform pg_temp.expect('the decision landed on participant_money', m, 1);
+  select coalesce(sum(scholarship_cents), 0) into m from public.registration_balances where registration_id = regA;
+  perform pg_temp.expect('registration_balances carries the scholarship', m, 5000);
+  -- A rule-applied discount keeps its reason when the app passes it back on
+  -- a scholarship decision; a hand change sends null and the reason goes.
+  set local role postgres;
+  update public.participant_money set discount_reason = 'Both weeks (50% off the later week)' where participant_id = rpA;
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  perform public.set_participant_adjustments(rpA, 6000, 1000, 'Both weeks (50% off the later week)');
+  select count(*) into m from public.participant_money
+   where participant_id = rpA and scholarship_cents = 6000 and discount_cents = 1000
+     and discount_reason = 'Both weeks (50% off the later week)';
+  perform pg_temp.expect('a rule-applied discount keeps its reason through a scholarship decision (0114)', m, 1);
+  perform public.set_participant_adjustments(rpA, 6000, 2000, null);
+  select count(*) into m from public.participant_money
+   where participant_id = rpA and discount_cents = 2000 and discount_reason is null;
+  perform pg_temp.expect('a hand-changed discount is marked hand-set (0114)', m, 1);
+  set local role postgres;
+  -- Three decisions through the function, plus this harness's own edit of
+  -- the reason above: every write to the table is logged, whoever made it.
+  select count(*) into m from public.money_change_log
+   where table_name = 'participant_money' and row_id = rpA and op = 'UPDATE';
+  perform pg_temp.expect('money_change_log recorded every change to the row', m, 4);
+  update public.participant_money set scholarship_cents = 0, discount_cents = 0 where participant_id = rpA;
+  select count(*) into m from information_schema.columns
+   where table_schema = 'public' and table_name = 'registration_participants'
+     and column_name in ('fee_cents', 'scholarship_cents', 'discount_cents', 'discount_reason',
+                         'early_discount_cents', 'family_discount_cents');
+  perform pg_temp.expect('the money columns are gone from registration_participants (0114)', m, 0);
+  -- Grant Payments read at runtime: exactly that opens the money.
+  insert into public.staff_grants (profile_id, area, level) values (uC, 'payments', 'read');
+  set local role authenticated;
+  perform pg_temp.as_user(uC);
+  select count(*) into m from public.participant_money;
+  perform pg_temp.expect('coordinator given Payments READ sees every participant_money row', m, n);
+  set local role postgres;
+  delete from public.staff_grants where profile_id = uC and area = 'payments';
   set local role authenticated;
 
   ---- anonymous visitors ----------------------------------------------

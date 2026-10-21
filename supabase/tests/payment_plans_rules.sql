@@ -3,18 +3,20 @@
 \set ON_ERROR_STOP on
 \pset footer off
 update public.events set early_registration_ends_on='2026-12-31', early_registration_discount_cents=5000 where id='30000000-0000-0000-0000-000000000001';
-\echo == 1 family cannot change a fee
+\echo == 1 family cannot change a fee (0114: the fee lives on participant_money, which nobody signed in writes)
 begin; set local role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',true) \g /dev/null
 do $$ begin
-  update public.registration_participants set fee_cents=0 where id='60000000-0000-0000-0000-000000000001';
+  update public.participant_money set fee_cents=0 where participant_id='60000000-0000-0000-0000-000000000001';
   raise exception 'FAIL: fee change allowed';
 exception when insufficient_privilege then raise notice 'PASS fee change refused';
 end $$;
-\echo == 2 family insert takes the option fee and zero discounts
+\echo == 2 family insert takes the option fee and zero discounts (0114: filled by trigger; the family sends no money)
 insert into public.people (id, household_id, first_name, last_name) values ('20000000-0000-0000-0000-000000000009','10000000-0000-0000-0000-000000000001','Sib','Ling');
-insert into public.registration_participants (registration_id, person_id, event_option_id, camp_role, status, fee_cents, discount_cents, early_discount_cents)
-values ('50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000009','40000000-0000-0000-0000-000000000001','sibling','submitted',0,999,999);
-select fee_cents as expect_60000, discount_cents as expect_0, early_discount_cents as expect_0 from public.registration_participants where person_id='20000000-0000-0000-0000-000000000009';
+insert into public.registration_participants (registration_id, person_id, event_option_id, camp_role, status)
+values ('50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000009','40000000-0000-0000-0000-000000000001','sibling','submitted');
+select pm.fee_cents as expect_60000, pm.discount_cents as expect_0, pm.early_discount_cents as expect_0
+  from public.participant_money pm join public.registration_participants rp on rp.id = pm.participant_id
+ where rp.person_id='20000000-0000-0000-0000-000000000009';
 rollback;
 \echo == 3 candidates, pay-in-full amount, no qualification yet
 select * from public.early_discount_candidates('50000000-0000-0000-0000-000000000001');
@@ -44,11 +46,11 @@ select early_discount_cents as expect_0 from public.registration_balances where 
 update public.payment_plans set keeps_early_discount=true where id='80000000-0000-0000-0000-000000000001';
 \echo == 7 late-registered person and both-weeks coexistence
 update public.registration_participants set created_at='2027-01-05 10:00-05' where id='60000000-0000-0000-0000-000000000002';
-update public.registration_participants set discount_cents=58000, discount_reason='Both weeks (test)' where id='60000000-0000-0000-0000-000000000001';
+update public.participant_money set discount_cents=58000, discount_reason='Both weeks (test)' where participant_id='60000000-0000-0000-0000-000000000001';
 select * from public.early_discount_candidates('50000000-0000-0000-0000-000000000001');
 select 'expect camper only, 2000 (capped at what is left)' as note;
 update public.registration_participants set created_at='2026-11-01 15:00-05' where id='60000000-0000-0000-0000-000000000002';
-update public.registration_participants set discount_cents=0, discount_reason=null where id='60000000-0000-0000-0000-000000000001';
+update public.participant_money set discount_cents=0, discount_reason=null where participant_id='60000000-0000-0000-0000-000000000001';
 \echo == 8 charge dates
 select array_agg(d order by d) as monthly from public.plan_charge_dates('2026-11-01','2027-07-04','monthly') d;
 select array_agg(d order by d) as semi from public.plan_charge_dates('2026-11-01','2027-01-10','semi_monthly') d;
@@ -78,9 +80,10 @@ begin; set local role authenticated; select set_config('request.jwt.claim.sub','
 select public.pay_in_full_amount('50000000-0000-0000-0000-000000000001') as stranger_expect_null;
 select count(*) as stranger_routes_expect_0 from public.registration_payment_routes;
 rollback;
-\echo == 11 registrar can still adjust money
-begin; set local role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true) \g /dev/null
-update public.registration_participants set discount_cents=1000 where id='60000000-0000-0000-0000-000000000001';
+\echo == 11 registrar can still adjust money (0114: through set_participant_adjustments, on a code-verified session)
+begin; set local role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true), set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+select public.set_participant_adjustments('60000000-0000-0000-0000-000000000001', 0, 1000, null);
+select discount_cents as expect_1000 from public.participant_money where participant_id='60000000-0000-0000-0000-000000000001';
 select 'PASS registrar discount allowed' as ok;
 rollback;
 \echo == 12 multi-week rule still works when called by a family

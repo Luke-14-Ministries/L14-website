@@ -8,19 +8,20 @@
 insert into public.people (id, household_id, first_name, last_name) values
  ('20000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000001','Third','Kid'),
  ('20000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000001','Fourth','Kid');
-insert into public.registration_participants (id, registration_id, person_id, event_option_id, camp_role, status, fee_cents, created_at) values
- ('60000000-0000-0000-0000-000000000004','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000003','40000000-0000-0000-0000-000000000001','sibling','submitted',60000,'2026-11-02 10:00-05'),
- ('60000000-0000-0000-0000-000000000005','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000004','40000000-0000-0000-0000-000000000001','sibling','submitted',60000,'2026-11-03 10:00-05');
+-- 0114: the fee ($600) is copied to participant_money by trigger from the option.
+insert into public.registration_participants (id, registration_id, person_id, event_option_id, camp_role, status, created_at) values
+ ('60000000-0000-0000-0000-000000000004','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000003','40000000-0000-0000-0000-000000000001','sibling','submitted','2026-11-02 10:00-05'),
+ ('60000000-0000-0000-0000-000000000005','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000004','40000000-0000-0000-0000-000000000001','sibling','submitted','2026-11-03 10:00-05');
 select public.recalc_family_discount('50000000-0000-0000-0000-000000000001');
 
 do $$ declare n int; t int; begin
   select count(*) filter (where family_discount_cents = 5000), sum(family_discount_cents)
-    into n, t from public.registration_participants
-   where registration_id = '50000000-0000-0000-0000-000000000001';
+    into n, t from public.participant_money pm join public.registration_participants rp on rp.id = pm.participant_id
+   where rp.registration_id = '50000000-0000-0000-0000-000000000001';
   if n = 2 and t = 10000 then raise notice 'PASS 3rd and 4th people get $50';
   else raise exception 'FAIL family discount: % rows, % cents', n, t; end if;
-  if (select family_discount_cents from public.registration_participants where id='60000000-0000-0000-0000-000000000004') = 5000
-     and (select family_discount_cents from public.registration_participants where id='60000000-0000-0000-0000-000000000001') = 0
+  if (select family_discount_cents from public.participant_money where participant_id='60000000-0000-0000-0000-000000000004') = 5000
+     and (select family_discount_cents from public.participant_money where participant_id='60000000-0000-0000-0000-000000000001') = 0
   then raise notice 'PASS the discount goes to the later joiners';
   else raise exception 'FAIL wrong people discounted'; end if;
   if (select balance_cents from public.registration_balances where registration_id='50000000-0000-0000-0000-000000000001') = 230000
@@ -33,8 +34,8 @@ select public.recalc_family_discount('50000000-0000-0000-0000-000000000001');
 update public.registration_participants set status='cancelled' where id='60000000-0000-0000-0000-000000000002';
 select public.recalc_family_discount('50000000-0000-0000-0000-000000000001');
 do $$ begin
-  if (select sum(family_discount_cents) from public.registration_participants where registration_id='50000000-0000-0000-0000-000000000001') = 5000
-     and (select family_discount_cents from public.registration_participants where id='60000000-0000-0000-0000-000000000005') = 5000
+  if (select sum(pm.family_discount_cents) from public.participant_money pm join public.registration_participants rp on rp.id = pm.participant_id where rp.registration_id='50000000-0000-0000-0000-000000000001') = 5000
+     and (select family_discount_cents from public.participant_money where participant_id='60000000-0000-0000-0000-000000000005') = 5000
   then raise notice 'PASS cancelling a place re-ranks the family';
   else raise exception 'FAIL re-rank'; end if;
 end $$;
@@ -43,7 +44,7 @@ select public.recalc_family_discount('50000000-0000-0000-0000-000000000001');
 
 -- All three discounts stack, and never take a person below $0.
 update public.events set early_registration_ends_on='2026-12-31', early_registration_discount_cents=5000 where id='30000000-0000-0000-0000-000000000001';
-update public.registration_participants set scholarship_cents=58000 where id='60000000-0000-0000-0000-000000000005';
+update public.participant_money set scholarship_cents=58000 where participant_id='60000000-0000-0000-0000-000000000005';
 select public.recalc_family_discount('50000000-0000-0000-0000-000000000001');
 insert into public.payments (registration_id, amount_cents, method, status, received_on)
  values ('50000000-0000-0000-0000-000000000001', 175000, 'check', 'succeeded', '2026-11-05');
@@ -53,16 +54,16 @@ select public.recalc_early_registration_discount('50000000-0000-0000-0000-000000
 do $$ declare r record; begin
   select fee_cents - discount_cents - scholarship_cents - early_discount_cents - family_discount_cents as left_over,
          early_discount_cents, family_discount_cents into r
-    from public.registration_participants where id='60000000-0000-0000-0000-000000000005';
+    from public.participant_money where participant_id='60000000-0000-0000-0000-000000000005';
   if r.left_over >= 0 and r.early_discount_cents + r.family_discount_cents = 2000
   then raise notice 'PASS stacked discounts capped at the $20 left (early %, family %)', r.early_discount_cents, r.family_discount_cents;
   else raise exception 'FAIL cap: left %, early %, family %', r.left_over, r.early_discount_cents, r.family_discount_cents; end if;
 end $$;
 
--- The guard: a family cannot write the family discount.
+-- 0114: a family cannot write the family discount (no signed-in user writes participant_money).
 begin; set local role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',true) \g /dev/null
 do $$ begin
-  update public.registration_participants set family_discount_cents=60000 where id='60000000-0000-0000-0000-000000000001';
+  update public.participant_money set family_discount_cents=60000 where participant_id='60000000-0000-0000-0000-000000000001';
   raise exception 'FAIL family wrote its own family discount';
 exception when insufficient_privilege then raise notice 'PASS family discount is the ministry''s to set';
 end $$;
@@ -78,9 +79,9 @@ insert into public.people (id, household_id, first_name, last_name) values
 insert into public.registrations (id, household_id, event_id) values
  ('50000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000001'),
  ('50000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000003','30000000-0000-0000-0000-000000000001');
-insert into public.registration_participants (id, registration_id, person_id, event_option_id, camp_role, status, fee_cents) values
- ('60000000-0000-0000-0000-000000000021','50000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000021','40000000-0000-0000-0000-000000000001','camper','submitted',60000),
- ('60000000-0000-0000-0000-000000000031','50000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000031','40000000-0000-0000-0000-000000000001','volunteer','submitted',60000);
+insert into public.registration_participants (id, registration_id, person_id, event_option_id, camp_role, status) values
+ ('60000000-0000-0000-0000-000000000021','50000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000021','40000000-0000-0000-0000-000000000001','camper','submitted'),
+ ('60000000-0000-0000-0000-000000000031','50000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000031','40000000-0000-0000-0000-000000000001','volunteer','submitted');
 insert into public.scholarships (registration_participant_id, requested_cents, status)
  values ('60000000-0000-0000-0000-000000000021', 60000, 'requested');
 insert into public.person_consents (person_id, kind, granted) values ('20000000-0000-0000-0000-000000000031','media',false);

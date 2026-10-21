@@ -127,7 +127,7 @@ do $$ declare s text; n int; begin
 
   -- 5. scholarship + discount capped at the fee
   begin
-    update public.registration_participants set scholarship_cents=99999 where id='60000000-0000-0000-0000-000000000001';
+    perform public.set_participant_adjustments('60000000-0000-0000-0000-000000000001', 99999, 0);   -- 0114: the only staff path to the amount
     raise exception 'FAIL 5: scholarship over the fee accepted';
   exception when raise_exception then
     if sqlerrm like 'FAIL%' then raise; end if;
