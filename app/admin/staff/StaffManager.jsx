@@ -13,7 +13,7 @@ import { updateStaffMember, addStaffMember, removeStaffMember, setStaffGrants, a
 import { AREA_LABEL } from '@/lib/grants';
 import GrantsPanel from './GrantsPanel';
 
-const ROLE_LABEL = { registrar: 'Registrar', coordinator: 'Coordinator', admin: 'Administrator' };
+// The role column means one thing since 0101: 'admin'. Other values are labels nothing reads.
 
 // The table and its parts live at MODULE level, with everything they need
 // passed in as props. Until 16 September 2026 they were defined inside
@@ -74,38 +74,32 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
             className="mt-1 block w-full max-w-[14rem] rounded border border-neutral-200 px-2 py-1 text-xs"
           />
         </td>
-        <td className="px-4 py-3">
-          <div
-            className="flex flex-col gap-1"
-            title={isSelf && m.role === 'admin' ? 'You cannot remove your own admin role.' : undefined}
+        {/* Until 21 Oct 2026 this was three radios -- Registrar, Coordinator,
+            Administrator -- next to the presets, and the two looked like
+            competing ways to set access (Lawrence). Since 0101 the grants ARE
+            the access; the role column means one thing, "administrator":
+            granting, accounts, naming a leader, the doctor's dated access. So
+            that one thing is one tick. Non-administrators keep whatever label
+            the column holds; nothing reads it. The Need-to-know column that sat
+            beside this duplicated the grants summary and is gone with it. */}
+        <td className="px-4 py-3 text-center">
+          <label
+            className="inline-flex items-center gap-2 text-sm"
+            title={
+              isSelf && m.role === 'admin'
+                ? 'You cannot remove your own administrator access. Ask another administrator.'
+                : 'Granting access, accounts, naming a program leader, the camp doctor\u2019s dated access.'
+            }
           >
-            {Object.entries(ROLE_LABEL).map(([v, l]) => (
-              <label key={v} className="inline-flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name={`role-${m.profileId}`}
-                  checked={m.role === v}
-                  disabled={busy || (isSelf && m.role === 'admin')}
-                  onChange={() => onPatch(m.profileId, { role: v })}
-                  className="h-4 w-4"
-                />
-                {l}
-              </label>
-            ))}
-          </div>
-        </td>
-        {/* The three tick boxes (Sensitive, Giving, Background checks) that sat
-            here until 17 Oct 2026 are three of the ten areas now, under Grants:
-            since 0101 the database reads staff_grants and not the old columns,
-            so a tick here would have done nothing. */}
-        <td className="px-4 py-3 text-center text-xs text-neutral-600">
-          {[
-            m.grants?.sensitive ? `Sensitive ${m.grants.sensitive === 'write' ? 'W' : 'R'}` : null,
-            m.grants?.giving ? `Giving ${m.grants.giving === 'write' ? 'W' : 'R'}` : null,
-            m.grants?.background_checks === 'write' ? 'Background checks W' : null,
-          ]
-            .filter(Boolean)
-            .join(' · ') || '—'}
+            <input
+              type="checkbox"
+              checked={m.role === 'admin'}
+              disabled={busy || (isSelf && m.role === 'admin')}
+              onChange={(e) => onPatch(m.profileId, { role: e.target.checked ? 'admin' : 'coordinator' })}
+              className="h-4 w-4"
+            />
+            {m.role === 'admin' ? 'Yes' : 'No'}
+          </label>
         </td>
         <td className="px-4 py-3 text-center">
           {/* The grants model (0100): a summary, and the panel under the row. */}
@@ -204,8 +198,7 @@ function Table({
         <thead className="bg-neutral-50 text-neutral-500">
                     <tr>
             <SortTh k="name" {...sortProps}>Person</SortTh>
-            <SortTh k="role" {...sortProps}>Role (label)</SortTh>
-            <SortTh k="sensitive" center {...sortProps}>Need-to-know</SortTh>
+            <SortTh k="role" center {...sortProps}>Administrator</SortTh>
             <SortTh k="grants" center {...sortProps}>Grants</SortTh>
             <th className="px-4 py-2" />
           </tr>
@@ -246,7 +239,9 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
   const [notice, setNotice] = useState('');
 
   const [addEmail, setAddEmail] = useState('');
-  const [addRole, setAddRole] = useState('registrar');
+  // A new staff member starts with no grants; the administrator applies a
+  // preset on the row that appears. The only choice here is administrator.
+  const [addAdmin, setAddAdmin] = useState(false);
   const [adding, setAdding] = useState(false);
   // A failed add is shown under the email box, not in the page-wide red bar:
   // two warnings about one field, one at the top of the page and one beside
@@ -350,7 +345,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
     setAddError('');
     setAdding(true);
     start(async () => {
-      const res = await addStaffMember(addEmail, addRole);
+      const res = await addStaffMember(addEmail, addAdmin ? 'admin' : 'coordinator');
       if (!res.ok) setAddError(res.error);
       else {
         setNotice(`${res.name} added to staff.`);
@@ -372,7 +367,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
   // bottom" (2 Sep). Default here is role (administrators first), then name,
   // and it is stable: only sorting BY a grant moves anyone when a grant changes.
   // Administrators first, then coordinators, then registrars -- the order the
-  // page describes. Object.keys(ROLE_LABEL) gave the reverse (found 29 Sep
+  // page describes. Object.keys of the old label map gave the reverse (found 29 Sep
   // 2026, Testing Script 3 §20.9): the table opened with the registrars on
   // top and every administrator at the bottom.
   const ROLE_ORDER = ['admin', 'coordinator', 'registrar'];
@@ -394,7 +389,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
     const filtered = rows.filter(
       (m) =>
         (!q || m.name.toLowerCase().includes(q) || (m.email ?? '').toLowerCase().includes(q)) &&
-        (!filterRole || m.role === filterRole)
+        (!filterRole || (filterRole === 'admin' ? m.role === 'admin' : m.role !== 'admin'))
     );
     const dir = sortDir === 'asc' ? 1 : -1;
     const byName = (a, b) => a.name.localeCompare(b.name);
@@ -402,8 +397,6 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       name: byName,
       email: (a, b) => (a.email ?? '').localeCompare(b.email ?? ''),
       role: (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role) || byName(a, b),
-      sensitive: (a, b) =>
-        Number(Boolean(b.grants?.sensitive)) - Number(Boolean(a.grants?.sensitive)) || byName(a, b),
       grants: (a, b) =>
         Object.keys(b.grants ?? {}).length - Object.keys(a.grants ?? {}).length || byName(a, b),
     }[sortKey];
@@ -464,18 +457,15 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
           />
         </label>
         <label className="block">
-          <span className="block text-xs font-semibold text-neutral-600 mb-1">Role</span>
+          <span className="block text-xs font-semibold text-neutral-600 mb-1">Show</span>
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
             className="rounded border border-neutral-300 px-3 py-1.5"
           >
-            <option value="">All roles</option>
-            {Object.entries(ROLE_LABEL).map(([v, l]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
-            ))}
+            <option value="">Everyone</option>
+            <option value="admin">Administrators</option>
+            <option value="other">Not administrators</option>
           </select>
         </label>
         <span className="text-xs text-neutral-500 pb-2">
@@ -578,19 +568,14 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
               </span>
             )}
           </label>
-          <label className="block">
-            <span className="block text-sm font-semibold mb-1">Role</span>
-            <select
-              value={addRole}
-              onChange={(e) => setAddRole(e.target.value)}
-              className="rounded border border-neutral-300 px-3 py-2"
-            >
-              {Object.entries(ROLE_LABEL).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
+          <label className="inline-flex items-center gap-2 text-sm pb-2">
+            <input
+              type="checkbox"
+              checked={addAdmin}
+              onChange={(e) => setAddAdmin(e.target.checked)}
+              className="h-4 w-4"
+            />
+            Administrator
           </label>
           <button type="submit" disabled={adding} className="btn-primary !py-2">
             {adding ? 'Adding…' : 'Add to staff'}

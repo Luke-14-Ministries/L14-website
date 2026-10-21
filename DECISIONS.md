@@ -2731,3 +2731,12 @@ the next audit does not re-find it.
 automatically) needs nothing here. Every migration since the first has granted explicitly, and
 the one table without a grant, `mfa_trusted_sessions`, is reached only through its functions by
 design. CLAUDE.md's first trap already says it; the date is now on it.
+
+## 2026-10-21 — Staff & Access: one Administrator tick, no role radios
+
+Lawrence, looking at the page: three role radios (Registrar, Coordinator, Administrator) beside
+five presets read as two competing ways to set access. Since `0101` the grants are the access and
+the role column means one thing, administrator. The page now says so: one **Administrator** tick
+per row and the grants panel; the Need-to-know column, which repeated the grants summary, is
+gone; adding a staff member asks only whether they are an administrator, and the preset is
+applied on the row that appears. The role column keeps a harmless label for everyone else.
