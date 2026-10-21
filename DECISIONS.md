@@ -2774,3 +2774,16 @@ Stripe's 2026-09-30 release, and the fields the site reads from a session and a 
 request, which Dependabot closes itself. The edge functions import Stripe separately (Deno) and
 are untouched. The other open Dependabot requests, Tailwind 4 and ESLint 10, are major rewrites
 of tooling and wait for a quiet week.
+
+## 2026-10-21 — ESLint 10, with npm's peer check switched off
+
+ESLint 9.39 → 10.13 with `eslint-config-next` 16.4.2 (whose typescript-eslint accepts ESLint 10; the
+16.3.8 preset crashed with `scopeManager.addGlobals is not a function`) and `typescript` 6 listed as
+a devDependency. Two plugins the preset pulls in, `eslint-plugin-import` 2.32 and
+`eslint-plugin-jsx-a11y` 6.10, declare a peer range that stops at ESLint 9, so `npm ci` refuses;
+`.npmrc` sets `legacy-peer-deps=true`, which installs what the lock file says and stops npm checking
+peer ranges for every package. Accepted because both plugins were proved to run under 10
+(`import/no-anonymous-default-export`, `jsx-a11y/alt-text` and `react-hooks/rules-of-hooks` fire on
+a throwaway file), lint is 0 errors with the same nine warnings, the site builds, and the linter
+never ships to anyone. The line goes the day the two plugins publish ESLint 10 support. Supersedes
+Dependabot's pull request 4.

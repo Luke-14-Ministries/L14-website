@@ -164,9 +164,8 @@ on the Programs page; the preset Lawrence wanted (16 Oct) is not built.
 `submitted_at` is set by the database; attaching a login to a household is the administrator's,
 through `admin_link_login_to_household()`; confirming an agreement signature is Registration write;
 `message_log` is read-only for staff; `pay_in_full_amount()` needs Payments read or your own
-registration. Staff without Payments read can still read the money columns on
-`registration_participants` and the balance views: **decided, 21 Oct, to leave until after launch**
-(the pages show "—"; the clean fix is a separate money table, an October rewrite).
+registration. The money columns left `registration_participants` for `participant_money` the same
+day (`0114`, see *Money*).
 
 **Rule of thumb for any access question (Lawrence):** when it is not obvious what a role or person
 should have, default to **read**; write is granted on top, for a named person, and logged.
