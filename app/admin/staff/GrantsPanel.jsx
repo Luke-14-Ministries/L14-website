@@ -8,7 +8,7 @@
 // person grant anything.
 
 import { useState } from 'react';
-import { AREAS, PRESETS, PRESET_LEAVES, grantsForPreset, matchingPreset } from '@/lib/grants';
+import { AREAS, PRESETS, PRESET_LEAVES, grantsForPreset, matchingPreset, nearestPreset } from '@/lib/grants';
 
 const LEVELS = [
   ['', '—'],
@@ -20,6 +20,9 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
   const [grants, setGrants] = useState(() => ({ ...(member.grants ?? {}) }));
   const dirty = JSON.stringify(grants) !== JSON.stringify(member.grants ?? {});
   const matches = matchingPreset(member.grants ?? {});
+  // No exact match is the normal case; say so, and name the nearest preset.
+  const nearest = matches ? null : nearestPreset(member.grants ?? {});
+  const level = (v) => (v === 'write' ? 'W' : v === 'read' ? 'R' : '—');
 
   const set = (area, level) =>
     setGrants((prev) => {
@@ -35,12 +38,22 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
         <div>
           <p className="font-bold">
             Grants for {member.name}
-            {matches && (
+            {matches ? (
               <span className="ml-2 rounded-full bg-brand-light px-2 py-0.5 text-xs font-semibold text-brand-dark">
                 matches {PRESETS[matches].label}
               </span>
+            ) : (
+              <span className="ml-2 rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-semibold text-neutral-700">
+                Custom
+              </span>
             )}
           </p>
+          {nearest && (
+            <p className="mt-0.5 text-xs text-neutral-600">
+              Nearest preset: <em>{nearest.label}</em>, except{' '}
+              {nearest.diffs.map((d) => `${d.label} ${level(d.have)}`).join(', ')}.
+            </p>
+          )}
           <p className="mt-0.5 text-xs text-neutral-600">
             R = read, W = write, — = no access. Giving is never set by a preset — tick it by hand
             for a named person. Every change is written to the access log.
