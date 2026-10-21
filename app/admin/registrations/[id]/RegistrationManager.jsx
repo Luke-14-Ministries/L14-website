@@ -457,23 +457,23 @@ function ParticipantRow({
               {awaitingScholarship && (
                 <a
                   href="#scholarship-requests"
-                  className="rounded-full bg-amber-200 px-2 py-0.5 text-[11px] leading-5 font-bold text-amber-900 hover:bg-amber-300"
+                  className="rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-bold text-amber-900 hover:bg-amber-300"
                 >
                   asked for help with the fee →
                 </a>
               )}
               {participant.media?.granted === false && (
-                <span className="rounded-full bg-neutral-800 text-white px-2 py-0.5 text-[11px] leading-5 font-semibold">
+                <span className="rounded-full bg-neutral-800 text-white px-2 py-0.5 text-[11px] font-semibold">
                   no photos
                 </span>
               )}
               {participant.directory?.granted === false && (
-                <span className="rounded-full bg-neutral-200 text-neutral-700 px-2 py-0.5 text-[11px] leading-5 font-semibold">
+                <span className="rounded-full bg-neutral-200 text-neutral-700 px-2 py-0.5 text-[11px] font-semibold">
                   not in directory
                 </span>
               )}
               {participant.first_time_attending === true && (
-                <span className="rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-[11px] leading-5 font-semibold">
+                <span className="rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-[11px] font-semibold">
                   first time
                 </span>
               )}
