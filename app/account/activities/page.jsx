@@ -5,6 +5,7 @@ import ActivityPicker from './ActivityPicker';
 import WaiverUpload from './WaiverUpload';
 import BackBar from '@/components/BackBar';
 import BackLink from '@/components/BackLink';
+import { agreementText } from '@/lib/events';
 
 export const metadata = { title: 'Activities — Luke 14 Ministries' };
 
@@ -31,7 +32,7 @@ export default async function ActivitiesPage() {
         .from('registrations')
         .select(
           `id, events ( id, name, starts_on, ends_on ),
-           registration_participants ( id, status, camp_role, people ( id, first_name, last_name ) )`
+           registration_participants ( id, status, camp_role, people ( id, first_name, last_name, date_of_birth ) )`
         )
         .in('household_id', householdIds)
         .order('created_at', { ascending: false })
@@ -77,6 +78,63 @@ export default async function ActivitiesPage() {
   const waiverByKey = new Map(
     (waiverRows ?? []).map((w) => [`${w.registration_participant_id}:${w.activity_id}`, w])
   );
+
+  // The ministry's own waiver for one activity (0116, horseback riding): an
+  // agreement_requirements row scoped to the ACTIVITY rather than the event.
+  // The wizard reads the event-level rows; these are read here, and signed
+  // here, per rider. Only an active document the site serves itself can be
+  // signed on the site, so anything else (an outside provider's link, a
+  // retired version) is left out rather than shown with no way to sign it.
+  const activityIds = (activityRows ?? []).map((a) => a.id);
+  const { data: reqRows, error: reqError } = activityIds.length
+    ? await supabase
+        .from('agreement_requirements')
+        .select('activity_id, agreements ( id, title, body, version, active, delivery )')
+        .in('activity_id', activityIds)
+        .eq('is_required', true)
+    : { data: [], error: null };
+  if (reqError) throw new Error(`Activity agreements: ${reqError.message}`);
+  const agreementByActivity = new Map();
+  for (const r of reqRows ?? []) {
+    const a = r.agreements;
+    if (!a?.active || a.delivery !== 'internal_document') continue;
+    if (!agreementByActivity.has(r.activity_id)) agreementByActivity.set(r.activity_id, a);
+  }
+  const agreementIds = [...new Set([...agreementByActivity.values()].map((a) => a.id))];
+
+  // Who has already signed which, on which registration. Scoped to this
+  // household's registrations explicitly (CLAUDE.md), not left to RLS. A
+  // signature belongs to one registration: the same rider at a second week
+  // signs the second week's waiver.
+  const registrationIds = regs.map((r) => r.id);
+  const { data: sigRows, error: sigError } =
+    agreementIds.length && registrationIds.length
+      ? await supabase
+          .from('agreement_signatures')
+          .select('agreement_id, person_id, registration_id, signer_name, signed_at')
+          .in('agreement_id', agreementIds)
+          .in('registration_id', registrationIds)
+          .eq('status', 'signed_here')
+          .not('person_id', 'is', null)
+      : { data: [], error: null };
+  if (sigError) throw new Error(`Activity waiver signatures: ${sigError.message}`);
+  const signatureByKey = new Map(
+    (sigRows ?? []).map((s) => [
+      `${s.registration_id}:${s.person_id}:${s.agreement_id}`,
+      { signer_name: s.signer_name, signed_at: s.signed_at },
+    ])
+  );
+
+  // Age at the start of the event, the way the wizard decides who may sign
+  // for themselves: a minor at camp is always signed for by a parent or
+  // guardian, whatever today's date says.
+  const ageAt = (dob, onDate) => {
+    if (!dob || !onDate) return null;
+    const [by, bm, bd] = String(dob).split('-').map(Number);
+    const [y, m, d] = String(onDate).split('-').map(Number);
+    if (!by || !y) return null;
+    return y - by - (m < bm || (m === bm && d < bd) ? 1 : 0);
+  };
 
   // How full each activity is. The function returns counts only -- a family
   // cannot read other families' signups, and does not need to.
@@ -133,32 +191,56 @@ export default async function ActivitiesPage() {
     .map((r) => {
       const activities = (activityRows ?? [])
         .filter((a) => a.event_id === r.events?.id)
-        .map((a) => ({
-          ...a,
-          taken: takenByActivity.get(a.id) ?? 0,
-          placesLeft: a.capacity == null ? null : Math.max(0, a.capacity - (takenByActivity.get(a.id) ?? 0)),
-          slots: slotsByActivity.get(a.id) ?? [],
-        }));
+        .map((a) => {
+          const agr = agreementByActivity.get(a.id) ?? null;
+          return {
+            ...a,
+            taken: takenByActivity.get(a.id) ?? 0,
+            placesLeft: a.capacity == null ? null : Math.max(0, a.capacity - (takenByActivity.get(a.id) ?? 0)),
+            slots: slotsByActivity.get(a.id) ?? [],
+            // The waiver this activity needs, with the event's name filled in
+            // the way every agreement is, or null.
+            agreement: agr
+              ? { id: agr.id, title: agr.title, version: agr.version, body: agreementText(agr.body, r.events) }
+              : null,
+          };
+        });
       // Campers only (Lawrence, 14 Oct 2026). Activities are chosen for the
       // camper; the buddy goes along with them. A volunteer, parent or
       // sibling choosing horseback riding for themselves was never the idea,
       // and the sheets the area leaders carry count places for campers.
       const people = (r.registration_participants ?? [])
         .filter((p) => p.status !== 'cancelled' && p.camp_role === 'camper')
-        .map((p) => ({
-          participantId: p.id,
-          name: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
-          choices: Object.fromEntries(
-            activities
-              .map((a) => [a.id, chosen.get(`${p.id}:${a.id}`) ?? null])
-              .filter(([, v]) => v)
-          ),
-          waivers: Object.fromEntries(
-            activities
-              .map((a) => [a.id, waiverByKey.get(`${p.id}:${a.id}`) ?? null])
-              .filter(([, v]) => v)
-          ),
-        }));
+        .map((p) => {
+          const age = ageAt(p.people?.date_of_birth, r.events?.starts_on);
+          return {
+            participantId: p.id,
+            name: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
+            // Whether the rider may sign for themselves. Unknown birth date:
+            // offered, and the server has the last word.
+            adult: age == null || age >= 18,
+            choices: Object.fromEntries(
+              activities
+                .map((a) => [a.id, chosen.get(`${p.id}:${a.id}`) ?? null])
+                .filter(([, v]) => v)
+            ),
+            waivers: Object.fromEntries(
+              activities
+                .map((a) => [a.id, waiverByKey.get(`${p.id}:${a.id}`) ?? null])
+                .filter(([, v]) => v)
+            ),
+            // Signatures already given on this registration, by agreement id.
+            signed: Object.fromEntries(
+              activities
+                .filter((a) => a.agreement)
+                .map((a) => [
+                  a.agreement.id,
+                  signatureByKey.get(`${r.id}:${p.people?.id}:${a.agreement.id}`) ?? null,
+                ])
+                .filter(([, v]) => v)
+            ),
+          };
+        });
       // Volunteers do not choose activities (they go where their camper
       // goes), but an outside provider wants THEIR form too. So each
       // volunteer gets an upload box per provider-run activity on the event.
