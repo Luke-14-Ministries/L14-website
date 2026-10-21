@@ -3,8 +3,9 @@
 -- 0041 left the open question with staff: horseback is run by volunteers and
 -- friends of the camp, not an outfitter with a form of its own, so there was
 -- no provider link to send families to -- and no waiver at all. The answer is
--- the ministry's own: a Tennessee equine-activity warning (T.C.A. 44-20-103,
--- which requires the sponsor to give it) and a release, signed on the site by
+-- the ministry's own: a Tennessee equine-activity warning that tracks T.C.A.
+-- 44-20-103 (the section that protects a sponsor; the sign wording 44-20-105
+-- mandates names only paid professionals, and we use none) and a release, signed on the site by
 -- the rider or the person signing for them, like every other agreement.
 --
 -- The schema has carried this since 0001 and never used it: an
