@@ -69,7 +69,7 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 2. **Live Stripe keys**, and **both** live-mode webhooks — `stripe-webhook` *and*
    `stripe-refund-webhook`. Test endpoints do not carry over; a missed refund webhook fails
    silently (migration `0054`). Stripe payouts set to automatic first (W44).
-3. **Vercel Pro** — required the moment live keys are in (see *Hosting*).
+3. ~~Vercel Pro~~ — done, 20 Oct 2026 (see *Hosting*).
 4. Domain pointed and transferred to Cloudflare in one session; the four preview switches reversed
    together; **archive the 2026 Retreat on Setup.** Board approval gates all of it.
 
@@ -392,10 +392,10 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
 
 ## Hosting
 
-Vercel **Hobby** is legitimate for Phases 1–3, **not at launch**: it is non-commercial only, and
-Vercel's terms count "any method of requesting or processing payment" — donations included. Being a
-501(c)(3) does not change it. Hobby is also one seat. **Pro ($20/developer seat/month, viewer seats
-free) is required the moment Stripe switches to live keys.** Implementation Plan §8.
+Vercel is on **Pro** since 20 October 2026, with tax-exempt status applied. Hobby was legitimate for
+Phases 1–3 only: it is non-commercial (Vercel counts donations as commerce) and one seat. Pro is
+$20 per developer seat per month; viewer seats are free, so the second administrator can be added
+without cost. Implementation Plan §8.
 
 ---
 
