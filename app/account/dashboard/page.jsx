@@ -768,19 +768,20 @@ export default async function DashboardPage({ searchParams }) {
                         {grants.length > 0 ? ` · ${grants.join(' · ')}` : ''}]
                       </span>
                     </p>
+                    {/* Two short sentences (Lawrence, 21 Oct 2026: the old
+                        three-line version was wordy and "this" had no clear
+                        antecedent). */}
                     <p className="text-sm text-neutral-600">
-                      This page is your own family view; the staff area is where you see everyone.
+                      This is your family&rsquo;s page; everyone else&rsquo;s is in the staff area.
                     </p>
                     {grants.length > 0 && (
                       <p className="mt-1 text-sm text-neutral-600">
-                        You currently hold {grants.length === 1 ? 'the' : 'these'}{' '}
-                        <strong>{grants.join(', ')}</strong> grant{grants.length === 1 ? '' : 's'}. If
-                        you are not using {grants.length === 1 ? 'it' : 'them'} today, switching{' '}
-                        {grants.length === 1 ? 'it' : 'them'} off on{' '}
+                        Your <strong>{grants.join(', ')}</strong> grant{grants.length === 1 ? ' is' : 's are'} on.
+                        Switch {grants.length === 1 ? 'it' : 'them'} off on{' '}
                         <Link href="/admin/staff" className="underline">
                           Staff &amp; Access
                         </Link>{' '}
-                        keeps that information off your screen until you need it.
+                        when you don&rsquo;t need {grants.length === 1 ? 'it' : 'them'}.
                       </p>
                     )}
                   </>
