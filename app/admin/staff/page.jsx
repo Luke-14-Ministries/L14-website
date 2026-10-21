@@ -89,96 +89,52 @@ export default async function StaffAccessPage() {
       </div>
       <p className="text-sm text-neutral-500 mb-4">
         Who can do what. Each person holds <span className="font-semibold">grants</span> on ten
-        areas — read, write or nothing — set by a <span className="font-semibold">preset</span> in
-        one click and adjusted underneath (the <em>Grants</em> button on each row). The role is a
-        label, except that <em>Administrator</em> is what lets a person grant anything. One
-        login, many hats: nobody needs a second account.
+        areas &mdash; read, write or nothing &mdash; set by a <span className="font-semibold">preset</span> in
+        one click and adjusted underneath (the <em>Grants</em> button on each row). The{' '}
+        <span className="font-semibold">Administrator</span> tick is what lets a person grant. Every
+        change is in the access log. One login, many hats: nobody needs a second account.
       </p>
 
-      {/* Explanation cards are collapsed by default (Lawrence, 2 Oct 2026): the
-          page is for doing, and the long explanations pushed the staff list below
-          the fold. <details> needs no client JS and keeps the text one click away. */}
-      <div className="mb-3 grid gap-3 sm:grid-cols-3 text-sm items-start">
-        <details className="group rounded-lg bg-white border border-neutral-200 p-4">
-          <summary className={SUMMARY}>
-            <span className="font-bold">Registrar</span>
-            <Chevron />
-          </summary>
-          <p className="text-neutral-600 mt-2">
-            A label since 17 Oct 2026. What a registrar may do is their grants — typically the{' '}
-            <em>Registration &amp; coordination</em> or <em>Finance</em> preset: families, money,
-            rosters, check-in, tracked changes, exports.
-          </p>
-        </details>
-        <details className="group rounded-lg bg-white border border-neutral-200 p-4">
-          <summary className={SUMMARY}>
-            <span className="font-bold">Coordinator</span>
-            <Chevron />
-          </summary>
-          <p className="text-neutral-600 mt-2">
-            A label since 17 Oct 2026. Typically the <em>Operations lead</em> or{' '}
-            <em>Operations helper</em> preset: the door, activities, rooms and buddies; no money.
-            The grants decide.
-          </p>
-        </details>
-        <details className="group rounded-lg bg-white border border-neutral-200 p-4">
-          <summary className={SUMMARY}>
-            <span className="font-bold">Administrator</span>
-            <Chevron />
-          </summary>
-          <p className="text-neutral-600 mt-2">
-            The one role the database still reads: an administrator can add and remove staff,
-            change anyone&rsquo;s grants and role, and <span className="font-semibold">grant or
-            revoke administrator itself</span>. All administrators are equal (there is no
-            &ldquo;super admin&rdquo;), and nobody can demote, deactivate, or remove
-            themselves — that always takes another administrator, which is one reason to
-            have two. Also: event setup, accounts, two-factor resets, and each event&rsquo;s
-            medical contact. Sensitive and Giving are separate grants even for
-            administrators — self-grantable, but deliberately not automatic. Keep this
-            list short.
-          </p>
-        </details>
-      </div>
+      {/* One fold, collapsed by default (Lawrence, 2 Oct 2026: the page is for
+          doing). <details> needs no client JS. Consolidated 21 Oct 2026 from
+          five folds that narrated how the page had changed. */}
       <details className="group mb-6 rounded-lg bg-white border border-neutral-200 p-4 text-sm">
         <summary className={SUMMARY}>
-          <span className="font-bold">The ten areas, and the three that are never automatic</span>
+          <span className="font-bold">How access works</span>
           <Chevron />
         </summary>
-        <p className="text-neutral-600 mt-2">
-          <span className="font-semibold">Registration info</span>, <span className="font-semibold">Payments
-          &amp; scholarships</span>, <span className="font-semibold">Events &amp; camp setup</span> (the
-          definitions), and the four placements — <span className="font-semibold">Activities, Rooming,
-          Buddies, Programs</span> (who is in what). Then the three that are need-to-know:{' '}
-          <span className="font-semibold">Sensitive</span> — medical, dietary and support details
-          (Dietary, Medical &amp; Support, red flags at check-in);{' '}
-          <span className="font-semibold">Giving</span> — donor gift records, never set by a preset;{' '}
-          <span className="font-semibold">Background checks</span> — read is the three facts everyone
-          sees (on file, current, verdict); write — ordering, importing, the verdict — is the
-          administrator&rsquo;s alone.
+        <p className="text-neutral-600 mt-3">
+          <span className="font-semibold">The presets.</span>{' '}
+          <em>Administrator</em>: every area, and the only one that can grant.{' '}
+          <em>Registration &amp; coordination</em>: families, money and placements.{' '}
+          <em>Finance</em>: records payments and refunds, reads names and events; scholarship
+          decisions need Registration write too, so they stay with Registration &amp; coordination.{' '}
+          <em>Operations lead</em>: the door, rooms, activities and buddies; no money.{' '}
+          <em>Operations helper</em>: reads what is needed to move people around camp safely,
+          writes nothing. A preset is a starting point; any area can be adjusted by hand.
         </p>
-        <p className="text-neutral-600 mt-2">
-          <span className="font-semibold">Why Sensitive and Giving are not automatic, even for
-          administrators:</span> nothing about running the platform requires seeing medical
-          details or donor giving, and an administrator with the grant <em>off</em> has safe
-          screens to project at check-in or share in a meeting — and keeps the list of people who
-          can see that information short and nameable. The Administrator preset sets Sensitive;
-          Giving is always a hand tick. Every change is in the access log.
+        <p className="text-neutral-600 mt-3">
+          <span className="font-semibold">The ten areas.</span>{' '}
+          <span className="font-semibold">Registration info</span>,{' '}
+          <span className="font-semibold">Payments &amp; scholarships</span>,{' '}
+          <span className="font-semibold">Events &amp; camp setup</span> (the definitions), and the four
+          placements &mdash; <span className="font-semibold">Activities, Rooming, Buddies, Programs</span>{' '}
+          (who is in what). Then three that are need-to-know:{' '}
+          <span className="font-semibold">Sensitive</span> &mdash; medical, dietary and support details;{' '}
+          <span className="font-semibold">Giving</span> &mdash; donor gift records, never set by a preset,
+          always a hand tick for a named person;{' '}
+          <span className="font-semibold">Background checks</span> &mdash; read is the three facts every
+          staff member sees (on file, current, verdict); write &mdash; ordering, importing, the
+          verdict &mdash; is the administrator&rsquo;s alone.
         </p>
-      </details>
-
-      {/* The grants model (0100 recorded it, 0101 enforces it; 16-17 Oct 2026). */}
-      <details className="group mb-6 rounded-lg bg-white border border-brand/40 p-4 text-sm">
-        <summary className={SUMMARY}>
-          <span className="font-bold">Grants by area — how access works since 17 Oct 2026</span>
-          <Chevron />
-        </summary>
-        <p className="text-neutral-600 mt-2">
-          Each person&rsquo;s <strong>Grants</strong> button opens ten areas, each <em>read</em>,{' '}
-          <em>write</em> or nothing, with preset buttons (Administrator, Registration &amp;
-          coordination, Finance, Operations lead, Operations helper) that set them in one click.
-          The database&rsquo;s own security rules read these grants, so a tick here is the
-          access, not a note about it. Giving is never set by a preset. Every change is in the
-          access log. The plan is in SharePoint: <em>Luke14-Access-Model-Plan</em>.
+        <p className="text-neutral-600 mt-3">
+          <span className="font-semibold">Administrators.</span> An administrator adds and removes
+          staff, changes anyone&rsquo;s grants, and can make or unmake another administrator. All
+          administrators are equal, and nobody can remove or deactivate themselves &mdash; that
+          takes another administrator, which is one reason to have two. Sensitive and Giving are
+          separate grants even for administrators: nothing about running the platform needs
+          medical details or donor giving, and an administrator with them off has safe screens to
+          project at check-in. Keep the administrator list short.
         </p>
       </details>
 
