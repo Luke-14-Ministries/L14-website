@@ -1,0 +1,23 @@
+# Dependabot: GitHub opens a pull request when a package this site depends on
+# has a security advisory or a new version. Free, and no package is added.
+# Security audit, 21 Oct 2026: the one supply-chain check the repository was
+# missing. A pull request is a notice, not a change -- someone still reads it,
+# runs `npm ci`, lints, builds and merges (CLAUDE.md: ask before adding a
+# dependency; a version bump is not a new dependency).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # One pull request for routine patch/minor bumps; security advisories
+      # still arrive on their own.
+      routine:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
