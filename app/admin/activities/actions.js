@@ -8,14 +8,48 @@
 // changes what it offers between weeks, sometimes between years, and nobody
 // should have to file a request to say so.
 //
-// Writes are gated by is_coordinator() in RLS (0039). The checks here are the
-// friendly half; Postgres is the boundary.
+// Writes are gated by has_grant('setup', 'write') in RLS (0039, 0101). The
+// checks here are the friendly half; Postgres is the boundary.
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 
 const MODES = ['interest', 'signup'];
+
+// The waiver decision that rides along with an activity's fields (21 Oct
+// 2026). One choice, three answers: nothing, the outside provider's own form
+// (provider_name / provider_url), or the ministry's own waiver signed on the
+// site (an agreement_requirements row on the activity, 0116). For the third:
+//   keep    -- leave what is attached;
+//   reuse   -- attach an existing waiver (the horseback one on next year's
+//              horseback activity, in one click);
+//   new     -- write one here: a new agreements row, version 1;
+//   revise  -- new text for the attached one: version n+1 of the same key.
+const WAIVER_CHOICES = ['none', 'provider', 'ours'];
+const WAIVER_MODES = ['keep', 'reuse', 'new', 'revise'];
+
+function shapeWaiver(w) {
+  // Callers that do not mention the waiver leave it exactly as it is.
+  if (!w || typeof w !== 'object') return { waiver: null };
+  const choice = WAIVER_CHOICES.includes(w.choice) ? w.choice : 'none';
+  const mode = WAIVER_MODES.includes(w.mode) ? w.mode : 'keep';
+  const title = String(w.title ?? '').trim();
+  const body = String(w.body ?? '').trim();
+  if (choice === 'ours') {
+    if (mode === 'reuse' && !w.agreementId) {
+      return { error: 'Choose a waiver from the list, or write a new one.' };
+    }
+    if (mode === 'new' || mode === 'revise') {
+      if (!title) return { error: 'The waiver needs a title — what the family will see it called.' };
+      if (title.length > 120) return { error: 'Keep the waiver title under 120 characters.' };
+      if (body.length < 20) {
+        return { error: 'The waiver needs its text — what the family is agreeing to.' };
+      }
+    }
+  }
+  return { waiver: { choice, mode, agreementId: w.agreementId || null, title, body } };
+}
 
 async function requireCoordinator() {
   const staff = await getStaff();
@@ -45,13 +79,20 @@ function shape(input) {
   // shown to nobody, so it is dropped rather than quietly stored.
   if (mode === 'interest') capacity = null;
 
-  const provider = String(input?.providerName ?? '').trim();
-  const url = String(input?.providerUrl ?? '').trim();
+  const { waiver, error: waiverError } = shapeWaiver(input?.waiver);
+  if (waiverError) return { error: waiverError };
+
+  // The provider and the ministry's own waiver are one decision: naming a
+  // provider while the waiver is chosen (or nothing) would have the family
+  // told two different things, so the fields follow the choice.
+  const provider = waiver && waiver.choice !== 'provider' ? '' : String(input?.providerName ?? '').trim();
+  const url = waiver && waiver.choice !== 'provider' ? '' : String(input?.providerUrl ?? '').trim();
   if (url && !/^https?:\/\//i.test(url)) {
     return { error: 'The provider link needs to start with http:// or https://' };
   }
 
   return {
+    waiver,
     row: {
       name,
       description: String(input?.description ?? '').trim() || null,
@@ -72,19 +113,27 @@ export async function createActivity(eventId, input) {
   if (authError) return { ok: false, error: authError };
   if (!eventId) return { ok: false, error: 'Which event?' };
 
-  const { row, error } = shape(input);
+  const { row, waiver, error } = shape(input);
   if (error) return { ok: false, error };
 
   const supabase = await createClient();
-  const { error: dbError } = await supabase
+  const { data: made, error: dbError } = await supabase
     .from('activities')
-    .insert({ event_id: eventId, ...row });
+    .insert({ event_id: eventId, ...row })
+    .select('id')
+    .single();
   if (dbError) {
     console.error('createActivity:', dbError.message);
-    return { ok: false, error: 'That could not be added.' };
+    return { ok: false, error: `That could not be added: ${dbError.message}` };
   }
 
+  // The activity exists now whatever happens below, so a waiver problem is
+  // reported as its own thing rather than as "could not be added".
+  const applied = await applyWaiver(supabase, made.id, waiver);
   revalidateAll();
+  if (!applied.ok) {
+    return { ok: false, error: `${row.name} was added, but its waiver was not: ${applied.error}` };
+  }
   return { ok: true };
 }
 
@@ -93,7 +142,7 @@ export async function updateActivity(activityId, input) {
   if (authError) return { ok: false, error: authError };
   if (!activityId) return { ok: false, error: 'Which activity?' };
 
-  const { row, error } = shape(input);
+  const { row, waiver, error } = shape(input);
   if (error) return { ok: false, error };
 
   const supabase = await createClient();
@@ -121,10 +170,210 @@ export async function updateActivity(activityId, input) {
     .eq('id', activityId);
   if (dbError) {
     console.error('updateActivity:', dbError.message);
-    return { ok: false, error: 'That could not be saved.' };
+    return { ok: false, error: `That could not be saved: ${dbError.message}` };
   }
 
+  const applied = await applyWaiver(supabase, activityId, waiver);
   revalidateAll();
+  if (!applied.ok) {
+    return { ok: false, error: `The activity was saved, but its waiver was not: ${applied.error}` };
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// The ministry's own waiver on an activity (21 Oct 2026).
+//
+// 0116 attached the Horseback Riding Waiver by migration and said so in its
+// header: a horseback activity on a later event needed a developer. This is
+// the screen that was missing. The rows are the ones 0116 wrote by hand --
+// an agreements row (key, version, title, body; delivery internal_document)
+// and an agreement_requirements row scoped to the ACTIVITY, applies_to
+// participant, required -- and the family's Activities page reads them
+// unchanged.
+//
+// Rules, each for a reason:
+//   * at most ONE ministry waiver per activity: the family page and the
+//     staff page both assume it;
+//   * text is never edited in place. A signature belongs to the words that
+//     were on the screen when it was given (DECISIONS, 25 Aug), so a change
+//     is a new VERSION of the same key, and the old version keeps its
+//     signatures;
+//   * revising moves THIS activity's requirement only. Another activity on
+//     the same key (the other camp week, last year's event) stays where it
+//     is -- the editor lists them so the staffer knows -- and the old version
+//     is retired (active = false) only once nothing points at it any more,
+//     because the family page refuses to show a retired version and a rider
+//     on the other week would otherwise be able to sign up with no waiver.
+//     admin_create_event() takes the newest ACTIVE version of a key either
+//     way, so a copied event gets the revised text;
+//   * taking the waiver off an activity deletes its requirement row and
+//     nothing else -- never an agreement, never a signature.
+//
+// Nothing here is one transaction. The worst partial outcome is an
+// agreements row with nothing pointing at it, which hurts nobody; every
+// step's error comes back with the database's own words.
+
+function slugOf(title) {
+  return (
+    String(title)
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 60) || 'waiver'
+  );
+}
+
+// A key nobody has used: the slug of the title, then slug_2, slug_3 ...
+async function freeKey(supabase, title) {
+  const base = slugOf(title);
+  const { data, error } = await supabase.from('agreements').select('key').like('key', `${base}%`);
+  if (error) return { error: `The existing waivers could not be read: ${error.message}` };
+  const taken = new Set((data ?? []).map((r) => r.key));
+  if (!taken.has(base)) return { key: base };
+  for (let i = 2; i < 1000; i += 1) {
+    if (!taken.has(`${base}_${i}`)) return { key: `${base}_${i}` };
+  }
+  return { error: 'That title is already in use too many times — try another.' };
+}
+
+// This activity's requirement rows that point at a waiver signed on the site.
+async function readActivityWaiver(supabase, activityId) {
+  const { data, error } = await supabase
+    .from('agreement_requirements')
+    .select('id, agreement_id, agreements ( id, key, version, title, body, delivery, active )')
+    .eq('activity_id', activityId);
+  if (error) return { error: `The activity's waiver could not be read: ${error.message}` };
+  return { rows: (data ?? []).filter((r) => r.agreements?.delivery === 'internal_document') };
+}
+
+async function insertAgreement(supabase, { key, version, title, body }) {
+  const { data, error } = await supabase
+    .from('agreements')
+    .insert({ key, version, title, body, delivery: 'internal_document', external_url: null, active: true })
+    .select('id')
+    .single();
+  if (error) return { error: `The waiver could not be saved: ${error.message}` };
+  return { id: data.id };
+}
+
+async function applyWaiver(supabase, activityId, waiver) {
+  if (!waiver) return { ok: true };
+
+  const { rows, error: readError } = await readActivityWaiver(supabase, activityId);
+  if (readError) return { ok: false, error: readError };
+  const current = rows[0] ?? null;
+
+  // None, or the provider's form: the requirement row goes; the agreement and
+  // every signature stay.
+  if (waiver.choice !== 'ours') {
+    if (rows.length === 0) return { ok: true };
+    const { error } = await supabase
+      .from('agreement_requirements')
+      .delete()
+      .in('id', rows.map((r) => r.id));
+    if (error) return { ok: false, error: `The waiver could not be taken off this activity: ${error.message}` };
+    return { ok: true };
+  }
+
+  let agreementId;
+  if (waiver.mode === 'keep') {
+    if (!current) return { ok: false, error: 'Choose a waiver from the list, or write a new one.' };
+    return { ok: true };
+  }
+
+  if (waiver.mode === 'reuse') {
+    const { data: agr, error } = await supabase
+      .from('agreements')
+      .select('id, title, delivery, active')
+      .eq('id', waiver.agreementId)
+      .maybeSingle();
+    if (error) return { ok: false, error: `That waiver could not be read: ${error.message}` };
+    if (!agr) return { ok: false, error: 'That waiver no longer exists — choose another.' };
+    if (agr.delivery !== 'internal_document') {
+      return { ok: false, error: `${agr.title} is an outside link, not a waiver signed on the site.` };
+    }
+    if (!agr.active) {
+      return { ok: false, error: `That version of ${agr.title} has been retired — choose the current one.` };
+    }
+    agreementId = agr.id;
+  } else if (waiver.mode === 'new') {
+    const { key, error } = await freeKey(supabase, waiver.title);
+    if (error) return { ok: false, error };
+    const made = await insertAgreement(supabase, { key, version: 1, title: waiver.title, body: waiver.body });
+    if (made.error) return { ok: false, error: made.error };
+    agreementId = made.id;
+  } else {
+    // revise: version n+1 of the attached waiver's key.
+    if (!current) {
+      return { ok: false, error: 'There is no waiver on this activity to revise — write a new one instead.' };
+    }
+    const old = current.agreements;
+    if (old.title === waiver.title && String(old.body ?? '').trim() === waiver.body) {
+      return { ok: true }; // nothing changed; no new version for no reason
+    }
+    const { data: latest, error: latestError } = await supabase
+      .from('agreements')
+      .select('version')
+      .eq('key', old.key)
+      .order('version', { ascending: false })
+      .limit(1);
+    if (latestError) return { ok: false, error: `The waiver's versions could not be read: ${latestError.message}` };
+    const version = (latest?.[0]?.version ?? old.version) + 1;
+    const made = await insertAgreement(supabase, { key: old.key, version, title: waiver.title, body: waiver.body });
+    if (made.error) return { ok: false, error: made.error };
+    agreementId = made.id;
+
+    // Retire the old version once nothing else requires it (see the note at
+    // the top of this section for why not always).
+    const { count, error: othersError } = await supabase
+      .from('agreement_requirements')
+      .select('id', { count: 'exact', head: true })
+      .eq('agreement_id', old.id)
+      .neq('id', current.id);
+    if (othersError) {
+      return { ok: false, error: `Version ${version} was saved, but who else uses version ${old.version} could not be read: ${othersError.message}` };
+    }
+    if ((count ?? 0) === 0) {
+      const { error: retireError } = await supabase
+        .from('agreements')
+        .update({ active: false })
+        .eq('id', old.id);
+      if (retireError) {
+        return { ok: false, error: `Version ${version} was saved, but version ${old.version} could not be retired: ${retireError.message}` };
+      }
+    }
+  }
+
+  // Point this activity at it: the existing row re-pointed, or one added.
+  // Any extra rows (there should be none) go, so one activity has one waiver.
+  if (current) {
+    if (current.agreement_id !== agreementId) {
+      const { error } = await supabase
+        .from('agreement_requirements')
+        .update({ agreement_id: agreementId })
+        .eq('id', current.id);
+      if (error) return { ok: false, error: `The activity could not be pointed at the waiver: ${error.message}` };
+    }
+    if (rows.length > 1) {
+      const { error } = await supabase
+        .from('agreement_requirements')
+        .delete()
+        .in('id', rows.slice(1).map((r) => r.id));
+      if (error) return { ok: false, error: `A duplicate waiver row could not be removed: ${error.message}` };
+    }
+  } else {
+    const { error } = await supabase.from('agreement_requirements').insert({
+      agreement_id: agreementId,
+      event_id: null,
+      activity_id: activityId,
+      applies_to: 'participant',
+      is_required: true,
+    });
+    if (error) return { ok: false, error: `The waiver could not be attached to this activity: ${error.message}` };
+  }
   return { ok: true };
 }
 
