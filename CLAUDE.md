@@ -35,7 +35,8 @@ is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as
 working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0122`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0122`** live; `0123` (returned-payment fee) is written on branch `returned-payment-fee`, not yet
+applied. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -249,7 +250,7 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   `supabase/functions/_shared/`. Families cannot edit money columns on `registration_participants`.
   **Not live until `supabase/PAYMENT-PLANS-SETUP.md` is done.** Plans and pay-in-full are offered at
   `/account/finish/[registrationId]` ("Ways to pay"; `registration_payment_routes` view; bank first,
-  with one line that it costs the camp less than a card). **Every plan email** — the family's
+  with one line that it costs the camp less than a card and a thank-you for choosing it). **Every plan email** — the family's
   receipt, payment problem and plan-stopped notices, and the staff alerts — goes through
   `sendEmail()` in `_shared/plans.ts` and is logged to `message_log` (`plan_*` keys, `0121`); a log
   failure never stops a charge being recorded. Staff alerts name the household in the subject and
@@ -269,8 +270,20 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   back when only the scholarship changes); the discount rules and `waive_deposit()` run as owner.
   `registration_balances` joins it and so **returns no row** to staff without Payments read — a
   `.maybeSingle()` caller shows "—", never 0, and the deposit check asks for the full deposit.
+- **Returned-bank-payment fee** (`0123`): an event setting on Setup (`events.returned_payment_fee_cents`,
+  $0 = off), disclosed beside the bank choice (Ways to pay, the dashboard pay panel) and in the plan
+  agreement **only when over $0**. What is charged is the **snapshot the family saw** — Checkout
+  metadata `returned_fee_cents`, stored on `payment_plans.returned_payment_fee_cents` — never the
+  event's current value. Only a **failed bank** payment adds it, once per PaymentIntent, through
+  `record_returned_payment_fee()` (service role; the edge functions via `recordReturnedFee()` in
+  `_shared/plans.ts`). Fees live in `registration_fees` (household and Payments read; no signed-in
+  writer — staff use `add_registration_fee()` / `waive_registration_fee()`, Payments write).
+  `registration_balances.fees_cents` is the unwaived total and **`balance_cents` includes it**, so a
+  plan's remaining charges collect a fee and `settledBalance()` never closes a plan with one unpaid;
+  the early-registration rule sets fees aside. A new reader of the balance that re-derives "net due"
+  from the columns must add `fees_cents`.
 - **The money audit trail** (`0111`): every write to `payments`, `payment_refunds`, `payment_plans`,
-  `coupons`, `coupon_redemptions` and `participant_money` lands in `money_change_log` (administrators read it). A
+  `coupons`, `coupon_redemptions`, `participant_money` and `registration_fees` lands in `money_change_log` (administrators read it). A
   refund row is edited only while pending and its money never changes; a payment with a refund on
   file stays with its family; `payments.status` follows the refunds on file. **Plans are created
   only by Stripe's webhook** — staff change status, the early-discount decision, the cancel stamps
