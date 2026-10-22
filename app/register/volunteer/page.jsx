@@ -131,7 +131,7 @@ export default async function VolunteerPage() {
   const { data: apps } = await supabase
     .from('volunteer_applications')
     .select(
-      'registration_participant_id, first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills, disability_experience, accompanying_adult_person_id, status, creed_affirmed'
+      'registration_participant_id, first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills, disability_experience, first_time_disability_ministry, accompanying_adult_person_id, status, creed_affirmed'
     )
     .in('registration_participant_id', volIds);
   const appByPart = new Map((apps ?? []).map((a) => [a.registration_participant_id, a]));

@@ -382,6 +382,14 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
               <div className="sm:col-span-2">
                 <dt className="text-xs font-semibold text-neutral-500">Disability experience</dt>
                 <dd className="whitespace-pre-wrap">{app.disability_experience || '—'}</dd>
+                {/* The applicant's optional tick (0118), shown only when ticked. */}
+                {app.first_time_disability_ministry && (
+                  <dd className="mt-1">
+                    <span className="rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-xs font-semibold">
+                      First time in disability ministry
+                    </span>
+                  </dd>
+                )}
               </div>
             </dl>
           ) : (

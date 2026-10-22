@@ -61,7 +61,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
       ? supabase
           .from('volunteer_applications')
           .select(
-            'registration_participant_id, first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills, disability_experience, accompanying_adult_person_id, status, reviewed_at, updated_at, creed_affirmed'
+            'registration_participant_id, first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills, disability_experience, first_time_disability_ministry, accompanying_adult_person_id, status, reviewed_at, updated_at, creed_affirmed'
           )
           .in('registration_participant_id', partIds)
       : Promise.resolve({ data: [] }),

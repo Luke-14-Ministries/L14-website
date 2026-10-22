@@ -79,6 +79,9 @@ export async function submitVolunteerApplication(payload) {
       faith_statement: clean(payload.faith),
       relevant_skills: clean(payload.skills),
       disability_experience: clean(payload.experience),
+      // Optional tick beside the experience question (0118). Not one of the
+      // required answers: the experience box is still answered either way.
+      first_time_disability_ministry: payload?.firstTimeDisabilityMinistry === true,
       accompanying_adult_person_id: payload.accompanyingAdultId || null,
       // The answer AS LAST GIVEN (0075). Ticked = true; left unticked = false,
       // which re-flags the application at review even if an earlier save

@@ -60,6 +60,9 @@ export default function VolunteerApplication({
   const [faith, setFaith] = useState(existing?.faith_statement ?? '');
   const [skills, setSkills] = useState(existing?.relevant_skills ?? '');
   const [experience, setExperience] = useState(existing?.disability_experience ?? '');
+  // Katie, Website Feedback list (22 Oct 2026): a tick beside the experience
+  // question. Optional; it does not stand in for the answer above it.
+  const [firstTimeDm, setFirstTimeDm] = useState(existing?.first_time_disability_ministry === true);
   const [adultId, setAdultId] = useState(existing?.accompanying_adult_person_id ?? '');
 
   // The Apostles' Creed affirmation (migration 0062). Starts ticked only if
@@ -96,6 +99,7 @@ export default function VolunteerApplication({
       faith,
       skills,
       experience,
+      firstTimeDisabilityMinistry: firstTimeDm,
       accompanyingAdultId: adultId || null,
     };
     const problem = volunteerApplicationProblem(answers);
@@ -227,6 +231,15 @@ export default function VolunteerApplication({
             value={experience}
             onChange={(e) => setExperience(e.target.value)}
           />
+          <label className="mt-2 flex items-center gap-2 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              checked={firstTimeDm}
+              onChange={(e) => setFirstTimeDm(e.target.checked)}
+              className="h-4 w-4"
+            />
+            This is my first time serving in disability ministry
+          </label>
 
           {isMinor && (
             <>
