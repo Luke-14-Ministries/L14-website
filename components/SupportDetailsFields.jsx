@@ -19,7 +19,8 @@
 //   name           the person's name, for the questions
 //   isCamper       the full profile, with the required marks
 //   showAll        whether the fuller sections are open (a non-camper's short
-//                  version hides them behind "Tell us more")
+//                  version -- allergies, rescue medication, diet, sleep and an
+//                  emergency contact -- hides the rest behind "Tell us more")
 //   onShowAll      called when that button is pressed
 //   idPrefix       keeps radio groups apart when several people share a page
 
@@ -116,6 +117,51 @@ export default function SupportDetailsFields({
   // for a diagnosis (Testing Script 5, 9.3). Anyone who already has answers
   // there keeps seeing them, whatever their role.
   const aboutOpen = showAll && (isCamper || hasFullerDetail(f));
+
+  // A non-camper's SHORT form also asks rescue medication and sleep away from
+  // home (Website Feedback list rows 9 and 17, 22 Oct 2026): the allergy hint
+  // below sends everyone to "rescue medication below", and an EpiPen matters
+  // whoever carries it. A camper's form keeps both exactly where they were.
+  // Each is one element, placed in one spot or the other, never both.
+  const rescueQuestion = (
+    <YesNo
+      id={`${idPrefix}rescue`}
+      question={`Does ${name} carry any rescue or emergency medication?`}
+      value={f.has_rescue_medication}
+      onChange={setFlag('has_rescue_medication')}
+      required={isCamper}
+    >
+      <label className={label}>What, where is it kept, and when is it used?</label>
+      <textarea
+        className={input}
+        rows={2}
+        value={f.rescue_medication_detail}
+        onChange={set('rescue_medication_detail')}
+        placeholder="EpiPen in her backpack — use for any reaction with facial swelling"
+      />
+    </YesNo>
+  );
+  const sleepQuestion = (
+    <YesNo
+      id={`${idPrefix}sleep`}
+      question={`Does ${name} have trouble sleeping away from home?`}
+      value={f.has_sleep_disturbance}
+      onChange={setFlag('has_sleep_disturbance')}
+    >
+      <label className={label}>What should the night staff know?</label>
+      <textarea className={input} rows={2} value={f.sleep_notes} onChange={set('sleep_notes')} />
+    </YesNo>
+  );
+
+  // "A hard day" ("Every camper has one") and "Will a caregiver be attending?"
+  // are about campers, so a non-camper's "Tell us more" does not ask them
+  // (row 17). As with the About questions, anyone who already has answers
+  // there keeps seeing them.
+  const hasText = (k) => (f[k] ?? '').toString().trim() !== '';
+  const hardDayOpen =
+    showAll &&
+    (isCamper || ['behaviour_triggers', 'redirection_strategies', 'likes_dislikes'].some(hasText));
+  const caregiverOpen = showAll && (isCamper || f.has_caregiver === true);
 
   return (
     <div>
@@ -265,6 +311,8 @@ export default function SupportDetailsFields({
         </p>
       </YesNo>
 
+      {!isCamper && rescueQuestion}
+
       {showAll && (
         <>
           <YesNo
@@ -284,22 +332,7 @@ export default function SupportDetailsFields({
             />
           </YesNo>
 
-          <YesNo
-            id={`${idPrefix}rescue`}
-            question={`Does ${name} carry any rescue or emergency medication?`}
-            value={f.has_rescue_medication}
-            onChange={setFlag('has_rescue_medication')}
-            required={isCamper}
-          >
-            <label className={label}>What, where is it kept, and when is it used?</label>
-            <textarea
-              className={input}
-              rows={2}
-              value={f.rescue_medication_detail}
-              onChange={set('rescue_medication_detail')}
-              placeholder="EpiPen in her backpack — use for any reaction with facial swelling"
-            />
-          </YesNo>
+          {isCamper && rescueQuestion}
 
           <label className={label}>Regular medications {req}</label>
           <textarea
@@ -323,50 +356,48 @@ export default function SupportDetailsFields({
         placeholder="Vegetarian, no pork, soft foods, small portions often…"
       />
 
+      {!isCamper && sleepQuestion}
+
       {showAll && (
         <>
-          <Heading hint="Every camper has one. Knowing what helps in advance means staff can help instead of guess.">
-            A hard day
-          </Heading>
-          <label className={label}>What tends to set {name} off, or make things harder?</label>
-          <textarea
-            className={input}
-            rows={2}
-            value={f.behaviour_triggers}
-            onChange={set('behaviour_triggers')}
-            placeholder="Loud rooms, changes to the plan, being rushed, hunger…"
-          />
+          {hardDayOpen && (
+            <>
+              <Heading hint="Every camper has one. Knowing what helps in advance means staff can help instead of guess.">
+                A hard day
+              </Heading>
+              <label className={label}>What tends to set {name} off, or make things harder?</label>
+              <textarea
+                className={input}
+                rows={2}
+                value={f.behaviour_triggers}
+                onChange={set('behaviour_triggers')}
+                placeholder="Loud rooms, changes to the plan, being rushed, hunger…"
+              />
 
-          <label className={label}>What helps them settle?</label>
-          <textarea
-            className={input}
-            rows={3}
-            value={f.redirection_strategies}
-            onChange={set('redirection_strategies')}
-            placeholder="A quiet corner, a favourite song, a walk, a five-minute warning before changes"
-          />
+              <label className={label}>What helps them settle?</label>
+              <textarea
+                className={input}
+                rows={3}
+                value={f.redirection_strategies}
+                onChange={set('redirection_strategies')}
+                placeholder="A quiet corner, a favourite song, a walk, a five-minute warning before changes"
+              />
 
-          {/* E34. Here rather than on a page of its own: a leader reading
-              "loves trains, hates loud singing" is reading it for the same
-              reason they read the two boxes above. */}
-          <label className={label}>What does {name} enjoy, and what do they avoid?</label>
-          <textarea
-            className={input}
-            rows={2}
-            value={f.likes_dislikes}
-            onChange={set('likes_dislikes')}
-            placeholder="Loves water and music, avoids crowds and face paint..."
-          />
+              {/* E34. Here rather than on a page of its own: a leader reading
+                  "loves trains, hates loud singing" is reading it for the same
+                  reason they read the two boxes above. */}
+              <label className={label}>What does {name} enjoy, and what do they avoid?</label>
+              <textarea
+                className={input}
+                rows={2}
+                value={f.likes_dislikes}
+                onChange={set('likes_dislikes')}
+                placeholder="Loves water and music, avoids crowds and face paint..."
+              />
 
-          <YesNo
-            id={`${idPrefix}sleep`}
-            question={`Does ${name} have trouble sleeping away from home?`}
-            value={f.has_sleep_disturbance}
-            onChange={setFlag('has_sleep_disturbance')}
-          >
-            <label className={label}>What should the night staff know?</label>
-            <textarea className={input} rows={2} value={f.sleep_notes} onChange={set('sleep_notes')} />
-          </YesNo>
+              {isCamper && sleepQuestion}
+            </>
+          )}
 
           <Heading>Support at camp</Heading>
           {/* E38. Free text, and only for now: the right shape is probably a
@@ -389,17 +420,19 @@ export default function SupportDetailsFields({
           {/* "Does X need a one-to-one buddy?" was removed on 31 August 2026:
               the family coordinator works that out with each family, and
               staff set it on the Buddies page. The FIELD is untouched. */}
-          <YesNo
-            id={`${idPrefix}caregiver`}
-            question={`Will a caregiver be attending with ${name}?`}
-            value={f.has_caregiver}
-            onChange={setFlag('has_caregiver')}
-          >
-            <p className="mt-2 text-sm text-neutral-600">
-              Make sure they are added to your registration as well, so they have a place and a
-              meal.
-            </p>
-          </YesNo>
+          {caregiverOpen && (
+            <YesNo
+              id={`${idPrefix}caregiver`}
+              question={`Will a caregiver be attending with ${name}?`}
+              value={f.has_caregiver}
+              onChange={setFlag('has_caregiver')}
+            >
+              <p className="mt-2 text-sm text-neutral-600">
+                Make sure they are added to your registration as well, so they have a place and a
+                meal.
+              </p>
+            </YesNo>
+          )}
         </>
       )}
 
@@ -410,8 +443,8 @@ export default function SupportDetailsFields({
         <div className="mt-5 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 text-center">
           <p className="text-sm text-neutral-700">
             We&rsquo;ve kept this short because {name} isn&rsquo;t registered as a camper. If
-            there is more we should know — allergies and what they are, medications, seizures,
-            sleep away from home, who they would like to room with — it all matters just as much.
+            there is more we should know — regular medications, seizures, who they would like to
+            room with — it all matters just as much.
           </p>
           <button type="button" onClick={onShowAll} className="btn-outline py-1.5! text-sm mt-3">
             Tell us more about {name}

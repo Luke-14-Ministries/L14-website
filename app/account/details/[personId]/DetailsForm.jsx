@@ -52,8 +52,9 @@ export default function DetailsForm({
   // HOW MUCH TO ASK. Decided 25 Aug: asking a parent/guardian and a
   // four-year-old sibling for a full seizure plan reads as absurd, gets
   // skipped, and teaches families that this form is noise. Campers get the
-  // full profile; everyone else gets allergies, diet and an emergency contact,
-  // and can open the rest. Anyone who ALREADY has detail saved in the fuller
+  // full profile; everyone else gets allergies, rescue medication, diet, sleep
+  // and an emergency contact (rescue and sleep since 22 Oct 2026), and can
+  // open the rest -- which for them never includes the camper-only questions. Anyone who ALREADY has detail saved in the fuller
   // sections sees them open, whatever their role.
   const [showAll, setShowAll] = useState(isCamper || hasFullerDetail(emptySupport(support)));
 
