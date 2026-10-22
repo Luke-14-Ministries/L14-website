@@ -148,7 +148,7 @@ export default function SupportDetailsFields({
       value={f.has_sleep_disturbance}
       onChange={setFlag('has_sleep_disturbance')}
     >
-      <label className={label}>What should the night staff know?</label>
+      <label className={label}>What helps at night?</label>
       <textarea className={input} rows={2} value={f.sleep_notes} onChange={set('sleep_notes')} />
     </YesNo>
   );

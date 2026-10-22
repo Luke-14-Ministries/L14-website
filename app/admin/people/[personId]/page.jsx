@@ -282,7 +282,7 @@ function FormAnswers({ sensitive, support, name }) {
             <AnswerYesNo value={s.has_sleep_disturbance} saved={saved} tone="amber" />
           </Answer>
           {showDetail(s.has_sleep_disturbance, s.sleep_notes) && (
-            <Answer q="What should the night staff know?">
+            <Answer q="What helps at night?">
               <AnswerText value={s.sleep_notes} />
             </Answer>
           )}
