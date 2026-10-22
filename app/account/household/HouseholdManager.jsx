@@ -36,10 +36,11 @@ function Field({ label, children }) {
 
 const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-2';
 
-// Today on the ministry's calendar, not UTC (after 8 pm Eastern UTC is tomorrow).
-function todayEastern() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
-}
+// The date-of-birth inputs carry no min/max on purpose. Inside a real <form>
+// the browser's own bubble ("Value must be 01/01/1900 or later.") stopped the
+// save before the server's dobProblem() sentence could show (13.23); the
+// server action checks the same range and answers in the site's words, as
+// the wizard and the staff screen do.
 
 export default function HouseholdManager({
   household,
@@ -401,7 +402,7 @@ Anything already saved is untouched.`
                 />
               </Field>
               <Field label="Date of birth">
-                <input name="date_of_birth" type="date" defaultValue={m.date_of_birth ?? ''} className={inputCls} min="1900-01-01" max={todayEastern()} />
+                <input name="date_of_birth" type="date" defaultValue={m.date_of_birth ?? ''} className={inputCls} />
               </Field>
               <Field label="Sex">
                 <select name="gender" defaultValue={m.gender ?? ''} className={inputCls}>
@@ -575,7 +576,7 @@ Anything already saved is untouched.`
             />
           </Field>
           <Field label="Date of birth">
-            <input name="date_of_birth" type="date" className={inputCls} min="1900-01-01" max={todayEastern()} />
+            <input name="date_of_birth" type="date" className={inputCls} />
           </Field>
           <Field label="Sex">
             <select name="gender" className={inputCls} defaultValue="">
