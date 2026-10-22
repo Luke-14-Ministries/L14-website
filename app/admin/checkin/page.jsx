@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { staffAssigns, isCurrentEventRow } from '@/lib/events';
+import { signedPhotoUrls } from '@/lib/photos';
 import CheckinList from './CheckinList';
 import MedicalContact from './MedicalContact';
 
@@ -104,24 +105,16 @@ export default async function CheckinPage({ searchParams }) {
       (consents ?? []).filter((c) => c.granted === false).map((c) => c.person_id)
     );
 
-    // Identification thumbnails — the point of the photo. Readable by ANY
-    // active staff member since 0033, because the door volunteers who need it
-    // rarely hold the sensitive grant, and a photo they cannot see does not do
-    // the job it exists to do. The bucket itself stays private: every view is
-    // a signed URL minted here, for this request, expiring within the hour.
-    const { data: photoRows } = await supabase
-      .from('person_photos')
-      .select('person_id, storage_path');
-    const photoUrlOf = new Map();
-    for (const row of photoRows ?? []) {
-      if (!row.storage_path) continue;
-      const { data: signed } = await supabase.storage
-        .from('person-photos')
-        // 15 minutes, not an hour (Script 5, 18 Oct 2026): a child's photo link
-        // should not outlive the visit. Each page load signs fresh ones.
-        .createSignedUrl(row.storage_path, 900);
-      if (signed?.signedUrl) photoUrlOf.set(row.person_id, signed.signedUrl);
-    }
+    // Identification thumbnails — the point of the photo. Since 0101/0105 the
+    // rows and the private bucket need the Sensitive READ grant (0033 had let
+    // any staff see them); the door presets, Operations lead and helper, carry
+    // it. lib/photos.js mirrors that rule, signs only this event's people in
+    // one request, and throws on a failed lookup instead of showing nobody.
+    const photoUrlOf = await signedPhotoUrls(
+      supabase,
+      can(staff, 'read:sensitive'),
+      (regs ?? []).flatMap((r) => (r.registration_participants ?? []).map((p) => p.people?.id))
+    );
 
     for (const r of regs ?? []) {
       for (const p of r.registration_participants ?? []) {
