@@ -142,7 +142,7 @@ export default async function ReviewQueuePage({ searchParams }) {
           <Link
             href={`/admin/review/${eventFilter ? `?event=${eventFilter}` : ''}`}
             className={`rounded-full px-3 py-1 font-semibold border ${
-              !showAll ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
+              show === 'staff' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
             }`}
           >
             Waiting on staff
