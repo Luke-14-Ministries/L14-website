@@ -317,15 +317,15 @@ export default async function AdminActivitiesPage({ searchParams }) {
                   <p className="mt-1 text-sm text-neutral-600">{a.description}</p>
                 )}
 
-                {a.provider_name && (
+                {(a.provider_name || a.provider_url) && (
                   <p className="mt-1 text-sm text-amber-800">
-                    Outside provider: {a.provider_name}. Their own waiver is the family&rsquo;s
+                    Outside provider: {a.provider_name || 'named by link only'}. Their own waiver is the family&rsquo;s
                     to complete; &ldquo;confirmation&rdquo; below means they uploaded the
                     provider&rsquo;s proof, and opens it. &ldquo;told&rdquo; records only that
                     we said so.
                   </p>
                 )}
-                {a.provider_name && (() => {
+                {(a.provider_name || a.provider_url) && (() => {
                   // Volunteers and buddies upload without a sign-up row.
                   const signedUpIds = new Set((byActivity.get(a.id) ?? []).map((p) => p.participantId));
                   const extra = [...waiverByKey.entries()]
@@ -411,7 +411,11 @@ export default async function AdminActivitiesPage({ searchParams }) {
                             {p.acknowledged ? 'told' : 'not told'}
                           </span>
                         )}
-                        {a.provider_name && p.status === 'signed_up' && (() => {
+                        {/* Every active place on a provider-run activity, interested
+                            ones too and a provider named only by its link --
+                            exactly the places activity_waivers_outstanding
+                            (0120) counts as owing a confirmation. */}
+                        {(a.provider_name || a.provider_url) && (() => {
                           const w = waiverByKey.get(`${a.id}:${p.participantId}`);
                           return w ? (
                             <a
@@ -447,7 +451,13 @@ export default async function AdminActivitiesPage({ searchParams }) {
                 />}
 
                 {canDefine && (
-                  <ActivityEditor activity={a} waiver={waiver} waiverChoices={waiverChoices} />
+                  <ActivityEditor
+                    activity={a}
+                    eventId={selected}
+                    canEmail={can(staff, 'write:registration')}
+                    waiver={waiver}
+                    waiverChoices={waiverChoices}
+                  />
                 )}
               </ActivityCard>
             );

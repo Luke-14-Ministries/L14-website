@@ -148,6 +148,19 @@ export async function updateActivity(activityId, input) {
 
   const supabase = await createClient();
 
+  // The activity as it stood, so a save that ADDS a provider (or changes it)
+  // can be told apart from one that leaves it alone -- see owedAfterSave().
+  const { data: before, error: beforeError } = await supabase
+    .from('activities')
+    .select('event_id, name, provider_name, provider_url')
+    .eq('id', activityId)
+    .maybeSingle();
+  if (beforeError) {
+    console.error('updateActivity before:', beforeError.message);
+    return { ok: false, error: `The activity could not be read: ${beforeError.message}` };
+  }
+  if (!before) return { ok: false, error: 'That activity no longer exists.' };
+
   // Refuse a capacity below the people already signed up, for the same reason
   // the event capacity refuses it: the number would be false the moment it
   // saved, and the list of names is the thing that is true.
@@ -179,7 +192,39 @@ export async function updateActivity(activityId, input) {
   if (!applied.ok) {
     return { ok: false, error: `The activity was saved, but its waiver was not: ${applied.error}` };
   }
-  return { ok: true };
+
+  const providerAdded =
+    Boolean(row.provider_name || row.provider_url) &&
+    (row.provider_name !== (before.provider_name ?? null) || row.provider_url !== (before.provider_url ?? null));
+  const owed = await owedAfterSave(supabase, {
+    activityId,
+    eventId: before.event_id,
+    activityName: row.name,
+    kind: applied.attached ? 'ours' : providerAdded ? 'provider' : null,
+  });
+  if (owed.error) {
+    return { ok: false, error: `The activity was saved, but who now needs the waiver could not be read: ${owed.error}` };
+  }
+  return { ok: true, owed: owed.owed };
+}
+
+// After a save that ATTACHED a waiver of ours (or swapped or revised it), or
+// added or changed an outside provider: how many people already signed up
+// now need it (activity_waivers_outstanding, 0120). The editor offers to
+// email their families -- it never sends anything itself (22 Oct 2026). A
+// save that changes neither says nothing, so a tweak to a description does
+// not prompt anybody. Returns { owed: null | { count, kind, eventId,
+// activityId, activityName } } or { error }.
+async function owedAfterSave(supabase, { activityId, eventId, activityName, kind }) {
+  if (!kind) return { owed: null };
+  const { count, error } = await supabase
+    .from('activity_waivers_outstanding')
+    .select('registration_participant_id', { count: 'exact', head: true })
+    .eq('activity_id', activityId)
+    .eq('kind', kind);
+  if (error) return { error: error.message };
+  if (!count) return { owed: null };
+  return { owed: { count, kind, eventId, activityId, activityName } };
 }
 
 // ---------------------------------------------------------------------------
@@ -350,6 +395,10 @@ async function applyWaiver(supabase, activityId, waiver) {
 
   // Point this activity at it: the existing row re-pointed, or one added.
   // Any extra rows (there should be none) go, so one activity has one waiver.
+  // `attached` says the activity now asks for a waiver it did not ask for
+  // before (a new one, a swap, a new version), which is what makes the
+  // editor offer to email the families already signed up.
+  let attached = false;
   if (current) {
     if (current.agreement_id !== agreementId) {
       const { error } = await supabase
@@ -357,6 +406,7 @@ async function applyWaiver(supabase, activityId, waiver) {
         .update({ agreement_id: agreementId })
         .eq('id', current.id);
       if (error) return { ok: false, error: `The activity could not be pointed at the waiver: ${error.message}` };
+      attached = true;
     }
     if (rows.length > 1) {
       const { error } = await supabase
@@ -374,8 +424,9 @@ async function applyWaiver(supabase, activityId, waiver) {
       is_required: true,
     });
     if (error) return { ok: false, error: `The waiver could not be attached to this activity: ${error.message}` };
+    attached = true;
   }
-  return { ok: true };
+  return { ok: true, attached };
 }
 
 // Two different things, and the difference matters.
