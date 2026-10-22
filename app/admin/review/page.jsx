@@ -5,7 +5,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 import { statusPill } from '@/lib/format';
-import { dayInMorristown } from '@/lib/events';
+import { dayInMorristown, isCurrentEventRow } from '@/lib/events';
 
 export const metadata = { title: 'Awaiting review — Staff Admin' };
 
@@ -40,7 +40,14 @@ export default async function ReviewQueuePage({ searchParams }) {
   // in and who have not asked for a full scholarship -- Larry (16 Oct 2026):
   // "grouped / filtered together", so a registrar can work that list and
   // waive where there is a reason to.
-  const show = ['all', 'family', 'nodeposit'].includes(params?.show) ? params.show : 'staff';
+  // ?show=waiver (22 Oct 2026): every registration with an activity waiver
+  // still outstanding (activity_waivers_outstanding, 0120) -- staff attached a
+  // waiver or an outside provider after people signed up. CONFIRMED
+  // registrations are listed too, and nothing here changes anyone's status:
+  // a confirmed place is not undone for paperwork. It is a flag to follow
+  // up (and to email the families from /admin/email-families), not a step
+  // back in the review.
+  const show = ['all', 'family', 'nodeposit', 'waiver'].includes(params?.show) ? params.show : 'staff';
   const showAll = show === 'all';
   // One event, or every current one (the shared filter, 16 Oct 2026).
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
@@ -50,7 +57,7 @@ export default async function ReviewQueuePage({ searchParams }) {
   // the caller's rights and shows $0 paid to everyone else, which reads as a
   // family that has not paid.
   const seesMoney = can(staff, 'read:payments');
-  const [{ data: regs }, { data: parts }, { data: reviews }, { data: balances }] =
+  const [{ data: regs }, { data: parts }, { data: reviews }, { data: balances }, { data: owed, error: owedError }] =
     await Promise.all([
       supabase
         .from('registrations')
@@ -59,17 +66,26 @@ export default async function ReviewQueuePage({ searchParams }) {
         ),
       supabase
         .from('registration_participants')
-        .select('registration_id, status, camp_role, people ( first_name, last_name )'),
+        .select('registration_id, person_id, status, camp_role, people ( first_name, last_name )'),
       supabase
         .from('registration_review')
         .select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents'),
       seesMoney
         ? supabase.from('registration_balances').select('registration_id, paid_cents, balance_cents, fee_cents')
         : Promise.resolve({ data: [] }),
+      supabase
+        .from('activity_waivers_outstanding')
+        .select('registration_id, person_id, activity_name, kind'),
     ]);
+  if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
 
   const reviewByReg = new Map((reviews ?? []).map((r) => [r.registration_id, r]));
   const balanceByReg = new Map((balances ?? []).map((b) => [b.registration_id, b]));
+  const owedByReg = new Map();
+  for (const o of owed ?? []) {
+    if (!owedByReg.has(o.registration_id)) owedByReg.set(o.registration_id, []);
+    owedByReg.get(o.registration_id).push(o);
+  }
 
   // People per registration, cancelled and draft left out of the counts the
   // same way the Overview leaves them out.
@@ -95,6 +111,7 @@ export default async function ReviewQueuePage({ searchParams }) {
         created: r.created_at,
         awaitingSince: r.awaiting_family_since ?? null,
         awaitingReason: r.awaiting_family_reason ?? null,
+        owed: owedByReg.get(r.id) ?? [],
       };
     })
     .filter((r) => {
@@ -102,6 +119,9 @@ export default async function ReviewQueuePage({ searchParams }) {
       if (eventFilter && r.event?.id !== eventFilter) return false;
       if (show === 'all') return true;
       if (show === 'family') return Boolean(r.awaitingSince);
+      // Every current event unless one is chosen, as the "All current
+      // events" pill says -- a past camp's paperwork is not live work.
+      if (show === 'waiver') return r.owed.length > 0 && (eventFilter || isCurrentEventRow(r.event));
       if (show === 'nodeposit') {
         return r.pending.length > 0 && !r.awaitingSince && (r.review?.review_class ?? 'neither') === 'neither';
       }
@@ -133,6 +153,13 @@ export default async function ReviewQueuePage({ searchParams }) {
   // view can say where the rest went.
   const onFamily = (regs ?? []).filter((r) => r.awaiting_family_since).length;
   const totalFlags = rows.reduce((s, r) => s + (r.review?.flags?.length ?? 0), 0);
+  // For the tab's count: registrations at a current event with a waiver owed.
+  const waiverRegs = (regs ?? []).filter(
+    (r) => owedByReg.has(r.id) && isCurrentEventRow(r.events)
+  ).length;
+  const nameOf = new Map(
+    (parts ?? []).map((p) => [`${p.registration_id}:${p.person_id}`, p.people?.first_name ?? ''])
+  );
 
   return (
     <div>
@@ -162,6 +189,14 @@ export default async function ReviewQueuePage({ searchParams }) {
             }`}
           >
             Waiting on the family{onFamily > 0 && ` (${onFamily})`}
+          </Link>
+          <Link
+            href={`/admin/review/?show=waiver${eventFilter ? `&event=${eventFilter}` : ''}`}
+            className={`rounded-full px-3 py-1 font-semibold border ${
+              show === 'waiver' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
+            }`}
+          >
+            Waiver outstanding{waiverRegs > 0 && ` (${waiverRegs})`}
           </Link>
           <Link
             href={`/admin/review/?show=all${eventFilter ? `&event=${eventFilter}` : ''}`}
@@ -196,13 +231,29 @@ export default async function ReviewQueuePage({ searchParams }) {
         allowAll
       />
 
+      {show === 'waiver' && (
+        <p className="mb-4 text-sm text-neutral-600">
+          Families with someone on an activity whose waiver is still missing — a waiver or an
+          outside provider added after they signed up. Confirmed families are listed too; nobody&rsquo;s
+          status changes for this.{' '}
+          <Link
+            href={`/admin/email-families/?outstanding=1${eventFilter ? `&event=${eventFilter}` : ''}`}
+            className="font-semibold text-brand underline"
+          >
+            Email these families →
+          </Link>
+        </p>
+      )}
+
       {groups.length === 0 && (
         <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
           {show === 'family'
             ? 'Nothing is waiting on a family.'
             : show === 'nodeposit'
               ? 'Everyone waiting on staff has a deposit in, a scholarship requested, or the deposit waived.'
-              : 'Nothing waiting on staff.'}
+              : show === 'waiver'
+                ? 'Every activity waiver is signed or uploaded.'
+                : 'Nothing waiting on staff.'}
         </p>
       )}
 
@@ -282,13 +333,22 @@ export default async function ReviewQueuePage({ searchParams }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        {flags.length === 0 && !r.awaitingSince ? (
+                        {flags.length === 0 && !r.awaitingSince && r.owed.length === 0 ? (
                           <span className="text-neutral-400">—</span>
                         ) : (
                           <ul className="space-y-0.5">
                             {flags.map((f) => (
                               <li key={f} className="whitespace-nowrap text-xs font-semibold text-amber-800">
                                 ⚑ {REVIEW_FLAG[f] ?? f}
+                              </li>
+                            ))}
+                            {r.owed.map((o) => (
+                              <li
+                                key={`${o.person_id}:${o.activity_name}:${o.kind}`}
+                                className="text-xs font-semibold text-amber-800"
+                              >
+                                ⚑ {o.activity_name}: {nameOf.get(`${r.id}:${o.person_id}`) || 'someone'}{' '}
+                                {o.kind === 'ours' ? 'needs the waiver signed' : "needs the outfitter's confirmation"}
                               </li>
                             ))}
                             {r.awaitingSince && (

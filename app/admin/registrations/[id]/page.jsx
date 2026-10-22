@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -367,8 +368,56 @@ export default async function RegistrationDetailPage({ params }) {
     a.due_on.localeCompare(b.due_on)
   );
 
+  // Activity waivers still owed on this registration (0120): a waiver or an
+  // outside provider staff added after the signup. A flag only -- a
+  // confirmed place stays confirmed while the paperwork is chased.
+  const { data: owedRows, error: owedError } = await supabase
+    .from('activity_waivers_outstanding')
+    .select('person_id, activity_name, kind, agreement_title')
+    .eq('registration_id', id);
+  if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
+  const personName = new Map(
+    (reg.registration_participants ?? []).map((p) => [
+      p.people?.id,
+      `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
+    ])
+  );
+  const owed = (owedRows ?? [])
+    .map((o) => ({
+      key: `${o.person_id}:${o.activity_name}:${o.kind}`,
+      text:
+        o.kind === 'ours'
+          ? `${o.activity_name}: ${personName.get(o.person_id) || 'someone'} has not signed the ${o.agreement_title || 'waiver'}.`
+          : `${o.activity_name}: no outfitter's confirmation uploaded for ${personName.get(o.person_id) || 'someone'}.`,
+    }))
+    .sort((a, b) => a.text.localeCompare(b.text));
+
   return (
     <>
+    {owed.length > 0 && (
+      <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="font-semibold">Activity waiver outstanding</p>
+        <ul className="mt-1 space-y-0.5">
+          {owed.map((o) => (
+            <li key={o.key}>⚑ {o.text}</li>
+          ))}
+        </ul>
+        <p className="mt-1 text-xs">
+          The family sees this on their dashboard and Activities page. Their place is not affected.
+          {can(staff, 'write:registration') && reg.events?.id && (
+            <>
+              {' '}
+              <Link
+                href={`/admin/email-families/?event=${reg.events.id}&outstanding=1`}
+                className="font-semibold underline"
+              >
+                Email the families with a waiver outstanding →
+              </Link>
+            </>
+          )}
+        </p>
+      </div>
+    )}
     <RegistrationManager
       registration={registration}
       canSeeMoney={can(staff, 'read:payments')}
