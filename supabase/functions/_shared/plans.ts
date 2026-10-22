@@ -277,11 +277,12 @@ ${button(`${SITE}/admin/registrations/${registrationId}/`, 'Open the registratio
 // a snapshot, never the event's current setting: a plan carries it on
 // payment_plans.returned_payment_fee_cents, a checkout in its metadata
 // (returned_fee_cents). record_returned_payment_fee() (service role only)
-// does the deciding: a FAILED BANK payment on file for this PaymentIntent,
-// a snapshot over $0, one fee per PaymentIntent (each plan try and each
-// checkout is its own PaymentIntent, so a Stripe retry, or the charger and
-// the webhook both seeing one failure, add it once). Card declines cost the
-// ministry nothing and never add a fee.
+// does the deciding: a debit the bank actually RETURNED (bankDebitReturned),
+// a FAILED BANK payment on file for this PaymentIntent, a snapshot over $0,
+// one fee per PaymentIntent (each plan try and each checkout is its own
+// PaymentIntent, so a Stripe retry, or the charger and the webhook both
+// seeing one failure, add it once) and at most one per plan installment.
+// Card declines cost the ministry nothing and never add a fee.
 //
 // The fee is owed in registration_balances. A plan's stored schedule is not
 // rewritten; because every charge is worked out on the day from the live
@@ -293,15 +294,36 @@ ${button(`${SITE}/admin/registrations/${registrationId}/`, 'Open the registratio
 
 export type ReturnedFee = { feeCents: number; added: boolean };
 
+// Did the bank actually RETURN this debit? Only then does Stripe charge the
+// ministry a return fee (review, 22 Oct 2026). After a return such as R02
+// (account closed) Stripe blocks the account, and the next tries fail the
+// moment they are made -- each a new PaymentIntent, never submitted to the
+// bank, so no charge with a failure code. Counting those would make one
+// returned debit three fees. A failed read throws (the webhook answers 500 and
+// Stripe retries).
+export async function bankDebitReturned(stripe: Stripe, piId: string): Promise<boolean> {
+  const pi = await stripe.paymentIntents.retrieve(piId, { expand: ['latest_charge'] });
+  const charge = (typeof pi.latest_charge === 'object' ? pi.latest_charge : null) as Stripe.Charge | null;
+  return Boolean(charge && charge.status === 'failed' && charge.failure_code);
+}
+
 export async function recordReturnedFee(
   admin: SupabaseClient,
-  args: { registrationId: string; piId: string; installmentId?: string | null; disclosedCents?: number }
+  args: {
+    registrationId: string;
+    piId: string;
+    installmentId?: string | null;
+    disclosedCents?: number;
+    // From bankDebitReturned(): the database refuses the fee without it.
+    returned: boolean;
+  }
 ): Promise<ReturnedFee> {
   const { data, error } = await admin.rpc('record_returned_payment_fee', {
     p_registration_id: args.registrationId,
     p_payment_intent_id: args.piId,
     p_installment_id: args.installmentId ?? null,
     p_disclosed_cents: Math.max(0, Math.round(args.disclosedCents ?? 0)),
+    p_returned: args.returned === true,
   });
   if (error) throw new Error(`returned-fee: ${error.message}`);
   const row = (Array.isArray(data) ? data[0] : data) as { fee_cents?: number; added?: boolean } | null;
@@ -532,6 +554,11 @@ export async function recordInstallmentOutcome(
     // with no PaymentIntent tied yet is only claimed by the CURRENT try, never
     // by a late Stripe retry of an earlier one.
     attempt?: number;
+    // 0123: the bank RETURNED this debit (bankDebitReturned(), the webhook's
+    // check). The charger passes false: a bank debit cannot come back at the
+    // moment it is made, and one refused then never reached the bank. The
+    // return arrives later as payment_intent.payment_failed.
+    returned?: boolean;
   }
 ) {
   const today = args.today ?? ministryToday();
@@ -554,8 +581,8 @@ export async function recordInstallmentOutcome(
   );
   if (payErr) throw new Error(`payment-upsert: ${payErr.message}`);
 
-  // A failed BANK charge: the plan's agreed returned-payment fee (0123), once
-  // for this PaymentIntent. Before the transition below, so a failure here
+  // A returned BANK debit: the plan's agreed returned-payment fee (0123), once
+  // for this PaymentIntent and once for this installment. Before the transition below, so a failure here
   // throws (and Stripe retries) before anything is half-done. Whichever of
   // charger and webhook records it, the one that moves the installment sends
   // the email, and the fee is on file by then.
@@ -565,6 +592,7 @@ export async function recordInstallmentOutcome(
           registrationId: args.registrationId,
           piId: args.piId,
           installmentId: args.installmentId,
+          returned: args.returned === true,
         })
       : { feeCents: 0, added: false };
 

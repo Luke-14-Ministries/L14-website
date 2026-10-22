@@ -17,6 +17,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 // The returned-payment fee (0123) and the logged family email share the plan
 // module's code, so the two webhooks word and record it the same way.
 import {
+  bankDebitReturned,
   dollars as planDollars,
   esc,
   planContext,
@@ -255,10 +256,14 @@ Deno.serve(async (req) => {
     if (status === 'failed' && method === 'bank_transfer') {
       let fee: ReturnedFee;
       try {
+        // Only a debit the bank actually returned (its latest charge failed
+        // with a failure code) -- the database refuses the fee otherwise.
+        const returned = await bankDebitReturned(stripe, paymentIntentId);
         fee = await recordReturnedFee(admin, {
           registrationId,
           piId: paymentIntentId,
           disclosedCents: parseInt(md.returned_fee_cents ?? '0', 10) || 0,
+          returned,
         });
       } catch (e) {
         return fail('returned-fee', String((e as Error)?.message ?? e), 500);

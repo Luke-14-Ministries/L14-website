@@ -24,6 +24,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   activatePlanFromDeposit,
   applyNewPaymentMethod,
+  bankDebitReturned,
   recordInstallmentOutcome,
 } from '../_shared/plans.ts';
 
@@ -96,17 +97,23 @@ Deno.serve(async (req) => {
         const c = await stripe.customers.retrieve(pi.customer);
         payerEmail = c && !('deleted' in c && c.deleted) ? (c as Stripe.Customer).email : null;
       }
+      // 0123: a returned-payment fee only for a bank debit the bank actually
+      // returned -- not for a try Stripe refused before it reached the bank.
+      const method = md.method === 'bank' ? 'bank_transfer' : 'card';
+      const failed = event.type === 'payment_intent.payment_failed';
+      const returned = failed && method === 'bank_transfer' ? await bankDebitReturned(stripe, pi.id) : false;
       await recordInstallmentOutcome(admin, {
         installmentId: md.installment_id,
         registrationId: md.registration_id,
         piId: pi.id,
         amountCents: parseInt(md.base_cents ?? '', 10) || pi.amount,
-        method: md.method === 'bank' ? 'bank_transfer' : 'card',
-        outcome: event.type === 'payment_intent.succeeded' ? 'succeeded' : 'failed',
+        method,
+        outcome: failed ? 'failed' : 'succeeded',
         error: pi.last_payment_error?.message ?? null,
         payerEmail,
         eventName: md.event_name ?? null,
         attempt: md.attempt ? parseInt(md.attempt, 10) : undefined,
+        returned,
       });
       return new Response('ok', { status: 200 });
     }

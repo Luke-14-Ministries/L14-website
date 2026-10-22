@@ -204,6 +204,11 @@ export async function chargeDuePlans(
         eventName,
         today,
         attempt,
+        // 0123: never a returned-payment fee from here. A bank debit cannot be
+        // returned at the moment it is made; one refused now (a blocked
+        // account) never reached the bank. A real return arrives days later
+        // as payment_intent.payment_failed, and the webhook checks it.
+        returned: false,
       });
       results.push({ plan: plan.id, installment: inst.id, charged_cents: amount, outcome });
     } catch (e) {
