@@ -105,11 +105,12 @@ test bank accounts are listed in the Stripe docs under ACH testing.
   payment fee ($)*; $0 is off. When it is over $0, Ways to pay and the dashboard's pay panel
   say so beside the bank choice, and the plan agreement gains one sentence naming it. The
   amount the family saw rides in the Checkout metadata (`returned_fee_cents`) and is stored
-  on the plan (`payment_plans.returned_payment_fee_cents`); only a **failed bank** payment
-  adds it, once per PaymentIntent, and only that snapshot — a fee set or raised later never
+  on the plan (`payment_plans.returned_payment_fee_cents`); only a bank debit the bank
+  actually **returned** adds it (not a try Stripe refused at once after blocking the account),
+  once per PaymentIntent and once per installment, and only that snapshot — a fee set or raised later never
   applies to a family who already agreed. It is owed in the balance, so a plan's remaining
   charges collect it and the plan still ends on $0. Staff waive or add fees on the
-  registration page (Payments write). **Deploy `stripe-webhook`, `stripe-plans-webhook` and
+  registration page (add: Payments write; waive: Payments and Registration write). **Deploy `stripe-webhook`, `stripe-plans-webhook` and
   `charge-payment-plans` together after applying `0123`** — all three bundle
   `_shared/plans.ts`, which calls `record_returned_payment_fee()`. To test: set a fee, pay by
   test bank account with Stripe's failing test account number, and check the fee line on the

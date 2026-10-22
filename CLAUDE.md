@@ -274,13 +274,18 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   $0 = off), disclosed beside the bank choice (Ways to pay, the dashboard pay panel) and in the plan
   agreement **only when over $0**. What is charged is the **snapshot the family saw** — Checkout
   metadata `returned_fee_cents`, stored on `payment_plans.returned_payment_fee_cents` — never the
-  event's current value. Only a **failed bank** payment adds it, once per PaymentIntent, through
+  event's current value. Only a bank debit the bank actually **returned** adds it (the latest
+  charge failed with a failure code — `bankDebitReturned()`; a try Stripe refuses at once adds
+  none), once per PaymentIntent and at most once per plan installment, through
   `record_returned_payment_fee()` (service role; the edge functions via `recordReturnedFee()` in
   `_shared/plans.ts`). Fees live in `registration_fees` (household and Payments read; no signed-in
-  writer — staff use `add_registration_fee()` / `waive_registration_fee()`, Payments write).
+  writer — staff add with `add_registration_fee()` (Payments write) and waive with
+  `waive_registration_fee()` (`can_decide_scholarships()`: a decision). Families read their whole
+  rows (RLS is per row), so family pages select only kind, amount, date, reason and waived.
   `registration_balances.fees_cents` is the unwaived total and **`balance_cents` includes it**, so a
   plan's remaining charges collect a fee and `settledBalance()` never closes a plan with one unpaid;
-  the early-registration rule sets fees aside. A new reader of the balance that re-derives "net due"
+  the early-registration rule and `registration_payment_routes` set fees aside (a fee does not make
+  a paid family "not finished"). A new reader of the balance that re-derives "net due"
   from the columns must add `fees_cents`.
 - **The money audit trail** (`0111`): every write to `payments`, `payment_refunds`, `payment_plans`,
   `coupons`, `coupon_redemptions`, `participant_money` and `registration_fees` lands in `money_change_log` (administrators read it). A

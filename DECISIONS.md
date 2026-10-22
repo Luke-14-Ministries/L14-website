@@ -3007,6 +3007,23 @@ principal so they appeared to owe it again. The agreement and the payment-proble
 that the remaining payments include it. The early-registration rule sets fees aside (a fee must not
 cost a family its early discount).
 
+**Review fixes, same day (0123 amended before it ran).** (1) *Only a debit the bank actually
+returned.* After a return such as R02 (account closed) Stripe blocks the account and the plan's next
+tries fail the moment they are made — each a new PaymentIntent, none of them reaching the bank. The
+webhooks now ask Stripe whether the latest charge failed with a failure code
+(`bankDebitReturned()`), the charger always says no (a debit cannot come back the moment it is made),
+and `record_returned_payment_fee()` refuses without that word; a unique index also allows one
+returned-payment fee per installment. One returned debit is one fee. (2) `registration_payment_routes`
+asks about the camp (balance less fees), so a $4 fee does not turn a paid-in-full family back into
+"not finished" and re-offer payment choices; the fee is its own line. (3) The payments CSV counts
+fees as the page does. (4) *Families can read their own whole fee rows* — column grants are per
+role, not per person, so the staff columns (who added or waived it, the waiver's reason) cannot be
+hidden from the family the row belongs to without a view, and none of them is sensitive. The table
+grant stays; the family pages select only kind, amount, date, reason and waived, and the Waive form
+says "The family can see this reason." (5) *Waiving is a decision*: `can_decide_scholarships()`
+(Payments **and** Registration write, `0102`), like a scholarship or a hand-set discount; adding a fee
+stays Payments write.
+
 **Not done:** a failed pay-in-full bank payment with no fee still sends the family no email (as
 before); the email is sent when a fee is added. `money_change_log.changed_as` records the logger's
 owner for every row, not the writer's role (the logger is security definer since `0111`) —
