@@ -452,7 +452,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                           {credit > 0 && (
                             <span
                               title="Paid more than is owed: a refund due, a later scholarship, or a cancelled person. Settle it -- refund, or carry it as a credit."
-                              className="block whitespace-nowrap text-xs font-semibold text-amber-800"
+                              className="block text-xs font-semibold text-amber-800"
                             >
                               ⚑ Credit of {money(credit)} — paid more than owed
                             </span>
@@ -460,7 +460,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                           {(rv.flags ?? []).filter((f) => f === 'deposit_short').map((f) => (
                             <span
                               key={f}
-                              className="block whitespace-nowrap text-xs font-semibold text-amber-800"
+                              className="block text-xs font-semibold text-amber-800"
                             >
                               ⚑ {REVIEW_FLAG[f] ?? f}
                             </span>
