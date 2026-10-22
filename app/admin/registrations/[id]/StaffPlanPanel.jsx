@@ -7,7 +7,8 @@
 
 import { useState, useTransition } from 'react';
 import { setPlanStatus } from './actions';
-import { ROUTE_LABEL, SCHEDULE_LABEL, PLAN_STATUS_LABEL } from '@/lib/plans';
+import { ROUTE_LABEL, SCHEDULE_LABEL, PLAN_STATUS_LABEL, planStoppedAt } from '@/lib/plans';
+import { dayInMorristown } from '@/lib/events';
 import Panel from './Panel';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -62,6 +63,14 @@ export default function StaffPlanPanel({
 
       {plan && plan.status !== 'pending' && (
         <>
+          {/* The Plan stopped flag (22 Oct 2026): the same rule as the review
+              queue's tab and the Overview's red card. */}
+          {plan.status === 'failed' && (
+            <p className="mb-2 text-sm font-semibold text-red-700">
+              This plan stopped after 3 failed payments
+              {planStoppedAt(plan) ? ` on ${dayInMorristown(planStoppedAt(plan))}` : ''}.
+            </p>
+          )}
           <p className="text-sm">
             <span className="font-semibold">{SCHEDULE_LABEL[plan.schedule] ?? plan.schedule}</span> ·{' '}
             {PLAN_STATUS_LABEL[plan.status] ?? plan.status}

@@ -3,7 +3,7 @@ import EventFilter from '@/components/EventFilter';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
+import { REVIEW_CLASS, REVIEW_FLAG, planStoppedAt } from '@/lib/plans';
 import { statusPill } from '@/lib/format';
 import { dayInMorristown, isCurrentEventRow } from '@/lib/events';
 
@@ -47,7 +47,15 @@ export default async function ReviewQueuePage({ searchParams }) {
   // a confirmed place is not undone for paperwork. It is a flag to follow
   // up (and to email the families from /admin/email-families), not a step
   // back in the review.
-  const show = ['all', 'family', 'nodeposit', 'waiver'].includes(params?.show) ? params.show : 'staff';
+  // ?show=plan (22 Oct 2026, Lawrence): every registration whose payment
+  // plan stopped after three failed payments (payment_plans.status 'failed';
+  // a plan paused by staff is not listed). Built like the waiver tab:
+  // confirmed registrations included, nobody's status changes. Plans are
+  // money, so the tab exists only for Payments read -- the same grant
+  // payment_plans_select asks (0101), read with the staff's own client.
+  const seesMoney = can(staff, 'read:payments');
+  const shows = ['all', 'family', 'nodeposit', 'waiver', ...(seesMoney ? ['plan'] : [])];
+  const show = shows.includes(params?.show) ? params.show : 'staff';
   const showAll = show === 'all';
   // One event, or every current one (the shared filter, 16 Oct 2026).
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
@@ -55,9 +63,15 @@ export default async function ReviewQueuePage({ searchParams }) {
 
   // Money only for those who may read it (0111): the balances view runs with
   // the caller's rights and shows $0 paid to everyone else, which reads as a
-  // family that has not paid.
-  const seesMoney = can(staff, 'read:payments');
-  const [{ data: regs }, { data: parts }, { data: reviews }, { data: balances }, { data: owed, error: owedError }] =
+  // family that has not paid. (seesMoney is set above, with the tabs.)
+  const [
+    { data: regs },
+    { data: parts },
+    { data: reviews },
+    { data: balances },
+    { data: owed, error: owedError },
+    { data: stoppedPlans, error: stoppedError },
+  ] =
     await Promise.all([
       supabase
         .from('registrations')
@@ -76,8 +90,16 @@ export default async function ReviewQueuePage({ searchParams }) {
       supabase
         .from('activity_waivers_outstanding')
         .select('registration_id, person_id, activity_name, kind'),
+      seesMoney
+        ? supabase
+            .from('payment_plans')
+            .select('registration_id, status, updated_at, payment_installments ( status, last_attempt_at )')
+            .eq('status', 'failed')
+        : Promise.resolve({ data: [], error: null }),
     ]);
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
+  if (stoppedError) throw new Error(`Stopped payment plans: ${stoppedError.message}`);
+  const stoppedByReg = new Map((stoppedPlans ?? []).map((p) => [p.registration_id, planStoppedAt(p)]));
 
   const reviewByReg = new Map((reviews ?? []).map((r) => [r.registration_id, r]));
   const balanceByReg = new Map((balances ?? []).map((b) => [b.registration_id, b]));
@@ -112,6 +134,8 @@ export default async function ReviewQueuePage({ searchParams }) {
         awaitingSince: r.awaiting_family_since ?? null,
         awaitingReason: r.awaiting_family_reason ?? null,
         owed: owedByReg.get(r.id) ?? [],
+        planStopped: stoppedByReg.has(r.id),
+        planStoppedAt: stoppedByReg.get(r.id) ?? null,
       };
     })
     .filter((r) => {
@@ -122,6 +146,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       // Every current event unless one is chosen, as the "All current
       // events" pill says -- a past camp's paperwork is not live work.
       if (show === 'waiver') return r.owed.length > 0 && (eventFilter || isCurrentEventRow(r.event));
+      if (show === 'plan') return r.planStopped && (eventFilter || isCurrentEventRow(r.event));
       if (show === 'nodeposit') {
         return r.pending.length > 0 && !r.awaitingSince && (r.review?.review_class ?? 'neither') === 'neither';
       }
@@ -156,6 +181,10 @@ export default async function ReviewQueuePage({ searchParams }) {
   // For the tab's count: registrations at a current event with a waiver owed.
   const waiverRegs = (regs ?? []).filter(
     (r) => owedByReg.has(r.id) && isCurrentEventRow(r.events)
+  ).length;
+  // For the Plan stopped tab's count: the same rule, current events only.
+  const stoppedRegs = (regs ?? []).filter(
+    (r) => stoppedByReg.has(r.id) && isCurrentEventRow(r.events)
   ).length;
   const nameOf = new Map(
     (parts ?? []).map((p) => [`${p.registration_id}:${p.person_id}`, p.people?.first_name ?? ''])
@@ -198,6 +227,20 @@ export default async function ReviewQueuePage({ searchParams }) {
           >
             Waiver outstanding{waiverRegs > 0 && ` (${waiverRegs})`}
           </Link>
+          {seesMoney && (
+            <Link
+              href={`/admin/review/?show=plan${eventFilter ? `&event=${eventFilter}` : ''}`}
+              className={`rounded-full px-3 py-1 font-semibold border ${
+                show === 'plan'
+                  ? 'bg-red-700 text-white border-red-700'
+                  : stoppedRegs > 0
+                    ? 'border-red-300 text-red-700 hover:border-red-700'
+                    : 'border-neutral-300 text-neutral-700 hover:border-brand'
+              }`}
+            >
+              Plan stopped{stoppedRegs > 0 && ` (${stoppedRegs})`}
+            </Link>
+          )}
           <Link
             href={`/admin/review/?show=all${eventFilter ? `&event=${eventFilter}` : ''}`}
             className={`rounded-full px-3 py-1 font-semibold border ${
@@ -247,6 +290,15 @@ export default async function ReviewQueuePage({ searchParams }) {
         </p>
       )}
 
+      {show === 'plan' && (
+        <p className="mb-4 text-sm text-neutral-600">
+          Families whose payment plan stopped after three failed payments. Confirmed families are
+          listed too; nobody&rsquo;s status changes for this. Open the registration to retry,
+          pause or cancel the plan, and to decide whether the family keeps the early-registration
+          discount.
+        </p>
+      )}
+
       {groups.length === 0 && (
         <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
           {show === 'family'
@@ -255,7 +307,9 @@ export default async function ReviewQueuePage({ searchParams }) {
               ? 'Everyone waiting on staff has a deposit in, a scholarship requested, or the deposit waived.'
               : show === 'waiver'
                 ? 'Every activity waiver is signed or uploaded.'
-                : 'Nothing waiting on staff.'}
+                : show === 'plan'
+                  ? 'No payment plan has stopped.'
+                  : 'Nothing waiting on staff.'}
         </p>
       )}
 
@@ -335,10 +389,16 @@ export default async function ReviewQueuePage({ searchParams }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        {flags.length === 0 && !r.awaitingSince && r.owed.length === 0 ? (
+                        {flags.length === 0 && !r.awaitingSince && r.owed.length === 0 && !r.planStopped ? (
                           <span className="text-neutral-400">—</span>
                         ) : (
                           <ul className="space-y-0.5">
+                            {r.planStopped && (
+                              <li className="whitespace-nowrap text-xs font-semibold text-red-700">
+                                ⚑ Payment plan stopped
+                                {r.planStoppedAt ? ` ${dayInMorristown(r.planStoppedAt)}` : ''}
+                              </li>
+                            )}
                             {flags.map((f) => (
                               <li key={f} className="whitespace-nowrap text-xs font-semibold text-amber-800">
                                 ⚑ {REVIEW_FLAG[f] ?? f}

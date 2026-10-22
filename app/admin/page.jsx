@@ -17,9 +17,10 @@ export const metadata = { title: 'Overview — Staff Admin' };
 // lint (react-hooks/static-components) cannot tell, and the habit is worth
 // not having.
 function Stat({ label, sub, value, tone, href }) {
+  const number = tone === 'amber' ? 'text-amber-700' : tone === 'red' ? 'text-red-700' : '';
   const body = (
     <>
-      <div className={`text-3xl font-bold ${tone === 'amber' ? 'text-amber-700' : ''}`}>
+      <div className={`text-3xl font-bold ${number}`}>
         {value}
       </div>
       <div className="text-sm font-semibold text-neutral-700">{label}</div>
@@ -27,7 +28,7 @@ function Stat({ label, sub, value, tone, href }) {
     </>
   );
   const cls = `block rounded-lg bg-white border shadow-xs p-5 ${
-    tone === 'amber' ? 'border-amber-300' : 'border-neutral-200'
+    tone === 'amber' ? 'border-amber-300' : tone === 'red' ? 'border-red-300 bg-red-50!' : 'border-neutral-200'
   }`;
   // A number that is also the way to the work (14 Oct 2026): "37 awaiting
   // review" opens the review queue.
@@ -49,12 +50,21 @@ export default async function AdminOverview({ searchParams }) {
   const supabase = await createClient();
 
   // As staff, row-level security returns the whole ministry, not one household.
-  const [{ data: regs }, { data: parts }] = await Promise.all([
+  // Stopped payment plans (22 Oct 2026): money, so only for Payments read --
+  // the grant payment_plans_select asks (0101) -- and the card links to the
+  // review queue's Plan stopped tab, which counts the same way.
+  // The tab is on Awaiting review, which needs Registration read as well.
+  const seesStoppedPlans = can(staff, 'read:payments') && can(staff, 'read:registration');
+  const [{ data: regs }, { data: parts }, { data: stoppedPlans, error: stoppedError }] = await Promise.all([
     supabase.from('registrations').select('id, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'),
     supabase
       .from('registration_participants')
       .select('status, registration_id, people ( first_name, last_name )'),
+    seesStoppedPlans
+      ? supabase.from('payment_plans').select('registration_id').eq('status', 'failed')
+      : Promise.resolve({ data: [], error: null }),
   ]);
+  if (stoppedError) throw new Error(`Stopped payment plans: ${stoppedError.message}`);
 
   const registrations = regs ?? [];
   const participants = parts ?? [];
@@ -137,11 +147,19 @@ export default async function AdminOverview({ searchParams }) {
 
   const reviewList = [...needsReview.entries()];
 
+  // Registrations at a current event whose plan stopped after three failed
+  // payments -- the same rule as the review queue's tab.
+  const eventOfReg = new Map(registrations.map((r) => [r.id, r.events]));
+  const plansStopped = (stoppedPlans ?? []).filter((p) => {
+    const ev = eventOfReg.get(p.registration_id);
+    return ev ? isCurrentEventRow(ev) : false;
+  }).length;
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Overview</h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className={`grid grid-cols-1 gap-4 mb-8 ${plansStopped > 0 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
         <Stat
           label="Families signed up"
           sub="each family registers once per event"
@@ -165,6 +183,15 @@ export default async function AdminOverview({ searchParams }) {
           tone={totalPending > 0 ? 'amber' : undefined}
           href="/admin/review/"
         />
+        {seesStoppedPlans && plansStopped > 0 && (
+          <Stat
+            label="Payment plans stopped"
+            sub="three failed payments · call the family"
+            value={plansStopped}
+            tone="red"
+            href="/admin/review/?show=plan"
+          />
+        )}
       </div>
 
       {/* The work queue: families with someone still pending review.
