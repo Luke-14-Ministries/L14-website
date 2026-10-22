@@ -635,7 +635,7 @@ function NewEventPanel({ events }) {
           <p className="mt-3 text-xs text-neutral-600">
             {src ? (
               <>
-                Copies from {src.name}: its description, agreements and activities
+                Copies from {src.name}: its description, agreements, activities and their waivers
                 {f.eventType === 'camp_week' ? ', and its rooms and cabins (empty, no one assigned)' : ''},
                 with dates moved to match. People, assignments and program leaders are not copied.
               </>

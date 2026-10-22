@@ -275,9 +275,13 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   agreement is at version 3 (`0088`). An agreement can also be a condition of **one activity**
   (`agreement_requirements.activity_id`, first used in `0116` for the Horseback Riding Waiver): the
   Activities page opens it when the rider is ticked onto the activity and saves the signup only with
-  the signature (`app/account/activities/actions.js`, scoped to the caller's household). A horseback
-  activity on a new event needs its requirement row by hand — `create_event()` copies event-scoped
-  rows only, and Setup has no screen for requirements.
+  the signature (`app/account/activities/actions.js`, scoped to the caller's household). Staff set an
+  activity's waiver on the Activities page editor's **Waiver** block (`0117`, 21 Oct): none, the
+  outside provider's form (`provider_name`/`provider_url`), or the ministry's own — reused from
+  another activity at its current version, or written there. New text is **version n+1 of the same
+  key, never an edit in place**; the old version is retired only once no activity points at it, and
+  only the edited activity moves. `admin_create_event()` copies activity-scoped requirements since
+  `0117` (0083 filtered on `event_id`, which an activity row never has).
 
 **Registration details.** A camper's support and medical details are asked inside the wizard
 (card 4) and are a condition of submitting (`0097`; `submitFamilyRegistration` writes

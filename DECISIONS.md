@@ -2840,3 +2840,21 @@ not enforce a parent's pre-injury release of a minor's own claim (*Childress*, 1
 2017); the statute's inherent-risk bar and insurance are the real protection for a child's claim.
 Follow-ups, not built: a Setup screen for per-activity requirements (`create_event()` copies
 event-scoped rows only); a staff "verified" mark and staff upload for outfitter confirmations.
+
+## 2026-10-21 — Activity waivers are set up on the Activities page, and a copied event keeps them
+
+Lawrence: staff should set an activity's waiver without a migration. The editor on the staff
+Activities page now asks one question with three answers — none, the outside provider's own form
+(the provider name and link moved under that answer), or our own waiver signed on the site — because
+the provider fields and the ministry's waiver were two different places on the form and read as two
+different questions. A waiver is reused from another activity at its current version (next year's
+horseback activity, one click) or written there in plain text with `{{event}}` allowed. **New text
+is version n+1 of the same key, never an edit in place** (25 Aug: a signature belongs to the words
+on the screen when it was given). Only the edited activity moves to the new version; the others on
+the key are listed in the confirm and left alone, and the old version is retired only once nothing
+points at it — the family page refuses to show a retired version, so retiring it under the other
+camp week would have let riders sign up with no waiver. `admin_create_event()` takes the newest
+*active* version of a key, so a copied event gets the revised text either way. Taking a waiver off
+an activity deletes its requirement row and nothing else. `0117` also fixes the copy itself: 0083
+filtered requirements on `event_id`, which an activity-scoped row never has, so no activity waiver
+was ever copied; the harness now proves one is.
