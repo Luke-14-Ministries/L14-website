@@ -2858,3 +2858,17 @@ camp week would have let riders sign up with no waiver. `admin_create_event()` t
 an activity deletes its requirement row and nothing else. `0117` also fixes the copy itself: 0083
 filtered requirements on `event_id`, which an activity-scoped row never has, so no activity waiver
 was ever copied; the harness now proves one is.
+
+## 2026-10-22 — A volunteer's short support form; the volunteer application checked on the server
+
+Website Feedback list rows 9, 13 and 17. **A non-camper's short support form now asks rescue
+medication and sleep away from home** beside allergies, diet and the emergency contact: the
+allergy hint sends everyone to "rescue medication below", and an EpiPen matters whoever carries
+it. Their "Tell us more" no longer asks *A hard day* ("Every camper has one") or *Will a caregiver
+be attending?* -- both are about campers; anyone with answers there keeps seeing them, as with the
+About questions (16 Oct). Nothing a non-camper's form hides is required. The camper's form is
+unchanged. **The volunteer application's required answers are refused by the server too**, in the
+browser's words, from one rule (`volunteerApplicationProblem()`, `lib/volunteer.js`); until today
+only the browser checked. Katie's tick *This is my first time serving in disability ministry*
+(row 8) is **not built**: `volunteer_applications` has no jsonb answers column, so it needs a new
+column, and that waits on a decision.

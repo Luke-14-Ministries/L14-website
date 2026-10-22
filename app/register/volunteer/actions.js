@@ -8,6 +8,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
+import { volunteerApplicationProblem } from '@/lib/volunteer';
 
 // Returns the participant's ids when this login owns it, or null. It used to
 // return a boolean; the Creed signature needs person_id and registration_id,
@@ -40,6 +41,12 @@ export async function submitVolunteerApplication(payload) {
   if (!owned) {
     return { ok: false, error: 'That registration could not be found on your account.' };
   }
+
+  // The required answers, refused here exactly as the form refuses them and
+  // in the same words (lib/volunteer.js). Until 22 Oct 2026 only the browser
+  // checked, so a stale tab or a hand-made request saved blanks.
+  const problem = volunteerApplicationProblem(payload);
+  if (problem) return { ok: false, error: problem };
 
   // The Apostles' Creed affirmation (migration 0062, item L2). Asked of
   // volunteers, never of families or campers -- which is why it is looked up

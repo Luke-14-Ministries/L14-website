@@ -126,6 +126,7 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 | Background-check status shown | `clearancePill()` in `lib/format.js` |
 | Is a date of birth real? | `dobProblem()` in `lib/format.js` (a trigger on `people` refuses before 1900 or in the future) |
 | Are the support details complete? | `supportProblems()` in `lib/support.js` (browser and `submitFamilyRegistration`) |
+| Is a volunteer application complete? | `volunteerApplicationProblem()` in `lib/volunteer.js` (browser and `submitVolunteerApplication`) |
 | How are allergies printed? | `allergenWords()` / `allergySummary()` in `lib/support.js` |
 | What refund to suggest | `refundSuggestion()` in `lib/payments.js` — a suggestion, never a lock |
 | Must a family choose a payment route? | `requiresPaymentChoice()` in `lib/plans.js` — returns `false` |

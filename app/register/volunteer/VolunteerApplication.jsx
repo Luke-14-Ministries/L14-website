@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitVolunteerApplication, withdrawVolunteerApplication } from './actions';
+import { volunteerApplicationProblem } from '@/lib/volunteer';
 
 const AREAS = [
   'Buddy (one-on-one with a camper)',
@@ -78,28 +79,15 @@ export default function VolunteerApplication({
     setPicked((p) => (p.includes(a) ? p.filter((x) => x !== a) : [...p, a]));
 
   async function save() {
-    // Checked here so the person is told before a round trip, and again on the
-    // server, which is the one that actually holds -- a server action is a
-    // public endpoint whatever the form in front of it does.
+    // Checked here so the person is told before a round trip, and again by
+    // submitVolunteerApplication, which refuses the same answers in the same
+    // words -- one rule, volunteerApplicationProblem() in lib/volunteer.js. A
+    // server action is a public endpoint whatever the form in front of it does.
     // The Creed affirmation is asked of every volunteer but no longer blocks
     // the form (board decision, relayed 29 Sep 2026): somebody who is not
     // comfortable affirming it is asked to speak with Larry, and the
     // omission is flagged to staff at review rather than refused here.
-    // Every question except skills is required (Ellen & Katie; Lawrence,
-    // 14 Oct 2026). "None" is an answer; a blank is not.
-    const missing = [];
-    if (picked.length === 0) missing.push('where you would like to serve');
-    if (firstTime === '') missing.push('whether this is your first time');
-    if (!church.trim()) missing.push('home church ("none" is fine)');
-    if (!faith.trim()) missing.push('a little about your faith');
-    if (!experience.trim()) missing.push('experience with people with disabilities ("none" is fine)');
-    if (missing.length > 0) {
-      setError(`Please answer: ${missing.join('; ')}.`);
-      return;
-    }
-    setPending(true);
-    setError('');
-    const res = await submitVolunteerApplication({
+    const answers = {
       creedAffirmed: creedOk,
       participantId,
       firstTime: firstTime === '' ? null : firstTime === 'yes',
@@ -109,7 +97,15 @@ export default function VolunteerApplication({
       skills,
       experience,
       accompanyingAdultId: adultId || null,
-    });
+    };
+    const problem = volunteerApplicationProblem(answers);
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setPending(true);
+    setError('');
+    const res = await submitVolunteerApplication(answers);
     setPending(false);
     if (!res?.ok) {
       setError(res?.error || 'Something went wrong — please try again.');
