@@ -18,6 +18,7 @@ import {
   deleteSlot,
   generateSlots,
 } from './actions';
+import { activityDayBounds, formatDayShort } from '@/lib/events';
 
 // Wall-clock, formatted as people say it. No timezone maths anywhere in this
 // file, by design (0052): these are times AT CAMP, stored as a date and two
@@ -689,7 +690,7 @@ export function ActivityCard({
 // exists, the database requires every signup to name one (0052) — so adding
 // the first time to an activity people have already joined is a real change,
 // and the panel says so.
-export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '' }) {
+export function SlotEditor({ activity, slots = [], event = null }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
@@ -703,12 +704,19 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
   const setG_ = (k) => (e) => setG((prev) => ({ ...prev, [k]: e.target.value }));
   const [genOpen, setGenOpen] = useState(false);
 
-  // Days outside the event are almost always a typo — a slot on a date camp is
-  // not running is bookable and unrunnable (25 Aug). Advisory rather than
-  // enforced: an arrival-evening or departure-morning activity is a real thing
-  // and the browser's own min/max would simply refuse it.
-  const dayBounds = eventStart && eventEnd ? { min: eventStart, max: eventEnd } : {};
-  const outsideCamp = (d) => Boolean(d && eventStart && eventEnd && (d < eventStart || d > eventEnd));
+  // A time must fall during the event (Lawrence, 22 Oct 2026; 0119). Until
+  // then this was only a warning, kept advisory so an arrival-evening sitting
+  // could be set -- and Week 1's only Salon sitting was saved four days before
+  // the week. The range starts on the volunteers' arrival day when that is
+  // earlier, which is what the arrival evening needed, and ends on the last
+  // day (a departure-morning sitting is on it). The browser's min/max, the
+  // server action and a trigger on activity_slots hold the same range.
+  const bounds = activityDayBounds(event);
+  const dayBounds = bounds ? { min: bounds.first, max: bounds.last } : {};
+  const rangeText = bounds
+    ? `Between ${formatDayShort(bounds.first)} and ${formatDayShort(bounds.last)}.`
+    : '';
+  const outsideCamp = (d) => Boolean(d && bounds && (d < bounds.first || d > bounds.last));
 
   if (activity.booking_mode !== 'signup') {
     return (
@@ -756,6 +764,11 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
               className="flex flex-wrap items-center gap-2 rounded-sm border border-neutral-200 px-3 py-1.5 text-sm"
             >
               <span className="font-medium">{slotLabel(s)}</span>
+              {outsideCamp(s.slot_date) && (
+                <span className="rounded-sm bg-amber-100 px-1.5 text-xs font-semibold text-amber-900">
+                  Not during the event — remove it and add the right day
+                </span>
+              )}
               <span className="text-xs text-neutral-500">
                 {s.capacity == null ? 'no limit' : `${s.taken ?? 0} of ${s.capacity}`}
               </span>
@@ -784,6 +797,7 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
             onChange={set('date')}
             {...dayBounds}
           />
+          {rangeText && <span className="mt-0.5 block text-neutral-500">{rangeText}</span>}
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">From</span>
@@ -818,8 +832,7 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
 
       {outsideCamp(f.date) && (
         <p className="mt-2 text-xs font-semibold text-amber-800">
-          That day is outside {eventStart} – {eventEnd}. Fine if the activity really runs then
-          — worth a second look otherwise.
+          That day is not during the event. {rangeText}
         </p>
       )}
 
@@ -855,6 +868,7 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
                 onChange={setG_('date')}
                 {...dayBounds}
               />
+              {rangeText && <span className="mt-0.5 block text-neutral-500">{rangeText}</span>}
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Starts</span>
@@ -896,7 +910,7 @@ export function SlotEditor({ activity, slots = [], eventStart = '', eventEnd = '
 
           {outsideCamp(g.date) && (
             <p className="mt-2 text-xs font-semibold text-amber-800">
-              That day is outside {eventStart} – {eventEnd}.
+              That day is not during the event. {rangeText}
             </p>
           )}
 

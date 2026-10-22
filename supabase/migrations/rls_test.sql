@@ -664,9 +664,52 @@ begin
   insert into public.staff_grants (profile_id, area, level) values (uR, 'setup', 'write');
   set local role authenticated;
   perform pg_temp.as_user(uR);
+
+  ---- an activity's times fall within its event (0119) ------------------
+  -- Week 1's only Salon sitting was saved four days before the week (22 Oct
+  -- bot run). Test Week runs current_date .. current_date + 4 and has no
+  -- volunteer arrival day; Rafting is a sign-up activity. The copy below
+  -- then proves admin_create_event() carries the slots across inside the new
+  -- event's days.
+  insert into public.activity_slots (activity_id, slot_date, start_time, end_time, capacity)
+    values (act, current_date + 2, '14:00', '15:00', 4);
+  select count(*) into m from public.activity_slots where activity_id = act;
+  perform pg_temp.expect('a slot during its event is accepted (0119)', m, 1);
+  begin
+    insert into public.activity_slots (activity_id, slot_date, start_time, end_time)
+      values (act, current_date - 4, '14:00', '15:00');
+    raise exception 'FAIL: a slot dated before its event was ALLOWED (0119)';
+  exception when check_violation then
+    if sqlerrm not like 'A time for Rafting must fall during Test Week: % to %.' then
+      raise exception 'FAIL: the before-the-event refusal said "%" (0119)', sqlerrm;
+    end if;
+  end;
+  perform pg_temp.expect_denied('a slot dated after its event is refused (0119)',
+    format('insert into public.activity_slots (activity_id, slot_date, start_time, end_time) values (%L, current_date + 5, ''14:00'', ''15:00'')', act));
+  perform pg_temp.expect_denied('a slot cannot be moved before its event (0119)',
+    format('update public.activity_slots set slot_date = current_date - 1 where activity_id = %L', act));
+  -- The volunteers' arrival day opens the range that one day early.
+  set local role postgres;
+  update public.events set volunteer_arrives_on = current_date - 1 where id = ev;
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  insert into public.activity_slots (activity_id, slot_date, start_time, end_time)
+    values (act, current_date - 1, '19:00', '20:00');
+  select count(*) into m from public.activity_slots where activity_id = act;
+  perform pg_temp.expect('a slot on the volunteers'' arrival day is accepted (0119)', m, 2);
+  perform pg_temp.expect_denied('a slot the day before the volunteers arrive is refused (0119)',
+    format('insert into public.activity_slots (activity_id, slot_date, start_time, end_time) values (%L, current_date - 2, ''14:00'', ''15:00'')', act));
+
   select public.admin_create_event('Test Week (copy)', 'camp_week', current_date + 365,
                                    current_date + 369, 49500, 5000, null, null, ev)
     into evCopy;
+  select count(*) into m
+    from public.activity_slots s
+    join public.activities a on a.id = s.activity_id
+    join public.events e on e.id = a.event_id
+   where e.id = evCopy
+     and s.slot_date between e.volunteer_arrives_on and e.ends_on;
+  perform pg_temp.expect('a copied event''s slots land inside the copy''s days (0119)', m, 2);
   select count(*) into m
     from public.agreement_requirements r
     join public.activities a on a.id = r.activity_id
@@ -681,6 +724,8 @@ begin
   perform pg_temp.expect('the source activity keeps its own requirement row', m, 1);
   set local role postgres;
   delete from public.events where id = evCopy;
+  delete from public.activity_slots where activity_id = act;
+  update public.events set volunteer_arrives_on = null where id = ev;
   delete from public.staff_grants where profile_id = uR and area = 'setup';
   set local role authenticated;
 

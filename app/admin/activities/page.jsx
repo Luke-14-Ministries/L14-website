@@ -31,7 +31,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
 
   const { data: events } = await supabase
     .from('events')
-    .select('id, name, starts_on, ends_on, archived_at')
+    .select('id, name, starts_on, ends_on, volunteer_arrives_on, archived_at')
     .order('starts_on');
 
   // Same archiving convention as the rest of the staff portal: current and
@@ -443,8 +443,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                 {canDefine && <SlotEditor
                   activity={a}
                   slots={slotsByActivity.get(a.id) ?? []}
-                  eventStart={visibleEvents.find((e) => e.id === selected)?.starts_on ?? ''}
-                  eventEnd={visibleEvents.find((e) => e.id === selected)?.ends_on ?? ''}
+                  event={(events ?? []).find((e) => e.id === selected) ?? null}
                 />}
 
                 {canDefine && (

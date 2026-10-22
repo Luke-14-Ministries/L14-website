@@ -2872,3 +2872,15 @@ browser's words, from one rule (`volunteerApplicationProblem()`, `lib/volunteer.
 only the browser checked. Katie's tick *This is my first time serving in disability ministry*
 (row 8) is **not built**: `volunteer_applications` has no jsonb answers column, so it needs a new
 column, and that waits on a decision.
+
+## 2026-10-22 — An activity's times must fall within its event
+
+Lawrence, after the 22 Oct bot run found Week 1's only Salon sitting dated 15 July, four days
+before the week. The Activities page had only warned since 25 August, so that an arrival-evening
+sitting could be set. **Now it is a rule**, from the event's first day (or the volunteers' arrival
+day, `events.volunteer_arrives_on`, when earlier) to its last day, held three times in one
+sentence: the date inputs' min/max with the range written under them, the server action
+(`createSlot` / `generateSlots`), and a trigger on `activity_slots` (`0119`). Asked on insert and
+when a slot's day or activity changes, **not when an event's dates move**. Existing rows are not
+rewritten: staff fix the Salon sitting on the Activities page, which marks any time outside the
+event's days.

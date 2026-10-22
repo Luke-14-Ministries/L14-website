@@ -14,6 +14,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
+import { activityDayBounds, slotOutsideEventMessage } from '@/lib/events';
 
 const MODES = ['interest', 'signup'];
 
@@ -447,6 +448,33 @@ function revalidateAll() {
 // is discovered at the dock.
 
 const HHMM = /^([01]?\d|2[0-3]):[0-5]\d$/;
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+// A time must fall during its event: the first day (or the volunteers'
+// arrival day, when earlier) to the last (Lawrence, 22 Oct 2026). Week 1's
+// only Salon sitting was saved four days before the week. Asked here, before
+// the database, so the coordinator gets the sentence rather than a refusal;
+// the trigger in 0119 says the same words if anything else writes a slot.
+// Returns an error string, or '' when the day is fine.
+async function slotDayProblem(supabase, activityId, date) {
+  if (!ISO_DAY.test(date)) return 'Which day? Pick it from the calendar.';
+  const { data, error } = await supabase
+    .from('activities')
+    .select('name, events ( name, starts_on, ends_on, volunteer_arrives_on )')
+    .eq('id', activityId)
+    .maybeSingle();
+  if (error) {
+    console.error('slotDayProblem:', error.message);
+    return `The activity's event could not be read, so no time was added: ${error.message}`;
+  }
+  if (!data) return 'That activity no longer exists.';
+  const bounds = activityDayBounds(data.events);
+  if (!bounds) return 'The event has no dates yet, so a time cannot be placed in it.';
+  if (date < bounds.first || date > bounds.last) {
+    return slotOutsideEventMessage(data.name, data.events?.name, bounds);
+  }
+  return '';
+}
 
 export async function createSlot(activityId, input) {
   const { error: authError } = await requireCoordinator();
@@ -472,6 +500,9 @@ export async function createSlot(activityId, input) {
   }
 
   const supabase = await createClient();
+  const dayProblem = await slotDayProblem(supabase, activityId, date);
+  if (dayProblem) return { ok: false, error: dayProblem };
+
   const { error } = await supabase.from('activity_slots').insert({
     activity_id: activityId,
     slot_date: date,
@@ -482,7 +513,7 @@ export async function createSlot(activityId, input) {
   });
   if (error) {
     console.error('createSlot:', error.message);
-    return { ok: false, error: 'That time could not be added.' };
+    return { ok: false, error: `That time could not be added: ${error.message}` };
   }
 
   revalidateAll();
@@ -597,10 +628,13 @@ export async function generateSlots(activityId, input) {
   }
 
   const supabase = await createClient();
+  const dayProblem = await slotDayProblem(supabase, activityId, date);
+  if (dayProblem) return { ok: false, error: dayProblem };
+
   const { error } = await supabase.from('activity_slots').insert(rows);
   if (error) {
     console.error('generateSlots:', error.message);
-    return { ok: false, error: 'Those times could not be added.' };
+    return { ok: false, error: `Those times could not be added: ${error.message}` };
   }
 
   revalidateAll();
