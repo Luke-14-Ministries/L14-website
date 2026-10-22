@@ -7,7 +7,7 @@
 // about zip line: "where do we activate things like this? Have to go through
 // you, right now? doesn't seem sensible." It isn't. This is the answer.
 
-import { useState, useTransition } from 'react';
+import { useId, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   createActivity,
@@ -51,7 +51,269 @@ export const slotLabel = (s) =>
 const input = 'w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm';
 const label = 'block text-xs font-semibold text-neutral-700 mb-0.5';
 
-function Fields({ f, set }) {
+// ---------------------------------------------------------------------------
+// The waiver (21 Oct 2026). One decision with three answers -- nothing, the
+// outside provider's own form, or the ministry's own waiver signed on the
+// site -- because the two kinds were two different places on the form and
+// read as two different questions. The provider's name and link live under
+// the second answer; the third attaches, writes or revises an agreement
+// (0116's horseback waiver was the first, by migration; this is the screen
+// 0116 said was missing). What each answer does on save is in actions.js
+// under "The ministry's own waiver on an activity".
+
+const WAIVER_EXCERPT = 120;
+const excerpt = (body) => {
+  const t = String(body ?? '').replace(/\s+/g, ' ').trim();
+  return t.length > WAIVER_EXCERPT ? `${t.slice(0, WAIVER_EXCERPT).trimEnd()}…` : t;
+};
+
+// The waiver fields as an activity stands now: attached waiver, provider, or
+// neither. `attached` is the page's reading of this activity's requirement
+// row (null when it has none); `choices` the waivers already in use.
+function waiverState(activity, attached) {
+  return {
+    waiverChoice: attached ? 'ours' : activity?.provider_name ? 'provider' : 'none',
+    waiverMode: 'keep',
+    waiverAgreementId: '',
+    waiverTitle: '',
+    waiverBody: '',
+  };
+}
+
+const waiverPayload = (f) => ({
+  choice: f.waiverChoice,
+  mode: f.waiverMode,
+  agreementId: f.waiverAgreementId || null,
+  title: f.waiverTitle,
+  body: f.waiverBody,
+});
+
+const sharerList = (attached) =>
+  (attached?.sharers ?? []).map((s) => `${s.name} (${s.eventName})`).join(', ');
+
+// What to ask before saving, or null when the save needs no confirming. Only
+// a change to an ATTACHED waiver is asked about: taking it off, swapping it,
+// or giving it new text (a new version). Attaching one to an activity with
+// none, or writing a brand-new one, just saves.
+function waiverConfirm(f, attached, activityName) {
+  if (!attached) return null;
+  const a = attached.agreement;
+  const sharers = sharerList(attached);
+  if (f.waiverChoice !== 'ours') {
+    return `Take the ${a.title} off "${activityName}"?\n\nThe waiver itself stays, and every signature already given stays on file. Families ticking ${activityName} will no longer be asked to sign it.`;
+  }
+  if (
+    f.waiverMode === 'revise' &&
+    (f.waiverTitle.trim() !== a.title || f.waiverBody.trim() !== String(a.body ?? '').trim())
+  ) {
+    return `Save a new version of the ${a.title}?\n\nThis makes version ${attached.nextVersion} for "${activityName}". Signatures already given stay with version ${a.version}; anyone ticking ${activityName} from now on signs the new text.\n\n${
+      sharers
+        ? `${sharers} also use the ${a.title} and stay on version ${a.version} until you change them there.`
+        : 'No other activity uses it.'
+    }`;
+  }
+  if (f.waiverMode === 'reuse' && f.waiverAgreementId && f.waiverAgreementId !== a.id) {
+    return `Swap the ${a.title} for the one you chose on "${activityName}"?\n\nSignatures of the ${a.title} stay on file; families ticking ${activityName} from now on sign the one you chose.`;
+  }
+  return null;
+}
+
+const radio = 'mt-0.5 h-4 w-4 shrink-0 accent-brand';
+
+function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, hadProvider }) {
+  const a = attached?.agreement ?? null;
+  const others = choices.filter((c) => !a || c.id !== a.id);
+  const firstMode = () => (attached ? 'keep' : choices.length ? 'reuse' : 'new');
+  const choose = (choice) => () =>
+    setMany({ waiverChoice: choice, waiverMode: choice === 'ours' ? firstMode() : 'keep' });
+  const startRevise = () =>
+    setMany({ waiverMode: 'revise', waiverTitle: a.title, waiverBody: a.body ?? '' });
+  const startReuse = () => setMany({ waiverMode: 'reuse', waiverAgreementId: '' });
+  const startNew = () => setMany({ waiverMode: 'new', waiverTitle: '', waiverBody: '' });
+  const back = () => setMany({ waiverMode: firstMode(), waiverAgreementId: '' });
+  const name = activityName || 'this activity';
+  // Radios group by name across the whole page, and several cards can be
+  // open at once: each block gets a group of its own.
+  const group = useId();
+
+  return (
+    <fieldset className="mt-4 rounded-lg border border-neutral-200 bg-white p-3">
+      <legend className="px-1 text-sm font-bold">Waiver</legend>
+      <p className="text-xs text-neutral-500">
+        How a family agrees to the risks of this activity, if it carries any.
+      </p>
+
+      <div className="mt-2 space-y-2 text-sm">
+        <label className="flex gap-2">
+          <input type="radio" name={group} className={radio} checked={f.waiverChoice === 'none'} onChange={choose('none')} />
+          <span>
+            <span className="font-semibold">None</span>
+            <span className="text-neutral-600"> — no waiver for this activity.</span>
+          </span>
+        </label>
+
+        <label className="flex gap-2">
+          <input type="radio" name={group} className={radio} checked={f.waiverChoice === 'provider'} onChange={choose('provider')} />
+          <span>
+            <span className="font-semibold">The outside provider&rsquo;s own form</span>
+            <span className="text-neutral-600">
+              {' '}— the family completes it with the provider and uploads their confirmation.
+            </span>
+          </span>
+        </label>
+        {f.waiverChoice === 'provider' && (
+          <div className="ml-6">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-sm">
+                <span className={label}>Provider</span>
+                <input
+                  className={input}
+                  value={f.providerName}
+                  onChange={set('providerName')}
+                  placeholder="e.g. River outfitter"
+                />
+              </label>
+              <label className="text-sm">
+                <span className={label}>Their link (optional)</span>
+                <input className={input} value={f.providerUrl} onChange={set('providerUrl')} />
+              </label>
+            </div>
+            {/* Naming a provider is not cosmetic: it is what makes the family's
+                page say the outfitter has a form of their own, and what puts
+                the told / not told pills on this page. */}
+            {f.providerName.trim() ? (
+              <p className="mt-1 text-xs text-amber-800">
+                Families will be told {f.providerName.trim()} has their own form to complete, and
+                asked to confirm they understand.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-neutral-500">
+                Name the provider — a blank name means camp runs it, and families are told nothing.
+              </p>
+            )}
+          </div>
+        )}
+
+        <label className="flex gap-2">
+          <input type="radio" name={group} className={radio} checked={f.waiverChoice === 'ours'} onChange={choose('ours')} />
+          <span>
+            <span className="font-semibold">Our own waiver, signed on the site</span>
+            <span className="text-neutral-600">
+              {' '}— the family reads and signs it when they tick the activity.
+            </span>
+          </span>
+        </label>
+
+        {f.waiverChoice === 'ours' && f.waiverMode === 'keep' && a && (
+          <div className="ml-6 rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2">
+            <p>
+              <span className="font-semibold">{a.title}</span>
+              <span className="text-neutral-600">
+                {' '}· version {a.version} · signed by {attached.signedCount} of {attached.riderCount}{' '}
+                {attached.riderCount === 1 ? 'person' : 'people'} on this activity
+              </span>
+            </p>
+            {!a.active && (
+              <p className="mt-1 text-xs font-semibold text-amber-800">
+                This version has been retired, so families cannot sign it. Choose the current
+                version with &ldquo;Use a different waiver&rdquo;.
+              </p>
+            )}
+            {excerpt(a.body) && (
+              <p className="mt-1 text-xs italic text-neutral-600">&ldquo;{excerpt(a.body)}&rdquo;</p>
+            )}
+            {attached.sharers.length > 0 && (
+              <p className="mt-1 text-xs text-neutral-500">Also on {sharerList(attached)}.</p>
+            )}
+            <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold">
+              <button type="button" onClick={startRevise} className="text-brand underline">
+                Edit the text
+              </button>
+              <button type="button" onClick={startReuse} className="text-brand underline">
+                Use a different waiver
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-neutral-500">
+              To take it off {name}, choose None or the provider&rsquo;s form above.
+            </p>
+          </div>
+        )}
+
+        {f.waiverChoice === 'ours' && f.waiverMode === 'reuse' && (
+          <div className="ml-6">
+            <label className="text-sm">
+              <span className={label}>Which waiver</span>
+              <select
+                className={input}
+                value={f.waiverAgreementId}
+                onChange={(e) =>
+                  e.target.value === '__new__' ? startNew() : setMany({ waiverAgreementId: e.target.value })
+                }
+              >
+                <option value="">Choose a waiver…</option>
+                {others.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title} — {c.key}, version {c.version}
+                  </option>
+                ))}
+                <option value="__new__">Write a new waiver…</option>
+              </select>
+            </label>
+            <p className="mt-1 text-xs text-neutral-500">
+              Waivers already in use on an activity, at their current version. Choosing one
+              attaches it to {name}; nothing changes for the other activities using it.
+            </p>
+            {attached && (
+              <button type="button" onClick={back} className="mt-1 text-xs text-neutral-600 underline">
+                Keep the {a.title}
+              </button>
+            )}
+          </div>
+        )}
+
+        {f.waiverChoice === 'ours' && (f.waiverMode === 'new' || f.waiverMode === 'revise') && (
+          <div className="ml-6">
+            <label className="block text-sm">
+              <span className={label}>Title</span>
+              <input
+                className={input}
+                value={f.waiverTitle}
+                onChange={set('waiverTitle')}
+                placeholder="e.g. Zip Line Waiver"
+              />
+            </label>
+            <label className="mt-2 block text-sm">
+              <span className={label}>Text</span>
+              <textarea rows={8} className={input} value={f.waiverBody} onChange={set('waiverBody')} />
+            </label>
+            <p className="mt-1 text-xs text-neutral-500">
+              Plain text, as the family will read it. Write <code>{'{{event}}'}</code> where the
+              event&rsquo;s name should appear — the page fills it in.
+            </p>
+            {f.waiverMode === 'revise' && a && (
+              <p className="mt-1 text-xs text-neutral-600">
+                Saving makes version {attached.nextVersion} of the {a.title}. Signatures already
+                given stay with version {a.version}; anyone ticking {name} from now on signs the
+                new text.
+                {attached.sharers.length > 0 &&
+                  ` ${sharerList(attached)} also use it and stay on version ${a.version} until you change them there.`}
+              </p>
+            )}
+            <button type="button" onClick={back} className="mt-1 text-xs text-neutral-600 underline">
+              {attached ? `Keep the ${a.title} as it is` : 'Back to the list'}
+            </button>
+          </div>
+        )}
+
+        {hadProvider && f.waiverChoice !== 'provider' && (
+          <p className="text-xs text-amber-800">Saving clears the provider&rsquo;s name and link.</p>
+        )}
+      </div>
+    </fieldset>
+  );
+}
+
+function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadProvider }) {
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -120,38 +382,25 @@ function Fields({ f, set }) {
         </label>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <label className="text-sm">
-          <span className={label}>
-            Outside provider{' '}
-            <span className="font-normal text-neutral-500">— blank if camp runs it</span>
-          </span>
-          <input
-            className={input}
-            value={f.providerName}
-            onChange={set('providerName')}
-            placeholder="e.g. River outfitter"
-          />
-        </label>
-        <label className="text-sm">
-          <span className={label}>Their link (optional)</span>
-          <input className={input} value={f.providerUrl} onChange={set('providerUrl')} />
-        </label>
-      </div>
-      {/* Naming a provider is not cosmetic: it is what makes the family's page
-          say the outfitter has a form of their own, and what puts the
-          told / not told pills on this page. */}
-      {f.providerName.trim() && (
-        <p className="mt-1 text-xs text-amber-800">
-          Families will be told {f.providerName.trim()} has their own form to complete, and
-          asked to confirm they understand.
-        </p>
-      )}
+      <WaiverBlock
+        f={f}
+        set={set}
+        setMany={setMany}
+        attached={attached}
+        choices={waiverChoices}
+        activityName={activityName}
+        hadProvider={hadProvider}
+      />
     </>
   );
 }
 
-export function ActivityEditor({ activity }) {
+// `waiver` is the page's reading of the activity's own waiver, or null:
+// { agreement: { id, key, version, title, body, active }, signedCount,
+//   riderCount, sharers: [{ name, eventName }], nextVersion }.
+// `waiverChoices` is every waiver already in use on some activity, at its
+// current version: [{ id, key, version, title }].
+export function ActivityEditor({ activity, waiver = null, waiverChoices = [] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -165,8 +414,10 @@ export function ActivityEditor({ activity }) {
     providerUrl: activity.provider_url ?? '',
     sortOrder: String(activity.sort_order ?? 0),
     active: activity.active !== false,
+    ...waiverState(activity, waiver),
   });
   const set = (k) => (e) => setF((prev) => ({ ...prev, [k]: e.target.value }));
+  const setMany = (patch) => setF((prev) => ({ ...prev, ...patch }));
 
   function run(fn) {
     setError('');
@@ -201,13 +452,27 @@ export function ActivityEditor({ activity }) {
 
       {open && (
         <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-          <Fields f={f} set={set} />
+          <Fields
+            f={f}
+            set={set}
+            setMany={setMany}
+            attached={waiver}
+            waiverChoices={waiverChoices}
+            activityName={activity.name}
+            hadProvider={Boolean(activity.provider_name)}
+          />
 
           {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
-              onClick={() => run(() => updateActivity(activity.id, { ...f, active: f.active }))}
+              onClick={() => {
+                const ask = waiverConfirm(f, waiver, activity.name);
+                if (ask && !confirm(ask)) return;
+                run(() =>
+                  updateActivity(activity.id, { ...f, active: f.active, waiver: waiverPayload(f) })
+                );
+              }}
               disabled={pending}
               className="btn-primary py-1.5! text-sm disabled:opacity-50"
             >
@@ -242,7 +507,7 @@ export function ActivityEditor({ activity }) {
   );
 }
 
-export function AddActivity({ eventId, eventName }) {
+export function AddActivity({ eventId, eventName, waiverChoices = [] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -256,9 +521,11 @@ export function AddActivity({ eventId, eventName }) {
     providerUrl: '',
     sortOrder: '50',
     active: true,
+    ...waiverState(null, null),
   };
   const [f, setF] = useState(blank);
   const set = (k) => (e) => setF((prev) => ({ ...prev, [k]: e.target.value }));
+  const setMany = (patch) => setF((prev) => ({ ...prev, ...patch }));
 
   if (!open) {
     return (
@@ -271,7 +538,15 @@ export function AddActivity({ eventId, eventName }) {
   return (
     <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-5">
       <h3 className="font-bold mb-3">Add an activity</h3>
-      <Fields f={f} set={set} />
+      <Fields
+        f={f}
+        set={set}
+        setMany={setMany}
+        attached={null}
+        waiverChoices={waiverChoices}
+        activityName={f.name.trim()}
+        hadProvider={false}
+      />
       {/* Said here because the obvious next question after "Sign-up" is "where
           do I put the times?" and the answer is "not yet" (25 Aug). */}
       {f.mode === 'signup' && (
@@ -288,7 +563,7 @@ export function AddActivity({ eventId, eventName }) {
           onClick={() => {
             setError('');
             start(async () => {
-              const res = await createActivity(eventId, f);
+              const res = await createActivity(eventId, { ...f, waiver: waiverPayload(f) });
               if (!res.ok) setError(res.error);
               else {
                 setF(blank);

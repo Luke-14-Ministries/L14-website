@@ -103,7 +103,50 @@ export default async function AdminActivitiesPage({ searchParams }) {
     if (!a?.active || a.delivery !== 'internal_document') continue;
     if (!agreementByActivity.has(r.activity_id)) agreementByActivity.set(r.activity_id, a);
   }
-  const agreementIds = [...new Set([...agreementByActivity.values()].map((a) => a.id))];
+  // For the editor (Setup write): every activity-scoped requirement on any
+  // event, with its waiver and its activity. From one read come the list of
+  // waivers already in use (the dropdown: one per key, at its current
+  // version), and for each activity here its attached waiver -- whatever
+  // version, retired or not, so the editor can say so -- and the other
+  // activities on the same key, which a new version does not move.
+  const { data: allActRows, error: allActError } = canDefine
+    ? await supabase
+        .from('agreement_requirements')
+        .select(
+          `id, activity_id, agreement_id,
+           agreements ( id, key, version, title, body, active, delivery ),
+           activities ( id, name, events ( name ) )`
+        )
+        .not('activity_id', 'is', null)
+    : { data: [], error: null };
+  if (allActError) throw new Error(`Activity waivers: ${allActError.message}`);
+  const internalRows = (allActRows ?? []).filter((r) => r.agreements?.delivery === 'internal_document');
+  const rowsByKey = new Map();
+  for (const r of internalRows) {
+    if (!rowsByKey.has(r.agreements.key)) rowsByKey.set(r.agreements.key, []);
+    rowsByKey.get(r.agreements.key).push(r);
+  }
+  const waiverChoices = [...rowsByKey.values()]
+    .map((rows) => {
+      const live = rows.filter((r) => r.agreements.active);
+      const best = (live.length ? live : rows).reduce((x, y) =>
+        y.agreements.version > x.agreements.version ? y : x
+      );
+      const { id, key, version, title } = best.agreements;
+      return { id, key, version, title };
+    })
+    .sort((x, y) => x.title.localeCompare(y.title));
+  const attachedByActivity = new Map();
+  for (const r of internalRows) {
+    if (!attachedByActivity.has(r.activity_id)) attachedByActivity.set(r.activity_id, r);
+  }
+
+  const agreementIds = [
+    ...new Set([
+      ...[...agreementByActivity.values()].map((a) => a.id),
+      ...activityIds.map((id) => attachedByActivity.get(id)?.agreement_id).filter(Boolean),
+    ]),
+  ];
   const { data: sigRows, error: sigError } = agreementIds.length
     ? await supabase
         .from('agreement_signatures')
@@ -160,6 +203,8 @@ export default async function AdminActivitiesPage({ searchParams }) {
     if (!byActivity.has(s.activity_id)) byActivity.set(s.activity_id, []);
     byActivity.get(s.activity_id).push({
       participantId: s.registration_participants?.id,
+      personId: s.registration_participants?.person_id,
+      registrationId: s.registration_participants?.registration_id,
       slotId: s.slot_id,
       name: `${s.registration_participants?.people?.first_name ?? ''} ${
         s.registration_participants?.people?.last_name ?? ''
@@ -220,6 +265,34 @@ export default async function AdminActivitiesPage({ searchParams }) {
             const signedUp = people.filter((p) => p.status === 'signed_up').length;
             const interested = people.filter((p) => p.status === 'interested').length;
             const over = a.capacity != null && signedUp > a.capacity;
+            // The editor's reading of this activity's own waiver: who signed
+            // THIS version on this activity (staff read every signature row),
+            // and who else is on the key.
+            const attachedRow = canDefine ? attachedByActivity.get(a.id) : null;
+            const waiver = attachedRow
+              ? (() => {
+                  const agr = attachedRow.agreements;
+                  const keyRows = rowsByKey.get(agr.key) ?? [];
+                  return {
+                    agreement: {
+                      id: agr.id, key: agr.key, version: agr.version, title: agr.title,
+                      body: agr.body, active: agr.active,
+                    },
+                    signedCount: people.filter((p) =>
+                      signedAtByKey.has(`${agr.id}:${p.personId}:${p.registrationId}`)
+                    ).length,
+                    riderCount: people.length,
+                    sharers: keyRows
+                      .filter((r) => r.activity_id !== a.id && r.activities)
+                      .map((r) => ({
+                        name: r.activities.name,
+                        eventName: r.activities.events?.name ?? '',
+                      }))
+                      .sort((x, y) => `${x.eventName} ${x.name}`.localeCompare(`${y.eventName} ${y.name}`)),
+                    nextVersion: Math.max(...keyRows.map((r) => r.agreements.version), agr.version) + 1,
+                  };
+                })()
+              : null;
             return (
               <ActivityCard
                 key={a.id}
@@ -371,7 +444,9 @@ export default async function AdminActivitiesPage({ searchParams }) {
                   eventEnd={visibleEvents.find((e) => e.id === selected)?.ends_on ?? ''}
                 />}
 
-                {canDefine && <ActivityEditor activity={a} />}
+                {canDefine && (
+                  <ActivityEditor activity={a} waiver={waiver} waiverChoices={waiverChoices} />
+                )}
               </ActivityCard>
             );
           })}
@@ -383,6 +458,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
           <AddActivity
             eventId={selected}
             eventName={visibleEvents.find((e) => e.id === selected)?.name}
+            waiverChoices={waiverChoices}
           />
         </div>
       )}

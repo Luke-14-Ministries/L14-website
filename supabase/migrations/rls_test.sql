@@ -185,6 +185,11 @@ begin
             'external_link', 'https://example.test/waiver')
     returning id into agr;
 
+  -- The waiver is a condition of the ACTIVITY, not the event (0001: exactly
+  -- one of event_id / activity_id). 0117 copies such rows with the event.
+  insert into public.agreement_requirements (agreement_id, event_id, activity_id, applies_to, is_required)
+    values (agr, null, act, 'participant', true);
+
   insert into public.coupons (code, percent_off, max_redemptions)
     values ('SECRET25', 25, 1);
 
@@ -217,6 +222,7 @@ declare
   uA uuid; uB uuid; uR uuid; uC uuid; uF uuid; uD uuid;
   hA uuid; hB uuid; pA uuid; pB uuid; ev uuid; regA uuid;
   rpA uuid; rpB uuid; agr uuid; pNew uuid; optGen uuid;
+  act uuid; evCopy uuid;
   n bigint; m bigint;
   oldStatus text;
 begin
@@ -228,7 +234,7 @@ begin
   select v into pB from t where k='pB';   select v into ev from t where k='ev';
   select v into regA from t where k='regA';
   select v into rpA from t where k='rpA'; select v into rpB from t where k='rpB';
-  select v into agr from t where k='agr';
+  select v into agr from t where k='agr';   select v into act from t where k='act';
 
   set local role authenticated;
 
@@ -646,6 +652,36 @@ begin
   perform pg_temp.expect('coordinator given Payments READ sees every participant_money row', m, n);
   set local role postgres;
   delete from public.staff_grants where profile_id = uC and area = 'payments';
+  set local role authenticated;
+
+  ---- copying an event carries its activity waivers (0117) --------------
+  -- 0083 said it copied them and never did: an activity-scoped requirement
+  -- has no event_id, and the copy was filtered on event_id. The harness's
+  -- Rafting carries one; a copy made with Setup write must give the new
+  -- Rafting its own row, pointed at the same (current) agreement, scoped to
+  -- the activity and not the event -- and leave the source's row alone.
+  set local role postgres;
+  insert into public.staff_grants (profile_id, area, level) values (uR, 'setup', 'write');
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  select public.admin_create_event('Test Week (copy)', 'camp_week', current_date + 365,
+                                   current_date + 369, 49500, 5000, null, null, ev)
+    into evCopy;
+  select count(*) into m
+    from public.agreement_requirements r
+    join public.activities a on a.id = r.activity_id
+   where a.event_id = evCopy and a.name = 'Rafting'
+     and r.agreement_id = agr and r.event_id is null
+     and r.applies_to = 'participant' and r.is_required;
+  perform pg_temp.expect('a copied event''s activity carries the waiver requirement (0117)', m, 1);
+  select count(*) into m from public.agreement_requirements r
+    join public.activities a on a.id = r.activity_id where a.event_id = evCopy;
+  perform pg_temp.expect('the copy carries exactly one activity requirement', m, 1);
+  select count(*) into m from public.agreement_requirements where activity_id = act;
+  perform pg_temp.expect('the source activity keeps its own requirement row', m, 1);
+  set local role postgres;
+  delete from public.events where id = evCopy;
+  delete from public.staff_grants where profile_id = uR and area = 'setup';
   set local role authenticated;
 
   ---- anonymous visitors ----------------------------------------------
