@@ -46,7 +46,7 @@ export async function chargeDuePlans(
       payment_method_kind: string | null;
     };
     try {
-      const [{ data: bal }, { count: left }, { data: reg }] = await Promise.all([
+      const [{ data: bal, error: balErr }, { count: left, error: leftErr }, { data: reg, error: regErr }] = await Promise.all([
         admin
           .from('registration_balances')
           .select('balance_cents')
@@ -63,6 +63,11 @@ export async function chargeDuePlans(
           .eq('id', plan.registration_id)
           .maybeSingle(),
       ]);
+      // A failed read is an error for this plan, never "nothing owed" (which
+      // would close the plan) -- caught below and reported in the results.
+      if (balErr) throw new Error(`balance: ${balErr.message}`);
+      if (leftErr) throw new Error(`installments-left: ${leftErr.message}`);
+      if (regErr) throw new Error(`registration: ${regErr.message}`);
       const balance = Math.max(0, bal?.balance_cents ?? 0);
       const { settled, inFlight } = await settledBalance(admin, plan.registration_id);
       const eventName = (reg?.events as { name?: string } | null)?.name ?? 'Camp registration';
