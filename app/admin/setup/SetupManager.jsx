@@ -67,6 +67,8 @@ function EventRow({ e }) {
   const [family, setFamily] = useState(e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '');
   const [familyFrom, setFamilyFrom] = useState(String(e.familyFromPerson ?? 3));
   const [multiWeek, setMultiWeek] = useState(String(e.multiWeekPercent ?? 0));
+  // 0123: returned bank payment fee, dollars; '0.00' = off.
+  const [returnedFee, setReturnedFee] = useState(((e.returnedFeeCents ?? 0) / 100).toFixed(2));
   const [detailBusy, setDetailBusy] = useState(false);
   const [detailNotice, setDetailNotice] = useState(null);
 
@@ -85,6 +87,7 @@ function EventRow({ e }) {
         familyDollars: family,
         familyFromPerson: familyFrom,
         multiWeekPercent: multiWeek,
+        returnedFeeDollars: returnedFee,
       });
       setDetailBusy(false);
       setDetailNotice(
@@ -358,6 +361,28 @@ function EventRow({ e }) {
             </p>
           </div>
 
+          {/* 0123 (Lawrence, 22 Oct 2026): when a bank payment is returned,
+              Stripe charges the ministry; this passes a fee on to the family.
+              $0 = off. Families are told before they choose a bank payment,
+              and are charged only the fee they were shown when they agreed. */}
+          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            <label className="text-sm">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Returned bank payment fee ($)</span>
+              <input
+                inputMode="decimal"
+                value={returnedFee}
+                onChange={(ev) => setReturnedFee(ev.target.value)}
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+              />
+            </label>
+            <p className="text-xs text-neutral-600 sm:col-span-3 self-end">
+              Added to a family&rsquo;s balance when their bank returns a payment (never for a card
+              decline). $0 is off. Ways to pay and the payment-plan agreement tell families this
+              amount before they choose a bank payment; a change here applies only to families who
+              agree after it — anyone who already agreed keeps the amount they were shown.
+            </p>
+          </div>
+
           {/* Said plainly, because the alternative behaviour is the one people
               assume: changing a price here does NOT re-price anyone already
               registered. Their fee was copied onto their row when they signed
@@ -402,6 +427,7 @@ function EventRow({ e }) {
                 setFamily(e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '');
                 setFamilyFrom(String(e.familyFromPerson ?? 3));
                 setMultiWeek(String(e.multiWeekPercent ?? 0));
+                setReturnedFee(((e.returnedFeeCents ?? 0) / 100).toFixed(2));
                 setEarly(e.earlyCents ? (e.earlyCents / 100).toFixed(2) : '');
                 setDetailNotice(null);
               }}

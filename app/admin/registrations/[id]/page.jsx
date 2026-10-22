@@ -4,6 +4,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import RegistrationManager from './RegistrationManager';
 import StaffPlanPanel from './StaffPlanPanel';
+import FeesPanel from './FeesPanel';
 import { requiresPaymentChoice } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
@@ -221,7 +222,7 @@ export default async function RegistrationDetailPage({ params }) {
   // what is still owed. Full payment history stays on Event Payments.
   const { data: balanceRow } = await supabase
     .from('registration_balances')
-    .select('fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents, refund_pending_cents, early_discount_cents, family_discount_cents')
+    .select('fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents, refund_pending_cents, early_discount_cents, family_discount_cents, fees_cents')
     .eq('registration_id', id)
     .maybeSingle();
 
@@ -339,6 +340,33 @@ export default async function RegistrationDetailPage({ params }) {
       ),
   };
 
+  // Fees (0123): returned bank payments and staff-added fees. Payments read
+  // sees them (RLS); the page shows them only to Payments read as well.
+  let fees = [];
+  if (can(staff, 'read:payments')) {
+    const { data: feeRows, error: feeError } = await supabase
+      .from('registration_fees')
+      .select('id, kind, amount_cents, reason, created_at, created_by, waived_at, waived_by, waived_reason')
+      .eq('registration_id', id)
+      .order('created_at');
+    if (feeError) throw new Error(`Fees: ${feeError.message}`);
+    const feePeople = [...new Set((feeRows ?? []).flatMap((f) => [f.created_by, f.waived_by]).filter(Boolean))];
+    let feeNames = new Map();
+    if (feePeople.length) {
+      const { data: who, error: whoError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', feePeople);
+      if (whoError) throw new Error(`Fee names: ${whoError.message}`);
+      feeNames = new Map((who ?? []).map((p) => [p.id, `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim()]));
+    }
+    fees = (feeRows ?? []).map((f) => ({
+      ...f,
+      createdByName: feeNames.get(f.created_by) || null,
+      waivedByName: feeNames.get(f.waived_by) || null,
+    }));
+  }
+
   // How it is being paid (0080). Errors are shown, never swallowed.
   const [
     { data: routeRow, error: routeError },
@@ -434,6 +462,11 @@ export default async function RegistrationDetailPage({ params }) {
       familyMessages={familyMessages}
       signatures={signatures}
       balance={balanceRow}
+      feesPanel={
+        can(staff, 'read:payments') ? (
+          <FeesPanel registrationId={id} fees={fees} canWrite={can(staff, 'write:payments')} />
+        ) : null
+      }
       payments={payments}
       stripeBase={stripeBase}
       scholarshipRequests={scholarshipRequests}

@@ -25,7 +25,7 @@ export async function GET(request) {
   const [{ data: balances }, { data: regs }] = await Promise.all([
     supabase
       .from('registration_balances')
-      .select('registration_id, event_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents'),
+      .select('registration_id, event_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents, fees_cents'),
     supabase.from('registrations').select('id, events ( id, name, starts_on, ends_on, archived_at ), households ( display_name, email, phone )'),
   ]);
   const regById = new Map((regs ?? []).map((r) => [r.id, r]));
@@ -38,7 +38,7 @@ export async function GET(request) {
 
   const matches = (b) => {
     if (!inScope(regById.get(b.registration_id)?.events)) return false;
-    const net = (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0);
+    const net = (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0) + (b.fees_cents ?? 0);
     const paid = b.paid_cents ?? 0;
     const bal = b.balance_cents ?? 0;
     if (paystate === 'unpaid') return paid === 0 && bal > 0;
@@ -50,12 +50,12 @@ export async function GET(request) {
 
   const d = (c) => ((c ?? 0) / 100).toFixed(2);
   const rows = [
-    ['Household', 'Email', 'Phone', 'Event', 'Fees', 'Discounts', 'Scholarships', 'Coupons', 'Net due', 'Paid', 'Balance'],
+    ['Household', 'Email', 'Phone', 'Event', 'Fees', 'Discounts', 'Scholarships', 'Coupons', 'Added fees (returned payments etc.)', 'Net due', 'Paid', 'Balance'],
   ];
   for (const b of balances ?? []) {
     if (!matches(b)) continue;
     const r = regById.get(b.registration_id);
-    const net = (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0);
+    const net = (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0) + (b.fees_cents ?? 0);
     rows.push([
       r?.households?.display_name ?? '',
       r?.households?.email ?? '',
@@ -65,6 +65,7 @@ export async function GET(request) {
       d(b.discount_cents),
       d(b.scholarship_cents),
       d(b.coupon_cents),
+      d(b.fees_cents),
       d(net),
       d(b.paid_cents),
       d(b.balance_cents),
