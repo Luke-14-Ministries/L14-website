@@ -62,6 +62,120 @@ function signatureProblem(signature, participant) {
   return null;
 }
 
+// The activity and the person a choice or a signature is about, read on the
+// server and checked against the caller's own household -- the part
+// setActivityChoice() and signActivityWaiver() share, so the two cannot
+// drift apart. Returns { activity, participant } or { error }.
+async function activityAndPerson(supabase, participantId, activityId, label) {
+  const { data: activity, error: actError } = await supabase
+    .from('activities')
+    .select('id, name, booking_mode, capacity, provider_name, provider_url, active, signup_opens_at, signup_closes_at')
+    .eq('id', activityId)
+    .maybeSingle();
+  if (actError) {
+    console.error(`${label} activity:`, actError.message);
+    return { error: `That activity could not be read: ${actError.message}` };
+  }
+  if (!activity) return { error: 'That activity could not be found.' };
+  if (!activity.active) return { error: 'That activity is not open at the moment.' };
+
+  // Whose place this is. RLS lets a family read only their own participants,
+  // so a row here is the family's; the person, registration and event start
+  // are what the waiver below is written against -- read here, never taken
+  // from the browser.
+  const { data: participant, error: partError } = await supabase
+    .from('registration_participants')
+    .select(
+      `id, person_id, registration_id,
+       people ( first_name, last_name, date_of_birth ),
+       registrations ( household_id, events ( starts_on ) )`
+    )
+    .eq('id', participantId)
+    .maybeSingle();
+  if (partError) {
+    console.error(`${label} participant:`, partError.message);
+    return { error: `That person could not be read: ${partError.message}` };
+  }
+  if (!participant) return { error: 'That person is not on one of your registrations.' };
+  // Explicit household scope, not RLS alone (CLAUDE.md): staff who are also a
+  // family read every participant, and must still sign only for their own.
+  const { data: { user } = {} } = await supabase.auth.getUser();
+  const { data: memberships, error: memError } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('profile_id', user?.id ?? '00000000-0000-0000-0000-000000000000');
+  if (memError) {
+    console.error(`${label} memberships:`, memError.message);
+    return { error: `Your household could not be read: ${memError.message}` };
+  }
+  if (!(memberships ?? []).some((m) => m.household_id === participant.registrations?.household_id)) {
+    return { error: 'That person is not on one of your registrations.' };
+  }
+  return { activity, participant };
+}
+
+// THE WAIVER (0116). An activity may carry a required agreement of its own
+// (agreement_requirements.activity_id) -- the horseback waiver. Each one not
+// yet signed for this person on this registration is signed now, from
+// `signature`, with the same shape the wizard gives the event agreements;
+// without a matching signature the caller is told what is missing. Never
+// removes a signature: what was agreed to stays agreed to. Returns
+// { ok: true } or { error }.
+async function signRequiredWaivers(supabase, { activity, participant, signature, label }) {
+  const { data: reqRows, error: reqError } = await supabase
+    .from('agreement_requirements')
+    .select('agreement_id, agreements ( id, title, active, delivery )')
+    .eq('activity_id', activity.id)
+    .eq('is_required', true);
+  if (reqError) {
+    console.error(`${label} requirements:`, reqError.message);
+    return { error: `The activity's agreements could not be read: ${reqError.message}` };
+  }
+  const required = (reqRows ?? [])
+    .map((r) => r.agreements)
+    .filter((a) => a?.active && a.delivery === 'internal_document');
+
+  for (const agreement of required) {
+    const { data: have, error: haveError } = await supabase
+      .from('agreement_signatures')
+      .select('id')
+      .eq('agreement_id', agreement.id)
+      .eq('person_id', participant.person_id)
+      .eq('registration_id', participant.registration_id)
+      .limit(1);
+    if (haveError) {
+      console.error(`${label} signatures:`, haveError.message);
+      return { error: `The signatures could not be read: ${haveError.message}` };
+    }
+    if ((have ?? []).length > 0) continue;
+
+    if (!signature || signature.agreementId !== agreement.id) {
+      return {
+        error: `${activity.name} needs the ${agreement.title} signed first. Tick the activity to read and sign it.`,
+      };
+    }
+    const problem = signatureProblem(signature, participant);
+    if (problem) return { error: problem };
+
+    const role = signature.signerRole;
+    const { error: sigError } = await supabase.from('agreement_signatures').insert({
+      agreement_id: agreement.id,
+      person_id: participant.person_id,
+      registration_id: participant.registration_id,
+      status: 'signed_here',
+      signed_at: new Date().toISOString(),
+      signer_name: signature.signerName.trim(),
+      signer_role: role,
+      note: `${SIGNER_NOTE[role]} For ${activity.name}.`,
+    });
+    if (sigError) {
+      console.error(`${label} sign:`, sigError.message);
+      return { error: `The ${agreement.title} could not be recorded: ${sigError.message}` };
+    }
+  }
+  return { ok: true };
+}
+
 // One activity choice for one person.
 //
 // `status` is the schema's own vocabulary and the three values mean genuinely
@@ -93,50 +207,9 @@ export async function setActivityChoice({
 
   const supabase = await createClient();
 
-  const { data: activity, error: actError } = await supabase
-    .from('activities')
-    .select('id, name, booking_mode, capacity, provider_name, provider_url, active, signup_opens_at, signup_closes_at')
-    .eq('id', activityId)
-    .maybeSingle();
-  if (actError) {
-    console.error('setActivityChoice activity:', actError.message);
-    return { ok: false, error: `That activity could not be read: ${actError.message}` };
-  }
-  if (!activity) return { ok: false, error: 'That activity could not be found.' };
-  if (!activity.active) return { ok: false, error: 'That activity is not open at the moment.' };
-
-  // Whose place this is. RLS lets a family read only their own participants,
-  // so a row here is the family's; the person, registration and event start
-  // are what the waiver below is written against -- read here, never taken
-  // from the browser.
-  const { data: participant, error: partError } = await supabase
-    .from('registration_participants')
-    .select(
-      `id, person_id, registration_id,
-       people ( first_name, last_name, date_of_birth ),
-       registrations ( household_id, events ( starts_on ) )`
-    )
-    .eq('id', participantId)
-    .maybeSingle();
-  if (partError) {
-    console.error('setActivityChoice participant:', partError.message);
-    return { ok: false, error: `That person could not be read: ${partError.message}` };
-  }
-  if (!participant) return { ok: false, error: 'That person is not on one of your registrations.' };
-  // Explicit household scope, not RLS alone (CLAUDE.md): staff who are also a
-  // family read every participant, and must still sign only for their own.
-  const { data: { user } = {} } = await supabase.auth.getUser();
-  const { data: memberships, error: memError } = await supabase
-    .from('household_members')
-    .select('household_id')
-    .eq('profile_id', user?.id ?? '00000000-0000-0000-0000-000000000000');
-  if (memError) {
-    console.error('setActivityChoice memberships:', memError.message);
-    return { ok: false, error: `Your household could not be read: ${memError.message}` };
-  }
-  if (!(memberships ?? []).some((m) => m.household_id === participant.registrations?.household_id)) {
-    return { ok: false, error: 'That person is not on one of your registrations.' };
-  }
+  const found = await activityAndPerson(supabase, participantId, activityId, 'setActivityChoice');
+  if (found.error) return { ok: false, error: found.error };
+  const { activity, participant } = found;
 
   // Signup windows, checked on the server because a page left open overnight
   // is the normal way a closed window gets a late write.
@@ -160,65 +233,17 @@ export async function setActivityChoice({
     };
   }
 
-  // THE WAIVER (0116). An activity may carry a required agreement of its own
-  // (agreement_requirements.activity_id) -- the horseback waiver. Taking the
-  // activity needs it signed for this person on this registration; the
-  // signature row is written first, with the same shape the wizard gives the
-  // event agreements, and the signup only after. Cancelling needs nothing,
-  // and never removes a signature: what was agreed to stays agreed to.
+  // THE WAIVER (0116). Taking the activity needs its own waiver signed for
+  // this person on this registration: the signature row is written first and
+  // the signup only after. Cancelling needs nothing.
   if (status !== 'cancelled') {
-    const { data: reqRows, error: reqError } = await supabase
-      .from('agreement_requirements')
-      .select('agreement_id, agreements ( id, title, active, delivery )')
-      .eq('activity_id', activityId)
-      .eq('is_required', true);
-    if (reqError) {
-      console.error('setActivityChoice requirements:', reqError.message);
-      return { ok: false, error: `The activity's agreements could not be read: ${reqError.message}` };
-    }
-    const required = (reqRows ?? [])
-      .map((r) => r.agreements)
-      .filter((a) => a?.active && a.delivery === 'internal_document');
-
-    for (const agreement of required) {
-      const { data: have, error: haveError } = await supabase
-        .from('agreement_signatures')
-        .select('id')
-        .eq('agreement_id', agreement.id)
-        .eq('person_id', participant.person_id)
-        .eq('registration_id', participant.registration_id)
-        .limit(1);
-      if (haveError) {
-        console.error('setActivityChoice signatures:', haveError.message);
-        return { ok: false, error: `The signatures could not be read: ${haveError.message}` };
-      }
-      if ((have ?? []).length > 0) continue;
-
-      if (!signature || signature.agreementId !== agreement.id) {
-        return {
-          ok: false,
-          error: `${activity.name} needs the ${agreement.title} signed first. Tick the activity to read and sign it.`,
-        };
-      }
-      const problem = signatureProblem(signature, participant);
-      if (problem) return { ok: false, error: problem };
-
-      const role = signature.signerRole;
-      const { error: sigError } = await supabase.from('agreement_signatures').insert({
-        agreement_id: agreement.id,
-        person_id: participant.person_id,
-        registration_id: participant.registration_id,
-        status: 'signed_here',
-        signed_at: new Date().toISOString(),
-        signer_name: signature.signerName.trim(),
-        signer_role: role,
-        note: `${SIGNER_NOTE[role]} For ${activity.name}.`,
-      });
-      if (sigError) {
-        console.error('setActivityChoice sign:', sigError.message);
-        return { ok: false, error: `The ${agreement.title} could not be recorded: ${sigError.message}` };
-      }
-    }
+    const signed = await signRequiredWaivers(supabase, {
+      activity,
+      participant,
+      signature,
+      label: 'setActivityChoice',
+    });
+    if (signed.error) return { ok: false, error: signed.error };
   }
 
   const row = {
@@ -268,5 +293,61 @@ export async function setActivityChoice({
   revalidatePath('/account/activities');
   revalidatePath('/account/dashboard');
   revalidatePath('/admin/activities');
+  return { ok: true };
+}
+
+// The waiver alone, for a person ALREADY on the activity (22 Oct 2026).
+//
+// Staff can attach a waiver to an activity after families have signed people
+// up (the Waiver block on the staff Activities editor, 0117) -- and the tick
+// that opens the signing box for a new signup never fires for a place that is
+// already saved, so until now nobody already signed up was asked. This writes
+// ONLY the signature: the signup row, its time and its acknowledgement are
+// not touched, and a closed signup window does not stop it -- the place was
+// taken while the window was open; this is the paperwork for it. The checks
+// are setActivityChoice()'s own (activityAndPerson, signRequiredWaivers), so
+// the same household scope and the same signing rules apply.
+export async function signActivityWaiver({ participantId, activityId, signature }) {
+  if (!participantId || !activityId) {
+    return { ok: false, error: 'Something is missing — please refresh and try again.' };
+  }
+  if (!signature) {
+    return { ok: false, error: 'Please read the waiver, tick to agree, and type the name of the person signing.' };
+  }
+
+  const supabase = await createClient();
+
+  const found = await activityAndPerson(supabase, participantId, activityId, 'signActivityWaiver');
+  if (found.error) return { ok: false, error: found.error };
+  const { activity, participant } = found;
+
+  // Only for a place that is actually held: a new signup signs through
+  // setActivityChoice, together with the place.
+  const { data: signup, error: signupError } = await supabase
+    .from('activity_signups')
+    .select('status')
+    .eq('registration_participant_id', participantId)
+    .eq('activity_id', activityId)
+    .maybeSingle();
+  if (signupError) {
+    console.error('signActivityWaiver signup:', signupError.message);
+    return { ok: false, error: `The signup could not be read: ${signupError.message}` };
+  }
+  if (!signup || signup.status === 'cancelled') {
+    return { ok: false, error: `${participant.people?.first_name ?? 'This person'} is not signed up for ${activity.name}. Tick the activity to sign up and sign together.` };
+  }
+
+  const signed = await signRequiredWaivers(supabase, {
+    activity,
+    participant,
+    signature,
+    label: 'signActivityWaiver',
+  });
+  if (signed.error) return { ok: false, error: signed.error };
+
+  revalidatePath('/account/activities');
+  revalidatePath('/account/dashboard');
+  revalidatePath('/admin/activities');
+  revalidatePath('/admin/review');
   return { ok: true };
 }
