@@ -5,6 +5,7 @@ import RegistrationManager from './RegistrationManager';
 import StaffPlanPanel from './StaffPlanPanel';
 import { requiresPaymentChoice } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
+import { signedPhotoUrls } from '@/lib/photos';
 
 export const metadata = { title: 'Registration — Staff Admin' };
 
@@ -286,6 +287,11 @@ export default async function RegistrationDetailPage({ params }) {
   const consentOf = new Map();
   for (const c of consentRows ?? []) consentOf.set(`${c.person_id}:${c.kind}`, c);
 
+  // Faces beside names, as on Check-In (Ellen, Script 5 item 2.5; approved
+  // 22 Oct 2026). Sensitive read, like the photos table and bucket; without
+  // it the rows show names only. All links signed in one request.
+  const photoUrlOf = await signedPhotoUrls(supabase, can(staff, 'read:sensitive'), peopleIds);
+
   const signatures = (sigRows ?? []).map((s) => ({
     id: s.id,
     title: s.agreements?.title ?? s.agreements?.key ?? 'Agreement',
@@ -322,6 +328,7 @@ export default async function RegistrationDetailPage({ params }) {
         // to the screen so staff never read silence as a refusal.
         media: consentOf.get(`${p.people?.id}:media`) ?? null,
         directory: consentOf.get(`${p.people?.id}:directory`) ?? null,
+        photoUrl: photoUrlOf.get(p.people?.id) ?? null,
         person: p.people,
       }))
       .sort((a, b) =>

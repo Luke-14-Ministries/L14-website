@@ -404,6 +404,17 @@ function ParticipantRow({
   return (
     <div className="border-t border-neutral-100 py-4 first:border-t-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+        {/* As on Check-In: absent when there is no photo, or when this staff
+            member does not hold Sensitive read (lib/photos.js). */}
+        {participant.photoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={participant.photoUrl}
+            alt=""
+            className="h-10 w-10 shrink-0 rounded-full object-cover border border-neutral-200"
+          />
+        )}
         <div className="min-w-0">
           <p className="font-semibold">
             {p.first_name} {p.last_name}
@@ -479,6 +490,7 @@ function ParticipantRow({
               )}
             </p>
           )}
+        </div>
         </div>
         {canWrite ? (
           <StatusControl registrationId={registrationId} participant={participant} />

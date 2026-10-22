@@ -6,6 +6,7 @@ import { allergyPill, statusPill } from '@/lib/format';
 import { allergySummary } from '@/lib/support';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
+import { signedPhotoUrls } from '@/lib/photos';
 
 export const metadata = { title: 'Person — Staff Admin' };
 
@@ -290,6 +291,11 @@ export default async function PersonPage({ params }) {
         .maybeSingle()
     : { data: null };
 
+  // The face at the top, as on Check-In and the registration page. Sensitive
+  // read, like the photos table and bucket (lib/photos.js); without it, or
+  // with no photo uploaded, the heading stands alone.
+  const photoUrl = (await signedPhotoUrls(supabase, sensitive, [personId])).get(personId) ?? null;
+
   const displayName = [person.first_name, person.last_name].filter(Boolean).join(' ');
   const soonest = (parts ?? [])
     .map((p) => p.registrations?.events?.starts_on)
@@ -298,6 +304,16 @@ export default async function PersonPage({ params }) {
 
   return (
     <div>
+      <div className="flex items-center gap-4">
+      {photoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photoUrl}
+          alt=""
+          className="h-20 w-20 shrink-0 rounded-full object-cover border border-neutral-200"
+        />
+      )}
+      <div className="min-w-0">
       <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Person</p>
       <h1 className="text-2xl font-bold">
         {displayName}
@@ -315,6 +331,8 @@ export default async function PersonPage({ params }) {
           : 'age not recorded'}
         {person.gender ? ` · ${person.gender}` : ''}
       </p>
+      </div>
+      </div>
 
       <p className="mt-3 text-sm">
         <Link href="/admin/rosters/" className="text-brand underline">
