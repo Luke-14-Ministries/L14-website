@@ -39,7 +39,7 @@ async function ownRegistration(supabase, userId, registrationId) {
   const { data } = await supabase
     .from('registrations')
     .select(
-      `id, events ( id, name, event_type, starts_on, deposit_cents, balance_due_on ),
+      `id, events ( id, name, event_type, starts_on, deposit_cents, balance_due_on, returned_payment_fee_cents ),
        registration_participants ( id, person_id, status )`
     )
     .eq('id', registrationId)
@@ -89,7 +89,12 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
   if (!(deposit > 0)) return { ok: false, error: 'No deposit amount is set for this camp yet.' };
 
   const due = balanceDueOn(ev);
-  const consent = planConsentText({ schedule, dueLabel: formatDueDate(due) });
+  // 0123: the returned-payment fee the family is agreeing to, read now -- the
+  // same figure the page put in the agreement and beside the bank choice. It
+  // rides in the metadata and the plans webhook stores it on the plan; it is
+  // the only fee that plan can ever add (0 = never).
+  const returnedFeeCents = Math.max(0, ev.returned_payment_fee_cents ?? 0);
+  const consent = planConsentText({ schedule, dueLabel: formatDueDate(due), returnedFeeCents });
   const origin = await originFromRequest();
 
   const metadata = {
@@ -103,6 +108,7 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
     plan_schedule: schedule,
     consent_version: PLAN_CONSENT_VERSION,
     consent_text: consent,
+    returned_fee_cents: String(returnedFeeCents),
     consented_by: user.id,
     consented_at: new Date().toISOString(),
   };

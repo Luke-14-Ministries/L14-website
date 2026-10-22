@@ -31,6 +31,19 @@ select balance_cents as expect_0, early_discount_cents as expect_10000 from publ
 select public.recalc_early_registration_discount('50000000-0000-0000-0000-000000000001');
 select balance_cents as still_0 from public.registration_balances where registration_id='50000000-0000-0000-0000-000000000001';
 select route as expect_paid_in_full from public.registration_payment_routes where registration_id='50000000-0000-0000-0000-000000000001';
+\echo == 4b a returned-payment fee is owed but does not take the early discount away (0123)
+insert into public.registration_fees (id, registration_id, kind, amount_cents, reason) values ('90000000-0000-0000-0000-0000000000f1','50000000-0000-0000-0000-000000000001','manual',400,'test');
+select public.recalc_early_registration_discount('50000000-0000-0000-0000-000000000001');
+do $$ declare b bigint; e bigint; f bigint; begin
+  select balance_cents, early_discount_cents, fees_cents into b, e, f from public.registration_balances where registration_id='50000000-0000-0000-0000-000000000001';
+  if b <> 400 or e <> 10000 or f <> 400 then raise exception 'FAIL 4b: balance % early % fees %', b, e, f; end if;
+  raise notice 'PASS 4b fee owed (400), early discount kept (10000)';
+  if (select route from public.registration_payment_routes where registration_id='50000000-0000-0000-0000-000000000001') <> 'paid_in_full' then
+    raise exception 'FAIL 4b: a fee turned a paid-in-full family back into "not finished"';
+  end if;
+  raise notice 'PASS 4b the route stays paid_in_full with a fee owed';
+end $$;
+delete from public.registration_fees where id='90000000-0000-0000-0000-0000000000f1';
 \echo == 5 payment fails -> discount goes
 update public.payments set status='failed' where id='70000000-0000-0000-0000-000000000001';
 select public.recalc_early_registration_discount('50000000-0000-0000-0000-000000000001');

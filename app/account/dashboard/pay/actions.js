@@ -43,7 +43,7 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
 
   const { data: ev } = await supabase
     .from('events')
-    .select('name, deposit_cents')
+    .select('name, deposit_cents, returned_payment_fee_cents')
     .eq('id', bal.event_id)
     .maybeSingle();
 
@@ -121,6 +121,10 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
     // Travels to the webhook so the emailed receipt can say what was paid for
     // without another database lookup.
     event_name: ev?.name ?? 'Camp registration',
+    // 0123: the returned-payment fee shown beside the bank choice, read now.
+    // If this bank payment comes back, the webhook adds exactly this -- never
+    // the event's later setting. A card payment carries 0: no fee, ever.
+    returned_fee_cents: method === 'bank' ? String(Math.max(0, ev?.returned_payment_fee_cents ?? 0)) : '0',
   };
 
   try {

@@ -8,6 +8,7 @@
 import { useState, useTransition } from 'react';
 import { createCheckout } from './pay/actions';
 import { coverFeeCents, dollars } from '@/lib/payments';
+import { returnedFeeDisclosure } from '@/lib/plans';
 
 // One choice in a pill-shaped radio group. Takes everything it needs as props
 // and lives at module level: defined inside PayPanel it was a new component
@@ -42,6 +43,8 @@ export default function PayPanel({
   // early-registration discount that paying in full would earn (0080's
   // pay_in_full_amount). Defaults to the balance.
   payInFullCents,
+  // The event's returned-bank-payment fee (0123); 0 = none, and nothing is said.
+  returnedFeeCents = 0,
 }) {
   const [open, setOpen] = useState(false);
   // The $50 deposit is REQUIRED (Larry, 24 Aug), so until a family has paid
@@ -227,6 +230,7 @@ export default function PayPanel({
         <p className="text-xs text-neutral-500 mb-3">
           Bank transfers take a few days to clear, so your payment will show as
           &ldquo;clearing&rdquo; until it settles.
+          {returnedFeeDisclosure(returnedFeeCents) && <> {returnedFeeDisclosure(returnedFeeCents)}</>}
         </p>
       )}
 

@@ -49,7 +49,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
   ] = await Promise.all([
     supabase
       .from('registration_balances')
-      .select('registration_id, event_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents'),
+      .select('registration_id, event_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents, fees_cents'),
     supabase
       .from('registrations')
       .select('id, events ( id, name, event_type, starts_on, ends_on, archived_at, balance_due_on ), households ( display_name )'),
@@ -103,7 +103,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
     if (!inScope(ev)) continue;
     const evName = ev?.name ?? 'Unassigned';
     const cur = events.get(evName) ?? { fees: 0, assist: 0, paid: 0, outstanding: 0 };
-    cur.fees += (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0);
+    // 0123: returned-payment and staff-added fees are owed, so they count here.
+    cur.fees += (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0) + (b.fees_cents ?? 0);
     cur.assist += (b.scholarship_cents ?? 0) + (b.discount_cents ?? 0) + (b.coupon_cents ?? 0);
     cur.paid += b.paid_cents ?? 0;
     cur.outstanding += Math.max(0, b.balance_cents ?? 0);
@@ -133,7 +134,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
   //   paid    = balance settled (payments incl. clearing bank transfers)
   //   scholarship = any scholarship or discount applied
   const matchesPaystate = (b) => {
-    const net = (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0);
+    const net = (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0) + (b.fees_cents ?? 0);
     const paid = b.paid_cents ?? 0;
     const bal = b.balance_cents ?? 0;
     switch (paystate) {
@@ -389,7 +390,12 @@ export default async function AdminPaymentsPage({ searchParams }) {
                     </Link>
                   </td>
                   <td className="px-4 py-2">{r?.events?.name ?? ''}</td>
-                  <td className="px-4 py-2 text-right">{money(b.fee_cents)}</td>
+                  <td className="px-4 py-2 text-right">
+                    {money((b.fee_cents ?? 0) + (b.fees_cents ?? 0))}
+                    {(b.fees_cents ?? 0) > 0 && (
+                      <span className="block text-xs text-amber-800">incl. {money(b.fees_cents)} fees</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-right text-green-700">
                     {assist > 0 ? `−${money(assist)}` : '—'}
                   </td>

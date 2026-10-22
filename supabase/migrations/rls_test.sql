@@ -656,6 +656,160 @@ begin
   delete from public.staff_grants where profile_id = uC and area = 'payments';
   set local role authenticated;
 
+  ---- returned-payment fees (0123) ---------------------------------------
+  -- A failed BANK payment adds the fee the family was shown (a snapshot),
+  -- once per PaymentIntent; a card decline adds nothing. The family sees
+  -- its own fees, nobody else's; Payments read sees them; nobody signed in
+  -- writes the table except through the two staff functions.
+  set local role postgres;
+  select id into regB from public.registrations where household_id = hB and event_id = ev;
+  update public.events set returned_payment_fee_cents = 900 where id = ev;   -- the CURRENT value: never charged
+  insert into public.payments (registration_id, amount_cents, method, status, stripe_payment_intent_id)
+    values (regA, 10000, 'bank_transfer', 'failed', 'pi_fee_bank_A'),
+           (regA, 10000, 'card', 'failed', 'pi_fee_card_A');
+  select balance_cents into n from public.registration_balances where registration_id = regA;
+  set local role service_role;
+  perform set_config('request.jwt.claim.sub', '', true);
+  select fee_cents into m from public.record_returned_payment_fee(regA, 'pi_fee_bank_A', null, 400, false);
+  perform pg_temp.expect('a bank try that never reached the bank (not returned) adds no fee (0123)', m, 0);
+  select fee_cents, case when added then 1 else 0 end into m, oldStatus
+    from public.record_returned_payment_fee(regA, 'pi_fee_bank_A', null, 400, true);
+  perform pg_temp.expect('a returned bank checkout adds the disclosed fee, not the event''s current one (0123)', m, 400);
+  perform pg_temp.expect('... and says it added it', oldStatus::bigint, 1);
+  select fee_cents, case when added then 1 else 0 end into m, oldStatus
+    from public.record_returned_payment_fee(regA, 'pi_fee_bank_A', null, 400, true);
+  perform pg_temp.expect('the same failure again (a Stripe retry) reports the fee on file (0123)', m, 400);
+  perform pg_temp.expect('... without adding a second', oldStatus::bigint, 0);
+  select fee_cents into m from public.record_returned_payment_fee(regA, 'pi_fee_card_A', null, 400, true);
+  perform pg_temp.expect('a card decline adds no fee (0123)', m, 0);
+  select fee_cents into m from public.record_returned_payment_fee(regA, 'pi_no_such_payment', null, 400, true);
+  perform pg_temp.expect('no failed payment on file, no fee (0123)', m, 0);
+  set local role postgres;
+  select count(*) into m from public.registration_fees where registration_id = regA;
+  perform pg_temp.expect('one fee row for one failed bank payment (0123)', m, 1);
+  select balance_cents into m from public.registration_balances where registration_id = regA;
+  perform pg_temp.expect('the unwaived fee is owed in registration_balances (0123)', m, n + 400);
+  select fees_cents into m from public.registration_balances where registration_id = regA;
+  perform pg_temp.expect('registration_balances.fees_cents carries it (0123)', m, 400);
+  -- A plan charge uses the PLAN's snapshot; $0 at agreement means never.
+  insert into public.payment_plans (registration_id, schedule, status, activated_at, returned_payment_fee_cents)
+    values (regB, 'monthly', 'active', now(), 250) returning id into planId;
+  insert into public.payment_installments (payment_plan_id, due_on, amount_cents)
+    values (planId, current_date, 10000) returning id into logId;
+  insert into public.payments (registration_id, installment_id, amount_cents, method, status, stripe_payment_intent_id)
+    values (regB, logId, 10000, 'bank_transfer', 'failed', 'pi_fee_inst_B');
+  set local role service_role;
+  select fee_cents into m from public.record_returned_payment_fee(regB, 'pi_fee_inst_B', logId, 9999, true);
+  perform pg_temp.expect('a plan charge adds the plan''s snapshot, not the caller''s figure (0123)', m, 250);
+  -- The next try of the SAME installment (a new PaymentIntent) fails too:
+  -- one returned debit, one fee, even if the caller calls it returned.
+  set local role postgres;
+  insert into public.payments (registration_id, installment_id, amount_cents, method, status, stripe_payment_intent_id)
+    values (regB, logId, 10000, 'bank_transfer', 'failed', 'pi_fee_inst_B2');
+  set local role service_role;
+  select fee_cents into m from public.record_returned_payment_fee(regB, 'pi_fee_inst_B2', logId, 9999, true);
+  perform pg_temp.expect('a second failed try of the same installment adds no second fee (0123)', m, 0);
+  set local role postgres;
+  select count(*) into m from public.registration_fees where payment_installment_id = logId;
+  perform pg_temp.expect('... one fee row for the installment (0123)', m, 1);
+  -- A plan agreed at $0 never adds one, on any installment.
+  update public.payment_plans set returned_payment_fee_cents = 0 where id = planId;
+  insert into public.payment_installments (payment_plan_id, due_on, amount_cents)
+    values (planId, current_date + 30, 10000);
+  insert into public.payments (registration_id, installment_id, amount_cents, method, status, stripe_payment_intent_id)
+    select regB, i.id, 10000, 'bank_transfer', 'failed', 'pi_fee_inst_B3'
+      from public.payment_installments i where i.payment_plan_id = planId and i.id <> logId;
+  set local role service_role;
+  select fee_cents into m from public.record_returned_payment_fee(regB, 'pi_fee_inst_B3',
+    (select i.id from public.payment_installments i where i.payment_plan_id = planId and i.id <> logId), 9999, true);
+  perform pg_temp.expect('a plan agreed at $0 never adds a fee (0123)', m, 0);
+  set local role authenticated;
+  -- Who sees them.
+  perform pg_temp.as_user(uA);
+  select count(*) into m from public.registration_fees;
+  perform pg_temp.expect('a family sees its own fee (0123)', m, 1);
+  select fees_cents into m from public.registration_balances where registration_id = regA;
+  perform pg_temp.expect('a family sees the fee in its own balance (0123)', m, 400);
+  perform pg_temp.as_user(uB);
+  select count(*) into m from public.registration_fees where registration_id = regA;
+  perform pg_temp.expect('another family does not see it (0123)', m, 0);
+  perform pg_temp.as_user(uC);
+  select count(*) into m from public.registration_fees;
+  perform pg_temp.expect('staff without Payments read see no fees (0123)', m, 0);
+  perform pg_temp.expect_denied('staff without Payments write may NOT add a fee (0123)',
+    format('select public.add_registration_fee(%L, 500, ''test'')', regA));
+  perform pg_temp.as_user(uR);
+  select count(*) into m from public.registration_fees;
+  perform pg_temp.expect('Payments read sees every fee (0123)', m, 2);
+  -- Nobody signed in writes the table, or records the automatic fee.
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('a family may NOT insert a fee row (0123)',
+    format('insert into public.registration_fees (registration_id, kind, amount_cents) values (%L, ''manual'', 1)', regA));
+  perform pg_temp.expect_denied('a family may NOT waive its own fee by update (0123)',
+    'update public.registration_fees set waived_at = now(), waived_reason = ''x'' where true');
+  perform pg_temp.expect_denied('a family may NOT delete a fee (0123)',
+    'delete from public.registration_fees where true');
+  perform pg_temp.expect_denied('a family may NOT record an automatic fee (0123)',
+    format('select * from public.record_returned_payment_fee(%L, ''pi_fee_bank_A'', null, 1, true)', regA));
+  perform pg_temp.expect_denied('a family may NOT waive through the function (0123)',
+    format('select public.waive_registration_fee(id, ''please'') from public.registration_fees where registration_id = %L', regA));
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('Payments write may NOT update a fee row directly (0123)',
+    'update public.registration_fees set amount_cents = 1 where true');
+  perform pg_temp.expect_denied('Payments write may NOT change a plan''s agreed fee (0123)',
+    format('update public.payment_plans set returned_payment_fee_cents = 5000 where id = %L', planId));
+  -- Staff: add by hand (reason required), waive (reason required, once).
+  perform pg_temp.expect_denied('a manual fee needs a reason (0123)',
+    format('select public.add_registration_fee(%L, 500, ''  '')', regA));
+  perform pg_temp.expect_denied('a manual fee must be more than $0 (0123)',
+    format('select public.add_registration_fee(%L, 0, ''test'')', regA));
+  perform public.add_registration_fee(regA, 1500, 'Returned check');
+  select fees_cents into m from public.registration_balances where registration_id = regA;
+  perform pg_temp.expect('a manual fee counts in the balance (0123)', m, 1900);
+  -- Waiving is a decision (Payments AND Registration write, 0102); adding is
+  -- Payments write. The coordinator, given Payments write with Registration
+  -- read only, may add but not waive.
+  set local role postgres;
+  insert into public.staff_grants (profile_id, area, level) values (uC, 'payments', 'write');
+  set local role authenticated;
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_denied('Payments write without Registration write may NOT waive a fee (0123)',
+    'select public.waive_registration_fee(id, ''kindness'') from public.registration_fees where stripe_payment_intent_id = ''pi_fee_bank_A''');
+  perform pg_temp.expect_allowed('Payments write alone may add a fee (0123)',
+    format('select public.add_registration_fee(%L, 100, ''Postage'')', regB));
+  set local role postgres;
+  delete from public.staff_grants where profile_id = uC and area = 'payments';
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('a waiver needs a reason (0123)',
+    format('select public.waive_registration_fee(id, '''') from public.registration_fees where stripe_payment_intent_id = ''pi_fee_bank_A'''));
+  perform public.waive_registration_fee((select id from public.registration_fees where stripe_payment_intent_id = 'pi_fee_bank_A'), 'Bank error, not the family');
+  select fees_cents into m from public.registration_balances where registration_id = regA;
+  perform pg_temp.expect('a waived fee drops out of the balance (0123)', m, 1500);
+  perform pg_temp.expect_denied('a fee is waived once (0123)',
+    'select public.waive_registration_fee(id, ''again'') from public.registration_fees where stripe_payment_intent_id = ''pi_fee_bank_A''');
+  perform pg_temp.as_user(uA);
+  select count(*) into m from public.registration_fees where waived_at is not null;
+  perform pg_temp.expect('the family still sees the waived fee, marked waived (0123)', m, 1);
+  set local role postgres;
+  select count(*) into m from public.money_change_log where table_name = 'registration_fees';
+  perform pg_temp.expect('every fee write is in money_change_log: 4 inserts and a waiver (0123)', m, 5);
+  select count(*) into m from public.money_change_log
+   where table_name = 'registration_fees' and op = 'INSERT' and changed_by is null;
+  perform pg_temp.expect('the automatic fees are logged as a server-side writer, no person (0123)', m, 2);
+  select count(*) into m from public.money_change_log
+   where table_name = 'registration_fees' and changed_by = uR;
+  perform pg_temp.expect('the manual fee and the waiver are logged with who did them (0123)', m, 2);
+  -- Leave the seed as it was for the checks below.
+  set local session_replication_role = replica;
+  delete from public.registration_fees where registration_id in (regA, regB);
+  delete from public.payments where stripe_payment_intent_id like 'pi_fee_%';
+  delete from public.payment_installments where payment_plan_id = planId;
+  delete from public.payment_plans where id = planId;
+  set local session_replication_role = origin;
+  update public.events set returned_payment_fee_cents = 0 where id = ev;
+  set local role authenticated;
+
   ---- copying an event carries its activity waivers (0117) --------------
   -- 0083 said it copied them and never did: an activity-scoped requirement
   -- has no event_id, and the copy was filtered on event_id. The harness's

@@ -8,7 +8,7 @@ import CancelRequest from './CancelRequest';
 import SupportDetailsCard from './SupportDetailsCard';
 import { registrationDepositCents, registrationHeads, participantMoney } from '@/lib/payments';
 import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from '@/lib/events';
-import { requiresPaymentChoice, offersPaymentPlan } from '@/lib/plans';
+import { requiresPaymentChoice, offersPaymentPlan, feeLabel } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
 import { emptySupport, supportProblems } from '@/lib/support';
 
@@ -197,7 +197,7 @@ export default async function DashboardPage({ searchParams }) {
         .select(
           `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
            hold_since, hold_reason, deposit_waived_at,
-           events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url,
+           events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url, returned_payment_fee_cents,
                     event_medical_contacts ( name, phone ) ),
            registration_participants ( id, camp_role, status, checked_in_at,
              participant_money ( fee_cents ),
@@ -423,6 +423,26 @@ export default async function DashboardPage({ searchParams }) {
         .in('registration_id', regIds)
     : { data: [] };
   const balByReg = new Map((balances ?? []).map((b) => [b.registration_id, b]));
+
+  // Fees on these registrations (0123): a returned bank payment, or one staff
+  // added -- waived ones too, struck through, so the family sees what
+  // happened to them. Scoped to this household's registrations explicitly.
+  // Only what a family is shown: kind, amount, date, reason, waived -- never
+  // the staff columns (who added or waived it, the waiver's reason, ids).
+  // RLS lets a family read its own whole row, so the page is what limits it.
+  const { data: feeRows, error: feeError } = regIds.length
+    ? await supabase
+        .from('registration_fees')
+        .select('registration_id, kind, amount_cents, reason, created_at, waived_at')
+        .in('registration_id', regIds)
+        .order('created_at')
+    : { data: [], error: null };
+  if (feeError) throw new Error(`Dashboard fees: ${feeError.message}`);
+  const feesByReg = new Map();
+  for (const f of feeRows ?? []) {
+    if (!feesByReg.has(f.registration_id)) feesByReg.set(f.registration_id, []);
+    feesByReg.get(f.registration_id).push(f);
+  }
   const balanceByReg = new Map((balances ?? []).map((b) => [b.registration_id, b.balance_cents]));
 
   // Every payment on this household's registrations, newest first. Shown as a
@@ -1210,7 +1230,8 @@ export default async function DashboardPage({ searchParams }) {
                         if (!b) return null;
                         const reductions =
                           (b.scholarship_cents ?? 0) + (b.discount_cents ?? 0) + (b.coupon_cents ?? 0);
-                        if (reductions === 0) return null;
+                        const fees = feesByReg.get(r.id) ?? [];
+                        if (reductions === 0 && fees.length === 0) return null;
                         const bal = b.balance_cents ?? 0;
                         return (
                           <div className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm max-w-xs">
@@ -1236,6 +1257,20 @@ export default async function DashboardPage({ searchParams }) {
                                 <span>−{money(b.coupon_cents)}</span>
                               </div>
                             )}
+                            {/* 0123: each fee on its own line, with its date; a
+                                waived one struck through and marked. */}
+                            {fees.map((f, i) => (
+                              <div
+                                key={i}
+                                className={`flex justify-between gap-2 py-0.5 ${f.waived_at ? 'text-neutral-400' : 'text-amber-800'}`}
+                              >
+                                <span>
+                                  {feeLabel(f)} ({dayInMorristown(f.created_at)})
+                                  {f.waived_at && <span className="ml-1 text-xs">waived</span>}
+                                </span>
+                                <span className={f.waived_at ? 'line-through' : ''}>{money(f.amount_cents)}</span>
+                              </div>
+                            ))}
                             <div className="flex justify-between py-0.5">
                               <span className="text-neutral-500">Paid</span>
                               {/* Nothing paid reads "$0", never "−$0". */}
@@ -1359,6 +1394,7 @@ export default async function DashboardPage({ searchParams }) {
                           pendingCents={pendingByReg.get(r.id)}
                           paidCents={balByReg.get(r.id)?.paid_cents}
                           payInFullCents={payInFullByReg.get(r.id) ?? undefined}
+                          returnedFeeCents={r.events?.returned_payment_fee_cents ?? 0}
                         />
                         {/* Offered plainly beside Pay rather than hidden behind
                             "having trouble?" — the ministry raises money for

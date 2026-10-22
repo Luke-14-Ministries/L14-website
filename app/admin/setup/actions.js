@@ -64,6 +64,8 @@ export async function updateEventDetails(
     startsOn, endsOn, capacity, feeDollars, earlyEndsOn, earlyDollars,
     // 0096: the due date and the two discounts, as settings.
     balanceDueOn, familyDollars, familyFromPerson, multiWeekPercent,
+    // 0123: the returned bank payment fee.
+    returnedFeeDollars,
   }
 ) {
   const staff = await getStaff();
@@ -145,6 +147,17 @@ export async function updateEventDetails(
     return { ok: false, error: 'The both-weeks discount is a percentage from 0 to 100.' };
   }
 
+  // 0123: the returned bank payment fee. Blank is not zero (the 18 Oct
+  // lesson above): say 0 to switch it off.
+  if (String(returnedFeeDollars ?? '').trim() === '') {
+    return { ok: false, error: 'Give the returned bank payment fee in dollars — 0 for none.' };
+  }
+  const feeN = Number.parseFloat(String(returnedFeeDollars).replace(/[$,\s]/g, ''));
+  if (Number.isNaN(feeN) || feeN < 0) {
+    return { ok: false, error: 'The returned bank payment fee has to be a dollar amount, or 0.' };
+  }
+  const returnedFeeCents = Math.round(feeN * 100);
+
   const { error } = await supabase
     .from('events')
     .update({
@@ -157,6 +170,7 @@ export async function updateEventDetails(
       family_discount_cents: familyCents,
       family_discount_from_person: fromPerson,
       multi_week_discount_percent: pct,
+      returned_payment_fee_cents: returnedFeeCents,
       updated_at: new Date().toISOString(),
     })
     .eq('id', eventId);

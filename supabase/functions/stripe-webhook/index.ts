@@ -14,6 +14,19 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+// The returned-payment fee (0123) and the logged family email share the plan
+// module's code, so the two webhooks word and record it the same way.
+import {
+  bankDebitReturned,
+  dollars as planDollars,
+  esc,
+  planContext,
+  recordReturnedFee,
+  returnedFeeParagraph,
+  sendEmail,
+  SITE,
+  type ReturnedFee,
+} from '../_shared/plans.ts';
 
 function fail(where: string, message: string, status: number) {
   console.error(`[stripe-webhook] ${where}: ${message}`);
@@ -230,6 +243,49 @@ Deno.serve(async (req) => {
       p_registration_id: registrationId,
     });
     if (recalcErr) console.error(`[stripe-webhook] early-discount recalc: ${recalcErr.message}`);
+
+    // A bank payment that came back (0123): the returned-payment fee the
+    // family was shown before they chose a bank payment rides in the
+    // metadata (returned_fee_cents, set by createCheckout or startPaymentPlan
+    // from the event at that moment) -- never the event's current setting.
+    // record_returned_payment_fee() adds it once per PaymentIntent and only
+    // for a failed bank payment; a Stripe retry gets added=false and sends
+    // nothing. An error answers 500 so Stripe retries (all idempotent).
+    // Only the call that ADDED the fee tells the family. A failed bank
+    // payment with no fee sends nothing, as before.
+    if (status === 'failed' && method === 'bank_transfer') {
+      let fee: ReturnedFee;
+      try {
+        // Only a debit the bank actually returned (its latest charge failed
+        // with a failure code) -- the database refuses the fee otherwise.
+        const returned = await bankDebitReturned(stripe, paymentIntentId);
+        fee = await recordReturnedFee(admin, {
+          registrationId,
+          piId: paymentIntentId,
+          disclosedCents: parseInt(md.returned_fee_cents ?? '0', 10) || 0,
+          returned,
+        });
+      } catch (e) {
+        return fail('returned-fee', String((e as Error)?.message ?? e), 500);
+      }
+      if (fee.added && fee.feeCents > 0) {
+        const ctx = await planContext(admin, registrationId);
+        const eventName = md.event_name || ctx.eventName || 'Camp registration';
+        const hello = ctx.household !== 'A family' ? `<p>Hello ${esc(ctx.household)},</p>` : '';
+        await sendEmail(admin, {
+          to: payerEmail ?? ctx.email,
+          subject: `Payment problem — ${eventName}`,
+          title: 'Your bank payment did not go through',
+          body: `${hello}
+           <p>Your bank payment of <strong>${planDollars(base)}</strong> for ${esc(eventName)} was returned by your bank, so it has not been counted toward your balance.</p>
+           ${returnedFeeParagraph(fee.feeCents, false)}
+           <p>You can pay again, or choose another way to pay, from your <a href="${SITE}/account/dashboard/" style="color:#14606a">family dashboard</a>.</p>`,
+          templateKey: 'bank_payment_returned_family',
+          householdId: ctx.householdId,
+          registrationId,
+        });
+      }
+    }
 
     // Branded receipt, sent from the ministry's own address via Resend. A
     // failure here must never fail the webhook -- the payment IS recorded --

@@ -1669,7 +1669,9 @@ function MoneySummary({ balance, livePeople }) {
   const scholarship = balance.scholarship_cents ?? 0;
   const discount = balance.discount_cents ?? 0;
   const coupon = balance.coupon_cents ?? 0;
-  const due = fee - scholarship - discount - coupon;
+  // 0123: unwaived fees (a returned bank payment, or one staff added) are owed.
+  const fees = balance.fees_cents ?? 0;
+  const due = fee - scholarship - discount - coupon + fees;
   const paid = balance.paid_cents ?? 0;
   const bal = balance.balance_cents ?? 0;
   const pending = balance.refund_pending_cents ?? 0;
@@ -1688,6 +1690,7 @@ function MoneySummary({ balance, livePeople }) {
         {scholarship > 0 && <MoneyRow label="− Scholarships" value={money(scholarship)} cls="text-green-700" />}
         {discount > 0 && <MoneyRow label="− Discounts" value={money(discount)} cls="text-green-700" />}
         {coupon > 0 && <MoneyRow label="− Coupons" value={money(coupon)} cls="text-green-700" />}
+        {fees > 0 && <MoneyRow label="+ Fees" note="see Fees below" value={money(fees)} cls="text-amber-800" />}
         <div className="border-t border-neutral-200 pt-1">
           <MoneyRow label="Amount due" value={money(due)} strong />
         </div>
@@ -1757,6 +1760,8 @@ export default function RegistrationManager({
   familyMessages = [],
   signatures = [],
   balance = null,
+  // 0123: the Fees panel (server-built, Payments read), shown under the money.
+  feesPanel = null,
   payments = [],
   stripeBase = '',
 }) {
@@ -1845,6 +1850,7 @@ export default function RegistrationManager({
           view the dashboard and Event Payments read, so the three never
           disagree (24 Aug). */}
       {canSeeMoney && <MoneySummary balance={balance} livePeople={livePeople} />}
+      {canSeeMoney && feesPanel}
 
       <div className="mb-6">
         <ReviewCard

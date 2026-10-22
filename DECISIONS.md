@@ -2965,3 +2965,66 @@ get the multi-week discount; a camper attending both weeks gets none. That is wh
 true`), so no code changes; the comment in `0114` that calls it "still with staff" is out of date and,
 the migration having run, stays as it is. The amount (leaning 50%) is still Larry's. Staff Questions
 §3 records it.
+
+## 2026-10-22 — A returned-bank-payment fee, disclosed first, charged only as disclosed (0123)
+
+Lawrence: when a bank (ACH) debit fails Stripe charges the ministry a fee, and the ministry may pass
+a fee on to the family, with notice. Built as an event setting on Setup (`events.returned_payment_fee_cents`,
+$0 = off), a `registration_fees` table (household and Payments read; written only through
+`record_returned_payment_fee()` as the service role and `add_registration_fee()` /
+`waive_registration_fee()` for Payments write; logged in `money_change_log`), and `fees_cents` in
+`registration_balances`.
+
+**Bank only.** A card decline costs the ministry nothing, so it adds nothing. The database checks it
+too: the fee is recorded only against a *failed bank_transfer* payment row for that PaymentIntent.
+
+**Disclosed before the choice, and only when there is a fee.** Ways to pay (and the dashboard's pay
+panel) say "If your bank returns a payment, a $X fee is added to cover what the bank charges us."
+beside the bank choice only when the fee is over $0. The plan agreement is page text
+(`planConsentText()` in `lib/plans.js`, not an `agreements` row), so it gains the sentence
+conditionally (version `plan-consent-v2`; with no fee the words are exactly v1's) — first person,
+because the family is the one saying "I authorize". A fee nobody was told about is not one a family
+can fairly be charged, and a $0 event should not print a sentence about fees at all.
+
+**Charged only as disclosed — a snapshot (Lawrence's refinement).** The fee the family saw travels in
+the Checkout metadata (`returned_fee_cents`) and, for a plan, is stored on
+`payment_plans.returned_payment_fee_cents` when the plan activates. The automatic fee uses that
+snapshot, never the event's current value: a fee set or raised after a family agreed does not apply
+to them, and $0 at agreement means no fee ever for that plan or payment. Staff cannot edit the
+snapshot (`guard_payment_plan_writes()` restated).
+
+**Once per failed attempt.** Unique on the PaymentIntent — each plan try and each checkout is its own
+PaymentIntent — so a Stripe retry of the same webhook, or the charger and the webhook both seeing
+one failure, records one fee; only the writer that added it emails the family.
+
+**Not added to the plan's stored schedule; collected by its remaining charges.** The brief offered
+"fees outside the plan". In this code that would be the less simple option: the charger already
+works every charge out on the day from the live balance, so a fee in the balance is collected by the
+remaining charges with no change to the charger, and `settledBalance()` includes it so a plan never
+closes with a fee unpaid. Keeping it outside would need the charger to subtract fees, would let a
+plan "complete" with money owed, and would credit a fee the family paid separately to the plan's
+principal so they appeared to owe it again. The agreement and the payment-problem email say plainly
+that the remaining payments include it. The early-registration rule sets fees aside (a fee must not
+cost a family its early discount).
+
+**Review fixes, same day (0123 amended before it ran).** (1) *Only a debit the bank actually
+returned.* After a return such as R02 (account closed) Stripe blocks the account and the plan's next
+tries fail the moment they are made — each a new PaymentIntent, none of them reaching the bank. The
+webhooks now ask Stripe whether the latest charge failed with a failure code
+(`bankDebitReturned()`), the charger always says no (a debit cannot come back the moment it is made),
+and `record_returned_payment_fee()` refuses without that word; a unique index also allows one
+returned-payment fee per installment. One returned debit is one fee. (2) `registration_payment_routes`
+asks about the camp (balance less fees), so a $4 fee does not turn a paid-in-full family back into
+"not finished" and re-offer payment choices; the fee is its own line. (3) The payments CSV counts
+fees as the page does. (4) *Families can read their own whole fee rows* — column grants are per
+role, not per person, so the staff columns (who added or waived it, the waiver's reason) cannot be
+hidden from the family the row belongs to without a view, and none of them is sensitive. The table
+grant stays; the family pages select only kind, amount, date, reason and waived, and the Waive form
+says "The family can see this reason." (5) *Waiving is a decision*: `can_decide_scholarships()`
+(Payments **and** Registration write, `0102`), like a scholarship or a hand-set discount; adding a fee
+stays Payments write.
+
+**Not done:** a failed pay-in-full bank payment with no fee still sends the family no email (as
+before); the email is sent when a fee is added. `money_change_log.changed_as` records the logger's
+owner for every row, not the writer's role (the logger is security definer since `0111`) —
+`changed_by` is the reliable column; left for a separate fix.

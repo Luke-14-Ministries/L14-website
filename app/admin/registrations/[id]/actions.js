@@ -1179,3 +1179,49 @@ export async function setPlanStatus(registrationId, { action, keepsEarlyDiscount
   revalidatePath('/admin/payments');
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// Fees (0123): a staff-added fee (Payments write), and waiving any fee
+// (Payments and Registration write -- a decision, as a scholarship is).
+// Both go through definer functions -- nobody signed in writes
+// registration_fees directly -- and both land in money_change_log. The
+// family sees the reason for an added fee on their dashboard and statement.
+// ---------------------------------------------------------------------------
+export async function addRegistrationFee(registrationId, { dollars, reason } = {}) {
+  const { error: authError } = await requireRegistrar('write:payments');
+  if (authError) return { ok: false, error: authError };
+  const n = Number.parseFloat(String(dollars ?? '').replace(/[$,\s]/g, ''));
+  if (Number.isNaN(n) || n <= 0) return { ok: false, error: 'Give the fee as a dollar amount over $0.' };
+  const why = String(reason ?? '').trim();
+  if (!why) return { ok: false, error: 'Give the reason for the fee; the family sees it.' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('add_registration_fee', {
+    p_registration_id: registrationId,
+    p_amount_cents: Math.round(n * 100),
+    p_reason: why.slice(0, 300),
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidateAll(registrationId);
+  revalidatePath('/admin/payments');
+  return { ok: true };
+}
+
+export async function waiveRegistrationFee(registrationId, feeId, reason) {
+  // A waiver is a decision, like a scholarship (0102): Payments AND
+  // Registration write. The database asks can_decide_scholarships() too.
+  const { error: authError } = await requireRegistrar('decide:scholarships');
+  if (authError) return { ok: false, error: authError };
+  const why = String(reason ?? '').trim();
+  if (!why) return { ok: false, error: 'Give the reason for waiving the fee.' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('waive_registration_fee', {
+    p_fee_id: feeId,
+    p_reason: why.slice(0, 300),
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidateAll(registrationId);
+  revalidatePath('/admin/payments');
+  return { ok: true };
+}

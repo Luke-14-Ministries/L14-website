@@ -46,7 +46,7 @@ export async function GET(request) {
     supabase.from('registrations').select('id, events ( id, name, starts_on, ends_on, archived_at ), households ( display_name )'),
     supabase
       .from('registration_balances')
-      .select('registration_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents'),
+      .select('registration_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents, fees_cents'),
     // Refunds, for the QuickBooks shape: money that went back out.
     supabase
       .from('payment_refunds')
@@ -62,7 +62,8 @@ export async function GET(request) {
     allowed = new Set(
       (balances ?? [])
         .filter((b) => {
-          const net = (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0);
+          // 0123: added fees are owed, as on the Event Payments page.
+          const net = (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0) + (b.fees_cents ?? 0);
           const paid = b.paid_cents ?? 0;
           const bal = b.balance_cents ?? 0;
           if (paystate === 'unpaid') return paid === 0 && bal > 0;
