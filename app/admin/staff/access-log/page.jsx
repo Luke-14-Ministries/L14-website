@@ -3,6 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import BackLink from '@/components/BackLink';
 import { AREA_LABEL } from '@/lib/grants';
+import { whenInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Access changes — Staff Admin' };
 
@@ -121,7 +122,7 @@ export default async function AccessLogPage() {
                 return (
                   <tr key={r.id} className={r.changed_by_self ? 'bg-amber-50/60' : ''}>
                     <td className="px-3 py-2 whitespace-nowrap text-neutral-600">
-                      {r.changed_at?.slice(0, 16).replace('T', ' ')}
+                      {whenInMorristown(r.changed_at)}
                     </td>
                     <td className="px-3 py-2 font-semibold">{name(r.subject) ?? '—'}</td>
                     <td className="px-3 py-2">{labelOf(r.field)}</td>

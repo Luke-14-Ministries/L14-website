@@ -3,19 +3,9 @@ import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import ChangesList from './ChangesList';
+import { whenInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Recent Changes — Staff Admin' };
-
-const fmtWhen = (ts) =>
-  ts
-    ? new Date(ts).toLocaleString('en-US', {
-        timeZone: 'America/New_York',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      })
-    : '';
 
 // Tracked changes: every edit a FAMILY makes (Manage Household, wizard
 // resubmits) is logged field-by-field by database triggers (migration 0013),
@@ -92,7 +82,7 @@ export default async function RecentChangesPage() {
       field: r.field,
       oldValue: r.old_value,
       newValue: r.new_value,
-      when: fmtWhen(r.changed_at),
+      when: whenInMorristown(r.changed_at),
       person: r.person_id ? personName.get(r.person_id) ?? '' : '',
       actor: r.actor_profile_id ? actorName.get(r.actor_profile_id) ?? '' : '',
       actorIsStaff: staffActorIds.has(r.actor_profile_id),
