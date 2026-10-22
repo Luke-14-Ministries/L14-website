@@ -88,8 +88,29 @@ const waiverPayload = (f) => ({
   body: f.waiverBody,
 });
 
+const sharerName = (s) => `${s.name} (${s.eventName})`;
+
+// "Also on …" under the attached waiver, each with its own version: once one
+// activity has a new version the others are still on theirs.
 const sharerList = (attached) =>
-  (attached?.sharers ?? []).map((s) => `${s.name} (${s.eventName})`).join(', ');
+  (attached?.sharers ?? []).map((s) => `${sharerName(s)}, version ${s.version}`).join('; ');
+
+// The sentence about the OTHER activities on the same key when this one gets
+// a new version. Each keeps its OWN current version, which need not be this
+// activity's (Week 1 at version 2 while Week 2 is still on version 1).
+function sharerSentence(attached, what) {
+  const list = attached?.sharers ?? [];
+  if (list.length === 0) return '';
+  if (list.length === 1) {
+    const [s] = list;
+    return `${sharerName(s)} also uses ${what} and stays on version ${s.version} until you change it there.`;
+  }
+  const versions = new Set(list.map((s) => s.version));
+  if (versions.size === 1) {
+    return `${list.map(sharerName).join(', ')} also use ${what} and stay on version ${list[0].version} until you change them there.`;
+  }
+  return `${list.map((s) => `${sharerName(s)} (version ${s.version})`).join(', ')} also use ${what}; each stays on its own version until you change it there.`;
+}
 
 // What to ask before saving, or null when the save needs no confirming. Only
 // a change to an ATTACHED waiver is asked about: taking it off, swapping it,
@@ -98,7 +119,6 @@ const sharerList = (attached) =>
 function waiverConfirm(f, attached, activityName) {
   if (!attached) return null;
   const a = attached.agreement;
-  const sharers = sharerList(attached);
   if (f.waiverChoice !== 'ours') {
     return `Take the ${a.title} off "${activityName}"?\n\nThe waiver itself stays, and every signature already given stays on file. Families ticking ${activityName} will no longer be asked to sign it.`;
   }
@@ -107,8 +127,8 @@ function waiverConfirm(f, attached, activityName) {
     (f.waiverTitle.trim() !== a.title || f.waiverBody.trim() !== String(a.body ?? '').trim())
   ) {
     return `Save a new version of the ${a.title}?\n\nThis makes version ${attached.nextVersion} for "${activityName}". Signatures already given stay with version ${a.version}; anyone ticking ${activityName} from now on signs the new text.\n\n${
-      sharers
-        ? `${sharers} also use the ${a.title} and stay on version ${a.version} until you change them there.`
+      attached.sharers.length > 0
+        ? sharerSentence(attached, `the ${a.title}`)
         : 'No other activity uses it.'
     }`;
   }
@@ -296,7 +316,7 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
                 given stay with version {a.version}; anyone ticking {name} from now on signs the
                 new text.
                 {attached.sharers.length > 0 &&
-                  ` ${sharerList(attached)} also use it and stay on version ${a.version} until you change them there.`}
+                  ` ${sharerSentence(attached, 'it')}`}
               </p>
             )}
             <button type="button" onClick={back} className="mt-1 text-xs text-neutral-600 underline">
@@ -397,7 +417,7 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
 
 // `waiver` is the page's reading of the activity's own waiver, or null:
 // { agreement: { id, key, version, title, body, active }, signedCount,
-//   riderCount, sharers: [{ name, eventName }], nextVersion }.
+//   riderCount, sharers: [{ name, eventName, version }], nextVersion }.
 // `waiverChoices` is every waiver already in use on some activity, at its
 // current version: [{ id, key, version, title }].
 export function ActivityEditor({ activity, waiver = null, waiverChoices = [] }) {

@@ -287,6 +287,9 @@ export default async function AdminActivitiesPage({ searchParams }) {
                       .map((r) => ({
                         name: r.activities.name,
                         eventName: r.activities.events?.name ?? '',
+                        // Each sharer's OWN version: a new version moves only
+                        // the edited activity, so these differ once revised.
+                        version: r.agreements.version,
                       }))
                       .sort((x, y) => `${x.eventName} ${x.name}`.localeCompare(`${y.eventName} ${y.name}`)),
                     nextVersion: Math.max(...keyRows.map((r) => r.agreements.version), agr.version) + 1,
