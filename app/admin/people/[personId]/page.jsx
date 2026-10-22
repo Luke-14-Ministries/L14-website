@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { allergyPill, statusPill } from '@/lib/format';
-import { allergySummary } from '@/lib/support';
+import { allergySummary, allergenWords } from '@/lib/support';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
@@ -75,6 +75,337 @@ function Row({ label, children }) {
   );
 }
 
+// ---- Form answers (Website Feedback list, row 15; Ellen) -----------------------
+// Everything the family wrote on the support-details form, in one place.
+// Diagnosis, communication, getting around, personal care, a hard day, sleep
+// and rooming were on no staff page before this (22 Oct 2026).
+//
+// THE LABELS ARE THE FAMILY'S QUESTIONS, word for word, grouped as the form
+// groups them (components/SupportDetailsFields.jsx). When a question there is
+// reworded, reword it here: staff saying "you told us X" should be quoting
+// the question the family actually read.
+//
+// Colour, as everywhere in the admin (Check-In's comment, 24 Aug): RED is a
+// medical alert -- allergies, seizures, rescue medication, with the shared
+// allergyPill for severity. AMBER is operational -- trouble sleeping away from
+// home, a caregiver coming. Grey italic "Not answered" is a blank, never "No".
+//
+// The yes/no columns are NOT NULL with a default of false, so on a row the
+// family never saved through the form (details_saved_at is null) a false is
+// the default, not an answer: it reads "Not answered". A true always shows.
+
+const isBlank = (v) => v == null || String(v).trim() === '';
+
+function NotAnswered() {
+  return <span className="italic text-neutral-400">Not answered</span>;
+}
+
+function Answer({ q, children }) {
+  return (
+    <div className="grid gap-x-4 gap-y-0.5 border-b border-neutral-100 py-2 last:border-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <dt className="text-neutral-500">{q}</dt>
+      <dd className="min-w-0 whitespace-pre-wrap break-words">{children}</dd>
+    </div>
+  );
+}
+
+function AnswerText({ value, alert = false }) {
+  if (isBlank(value)) return <NotAnswered />;
+  return alert ? (
+    <span className="block border-l-2 border-red-300 pl-2 text-red-900">{value}</span>
+  ) : (
+    value
+  );
+}
+
+function AnswerYesNo({ value, saved, tone }) {
+  if (value === true) {
+    const cls =
+      tone === 'red'
+        ? 'bg-red-100 text-red-800'
+        : tone === 'amber'
+          ? 'bg-amber-100 text-amber-800'
+          : 'bg-neutral-100 text-neutral-800';
+    return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>Yes</span>;
+  }
+  if (value === false && saved) return 'No';
+  return <NotAnswered />;
+}
+
+function AnswerGroup({ title, hint, children }) {
+  return (
+    <div className="mt-6 first:mt-0">
+      <h3 className="border-b border-neutral-200 pb-1 font-semibold">{title}</h3>
+      {hint && <p className="mt-0.5 text-xs text-neutral-500">{hint}</p>}
+      <dl>{children}</dl>
+    </div>
+  );
+}
+
+function FormAnswers({ sensitive, support, name }) {
+  // Without the grant: one line -- never an error, and never an empty form
+  // that reads as "the family answered nothing".
+  if (!sensitive) {
+    return (
+      <div id="form-answers" className="mt-4">
+        <Section title="Form answers">
+          <p className="text-neutral-500">Form answers need the Sensitive grant.</p>
+        </Section>
+      </div>
+    );
+  }
+  if (!support) {
+    return (
+      <div id="form-answers" className="mt-4">
+        <Section title="Form answers">
+          <p className="text-amber-700">
+            No form answers on file — nobody has filled in the support details for {name} yet.
+          </p>
+        </Section>
+      </div>
+    );
+  }
+
+  const s = support;
+  const saved = Boolean(s.details_saved_at);
+  const codes = Array.isArray(s.allergens) ? s.allergens : [];
+  const words = allergenWords(s);
+  const pill = allergyPill(s.has_allergies, s.allergy_severity);
+  // A row from before the tick list (0097) has its list in allergy_detail;
+  // allergenWords already shows it as "Other: ...", so it is not repeated as
+  // the reaction.
+  const legacyAllergyText = s.has_allergies && codes.length === 0 && !isBlank(s.allergy_detail);
+  // The form asks the detail only behind a "yes"; a detail left behind by an
+  // older save is shown rather than hidden.
+  const showDetail = (flag, detail) => flag === true || !isBlank(detail);
+
+  return (
+    <div id="form-answers" className="mt-4">
+      <Section
+        title="Form answers"
+        note={
+          saved
+            ? `What the family wrote, under the form's own questions. Last saved ${dayInMorristown(s.details_saved_at)}.`
+            : 'What is on file. The family has never saved the form, so a yes/no left at its default reads "Not answered".'
+        }
+      >
+        <AnswerGroup
+          title={`About ${name}`}
+          hint="Asked of campers. Anyone else is asked these only if they already had answers here."
+        >
+          <Answer q="Disability or diagnosis, in your own words">
+            <AnswerText value={s.disabilities} />
+          </Answer>
+          <Answer q={`How does ${name} communicate best?`}>
+            <AnswerText value={s.communication} />
+          </Answer>
+          <Answer q="Getting around">
+            <AnswerText value={s.mobility} />
+          </Answer>
+          <Answer q="Personal care">
+            <AnswerText value={s.personal_care} />
+          </Answer>
+          <Answer q="Anything else about daily routine">
+            <AnswerText value={s.daily_living_supports} />
+          </Answer>
+        </AnswerGroup>
+
+        <AnswerGroup title="Health">
+          <Answer q={`Does ${name} have any allergies?`}>
+            <AnswerYesNo value={s.has_allergies} saved={saved} tone="red" />
+          </Answer>
+          {s.has_allergies && (
+            <>
+              <Answer q="Which ones? Tick all that apply.">
+                {words.length ? (
+                  <span className="font-semibold text-red-800">{words.join(', ')}</span>
+                ) : (
+                  <NotAnswered />
+                )}
+              </Answer>
+              <Answer q="How serious is it?">
+                {pill && (
+                  <span
+                    title={pill.title}
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${pill.cls}`}
+                  >
+                    {pill.text}
+                  </span>
+                )}
+              </Answer>
+              <Answer q="What happens, and what should we do?">
+                {legacyAllergyText ? (
+                  <span className="text-neutral-500">
+                    Given before the tick list, as one answer — shown under &ldquo;Which ones&rdquo;.
+                  </span>
+                ) : (
+                  <AnswerText value={s.allergy_detail} alert />
+                )}
+              </Answer>
+            </>
+          )}
+          <Answer q={`Does ${name} have seizures?`}>
+            <AnswerYesNo value={s.has_seizures} saved={saved} tone="red" />
+          </Answer>
+          {showDetail(s.has_seizures, s.seizure_detail) && (
+            <Answer q="What do they look like, and what should we do?">
+              <AnswerText value={s.seizure_detail} alert />
+            </Answer>
+          )}
+          <Answer q={`Does ${name} carry any rescue or emergency medication?`}>
+            <AnswerYesNo value={s.has_rescue_medication} saved={saved} tone="red" />
+          </Answer>
+          {showDetail(s.has_rescue_medication, s.rescue_medication_detail) && (
+            <Answer q="What, where is it kept, and when is it used?">
+              <AnswerText value={s.rescue_medication_detail} alert />
+            </Answer>
+          )}
+          <Answer q="Regular medications">
+            <AnswerText value={s.medications} />
+          </Answer>
+          <Answer q="Dietary needs">
+            <AnswerText value={s.dietary_needs} />
+          </Answer>
+        </AnswerGroup>
+
+        <AnswerGroup title="A hard day">
+          <Answer q={`What tends to set ${name} off, or make things harder?`}>
+            <AnswerText value={s.behaviour_triggers} />
+          </Answer>
+          <Answer q="What helps them settle?">
+            <AnswerText value={s.redirection_strategies} />
+          </Answer>
+          <Answer q={`What does ${name} enjoy, and what do they avoid?`}>
+            <AnswerText value={s.likes_dislikes} />
+          </Answer>
+          <Answer q={`Does ${name} have trouble sleeping away from home?`}>
+            <AnswerYesNo value={s.has_sleep_disturbance} saved={saved} tone="amber" />
+          </Answer>
+          {showDetail(s.has_sleep_disturbance, s.sleep_notes) && (
+            <Answer q="What should the night staff know?">
+              <AnswerText value={s.sleep_notes} />
+            </Answer>
+          )}
+        </AnswerGroup>
+
+        <AnswerGroup title="Support at camp">
+          <Answer q={`Anything about who ${name} shares a room with, or the room itself?`}>
+            <AnswerText value={s.rooming_preferences} />
+          </Answer>
+          <Answer q={`Will a caregiver be attending with ${name}?`}>
+            <AnswerYesNo value={s.has_caregiver} saved={saved} tone="amber" />
+          </Answer>
+        </AnswerGroup>
+
+        <AnswerGroup title="Emergency contact">
+          <Answer q="Name">
+            <AnswerText value={s.emergency_contact_name} />
+          </Answer>
+          <Answer q="Phone">
+            {isBlank(s.emergency_contact_phone) ? (
+              <NotAnswered />
+            ) : (
+              <a href={`tel:${s.emergency_contact_phone}`} className="text-brand underline">
+                {s.emergency_contact_phone}
+              </a>
+            )}
+          </Answer>
+          <Answer q={`Relationship to ${name}`}>
+            <AnswerText value={s.emergency_contact_relationship} />
+          </Answer>
+        </AnswerGroup>
+
+        <AnswerGroup title="Anything else?" hint="Anything that doesn't fit neatly above.">
+          <Answer q="Anything else?">
+            <AnswerText value={s.other_concerns} />
+          </Answer>
+        </AnswerGroup>
+      </Section>
+    </div>
+  );
+}
+
+// The volunteer application's answers, per event, under the application's own
+// questions (app/register/volunteer/VolunteerApplication.jsx). NOT behind the
+// Sensitive grant: volunteer_applications' select policy is is_staff() (0001;
+// 0101 changed its write rules, not its read), and the Volunteers page already
+// shows these answers to every staff member who opens it. Gating them here
+// would hide on one page what another page shows.
+function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
+  const withApp = parts.filter((p) => appByPart.has(p.id));
+  if (withApp.length === 0) return null;
+  return (
+    <div className="mt-4">
+      <Section
+        title="Volunteer application answers"
+        note="What they wrote on the volunteer application, per event. Reviewed on the Volunteers page."
+      >
+        {withApp.map((p) => {
+          const a = appByPart.get(p.id);
+          const age = ageAt(dob, p.registrations?.events?.starts_on);
+          const minor = age != null && age < 18;
+          return (
+            <AnswerGroup
+              key={p.id}
+              title={`${p.registrations?.events?.name ?? 'Event'} — ${a.status}${
+                a.updated_at ? `, last saved ${dayInMorristown(a.updated_at)}` : ''
+              }`}
+            >
+              <Answer q="Where would you like to serve?">
+                <AnswerText value={a.preferred_areas} />
+              </Answer>
+              <Answer q="Is this your first time volunteering with us?">
+                {a.first_time_volunteering == null ? (
+                  <NotAnswered />
+                ) : a.first_time_volunteering ? (
+                  'Yes — first time'
+                ) : (
+                  'No — returning'
+                )}
+              </Answer>
+              <Answer q="Home church">
+                <AnswerText value={a.church_attendance} />
+              </Answer>
+              <Answer q="A little about your faith">
+                <AnswerText value={a.faith_statement} />
+              </Answer>
+              <Answer q="Skills you'd bring (music, lifeguard, nursing, crafts…)">
+                <AnswerText value={a.relevant_skills} />
+              </Answer>
+              <Answer q="Experience with people with disabilities">
+                <AnswerText value={a.disability_experience} />
+              </Answer>
+              {(minor || a.accompanying_adult_person_id) && (
+                <Answer q="Accompanying adult (required for volunteers under 18)">
+                  {a.accompanying_adult_person_id ? (
+                    <Link
+                      href={`/admin/people/${a.accompanying_adult_person_id}/`}
+                      className="text-brand underline"
+                    >
+                      {adultName.get(a.accompanying_adult_person_id) || 'The named adult'}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold text-amber-800">⚑ None named</span>
+                  )}
+                </Answer>
+              )}
+              <Answer q="I have read the Apostles' Creed and I affirm it.">
+                {a.creed_affirmed === true ? (
+                  <span className="text-green-700">Affirmed</span>
+                ) : a.creed_affirmed === false ? (
+                  <span className="font-semibold text-red-700">⚠ Not affirmed — speak with Larry</span>
+                ) : (
+                  <NotAnswered />
+                )}
+              </Answer>
+            </AnswerGroup>
+          );
+        })}
+      </Section>
+    </div>
+  );
+}
+
 export default async function PersonPage({ params }) {
   const { personId } = await params;
 
@@ -82,7 +413,11 @@ export default async function PersonPage({ params }) {
   if (!staff) await bounceNonStaff(`/admin/people/${personId}/`);
   if (!can(staff, 'staff')) redirect('/admin');
 
-  const sensitive = can(staff, 'sensitive');
+  // read:sensitive is what person_support's select policy asks
+  // (can_view_person_support -> can_view_sensitive() = has_grant('sensitive',
+  // 'read'), 0101/0106). 'sensitive' is its old alias; the canonical name is
+  // used so the page reads the same as the policy.
+  const sensitive = can(staff, 'read:sensitive');
   const supabase = await createClient();
 
   const { data: person } = await supabase
@@ -148,8 +483,17 @@ export default async function PersonPage({ params }) {
       participantIds.length
         ? supabase
             .from('volunteer_applications')
-            .select('registration_participant_id, status, creed_affirmed, reviewed_at, updated_at')
+            .select(
+              'registration_participant_id, status, creed_affirmed, reviewed_at, updated_at, preferred_areas, first_time_volunteering, church_attendance, faith_statement, relevant_skills, disability_experience, accompanying_adult_person_id'
+            )
             .in('registration_participant_id', participantIds)
+            .then((res) => {
+              // Thrown, not swallowed: this read carries the answers shown
+              // under Form answers, and an error read as "no application"
+              // would say this volunteer never applied.
+              if (res.error) throw new Error(`Volunteer applications: ${res.error.message}`);
+              return res;
+            })
         : Promise.resolve({ data: [] }),
       supabase
         .from('person_consents')
@@ -281,15 +625,40 @@ export default async function PersonPage({ params }) {
   // grant is checked explicitly so the page can SAY it is hidden rather than
   // rendering an empty section that reads as "nothing recorded" -- which on a
   // medical section is the dangerous reading.
-  const { data: support } = sensitive
-    ? await supabase
-        .from('person_support')
-        .select(
-          'has_allergies, allergy_severity, allergens, allergy_other, allergy_detail, dietary_needs, has_seizures, has_rescue_medication, buddy_required, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship'
-        )
-        .eq('person_id', personId)
-        .maybeSingle()
-    : { data: null };
+  //
+  // Every answer column, for Form answers as well as the two summaries. A
+  // failed read for someone WITH the grant is thrown: rendered as null it
+  // would say "nothing recorded" on a medical record.
+  let support = null;
+  if (sensitive) {
+    const { data, error } = await supabase
+      .from('person_support')
+      .select(
+        `has_allergies, allergy_severity, allergens, allergy_other, allergy_detail, dietary_needs,
+         has_seizures, seizure_detail, has_rescue_medication, rescue_medication_detail, medications,
+         disabilities, communication, mobility, personal_care, daily_living_supports,
+         behaviour_triggers, redirection_strategies, likes_dislikes,
+         has_sleep_disturbance, sleep_notes, rooming_preferences, has_caregiver, other_concerns,
+         buddy_required, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
+         details_saved_at`
+      )
+      .eq('person_id', personId)
+      .maybeSingle();
+    if (error) throw new Error(`Support details: ${error.message}`);
+    support = data;
+  }
+
+  // Names for any accompanying adult a volunteer named (volunteer answers).
+  const adultIds = [...new Set((apps ?? []).map((a) => a.accompanying_adult_person_id).filter(Boolean))];
+  let adultName = new Map();
+  if (adultIds.length) {
+    const { data: adults, error: adultsError } = await supabase
+      .from('people')
+      .select('id, first_name, last_name')
+      .in('id', adultIds);
+    if (adultsError) throw new Error(`Accompanying adults: ${adultsError.message}`);
+    adultName = new Map((adults ?? []).map((a) => [a.id, `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim()]));
+  }
 
   // The face at the top, as on Check-In and the registration page. Sensitive
   // read, like the photos table and bucket (lib/photos.js); without it, or
@@ -612,8 +981,9 @@ export default async function PersonPage({ params }) {
                   after somebody is paired. This row went on saying "Yes" for
                   the rest of the season. */}
               <p className="mt-2 text-xs text-neutral-500">
-                Fuller medical notes stay on the Medical &amp; Support page — this is the summary,
-                not a second medical record.
+                The summary. Every answer the family gave, in the form&rsquo;s own questions, is
+                under <a href="#form-answers" className="text-brand underline">Form answers</a>{' '}
+                below.
               </p>
             </>
           )}
@@ -645,6 +1015,19 @@ export default async function PersonPage({ params }) {
           )}
         </Section>
       </div>
+
+      <FormAnswers
+        sensitive={sensitive}
+        support={support}
+        name={person.preferred_name || person.first_name || 'this person'}
+      />
+
+      <VolunteerAnswers
+        parts={parts ?? []}
+        appByPart={appByPart}
+        adultName={adultName}
+        dob={person.date_of_birth}
+      />
     </div>
   );
 }
