@@ -16,7 +16,7 @@ import { dayInMorristown } from '@/lib/events';
 import { addRegistrationFee, waiveRegistrationFee } from './actions';
 
 // Module level (CLAUDE.md: never a component inside another's body).
-function FeeRow({ fee, canWrite, registrationId }) {
+function FeeRow({ fee, canWaive, registrationId }) {
   const router = useRouter();
   const [waiving, setWaiving] = useState(false);
   const [reason, setReason] = useState('');
@@ -49,7 +49,7 @@ function FeeRow({ fee, canWrite, registrationId }) {
           <span className={`tabular-nums ${fee.waived_at ? 'line-through text-neutral-400' : 'text-amber-800'}`}>
             {dollars(fee.amount_cents)}
           </span>
-          {!fee.waived_at && canWrite && !waiving && (
+          {!fee.waived_at && canWaive && !waiving && (
             <button type="button" onClick={() => setWaiving(true)} className="text-sm text-brand underline">
               Waive
             </button>
@@ -81,6 +81,7 @@ function FeeRow({ fee, canWrite, registrationId }) {
           <button type="button" onClick={() => setWaiving(false)} className="text-sm text-neutral-600 underline">
             Cancel
           </button>
+          <p className="w-full text-xs text-neutral-500">The family can see this reason.</p>
         </div>
       )}
       {error && <p className="mt-1 text-sm text-red-700">{error}</p>}
@@ -156,7 +157,10 @@ function AddFeeForm({ registrationId }) {
   );
 }
 
-export default function FeesPanel({ registrationId, fees = [], canWrite = false }) {
+// canWrite: Payments write -- may ADD a fee. canWaive: Payments AND
+// Registration write (can_decide_scholarships, 0102) -- waiving is a hand-set
+// money decision, like a scholarship.
+export default function FeesPanel({ registrationId, fees = [], canWrite = false, canWaive = false }) {
   if (fees.length === 0 && !canWrite) return null;
   return (
     <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-6 py-4 shadow-xs text-sm">
@@ -166,7 +170,7 @@ export default function FeesPanel({ registrationId, fees = [], canWrite = false 
       ) : (
         <ul className="mt-1 divide-y divide-neutral-100">
           {fees.map((f) => (
-            <FeeRow key={f.id} fee={f} canWrite={canWrite} registrationId={registrationId} />
+            <FeeRow key={f.id} fee={f} canWaive={canWaive} registrationId={registrationId} />
           ))}
         </ul>
       )}

@@ -427,10 +427,13 @@ export default async function DashboardPage({ searchParams }) {
   // Fees on these registrations (0123): a returned bank payment, or one staff
   // added -- waived ones too, struck through, so the family sees what
   // happened to them. Scoped to this household's registrations explicitly.
+  // Only what a family is shown: kind, amount, date, reason, waived -- never
+  // the staff columns (who added or waived it, the waiver's reason, ids).
+  // RLS lets a family read its own whole row, so the page is what limits it.
   const { data: feeRows, error: feeError } = regIds.length
     ? await supabase
         .from('registration_fees')
-        .select('id, registration_id, kind, amount_cents, reason, created_at, waived_at')
+        .select('registration_id, kind, amount_cents, reason, created_at, waived_at')
         .in('registration_id', regIds)
         .order('created_at')
     : { data: [], error: null };
@@ -1256,9 +1259,9 @@ export default async function DashboardPage({ searchParams }) {
                             )}
                             {/* 0123: each fee on its own line, with its date; a
                                 waived one struck through and marked. */}
-                            {fees.map((f) => (
+                            {fees.map((f, i) => (
                               <div
-                                key={f.id}
+                                key={i}
                                 className={`flex justify-between gap-2 py-0.5 ${f.waived_at ? 'text-neutral-400' : 'text-amber-800'}`}
                               >
                                 <span>

@@ -464,7 +464,12 @@ export default async function RegistrationDetailPage({ params }) {
       balance={balanceRow}
       feesPanel={
         can(staff, 'read:payments') ? (
-          <FeesPanel registrationId={id} fees={fees} canWrite={can(staff, 'write:payments')} />
+          <FeesPanel
+            registrationId={id}
+            fees={fees}
+            canWrite={can(staff, 'write:payments')}
+            canWaive={can(staff, 'decide:scholarships')}
+          />
         ) : null
       }
       payments={payments}

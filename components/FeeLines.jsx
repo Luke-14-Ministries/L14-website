@@ -7,9 +7,11 @@ import { dollars } from '@/lib/payments';
 import { feeLabel } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 
+// Only family-facing columns are passed (kind, amount, date, reason, waived)
+// -- never who added or waived it -- so the rows are keyed by position.
 export default function FeeLines({ fees = [] }) {
-  return fees.map((f) => (
-    <div key={f.id} className={`flex justify-between gap-2 py-1 ${f.waived_at ? 'text-neutral-400' : ''}`}>
+  return fees.map((f, i) => (
+    <div key={i} className={`flex justify-between gap-2 py-1 ${f.waived_at ? 'text-neutral-400' : ''}`}>
       <span>
         {feeLabel(f)} ({dayInMorristown(f.created_at)})
         {f.waived_at && <span className="ml-1 text-xs">waived</span>}

@@ -1181,7 +1181,8 @@ export async function setPlanStatus(registrationId, { action, keepsEarlyDiscount
 }
 
 // ---------------------------------------------------------------------------
-// Fees (0123): a staff-added fee, and waiving any fee. Payments write.
+// Fees (0123): a staff-added fee (Payments write), and waiving any fee
+// (Payments and Registration write -- a decision, as a scholarship is).
 // Both go through definer functions -- nobody signed in writes
 // registration_fees directly -- and both land in money_change_log. The
 // family sees the reason for an added fee on their dashboard and statement.
@@ -1207,7 +1208,9 @@ export async function addRegistrationFee(registrationId, { dollars, reason } = {
 }
 
 export async function waiveRegistrationFee(registrationId, feeId, reason) {
-  const { error: authError } = await requireRegistrar('write:payments');
+  // A waiver is a decision, like a scholarship (0102): Payments AND
+  // Registration write. The database asks can_decide_scholarships() too.
+  const { error: authError } = await requireRegistrar('decide:scholarships');
   if (authError) return { ok: false, error: authError };
   const why = String(reason ?? '').trim();
   if (!why) return { ok: false, error: 'Give the reason for waiving the fee.' };

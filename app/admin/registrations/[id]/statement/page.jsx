@@ -65,7 +65,7 @@ export default async function FamilyStatementPage({ params }) {
     // Fees (0123): returned bank payments and staff-added fees, waived ones too.
     supabase
       .from('registration_fees')
-      .select('id, kind, amount_cents, reason, created_at, waived_at')
+      .select('kind, amount_cents, reason, created_at, waived_at')
       .eq('registration_id', id)
       .order('created_at'),
   ]);
