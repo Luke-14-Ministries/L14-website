@@ -53,7 +53,8 @@ export default function FinishChoices({
 }) {
   const [route, setRoute] = useState(canPlan ? 'plan' : 'full');
   const [schedule, setSchedule] = useState('monthly');
-  // Bank first, as everywhere else on the site: its fee is a fraction of a card's.
+  // Bank first and the default, as everywhere else on the site: its fee is a
+  // fraction of a card's (the line under the pills says so, 22 Oct 2026).
   const [method, setMethod] = useState('bank');
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
@@ -153,11 +154,12 @@ export default function FinishChoices({
             <Pill value="bank" cur={method} set={setMethod}>Bank account</Pill>
             <Pill value="card" cur={method} set={setMethod}>Card</Pill>
           </div>
-          {method === 'card' && (
-            <p className="text-xs text-neutral-500">
-              Cards cost the ministry more in processing fees than bank transfers do.
-            </p>
-          )}
+          {/* Lawrence, 22 Oct 2026: say it beside the choice, whichever is
+              picked, and without a dollar figure. Bank stays first and is
+              the default. Nothing here changes an amount. */}
+          <p className="text-xs text-neutral-500">
+            Paying from your bank account costs the camp less in processing fees than a card.
+          </p>
 
           {route === 'plan' && plan && (
             <label className="flex gap-2 text-sm">
