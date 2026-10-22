@@ -349,8 +349,8 @@ export default async function RegistrationDetailPage({ params }) {
     supabase
       .from('payment_plans')
       .select(
-        `id, schedule, status, payment_method_label, keeps_early_discount, consent_text, consented_at,
-         payment_installments ( id, due_on, amount_cents, status, attempts, last_error, next_attempt_on )`
+        `id, schedule, status, payment_method_label, keeps_early_discount, consent_text, consented_at, updated_at,
+         payment_installments ( id, due_on, amount_cents, status, attempts, last_error, next_attempt_on, last_attempt_at )`
       )
       .eq('registration_id', id)
       .maybeSingle(),

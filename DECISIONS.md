@@ -2916,3 +2916,52 @@ household, to the household email; households without one are listed, not guesse
 is logged to `message_log` through `log_family_email()` — a definer function, Registration write,
 two template keys, stamped `sent_by` — rather than reopening INSERT on the table `0113` made
 read-only.
+
+## 2026-10-22 — A stopped payment plan: name the family, log every email, flag it for staff
+
+Lawrence, four decisions on one evening.
+
+**The staff alert names the family.** When a plan stopped after three failed payments, staff were
+told about "registration `<uuid>`" — nobody could act on it without a database lookup. The alert's
+subject is now *[Payment plans] Plan stopped — <household> — <event>*, and its body carries what
+was owed this time, the remaining balance (the figure the registration page shows,
+`registration_balances` via `settledBalance()`), the household's email and phone so staff can call,
+and an *Open the registration* button to `/admin/registrations/<id>/`. The completed-plan-reopened
+and deposit-failed alerts carry the same block. The family's own emails keep their wording, with a
+"Hello <household>," line, and fall back to the household email when Stripe has none on the
+customer.
+
+**Every plan email is logged.** `message_log` (`0001`) exists so the ministry can say "we told you
+on the first" from a record; the plan emails never wrote to it. `sendEmail()` in
+`supabase/functions/_shared/plans.ts` now returns `{ok, id, error}` and writes one row per email,
+sent or failed, with Resend's id — `plan_receipt`, `plan_payment_problem`, `plan_stopped_family`
+(the out-of-tries notice is its own key: "the plan stopped" is a different claim from "a payment
+failed"), `plan_stopped_staff`, `plan_reopened_staff`, `plan_deposit_failed_staff`. Logging is in
+that one place, and a logging failure is printed and never stops a charge being recorded. The
+edge functions insert as service_role; `log_family_email()` stays the staff path. `template_key` has
+no check constraint, so `0121` only grants service_role SELECT and INSERT (named, as every money
+table since `0006`) and refuses to apply if a constraint has appeared. Found on the way:
+`settledBalance()` and the charger read a failed balance query as $0 owed, which could close a
+plan; both now throw.
+
+**A "Plan stopped" flag, built like *Waiver outstanding*.** Awaiting review gains a *Plan stopped
+(N)* tab — registrations whose plan is `failed` (not paused by staff), confirmed ones included,
+nobody's status changed; the Overview a red card linking to it; the plan card a red line, "This
+plan stopped after 3 failed payments on <date>" (the third try, `planStoppedAt()`). Plans are money,
+so all three need Payments read — which is exactly what `payment_plans_select` asks since `0101` —
+and read with the staff member's own client, not a definer view. The question whether a stopped
+plan should also put the registration on hold stays with Larry (Staff Questions §1.1).
+
+**Ways to pay says bank costs the camp less.** Bank account was already first and the default; the
+card-only note becomes one line under the choice, whichever is picked: "Paying from your bank
+account costs the camp less in processing fees than a card." No dollar figure — the fee varies and a
+number would date — and no amount changes.
+
+## 2026-10-22 — The both-weeks discount is for volunteers only
+
+Lawrence: only **volunteers**, **confirmed by staff**, registered as a volunteer **for both weeks**
+get the multi-week discount; a camper attending both weeks gets none. That is what
+`recalc_multi_week_discount()` already does (`c_require_vol_both = true`, `c_require_confirmed =
+true`), so no code changes; the comment in `0114` that calls it "still with staff" is out of date and,
+the migration having run, stays as it is. The amount (leaning 50%) is still Larry's. Staff Questions
+§3 records it.

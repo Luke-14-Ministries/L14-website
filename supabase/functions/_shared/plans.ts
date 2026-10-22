@@ -51,7 +51,27 @@ export function methodLabel(pm: Stripe.PaymentMethod | null): string | null {
 
 // ---------------------------------------------------------------------------
 // Email. Fire-and-tolerate: a failed email never fails a money write.
+//
+// Every plan email -- the family's receipt and payment-problem notices, and
+// every staff alert -- is sent through sendEmail() and logged there, in one
+// place, to message_log (0001; Lawrence, 22 Oct 2026: "We told you on the
+// first" must be answerable from a record). The edge functions use the
+// service-role client, which RLS does not apply to, so they insert directly;
+// log_family_email() (0120) is the STAFF path and is not used here. A
+// logging failure is printed and the run carries on: the charge is already
+// recorded, and a missing log row must never undo or block it.
 // ---------------------------------------------------------------------------
+
+// Family-entered words (a household name) and provider error text go into
+// HTML, so they are escaped first.
+export function esc(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function shell(title: string, body: string): string {
   return `
@@ -67,27 +87,183 @@ function shell(title: string, body: string): string {
 </div>`;
 }
 
-export async function sendEmail(to: string | null, subject: string, title: string, body: string) {
+// A link that looks like a button (table-based, so mail clients keep it).
+function button(href: string, text: string): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:16px 0"><tr><td style="border-radius:6px;background:#14606a">
+  <a href="${href}" style="display:inline-block;padding:11px 22px;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none">${text}</a>
+</td></tr></table>`;
+}
+
+// The message_log template keys used here. message_log.template_key is free
+// text (no check constraint, 0001), so this list is the vocabulary.
+export type PlanTemplate =
+  | 'plan_receipt'
+  | 'plan_payment_problem'
+  | 'plan_stopped_family'
+  | 'plan_stopped_staff'
+  | 'plan_reopened_staff'
+  | 'plan_deposit_failed_staff';
+
+export type Sent = { ok: boolean; id: string | null; error: string | null };
+
+export async function sendEmail(
+  admin: SupabaseClient,
+  m: {
+    to: string | null;
+    subject: string;
+    title: string;
+    body: string;
+    templateKey: PlanTemplate;
+    householdId?: string | null;
+    registrationId?: string | null;
+  }
+): Promise<Sent> {
+  // No address: nothing to send and nothing to log (to_email is required).
+  if (!m.to) {
+    console.warn(`[plans] no address for ${m.templateKey} on registration ${m.registrationId ?? '?'}: not sent`);
+    return { ok: false, id: null, error: 'No email address on file.' };
+  }
+
+  let sent: Sent;
   try {
     const key = Deno.env.get('RESEND_API_KEY');
-    if (!key || !to) return;
-    const from =
-      Deno.env.get('RECEIPT_FROM') ?? 'Luke 14 Ministries <registration@luke14ministries.net>';
-    const resp = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [to], subject, html: shell(title, body) }),
-    });
-    if (!resp.ok) console.error(`[plans] email failed: ${await resp.text()}`);
+    if (!key) {
+      sent = { ok: false, id: null, error: 'RESEND_API_KEY is not set, so nothing was sent.' };
+    } else {
+      const from =
+        Deno.env.get('RECEIPT_FROM') ?? 'Luke 14 Ministries <registration@luke14ministries.net>';
+      const resp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to: [m.to], subject: m.subject, html: shell(m.title, m.body) }),
+      });
+      const text = await resp.text();
+      if (!resp.ok) {
+        sent = { ok: false, id: null, error: `The mail provider refused it (${resp.status}): ${text.slice(0, 500)}` };
+      } else {
+        let id: string | null = null;
+        try {
+          id = (JSON.parse(text) as { id?: string }).id ?? null;
+        } catch {
+          id = null;
+        }
+        sent = { ok: true, id, error: null };
+      }
+    }
   } catch (e) {
-    console.error(`[plans] email error: ${String((e as Error)?.message ?? e)}`);
+    sent = { ok: false, id: null, error: `The mail provider could not be reached: ${String((e as Error)?.message ?? e)}` };
   }
+  if (!sent.ok) console.error(`[plans] email ${m.templateKey} failed: ${sent.error}`);
+
+  // The record. Never thrown: the money write it follows has already happened.
+  try {
+    const { error: logErr } = await admin.from('message_log').insert({
+      to_email: m.to,
+      household_id: m.householdId ?? null,
+      registration_id: m.registrationId ?? null,
+      template_key: m.templateKey,
+      subject: m.subject.slice(0, 300),
+      status: sent.ok ? 'sent' : 'failed',
+      error: sent.error ? sent.error.slice(0, 1000) : null,
+      provider_message_id: sent.id,
+    });
+    if (logErr) console.error(`[plans] message_log insert failed (${m.templateKey}): ${logErr.message}`);
+  } catch (e) {
+    console.error(`[plans] message_log insert error (${m.templateKey}): ${String((e as Error)?.message ?? e)}`);
+  }
+  return sent;
 }
 
 // Staff are told at the shared registration mailbox (override: STAFF_ALERT_TO).
-export async function alertStaff(subject: string, body: string) {
+export async function alertStaff(
+  admin: SupabaseClient,
+  m: {
+    subject: string;
+    body: string;
+    templateKey: PlanTemplate;
+    householdId?: string | null;
+    registrationId?: string | null;
+  }
+): Promise<Sent> {
   const to = Deno.env.get('STAFF_ALERT_TO') ?? 'registration@luke14ministries.net';
-  await sendEmail(to, `[Payment plans] ${subject}`, 'Payment plan alert', body);
+  return await sendEmail(admin, {
+    to,
+    subject: `[Payment plans] ${m.subject}`,
+    title: 'Payment plan alert',
+    body: m.body,
+    templateKey: m.templateKey,
+    householdId: m.householdId,
+    registrationId: m.registrationId,
+  });
+}
+
+// Who a plan email is about: the household's name, email and phone, and the
+// event. Staff alerts used to name the registration only by its UUID; now they
+// carry the family's name, how to reach them and a link (22 Oct 2026). A
+// failed lookup is printed and the email still goes with what is known -- an
+// email never fails a money write.
+export type PlanContext = {
+  householdId: string | null;
+  household: string;
+  email: string | null;
+  phone: string | null;
+  eventName: string | null;
+};
+
+export async function planContext(admin: SupabaseClient, registrationId: string): Promise<PlanContext> {
+  const fallback: PlanContext = { householdId: null, household: 'A family', email: null, phone: null, eventName: null };
+  try {
+    const { data, error } = await admin
+      .from('registrations')
+      .select('household_id, events ( name ), households ( display_name, email, phone )')
+      .eq('id', registrationId)
+      .maybeSingle();
+    if (error) {
+      console.error(`[plans] could not look up registration ${registrationId} for an email: ${error.message}`);
+      return fallback;
+    }
+    if (!data) return fallback;
+    const h = (data.households ?? null) as { display_name?: string; email?: string; phone?: string } | null;
+    const ev = (data.events ?? null) as { name?: string } | null;
+    return {
+      householdId: (data.household_id as string) ?? null,
+      household: h?.display_name?.trim() || 'A family',
+      email: h?.email?.trim() || null,
+      phone: h?.phone?.trim() || null,
+      eventName: ev?.name ?? null,
+    };
+  } catch (e) {
+    console.error(`[plans] registration lookup error for ${registrationId}: ${String((e as Error)?.message ?? e)}`);
+    return fallback;
+  }
+}
+
+// The block every staff alert ends with: the money, how to reach the family,
+// and the way to the registration. Remaining balance is registration_balances
+// (via settledBalance), the figure the staff registration page shows.
+async function staffFacts(
+  admin: SupabaseClient,
+  registrationId: string,
+  ctx: PlanContext,
+  owedNowCents: number | null
+): Promise<string> {
+  let remaining = 'unknown (the balance could not be read; see the function log)';
+  try {
+    const { owed, inFlight } = await settledBalance(admin, registrationId);
+    remaining = `${dollars(owed)}${inFlight > 0 ? ` (counting ${dollars(inFlight)} still clearing the bank as paid)` : ''}`;
+  } catch (e) {
+    console.error(`[plans] balance for alert on ${registrationId}: ${String((e as Error)?.message ?? e)}`);
+  }
+  const row = (k: string, v: string) =>
+    `<tr><td style="padding:3px 12px 3px 0;color:#555;vertical-align:top">${k}</td><td style="padding:3px 0">${v}</td></tr>`;
+  const tel = ctx.phone ? ctx.phone.replace(/[^0-9+]/g, '') : '';
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:12px 0;font-size:14px">
+  ${owedNowCents != null ? row('Owed this time', `<strong>${dollars(owedNowCents)}</strong>`) : ''}
+  ${row('Remaining balance', remaining)}
+  ${row('Family email', ctx.email ? `<a href="mailto:${esc(ctx.email)}" style="color:#14606a">${esc(ctx.email)}</a>` : 'none on file')}
+  ${row('Family phone', ctx.phone ? `<a href="tel:${esc(tel)}" style="color:#14606a">${esc(ctx.phone)}</a>` : 'none on file')}
+</table>
+${button(`${SITE}/admin/registrations/${registrationId}/`, 'Open the registration')}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,10 +306,16 @@ export async function activatePlanFromDeposit(
         .eq('payment_plan_id', existing.id)
         .in('status', ['scheduled', 'failed']);
       await admin.rpc('recalc_early_registration_discount', { p_registration_id: registrationId });
-      await alertStaff(
-        'A payment-plan deposit failed',
-        `<p>The deposit for registration <code>${registrationId}</code> (${md.event_name ?? ''}) did not clear, so its payment plan was undone. The registration shows as not finished until the family chooses again.</p>`
-      );
+      const ctx = await planContext(admin, registrationId);
+      const ev = md.event_name || ctx.eventName || 'Camp registration';
+      await alertStaff(admin, {
+        subject: `Plan deposit failed — ${ctx.household} — ${ev}`,
+        body: `<p>The payment-plan deposit for <strong>${esc(ctx.household)}</strong> (${esc(ev)}) did not clear, so the plan was undone. The registration shows as not finished until the family chooses again.</p>
+         ${await staffFacts(admin, registrationId, ctx, null)}`,
+        templateKey: 'plan_deposit_failed_staff',
+        householdId: ctx.householdId,
+        registrationId,
+      });
     }
     return;
   }
@@ -226,10 +408,14 @@ export async function applyNewPaymentMethod(
 // view counts 'processing' payments as paid (right for what the family sees),
 // but a plan must not be closed on money that might still bounce.
 export async function settledBalance(admin: SupabaseClient, registrationId: string) {
-  const [{ data: bal }, { data: clearing }] = await Promise.all([
+  const [{ data: bal, error: balErr }, { data: clearing, error: clearErr }] = await Promise.all([
     admin.from('registration_balances').select('balance_cents').eq('registration_id', registrationId).maybeSingle(),
     admin.from('payments').select('amount_cents').eq('registration_id', registrationId).eq('status', 'processing'),
   ]);
+  // A failed read must never look like $0 owed: that would close a plan
+  // (CLAUDE.md: never turn a query error into an empty answer).
+  if (balErr) throw new Error(`balance: ${balErr.message}`);
+  if (clearErr) throw new Error(`clearing-payments: ${clearErr.message}`);
   const inFlight = (clearing ?? []).reduce((t: number, p: { amount_cents: number }) => t + (p.amount_cents ?? 0), 0);
   return { owed: bal?.balance_cents ?? 0, settled: (bal?.balance_cents ?? 0) + inFlight, inFlight };
 }
@@ -322,21 +508,33 @@ export async function recordInstallmentOutcome(
   await admin.rpc('recalc_early_registration_discount', { p_registration_id: args.registrationId });
   if (!transitioned) return;
 
-  const { data: plan } = await admin
+  const { data: plan, error: planErr } = await admin
     .from('payment_plans')
     .select('id, status, payment_method_label')
     .eq('id', inst.payment_plan_id)
     .maybeSingle();
-  const eventName = args.eventName ?? 'Camp registration';
+  if (planErr) throw new Error(`plan-read: ${planErr.message}`);
+
+  // Who this is about, for the emails (22 Oct 2026): the household's name,
+  // contact and event. The family's address is the one Stripe has for the
+  // payer, else the household's own.
+  const ctx = await planContext(admin, args.registrationId);
+  const eventName = args.eventName ?? ctx.eventName ?? 'Camp registration';
+  const familyTo = args.payerEmail ?? ctx.email ?? null;
+  const hello = ctx.household !== 'A family' ? `<p>Hello ${esc(ctx.household)},</p>` : '';
+  const family = { householdId: ctx.householdId, registrationId: args.registrationId };
 
   if (args.outcome === 'succeeded') {
-    await sendEmail(
-      args.payerEmail ?? null,
-      `Receipt: ${dollars(args.amountCents)} received — ${eventName}`,
-      'Payment received — thank you!',
-      `<p>Your scheduled payment of <strong>${dollars(args.amountCents)}</strong> for ${eventName} was received on ${today}${plan?.payment_method_label ? ` (${plan.payment_method_label})` : ''}.</p>
-       <p>Your remaining schedule is on your <a href="${SITE}/account/dashboard/" style="color:#14606a">family dashboard</a>.</p>`
-    );
+    await sendEmail(admin, {
+      to: familyTo,
+      subject: `Receipt: ${dollars(args.amountCents)} received — ${eventName}`,
+      title: 'Payment received — thank you!',
+      body: `${hello}
+       <p>Your scheduled payment of <strong>${dollars(args.amountCents)}</strong> for ${esc(eventName)} was received on ${today}${plan?.payment_method_label ? ` (${esc(plan.payment_method_label)})` : ''}.</p>
+       <p>Your remaining schedule is on your <a href="${SITE}/account/dashboard/" style="color:#14606a">family dashboard</a>.</p>`,
+      templateKey: 'plan_receipt',
+      ...family,
+    });
     // Done? Cancel what is left and close the plan -- but only on SETTLED
     // money, never on a bank transfer that is still clearing.
     const { settled } = await settledBalance(admin, args.registrationId);
@@ -357,28 +555,42 @@ export async function recordInstallmentOutcome(
     if (plan && plan.status === 'completed') {
       await admin.from('payment_plans').update({ status: 'active' }).eq('id', plan.id);
       plan.status = 'active';
-      await alertStaff(
-        'A completed plan was reopened',
-        `<p>A payment of ${dollars(args.amountCents)} on registration <code>${args.registrationId}</code> (${eventName}) failed after the plan had closed, so the plan was reopened and will retry.</p>`
-      );
+      await alertStaff(admin, {
+        subject: `Completed plan reopened — ${ctx.household} — ${eventName}`,
+        body: `<p>A payment of ${dollars(args.amountCents)} from <strong>${esc(ctx.household)}</strong> (${esc(eventName)}) failed after the plan had closed, so the plan was reopened and will retry.${args.error ? ` The error: ${esc(args.error)}.` : ''}</p>
+         ${await staffFacts(admin, args.registrationId, ctx, args.amountCents)}`,
+        templateKey: 'plan_reopened_staff',
+        ...family,
+      });
     }
     const outOfTries = (inst.attempts ?? 0) >= MAX_ATTEMPTS;
     if (outOfTries && plan && plan.status === 'active') {
       await admin.from('payment_plans').update({ status: 'failed' }).eq('id', plan.id);
-      await alertStaff(
-        `A plan stopped after ${MAX_ATTEMPTS} failed payments`,
-        `<p>The payment plan for registration <code>${args.registrationId}</code> (${eventName}) could not collect ${dollars(args.amountCents)} after ${MAX_ATTEMPTS} tries. Last error: ${args.error ?? 'unknown'}.</p>
-         <p>The plan is stopped. On the registration page you can retry, pause or cancel it, and decide whether the family keeps the early-registration discount.</p>`
-      );
+      // Lawrence, 22 Oct 2026: the family's name in the subject, what was
+      // owed and what is left, how to reach them, and a link -- the alert
+      // named the registration only by its UUID before.
+      await alertStaff(admin, {
+        subject: `Plan stopped — ${ctx.household} — ${eventName}`,
+        body: `<p>The payment plan for <strong>${esc(ctx.household)}</strong> (${esc(eventName)}) could not collect ${dollars(args.amountCents)} after ${MAX_ATTEMPTS} tries. Last error: ${esc(args.error ?? 'unknown')}.</p>
+         ${await staffFacts(admin, args.registrationId, ctx, args.amountCents)}
+         <p>The plan is stopped. On the registration page you can retry, pause or cancel it, and decide whether the family keeps the early-registration discount.</p>`,
+        templateKey: 'plan_stopped_staff',
+        ...family,
+      });
     }
-    await sendEmail(
-      args.payerEmail ?? null,
-      `Payment problem — ${eventName}`,
-      'We could not take your scheduled payment',
-      `<p>Your scheduled payment of <strong>${dollars(args.amountCents)}</strong> for ${eventName} did not go through${args.error ? ` (${args.error})` : ''}.</p>
+    await sendEmail(admin, {
+      to: familyTo,
+      subject: `Payment problem — ${eventName}`,
+      title: 'We could not take your scheduled payment',
+      body: `${hello}
+       <p>Your scheduled payment of <strong>${dollars(args.amountCents)}</strong> for ${esc(eventName)} did not go through${args.error ? ` (${esc(args.error)})` : ''}.</p>
        ${outOfTries
          ? `<p>We have tried ${MAX_ATTEMPTS} times, so your payment plan is paused and camp staff will be in touch.</p>`
-         : `<p>We will try again on ${retryOn}. To use a different card or bank account, open your <a href="${SITE}/account/dashboard/" style="color:#14606a">family dashboard</a> and choose &ldquo;Change card or bank account&rdquo;.</p>`}`
-    );
+         : `<p>We will try again on ${retryOn}. To use a different card or bank account, open your <a href="${SITE}/account/dashboard/" style="color:#14606a">family dashboard</a> and choose &ldquo;Change card or bank account&rdquo;.</p>`}`,
+      // The out-of-tries notice is its own record: "we told them the plan
+      // stopped" is a different claim from "we told them a payment failed".
+      templateKey: outOfTries ? 'plan_stopped_family' : 'plan_payment_problem',
+      ...family,
+    });
   }
 }

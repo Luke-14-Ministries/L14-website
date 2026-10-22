@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as
 working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0120`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0120`** (`0121` written, not yet applied). **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -133,6 +133,7 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 | May this staff member…? | `can(staff, 'read:<area>' \| 'write:<area>')`, vocabulary in `lib/grants.js` |
 | May they decide a scholarship, a hand-set discount or a deposit waiver? | `can(staff, 'decide:scholarships')` / `can_decide_scholarships()` — Payments **and** Registration write (`0102`) |
 | Which activity waivers are outstanding? (our waiver unsigned, or the provider's confirmation not uploaded, on an active signup) | the `activity_waivers_outstanding` view (`0120`, security invoker — families their own rows, staff all); never re-derive it on a page |
+| When did a stopped payment plan stop? | `planStoppedAt()` in `lib/plans.js` (the third failed try; the plan's `updated_at` as fallback) |
 
 ---
 
@@ -166,7 +167,7 @@ on the Programs page; the preset Lawrence wanted (16 Oct) is not built.
 **Since `0113`:** a family's new participant row is `draft` or `submitted`, never confirmed, and
 `submitted_at` is set by the database; attaching a login to a household is the administrator's,
 through `admin_link_login_to_household()`; confirming an agreement signature is Registration write;
-`message_log` is read-only for staff (the one staff write is `log_family_email()`, `0120`); `pay_in_full_amount()` needs Payments read or your own
+`message_log` is read-only for staff (the one staff write is `log_family_email()`, `0120`; the plan edge functions write it as service_role, `0121`); `pay_in_full_amount()` needs Payments read or your own
 registration. The money columns left `registration_participants` for `participant_money` the same
 day (`0114`, see *Money*).
 
@@ -222,8 +223,10 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   `recalcEarly()` does both). Each recalc **touches only discounts carrying its own
   `discount_reason`**; a manual staff discount is invisible to it. Amounts are event settings
   (`family_discount_cents`, `family_discount_from_person`, `multi_week_discount_percent`, `0096`);
-  `recalc_event_discounts()` re-runs them after Setup saves. Whether volunteering must cover both
-  weeks is still with staff — named constants at the top of `recalc_multi_week_discount()`.
+  `recalc_event_discounts()` re-runs them after Setup saves. **Only volunteers get the both-weeks
+  discount** (Lawrence, 22 Oct): confirmed by staff and volunteering at both weeks; a camper
+  attending both weeks gets none — the constants `c_require_vol_both` and `c_require_confirmed`
+  at the top of `recalc_multi_week_discount()` say so.
 - **"Deposit received" means the whole deposit** — $50 per fee-paying person, or a waiver (`0109`); a
   short payment is *No full deposit yet* with the `deposit_short` flag. The camp's medical contact
   is `event_medical_contacts` (`0109`): staff, leaders and households registered for the event only.
@@ -241,7 +244,15 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   daily `charge-payment-plans` function shares logic with the webhook via
   `supabase/functions/_shared/`. Families cannot edit money columns on `registration_participants`.
   **Not live until `supabase/PAYMENT-PLANS-SETUP.md` is done.** Plans and pay-in-full are offered at
-  `/account/finish/[registrationId]` ("Ways to pay"; `registration_payment_routes` view).
+  `/account/finish/[registrationId]` ("Ways to pay"; `registration_payment_routes` view; bank first,
+  with one line that it costs the camp less than a card). **Every plan email** — the family's
+  receipt, payment problem and plan-stopped notices, and the staff alerts — goes through
+  `sendEmail()` in `_shared/plans.ts` and is logged to `message_log` (`plan_*` keys, `0121`); a log
+  failure never stops a charge being recorded. Staff alerts name the household in the subject and
+  carry the money, the family's email and phone and a link to the registration. **A stopped plan**
+  (`failed`, after three tries) is a flag, not a status change: Awaiting review's *Plan stopped*
+  tab, a red Overview card, a red line on the plan card — Payments read (`payment_plans_select`,
+  `0101`).
 - **A person's money lives in `participant_money`** (`0114`, one row per participant:
   `fee_cents`, `scholarship_cents`, `discount_cents`, `discount_reason`, `early_discount_cents`,
   `family_discount_cents`), **not on `registration_participants`** — those columns are gone. Read it

@@ -224,6 +224,7 @@ declare
   rpA uuid; rpB uuid; agr uuid; pNew uuid; optGen uuid;
   act uuid; evCopy uuid;
   horses uuid; horsesAgr uuid; regB uuid; logId uuid;
+  planId uuid; planLogId uuid;
   n bigint; m bigint;
   oldStatus text;
 begin
@@ -827,7 +828,43 @@ begin
   perform pg_temp.expect_no_effect('staff cannot delete a logged email (0120)',
     format('delete from public.message_log where id = %L', logId));
 
+  -- Payment-plan emails (0121): the edge functions log every one as
+  -- service_role; staff read the row like any other.
+  set local role service_role;
+  insert into public.message_log (to_email, household_id, registration_id, template_key,
+                                  subject, status, provider_message_id)
+  values ('registration@example.test', hA, regA, 'plan_stopped_staff',
+          '[Payment plans] Plan stopped — Family A — Test', 'sent', 're_test_1')
+  returning id into planLogId;
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.message_log
+   where id = planLogId and template_key = 'plan_stopped_staff' and provider_message_id = 're_test_1';
+  perform pg_temp.expect('service_role logs a plan email, and staff can read it (0121)', n, 1);
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.message_log where id = planLogId;
+  perform pg_temp.expect('a family cannot read the plan email log (0121)', n, 0);
+
+  -- The Plan stopped tab and card read payment_plans with the staff's own
+  -- client: Payments read (0101's payment_plans_select), nothing else.
   set local role postgres;
+  insert into public.payment_plans (registration_id, schedule, status, activated_at)
+    values (regA, 'monthly', 'failed', now()) returning id into planId;
+  set local role authenticated;
+  perform pg_temp.as_user(uC);
+  select count(*) into n from public.payment_plans where id = planId and status = 'failed';
+  perform pg_temp.expect('Registration read without Payments read sees no stopped plan (Plan stopped tab)', n, 0);
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.payment_plans where id = planId and status = 'failed';
+  perform pg_temp.expect('Payments read sees the stopped plan (Plan stopped tab)', n, 1);
+
+  set local role postgres;
+  -- The plan guard (0111) keeps a plan from being deleted; this test row
+  -- goes with the triggers off, as the superuser seeding it.
+  set local session_replication_role = replica;
+  delete from public.payment_plans where id = planId;
+  set local session_replication_role = origin;
+  delete from public.message_log where id = planLogId;
   delete from public.activity_waiver_uploads where activity_id = act and registration_participant_id = rpA;
   delete from public.activity_signups where activity_id in (act, horses);
   delete from public.agreement_signatures where agreement_id = horsesAgr;
