@@ -123,8 +123,12 @@ end $$;
 -- Agreements.
 do $$ begin
   if (select count(*) from public.agreements where active and key in ('scholarship_agreement','payment_by_check')) = 0
-     and (select count(*) from public.agreements where active and body like '%{{event}}%') = 4
-     and (select bool_and(a.version = 2) from public.agreement_requirements r join public.agreements a on a.id = r.agreement_id)
+     -- The four household agreements only: since 0116 an activity waiver
+     -- (horseback_waiver, v1, also uses {{event}}) is an agreement too.
+     and (select count(*) from public.agreements where active and body like '%{{event}}%'
+            and key in ('emergency_consent','hold_harmless','event_rules','communication_consent')) = 4
+     and (select bool_and(a.version = 2) from public.agreement_requirements r join public.agreements a on a.id = r.agreement_id
+            where r.event_id is not null)
   then raise notice 'PASS agreements: 4 event agreements at v2, requirements moved, 2 retired';
   else raise exception 'FAIL agreements'; end if;
 end $$;
