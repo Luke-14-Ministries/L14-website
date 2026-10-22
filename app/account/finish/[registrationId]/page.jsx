@@ -43,7 +43,7 @@ export default async function FinishPage({ params }) {
     .select(
       `id, household_id, created_at,
        events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on,
-                early_registration_ends_on, early_registration_discount_cents ),
+                early_registration_ends_on, early_registration_discount_cents, returned_payment_fee_cents ),
        registration_participants ( id, person_id, status, camp_role )`
     )
     .eq('id', registrationId)
@@ -97,11 +97,13 @@ export default async function FinishPage({ params }) {
       };
     };
     const dueLabel = formatDueDate(due);
+    // 0123: the agreement names the returned-payment fee only when there is one.
+    const returnedFeeCents = ev.returned_payment_fee_cents ?? 0;
     preview = {
-      monthly: { ...build(monthly), consent: planConsentText({ schedule: 'monthly', dueLabel }) },
+      monthly: { ...build(monthly), consent: planConsentText({ schedule: 'monthly', dueLabel, returnedFeeCents }) },
       semi_monthly: {
         ...build(semi),
-        consent: planConsentText({ schedule: 'semi_monthly', dueLabel }),
+        consent: planConsentText({ schedule: 'semi_monthly', dueLabel, returnedFeeCents }),
       },
     };
   }
@@ -152,6 +154,7 @@ export default async function FinishPage({ params }) {
             canPlan={canPlan}
             preview={preview}
             planPending={route?.plan_status === 'pending'}
+            returnedFeeCents={ev.returned_payment_fee_cents ?? 0}
           />
         )}
       </div>

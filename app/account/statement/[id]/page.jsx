@@ -3,6 +3,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
 import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
 import { participantMoney } from '@/lib/payments';
+import FeeLines from '@/components/FeeLines';
 
 export const metadata = { title: 'My Statement — Luke 14 Ministries' };
 
@@ -54,7 +55,7 @@ export default async function MyStatementPage({ params }) {
     .maybeSingle();
   if (!own) notFound();
 
-  const [{ data: reg, error: regError }, { data: pays, error: paysError }, { data: bal, error: balError }] = await Promise.all([
+  const [{ data: reg, error: regError }, { data: pays, error: paysError }, { data: bal, error: balError }, { data: fees, error: feesError }] = await Promise.all([
     supabase
       .from('registrations')
       .select(
@@ -77,6 +78,12 @@ export default async function MyStatementPage({ params }) {
       .select('fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents')
       .eq('registration_id', id)
       .maybeSingle(),
+    // Fees (0123): returned bank payments and staff-added fees, waived ones too.
+    supabase
+      .from('registration_fees')
+      .select('id, kind, amount_cents, reason, created_at, waived_at')
+      .eq('registration_id', id)
+      .order('created_at'),
   ]);
 
   // A dropped error read as "no such registration" (a transient failure showed as a 404
@@ -84,6 +91,7 @@ export default async function MyStatementPage({ params }) {
   if (regError) throw new Error(`Family statement: ${regError.message}`);
   if (paysError) throw new Error(`Family statement payments: ${paysError.message}`);
   if (balError) throw new Error(`Family statement balance: ${balError.message}`);
+  if (feesError) throw new Error(`Family statement fees: ${feesError.message}`);
   if (!reg) notFound();
 
   const h = reg.households ?? {};
@@ -250,6 +258,7 @@ export default async function MyStatementPage({ params }) {
             <span>−{money(bal?.coupon_cents)}</span>
           </div>
         )}
+        <FeeLines fees={fees ?? []} />
         <div className="flex justify-between py-1">
           <span>Payments</span>
           <span>{(bal?.paid_cents ?? 0) > 0 ? `−${money(bal.paid_cents)}` : money(0)}</span>

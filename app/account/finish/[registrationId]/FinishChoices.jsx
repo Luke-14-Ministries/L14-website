@@ -7,6 +7,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { dollars } from '@/lib/payments';
 import { formatDueDateShort } from '@/lib/events';
+import { returnedFeeDisclosure } from '@/lib/plans';
 import { createCheckout } from '@/app/account/dashboard/pay/actions';
 import { startPaymentPlan } from './actions';
 
@@ -50,6 +51,8 @@ export default function FinishChoices({
   canPlan,
   preview,
   planPending,
+  // The event's returned-bank-payment fee (0123); 0 = none, and nothing is said.
+  returnedFeeCents = 0,
 }) {
   const [route, setRoute] = useState(canPlan ? 'plan' : 'full');
   const [schedule, setSchedule] = useState('monthly');
@@ -159,7 +162,15 @@ export default function FinishChoices({
               the default. Nothing here changes an amount. */}
           <p className="text-xs text-neutral-500">
             Paying from your bank account costs the camp less in processing fees than a card.
+            {' '}Thank you for considering a bank payment — it extends the impact of Luke 14 Ministries.
           </p>
+          {/* 0123: the returned-payment fee is disclosed BEFORE a family
+              chooses a bank payment, and only when the event has one. The
+              amount shown is the one the checkout carries and the only one
+              that can be charged. */}
+          {returnedFeeDisclosure(returnedFeeCents) && (
+            <p className="text-xs text-neutral-500">{returnedFeeDisclosure(returnedFeeCents)}</p>
+          )}
 
           {route === 'plan' && plan && (
             <label className="flex gap-2 text-sm">
