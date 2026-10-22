@@ -132,6 +132,7 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 | Must a family choose a payment route? | `requiresPaymentChoice()` in `lib/plans.js` — returns `false` |
 | May this staff member…? | `can(staff, 'read:<area>' \| 'write:<area>')`, vocabulary in `lib/grants.js` |
 | May they decide a scholarship, a hand-set discount or a deposit waiver? | `can(staff, 'decide:scholarships')` / `can_decide_scholarships()` — Payments **and** Registration write (`0102`) |
+| Which activity waivers are outstanding? (our waiver unsigned, or the provider's confirmation not uploaded, on an active signup) | the `activity_waivers_outstanding` view (`0120`, security invoker — families their own rows, staff all); never re-derive it on a page |
 
 ---
 
@@ -165,7 +166,7 @@ on the Programs page; the preset Lawrence wanted (16 Oct) is not built.
 **Since `0113`:** a family's new participant row is `draft` or `submitted`, never confirmed, and
 `submitted_at` is set by the database; attaching a login to a household is the administrator's,
 through `admin_link_login_to_household()`; confirming an agreement signature is Registration write;
-`message_log` is read-only for staff; `pay_in_full_amount()` needs Payments read or your own
+`message_log` is read-only for staff (the one staff write is `log_family_email()`, `0120`); `pay_in_full_amount()` needs Payments read or your own
 registration. The money columns left `registration_participants` for `participant_money` the same
 day (`0114`, see *Money*).
 
@@ -291,7 +292,12 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
 wizard and the dashboard form. Allergens are a tick list (`person_support.allergens`, fixed
 vocabulary, `allergy_other`; `allergy_detail` means "what happens"); rows saved before `0097` show
 "Other: …" until re-saved. Outside-provider waivers need an uploaded confirmation (`0087`, private
-bucket `waiver-confirmations`). Volunteers arrive a day early (`events.volunteer_arrives_on`).
+bucket `waiver-confirmations`). A waiver or provider added after people signed up is a **flag, not a
+status change** (`0120`): the review queue's *Waiver outstanding* tab, an amber line on the
+registration, the family's dashboard card and Activities page (`signActivityWaiver` signs alone).
+**Staff email to families lives at `/admin/email-families`** (Registration write): staff-pressed,
+never automatic, one email per household through `lib/email.js`, each logged to `message_log`.
+Volunteers arrive a day early (`events.volunteer_arrives_on`).
 Data-deletion requests: `/account/delete-data` → `/admin/deletion-requests`; nothing is deleted
 automatically.
 

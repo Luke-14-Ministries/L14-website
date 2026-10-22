@@ -8,6 +8,7 @@
 // you, right now? doesn't seem sensible." It isn't. This is the answer.
 
 import { useId, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   createActivity,
@@ -127,7 +128,7 @@ function waiverConfirm(f, attached, activityName) {
     f.waiverMode === 'revise' &&
     (f.waiverTitle.trim() !== a.title || f.waiverBody.trim() !== String(a.body ?? '').trim())
   ) {
-    return `Save a new version of the ${a.title}?\n\nThis makes version ${attached.nextVersion} for "${activityName}". Signatures already given stay with version ${a.version}; anyone ticking ${activityName} from now on signs the new text.\n\n${
+    return `Save a new version of the ${a.title}?\n\nThis makes version ${attached.nextVersion} for "${activityName}". Signatures already given stay on file with version ${a.version}; anyone ticking ${activityName} from now on signs the new text, and people already signed up are asked to sign it too.\n\n${
       attached.sharers.length > 0
         ? sharerSentence(attached, `the ${a.title}`)
         : 'No other activity uses it.'
@@ -314,8 +315,8 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
             {f.waiverMode === 'revise' && a && (
               <p className="mt-1 text-xs text-neutral-600">
                 Saving makes version {attached.nextVersion} of the {a.title}. Signatures already
-                given stay with version {a.version}; anyone ticking {name} from now on signs the
-                new text.
+                given stay on file with version {a.version}; anyone ticking {name} from now on
+                signs the new text, and people already signed up are asked to sign it too.
                 {attached.sharers.length > 0 &&
                   ` ${sharerSentence(attached, 'it')}`}
               </p>
@@ -421,11 +422,37 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
 //   riderCount, sharers: [{ name, eventName, version }], nextVersion }.
 // `waiverChoices` is every waiver already in use on some activity, at its
 // current version: [{ id, key, version, title }].
-export function ActivityEditor({ activity, waiver = null, waiverChoices = [] }) {
+// After a save that put a waiver (or an outside provider) on an activity with
+// people already signed up: the count, and the way to tell their families.
+// Nothing is sent from here -- the link opens the email page with the event,
+// the activity and "waiver outstanding" chosen and a suggested message, and a
+// staff member reads it and presses Send there (22 Oct 2026).
+function OwedNotice({ owed, canEmail, onClose }) {
+  const href = `/admin/email-families/?event=${owed.eventId}&activity=${owed.activityId}&outstanding=1&suggest=1`;
+  return (
+    <div className="mt-3 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+      {owed.count} {owed.count === 1 ? 'person' : 'people'} already signed up for {owed.activityName}{' '}
+      now need{owed.count === 1 ? 's' : ''} this.{' '}
+      {canEmail ? (
+        <Link href={href} className="font-semibold underline">
+          Email their families →
+        </Link>
+      ) : (
+        <span>Someone with Registration write can email their families from Email families.</span>
+      )}
+      <button type="button" onClick={onClose} className="ml-3 text-xs text-amber-800 underline">
+        Dismiss
+      </button>
+    </div>
+  );
+}
+
+export function ActivityEditor({ activity, eventId = null, canEmail = false, waiver = null, waiverChoices = [] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
+  const [owed, setOwed] = useState(null);
   const [f, setF] = useState({
     name: activity.name ?? '',
     description: activity.description ?? '',
@@ -446,6 +473,7 @@ export function ActivityEditor({ activity, waiver = null, waiverChoices = [] }) 
       const res = await fn();
       if (!res.ok) setError(res.error);
       else {
+        setOwed(res.owed ?? null);
         setOpen(false);
         router.refresh();
       }
@@ -467,7 +495,17 @@ export function ActivityEditor({ activity, waiver = null, waiverChoices = [] }) 
         >
           {activity.active !== false ? 'Turn off (hide from families)' : 'Turn back on'}
         </button>
+        {eventId && canEmail && (
+          <Link
+            href={`/admin/email-families/?event=${eventId}&activity=${activity.id}`}
+            className="text-brand underline"
+          >
+            Email the families signed up
+          </Link>
+        )}
       </div>
+
+      {owed && <OwedNotice owed={owed} canEmail={canEmail} onClose={() => setOwed(null)} />}
 
       {!open && error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
 

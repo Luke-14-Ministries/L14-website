@@ -260,6 +260,33 @@ export default async function DashboardPage({ searchParams }) {
     msgsByReg.get(m.registration_id).push(m);
   }
 
+  // Waivers still owed on activity places already held (0120): one line per
+  // person per activity, read from the one view that answers it, scoped to
+  // this household explicitly (staff RLS on the view is every family).
+  const { data: owedRows, error: owedError } = householdIds.length
+    ? await supabase
+        .from('activity_waivers_outstanding')
+        .select('registration_id, person_id, activity_id, activity_name, kind')
+        .in('household_id', householdIds)
+    : { data: [], error: null };
+  if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
+  const firstNameByPerson = new Map();
+  for (const r of regs) {
+    for (const p of r.registration_participants ?? []) {
+      if (p.people?.id) firstNameByPerson.set(p.people.id, p.people.first_name ?? '');
+    }
+  }
+  const waiversOwed = (owedRows ?? [])
+    .map((o) => ({
+      key: `${o.registration_id}:${o.person_id}:${o.activity_id}:${o.kind}`,
+      registrationId: o.registration_id,
+      text:
+        o.kind === 'ours'
+          ? `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'} needs a waiver signed`
+          : `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'}: upload the outfitter's confirmation`,
+    }))
+    .sort((a, b) => a.text.localeCompare(b.text));
+
   // Support-profile status per person. Registration ends by promising a fuller
   // form for each attendee; this is how the family finds it, and how they can
   // tell at a glance which ones are still outstanding.
@@ -770,6 +797,31 @@ export default async function DashboardPage({ searchParams }) {
           </div>
         )}
 
+
+        {/* Waivers owed on places already held (0120) -- a waiver or an
+            outside provider staff added after the signup. Each line opens
+            the Activities page at that registration, where it is signed or
+            uploaded. */}
+        {waiversOwed.length > 0 && (
+          <div className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-5">
+            <p className="font-semibold text-amber-900">
+              {waiversOwed.length === 1 ? 'A waiver is needed' : 'Waivers are needed'} for activities
+              you have signed up for
+            </p>
+            <ul className="mt-2 space-y-1 text-sm">
+              {waiversOwed.map((w) => (
+                <li key={w.key}>
+                  <Link
+                    href={`/account/activities/#reg-${w.registrationId}`}
+                    className="font-semibold text-amber-900 underline"
+                  >
+                    {w.text}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {!allDetailsDone && supportCard}
 

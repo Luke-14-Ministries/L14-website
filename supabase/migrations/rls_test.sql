@@ -223,6 +223,7 @@ declare
   hA uuid; hB uuid; pA uuid; pB uuid; ev uuid; regA uuid;
   rpA uuid; rpB uuid; agr uuid; pNew uuid; optGen uuid;
   act uuid; evCopy uuid;
+  horses uuid; horsesAgr uuid; regB uuid; logId uuid;
   n bigint; m bigint;
   oldStatus text;
 begin
@@ -727,6 +728,112 @@ begin
   delete from public.activity_slots where activity_id = act;
   update public.events set volunteer_arrives_on = null where id = ev;
   delete from public.staff_grants where profile_id = uR and area = 'setup';
+  set local role authenticated;
+
+  ---- waivers outstanding on existing signups (0120) --------------------
+  -- An activity people signed up for BEFORE it had a waiver: attaching one
+  -- must put each existing signup on activity_waivers_outstanding, a family
+  -- must see only its own rows (security invoker, through the tables' RLS),
+  -- and signing (or, for a provider, uploading) must take the row off.
+  set local role postgres;
+  select registration_id into regB from public.registration_participants where id = rpB;
+  insert into public.activities (id, event_id, name, booking_mode)
+    values (gen_random_uuid(), ev, 'Horses (0120)', 'signup') returning id into horses;
+  insert into public.activity_signups (registration_participant_id, activity_id, status)
+    values (rpA, horses, 'signed_up'), (rpB, horses, 'signed_up');
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.activity_waivers_outstanding where activity_id = horses;
+  perform pg_temp.expect('no waiver on the activity, nothing outstanding (0120)', n, 0);
+
+  set local role postgres;
+  insert into public.agreements (id, key, version, title, delivery, active, body)
+    values (gen_random_uuid(), 'horses_0120', 1, 'Horses waiver', 'internal_document', true,
+            'Horses are large animals.') returning id into horsesAgr;
+  insert into public.agreement_requirements (agreement_id, event_id, activity_id, applies_to, is_required)
+    values (horsesAgr, null, horses, 'participant', true);
+  set local role authenticated;
+
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.activity_waivers_outstanding
+   where activity_id = horses and kind = 'ours' and agreement_id = horsesAgr;
+  perform pg_temp.expect('attaching a waiver puts BOTH existing signups on the view, for staff (0120)', n, 2);
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.activity_waivers_outstanding where activity_id = horses;
+  perform pg_temp.expect('family A sees its own signup needing the new waiver (0120)', n, 1);
+  select count(*) into n from public.activity_waivers_outstanding where household_id <> hA;
+  perform pg_temp.expect('family A sees no other family''s outstanding waivers (0120)', n, 0);
+  perform pg_temp.as_user(uB);
+  select count(*) into n from public.activity_waivers_outstanding
+   where activity_id = horses and household_id = hB and person_id = pB;
+  perform pg_temp.expect('family B sees its own row (0120)', n, 1);
+  select count(*) into n from public.activity_waivers_outstanding where household_id = hA;
+  perform pg_temp.expect('family B sees none of family A''s rows (0120)', n, 0);
+
+  -- Family A signs, as the Activities page does: the row goes, for A and for staff.
+  perform pg_temp.as_user(uA);
+  insert into public.agreement_signatures (agreement_id, person_id, registration_id, status,
+                                           signed_at, signer_name, signer_role)
+    values (horsesAgr, pA, regA, 'signed_here', now(), 'Pat AAA', 'parent_guardian');
+  select count(*) into n from public.activity_waivers_outstanding where activity_id = horses;
+  perform pg_temp.expect('signing takes family A''s row off the view (0120)', n, 0);
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.activity_waivers_outstanding where activity_id = horses;
+  perform pg_temp.expect('staff then see only the unsigned signup (0120)', n, 1);
+
+  -- A cancelled signup is not asked for anything.
+  set local role postgres;
+  update public.activity_signups set status = 'cancelled'
+   where registration_participant_id = rpB and activity_id = horses;
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.activity_waivers_outstanding where activity_id = horses;
+  perform pg_temp.expect('a cancelled signup is not outstanding (0120)', n, 0);
+
+  -- The provider kind: Rafting names an outside provider (provider_url).
+  -- A signup with no uploaded confirmation is outstanding until one arrives.
+  set local role postgres;
+  insert into public.activity_signups (registration_participant_id, activity_id, status)
+    values (rpA, act, 'interested');
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.activity_waivers_outstanding
+   where activity_id = act and kind = 'provider' and agreement_id is null;
+  perform pg_temp.expect('a provider-run signup with no confirmation is outstanding (0120)', n, 1);
+  insert into public.activity_waiver_uploads (activity_id, registration_participant_id, storage_path, content_type)
+    values (act, rpA, rpA::text || '/' || act::text || '.pdf', 'application/pdf');
+  select count(*) into n from public.activity_waivers_outstanding where activity_id = act;
+  perform pg_temp.expect('uploading the confirmation takes the provider row off (0120)', n, 0);
+
+  -- The log of staff-sent family emails: Registration write, through the function only.
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('a family cannot write the message log through log_family_email (0120)',
+    format('select public.log_family_email(%L, %L, ''a@example.test'', ''family_update'', ''Hi'', ''sent'')', hA, regA));
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_denied('Registration READ cannot log a family email (0120)',
+    format('select public.log_family_email(%L, %L, ''a@example.test'', ''family_update'', ''Hi'', ''sent'')', hA, regA));
+  perform pg_temp.as_user(uR);
+  select public.log_family_email(hA, regA, 'a@example.test', 'waiver_needed',
+                                 'Horses now needs a waiver', 'sent') into logId;
+  select count(*) into n from public.message_log
+   where id = logId and sent_by = uR and template_key = 'waiver_needed' and household_id = hA;
+  perform pg_temp.expect('Registration write logs a family email, stamped with the sender (0120)', n, 1);
+  perform pg_temp.expect_denied('log_family_email refuses another template (0120)',
+    format('select public.log_family_email(%L, null, ''a@example.test'', ''welcome'', ''Hi'', ''sent'')', hA));
+  perform pg_temp.expect_denied('log_family_email refuses a registration that is not the household''s (0120)',
+    format('select public.log_family_email(%L, %L, ''a@example.test'', ''family_update'', ''Hi'', ''sent'')', hA, regB));
+  perform pg_temp.expect_denied('staff still cannot insert into message_log directly (0120)',
+    'insert into public.message_log (to_email, template_key) values (''x@example.test'', ''family_update'')');
+  perform pg_temp.expect_no_effect('staff cannot delete a logged email (0120)',
+    format('delete from public.message_log where id = %L', logId));
+
+  set local role postgres;
+  delete from public.activity_waiver_uploads where activity_id = act and registration_participant_id = rpA;
+  delete from public.activity_signups where activity_id in (act, horses);
+  delete from public.agreement_signatures where agreement_id = horsesAgr;
+  delete from public.activities where id = horses;
+  delete from public.agreements where id = horsesAgr;
+  delete from public.message_log where id = logId;
   set local role authenticated;
 
   ---- anonymous visitors ----------------------------------------------

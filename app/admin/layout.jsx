@@ -41,6 +41,9 @@ const NAV = [
   { href: '/admin/rosters', label: 'Roster: Campers & Families', need: 'read:registration', ready: true, group: 'events' },
   { href: '/admin/checkin', label: 'Check-In', need: 'read:registration', ready: true, group: 'events' },
   { href: '/admin/changes', label: 'Recent Changes', need: 'read:registration', ready: true, group: 'events' },
+  // Staff-pressed email to the families of an event or an activity (22 Oct
+  // 2026): Registration write, because it speaks to families for the ministry.
+  { href: '/admin/email-families', label: 'Email families', need: 'write:registration', ready: true, group: 'events' },
   { href: '/admin/dietary', label: 'Dietary & Allergies', need: 'sensitive', ready: true, group: 'events' },
   { href: '/admin/medical', label: 'Medical & Support', need: 'sensitive', ready: true, group: 'events' },
   { href: '/admin/volunteers', label: 'Volunteers', need: 'read:registration', ready: true, group: 'events' },
@@ -80,7 +83,7 @@ const NAV = [
 const SECTIONS = [
   // Search is the box in the header, not a sidebar item (Lawrence, 15 Oct
   // 2026); /admin/search is only where a search lands.
-  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/changes'] },
+  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/changes', '/admin/email-families'] },
   {
     key: 'camp',
     label: 'Camp week',

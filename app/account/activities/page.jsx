@@ -125,6 +125,23 @@ export default async function ActivitiesPage() {
     ])
   );
 
+  // What is still outstanding on places ALREADY held (0120): a waiver staff
+  // attached after the signup, or an outside provider's confirmation not yet
+  // uploaded. The view is the one answer; scoped to this household
+  // explicitly, not left to RLS (staff who are also a family read every row).
+  const { data: owedRows, error: owedError } = householdIds.length
+    ? await supabase
+        .from('activity_waivers_outstanding')
+        .select('registration_participant_id, activity_id, kind')
+        .in('household_id', householdIds)
+    : { data: [], error: null };
+  if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
+  const owedByKey = new Map();
+  for (const o of owedRows ?? []) {
+    const k = `${o.registration_participant_id}:${o.activity_id}`;
+    owedByKey.set(k, { ...(owedByKey.get(k) ?? {}), [o.kind]: true });
+  }
+
   // Age at the start of the event, the way the wizard decides who may sign
   // for themselves: a minor at camp is always signed for by a parent or
   // guardian, whatever today's date says.
@@ -229,6 +246,13 @@ export default async function ActivitiesPage() {
                 .map((a) => [a.id, waiverByKey.get(`${p.id}:${a.id}`) ?? null])
                 .filter(([, v]) => v)
             ),
+            // By activity id: { ours?: true, provider?: true } where a place
+            // already held still needs its waiver (0120).
+            outstanding: Object.fromEntries(
+              activities
+                .map((a) => [a.id, owedByKey.get(`${p.id}:${a.id}`) ?? null])
+                .filter(([, v]) => v)
+            ),
             // Signatures already given on this registration, by agreement id.
             signed: Object.fromEntries(
               activities
@@ -298,7 +322,8 @@ export default async function ActivitiesPage() {
             </p>
             <div className="space-y-10">
               {sections.map((s) => (
-                <div key={s.registrationId}>
+                // The anchor the dashboard's "waiver needed" card links to.
+                <div key={s.registrationId} id={`reg-${s.registrationId}`} className="scroll-mt-6">
                   <h2 className="text-xl font-bold mb-1">{s.event?.name}</h2>
                   <p className="text-sm text-neutral-500 mb-4">
                     {(s.event?.starts_on ?? '').slice(0, 10)} to {(s.event?.ends_on ?? '').slice(0, 10)}

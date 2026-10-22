@@ -2884,3 +2884,35 @@ sentence: the date inputs' min/max with the range written under them, the server
 when a slot's day or activity changes, **not when an event's dates move**. Existing rows are not
 rewritten: staff fix the Salon sitting on the Activities page, which marks any time outside the
 event's days.
+
+## 2026-10-22 — A waiver added after people signed up: a flag, an ask, and a staff-pressed email
+
+Lawrence: an activity can be added, families sign people up, and staff attach a waiver (ours, or
+an outside provider's link) later — and nobody already signed up was told. **One answer now says
+what is outstanding:** the `activity_waivers_outstanding` view (`0120`), one row per active signup
+missing our waiver (no signature of the activity's required agreement *version* on that
+registration) or the provider's uploaded confirmation. It is **security invoker**: the tables'
+own RLS already gives a family its own rows and staff every row, so it needs no `where` of its own
+(unlike the three definer views). Keyed on the version, a revised waiver asks people already
+signed up to sign the new text too; the editor's confirm now says so.
+
+**A flag, not a status change.** Awaiting review gains a *Waiver outstanding* tab that lists
+confirmed registrations too, and the registration page shows an amber line per waiver — but no
+status moves. A confirmed place is not undone for paperwork: sending a family back to *submitted*
+would drop them from rosters and counts for something staff chase by email, and the place was
+given fairly when it was given. The family is asked where they will see it — an amber card on the
+dashboard and an amber line with the signing box (or above the upload box) on the Activities page;
+signing there writes only the signature (`signActivityWaiver`, sharing `setActivityChoice`'s
+checks).
+
+**Email is staff-pressed, never automatic.** Nothing emails families because an activity was saved:
+a typo fixed in a description must not reach forty inboxes, and a waiver attached by mistake and
+removed a minute later must not either. Instead the editor, after a save that puts a waiver or a
+provider on an activity with people already signed up, says how many need it and links to
+`/admin/email-families` with everything chosen and a suggested message; a person with Registration
+write reads the preview ("This goes to N families (M people)" and the exact text) and confirms.
+The same page sends any update to the families of an event or one activity. One email per
+household, to the household email; households without one are listed, not guessed at. Each send
+is logged to `message_log` through `log_family_email()` — a definer function, Registration write,
+two template keys, stamped `sent_by` — rather than reopening INSERT on the table `0113` made
+read-only.
