@@ -30,9 +30,9 @@ Two constraints shape every decision:
 
 ## Where things stand — 18 October 2026
 
-**Phase 3: built, in staff testing** on the preview site, Stripe in test mode. **Testing Script 5**
-is the current script (SharePoint, `01 Plans and Decisions`). The working checklist is
-`DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
+**Phase 3: built, in staff testing** on the preview site, Stripe in test mode. **Testing Script 6**
+is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as the record). The
+working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
 **`0117`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
@@ -455,7 +455,8 @@ SharePoint library *Luke 14 Ministries Team Site — Website* (Markdown in each 
 - `Luke14-Staff-Questions.md` — open questions (§1) and what staff decided (`01`).
 - `Luke14-Access-Model-Plan.md`, `Luke14-Build-Plan-2026-10-16.md` — the grants model; the
   16 October build list (`01`).
-- `Luke14-Testing-Script-5.md` — the current test script (`01`).
+- `Luke14-Testing-Script-6.md` — the current test script; `Luke14-Testing-Script-5.md` is the
+  record (`01`).
 - `DO-THIS-NEXT.md` — the ordered working checklist (`02 Accounts and Setup`).
 - `Luke14-Account-Register.xlsx` — every account, owner and second admin; no passwords, ever (`02`).
 - `Luke14-Web-Admin-Handbook.md` — procedures, for the second admin (root).
