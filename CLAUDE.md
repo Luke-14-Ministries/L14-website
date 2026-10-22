@@ -111,6 +111,10 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
   (the harness caught it).
 - **A `need` with a colon is split into level and area by `can()`.** `decide:scholarships` is handled
   before the split; it was refused for everyone until 18 Oct. A new compound need goes there too.
+- **No bare `DELETE` or `UPDATE` in SQL the site calls.** Supabase runs the site's requests with
+  pg-safeupdate, which refuses either without a `WHERE` (`where true` is enough). `admin_create_event()`
+  emptied its scratch maps that way and creating an event never worked from Setup until `0122`; the
+  local harness runs through psql, where the extension is not loaded, so it cannot catch this.
 - **A function rewritten in place must check the rewrite took.** Python on Windows writes CRLF, and a
   multi-line `replace()` on `pg_get_functiondef()` then silently matches nothing; `0102` caught it with
   a post-check. Prefer restating a function in full.
