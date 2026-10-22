@@ -14,6 +14,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { BUCKET_LIMIT_BYTES, checkImageFile } from '@/lib/imageCheck';
 
 const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf' };
 
@@ -23,22 +24,32 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(existing);
+  // A picture too small to read (lib/imageCheck.js). The upload starts on
+  // choosing, so this shows AFTER it, with the file kept -- a warning, not a
+  // refusal. Only a file over the bucket's limit is refused, before upload.
+  const [sizeNote, setSizeNote] = useState('');
 
   async function onPick(e) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
     setError('');
+    setSizeNote('');
     const ext = EXT[file.type];
     if (!ext) {
       setError('Please choose a JPG, PNG or PDF.');
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      setError('That file is over 8 MB. A screenshot or a photo of the page is plenty.');
+    setBusy(true);
+    const check = await checkImageFile(file, {
+      kind: 'document',
+      maxBytes: BUCKET_LIMIT_BYTES['waiver-confirmations'],
+    });
+    if (check?.refuse) {
+      setError(`${check.message} A screenshot or a photo of the page is plenty.`);
+      setBusy(false);
       return;
     }
-    setBusy(true);
     try {
       const path = `${participantId}/${activityId}.${ext}`;
       // Replace any earlier upload with a different extension, so one person
@@ -64,6 +75,7 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
         .upsert(row, { onConflict: 'activity_id,registration_participant_id' });
       if (rowErr) throw new Error(rowErr.message);
       setDone({ storage_path: path, uploaded_at: row.uploaded_at });
+      setSizeNote(check?.message ?? '');
       router.refresh();
     } catch (err) {
       setError(`That could not be saved: ${err.message}`);
@@ -94,6 +106,11 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
             {busy ? 'Uploading…' : 'Choose file'}
             <input type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" className="hidden" onChange={onPick} disabled={busy} />
           </label>
+        </p>
+      )}
+      {sizeNote && (
+        <p role="status" className="mt-1 text-amber-800">
+          {sizeNote}
         </p>
       )}
       {error && <p className="mt-1 text-red-700">{error}</p>}

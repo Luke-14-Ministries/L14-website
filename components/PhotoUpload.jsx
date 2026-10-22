@@ -24,6 +24,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { pixelNote } from '@/lib/imageCheck';
 
 // "Is this a touch device that plausibly has a camera in it?" -- asked of the
 // browser with matchMedia and read through useSyncExternalStore, because the
@@ -92,6 +93,11 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
+  // "This photo is quite small..." -- shown in the framing step, before the
+  // person presses "Use this photo" (lib/imageCheck.js). Advice only: the
+  // photo can still be used. No byte limit is checked here, because the
+  // chosen file is never sent -- only the 512px square made from it.
+  const [sizeNote, setSizeNote] = useState('');
   // Whether to offer a camera button at all. See subscribeCoarsePointer at
   // the top of the file for how this is decided without a flash.
   const isTouchDevice = useSyncExternalStore(
@@ -128,6 +134,7 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
     try {
       if (!file.type.startsWith('image/')) throw new Error('Please choose an image file.');
       const bitmap = await createImageBitmap(file);
+      setSizeNote(pixelNote(bitmap.width, bitmap.height, 'photo') ?? '');
       setZoom(1);
       setFx(0.5);
       setFy(0.5);
@@ -165,6 +172,7 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
   function cancelFraming() {
     framing?.bitmap?.close?.();
     setFraming(null);
+    setSizeNote('');
   }
 
   async function saveFramed() {
@@ -249,6 +257,11 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
             className="flex-1"
           />
         </div>
+        {sizeNote && (
+          <p role="status" className="mt-2 max-w-sm text-xs text-amber-800">
+            {sizeNote}
+          </p>
+        )}
         <div className="mt-3 flex gap-3">
           <button type="button" onClick={saveFramed} disabled={busy} className="btn-primary py-1.5! text-sm">
             {busy ? 'Saving…' : 'Use this photo'}
