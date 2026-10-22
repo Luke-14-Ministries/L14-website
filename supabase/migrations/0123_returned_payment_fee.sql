@@ -20,12 +20,18 @@
 --   * public.registration_fees: one row per fee. Readable by the registration's
 --     own household and by Payments read (participant_money's rule, 0114). No
 --     signed-in insert, update or delete: staff go through
---     add_registration_fee() / waive_registration_fee() (Payments write); the
+--     add_registration_fee() (Payments write) / waive_registration_fee() (Payments and Registration write, as a scholarship is); the
 --     automatic fee is recorded by the edge functions (service role) through
 --     record_returned_payment_fee(). Every write lands in money_change_log
 --     (0111). Unique on the PaymentIntent: each plan try and each checkout is
 --     its own PaymentIntent, so a Stripe retry of the same webhook -- or the
 --     charger and the webhook both seeing one failure -- records one fee.
+--     A fee is recorded only for a debit the bank actually RETURNED (the
+--     caller says so from Stripe's latest charge) and at most once per plan
+--     installment, so a blocked account's instant refusals add nothing.
+--   * registration_payment_routes (0115) restated: "paid in full" / "nothing
+--     owed" ask about the camp (balance less fees), so a fee does not turn a
+--     paid family back into "not finished"; the fee shows as its own line.
 --   * registration_balances: unwaived fees are owed. A fees_cents column at
 --     the end, and balance_cents includes it. Restated in full, exactly as
 --     0114 left it otherwise: security invoker, the same row filter.
@@ -115,9 +121,16 @@ create table if not exists public.registration_fees (
     check (waived_at is null or nullif(btrim(waived_reason), '') is not null)
 );
 create index if not exists registration_fees_registration_idx on public.registration_fees (registration_id);
+-- At most ONE returned-payment fee per plan installment (review, 22 Oct):
+-- after a return such as R02 (account closed) Stripe blocks the account, and
+-- the next tries fail at once, each a new PaymentIntent. However many tries an
+-- installment takes, one returned debit is one fee.
+create unique index if not exists registration_fees_one_per_installment
+  on public.registration_fees (payment_installment_id)
+  where kind = 'returned_payment' and payment_installment_id is not null;
 
 comment on table public.registration_fees is
-  'Fees added to a registration (0123): the automatic returned-bank-payment fee and staff-added fees. Unwaived fees count in registration_balances. Readable by the household and Payments read; written only through record_returned_payment_fee() (service role), add_registration_fee() and waive_registration_fee() (Payments write).';
+  'Fees added to a registration (0123): the automatic returned-bank-payment fee and staff-added fees. Unwaived fees count in registration_balances. Readable by the household and Payments read; written only through record_returned_payment_fee() (service role), add_registration_fee() (Payments write) and waive_registration_fee() (Payments and Registration write).';
 
 alter table public.registration_fees enable row level security;
 
@@ -153,17 +166,28 @@ create trigger registration_fees_money_log
 --                             snapshot (payment_plans.returned_payment_fee_cents)
 --   otherwise              -> a checkout: the amount is p_disclosed_cents, the
 --                             snapshot that rode in the Checkout metadata
--- The event's current setting is never read. Refused (0, false) unless the
--- payment row for this PaymentIntent is a FAILED BANK payment on this
--- registration: a card decline costs the ministry nothing, so no fee, whatever
--- the caller thought. Returns the fee on file for this PaymentIntent and
--- whether this call added it (only the caller that added it tells the family).
--- INVOKER on purpose: the service role writes, and money_change_log names it.
+-- The event's current setting is never read. Refused (0, false) unless
+--   * p_returned: the caller saw a debit that was actually SUBMITTED and came
+--     back (Stripe's latest charge on the PaymentIntent failed with a failure
+--     code). A try Stripe refuses at once -- an account it blocked after an
+--     earlier return -- never reached the bank and costs the ministry no
+--     return fee, so it adds none (review, 22 Oct);
+--   * the payment row for this PaymentIntent is a FAILED BANK payment on this
+--     registration: a card decline costs the ministry nothing, so no fee,
+--     whatever the caller thought;
+--   * for a plan charge, the installment has no returned-payment fee yet.
+-- Returns the fee on file for THIS PaymentIntent and whether this call added
+-- it (only the caller that added it tells the family; a second failure of an
+-- installment that already carries a fee reports 0, so no email says a fee
+-- was added again).
+-- INVOKER on purpose: the service role writes, as the money_change_log rows
+-- with no person (changed_by null) show.
 create or replace function public.record_returned_payment_fee(
   p_registration_id   uuid,
   p_payment_intent_id text,
-  p_installment_id    uuid default null,
-  p_disclosed_cents   integer default 0
+  p_installment_id    uuid,
+  p_disclosed_cents   integer,
+  p_returned          boolean
 )
 returns table (fee_cents integer, added boolean)
 language plpgsql security invoker set search_path = ''
@@ -182,6 +206,18 @@ begin
     from public.registration_fees f where f.stripe_payment_intent_id = p_payment_intent_id;
   if v_amount is not null then
     return query select v_amount, false; return;
+  end if;
+
+  -- Never submitted to the bank, so never returned by it: no fee.
+  if p_returned is not true then
+    return query select 0, false; return;
+  end if;
+
+  -- One returned-payment fee per installment, whichever try it came from.
+  if p_installment_id is not null and exists (
+       select 1 from public.registration_fees f
+        where f.payment_installment_id = p_installment_id and f.kind = 'returned_payment') then
+    return query select 0, false; return;
   end if;
 
   select p.id into v_payment_id
@@ -212,11 +248,14 @@ begin
   values
     (p_registration_id, 'returned_payment', v_amount, 'The bank returned a payment.',
      v_payment_id, p_payment_intent_id, p_installment_id)
-  on conflict (stripe_payment_intent_id) do nothing
+  -- No conflict target: either uniqueness (the PaymentIntent, or one fee per
+  -- installment) turns a racing second insert into nothing.
+  on conflict do nothing
   returning id into v_new_id;
 
   if v_new_id is null then
-    -- Lost a race to the other writer: report what it recorded.
+    -- Lost a race to the other writer: report what it recorded for THIS
+    -- PaymentIntent (0 if the race was another try of the installment).
     select f.amount_cents into v_amount
       from public.registration_fees f where f.stripe_payment_intent_id = p_payment_intent_id;
     return query select coalesce(v_amount, 0), false; return;
@@ -224,11 +263,11 @@ begin
   return query select v_amount, true;
 end;
 $$;
-revoke all on function public.record_returned_payment_fee(uuid, text, uuid, integer) from public, anon, authenticated;
-grant execute on function public.record_returned_payment_fee(uuid, text, uuid, integer) to service_role;
+revoke all on function public.record_returned_payment_fee(uuid, text, uuid, integer, boolean) from public, anon, authenticated;
+grant execute on function public.record_returned_payment_fee(uuid, text, uuid, integer, boolean) to service_role;
 
 -- ---------------------------------------------------------------------------
--- 4. Staff: add a fee by hand, waive a fee (Payments write)
+-- 4. Staff: add a fee by hand (Payments write), waive a fee (Payments + Registration write)
 -- ---------------------------------------------------------------------------
 create or replace function public.add_registration_fee(
   p_registration_id uuid,
@@ -263,13 +302,16 @@ $$;
 revoke all on function public.add_registration_fee(uuid, integer, text) from public, anon;
 grant execute on function public.add_registration_fee(uuid, integer, text) to authenticated;
 
+-- Waiving is a hand-set money decision, like a scholarship or a hand-set
+-- discount (0102): Payments AND Registration write, can_decide_scholarships().
+-- Adding a fee stays bookkeeping (Payments write).
 create or replace function public.waive_registration_fee(p_fee_id uuid, p_reason text)
 returns void
 language plpgsql security definer set search_path = ''
 as $$
 begin
-  if not public.has_grant('payments', 'write') then
-    raise exception 'Waiving a fee needs Payments write.' using errcode = '42501';
+  if not public.can_decide_scholarships() then
+    raise exception 'Waiving a fee is decided by Payments and Registration together.' using errcode = '42501';
   end if;
   if nullif(btrim(p_reason), '') is null then
     raise exception 'Give the reason for waiving the fee.';
@@ -432,10 +474,71 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- 7. Post-checks: the restatements took
+-- 7. registration_payment_routes: 0115's view, restated in full
+-- ---------------------------------------------------------------------------
+-- registration_payment_routes (0080, 0114, 0115): how each registration is
+-- being paid -- the "finished registering" test.
+--   plan          a plan that got past its deposit (active, paused, failed or completed)
+--   paid_in_full  nothing owed and something was paid
+--   nothing_owed  nothing owed and nothing paid (e.g. a zero-fee volunteer)
+--   scholarship   a scholarship requested for someone on it (0115: a request,
+--                 status 'requested' -- never a grant read as a request)
+--   none          NOT FINISHED -- the family still has to choose
+-- 0123: "owed" here is the camp -- balance_cents less fees_cents. A $4
+-- returned-payment fee on a family who paid in full is a line on their
+-- balance, not an unfinished payment choice. Otherwise exactly 0115; CREATE
+-- OR REPLACE with the same columns in the same order.
+create or replace view public.registration_payment_routes
+with (security_invoker = on)
+as
+select r.id as registration_id,
+       r.household_id,
+       r.event_id,
+       pp.id as plan_id,
+       pp.status as plan_status,
+       pp.schedule as plan_schedule,
+       pp.payment_method_label,
+       coalesce(sch.any_request, false) as scholarship_requested,
+       case
+         when pp.status in ('active', 'paused', 'failed', 'completed') then 'plan'
+         when coalesce(b.balance_cents - b.fees_cents, 0) <= 0 and coalesce(b.paid_cents, 0) > 0 then 'paid_in_full'
+         when coalesce(b.balance_cents - b.fees_cents, 0) <= 0 then 'nothing_owed'
+         when coalesce(sch.any_request, false) then 'scholarship'
+         else 'none'
+       end as route
+  from public.registrations r
+  left join public.payment_plans pp on pp.registration_id = r.id
+  left join public.registration_balances b on b.registration_id = r.id
+  left join lateral (
+    select true as any_request
+      from public.scholarships s
+      join public.registration_participants rp on rp.id = s.registration_participant_id
+     where rp.registration_id = r.id
+       and s.status = 'requested'
+     limit 1
+  ) sch on true;
+
+grant select on public.registration_payment_routes to authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- 8. Post-checks: the restatements took
 -- ---------------------------------------------------------------------------
 do $$
 begin
+  if position('fees_cents' in pg_get_viewdef('public.registration_payment_routes'::regclass)) = 0
+     or position('requested' in pg_get_viewdef('public.registration_payment_routes'::regclass)) = 0 then
+    raise exception '0123: registration_payment_routes was not rewritten';
+  end if;
+  if not exists (select 1 from pg_class c where c.oid = 'public.registration_payment_routes'::regclass
+                  and 'security_invoker=on' = any (c.reloptions)) then
+    raise exception '0123: registration_payment_routes lost security_invoker';
+  end if;
+  if to_regclass('public.registration_fees_one_per_installment') is null then
+    raise exception '0123: the one-fee-per-installment index is missing';
+  end if;
+  if position('can_decide_scholarships' in pg_get_functiondef('public.waive_registration_fee(uuid, text)'::regprocedure)) = 0 then
+    raise exception '0123: waive_registration_fee does not ask can_decide_scholarships()';
+  end if;
   if position('registration_fees' in pg_get_viewdef('public.registration_balances'::regclass)) = 0
      or position('participant_money' in pg_get_viewdef('public.registration_balances'::regclass)) = 0 then
     raise exception '0123: registration_balances was not rewritten';
@@ -462,7 +565,7 @@ begin
   if has_table_privilege('authenticated', 'public.registration_fees', 'insert')
      or has_table_privilege('authenticated', 'public.registration_fees', 'update')
      or has_table_privilege('authenticated', 'public.registration_fees', 'delete')
-     or has_function_privilege('authenticated', 'public.record_returned_payment_fee(uuid, text, uuid, integer)', 'execute') then
+     or has_function_privilege('authenticated', 'public.record_returned_payment_fee(uuid, text, uuid, integer, boolean)', 'execute') then
     raise exception '0123: a signed-in user can write registration_fees';
   end if;
 end $$;
