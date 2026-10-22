@@ -236,12 +236,14 @@ export default async function ReviewQueuePage({ searchParams }) {
           Families with someone on an activity whose waiver is still missing — a waiver or an
           outside provider added after they signed up. Confirmed families are listed too; nobody&rsquo;s
           status changes for this.{' '}
+          {can(staff, 'write:registration') && (
           <Link
             href={`/admin/email-families/?outstanding=1${eventFilter ? `&event=${eventFilter}` : ''}`}
             className="font-semibold text-brand underline"
           >
             Email these families →
           </Link>
+          )}
         </p>
       )}
 
