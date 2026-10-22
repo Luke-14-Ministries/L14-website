@@ -16,6 +16,13 @@ import { createClient } from '@/lib/supabase/server';
 import { csvCell } from '@/lib/csv';
 import { dayInMorristown, todayInMorristown, inPaymentsScope } from '@/lib/events';
 
+// A payment's note as the treasurer should read it: in dollars. The Stripe
+// webhook's first versions wrote the fee cover in cents ("family added 181¢
+// to cover the processing fee"), and those rows keep their note as written;
+// the files print "$1.81". The stored note is not changed.
+const noteInDollars = (note) =>
+  note ? String(note).replace(/(\d+)¢/g, (_, c) => `$${(Number(c) / 100).toFixed(2)}`) : note;
+
 // Quoting and spreadsheet-formula safety: lib/csv.js.
 const esc = csvCell;
 
@@ -98,7 +105,7 @@ export async function GET(request) {
       const date = mdy(p.received_on ?? p.created_at);
       const name = r?.households?.display_name ?? '';
       const ev = r?.events?.name ?? 'Event';
-      const memo = [ev, p.method, p.stripe_payment_intent_id, p.note].filter(Boolean).join(' — ');
+      const memo = [ev, p.method, p.stripe_payment_intent_id, noteInDollars(p.note)].filter(Boolean).join(' — ');
       qb.push([date, name, memo, 'Camp registration fees', ((p.amount_cents ?? 0) / 100).toFixed(2)]);
       if ((p.fee_cover_cents ?? 0) > 0) {
         qb.push([date, name, `${ev} — processing fee covered by the payer`, 'Processing fees covered', ((p.fee_cover_cents ?? 0) / 100).toFixed(2)]);
@@ -142,7 +149,7 @@ export async function GET(request) {
       p.payer_name ?? '',
       p.payer_email ?? '',
       p.stripe_payment_intent_id ?? '',
-      p.note ?? '',
+      noteInDollars(p.note) ?? '',
     ]);
   }
 
