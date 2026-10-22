@@ -374,6 +374,9 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
               </Answer>
               <Answer q="Experience with people with disabilities">
                 <AnswerText value={a.disability_experience} />
+                {a.first_time_disability_ministry && (
+                  <p className="mt-1 text-sm">First time serving in disability ministry</p>
+                )}
               </Answer>
               {(minor || a.accompanying_adult_person_id) && (
                 <Answer q="Accompanying adult (required for volunteers under 18)">
@@ -484,7 +487,7 @@ export default async function PersonPage({ params }) {
         ? supabase
             .from('volunteer_applications')
             .select(
-              'registration_participant_id, status, creed_affirmed, reviewed_at, updated_at, preferred_areas, first_time_volunteering, church_attendance, faith_statement, relevant_skills, disability_experience, accompanying_adult_person_id'
+              'registration_participant_id, status, creed_affirmed, reviewed_at, updated_at, preferred_areas, first_time_volunteering, church_attendance, faith_statement, relevant_skills, first_time_disability_ministry, disability_experience, accompanying_adult_person_id'
             )
             .in('registration_participant_id', participantIds)
             .then((res) => {
