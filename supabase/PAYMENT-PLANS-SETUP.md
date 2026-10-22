@@ -74,8 +74,14 @@ test bank accounts are listed in the Stripe docs under ACH testing.
    (`payment_installments`), then run the same command without `?dry=1`.
 4. Repeat step 2 with card 0341, bring a payment forward as in step 3, and run the
    charger. The family gets a "payment problem" email and the plan shows a retry date.
-   After three failures the plan stops and staff get an alert. **Change card or bank
-   account** on the dashboard starts it again.
+   After three failures the plan stops and staff get an alert, subject
+   *[Payment plans] Plan stopped — <household> — <event>*, with what was owed, the
+   remaining balance, the family's email and phone, and an *Open the registration*
+   button; the registration appears under Awaiting review → *Plan stopped* (and as a red
+   card on the Overview) for staff with Payments read. **Change card or bank
+   account** on the dashboard starts it again. Every one of these emails, family and
+   staff, is a row in `message_log` (template keys `plan_*`; migration `0121` grants the
+   insert, so apply it before deploying the functions).
 5. Register a second family early and choose **Pay in full**. The amount offered should
    already include the discount, and the balance should end at exactly $0.
 6. Register a third and choose **Request a scholarship**. The registration counts as
