@@ -102,7 +102,10 @@ export type PlanTemplate =
   | 'plan_stopped_family'
   | 'plan_stopped_staff'
   | 'plan_reopened_staff'
-  | 'plan_deposit_failed_staff';
+  | 'plan_deposit_failed_staff'
+  // A pay-in-full (or deposit, or part) bank payment that came back, with a
+  // returned-payment fee added (0123). Sent by stripe-webhook.
+  | 'bank_payment_returned_family';
 
 export type Sent = { ok: boolean; id: string | null; error: string | null };
 
@@ -267,6 +270,74 @@ ${button(`${SITE}/admin/registrations/${registrationId}/`, 'Open the registratio
 }
 
 // ---------------------------------------------------------------------------
+// The returned-bank-payment fee (0123; Lawrence, 22 Oct 2026)
+//
+// When a bank debit fails Stripe charges the ministry a fee, and the ministry
+// passes on the fee the family was SHOWN before they chose a bank payment --
+// a snapshot, never the event's current setting: a plan carries it on
+// payment_plans.returned_payment_fee_cents, a checkout in its metadata
+// (returned_fee_cents). record_returned_payment_fee() (service role only)
+// does the deciding: a FAILED BANK payment on file for this PaymentIntent,
+// a snapshot over $0, one fee per PaymentIntent (each plan try and each
+// checkout is its own PaymentIntent, so a Stripe retry, or the charger and
+// the webhook both seeing one failure, add it once). Card declines cost the
+// ministry nothing and never add a fee.
+//
+// The fee is owed in registration_balances. A plan's stored schedule is not
+// rewritten; because every charge is worked out on the day from the live
+// balance, the remaining charges collect it and the plan still ends on $0
+// (settledBalance includes it, so a plan never closes with a fee unpaid).
+// A failed read or write THROWS: the webhook answers 500 and Stripe retries,
+// which is safe because the whole path is idempotent.
+// ---------------------------------------------------------------------------
+
+export type ReturnedFee = { feeCents: number; added: boolean };
+
+export async function recordReturnedFee(
+  admin: SupabaseClient,
+  args: { registrationId: string; piId: string; installmentId?: string | null; disclosedCents?: number }
+): Promise<ReturnedFee> {
+  const { data, error } = await admin.rpc('record_returned_payment_fee', {
+    p_registration_id: args.registrationId,
+    p_payment_intent_id: args.piId,
+    p_installment_id: args.installmentId ?? null,
+    p_disclosed_cents: Math.max(0, Math.round(args.disclosedCents ?? 0)),
+  });
+  if (error) throw new Error(`returned-fee: ${error.message}`);
+  const row = (Array.isArray(data) ? data[0] : data) as { fee_cents?: number; added?: boolean } | null;
+  return { feeCents: row?.fee_cents ?? 0, added: row?.added === true };
+}
+
+// The fee on file for one PaymentIntent, read only (for a staff alert that
+// another writer's fee may or may not have reached yet).
+export async function returnedFeeOnFile(admin: SupabaseClient, piId: string | null | undefined): Promise<number> {
+  if (!piId) return 0;
+  const { data, error } = await admin
+    .from('registration_fees')
+    .select('amount_cents')
+    .eq('stripe_payment_intent_id', piId)
+    .is('waived_at', null)
+    .maybeSingle();
+  if (error) throw new Error(`returned-fee-read: ${error.message}`);
+  return (data?.amount_cents as number | undefined) ?? 0;
+}
+
+// The family's paragraph (Lawrence's wording, 22 Oct 2026). On a plan that
+// will keep charging, it says plainly where the fee is collected.
+export function returnedFeeParagraph(feeCents: number, onPlan: boolean): string {
+  if (!(feeCents > 0)) return '';
+  return `<p>Because the bank returned this payment, a ${dollars(feeCents)} returned-payment fee has been added to your balance.${
+    onPlan ? ' Your remaining scheduled payments will include it.' : ''
+  } If this was a mistake on our side or you&rsquo;d like to talk about it, reply to this email.</p>`;
+}
+
+// The line for a staff alert.
+export function returnedFeeStaffLine(feeCents: number): string {
+  if (!(feeCents > 0)) return '';
+  return `<p>Because the bank returned the payment, a <strong>${dollars(feeCents)}</strong> returned-payment fee was added to the family&rsquo;s balance (the amount they were shown when they agreed). It can be waived on the registration page.</p>`;
+}
+
+// ---------------------------------------------------------------------------
 // Activating a plan from its deposit (webhook, kind = plan_deposit)
 // ---------------------------------------------------------------------------
 
@@ -308,9 +379,20 @@ export async function activatePlanFromDeposit(
       await admin.rpc('recalc_early_registration_discount', { p_registration_id: registrationId });
       const ctx = await planContext(admin, registrationId);
       const ev = md.event_name || ctx.eventName || 'Camp registration';
+      // The deposit's fee (0123) is recorded by stripe-webhook, which records
+      // the deposit payment itself; here it is only read, so the two
+      // webhooks can never both add it. It may not have landed yet, and a
+      // failed read only leaves the line out of an email.
+      let depositFee = 0;
+      try {
+        depositFee = await returnedFeeOnFile(admin, piId);
+      } catch (e) {
+        console.error(`[plans] ${String((e as Error)?.message ?? e)}`);
+      }
       await alertStaff(admin, {
         subject: `Plan deposit failed — ${ctx.household} — ${ev}`,
         body: `<p>The payment-plan deposit for <strong>${esc(ctx.household)}</strong> (${esc(ev)}) did not clear, so the plan was undone. The registration shows as not finished until the family chooses again.</p>
+         ${returnedFeeStaffLine(depositFee)}
          ${await staffFacts(admin, registrationId, ctx, null)}`,
         templateKey: 'plan_deposit_failed_staff',
         householdId: ctx.householdId,
@@ -345,7 +427,11 @@ export async function activatePlanFromDeposit(
     consented_at: md.consented_at || new Date().toISOString(),
     activated_at: new Date().toISOString(),
     deposit_payment_intent_id: piId ?? null,
-    note: `Started online (${md.consent_version ?? 'consent'}).`,
+    // 0123: the returned-payment fee the family was shown when they agreed
+    // (Ways to pay put it in the consent text and the metadata). A failed
+    // bank charge on this plan adds exactly this; 0 or absent = never.
+    returned_payment_fee_cents: Math.max(0, parseInt(md.returned_fee_cents ?? '0', 10) || 0),
+    note:`Started online (${md.consent_version ?? 'consent'}).`,
   };
   const { data: plan, error } = await admin
     .from('payment_plans')
@@ -406,7 +492,9 @@ export async function applyNewPaymentMethod(
 
 // What is owed once money still clearing the bank is set aside. The balance
 // view counts 'processing' payments as paid (right for what the family sees),
-// but a plan must not be closed on money that might still bounce.
+// but a plan must not be closed on money that might still bounce. The balance
+// includes any unwaived returned-payment fee (0123), so a plan never closes
+// with a fee unpaid.
 export async function settledBalance(admin: SupabaseClient, registrationId: string) {
   const [{ data: bal, error: balErr }, { data: clearing, error: clearErr }] = await Promise.all([
     admin.from('registration_balances').select('balance_cents').eq('registration_id', registrationId).maybeSingle(),
@@ -465,6 +553,20 @@ export async function recordInstallmentOutcome(
     { onConflict: 'stripe_payment_intent_id' }
   );
   if (payErr) throw new Error(`payment-upsert: ${payErr.message}`);
+
+  // A failed BANK charge: the plan's agreed returned-payment fee (0123), once
+  // for this PaymentIntent. Before the transition below, so a failure here
+  // throws (and Stripe retries) before anything is half-done. Whichever of
+  // charger and webhook records it, the one that moves the installment sends
+  // the email, and the fee is on file by then.
+  const fee: ReturnedFee =
+    args.outcome === 'failed' && args.method === 'bank_transfer'
+      ? await recordReturnedFee(admin, {
+          registrationId: args.registrationId,
+          piId: args.piId,
+          installmentId: args.installmentId,
+        })
+      : { feeCents: 0, added: false };
 
   const { data: inst } = await admin
     .from('payment_installments')
@@ -558,6 +660,7 @@ export async function recordInstallmentOutcome(
       await alertStaff(admin, {
         subject: `Completed plan reopened — ${ctx.household} — ${eventName}`,
         body: `<p>A payment of ${dollars(args.amountCents)} from <strong>${esc(ctx.household)}</strong> (${esc(eventName)}) failed after the plan had closed, so the plan was reopened and will retry.${args.error ? ` The error: ${esc(args.error)}.` : ''}</p>
+         ${returnedFeeStaffLine(fee.feeCents)}
          ${await staffFacts(admin, args.registrationId, ctx, args.amountCents)}`,
         templateKey: 'plan_reopened_staff',
         ...family,
@@ -572,6 +675,7 @@ export async function recordInstallmentOutcome(
       await alertStaff(admin, {
         subject: `Plan stopped — ${ctx.household} — ${eventName}`,
         body: `<p>The payment plan for <strong>${esc(ctx.household)}</strong> (${esc(eventName)}) could not collect ${dollars(args.amountCents)} after ${MAX_ATTEMPTS} tries. Last error: ${esc(args.error ?? 'unknown')}.</p>
+         ${returnedFeeStaffLine(fee.feeCents)}
          ${await staffFacts(admin, args.registrationId, ctx, args.amountCents)}
          <p>The plan is stopped. On the registration page you can retry, pause or cancel it, and decide whether the family keeps the early-registration discount.</p>`,
         templateKey: 'plan_stopped_staff',
@@ -584,6 +688,7 @@ export async function recordInstallmentOutcome(
       title: 'We could not take your scheduled payment',
       body: `${hello}
        <p>Your scheduled payment of <strong>${dollars(args.amountCents)}</strong> for ${esc(eventName)} did not go through${args.error ? ` (${esc(args.error)})` : ''}.</p>
+       ${returnedFeeParagraph(fee.feeCents, !outOfTries)}
        ${outOfTries
          ? `<p>We have tried ${MAX_ATTEMPTS} times, so your payment plan is paused and camp staff will be in touch.</p>`
          : `<p>We will try again on ${retryOn}. To use a different card or bank account, open your <a href="${SITE}/account/dashboard/" style="color:#14606a">family dashboard</a> and choose &ldquo;Change card or bank account&rdquo;.</p>`}`,
