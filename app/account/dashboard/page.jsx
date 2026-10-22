@@ -1186,7 +1186,8 @@ export default async function DashboardPage({ searchParams }) {
                             )}
                             <div className="flex justify-between py-0.5">
                               <span className="text-neutral-500">Paid</span>
-                              <span>−{money(b.paid_cents)}</span>
+                              {/* Nothing paid reads "$0", never "−$0". */}
+                              <span>{(b.paid_cents ?? 0) > 0 ? `−${money(b.paid_cents)}` : money(0)}</span>
                             </div>
                             {/* Beside the balance, never inside it (0053). A
                                 refund that has not landed is not money the
