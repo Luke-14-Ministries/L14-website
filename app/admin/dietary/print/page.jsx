@@ -29,8 +29,12 @@ export default async function KitchenListPage({ searchParams }) {
       ),
   ]);
 
-  // Tally identical needs so the kitchen sees quantities. Free-text entries
-  // are split on commas so "Red 40, gluten, dairy" counts as three items.
+  // Tally identical needs so the kitchen sees quantities. Dietary free text
+  // is split on commas so "Red 40, gluten, dairy" counts as three items.
+  // Allergy words are NOT split: allergenWords() already gives one word per
+  // ticked allergen, and its "Other: ..." is the family's own phrase, kept
+  // whole as the by-allergen page keeps it ("Peanuts; hives" split into a
+  // made-up "hives" allergy, 13.30).
   const byEvent = new Map();
   // Severity aggregates to the WORST seen for an item, never the latest and
   // never the commonest. Three campers list "peanuts" mild and a fourth is
@@ -41,8 +45,7 @@ export default async function KitchenListPage({ searchParams }) {
   // mildness, and on a page with no names attached there is nobody to ask.
   const SEV_RANK = { anaphylaxis: 4, severe: 3, unrecorded: 2, mild: 1 };
   const addItem = (eventId, kind, text, severity) => {
-    const items = String(text)
-      .split(/[,;\n]/)
+    const items = (kind === 'allergy' ? [String(text)] : String(text).split(/[,;\n]/))
       .map((t) => t.trim())
       .filter(Boolean);
     for (const item of items) {
