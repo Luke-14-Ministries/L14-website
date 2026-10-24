@@ -3028,3 +3028,23 @@ stays Payments write.
 before); the email is sent when a fee is added. `money_change_log.changed_as` records the logger's
 owner for every row, not the writer's role (the logger is security definer since `0111`) —
 `changed_by` is the reliable column; left for a separate fix.
+
+## 2026-10-24 — Tell families the site is new, and give them one place to say what is wrong
+
+Lawrence: when the new site goes live, families should be told it is new and asked for feedback.
+
+**A welcome card, once per browser, temporary.** A modal on the family dashboard and at the start of
+the family wizard (`components/WelcomeNotice.jsx`). Closing it hides it for that page; only the tick
+"Don't show this again" stores `l14_welcome_v1_dismissed` in localStorage, so a family who clicks past
+it sees it once more. Per browser rather than per account because it needs no migration and the cost
+of being shown it twice is nothing. The key is versioned so a rewritten card can be shown again. It
+stops by itself after `WELCOME_NOTICE_UNTIL` in `lib/notices.js` (2027-08-31, after the first camp
+season), so nobody has to remember to remove it. A plain overlay like the site's other modals, with
+the keyboard handling they lack (focus in, Tab trapped, Escape, focus returned).
+
+**Feedback by email, not a table.** "Send us feedback" at the foot of the dashboard sends one email to
+the published info@ address (Reply-To the family), with the page they name, their household and the
+browser; nothing is stored, as with the contact form — the shared mailbox is where staff already work.
+Signed-in only. **No rate limit:** in memory is not real on a serverless host and the durable place to
+check, `message_log`, is not readable by the family; the sign-in requirement (with two-factor) makes
+every note attributable, which is limit enough for now. Families only — nothing in the staff area.
