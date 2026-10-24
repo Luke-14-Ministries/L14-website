@@ -10,6 +10,7 @@ import { registrationDepositCents, registrationHeads, participantMoney } from '@
 import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from '@/lib/events';
 import { requiresPaymentChoice, offersPaymentPlan, feeLabel } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
+import FeedbackBox from './FeedbackBox';
 import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport, supportProblems } from '@/lib/support';
 
@@ -1661,6 +1662,12 @@ export default async function DashboardPage({ searchParams }) {
 
 
         {allDetailsDone && supportCard}
+
+        {/* Last on the page and narrower than the cards above: asked for,
+            not competing with registering (Lawrence, 24 Oct 2026). */}
+        <div className="mt-6 max-w-2xl">
+          <FeedbackBox />
+        </div>
       </div>
     </section>
   );
