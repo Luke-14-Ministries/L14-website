@@ -8,6 +8,7 @@ import {
   volunteerOption,
 } from '@/lib/events';
 import FamilyWizard from './FamilyWizard';
+import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport } from '@/lib/support';
 
 export const metadata = { title: 'Registration — Luke 14 Ministries' };
@@ -456,6 +457,9 @@ export default async function FamilyRegisterPage({ searchParams }) {
 
   return (
     <section className="bg-neutral-50 py-12">
+      {/* The temporary "new site" card (lib/notices.js), signed-in only --
+          the guest branch above returns before this. */}
+      <WelcomeNotice />
       <div className="container-site max-w-3xl mx-auto">
         {/* Generic on purpose: the ministry runs several events, and this
             wizard serves all of them -- the event itself is chosen (or

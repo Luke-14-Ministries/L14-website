@@ -10,6 +10,7 @@ import { registrationDepositCents, registrationHeads, participantMoney } from '@
 import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from '@/lib/events';
 import { requiresPaymentChoice, offersPaymentPlan, feeLabel } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
+import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport, supportProblems } from '@/lib/support';
 
 export const metadata = { title: 'Dashboard' };
@@ -734,6 +735,9 @@ export default async function DashboardPage({ searchParams }) {
 
   return (
     <section className="bg-neutral-50 min-h-[70vh] py-12">
+      {/* The temporary "new site" card (lib/notices.js); renders nothing on
+          the server and nothing once dismissed or past its date. */}
+      <WelcomeNotice />
       <div className="container-site">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div>
