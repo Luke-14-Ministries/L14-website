@@ -1657,17 +1657,19 @@ export default async function DashboardPage({ searchParams }) {
               </li>
             </ul>
           </div>
+
+          {/* In the right-hand, general column under Account settings, not under
+              the registrations (Lawrence, 26 Oct 2026): asked for, not competing
+              with registering. Last in the order on a phone. */}
+          <div className="order-5">
+            <FeedbackBox />
+          </div>
           </div>
         </div>
 
 
         {allDetailsDone && supportCard}
 
-        {/* Last on the page and narrower than the cards above: asked for,
-            not competing with registering (Lawrence, 24 Oct 2026). */}
-        <div className="mt-6 max-w-2xl">
-          <FeedbackBox />
-        </div>
       </div>
     </section>
   );
