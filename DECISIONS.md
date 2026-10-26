@@ -3108,3 +3108,36 @@ the whole list, and the page says so. Other staff tables are left as they are un
 which to convert. Same day: every person with a `program_leaders` grant is a **leader** and the one
 marked `is_lead` the **head leader** (My Program's line, the print view, the header pill *Program
 Leader · Head*, the Programs page's **Make head leader**). Labels only; `is_lead` stays a label.
+
+## 2026-10-26 — Staff accept or reject an outside provider's waiver confirmation
+
+**This supersedes the 21–22 Oct decision of *no* staff "verified" mark for outfitter confirmations**
+(the 21 Oct follow-up note above; DO-THIS-NEXT W60, "the family uploads, staff look"). Lawrence
+uploaded a random picture as a test and it counted as the confirmation. Now each upload in
+`activity_waiver_uploads` carries a review (`0124`): **pending** — shown to staff as *awaiting check*
+(blue) and to the family as *Uploaded <date> — camp staff will check it.*; **accepted** (green
+*accepted ✓*; the family reads *Accepted by camp staff ✓*); **rejected** with a reason (red
+*rejected — <reason>*; the family reads, in amber, *Camp staff couldn't accept this: <reason>.
+Please upload the confirmation again.* with the upload box open). A rejected upload is
+**outstanding** again in `activity_waivers_outstanding` (restated in full, with `upload_status`
+`missing` | `rejected` and `review_note`), so the dashboard card, the review queue's tab, the
+registration's amber line and the staff email all ask for it again; pending and accepted are not
+outstanding — the family has done their part, and the print sheet's Waiver column shows the three
+states so the day still knows what was checked.
+
+**Who reviews: Registration write**, through `review_waiver_upload(upload, status, note)` (definer,
+stamps reviewer and time, note required to reject — also a table check). It is the grant the staff
+Activities page already uses for the family-facing side (its email-the-families button,
+`log_family_email()`) and the one that confirms an agreement signature (`0113`); Activities write is
+about running the activity, not a family's paperwork. **Families cannot set the review**: they still
+insert and replace their own row (`0087`), so an *invoker* guard trigger (a definer trigger would
+see its owner as `current_user`) refuses any direct signed-in change to the review columns — staff
+included; the function is the one way — and **resets the review to pending whenever the file
+changes** (path, type or upload time), so a new file is never "accepted" by inheritance.
+
+**The audit is the row itself** (`reviewed_by`, `reviewed_at`, `review_note`): `money_change_log` is
+money only and `family_change_log` records family edits for staff to check off, neither a staff
+paperwork decision. A re-upload clears the last review, so a rejected file's history is not kept —
+the file in hand is what matters. Known gap, accepted: a family could overwrite the stored *file*
+through the storage API without touching the row (WaiverUpload always rewrites the row, which resets
+the review); a deliberate swap after acceptance is not something the ministry needs to defend against.
