@@ -3,6 +3,7 @@ import { allergySummary } from '@/lib/support';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
+import { SearchSelectLinks } from '@/components/SearchSelect';
 import { todayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Buddy Sheets — Staff Admin' };
@@ -105,16 +106,40 @@ export default async function BuddyPrintPage({ searchParams }) {
   // two sheets, each about one camper, so a sheet can travel with the camper
   // and nothing about a second camper is on it.
   const camperOf = (a) => byId.get(a.camper_participant_id);
-  const sheets = [...byBuddy.entries()]
+  const allSheets = [...byBuddy.entries()]
     .flatMap(([buddyId, list]) => list.map((a) => ({ buddy: byId.get(buddyId), list: [a] })))
-    .filter((s) => s.buddy && (!only || s.buddy.id === only))
+    .filter((s) => s.buddy)
     .sort(
       (a, b) =>
         nameOf(a.buddy).localeCompare(nameOf(b.buddy)) ||
         nameOf(camperOf(a.list[0])).localeCompare(nameOf(camperOf(b.list[0])))
     );
-  // The "Print:" links are still one per buddy.
-  const buddies = sheets.filter((s, i, arr) => arr.findIndex((x) => x.buddy.id === s.buddy.id) === i);
+  const sheets = only ? allSheets.filter((s) => s.buddy.id === only) : allSheets;
+
+  // The picker (26 Oct 2026): one option per buddy, not per sheet, with their
+  // camper(s) as the hint so a buddy can be found by the camper's name too.
+  // Built from every sheet, not the filtered ones, so the other buddies are
+  // still there to choose once one is chosen. The URL is unchanged
+  // (?event=…&buddy=<participant id>), so links already handed round work.
+  const listNames = (names) =>
+    names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+  const buddyOptions = [];
+  for (const s of allSheets) {
+    const camper = nameOf(camperOf(s.list[0]));
+    const known = buddyOptions.find((o) => o.value === s.buddy.id);
+    if (known) known.campers.push(camper);
+    else
+      buddyOptions.push({
+        value: s.buddy.id,
+        label: nameOf(s.buddy) || 'Unnamed buddy',
+        href: `/admin/buddies/print/?event=${eventId}&buddy=${s.buddy.id}`,
+        campers: [camper],
+      });
+  }
+  const pickerOptions = buddyOptions.map(({ campers, ...o }) => ({
+    ...o,
+    hint: `with ${listNames(campers.filter(Boolean)) || 'a camper'}`,
+  }));
 
   const supportOf = (p) => {
     const s = p?.people?.person_support;
@@ -132,22 +157,18 @@ export default async function BuddyPrintPage({ searchParams }) {
         safety facts a buddy must not be surprised by. A buddy with two campers gets two pages.
         Hand them out at orientation and collect them at the end of camp.
       </p>
-      {buddies.length > 1 && (
-        <p className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm print:hidden">
-          <span className="text-neutral-500">Print:</span>
-          <a href={`/admin/buddies/print/?event=${eventId}`} className={only ? 'text-brand underline' : 'font-semibold'}>
-            every buddy
-          </a>
-          {buddies.map((s) => (
-            <a
-              key={s.buddy.id}
-              href={`/admin/buddies/print/?event=${eventId}&buddy=${s.buddy.id}`}
-              className={only === s.buddy.id ? 'font-semibold' : 'text-brand underline'}
-            >
-              {nameOf(s.buddy)}
-            </a>
-          ))}
-        </p>
+      {pickerOptions.length > 1 && (
+        <div className="mb-6">
+          <SearchSelectLinks
+            label="Print"
+            printPrefix="Printed for"
+            noun={['buddy', 'buddies']}
+            placeholder="Type a buddy's or a camper's name"
+            pinned={[{ value: '', label: 'Every buddy', href: `/admin/buddies/print/?event=${eventId}` }]}
+            options={pickerOptions}
+            value={only}
+          />
+        </div>
       )}
       {!event && <p className="text-sm text-neutral-500">No event selected.</p>}
       {event && sheets.length === 0 && (
