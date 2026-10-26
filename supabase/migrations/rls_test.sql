@@ -224,7 +224,7 @@ declare
   rpA uuid; rpB uuid; agr uuid; pNew uuid; optGen uuid;
   act uuid; evCopy uuid;
   horses uuid; horsesAgr uuid; regB uuid; logId uuid;
-  planId uuid; planLogId uuid;
+  planId uuid; planLogId uuid; upId uuid;
   n bigint; m bigint;
   oldStatus text;
 begin
@@ -959,6 +959,75 @@ begin
     values (act, rpA, rpA::text || '/' || act::text || '.pdf', 'application/pdf');
   select count(*) into n from public.activity_waivers_outstanding where activity_id = act;
   perform pg_temp.expect('uploading the confirmation takes the provider row off (0120)', n, 0);
+
+  -- Staff review of the upload (0124): pending until staff look; a family
+  -- cannot set the review; a rejection puts the row back on the view with
+  -- the reason; a new file resets it to pending; only Registration write reviews.
+  select id into upId from public.activity_waiver_uploads
+   where activity_id = act and registration_participant_id = rpA;
+  select count(*) into n from public.activity_waiver_uploads
+   where id = upId and review_status = 'pending' and reviewed_by is null;
+  perform pg_temp.expect('a new upload is awaiting check (0124)', n, 1);
+  perform pg_temp.expect_denied('a family cannot accept its own upload (0124)',
+    format('update public.activity_waiver_uploads set review_status = ''accepted'' where id = %L', upId));
+  perform pg_temp.expect_denied('a family cannot stamp a reviewer (0124)',
+    format('update public.activity_waiver_uploads set reviewed_by = %L, reviewed_at = now() where id = %L', uA, upId));
+  perform pg_temp.expect_denied('a family cannot insert an upload already accepted (0124)',
+    format('insert into public.activity_waiver_uploads (activity_id, registration_participant_id, storage_path, review_status)
+            values (%L, %L, %L, ''accepted'')', horses, rpA, rpA::text || '/' || horses::text || '.pdf'));
+  perform pg_temp.expect_denied('a family cannot call review_waiver_upload (0124)',
+    format('select public.review_waiver_upload(%L, ''accepted'', null)', upId));
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_denied('Activities write without Registration write cannot review (0124)',
+    format('select public.review_waiver_upload(%L, ''accepted'', null)', upId));
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_no_effect('staff cannot set the review by a direct update (0124)',
+    format('update public.activity_waiver_uploads set review_status = ''accepted'' where id = %L', upId));
+  perform pg_temp.expect_denied('a rejection needs a reason (0124)',
+    format('select public.review_waiver_upload(%L, ''rejected'', ''  '')', upId));
+  perform pg_temp.expect_denied('review_waiver_upload refuses another status (0124)',
+    format('select public.review_waiver_upload(%L, ''pending'', null)', upId));
+  perform public.review_waiver_upload(upId, 'rejected', 'Wrong file');
+  select count(*) into n from public.activity_waiver_uploads
+   where id = upId and review_status = 'rejected' and reviewed_by = uR
+     and reviewed_at is not null and review_note = 'Wrong file';
+  perform pg_temp.expect('Registration write rejects, stamped with reviewer, time and reason (0124)', n, 1);
+  select count(*) into n from public.activity_waivers_outstanding
+   where activity_id = act and kind = 'provider' and upload_status = 'rejected' and review_note = 'Wrong file';
+  perform pg_temp.expect('a rejected upload is outstanding again, for staff (0124)', n, 1);
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.activity_waivers_outstanding
+   where activity_id = act and upload_status = 'rejected' and review_note = 'Wrong file';
+  perform pg_temp.expect('the family sees its rejected upload with the reason (0124)', n, 1);
+  perform pg_temp.as_user(uB);
+  select count(*) into n from public.activity_waivers_outstanding where activity_id = act;
+  perform pg_temp.expect('family B does not see family A''s rejected upload (0124)', n, 0);
+  -- Family A uploads again exactly as WaiverUpload.jsx does (an upsert).
+  perform pg_temp.as_user(uA);
+  insert into public.activity_waiver_uploads (activity_id, registration_participant_id, storage_path,
+                                              content_type, uploaded_at, uploaded_by)
+    values (act, rpA, rpA::text || '/' || act::text || '.png', 'image/png', now() + interval '1 minute', uA)
+  on conflict (activity_id, registration_participant_id) do update
+    set storage_path = excluded.storage_path, content_type = excluded.content_type,
+        uploaded_at = excluded.uploaded_at, uploaded_by = excluded.uploaded_by;
+  select count(*) into n from public.activity_waiver_uploads
+   where id = upId and review_status = 'pending' and reviewed_by is null
+     and reviewed_at is null and review_note is null;
+  perform pg_temp.expect('uploading again resets the review to pending (0124)', n, 1);
+  select count(*) into n from public.activity_waivers_outstanding where activity_id = act;
+  perform pg_temp.expect('a re-uploaded file awaiting check is not outstanding (0124)', n, 0);
+  perform pg_temp.as_user(uR);
+  perform public.review_waiver_upload(upId, 'accepted', null);
+  select count(*) into n from public.activity_waiver_uploads
+   where id = upId and review_status = 'accepted' and reviewed_by = uR and review_note is null;
+  perform pg_temp.expect('Registration write accepts the new file (0124)', n, 1);
+  select count(*) into n from public.activity_waivers_outstanding where activity_id = act;
+  perform pg_temp.expect('an accepted upload is not outstanding (0124)', n, 0);
+  perform pg_temp.as_user(uA);
+  update public.activity_waiver_uploads set uploaded_at = now() + interval '2 minutes' where id = upId;
+  select count(*) into n from public.activity_waiver_uploads
+   where id = upId and review_status = 'pending' and reviewed_by is null;
+  perform pg_temp.expect('replacing an accepted file sends it back to awaiting check (0124)', n, 1);
 
   -- The log of staff-sent family emails: Registration write, through the function only.
   perform pg_temp.as_user(uA);
