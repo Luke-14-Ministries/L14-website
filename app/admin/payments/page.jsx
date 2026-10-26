@@ -78,10 +78,12 @@ export default async function AdminPaymentsPage({ searchParams }) {
     (b.starts_on ?? '').localeCompare(a.starts_on ?? '')
   );
 
-  // Event scope. The dashboard is a quick view of what is coming up (and
-  // just wrapped), not a wall of history — old years stay one dropdown
-  // selection away under "All events". Scope values:
-  //   ''         default: upcoming (next 90 days) + recent (last 90 days)
+  // Event scope. The dashboard is a quick view of the events being worked
+  // on, not a wall of history — old years stay one dropdown selection away
+  // under "All events". Scope values:
+  //   ''         default: current events -- isCurrentEventRow(), the rule
+  //              every staff page uses (to two weeks after an event ends, a
+  //              year ahead), so camp weeks open for registration show
   //   'upcoming' starts within 90 days or currently running
   //   'recent'   ended within the last 90 days
   //   'all'      full history
@@ -90,7 +92,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
   // on isCurrentEventRow -- lib/events.js); 'all' and a chosen event keep it.
   const inScope = (ev) => inPaymentsScope(ev, eventFilter);
   const SCOPE_LABEL = {
-    '': 'Upcoming & recent events (90 days each way)',
+    '': 'Current events',
     upcoming: 'Upcoming events (next 90 days)',
     recent: 'Recent events (last 90 days)',
     all: 'All events — full history',
@@ -225,8 +227,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
 
       {/* The one event filter every staff page uses (16 Oct 2026): pills for
           current events, a search box for the rest. The scope dropdown below
-          keeps the time scopes (90 days each way, full history); both drive
-          the same ?event= parameter. */}
+          keeps the other scopes (90-day windows, full history); both drive
+          the same ?event= parameter, and both default to current events. */}
       <EventFilter
         events={eventOptions.map((ev) => ({
           id: ev.id,
@@ -239,12 +241,12 @@ export default async function AdminPaymentsPage({ searchParams }) {
         basePath="/admin/payments"
         extraParams={{ paystate }}
         allowAll
-        allLabel="Upcoming & recent"
       />
 
       {/* Event scope: governs the cards, fee covers, the balances table,
-          and both CSV downloads. Default keeps this a quick view of what's
-          coming up; full history is one selection away. */}
+          and the Balances and Payments CSVs (not the QuickBooks CSV, which
+          is a date range of money received). Default: current events; full
+          history is one selection away. */}
       <form method="get" action="/admin/payments" className="mb-6 flex flex-wrap items-center gap-2 text-sm">
         <label className="font-semibold text-neutral-700" htmlFor="event-scope">Showing</label>
         <select
@@ -253,7 +255,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
           defaultValue={eventFilter}
           className="rounded-sm border border-neutral-300 px-2 py-1"
         >
-          <option value="">Upcoming &amp; recent events (90 days each way)</option>
+          <option value="">Current events</option>
           <option value="upcoming">Upcoming events (next 90 days)</option>
           <option value="recent">Recent events (last 90 days)</option>
           <option value="all">All events — full history</option>

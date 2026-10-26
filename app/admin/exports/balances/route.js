@@ -30,10 +30,10 @@ export async function GET(request) {
   ]);
   const regById = new Map((regs ?? []).map((r) => [r.id, r]));
 
-  // Same event scope as the Event Payments page: '' = upcoming + recent
-  // (90 days each way), 'upcoming', 'recent', 'all', or one event's id --
-  // one function for both (lib/events.js); archived events are in no time
-  // scope.
+  // Same event scope as the Event Payments page: '' = current events
+  // (isCurrentEventRow), 'upcoming', 'recent', 'all', or one event's id --
+  // one function for both (inPaymentsScope, lib/events.js); archived events
+  // are in no time scope.
   const inScope = (ev) => inPaymentsScope(ev, eventFilter);
 
   const matches = (b) => {

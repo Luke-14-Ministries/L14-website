@@ -85,10 +85,10 @@ export async function GET(request) {
     ['Date', 'Household', 'Event', 'Amount', 'Fee cover', 'Method', 'Status',
      'Paid by', 'Payer email', 'Stripe reference', 'Note'],
   ];
-  // Same event scope as the Event Payments page: '' = upcoming + recent
-  // (90 days each way), 'upcoming', 'recent', 'all', or one event's id --
-  // one function for both (lib/events.js); archived events are in no time
-  // scope.
+  // Same event scope as the Event Payments page: '' = current events
+  // (isCurrentEventRow), 'upcoming', 'recent', 'all', or one event's id --
+  // one function for both (inPaymentsScope, lib/events.js); archived events
+  // are in no time scope.
   const inScope = (ev) => inPaymentsScope(ev, eventFilter);
 
   if (quickbooks) {
