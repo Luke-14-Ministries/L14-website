@@ -400,9 +400,11 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
     });
   }
 
-  // One lead per program per event -- a label, not a permission (0071). The
-  // server action clears the previous lead first, so this is always "move the
-  // badge", never "add a second one".
+  // One head leader per program per event -- a label, not a permission
+  // (0071; the column is still is_lead). The server action clears the previous
+  // one first, so this is always "move the badge", never "add a second one".
+  // "Head leader", not "lead" (Lawrence, 26 Oct 2026): everyone here is a
+  // leader, and "lead" beside "Program Leader" read as two different things.
   function setLead(grantId, isLead) {
     setMessage(null);
     startTransition(async () => {
@@ -419,7 +421,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
                 A leader signs in and sees one page: the people in their program, with their buddy and a
         flag where there is something to ask about. No medical detail, no other programs, no
         editing. Access is for this event only and ends with it. A program may have more than one
-        leader; mark one as the <strong>lead</strong> so check-in staff and drivers know who to
+        leader; make one the <strong>head leader</strong> so check-in staff and drivers know who to
         find — it changes nothing about what either of them can see.
       </p>
 
@@ -439,7 +441,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
                         {l.name}
                         {l.isLead && (
                           <span className="ml-2 rounded-full bg-brand-light px-2 py-0.5 text-xs font-semibold text-brand-dark">
-                            lead
+                            Head leader
                           </span>
                         )}
                       </span>
@@ -452,11 +454,11 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
                             className="text-xs underline text-neutral-500 hover:text-brand-dark"
                             title={
                               l.isLead
-                                ? 'Make this person an assistant leader instead.'
-                                : 'Make this person the lead. Any current lead becomes an assistant.'
+                                ? 'Make this person a leader, not the head leader.'
+                                : 'Make this person the head leader. Any current head leader stays a leader.'
                             }
                           >
-                            {l.isLead ? 'make assistant' : 'make lead'}
+                            {l.isLead ? 'Remove as head leader' : 'Make head leader'}
                           </button>
                           <button
                             type="button"

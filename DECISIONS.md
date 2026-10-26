@@ -3094,3 +3094,17 @@ camper sentences and the "Put a name down…" encouragement only where there is 
 volunteer-only card says *As a volunteer you go where your camper goes…*. The page's queries now
 throw on error instead of reading as "nothing to choose". The staff email's links keep `#reg-<id>`
 (the all-events view still has the anchor).
+
+## 2026-10-26 — One shared table that sorts, resizes and searches; "head leader", not "lead"
+
+Lawrence on My Program: column widths adjustable, columns sortable, a search for names. Built once,
+as `components/DataTable.jsx` (plain React and CSS, no table library), so the next table that wants
+it behaves the same: a header is a real button with `aria-sort`, cycling A→Z, Z→A, original order;
+numbers sort as numbers, text naturally and case-blind, blanks last both ways; each header has a
+drag handle (arrow keys too, 16 px a step, 60 px minimum) and widths are remembered per table in
+localStorage (read through `useSyncExternalStore`; when storage is blocked they last for the visit);
+the search ignores case and accents and says *Showing N of M*. The CSV and print view still carry
+the whole list, and the page says so. Other staff tables are left as they are until Lawrence picks
+which to convert. Same day: every person with a `program_leaders` grant is a **leader** and the one
+marked `is_lead` the **head leader** (My Program's line, the print view, the header pill *Program
+Leader · Head*, the Programs page's **Make head leader**). Labels only; `is_lead` stays a label.

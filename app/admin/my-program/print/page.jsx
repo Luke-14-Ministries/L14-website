@@ -58,8 +58,9 @@ export default async function MyProgramPrintPage({ searchParams }) {
         </p>
         {leaders.length > 0 && (
           <p className="text-sm text-neutral-600">
-            {lead ? `Lead: ${lead.name}` : 'No lead named yet'}
-            {assistants.length > 0 ? ` · with ${assistants.map((a) => a.name).join(', ')}` : ''}
+            {/* Same words as the screen: head leader, then the leaders. */}
+            Head leader: {lead ? lead.name : 'not named yet'}
+            {assistants.length > 0 ? ` · Leaders: ${assistants.map((a) => a.name).join(', ')}` : ''}
           </p>
         )}
       </div>

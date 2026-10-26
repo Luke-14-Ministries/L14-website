@@ -8,6 +8,7 @@ import {
   programRosterRows,
 } from '@/lib/programs';
 import FlagsNote from './FlagsNote';
+import ProgramRosterTable from './ProgramRosterTable';
 
 export const metadata = { title: 'My Program — Luke 14 Ministries' };
 
@@ -44,11 +45,12 @@ export default async function MyProgramPage({ searchParams }) {
   const current =
     leaderships.find((l) => `${l.programId}:${l.eventId}` === selectedKey) ?? leaderships[0];
 
-    const [roster, leaders] = await Promise.all([
+  const [roster, leaders] = await Promise.all([
     getProgramRoster({ programId: current.programId, eventId: current.eventId }),
     getProgramLeaders({ programId: current.programId, eventId: current.eventId }),
   ]);
   const lead = leaders.find((l) => l.isLead) ?? null;
+  // The other leaders, named after the head leader (all of them if none is).
   const assistants = leaders.filter((l) => !l.isLead);
 
   // Built in lib/programs.js so the CSV and the print view show the same rows.
@@ -62,22 +64,19 @@ export default async function MyProgramPage({ searchParams }) {
       <p className="text-sm text-neutral-500 mb-4">
         {current.eventName}
         {current.startsOn ? ` · from ${current.startsOn}` : ''} — {rows.length}{' '}
-                {rows.length === 1 ? 'person' : 'people'} in your program.
+        {rows.length === 1 ? 'person' : 'people'} in your program.
       </p>
 
-      {/* Who else leads this program, lead first. Two leaders on one program
-          is normal (a lead and an assistant); this line is so each knows the
-          other, and so "who is the lead?" has one answer. */}
+      {/* Who else leads this program, head leader first. Everyone with a
+          program_leaders grant is a LEADER; the one marked is_lead (0071) is
+          the HEAD LEADER -- a label, not a permission (Lawrence, 26 Oct 2026:
+          "lead" beside "Program Leader" read as two different things). This
+          line is so each knows the others, and "who is in charge?" has one
+          answer. */}
       {leaders.length > 0 && (
         <p className="-mt-3 mb-4 text-sm text-neutral-600">
-          {lead ? (
-            <>
-              Lead: <strong>{lead.name}</strong>
-            </>
-          ) : (
-            'No lead named yet'
-          )}
-          {assistants.length > 0 && <> · with {assistants.map((a) => a.name).join(', ')}</>}
+          Head leader: {lead ? <strong>{lead.name}</strong> : 'not named yet'}
+          {assistants.length > 0 && <> · Leaders: {assistants.map((a) => a.name).join(', ')}</>}
         </p>
       )}
 
@@ -112,13 +111,16 @@ export default async function MyProgramPage({ searchParams }) {
           nothing more; see export/route.js and print/page.jsx. Plain links:
           the CSV is a download, the print view a page of its own. */}
       {rows.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <a href={`/admin/my-program/export/?grant=${grant}`} className="btn-outline py-1.5! text-sm">
             Download CSV
           </a>
           <Link href={`/admin/my-program/print/?grant=${grant}`} className="btn-outline py-1.5! text-sm">
             Print / PDF
           </Link>
+          <span className="text-xs text-neutral-500">
+            The CSV and the print view hold the whole list, not just the rows a search is showing.
+          </span>
         </div>
       )}
 
@@ -128,61 +130,7 @@ export default async function MyProgramPage({ searchParams }) {
           fills up as the coordinator assigns people — there is nothing for you to do here.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-sm border border-neutral-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-neutral-50 text-left">
-              <tr>
-                <th className="px-3 py-2 font-semibold">Name</th>
-                <th className="px-3 py-2 font-semibold">Age</th>
-                <th className="px-3 py-2 font-semibold">Role</th>
-                <th className="px-3 py-2 font-semibold">Buddy</th>
-                <th className="px-3 py-2 font-semibold">Ask about</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-t border-neutral-100 align-top">
-                  <td className="px-3 py-2">
-                    <span className="font-medium">{r.name}</span>
-                    {r.formalName && (
-                      <span className="block text-xs text-neutral-500">
-                        on paperwork: {r.formalName}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">{r.age ?? '—'}</td>
-                  <td className="px-3 py-2">{r.roleLabel}</td>
-                  <td className="px-3 py-2">
-                    {r.buddy ? (
-                      r.buddy
-                    ) : r.buddyRequired ? (
-                      <span className="text-amber-800">buddy needed — not paired yet</span>
-                    ) : (
-                      <span className="text-neutral-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-1">
-                      {r.allergies && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                          Allergies
-                        </span>
-                      )}
-                      {r.support && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                          Support needs
-                        </span>
-                      )}
-                      {!r.allergies && !r.support && (
-                        <span className="text-neutral-400">—</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ProgramRosterTable rows={rows} />
       )}
 
       <p className="mt-4 text-xs text-neutral-500">

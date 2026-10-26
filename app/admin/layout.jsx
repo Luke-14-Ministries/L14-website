@@ -455,8 +455,13 @@ export default async function AdminLayout({ children }) {
           <h1 className="text-2xl font-bold">{fullName}</h1>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <span className="rounded-full bg-brand-light text-brand-dark px-2.5 py-0.5 text-xs font-semibold">
+              {/* Everyone with a program_leaders grant is a leader; the one
+                  marked is_lead is the head leader (Lawrence, 26 Oct 2026 --
+                  "lead" beside "Program Leader" read as two things). */}
               {isLeaderOnly
-                ? 'Program Leader'
+                ? leaderships.some((l) => l.isLead)
+                  ? 'Program Leader · Head'
+                  : 'Program Leader'
                 : (ROLE_INFO[staff.role] ?? {}).label ?? staff.role}
             </span>
             {/* The pills follow the GRANTS (0100), not the old staff columns:

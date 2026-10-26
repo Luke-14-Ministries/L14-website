@@ -261,7 +261,7 @@ export async function revokeProgramLeader({ grantId }) {
 export async function setProgramLead({ grantId, isLead }) {
   const staff = await getStaff();
   if (!can(staff, 'admin')) {
-    return { ok: false, error: 'Only an administrator can name the lead.' };
+    return { ok: false, error: 'Only an administrator can name the head leader.' };
   }
   if (!grantId) return { ok: false, error: 'Nothing to change.' };
 
@@ -284,7 +284,7 @@ export async function setProgramLead({ grantId, isLead }) {
       .eq('is_lead', true);
     if (clearError) {
       console.error('setProgramLead clear:', clearError.message);
-      return { ok: false, error: 'The previous lead could not be cleared.' };
+      return { ok: false, error: 'The previous head leader could not be cleared.' };
     }
   }
 
