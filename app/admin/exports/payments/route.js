@@ -1,11 +1,17 @@
 // GET /admin/exports/payments — every event payment as a CSV download.
-// Registrar-gated; RLS is the backstop.
+// Registrar-gated; RLS is the backstop. The ordinary file follows the Event
+// Payments page's scope (?event=, ?paystate=).
 //
 // ?format=quickbooks (build plan item 14; the call of 16 Oct 2026, 3:30 pm):
-// the same payments in the column order QuickBooks Online takes -- Date,
-// Name, Memo, Account, Amount -- one row per payment that actually moved
-// money (succeeded), a second row for a processing fee the payer covered
-// (booked with its transaction, as agreed), and negative rows for refunds.
+// money received, in the column order QuickBooks Online takes -- Date, Name,
+// Memo, Account, Amount -- one row per payment that actually moved money
+// (succeeded, or since refunded: the refund is its own row), a second row for
+// a processing fee the payer covered (booked with its transaction, as
+// agreed), and negative rows for refunds. Since 26 Oct 2026 (Script 6, 13.40)
+// it is a DATE RANGE on when the money moved -- ?from=YYYY-MM-DD&to=YYYY-MM-DD,
+// inclusive, either one empty for no limit -- across EVERY event, sorted by
+// date. It ignores the page's event scope and payment-state pill: the
+// treasurer books a month of money, not one event's families.
 // Gross per payment, as the treasurer books it; Stripe's own fee is not in
 // this system and comes from Stripe's payout report. The account names are
 // placeholders until the treasurer confirms the chart of accounts -- they are
@@ -36,9 +42,25 @@ export async function GET(request) {
   const paystate = url.searchParams.get('paystate') || '';
   const eventFilter = url.searchParams.get('event') || '';
   const quickbooks = url.searchParams.get('format') === 'quickbooks';
+  const from = url.searchParams.get('from') || '';
+  const to = url.searchParams.get('to') || '';
+  if (quickbooks) {
+    const DAY = /^\d{4}-\d{2}-\d{2}$/;
+    if ((from && !DAY.test(from)) || (to && !DAY.test(to))) {
+      return new Response('From and To must be dates (YYYY-MM-DD).', { status: 400 });
+    }
+    if (from && to && from > to) {
+      return new Response('The From date is after the To date.', { status: 400 });
+    }
+  }
 
   const supabase = await createClient();
-  const [{ data: pays }, { data: regs }, { data: balances }, { data: refunds }] = await Promise.all([
+  const [
+    { data: pays, error: paysError },
+    { data: regs, error: regsError },
+    { data: balances, error: balancesError },
+    { data: refunds, error: refundsError },
+  ] = await Promise.all([
     supabase
       .from('payments')
       .select('registration_id, amount_cents, fee_cover_cents, method, status, received_on, created_at, note, payer_email, payer_name, stripe_payment_intent_id')
@@ -53,6 +75,12 @@ export async function GET(request) {
       .select('registration_id, amount_cents, fee_cover_cents, status, method, reason, note, refunded_on, created_at, stripe_refund_id')
       .order('created_at'),
   ]);
+  // Never a short file in place of an error: a missing row here is money
+  // missing from the books.
+  const failed = paysError ?? regsError ?? balancesError ?? refundsError;
+  if (failed) {
+    return new Response(`Could not read the payments: ${failed.message}`, { status: 500 });
+  }
   const regById = new Map((regs ?? []).map((r) => [r.id, r]));
 
   // Same payment-state filter as the Event Payments page: the CSV matches
@@ -93,44 +121,59 @@ export async function GET(request) {
 
   if (quickbooks) {
     // MM/DD/YYYY, which QuickBooks Online reads without a format question.
-    const mdy = (iso) => {
-      const [y, m, d] = dayInMorristown(iso).split('-');
+    const mdy = (day) => {
+      const [y, m, d] = String(day).split('-');
       return y && m && d ? `${m}/${d}/${y}` : '';
     };
-    const qb = [['Date', 'Name', 'Memo', 'Account', 'Amount']];
+    // The Morristown day the money moved, inside the inclusive range.
+    const inRange = (day) => Boolean(day) && (!from || day >= from) && (!to || day <= to);
+    // Each payment or refund is a group -- its own row and, when the payer
+    // covered the fee, the fee row straight after it -- sorted by day, then
+    // by when it was recorded.
+    const groups = [];
     for (const p of pays ?? []) {
-      if (p.status !== 'succeeded') continue;
-      if (allowed && !allowed.has(p.registration_id)) continue;
+      // Money that arrived: succeeded, or refunded since (a payment's status
+      // follows the refunds on file, 0111). The refund is booked as its own
+      // negative row, so leaving the payment out would book money going back
+      // that never came in.
+      if (p.status !== 'succeeded' && p.status !== 'refunded') continue;
+      const day = dayInMorristown(p.received_on ?? p.created_at);
+      if (!inRange(day)) continue;
       const r = regById.get(p.registration_id);
-      if (!inScope(r?.events)) continue;
-      const date = mdy(p.received_on ?? p.created_at);
+      const date = mdy(day);
       const name = r?.households?.display_name ?? '';
       const ev = r?.events?.name ?? 'Event';
       const memo = [ev, p.method, p.stripe_payment_intent_id, noteInDollars(p.note)].filter(Boolean).join(' — ');
-      qb.push([date, name, memo, 'Camp registration fees', ((p.amount_cents ?? 0) / 100).toFixed(2)]);
+      const lines = [[date, name, memo, 'Camp registration fees', ((p.amount_cents ?? 0) / 100).toFixed(2)]];
       if ((p.fee_cover_cents ?? 0) > 0) {
-        qb.push([date, name, `${ev} — processing fee covered by the payer`, 'Processing fees covered', ((p.fee_cover_cents ?? 0) / 100).toFixed(2)]);
+        lines.push([date, name, `${ev} — processing fee covered by the payer`, 'Processing fees covered', ((p.fee_cover_cents ?? 0) / 100).toFixed(2)]);
       }
+      groups.push({ day, at: p.created_at ?? '', lines });
     }
     for (const f of refunds ?? []) {
       if (f.status !== 'succeeded') continue;
-      if (allowed && !allowed.has(f.registration_id)) continue;
+      const day = dayInMorristown(f.refunded_on ?? f.created_at);
+      if (!inRange(day)) continue;
       const r = regById.get(f.registration_id);
-      if (!inScope(r?.events)) continue;
-      const date = mdy(f.refunded_on ?? f.created_at);
+      const date = mdy(day);
       const name = r?.households?.display_name ?? '';
       const ev = r?.events?.name ?? 'Event';
       const memo = ['Refund', ev, f.method, f.stripe_refund_id, f.reason, f.note].filter(Boolean).join(' — ');
-      qb.push([date, name, memo, 'Camp registration fees', (-(f.amount_cents ?? 0) / 100).toFixed(2)]);
+      const lines = [[date, name, memo, 'Camp registration fees', (-(f.amount_cents ?? 0) / 100).toFixed(2)]];
       if ((f.fee_cover_cents ?? 0) > 0) {
-        qb.push([date, name, `Refund — ${ev} — processing fee returned`, 'Processing fees covered', (-(f.fee_cover_cents ?? 0) / 100).toFixed(2)]);
+        lines.push([date, name, `Refund — ${ev} — processing fee returned`, 'Processing fees covered', (-(f.fee_cover_cents ?? 0) / 100).toFixed(2)]);
       }
+      groups.push({ day, at: f.created_at ?? '', lines });
     }
+    groups.sort((a, b) => a.day.localeCompare(b.day) || String(a.at).localeCompare(String(b.at)));
+    const qb = [['Date', 'Name', 'Memo', 'Account', 'Amount'], ...groups.flatMap((g) => g.lines)];
+    const today = todayInMorristown();
+    const range = from || to ? `${from || 'start'}-to-${to || today}` : `all-time-${today}`;
     const csvQb = '\ufeff' + qb.map((row) => row.map(esc).join(',')).join('\r\n');
     return new Response(csvQb, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="luke14-event-payments-quickbooks-${todayInMorristown()}.csv"`,
+        'Content-Disposition': `attachment; filename="luke14-event-payments-quickbooks-${range}.csv"`,
       },
     });
   }

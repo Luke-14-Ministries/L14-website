@@ -193,32 +193,66 @@ export default async function AdminPaymentsPage({ searchParams }) {
     return s ? `?${s}` : '';
   };
   const csvHref = `/admin/exports/payments${qs()}`;
-  // QuickBooks Online shape (item 14): the same scope, money that moved.
-  const qbHref = `${csvHref}${qs() ? '&' : '?'}format=quickbooks`;
+  // QuickBooks Online shape (item 14) is money received in a date range,
+  // across every event -- not the page's scope (Script 6, 13.40, 26 Oct
+  // 2026). It opens on this month so far.
+  const monthStart = `${dueToday.slice(0, 8)}01`;
 
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <h2 className="text-xl font-bold">Event Payments</h2>
-        <span className="flex gap-2">
-          <a
-            href={`/admin/exports/balances${qs()}`}
-            className="btn-outline py-2! text-sm"
-            title="One row per family: fees, scholarships, paid, balance"
-          >
-            Balances CSV
-          </a>
-          <a href={csvHref} className="btn-outline py-2! text-sm" title="One row per payment received">
-            Payments CSV
-          </a>
-          <a
-            href={qbHref}
-            className="btn-outline py-2! text-sm"
-            title="Date, Name, Memo, Account, Amount — succeeded payments and refunds in this scope, covered fees as their own line. Account names are placeholders until the treasurer confirms them."
-          >
-            QuickBooks CSV
-          </a>
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span className="flex flex-wrap gap-2">
+            <a
+              href={`/admin/exports/balances${qs()}`}
+              className="btn-outline py-2! text-sm"
+              title="One row per family: fees, scholarships, paid, balance — for the events shown (follows Showing and the payment-state pill)"
+            >
+              Balances CSV
+            </a>
+            <a
+              href={csvHref}
+              className="btn-outline py-2! text-sm"
+              title="One row per payment — for the events shown (follows Showing and the payment-state pill), not a date range"
+            >
+              Payments CSV
+            </a>
+          </span>
+          <form method="get" action="/admin/exports/payments" className="flex flex-wrap items-center justify-end gap-2 text-sm">
+            <input type="hidden" name="format" value="quickbooks" />
+            <label htmlFor="qb-from" className="text-neutral-600">From</label>
+            <input
+              id="qb-from"
+              type="date"
+              name="from"
+              defaultValue={monthStart}
+              className="rounded-sm border border-neutral-300 px-2 py-1"
+            />
+            <label htmlFor="qb-to" className="text-neutral-600">To</label>
+            <input
+              id="qb-to"
+              type="date"
+              name="to"
+              defaultValue={dueToday}
+              className="rounded-sm border border-neutral-300 px-2 py-1"
+            />
+            <button
+              type="submit"
+              className="btn-outline py-2! text-sm"
+              title="Date, Name, Memo, Account, Amount — every payment and refund received between these dates, across all events (not just those shown), by date; covered fees as their own line, refunds negative. Account names are placeholders until the treasurer confirms them."
+            >
+              QuickBooks CSV
+            </button>
+            <a
+              href="/admin/exports/payments?format=quickbooks"
+              className="text-brand underline"
+              title="QuickBooks CSV of every payment and refund ever received"
+            >
+              All time
+            </a>
+          </form>
+        </div>
       </div>
       <p className="text-sm text-neutral-500 mb-4">
         What each family owes and has paid for an event (Camp Celebrate, retreats, and the rest). Online payments record themselves; checks
