@@ -432,12 +432,15 @@ export default async function AdminPaymentsPage({ searchParams }) {
                       <span className="block text-xs text-amber-800">incl. {money(b.fees_cents)} fees</span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-right text-green-700">
+                  <td className="px-4 py-2 text-right whitespace-nowrap text-green-700">
                     {assist > 0 ? `−${money(assist)}` : '—'}
                   </td>
                   <td className="px-4 py-2 text-right">{money(b.paid_cents)}</td>
-                  <td className={`px-4 py-2 text-right font-semibold ${bal > 0 ? 'text-amber-700' : 'text-green-700'}`}>
-                    {bal < 0 ? `−${money(-bal)}` : money(bal)}
+                  {/* A credit reads as one unit, worded as the Review column
+                      words it -- a bare "−" wrapped onto its own line above
+                      the amount (Script 6, 13.40). */}
+                  <td className={`px-4 py-2 text-right whitespace-nowrap font-semibold ${bal > 0 ? 'text-amber-700' : 'text-green-700'}`}>
+                    {bal < 0 ? `Credit of ${money(-bal)}` : money(bal)}
                   </td>
                   <td className="px-4 py-2 whitespace-nowrap">
                     {!dueOn ? (
