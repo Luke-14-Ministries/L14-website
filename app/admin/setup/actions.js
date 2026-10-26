@@ -8,25 +8,44 @@ import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 
-export async function updateEventRegistration(eventId, { published, archived = null, opensAt, closesAt }) {
+// One "Event status" (26 Oct 2026), stored on the two columns everything else
+// reads: unpublished = not published, not archived; published = published, not
+// archived; archived = archived_at set AND not published -- an archived event
+// is never on the public site. Choosing either of the other two clears the
+// archive mark. A row stored as both (possible before this) is tidied here, on
+// its next save, and nowhere else.
+const EVENT_STATUSES = new Set(['unpublished', 'published', 'archived']);
+
+export async function updateEventRegistration(eventId, { status, opensAt, closesAt }) {
   const staff = await getStaff();
   if (!can(staff, 'write:setup')) return { ok: false, error: 'Admins only.' };
   if (!eventId) return { ok: false, error: 'Missing event.' };
+  if (!EVENT_STATUSES.has(status)) return { ok: false, error: 'Choose an event status.' };
   if (opensAt && closesAt && new Date(opensAt) >= new Date(closesAt)) {
     return { ok: false, error: 'Registration would close before it opens — check the two times.' };
   }
 
   const supabase = await createClient();
   const patch = {
-    published: Boolean(published),
+    published: status === 'published',
     registration_opens_at: opensAt || null,
     registration_closes_at: closesAt || null,
+    archived_at: null,
   };
   // The archive mark (0099). The date it was first set is kept: re-saving an
   // archived event does not move it.
-  if (archived !== null) {
-    const { data: cur } = await supabase.from('events').select('archived_at').eq('id', eventId).maybeSingle();
-    patch.archived_at = archived ? cur?.archived_at ?? new Date().toISOString() : null;
+  if (status === 'archived') {
+    const { data: cur, error: curError } = await supabase
+      .from('events')
+      .select('archived_at')
+      .eq('id', eventId)
+      .maybeSingle();
+    if (curError) {
+      console.error('updateEventRegistration (read archived_at):', curError.message);
+      return { ok: false, error: 'Could not save. Please try again.' };
+    }
+    if (!cur) return { ok: false, error: 'That event was not found.' };
+    patch.archived_at = cur.archived_at ?? new Date().toISOString();
   }
   const { error } = await supabase
     .from('events')
@@ -236,7 +255,8 @@ export async function updateEventDetails(
 // transaction or not at all. A half-made event (no price, no agreements) would
 // take registrations that sign nothing, which is worse than no event.
 //
-// Always created HIDDEN. Ticking "Visible" stays a separate, deliberate act.
+// Always created UNPUBLISHED. Setting its Event status to Published stays a
+// separate, deliberate act.
 const parseDollars = (v) => {
   const t = String(v ?? '').replace(/[$,\s]/g, '');
   if (t === '') return null;

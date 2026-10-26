@@ -28,10 +28,24 @@ const isoToLocal = (iso) => {
 };
 const localToIso = (v) => (v ? new Date(v).toISOString() : null);
 
+// One "Event status" in place of two tick boxes (Lawrence, 26 Oct 2026: both
+// could be ticked at once). It maps onto the two columns the rest of the site
+// already reads -- events.published (public pages) and events.archived_at
+// (isCurrentEventRow, registrationOpen) -- and an archived event is always
+// stored unpublished. A row saved before this with both set reads as Archived,
+// which is what every staff page already treated it as.
+const EVENT_STATUSES = [
+  ['unpublished', 'Unpublished', 'Hidden from the public site; staff can still set it up.'],
+  ['published', 'Published', 'On the public site; registration follows the open/close times.'],
+  ['archived', 'Archived', 'Finished: out of every current list and off the public site; its records stay.'],
+];
+const eventStatus = (published, archivedAt) =>
+  archivedAt ? 'archived' : published ? 'published' : 'unpublished';
+
 function statusOf(row) {
   const now = new Date();
-  if (row.archived) return ['Archived — out of every current list', 'bg-neutral-200 text-neutral-600'];
-  if (!row.published) return ['Hidden', 'bg-neutral-200 text-neutral-600'];
+  if (row.status === 'archived') return ['Archived — out of every current list', 'bg-neutral-200 text-neutral-600'];
+  if (row.status !== 'published') return ['Unpublished — not on the public site', 'bg-neutral-200 text-neutral-600'];
   if (!row.hasPublishedOption)
     return ['No published price — cannot open', 'bg-red-100 text-red-800'];
   if (row.opensAt && new Date(row.opensAt) > now)
@@ -44,8 +58,11 @@ function statusOf(row) {
 function EventRow({ e }) {
   const router = useRouter();
   const [, start] = useTransition();
-  const [published, setPublished] = useState(e.published);
-  const [archived, setArchived] = useState(Boolean(e.archivedAt));
+  const savedStatus = eventStatus(e.published, e.archivedAt);
+  // Published AND archived at once -- possible before 26 Oct (the Adult
+  // Adventure Retreat 2026). Shown as Archived; Save stores it unpublished.
+  const legacyBoth = e.published && Boolean(e.archivedAt);
+  const [status, setStatus] = useState(savedStatus);
   const [opens, setOpens] = useState(isoToLocal(e.opensAt));
   const [closes, setCloses] = useState(isoToLocal(e.closesAt));
   const [busy, setBusy] = useState(false);
@@ -101,26 +118,25 @@ function EventRow({ e }) {
   }
 
   const dirty =
-    published !== e.published ||
-    archived !== Boolean(e.archivedAt) ||
+    status !== savedStatus ||
+    legacyBoth ||
     opens !== isoToLocal(e.opensAt) ||
     closes !== isoToLocal(e.closesAt);
 
   const [statusLabel, statusClass] = statusOf({
     ...e,
-    published,
-    archived,
+    status,
     opensAt: localToIso(opens),
     closesAt: localToIso(closes),
   });
+  const statusHint = EVENT_STATUSES.find(([v]) => v === status)?.[2];
 
   function save() {
     setBusy(true);
     setNotice(null);
     start(async () => {
       const res = await updateEventRegistration(e.id, {
-        published,
-        archived,
+        status,
         opensAt: localToIso(opens),
         closesAt: localToIso(closes),
       });
@@ -155,28 +171,24 @@ function EventRow({ e }) {
       </div>
 
       <div className="mt-3 flex flex-wrap items-end gap-4">
-        <label className="inline-flex items-center gap-2 text-sm font-semibold">
-          <input
-            type="checkbox"
-            checked={published}
-            onChange={(ev) => setPublished(ev.target.checked)}
-            className="h-4 w-4"
-          />
-          Visible on the site
-        </label>
-        {/* 0099 (16 Oct 2026). "Current" is a rule -- until two weeks after
-            the event ends -- and this is the one human override: a cancelled
-            week or a duplicate drops out of every staff page's pill row now,
-            and registration can never be open for it. It stays in history
-            and in every "Other events" search box. */}
-        <label className="inline-flex items-center gap-2 text-sm font-semibold" title="Out of every current list now; still in history and search. Registration can never be open for an archived event.">
-          <input
-            type="checkbox"
-            checked={archived}
-            onChange={(ev) => setArchived(ev.target.checked)}
-            className="h-4 w-4"
-          />
-          Archived
+        {/* Archived (0099, 16 Oct 2026): "current" is a rule -- until two
+            weeks after the event ends -- and this is the one human override:
+            a cancelled week or a duplicate drops out of every staff page's
+            pill row now, and registration can never be open for it. It stays
+            in history and in every "Other events" search box. */}
+        <label className="text-sm">
+          <span className="block font-semibold text-neutral-700 mb-0.5">Event status</span>
+          <select
+            value={status}
+            onChange={(ev) => setStatus(ev.target.value)}
+            className="rounded-sm border border-neutral-300 px-2 py-1"
+          >
+            {EVENT_STATUSES.map(([v, label]) => (
+              <option key={v} value={v}>
+                {label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="text-sm">
           <span className="block text-neutral-500 mb-0.5">Registration opens</span>
@@ -218,7 +230,13 @@ function EventRow({ e }) {
           </button>
         )}
       </div>
-      <p className="mt-2 text-xs text-neutral-400">
+      <p className="mt-2 text-xs text-neutral-600">{statusHint}</p>
+      {legacyBoth && status === 'archived' && (
+        <p className="mt-1 text-xs text-amber-800">
+          Saved before 26 Oct as both visible and archived. Save stores it as Archived (off the public site).
+        </p>
+      )}
+      <p className="mt-1 text-xs text-neutral-400">
         Times are in your local time zone. Blank = no restriction on that end.
       </p>
 
@@ -535,7 +553,7 @@ function NewEventPanel({ events }) {
       if (res.ok) {
         setNotice({
           ok: true,
-          message: `Created “${f.name.trim()}”. It is hidden: check its details below, then tick “Visible on the site” when registration should open.`,
+          message: `Created “${f.name.trim()}”. It is unpublished: check its details below, then set its Event status to Published when registration should open.`,
         });
         setF(BLANK);
         setOpen(false);
@@ -678,7 +696,7 @@ function NewEventPanel({ events }) {
                 {f.eventType === 'camp_week' ? ' and rooms (Rooms & Cabins can copy them from another event)' : ''} afterwards.</>
             )}{' '}
             {f.eventType === 'camp_week' && 'Volunteers are set to arrive the day before. '}
-            The event starts <strong>hidden</strong>.
+            The event starts <strong>unpublished</strong>.
           </p>
 
           <div className="mt-3 flex flex-wrap gap-3">
@@ -755,14 +773,14 @@ function groupByYear(events) {
 }
 
 function YearGroup({ year, list, past }) {
-  const visible = list.filter((e) => e.published).length;
+  const visible = list.filter((e) => eventStatus(e.published, e.archivedAt) === 'published').length;
   return (
     <details open={!past} className="group rounded-lg border border-neutral-200">
       <summary className={`${SUMMARY} px-4 py-3`}>
         <span>
           <span className="font-bold">{year}</span>
           <span className="ml-2 text-sm text-neutral-500">
-            {list.length} {list.length === 1 ? 'event' : 'events'} · {visible} visible
+            {list.length} {list.length === 1 ? 'event' : 'events'} · {visible} published
             {past ? ' · finished' : ''}
           </span>
         </span>

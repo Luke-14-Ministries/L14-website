@@ -3193,3 +3193,19 @@ QuickBooks CSV is about money, not events: From/To on the day the money moved (t
 default, *All time* one link away), across every event, sorted by date, ignoring the page's scope
 and payment-state pill. A payment since refunded is included, so its negative refund row is never
 booked without the money it reverses.
+
+## 2026-10-26 — Setup: one "Event status" dropdown in place of the Visible and Archived ticks
+
+Lawrence: both boxes could be ticked at once, which "seems odd". Each event row on Setup now has one
+**Event status** — Unpublished · Published · Archived — with a one-line hint under it, stored on the
+same two columns (`updateEventRegistration` in `app/admin/setup/actions.js`): Unpublished =
+`published` false, `archived_at` null; Published = `published` true, `archived_at` null; Archived =
+`archived_at` set (kept if already set, else now) **and** `published` false — an archived event is
+never on the public site. Choosing either of the others clears the archive mark. A row stored as
+both (the Adult Adventure Retreat 2026, today) reads as Archived and is stored archived +
+unpublished on its next save; no data is changed outside a save. **No check constraint**: only this
+action writes either column (`admin_create_event()` inserts unpublished with no archive mark; no
+edge function touches events), and the public pages already refuse an archived event through
+`registrationOpen()`, so the mixed row does no harm in the meantime. If a second writer ever
+appears, add `check (not (published and archived_at is not null))` after setting `published = false`
+where `archived_at is not null`.
