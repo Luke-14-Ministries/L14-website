@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
+import { SearchSelectLinks } from '@/components/SearchSelect';
 import { dayInMorristown } from '@/lib/events';
 import { waiverReviewPill } from '@/lib/format';
 
@@ -268,6 +269,31 @@ export default async function ActivityPrintPage({ searchParams }) {
       </table>
     );
 
+  // The picker (26 Oct 2026, the same searchable dropdown as Buddy Sheets):
+  // "All activities" pinned and the default, one option per activity with
+  // how many are signed up. URL unchanged: ?event=…&activity=<id>.
+  const signedUp = new Map();
+  for (const g of signups ?? []) {
+    if (g.status === 'cancelled') continue;
+    signedUp.set(g.activity_id, (signedUp.get(g.activity_id) ?? 0) + 1);
+  }
+  const pickerOptions = (activities ?? []).map((a) => {
+    const n = signedUp.get(a.id) ?? 0;
+    const sittings = (slotsByActivity.get(a.id) ?? []).length;
+    return {
+      value: a.id,
+      label: a.name,
+      href: `/admin/activities/print/?event=${selected ?? ''}&activity=${a.id}`,
+      hint: [
+        `${n} signed up`,
+        sittings > 1 ? `${sittings} sittings` : '',
+        (a.provider_name ?? '').trim(),
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    };
+  });
+
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
       <div className="mb-2 flex items-center justify-between print:hidden">
@@ -280,25 +306,20 @@ export default async function ActivityPrintPage({ searchParams }) {
         sheet is paper and paper gets left on a table. The <strong>Support</strong> column is
         about the person, not the activity: it reads the same on every sheet they appear on.
       </p>
-      {(activities ?? []).length > 1 && (
-        <p className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm print:hidden">
-          <span className="text-neutral-500">Print:</span>
-          <a
-            href={`/admin/activities/print/?event=${selected ?? ''}`}
-            className={only ? 'text-brand underline' : 'font-semibold'}
-          >
-            all activities
-          </a>
-          {(activities ?? []).map((a) => (
-            <a
-              key={a.id}
-              href={`/admin/activities/print/?event=${selected ?? ''}&activity=${a.id}`}
-              className={only === a.id ? 'font-semibold' : 'text-brand underline'}
-            >
-              {a.name}
-            </a>
-          ))}
-        </p>
+      {pickerOptions.length > 1 && (
+        <div className="mb-6">
+          <SearchSelectLinks
+            label="Print"
+            printPrefix="Printed for"
+            noun={['activity', 'activities']}
+            placeholder="Type an activity's name"
+            pinned={[
+              { value: '', label: 'All activities', href: `/admin/activities/print/?event=${selected ?? ''}` },
+            ]}
+            options={pickerOptions}
+            value={only}
+          />
+        </div>
       )}
 
       <p className="mb-6 text-sm font-semibold">
