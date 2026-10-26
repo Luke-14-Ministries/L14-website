@@ -851,7 +851,7 @@ export default async function DashboardPage({ searchParams }) {
               {waiversOwed.map((w) => (
                 <li key={w.key}>
                   <Link
-                    href={`/account/activities/#reg-${w.registrationId}`}
+                    href={`/account/activities/?registration=${w.registrationId}#reg-${w.registrationId}`}
                     className="font-semibold text-amber-900 underline"
                   >
                     {w.text}
@@ -1459,16 +1459,18 @@ export default async function DashboardPage({ searchParams }) {
                         {/* Activities live on their own page: a family with
                             three people and eleven activities is more screen
                             than a dashboard card should carry. */}
-                        {/* Campers only (14 Oct 2026): a registration with no
-                            camper on it has nothing to choose, so the button
-                            does not appear. */}
+                        {/* Campers choose; volunteers upload outside providers'
+                            confirmations (0087). A registration with neither
+                            has nothing there, so the button does not appear. */}
                         {(r.registration_participants ?? []).some(
                           (p) =>
                             (p.camp_role === 'camper' || p.camp_role === 'volunteer') &&
                             p.status !== 'cancelled'
                         ) && (
+                          // This registration's event only (Script 6 item 7.1,
+                          // 26 Oct): the page links on to all events.
                           <Link
-                            href="/account/activities/"
+                            href={`/account/activities/?registration=${r.id}`}
                             title="Choose activities for your campers; volunteers upload outside providers' confirmations here too."
                             className="btn-outline py-2!"
                           >

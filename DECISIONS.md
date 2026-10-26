@@ -3077,3 +3077,20 @@ list, so a failed read is an error, not "nobody placed yet" or a blank file. In 
 no longer sees "Staff Admin" (their pill says Program Leader) or the badge-colour key (staff
 vocabulary); **staff who hold a current leadership** get My Program in the sidebar with the same blue
 count, from the layout's existing `getProgramLeadership()` read.
+
+## 2026-10-26 — Activities: one event per card, and the dashboard button opens only its own event
+
+Lawrence (Script 6, 7.1–7.2), a volunteer on the Retreat and both camp weeks with a camper on Week 2,
+pressed **Choose activities** on Week 1 and read the page as wrong: the Retreat's outside-provider
+block (the Retreat has its own *White water rafting — River outfitter*, seeded `ac71…0101`) looked
+like Week 1's, and Week 1 seemed missing. The code did tie each block to its own event; what misled
+was the layout — every event stacked under one camper-worded intro, ordered by when the
+registration was created, so Week 1 came last, below Week 2's camper cards. Now the dashboard's
+button (and the 0120 waiver card) pass `?registration=<id>`; the page matches it against the
+household's own registrations (never a lookup by id) and shows that event alone, with **See
+activities for all your events**; an unknown or foreign id gives the all-events view. Without it:
+current events (`isCurrentEventRow`), by start date, each in its own card. The wording is per card:
+camper sentences and the "Put a name down…" encouragement only where there is a camper; a
+volunteer-only card says *As a volunteer you go where your camper goes…*. The page's queries now
+throw on error instead of reading as "nothing to choose". The staff email's links keep `#reg-<id>`
+(the all-events view still has the anchor).

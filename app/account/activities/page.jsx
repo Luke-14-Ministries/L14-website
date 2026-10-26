@@ -5,46 +5,79 @@ import ActivityPicker from './ActivityPicker';
 import WaiverUpload from './WaiverUpload';
 import BackBar from '@/components/BackBar';
 import BackLink from '@/components/BackLink';
-import { agreementText } from '@/lib/events';
+import { agreementText, isCurrentEventRow } from '@/lib/events';
 
 export const metadata = { title: 'Activities — Luke 14 Ministries' };
 
-// Activity choices, one section per event, one card per attending person.
+// Activity choices, one card per event, one card per attending person inside it.
 //
 // Deliberately its own page rather than another card on the dashboard: a
 // family with three people and eleven activities is a lot of screen, and the
 // dashboard's job is "what needs my attention", not "everything I might do".
-// The dashboard links here per registration.
-export default async function ActivitiesPage() {
+//
+// The dashboard links here PER REGISTRATION (?registration=<id>, Script 6
+// item 7.1, 26 Oct 2026): pressed from the Week 1 card, the page shows Week 1
+// and nothing else, with a link to every event. Lawrence, a volunteer on
+// three events, pressed it on Week 1 and read the Retreat's outside-provider
+// block -- the Retreat has its own rafting with the same outfitter -- as
+// Week 1's, because every event was stacked under one camper-worded intro and
+// Week 1 sorted last. Each event is now its own card, in date order, with
+// wording for who is on it.
+export default async function ActivitiesPage({ searchParams }) {
+  const params = await searchParams;
+  const wanted = typeof params?.registration === 'string' ? params.registration : '';
+
   const user = await getCurrentUser();
-  if (!user) redirect('/account/?next=/account/activities/');
+  if (!user) {
+    redirect(
+      `/account/?next=${encodeURIComponent(
+        wanted ? `/account/activities/?registration=${wanted}` : '/account/activities/'
+      )}`
+    );
+  }
 
   const supabase = await createClient();
 
-  const { data: memberships } = await supabase
+  const { data: memberships, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id);
+  if (memberError) throw new Error(`Household: ${memberError.message}`);
   const householdIds = (memberships ?? []).map((m) => m.household_id);
 
-  const { data: registrations } = householdIds.length
+  // Scoped to this household explicitly (CLAUDE.md), never left to RLS: a
+  // staff member who is also a family can read every registration.
+  const { data: registrations, error: regError } = householdIds.length
     ? await supabase
         .from('registrations')
         .select(
-          `id, events ( id, name, starts_on, ends_on ),
+          `id, events ( id, name, starts_on, ends_on, archived_at ),
            registration_participants ( id, status, camp_role, people ( id, first_name, last_name, date_of_birth ) )`
         )
         .in('household_id', householdIds)
-        .order('created_at', { ascending: false })
-    : { data: [] };
+    : { data: [], error: null };
+  if (regError) throw new Error(`Registrations: ${regError.message}`);
 
-  const regs = registrations ?? [];
+  // One registration, when the link named one of THIS household's. An id
+  // that is not theirs (or not an id at all) is never looked up on its own:
+  // it simply matches nothing here, and the page shows all their events.
+  const scoped = wanted ? (registrations ?? []).find((r) => r.id === wanted) ?? null : null;
+
+  // Otherwise every current event (isCurrentEventRow: to two weeks after it
+  // ends, a year ahead, never archived), earliest first.
+  const regs = (scoped ? [scoped] : (registrations ?? []).filter((r) => isCurrentEventRow(r.events)))
+    .slice()
+    .sort(
+      (a, b) =>
+        String(a.events?.starts_on ?? '9999').localeCompare(String(b.events?.starts_on ?? '9999')) ||
+        String(a.events?.name ?? '').localeCompare(String(b.events?.name ?? ''))
+    );
   const eventIds = [...new Set(regs.map((r) => r.events?.id).filter(Boolean))];
 
-  // Activities for exactly the events this family is attending. RLS also hides
-  // inactive ones and unpublished events, so this cannot show something the
-  // ministry has not opened.
-  const { data: activityRows } = eventIds.length
+  // Activities for exactly the events shown. RLS also hides inactive ones
+  // and unpublished events, so this cannot show something the ministry has
+  // not opened.
+  const { data: activityRows, error: activityError } = eventIds.length
     ? await supabase
         .from('activities')
         .select(
@@ -53,28 +86,31 @@ export default async function ActivitiesPage() {
         .in('event_id', eventIds)
         .eq('active', true)
         .order('sort_order')
-    : { data: [] };
+    : { data: [], error: null };
+  if (activityError) throw new Error(`Activities: ${activityError.message}`);
 
   const participantIds = regs.flatMap((r) =>
     (r.registration_participants ?? []).map((p) => p.id)
   );
 
-  const { data: signupRows } = participantIds.length
+  const { data: signupRows, error: signupError } = participantIds.length
     ? await supabase
         .from('activity_signups')
         .select('registration_participant_id, activity_id, slot_id, status, waiver_acknowledged_at')
         .in('registration_participant_id', participantIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (signupError) throw new Error(`Activity choices: ${signupError.message}`);
 
   // Proof that an outside provider's form was done (0087, 14 Oct 2026):
   // one upload per person per activity, shown beside the activity and, for
-  // volunteers, in their own block below the campers.
-  const { data: waiverRows } = participantIds.length
+  // volunteers, in their own block in that event's card.
+  const { data: waiverRows, error: waiverError } = participantIds.length
     ? await supabase
         .from('activity_waiver_uploads')
         .select('registration_participant_id, activity_id, storage_path, uploaded_at')
         .in('registration_participant_id', participantIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (waiverError) throw new Error(`Provider confirmations: ${waiverError.message}`);
   const waiverByKey = new Map(
     (waiverRows ?? []).map((w) => [`${w.registration_participant_id}:${w.activity_id}`, w])
   );
@@ -179,10 +215,12 @@ export default async function ActivitiesPage() {
   };
 
   for (const eventId of eventIds) {
-    const [{ data: avail }, { data: slotAvail }] = await Promise.all([
+    const [{ data: avail, error: availError }, { data: slotAvail, error: slotError }] = await Promise.all([
       supabase.rpc('activity_availability', { p_event_id: eventId }),
       supabase.rpc('activity_slot_availability', { p_event_id: eventId }),
     ]);
+    if (availError) throw new Error(`Activity places: ${availError.message}`);
+    if (slotError) throw new Error(`Activity sittings: ${slotError.message}`);
     for (const row of avail ?? []) takenByActivity.set(row.activity_id, row.taken);
     for (const row of slotAvail ?? []) {
       if (!slotsByActivity.has(row.activity_id)) slotsByActivity.set(row.activity_id, []);
@@ -282,10 +320,16 @@ export default async function ActivitiesPage() {
         }));
       return { registrationId: r.id, event: r.events, activities, people, volunteers, providerActivities };
     })
+    // All events: only those with something to do here -- a camper with
+    // activities to choose from, or a volunteer with an outside provider's
+    // form to upload. The one registration the link named is shown whatever
+    // it holds, with a line saying there is nothing here yet, so the button
+    // never lands on a page about other events.
     .filter(
       (s) =>
-        s.activities.length > 0 &&
-        (s.people.length > 0 || (s.volunteers.length > 0 && s.providerActivities.length > 0))
+        scoped ||
+        (s.activities.length > 0 &&
+          (s.people.length > 0 || (s.volunteers.length > 0 && s.providerActivities.length > 0)))
     );
 
   return (
@@ -295,6 +339,14 @@ export default async function ActivitiesPage() {
           <h1 className="text-3xl font-bold">Activities</h1>
           <BackLink />
         </div>
+        <p className="text-neutral-600">Choose activities for each person on your registration.</p>
+        {scoped && (
+          <p className="mt-2 text-sm">
+            <Link href="/account/activities/" className="font-semibold text-brand underline">
+              See activities for all your events
+            </Link>
+          </p>
+        )}
 
         {sections.length === 0 ? (
           <div className="mt-6 rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-600">
@@ -305,83 +357,171 @@ export default async function ActivitiesPage() {
             </p>
           </div>
         ) : (
-          <>
-            <p className="text-neutral-600 mb-8">
-              Choose what each camper would like to do — their buddy goes along with them.
-              Nothing here is binding — tell us
-              what you&rsquo;d like and camp staff will confirm the details closer to the
-              time. You can change your mind whenever you like.
-              {' '}
-              <span className="font-semibold text-neutral-800">
-                Put a name down for anything that appeals, even if you are not sure it will
-                work.
-              </span>{' '}
-              Camp has done this before — there is a great deal of support on hand, and staff
-              can usually accommodate a wide range of needs. Any questions or concerns, just
-              ask.
-            </p>
-            <div className="space-y-10">
-              {sections.map((s) => (
-                // The anchor the dashboard's "waiver needed" card links to.
-                <div key={s.registrationId} id={`reg-${s.registrationId}`} className="scroll-mt-6">
-                  <h2 className="text-xl font-bold mb-1">{s.event?.name}</h2>
-                  <p className="text-sm text-neutral-500 mb-4">
-                    {(s.event?.starts_on ?? '').slice(0, 10)} to {(s.event?.ends_on ?? '').slice(0, 10)}
-                  </p>
-                  <div className="space-y-6">
-                    {s.people.map((p) => (
-                      <ActivityPicker
-                        key={p.participantId}
-                        person={p}
-                        activities={s.activities}
-                      />
-                    ))}
-                    {s.volunteers.length > 0 && s.providerActivities.length > 0 && (
-                      <div className="rounded-lg border border-neutral-200 bg-white p-5">
-                        <h3 className="text-lg font-bold">Volunteers and buddies — outside providers</h3>
-                        <p className="mt-1 text-sm text-neutral-600">
-                          A buddy goes wherever their camper goes. Where an activity is run by an
-                          outside provider, the provider needs the volunteer&rsquo;s own form as
-                          well. Complete it with them, then upload their confirmation here —
-                          this can be done after camp starts, once pairings are known.
-                        </p>
-                        {s.volunteers.map((v) => (
-                          <div key={v.participantId} className="mt-4">
-                            <p className="font-semibold">{v.name}</p>
-                            {s.providerActivities.map((a) => (
-                              <div key={a.id} className="mt-2">
-                                <p className="text-sm">
-                                  <span className="font-semibold">{a.name}</span> — run by{' '}
-                                  {a.provider_name || 'an outside provider'}
-                                  {a.provider_url && (
-                                    <>
-                                      {' '}
-                                      <a href={a.provider_url} target="_blank" rel="noopener noreferrer" className="underline font-semibold text-amber-800">
-                                        Open their form ↗
-                                      </a>
-                                    </>
-                                  )}
-                                </p>
-                                <WaiverUpload
-                                  participantId={v.participantId}
-                                  activityId={a.id}
-                                  providerName={a.provider_name}
-                                  existing={v.waivers?.[a.id] ?? null}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
+          <div className="mt-8 space-y-10">
+            {sections.map((s) => (
+              <EventSection key={s.registrationId} section={s} />
+            ))}
+          </div>
         )}
         <BackBar />
       </div>
     </section>
+  );
+}
+
+// "Thursday, Oct 29 – Sunday, Nov 1, 2026" from two plain dates, read as
+// calendar days (they are dates, not moments: no time zone shift).
+function eventDates(event) {
+  const day = (iso, withYear) => {
+    const [y, m, d] = String(iso ?? '').slice(0, 10).split('-').map(Number);
+    if (!y || !m || !d) return '';
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      ...(withYear ? { year: 'numeric' } : {}),
+    });
+  };
+  const from = day(event?.starts_on, false);
+  const to = day(event?.ends_on, true);
+  if (from && to) return `${from} – ${to}`;
+  return day(event?.starts_on, true) || to;
+}
+
+// The dashed "nothing here" line inside an event card.
+function EmptyNote({ children }) {
+  return (
+    <p className="rounded-lg border border-dashed border-neutral-300 bg-white p-4 text-sm text-neutral-600">
+      {children}
+    </p>
+  );
+}
+
+// One event, in a card of its own. The wording follows who is on THIS
+// registration: campers get the camper sentences, a registration with only
+// volunteers gets the volunteer one (26 Oct 2026 -- a volunteer was reading
+// "choose what each camper would like to do" with no camper on the event).
+function EventSection({ section: s }) {
+  const hasCampers = s.people.length > 0;
+  const hasVolunteers = s.volunteers.length > 0;
+  const showProviders = hasVolunteers && s.providerActivities.length > 0;
+  return (
+    // The anchor the dashboard's "waiver needed" card and the staff email link to.
+    <div
+      id={`reg-${s.registrationId}`}
+      className="scroll-mt-6 overflow-hidden rounded-xl border-2 border-brand/30 bg-brand-light/40 shadow-sm"
+    >
+      <div className="bg-brand px-5 py-4 text-white">
+        <h2 className="text-xl font-bold">{s.event?.name}</h2>
+        <p className="mt-0.5 text-sm text-white/85">{eventDates(s.event)}</p>
+      </div>
+      <div className="space-y-6 p-5">
+        {hasCampers ? (
+          <p className="text-neutral-700">
+            Choose what each camper would like to do — their buddy goes along with them.
+            Nothing here is binding — tell us what you&rsquo;d like and camp staff will
+            confirm the details closer to the time. You can change your mind whenever you
+            like.{' '}
+            <span className="font-semibold text-neutral-800">
+              Put a name down for anything that appeals, even if you are not sure it will
+              work.
+            </span>{' '}
+            Camp has done this before — there is a great deal of support on hand, and staff
+            can usually accommodate a wide range of needs. Any questions or concerns, just
+            ask.
+          </p>
+        ) : (
+          hasVolunteers && (
+            <p className="text-neutral-700">
+              As a volunteer you go where your camper goes. Where an outside provider runs an
+              activity, they need your own form as well — complete it with them, then upload
+              their confirmation here.
+            </p>
+          )
+        )}
+
+        {hasCampers && s.activities.length === 0 && (
+          <EmptyNote>
+            There are no activities to choose from for this event yet. Camp staff open these
+            closer to the time.
+          </EmptyNote>
+        )}
+        {hasCampers &&
+          s.activities.length > 0 &&
+          s.people.map((p) => (
+            <ActivityPicker key={p.participantId} person={p} activities={s.activities} />
+          ))}
+
+        {showProviders && <ProviderUploads section={s} withIntro={hasCampers} />}
+        {!hasCampers && hasVolunteers && !showProviders && (
+          <EmptyNote>
+            No activity on this event is run by an outside provider, so there is nothing to
+            upload here.
+          </EmptyNote>
+        )}
+        {!hasCampers && !hasVolunteers && (
+          <EmptyNote>
+            Activities are chosen for campers, and there is no camper on this registration, so
+            there is nothing to choose here.
+          </EmptyNote>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Each volunteer on the registration, an upload box per provider-run
+// activity on THIS event only. `withIntro`: where campers share the card the
+// explanation lives here; on a volunteer-only card the card's own sentence
+// has already said it.
+function ProviderUploads({ section: s, withIntro }) {
+  return (
+    <div className="rounded-lg border border-neutral-200 bg-white p-5">
+      <h3 className="text-lg font-bold">Volunteers and buddies — outside providers</h3>
+      {withIntro ? (
+        <p className="mt-1 text-sm text-neutral-600">
+          A buddy goes wherever their camper goes. Where an activity is run by an outside
+          provider, the provider needs the volunteer&rsquo;s own form as well. Complete it
+          with them, then upload their confirmation here — this can be done after camp
+          starts, once pairings are known.
+        </p>
+      ) : (
+        <p className="mt-1 text-sm text-neutral-600">
+          This can be done after the event starts, once pairings are known.
+        </p>
+      )}
+      {s.volunteers.map((v) => (
+        <div key={v.participantId} className="mt-4">
+          <p className="font-semibold">{v.name}</p>
+          {s.providerActivities.map((a) => (
+            <div key={a.id} className="mt-2">
+              <p className="text-sm">
+                <span className="font-semibold">{a.name}</span> — run by{' '}
+                {a.provider_name || 'an outside provider'}
+                {a.provider_url && (
+                  <>
+                    {' '}
+                    <a
+                      href={a.provider_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline font-semibold text-amber-800"
+                    >
+                      Open their form ↗
+                    </a>
+                  </>
+                )}
+              </p>
+              <WaiverUpload
+                participantId={v.participantId}
+                activityId={a.id}
+                providerName={a.provider_name}
+                existing={v.waivers?.[a.id] ?? null}
+              />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
   );
 }
