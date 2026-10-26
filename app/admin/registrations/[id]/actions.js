@@ -884,6 +884,28 @@ export async function reviewRegistration(registrationId, { action, reason = '', 
     return { ok: true, count: n ?? 0 };
   }
 
+  // Undo the waiver (0127; Lawrence, 26 Oct 2026: "suppose it was done in
+  // error??"). The function puts back each person's scholarship from before
+  // the waiver where it is still the waiver's, clears the mark and
+  // recalculates. Nobody is un-approved: the registration just reads its
+  // real deposit again. A reason is required -- it becomes the staff note.
+  if (action === 'undo_deposit_waiver') {
+    const { error: decideError } = await requireRegistrar('decide:scholarships');
+    if (decideError) return { ok: false, error: decideError };
+    const text = typeof reason === 'string' ? reason.trim().slice(0, 300) : '';
+    if (!text) return { ok: false, error: 'Say why the waiver is being undone.' };
+    const { data: n, error } = await supabase.rpc('undo_deposit_waiver', {
+      p_registration_id: registrationId,
+      p_reason: text,
+    });
+    if (error) return { ok: false, error: error.message };
+    revalidateAll(registrationId);
+    revalidatePath('/admin/payments');
+    revalidatePath('/admin/scholarships');
+    revalidatePath('/admin/review');
+    return { ok: true, count: n ?? 0 };
+  }
+
   return { ok: false, error: 'Unknown review action.' };
 }
 

@@ -60,6 +60,8 @@ export default function ReviewCard({
   const [reason, setReason] = useState('');
   const [waiving, setWaiving] = useState(false);
   const [waiveReason, setWaiveReason] = useState('');
+  const [undoing, setUndoing] = useState(false);
+  const [undoReason, setUndoReason] = useState('');
   const [holding, setHolding] = useState(false);
   const [holdReason, setHoldReason] = useState('');
 
@@ -101,6 +103,8 @@ export default function ReviewCard({
       setReason('');
       setWaiving(false);
       setWaiveReason('');
+      setUndoing(false);
+      setUndoReason('');
       setHolding(false);
       setHoldReason('');
       router.refresh();
@@ -140,11 +144,58 @@ export default function ReviewCard({
       )}
 
       {depositWaived && (
-        <p className="mb-3 rounded-sm border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">
-          <span className="font-semibold">Deposit waived</span> on {when(depositWaived.at)}
-          {depositWaived.reason && <> — &ldquo;{depositWaived.reason}&rdquo;</>}. Each fee-paying person holds a
-          scholarship of at least the per-person deposit; the registration counts as deposit-received.
-        </p>
+        <div className="mb-3 rounded-sm border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">
+          <p>
+            <span className="font-semibold">Deposit waived</span> on {when(depositWaived.at)}
+            {depositWaived.reason && <> — &ldquo;{depositWaived.reason}&rdquo;</>}. Each fee-paying person holds a
+            scholarship of at least the per-person deposit; the registration counts as deposit-received.
+          </p>
+          {/* Undoing it (0127; Lawrence, 26 Oct 2026: "suppose it was done in
+              error??"). Each person's scholarship from before the waiver comes
+              back, unless staff have decided it since; nobody is un-approved. */}
+          {canDecide && !undoing && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setUndoing(true)}
+              className="mt-1 text-xs text-green-900 underline"
+            >
+              Undo waiver…
+            </button>
+          )}
+          {canDecide && undoing && (
+            <div className="mt-2">
+              <input
+                value={undoReason}
+                onChange={(e) => setUndoReason(e.target.value)}
+                maxLength={300}
+                placeholder="Why it is being undone (required) — e.g. waived on the wrong family"
+                className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900"
+              />
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={pending || !undoReason.trim()}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        'This takes back the deposit scholarship it granted. Anyone already approved stays approved; the registration will show its real deposit again.'
+                      )
+                    ) {
+                      run('undo_deposit_waiver', { reason: undoReason });
+                    }
+                  }}
+                  className="btn-outline py-1.5! text-sm disabled:opacity-50"
+                >
+                  {pending ? 'Saving…' : 'Undo the waiver'}
+                </button>
+                <button type="button" onClick={() => setUndoing(false)} className="text-sm underline">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
       {/* Waiving the deposit (Larry, 16 Oct 2026): the registrar grants the
           per-person deposit as a scholarship and the registration counts as
