@@ -1,6 +1,7 @@
 'use server';
 
 import { dobProblem } from '@/lib/format';
+import { caregiverPhoneProblem, hasPhone } from '@/lib/caregivers';
 // Server actions for the staff registration-management screen.
 //
 // Every action re-checks that the caller is a registrar (or admin) before it
@@ -269,6 +270,43 @@ export async function updatePerson(registrationId, personId, fields, options = {
   }
 
   const supabase = await createClient();
+
+  // A linked caregiver must have a phone (Lawrence, 26 Oct; lib/caregivers.js).
+  // Staff create no caregiver links -- families do, on Manage Household -- so
+  // the one way this screen could break the rule is CLEARING the number of
+  // someone already linked. That is refused, in the family page's words. A
+  // caregiver who never had a number is not blocked here: staff fixing a name
+  // over the phone should not be stopped by a gap they cannot fill.
+  if ('phone' in patch && !hasPhone(patch.phone)) {
+    const { data: before, error: beforeError } = await supabase
+      .from('people')
+      .select('first_name, phone')
+      .eq('id', personId)
+      .maybeSingle();
+    if (beforeError) return { ok: false, error: `This person could not be read: ${beforeError.message}` };
+    if (before && hasPhone(before.phone)) {
+      const { data: links, error: linkError } = await supabase
+        .from('person_caregivers')
+        .select('person_id')
+        .eq('caregiver_person_id', personId);
+      if (linkError) return { ok: false, error: `Caregiver links could not be read: ${linkError.message}` };
+      const ids = (links ?? []).map((l) => l.person_id);
+      if (ids.length > 0) {
+        const { data: deps, error: depError } = await supabase
+          .from('people')
+          .select('first_name')
+          .in('id', ids)
+          .order('created_at');
+        if (depError) return { ok: false, error: `Caregiver links could not be read: ${depError.message}` };
+        const bad = caregiverPhoneProblem({
+          name: patch.first_name ?? before.first_name,
+          phone: patch.phone,
+          caresFor: (deps ?? []).map((d) => d.first_name),
+        });
+        if (bad) return { ok: false, error: bad };
+      }
+    }
+  }
 
   // ⭐ IDENTITY CHANGES ON A REGISTERED PERSON NEED A DELIBERATE YES.
   //
