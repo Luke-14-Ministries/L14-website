@@ -241,7 +241,7 @@ export default async function DashboardPage({ searchParams }) {
            hold_since, hold_reason, deposit_waived_at,
            events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url, returned_payment_fee_cents,
                     event_medical_contacts ( name, phone ) ),
-           registration_participants ( id, camp_role, status, checked_in_at,
+           registration_participants ( id, camp_role, status, checked_in_at, waitlist_reason,
              participant_money ( fee_cents, discount_cents, early_discount_cents, family_discount_cents ),
              people ( id, first_name, last_name ) )`
         )
@@ -1157,6 +1157,14 @@ export default async function DashboardPage({ searchParams }) {
                                   {label}
                                 </span>
                               </div>
+                              {/* Why camp staff put this person on the waitlist
+                                  (0128), in their words -- written knowing the
+                                  family reads it here. */}
+                              {p.status === 'waitlisted' && p.waitlist_reason && (
+                                <p className="mt-1 text-xs text-orange-900">
+                                  Why {p.people?.first_name || 'this person'} is on the waitlist: {p.waitlist_reason}
+                                </p>
+                              )}
                               {lodgingByParticipant.get(p.id) && (
                                 <p className="mt-1 text-xs text-neutral-600">
                                   Staying in:{' '}
