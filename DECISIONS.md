@@ -3141,3 +3141,22 @@ paperwork decision. A re-upload clears the last review, so a rejected file's his
 the file in hand is what matters. Known gap, accepted: a family could overwrite the stored *file*
 through the storage API without touching the row (WaiverUpload always rewrites the row, which resets
 the review); a deliberate swap after acceptance is not something the ministry needs to defend against.
+
+## 2026-10-26 — A linked caregiver must have a phone number; household cards fold
+
+**Rule (Lawrence):** a person linked as a caregiver for someone (`person_caregivers`) **must** have a
+phone number — the link exists so staff can reach that adult at camp. Everyone else's phone is
+labelled *Phone (optional)*. One validator, `lib/caregivers.js` (`caregiverPhoneProblem`,
+`caregiverLinkProblem`; "a phone" = at least seven digits), used by Manage Household in the browser
+and by its server actions, so both sides refuse in the same words: saving a caregiver without one
+(*A phone number is required — Ann is a linked caregiver for Sam and Pip.*), and linking someone who
+has none (*Add a phone number for Ann first — caregivers must be reachable.*). Only **new** links are
+refused; existing rows that break the rule are not rewritten — the card shows *Needs: phone* in amber
+and opens. Links are created only on Manage Household (`setCaregivers`); the wizard and the staff
+screens create none. The staff person editor (`updatePerson`) refuses only **clearing** a linked
+caregiver's number — a caregiver who never had one does not block a staff name fix.
+
+Every person card on Manage Household folds (a real button header with name, age, role chips, status
+and chevron), folded by default unless it needs something; folding hides the body and never unmounts
+it, so unsaved edits and the unsaved bar survive. *Open all / Fold all* sit above the cards; the
+household contact card stays open.
