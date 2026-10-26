@@ -152,3 +152,121 @@ exception when others then
 end $$;
 select (created_at > now() - interval '1 minute') as created_at_forced_to_now from public.registration_participants where person_id='20000000-0000-0000-0000-000000000008';
 rollback;
+\echo == 14 a deposit waiver can be undone (0127)
+-- Outside a transaction on purpose: each statement gets its own now(), as a
+-- waiver and its undo would on the site, so the log lookup is tested against
+-- real timestamps rather than one shared instant.
+-- A third fee-paying person with no scholarship, and a Finance persona
+-- (Payments write, Registration read): records money, does not decide (0102).
+insert into public.people (id, household_id, first_name, last_name) values ('20000000-0000-0000-0000-000000000007','10000000-0000-0000-0000-000000000001','Sis','Ter');
+insert into public.registration_participants (id, registration_id, person_id, event_option_id, camp_role, status) values
+ ('60000000-0000-0000-0000-000000000007','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000007','40000000-0000-0000-0000-000000000001','sibling','submitted');
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-00000000000c','finance@example.org');
+insert into public.staff (profile_id, role) values ('00000000-0000-0000-0000-00000000000c','registrar') on conflict do nothing;
+insert into public.staff_grants (profile_id, area, level) values
+ ('00000000-0000-0000-0000-00000000000c','payments','write'), ('00000000-0000-0000-0000-00000000000c','registration','read')
+on conflict do nothing;
+set role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false), set_config('request.jwt.claims','{"aal":"aal2"}',false) \g /dev/null
+-- The camper already holds a $20 scholarship; the waiver overwrites it.
+select public.set_participant_adjustments('60000000-0000-0000-0000-000000000001', 2000, 0, null);
+select public.waive_deposit('50000000-0000-0000-0000-000000000001', 'test waiver') as waived_expect_3;
+-- Staff then decide the parent's scholarship themselves: no longer the waiver's.
+select public.set_participant_adjustments('60000000-0000-0000-0000-000000000002', 7000, 0, null);
+-- Finance may not undo it.
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000c',false) \g /dev/null
+do $$ begin
+  perform public.undo_deposit_waiver('50000000-0000-0000-0000-000000000001', 'finance try');
+  raise exception 'FAIL 14: Finance (no Registration write) undid a waiver';
+exception when insufficient_privilege then raise notice 'PASS 14 Finance cannot undo a waiver';
+end $$;
+-- Nor may the family.
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',false) \g /dev/null
+do $$ begin
+  perform public.undo_deposit_waiver('50000000-0000-0000-0000-000000000001', 'family try');
+  raise exception 'FAIL 14: a family undid a waiver';
+exception when insufficient_privilege then raise notice 'PASS 14 a family cannot undo a waiver';
+end $$;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',false) \g /dev/null
+do $$ begin
+  perform public.undo_deposit_waiver('50000000-0000-0000-0000-000000000001', '   ');
+  raise exception 'FAIL 14: undo without a reason allowed';
+exception when others then
+  if sqlerrm like 'FAIL%' then raise; end if;
+  raise notice 'PASS 14 a reason is required (%)', sqlerrm;
+end $$;
+select public.undo_deposit_waiver('50000000-0000-0000-0000-000000000001', 'waived in error') as undone_expect_2;
+-- Review reads the real deposit again: $100 paid of a $150 deposit.
+do $$ declare v record; begin
+  select review_class, flags into v from public.registration_review where registration_id='50000000-0000-0000-0000-000000000001';
+  if v.review_class is null or v.review_class = 'deposit_paid' or 'deposit_waived' = any(v.flags)
+     or not ('deposit_short' = any(v.flags)) then
+    raise exception 'FAIL 14: review after the undo reads % %', v.review_class, v.flags;
+  end if;
+  raise notice 'PASS 14 review reads the real deposit again (%, %)', v.review_class, v.flags;
+end $$;
+reset role;
+do $$ declare r record; begin
+  select deposit_waived_at, deposit_waived_by, deposit_waived_reason into r from public.registrations where id='50000000-0000-0000-0000-000000000001';
+  if r.deposit_waived_at is not null or r.deposit_waived_by is not null or r.deposit_waived_reason is not null then
+    raise exception 'FAIL 14: the waiver mark was not cleared';
+  end if;
+  raise notice 'PASS 14 the waiver mark is cleared';
+  -- Camper: back to the $20 held before the waiver, still granted.
+  select pm.scholarship_cents, s.granted_cents, s.status, s.staff_note, s.reviewed_by into r
+    from public.participant_money pm join public.scholarships s on s.registration_participant_id = pm.participant_id
+   where pm.participant_id='60000000-0000-0000-0000-000000000001';
+  if r.scholarship_cents <> 2000 or r.granted_cents <> 2000 or r.status <> 'granted'
+     or r.staff_note <> 'Deposit waiver undone: waived in error' or r.reviewed_by <> '00000000-0000-0000-0000-00000000000b' then
+    raise exception 'FAIL 14: camper not restored to the prior $20 (%)', row_to_json(r);
+  end if;
+  raise notice 'PASS 14 a prior smaller scholarship is restored';
+  -- Sibling: had none, so none again; the row says it is no longer granted.
+  select pm.scholarship_cents, s.granted_cents, s.status into r
+    from public.participant_money pm join public.scholarships s on s.registration_participant_id = pm.participant_id
+   where pm.participant_id='60000000-0000-0000-0000-000000000007';
+  if r.scholarship_cents <> 0 or r.granted_cents <> 0 or r.status <> 'declined' then
+    raise exception 'FAIL 14: sibling not back to no scholarship (%)', row_to_json(r);
+  end if;
+  raise notice 'PASS 14 no prior scholarship -> 0, recorded as declined';
+  -- Parent: staff's later $70 decision is left alone.
+  select pm.scholarship_cents, s.granted_cents, s.staff_note into r
+    from public.participant_money pm join public.scholarships s on s.registration_participant_id = pm.participant_id
+   where pm.participant_id='60000000-0000-0000-0000-000000000002';
+  if r.scholarship_cents <> 7000 or r.staff_note not like 'Deposit waived%' then
+    raise exception 'FAIL 14: a scholarship staff changed after the waiver was touched (%)', row_to_json(r);
+  end if;
+  raise notice 'PASS 14 a scholarship staff changed since is left alone';
+  -- The undo's own write is in the money log, under the registrar's name.
+  if not exists (select 1 from public.money_change_log
+                  where table_name='participant_money' and row_id='60000000-0000-0000-0000-000000000001'
+                    and (before->>'scholarship_cents')::int = 5000 and (after->>'scholarship_cents')::int = 2000
+                    and changed_by='00000000-0000-0000-0000-00000000000b') then
+    raise exception 'FAIL 14: the undo is not in money_change_log';
+  end if;
+  raise notice 'PASS 14 the undo is logged in money_change_log';
+end $$;
+set role authenticated;
+do $$ begin
+  perform public.undo_deposit_waiver('50000000-0000-0000-0000-000000000001', 'again');
+  raise exception 'FAIL 14: undo on an unwaived registration allowed';
+exception when others then
+  if sqlerrm like 'FAIL%' then raise; end if;
+  raise notice 'PASS 14 undo on an unwaived registration refused (%)', sqlerrm;
+end $$;
+-- Waived twice, then undone: the second waiver re-stamps the mark but skips
+-- everyone already holding the deposit, so the restore must still find the
+-- first waiver's write.
+select public.waive_deposit('50000000-0000-0000-0000-000000000001', 'again') as rewaived_expect_2;
+select public.waive_deposit('50000000-0000-0000-0000-000000000001', 'twice') as waived_twice_expect_0;
+select public.undo_deposit_waiver('50000000-0000-0000-0000-000000000001', 'twice in error') as undone_expect_2;
+reset role;
+do $$ begin
+  if (select scholarship_cents from public.participant_money where participant_id='60000000-0000-0000-0000-000000000001') <> 2000
+     or (select scholarship_cents from public.participant_money where participant_id='60000000-0000-0000-0000-000000000007') <> 0
+     or (select scholarship_cents from public.participant_money where participant_id='60000000-0000-0000-0000-000000000002') <> 7000 then
+    raise exception 'FAIL 14: a double waiver did not undo to the original scholarships';
+  end if;
+  raise notice 'PASS 14 a double waiver undoes to the original scholarships';
+end $$;
+\echo ALL DEPOSIT WAIVER CHECKS PASSED
