@@ -331,6 +331,118 @@ $$;
 
 
 -- ---------------------------------------------------------------------
+-- Who changed a status, when, and why someone is waitlisted (0128). Its
+-- own block, cleaned up after itself.
+-- ---------------------------------------------------------------------
+do $$
+declare
+  uA uuid; uR uuid; uC uuid; hA uuid; ev uuid; regA uuid; rpA uuid;
+  optGen uuid; pNew uuid; rpNew uuid;
+  was_status text; was_at timestamptz;
+  n bigint;
+begin
+  select v into uA from t where k='uA';   select v into uR from t where k='uR';
+  select v into uC from t where k='uC';   select v into hA from t where k='hA';
+  select v into ev from t where k='ev';   select v into regA from t where k='regA';
+  select v into rpA from t where k='rpA';
+  select status into was_status from public.registration_participants where id = rpA;
+
+  set local role authenticated;
+
+  -- Registration write waitlists with a reason, in one update; the stamps fill.
+  perform pg_temp.as_user(uR);
+  update public.registration_participants
+     set status = 'waitlisted', waitlist_reason = 'The camper cabins are full for this week.'
+   where id = rpA;
+  select count(*) into n from public.registration_participants
+   where id = rpA and status = 'waitlisted'
+     and waitlist_reason = 'The camper cabins are full for this week.'
+     and status_changed_by = uR and status_changed_at is not null;
+  perform pg_temp.expect('Registration write waitlists with a reason, stamped with who and when (0128)', n, 1);
+  select status_changed_at into was_at from public.registration_participants where id = rpA;
+  perform pg_temp.expect_denied('a waitlist reason over 500 characters is refused (0128)',
+    format('update public.registration_participants set waitlist_reason = %L where id = %L', repeat('x', 501), rpA));
+  -- Even staff cannot move the stamps while the status stays put.
+  update public.registration_participants
+     set status_changed_at = '2020-01-01', status_changed_by = uC
+   where id = rpA;
+  select count(*) into n from public.registration_participants
+   where id = rpA and status_changed_at = was_at and status_changed_by = uR;
+  perform pg_temp.expect('staff cannot rewrite the status stamps directly (0128)', n, 1);
+
+  -- The family reads the reason (accepted: their dashboard shows it) ...
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.registration_participants
+   where id = rpA and waitlist_reason = 'The camper cabins are full for this week.';
+  perform pg_temp.expect('the family reads its own waitlist reason (0128)', n, 1);
+  -- ... and cannot write it (the waitlisted row is also outside the family's
+  -- update policy, 0001's WITH CHECK).
+  perform pg_temp.expect_denied('a family cannot change the waitlist reason (0128)',
+    format('update public.registration_participants set waitlist_reason = ''We said so'' where id = %L', rpA));
+  perform pg_temp.expect_denied('a family cannot clear the waitlist reason (0128)',
+    format('update public.registration_participants set waitlist_reason = null where id = %L', rpA));
+  -- A family's new row is born with no stamps and no reason.
+  set local role postgres;
+  insert into public.event_options (event_id, name, fee_cents, published)
+    values (ev, 'General 0128', 10000, true) returning id into optGen;
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  insert into public.people (household_id, first_name, last_name) values (hA, 'Stamp', 'AAA') returning id into pNew;
+  insert into public.registration_participants
+    (registration_id, person_id, event_option_id, camp_role, status, waitlist_reason, status_changed_at, status_changed_by)
+    values (regA, pNew, optGen, 'camper', 'waitlisted', 'forged', '2020-01-01', uR)
+    returning id into rpNew;
+  set local role postgres;
+  select count(*) into n from public.registration_participants
+   where id = rpNew and status = 'submitted' and waitlist_reason is null
+     and status_changed_at is null and status_changed_by is null;
+  perform pg_temp.expect('a family-inserted row gets no waitlist reason and no stamps (0128)', n, 1);
+  -- On a row the family may update (its own submitted person), the trigger
+  -- itself refuses the reason and keeps the stamps.
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('a family cannot write a waitlist reason on its own row (0128)',
+    format('update public.registration_participants set waitlist_reason = ''forged'' where id = %L', rpNew));
+  update public.registration_participants
+     set status_changed_at = '2020-01-01', status_changed_by = uR, tshirt_size = 'Adult M'
+   where id = rpNew;
+  select count(*) into n from public.registration_participants
+   where id = rpNew and tshirt_size = 'Adult M' and status_changed_at is null and status_changed_by is null;
+  perform pg_temp.expect('a family cannot set the status stamps (0128)', n, 1);
+  set local role postgres;
+  delete from public.registration_participants where id = rpNew;
+  delete from public.people where id = pNew;
+  delete from public.event_options where id = optGen;
+  set local role authenticated;
+
+  -- Registration READ cannot waitlist or write a reason.
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_no_effect('Registration READ cannot write a waitlist reason (0128)',
+    format('update public.registration_participants set waitlist_reason = ''x'' where id = %L', rpA));
+
+  -- Moving off the waitlist clears the reason and stamps the new move.
+  perform pg_temp.as_user(uR);
+  update public.registration_participants set status = 'confirmed', confirmed_at = now() where id = rpA;
+  select count(*) into n from public.registration_participants
+   where id = rpA and status = 'confirmed' and waitlist_reason is null
+     and status_changed_by = uR and status_changed_at >= was_at;
+  perform pg_temp.expect('confirming clears the waitlist reason and re-stamps (0128)', n, 1);
+  -- A reason on someone not waitlisted is not kept.
+  update public.registration_participants set waitlist_reason = 'stray' where id = rpA;
+  select count(*) into n from public.registration_participants where id = rpA and waitlist_reason is null;
+  perform pg_temp.expect('only a waitlisted person keeps a waitlist reason (0128)', n, 1);
+
+  -- Back as the seed had it (as the owner, who may write the stamps).
+  set local role postgres;
+  update public.registration_participants
+     set status = was_status, confirmed_at = null where id = rpA;
+  update public.registration_participants
+     set status_changed_at = null, status_changed_by = null where id = rpA;
+end;
+$$;
+
+
+-- ---------------------------------------------------------------------
 -- Checks
 -- ---------------------------------------------------------------------
 
