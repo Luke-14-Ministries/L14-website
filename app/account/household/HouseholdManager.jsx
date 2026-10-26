@@ -18,6 +18,12 @@ import SaveButton from '@/components/SaveButton';
 import PhotoUpload from '@/components/PhotoUpload';
 import { formatPhone, formatZip, tidyCity, US_STATES } from '@/lib/format';
 import {
+  caregiverLinkProblem,
+  caregiverPhoneHint,
+  caregiverPhoneProblem,
+  hasPhone,
+} from '@/lib/caregivers';
+import {
   updateHouseholdInfo,
   updatePersonInfo,
   setCaregivers,
@@ -35,6 +41,31 @@ function Field({ label, children }) {
 }
 
 const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-2';
+
+function Chip({ children }) {
+  return (
+    <span className="rounded-full bg-neutral-100 px-2 text-[11px] font-semibold leading-5 text-neutral-700">
+      {children}
+    </span>
+  );
+}
+
+function Chevron({ open }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className={`h-5 w-5 shrink-0 text-neutral-500 transition-transform ${open ? 'rotate-180' : ''}`}
+    >
+      <path
+        fillRule="evenodd"
+        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
 
 // The date-of-birth inputs carry no min/max on purpose. Inside a real <form>
 // the browser's own bubble ("Value must be 01/01/1900 or later.") stopped the
@@ -57,12 +88,21 @@ export default function HouseholdManager({
   // Per-person override for the caregiver section: undefined = use the
   // default rule, true = the person asked to see it.
   const [caregiversOpen, setCaregiversOpen] = useState({});
+  // Which person cards are unfolded (Lawrence, 26 Oct): undefined = the
+  // default (folded, unless the card needs something), true/false = the
+  // family's own choice. Folding HIDES the body, it never unmounts it, so
+  // half-typed edits survive a fold and the unsaved bar still finds the form.
+  const [openCards, setOpenCards] = useState({});
+  const setOpen = (key, value) => setOpenCards((o) => ({ ...o, [key]: value }));
   const patch = (key, s) => setState((m) => ({ ...m, [key]: { ...m[key], ...s } }));
 
   function run(key, fn) {
     patch(key, { busy: true, saved: false, error: '' });
     start(async () => {
       const res = await fn();
+      // A refusal has to be readable: unfold the card it landed on (Save all
+      // can submit a folded card).
+      if (!res.ok) setOpen(key, true);
       patch(key, {
         busy: false,
         saved: !!res.ok,
@@ -191,6 +231,21 @@ Anything already saved is untouched.`
   const suggested = members.filter((m) => m.isGuardian);
   const fallbackAdults = members.filter((m) => m.age != null && m.age >= 18);
   const defaults = (suggested.length > 0 ? suggested : fallbackAdults).slice(0, 2);
+
+  // Who each person is a SAVED linked caregiver for (first names, household
+  // order). Suggestions not yet saved do not count -- the phone rule follows
+  // what is on file.
+  const caresForByPerson = {};
+  for (const dep of members) {
+    for (const carerId of Object.values(caregiversByPerson[dep.id] ?? {})) {
+      if (!carerId) continue;
+      (caresForByPerson[carerId] ??= []).push(dep.first_name);
+    }
+  }
+  const needsPhone = (m) => (caresForByPerson[m.id] ?? []).length > 0 && !hasPhone(m.phone);
+  const isCardOpen = (m) => openCards[m.id] ?? needsPhone(m);
+  const setAllCards = (value) =>
+    setOpenCards((o) => ({ ...o, ...Object.fromEntries(members.map((m) => [m.id, value])) }));
 
   return (
     <div className="space-y-6 pb-24">
@@ -326,6 +381,27 @@ Anything already saved is untouched.`
         </div>
       </form>
 
+      {/* Open all / Fold all (26 Oct). Plain links, because they change
+          nothing but what is shown. */}
+      {members.length > 0 && (
+        <div className="flex items-center justify-end gap-4 text-sm">
+          <button
+            type="button"
+            onClick={() => setAllCards(true)}
+            className="font-semibold text-brand underline"
+          >
+            Open all
+          </button>
+          <button
+            type="button"
+            onClick={() => setAllCards(false)}
+            className="font-semibold text-brand underline"
+          >
+            Fold all
+          </button>
+        </div>
+      )}
+
       {/* One card per person */}
       {members.map((m) => {
         const saved = caregiversByPerson[m.id] ?? {};
@@ -334,6 +410,13 @@ Anything already saved is untouched.`
         const cg2 = saved[2] ?? (hasSaved ? '' : defaults[1]?.id ?? '');
         const others = members.filter((o) => o.id !== m.id);
         const isAdult = m.age != null && m.age >= 18;
+        const caresFor = caresForByPerson[m.id] ?? [];
+        const isCarer = caresFor.length > 0;
+        const missingPhone = needsPhone(m);
+        const open = isCardOpen(m);
+        const headId = `person-${m.id}-head`;
+        const bodyId = `person-${m.id}-body`;
+        const phoneHintId = `person-${m.id}-phone-hint`;
         return (
           <form
             key={m.id}
@@ -343,6 +426,27 @@ Anything already saved is untouched.`
             onSubmit={(e) => {
               e.preventDefault();
               const f = Object.fromEntries(new FormData(e.currentTarget));
+              // The caregiver phone rule, checked here first so the family
+              // reads the sentence without a round trip. The server actions
+              // ask the same lib/caregivers.js question and answer in the
+              // same words.
+              const name = String(f.first_name ?? '').trim() || m.first_name;
+              let problem = caregiverPhoneProblem({ name, phone: f.phone, caresFor });
+              if (!problem) {
+                const already = new Set(Object.values(saved).filter(Boolean));
+                for (const id of new Set([f.caregiver1, f.caregiver2].filter(Boolean))) {
+                  if (already.has(id)) continue;
+                  const carer = members.find((o) => o.id === id);
+                  if (!carer) continue;
+                  problem = caregiverLinkProblem({ name: carer.first_name, phone: carer.phone });
+                  if (problem) break;
+                }
+              }
+              if (problem) {
+                setOpen(m.id, true);
+                patch(m.id, { saved: false, error: problem });
+                return;
+              }
               run(m.id, async () => {
                 const r1 = await updatePersonInfo(m.id, f);
                 if (!r1.ok) return r1;
@@ -350,183 +454,230 @@ Anything already saved is untouched.`
               });
             }}
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
-              Person
-            </p>
-            <h2 className="text-lg font-bold mb-1">
-              {m.first_name} {m.last_name}
-              <span className="font-normal text-neutral-500 text-base">
-                {m.age != null ? ` · age ${m.age}` : ' · no date of birth on file'}
-              </span>
-            </h2>
-            {/* The photo lives here as well as on the details form (asked for
-                25 Aug). It is a household fact — "who is this person" — not an
-                event one, and a family keeping their roster current should not
-                have to open a per-event form to change a face. Same component,
-                same storage path, so a photo added in either place is the
-                same photo. */}
-            <div className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 p-4">
-              <PhotoUpload
-                personId={m.id}
-                personName={m.first_name}
-                initialUrl={photoUrlByPerson[m.id] ?? null}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 mt-3">
-              <Field label="First name">
-                <input name="first_name" defaultValue={m.first_name ?? ''} className={inputCls} />
-              </Field>
-              <Field label="Last name">
-                <input name="last_name" defaultValue={m.last_name ?? ''} className={inputCls} />
-              </Field>
-              {/* E45. Staff have always been able to record a preferred name;
-                  nobody ever asked the family for one, so the nametag list it
-                  was supposed to feed would have come out empty unless staff
-                  typed all of them. Asked here, beside the legal name, because
-                  that is where somebody is already thinking about what this
-                  person is called.
-
-                  Deliberately NOT locked when they are on a registration, the
-                  way first name, last name and date of birth are. Those are
-                  locked because rosters and signed agreements use them. What
-                  somebody likes to be called is not an identity claim, it
-                  changes, and a child who starts going by a different name
-                  mid-season should not have to email the ministry about it. */}
-              <Field label="Preferred name (for nametags), if different">
-                <input
-                  name="preferred_name"
-                  defaultValue={m.preferred_name ?? ''}
-                  placeholder={m.first_name || 'Leave blank to use their first name'}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Date of birth">
-                <input name="date_of_birth" type="date" defaultValue={m.date_of_birth ?? ''} className={inputCls} />
-              </Field>
-              <Field label="Sex">
-                <select name="gender" defaultValue={m.gender ?? ''} className={inputCls}>
-                  <option value="">— select —</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                  {m.gender && !['Male', 'Female'].includes(m.gender) && <option>{m.gender}</option>}
-                </select>
-              </Field>
-              <Field label={isAdult ? 'Phone' : 'Phone (if they carry one)'}>
-                <input
-                  name="phone"
-                  type="tel"
-                  defaultValue={m.phone ?? ''}
-                  onBlur={tidyPhone}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Email (optional)">
-                <input name="email" type="email" defaultValue={m.email ?? ''} className={inputCls} />
-              </Field>
-            </div>
-
-            {/* WHO SEES THIS, AND WHY IT IS FOLDED AWAY.
-                Lawrence, 25 Aug: non-standard arrangements should stay
-                possible — so nothing here is restricted, and anyone in the
-                household can still be chosen. What struck him as odd was
-                merely being ASKED, on the card of the adult who is plainly
-                the head of the house.
-                
-                So the field is not removed, it is folded: an independent
-                adult with nothing saved sees a quiet link. A person who has
-                caregivers saved, or who is a minor, sees them open.
-                
-                The inputs are NOT RENDERED while folded, deliberately. They
-                are uncontrolled selects carrying suggested defaults, so
-                leaving them mounted-but-hidden would submit a suggestion
-                nobody confirmed — which is how DoubleFaci ended up looking
-                like a saved answer. Absent means absent. */}
-            {caregiversOpen[m.id] ?? (hasSaved || !isAdult) ? (
-              <div className="mt-4 rounded-sm border border-neutral-200 bg-neutral-50 p-4">
-                <p className="text-sm font-semibold mb-2">
-                  Linked caregivers
-                  {!hasSaved && defaults.length > 0 && (
-                    <span className="font-normal text-neutral-500"> (suggested — save to confirm)</span>
-                  )}
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {[1, 2].map((slot) => (
-                    <select
-                      key={slot}
-                      name={`caregiver${slot}`}
-                      defaultValue={
-                        // Suggestions are for people who plausibly need one.
-                        // An adult opening this by choice starts blank rather
-                        // than being handed a guess to accept by accident.
-                        isAdult && !hasSaved ? '' : slot === 1 ? cg1 : cg2
-                      }
-                      className={inputCls}
-                    >
-                      <option value="">— none —</option>
-                      {others.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.first_name} {o.last_name}
-                          {o.phone ? ` (${o.phone})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  ))}
-                </div>
-                <p className="text-xs text-neutral-500 mt-2">
-                  Who staff contact first about this person at camp. Make sure each
-                  caregiver&rsquo;s phone number is provided so staff have a way to reach them
-                  if needed during camp.
-                </p>
-              </div>
-            ) : (
+            {/* THE FOLD (Lawrence, 26 Oct). Every person card starts folded
+                to this one line -- a family of five was a very long page --
+                except a card that needs something, which starts open. The
+                header is a real button inside the heading (the WAI accordion
+                pattern), so it works from the keyboard and a screen reader
+                hears "expanded / collapsed". */}
+            <h2>
               <button
                 type="button"
-                onClick={() => setCaregiversOpen((o) => ({ ...o, [m.id]: true }))}
-                className="mt-4 text-sm text-brand underline"
+                id={headId}
+                aria-expanded={open}
+                aria-controls={bodyId}
+                onClick={() => setOpen(m.id, !open)}
+                className="flex w-full items-center gap-3 text-left"
               >
-                Add a linked caregiver for {m.first_name}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                    Person
+                  </span>
+                  <span className="block text-lg font-bold">
+                    {m.first_name} {m.last_name}
+                    <span className="font-normal text-neutral-500 text-base">
+                      {m.age != null ? ` · age ${m.age}` : ' · no date of birth on file'}
+                    </span>
+                  </span>
+                  {(household?.primary_contact_person_id === m.id || m.isGuardian || isCarer) && (
+                    <span className="mt-1 flex flex-wrap gap-1.5">
+                      {household?.primary_contact_person_id === m.id && <Chip>Primary contact</Chip>}
+                      {m.isGuardian && <Chip>Parent/guardian</Chip>}
+                      {isCarer && <Chip>Caregiver</Chip>}
+                    </span>
+                  )}
+                </span>
+                {missingPhone && (
+                  <span className="shrink-0 text-sm font-semibold text-amber-700">Needs: phone</span>
+                )}
+                <Chevron open={open} />
               </button>
-            )}
+            </h2>
 
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <SaveButton
-                type="submit"
-                busy={state[m.id]?.busy}
-                saved={state[m.id]?.saved}
-                className="py-2!"
-              />
-              {(state[m.id]?.dirty || state[m.id]?.error) && (
+            <div id={bodyId} role="region" aria-labelledby={headId} hidden={!open}>
+              {/* The photo lives here as well as on the details form (asked for
+                  25 Aug). It is a household fact — "who is this person" — not an
+                  event one, and a family keeping their roster current should not
+                  have to open a per-event form to change a face. Same component,
+                  same storage path, so a photo added in either place is the
+                  same photo. */}
+              <div className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 p-4">
+                <PhotoUpload
+                  personId={m.id}
+                  personName={m.first_name}
+                  initialUrl={photoUrlByPerson[m.id] ?? null}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 mt-3">
+                <Field label="First name">
+                  <input name="first_name" defaultValue={m.first_name ?? ''} className={inputCls} />
+                </Field>
+                <Field label="Last name">
+                  <input name="last_name" defaultValue={m.last_name ?? ''} className={inputCls} />
+                </Field>
+                {/* E45. Staff have always been able to record a preferred name;
+                    nobody ever asked the family for one, so the nametag list it
+                    was supposed to feed would have come out empty unless staff
+                    typed all of them. Asked here, beside the legal name, because
+                    that is where somebody is already thinking about what this
+                    person is called.
+
+                    Deliberately NOT locked when they are on a registration, the
+                    way first name, last name and date of birth are. Those are
+                    locked because rosters and signed agreements use them. What
+                    somebody likes to be called is not an identity claim, it
+                    changes, and a child who starts going by a different name
+                    mid-season should not have to email the ministry about it. */}
+                <Field label="Preferred name (for nametags), if different">
+                  <input
+                    name="preferred_name"
+                    defaultValue={m.preferred_name ?? ''}
+                    placeholder={m.first_name || 'Leave blank to use their first name'}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Date of birth">
+                  <input name="date_of_birth" type="date" defaultValue={m.date_of_birth ?? ''} className={inputCls} />
+                </Field>
+                <Field label="Sex">
+                  <select name="gender" defaultValue={m.gender ?? ''} className={inputCls}>
+                    <option value="">— select —</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                    {m.gender && !['Male', 'Female'].includes(m.gender) && <option>{m.gender}</option>}
+                  </select>
+                </Field>
+                {/* Optional for everyone EXCEPT a linked caregiver, who must be
+                    reachable (Lawrence, 26 Oct; lib/caregivers.js). No HTML
+                    `required`: the browser's own bubble would speak before the
+                    site's sentence, the same reason the DOB box carries no min. */}
+                <Field label={isCarer ? 'Phone' : 'Phone (optional)'}>
+                  <input
+                    name="phone"
+                    type="tel"
+                    defaultValue={m.phone ?? ''}
+                    onBlur={tidyPhone}
+                    aria-required={isCarer || undefined}
+                    aria-describedby={isCarer ? phoneHintId : undefined}
+                    className={inputCls}
+                  />
+                  {isCarer && (
+                    <span
+                      id={phoneHintId}
+                      className={`mt-1 block text-xs ${missingPhone ? 'font-semibold text-amber-800' : 'text-neutral-500'}`}
+                    >
+                      {caregiverPhoneHint(m.first_name, caresFor)}
+                    </span>
+                  )}
+                </Field>
+                <Field label="Email (optional)">
+                  <input name="email" type="email" defaultValue={m.email ?? ''} className={inputCls} />
+                </Field>
+              </div>
+
+              {/* WHO SEES THIS, AND WHY IT IS FOLDED AWAY.
+                  Lawrence, 25 Aug: non-standard arrangements should stay
+                  possible — so nothing here is restricted, and anyone in the
+                  household can still be chosen. What struck him as odd was
+                  merely being ASKED, on the card of the adult who is plainly
+                  the head of the house.
+                
+                  So the field is not removed, it is folded: an independent
+                  adult with nothing saved sees a quiet link. A person who has
+                  caregivers saved, or who is a minor, sees them open.
+                
+                  The inputs are NOT RENDERED while folded, deliberately. They
+                  are uncontrolled selects carrying suggested defaults, so
+                  leaving them mounted-but-hidden would submit a suggestion
+                  nobody confirmed — which is how DoubleFaci ended up looking
+                  like a saved answer. Absent means absent. */}
+              {caregiversOpen[m.id] ?? (hasSaved || !isAdult) ? (
+                <div className="mt-4 rounded-sm border border-neutral-200 bg-neutral-50 p-4">
+                  <p className="text-sm font-semibold mb-2">
+                    Linked caregivers
+                    {!hasSaved && defaults.length > 0 && (
+                      <span className="font-normal text-neutral-500"> (suggested — save to confirm)</span>
+                    )}
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[1, 2].map((slot) => (
+                      <select
+                        key={slot}
+                        name={`caregiver${slot}`}
+                        defaultValue={
+                          // Suggestions are for people who plausibly need one.
+                          // An adult opening this by choice starts blank rather
+                          // than being handed a guess to accept by accident.
+                          isAdult && !hasSaved ? '' : slot === 1 ? cg1 : cg2
+                        }
+                        className={inputCls}
+                      >
+                        <option value="">— none —</option>
+                        {others.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.first_name} {o.last_name}
+                            {hasPhone(o.phone) ? ` (${o.phone})` : ' (no phone yet)'}
+                          </option>
+                        ))}
+                      </select>
+                    ))}
+                  </div>
+                  <p className="text-xs text-neutral-500 mt-2">
+                    Who staff contact first about this person at camp. A linked caregiver
+                    needs a phone number on their own card, so staff can reach them during
+                    camp.
+                  </p>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={revert(m.id)}
-                  disabled={state[m.id]?.busy}
-                  className="text-sm font-semibold text-brand underline disabled:opacity-50"
+                  onClick={() => setCaregiversOpen((o) => ({ ...o, [m.id]: true }))}
+                  className="mt-4 text-sm text-brand underline"
                 >
-                  Cancel changes
+                  Add a linked caregiver for {m.first_name}
                 </button>
               )}
-              {/* Removal is quiet and to the side -- it is the rare action,
-                  and the server refuses it for anyone on a registration or
-                  serving as the primary contact, explaining why. */}
-              <button
-                type="button"
-                disabled={state[m.id]?.busy}
-                onClick={() => {
-                  const ok = window.confirm(
-                    `Remove ${m.first_name} ${m.last_name} from your household?\n\n` +
-                      `This only works for someone who has never been registered for an event.`
-                  );
-                  if (!ok) return;
-                  run(m.id, () => removeHouseholdPerson(m.id));
-                }}
-                className="text-sm text-neutral-500 underline hover:text-red-700 disabled:opacity-50"
-              >
-                Remove from household
-              </button>
-              {state[m.id]?.error && (
-                <span className="text-sm text-red-700">{state[m.id].error}</span>
-              )}
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <SaveButton
+                  type="submit"
+                  busy={state[m.id]?.busy}
+                  saved={state[m.id]?.saved}
+                  className="py-2!"
+                />
+                {(state[m.id]?.dirty || state[m.id]?.error) && (
+                  <button
+                    type="button"
+                    onClick={revert(m.id)}
+                    disabled={state[m.id]?.busy}
+                    className="text-sm font-semibold text-brand underline disabled:opacity-50"
+                  >
+                    Cancel changes
+                  </button>
+                )}
+                {/* Removal is quiet and to the side -- it is the rare action,
+                    and the server refuses it for anyone on a registration or
+                    serving as the primary contact, explaining why. */}
+                <button
+                  type="button"
+                  disabled={state[m.id]?.busy}
+                  onClick={() => {
+                    const ok = window.confirm(
+                      `Remove ${m.first_name} ${m.last_name} from your household?\n\n` +
+                        `This only works for someone who has never been registered for an event.`
+                    );
+                    if (!ok) return;
+                    run(m.id, () => removeHouseholdPerson(m.id));
+                  }}
+                  className="text-sm text-neutral-500 underline hover:text-red-700 disabled:opacity-50"
+                >
+                  Remove from household
+                </button>
+                {state[m.id]?.error && (
+                  <span className="text-sm text-red-700">{state[m.id].error}</span>
+                )}
+              </div>
             </div>
           </form>
         );
@@ -553,6 +704,9 @@ Anything already saved is untouched.`
           run('add', async () => {
             const res = await addHouseholdPerson(household.id, f);
             if (res.ok) formEl.reset();
+            // The new person's card arrives unfolded -- they were just typed
+            // in, and the next thing is usually their phone or caregivers.
+            if (res.ok && res.personId) setOpen(res.personId, true);
             return res;
           });
         }}
