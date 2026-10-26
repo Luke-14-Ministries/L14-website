@@ -3048,3 +3048,15 @@ browser; nothing is stored, as with the contact form — the shared mailbox is w
 Signed-in only. **No rate limit:** in memory is not real on a serverless host and the durable place to
 check, `message_log`, is not readable by the family; the sign-in requirement (with two-factor) makes
 every note attributable, which is limit enough for now. Families only — nothing in the staff area.
+
+## 2026-10-26 — The family wizard's cards fold, and each says what it still needs
+
+Lawrence: every card on `/register/family` should be collapsible and flagged when it is missing
+something. **The chip is worked out from the submit's own rules, never a second copy:** one helper
+per card (`sessionNeeds()` … `agreementNeeds()` in `FamilyWizard.jsx`, on top of `dobProblem()`,
+`emailLooksValid()` and `supportProblems()`) returns what is missing, and `handleSubmit` walks the
+same lists — hard items refuse, the two soft ones (date of birth, sex) still ask. **A new
+registration opens every card** (it is read top to bottom); **editing a saved one opens only the
+cards that need something**, decided once from the saved answers so nothing snaps shut while the
+family types. Folded bodies are hidden, not unmounted, so no answer or chosen file is lost. A refused
+submit opens every card that needs something and moves focus to the one the refusal is about.
