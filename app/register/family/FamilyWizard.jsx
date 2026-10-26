@@ -10,6 +10,9 @@
 //   - a sticky summary bar with the running total and the submit button, so
 //     "what will this cost / am I done" is always on screen
 //   - validation reported against named sections instead of step numbers
+//   - since 26 Oct 2026, every card folds (its header is a button) and
+//     carries a status chip -- "Complete ✓" or "Needs: ..." -- from the same
+//     per-card rules the submit applies (sessionNeeds() ... agreementNeeds())
 //
 // The support profile (medications, allergies, seizure and behaviour detail,
 // emergency contact) is asked HERE, per person, in card 4 -- since 16 October
@@ -30,6 +33,7 @@ import {
   tidyCity,
   US_STATES,
   emailLooksValid,
+  dobProblem,
 } from '@/lib/format';
 import { submitFamilyRegistration } from './actions';
 import { formatDueDate, agreementText, formatDueDateShort, todayInMorristown } from '@/lib/events';
@@ -150,17 +154,350 @@ const ageOn = (dobISO, onISO) => {
 const input = 'w-full rounded-sm border border-neutral-300 px-4 py-2.5';
 const label = 'block font-semibold mb-1.5 mt-4 first:mt-0';
 
-function Card({ n, title, subtitle, children }) {
+// ---- The form's starting values ------------------------------------------------
+// Module-level so the open/folded state of the cards can be worked out from
+// the same starting values the fields get (see `openCards` below).
+const startFamily = (existing, defaultEmail) =>
+  existing?.family ?? {
+    contactFirst: '',
+    contactLast: '',
+    email: defaultEmail,
+    phone: '',
+    // The address is four fields, not one (24 Aug). It used to be a single
+    // free-text box, which meant the whole thing landed in address_line1 and
+    // the household's city/state/ZIP columns stayed empty -- unusable for a
+    // mailing label and impossible to check for typos. Separate fields make
+    // both possible.
+    address: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    church: '',
+    heardAbout: '',
+    heardAboutFrom: '',
+  };
+const startMembers = (existing) =>
+  existing?.members?.length ? existing.members : [{ ...emptyMember }];
+const startWeekIdx = (weeks, existing) => {
+  const i = weeks.findIndex((w) => w.eventId === existing?.eventId);
+  return i >= 0 ? i : 0;
+};
+
+const isNamed = (m) => Boolean(m.firstName.trim() && m.lastName.trim());
+const personKey = (m) => `${m.firstName.trim()}|${m.lastName.trim()}`.toLowerCase();
+const normName = (v) => (v || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+// ---- Who is signed for, and how -------------------------------------------------
+// Used by the Agreements card, its status chip and the submit, so all three
+// read the same answer.
+function signingFacts({ members, family, week, signedAlready, existing, capacityFor }) {
+  // A signature belongs to the registration it was given for, and therefore
+  // to that EVENT. Reported 25 Aug: switching the event selection left the
+  // "already signed" panel in place, so a signature given for Camp Celebrate
+  // could roll onto the Adult Adventure Retreat without the words ever being
+  // shown again.
+  const signedEventId = signedAlready?.eventId ?? existing?.eventId ?? null;
+  const signedThisEvent =
+    Boolean(signedAlready?.signedAt) && signedEventId != null && week?.eventId === signedEventId;
+  const named = members.filter(isNamed);
+  const signedNames = new Set(signedThisEvent ? signedAlready?.people ?? [] : []);
+  // Who still needs signing for: everyone named who is not already signed for
+  // on this registration -- so a person added later is signed for then.
+  const toSign = named.filter((m) => !signedNames.has(personKey(m)));
+  const alreadySigned = signedThisEvent && toSign.length === 0;
+  const isSigner = (m) =>
+    normName(`${m.firstName} ${m.lastName}`) ===
+    normName(`${family.contactFirst} ${family.contactLast}`);
+  // Who is a minor is decided per person, at the START OF CAMP, not today: a
+  // seventeen-year-old who turns eighteen in June is an adult at camp in
+  // July, and the release covers the week, not the day the form was filled
+  // in. Testing, 25 Aug: a registration containing a seven-year-old recorded
+  // its release as signed "for themselves", because the capacity defaulted to
+  // 'self' and nobody had reason to change it -- so a minor's capacity is
+  // settled, never asked. Derived, never stored: storing it would need an
+  // effect to keep it honest as dates of birth are typed.
+  const isMinor = (m) => {
+    const a = ageOn(m.dob, week?.startsOn);
+    return a !== null && a < 18;
+  };
+  const capacityOf = (m) =>
+    isSigner(m) ? 'self' : isMinor(m) ? 'parent_guardian' : capacityFor[personKey(m)] ?? '';
+  const otherAdults = toSign.filter((m) => !isSigner(m) && !isMinor(m));
+  const needsAffirmation = otherAdults.some((m) => capacityOf(m) === 'authorized_adult');
+  return {
+    named,
+    signedNames,
+    toSign,
+    alreadySigned,
+    isSigner,
+    isMinor,
+    capacityOf,
+    otherAdults,
+    needsAffirmation,
+  };
+}
+
+// ---- What each card still needs (26 Oct 2026) -------------------------------------
+// Lawrence: every card folds, and says whether it is missing anything. These
+// helpers are THE rules the submit applies -- handleSubmit walks the same
+// lists -- so a chip can never say "Complete" about a card the button will
+// refuse. Each returns a list of { chip, message, confirm }:
+//   chip     the few words after "Needs:" on the card's status chip
+//   message  what the submit says when it refuses
+//   confirm  set on the two SOFT asks (date of birth, sex): the submit asks
+//            with this text and goes ahead on OK, instead of refusing.
+// The validators underneath are the shared ones (dobProblem, emailLooksValid,
+// supportProblems); the server applies its own copies of the hard ones again.
+
+// "Pip" for one person, "3 people" for more -- short enough for a chip.
+const whoList = (names) => (names.length === 1 ? names[0] : `${names.length} people`);
+const shownName = (m, i) =>
+  m.firstName.trim() || m.lastName.trim()
+    ? `${m.firstName} ${m.lastName}`.trim()
+    : `Person ${i + 1}`;
+const fullNames = (list) => list.map((m) => `${m.firstName} ${m.lastName}`.trim()).join(', ');
+
+function sessionNeeds({ week }) {
+  if (week?.eventId && week?.optionId) return [];
+  return [{ chip: 'a session', message: 'Please choose a camp week before submitting.' }];
+}
+
+function familyNeeds({ family }) {
+  // A malformed email is worth catching here rather than after a
+  // confirmation silently fails to arrive (asked for 25 Aug). Loose on
+  // purpose -- see emailLooksValid.
+  if (family.email && !emailLooksValid(family.email)) {
+    return [
+      {
+        chip: 'an email address that looks right',
+        message: `That email address doesn't look right — "${family.email}". Please check it in "Your family or group" above; it is where your confirmation goes.`,
+      },
+    ];
+  }
+  return [];
+}
+
+function peopleNeeds({ members }) {
+  const out = [];
+  const named = members.filter(isNamed);
+  // 0094: a two-digit year typed into a date box. The server refuses it too
+  // (every row, named or not), in the same words.
+  const badDob = members
+    .map((m, i) => ({ m, i, bad: dobProblem(m.dob) }))
+    .filter((x) => x.bad);
+  if (badDob.length > 0) {
+    out.push({
+      chip: `a real date of birth for ${whoList(badDob.map((x) => x.m.firstName.trim() || shownName(x.m, x.i)))}`,
+      message: `${shownName(badDob[0].m, badDob[0].i)}: ${badDob[0].bad} In “Who's coming” above.`,
+    });
+  }
+  // HARD requirement: role. DOB and sex below are soft confirms, but a
+  // missing role has no sensible fallback -- fees, rosters, and volunteer
+  // review all key off it. One role per person per event (0086): the
+  // dropdown offers one, and the database refuses a second.
+  const missingRole = named.filter((m) => !m.role);
+  if (missingRole.length > 0) {
+    out.push({
+      chip: `a role for ${whoList(missingRole.map((m) => m.firstName.trim()))}`,
+      message: `Please choose a role for: ${fullNames(missingRole)} — in “Who's coming” above.`,
+    });
+  }
+  // Soft requirement: date of birth. It is one of the ways family members
+  // are told apart, so warn (but do not block) when it is missing.
+  const missingDob = named.filter((m) => !m.dob);
+  if (missingDob.length > 0) {
+    out.push({
+      chip: `a date of birth for ${whoList(missingDob.map((m) => m.firstName.trim()))}`,
+      confirm: `No date of birth entered for: ${fullNames(missingDob)}.\n\nBirth dates help us tell family members apart, and help program leaders at camp plan resources and accommodations appropriately. Save anyway?`,
+    });
+  }
+  // Same soft requirement for sex: program leaders use it for volunteer
+  // pairing, adult programming, and rooming assignments.
+  const missingSex = named.filter((m) => !m.sex);
+  if (missingSex.length > 0) {
+    out.push({
+      chip: `sex for ${whoList(missingSex.map((m) => m.firstName.trim()))}`,
+      confirm: `Sex not selected for: ${fullNames(missingSex)}.\n\nCamp leaders use this for rooming assignments, volunteer pairing, and program planning. Save anyway?`,
+    });
+  }
+  return out;
+}
+
+function supportNeeds({ members }) {
+  // HARD requirement (16 Oct 2026): a camper's support and medical details,
+  // and the detail behind any "yes" for everyone. Same rule as the
+  // dashboard form; the server applies it again.
+  const lacking = members
+    .filter(isNamed)
+    .map((m) => ({
+      m,
+      problems: supportProblems(m.support ?? {}, { isCamper: m.role === 'Camper with disability' }),
+    }))
+    .filter((x) => x.problems.length > 0);
+  if (lacking.length === 0) return [];
+  const first = lacking[0];
+  return [
+    {
+      chip: `support details for ${whoList(lacking.map((x) => x.m.firstName.trim()))}`,
+      message: `Support details for ${first.m.firstName.trim()}: ${first.problems.join('; ')} — in “Support and medical details” above.`,
+    },
+  ];
+}
+
+function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, facts }) {
+  // HARD requirement: the agreements. These are conditions of attending, not
+  // preferences -- so unlike the two permissions, an unanswered one stops the
+  // submit rather than saving as null.
+  if (facts.alreadySigned || agreements.length === 0) return [];
+  const out = [];
+  const unchecked = agreements.filter((a) => !agreed.has(a.key));
+  if (unchecked.length > 0) {
+    out.push({
+      chip: `${unchecked.length} ${unchecked.length === 1 ? 'agreement' : 'agreements'} ticked`,
+      message: `Please read and agree to: ${unchecked.map((a) => a.title).join(', ')} — in the “Agreements” card below.`,
+    });
+  }
+  if (!signerName.trim()) {
+    out.push({
+      chip: 'your typed signature',
+      message: 'Please type your full name as your signature at the bottom of the “Agreements” card.',
+    });
+  }
+  const undecided = facts.otherAdults.filter((m) => !facts.capacityOf(m));
+  if (undecided.length > 0) {
+    out.push({
+      chip: `how you are signing for ${whoList(undecided.map((m) => m.firstName.trim()))}`,
+      message: `Please say how you are signing for ${undecided
+        .map((m) => m.firstName.trim())
+        .join(', ')} — in the “Agreements” card below.`,
+    });
+  }
+  if (facts.needsAffirmation && !affirmOthers) {
+    out.push({
+      chip: 'the permission confirmation',
+      message:
+        'Please confirm that the other adults you are signing for have given you permission — in the “Agreements” card below.',
+    });
+  }
+  // The signature must name the accountable adult filling in this form --
+  // the primary contact from "Your family or group" above. Testing proved the
+  // need: "Alberto Gonzales" signed for a family containing no such person. A
+  // guardian with a different name corrects the contact fields, which sit
+  // one card up and are theirs to edit.
+  if (
+    signerName.trim() &&
+    normName(signerName) !== normName(`${family.contactFirst} ${family.contactLast}`)
+  ) {
+    out.push({
+      chip: 'a signature matching the primary contact',
+      message: `The signature must match the primary contact's name — "${family.contactFirst} ${family.contactLast}". If someone else is completing this form, update the primary contact in "Your family" first, so the signature names the person actually responsible.`,
+    });
+  }
+  return out;
+}
+
+// Every card's list, in card order. `notStarted` marks a card with nothing
+// to fill in yet, which reads better than "Complete" over an empty card.
+const CARD_KEYS = ['session', 'family', 'people', 'support', 'notes', 'agreements'];
+function cardNeeds(s) {
+  const facts = signingFacts(s);
+  const named = s.members.filter(isNamed);
+  return {
+    facts,
+    needs: {
+      session: sessionNeeds(s),
+      family: familyNeeds(s),
+      people: peopleNeeds(s),
+      support: supportNeeds(s),
+      notes: [],
+      agreements: agreementNeeds({ ...s, facts }),
+    },
+    notStarted: {
+      people: named.length === 0,
+      support: named.length === 0,
+    },
+  };
+}
+
+// What the chip says. `optional` is the notes card: nothing is ever needed
+// there, so an empty one says so rather than claiming to be complete.
+function cardStatus(items, { notStarted = false, optional = false, filled = false } = {}) {
+  if (items.length > 0) {
+    const words = items.slice(0, 2).map((x) => x.chip).join(', ');
+    const more = items.length > 2 ? ` and ${items.length - 2} more` : '';
+    return { tone: 'need', text: `Needs: ${words}${more}` };
+  }
+  if (notStarted) return { tone: 'idle', text: 'Not started' };
+  if (optional && !filled) return { tone: 'idle', text: 'Optional' };
+  return { tone: 'done', text: 'Complete ✓' };
+}
+
+// The dashboard's pill colours (PayPanel, SupportDetailsCard).
+const CHIP_TONE = {
+  done: 'bg-green-100 text-green-800',
+  need: 'bg-amber-100 text-amber-800',
+  idle: 'bg-neutral-100 text-neutral-600',
+};
+
+// A numbered card whose header is a real <button>: Enter and Space toggle it,
+// and aria-expanded / aria-controls tell a screen reader what it does. The
+// body is HIDDEN when folded, never unmounted, so typed answers, chosen
+// files and focus all survive folding (Lawrence, 26 Oct 2026).
+function Card({ id, n, title, subtitle, open, onToggle, status, children }) {
+  const headId = `card-${id}-head`;
+  const bodyId = `card-${id}-body`;
   return (
-    <section className="rounded-lg border border-neutral-200 shadow-xs bg-white p-6 sm:p-8">
-      <div className="flex items-baseline gap-3 mb-1">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-white text-sm font-bold">
-          {n}
-        </span>
-        <h2 className="text-xl font-bold">{title}</h2>
+    <section className="scroll-mt-16 rounded-lg border border-neutral-200 shadow-xs bg-white">
+      <h2 className="text-xl font-bold">
+        <button
+          type="button"
+          id={headId}
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={onToggle}
+          className={`flex w-full items-start gap-3 rounded-lg px-6 pt-6 sm:px-8 sm:pt-8 text-left scroll-mt-16 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+            open ? 'pb-2' : 'pb-6 sm:pb-8'
+          }`}
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-white text-sm font-bold">
+            {n}
+          </span>
+          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span>{title}</span>
+            {status && (
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold sm:ml-auto ${CHIP_TONE[status.tone]}`}
+              >
+                {status.text}
+              </span>
+            )}
+          </span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className={`mt-1 h-5 w-5 shrink-0 text-neutral-500 transition-transform ${
+              open ? 'rotate-180' : ''
+            }`}
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </h2>
+      <div
+        id={bodyId}
+        role="region"
+        aria-labelledby={headId}
+        hidden={!open}
+        className="px-6 pb-6 sm:px-8 sm:pb-8"
+      >
+        {subtitle && <p className="text-sm text-neutral-600 mb-4 ml-10">{subtitle}</p>}
+        <div className={subtitle ? '' : 'mt-2'}>{children}</div>
       </div>
-      {subtitle && <p className="text-sm text-neutral-600 mb-4 ml-10">{subtitle}</p>}
-      <div className={subtitle ? '' : 'mt-4'}>{children}</div>
     </section>
   );
 }
@@ -191,34 +528,31 @@ export default function FamilyWizard({
   // -- we show what was signed and when, and offer a copy.
 
 
-  const [family, setFamily] = useState(
-    existing?.family ?? {
-      contactFirst: '',
-      contactLast: '',
-      email: defaultEmail,
-      phone: '',
-      // The address is four fields, not one (24 Aug). It used to be a single
-      // free-text box, which meant the whole thing landed in address_line1 and
-      // the household's city/state/ZIP columns stayed empty -- unusable for a
-      // mailing label and impossible to check for typos. Separate fields make
-      // both possible.
-      address: '',
-      city: '',
-      state: '',
-      postalCode: '',
-      church: '',
-      heardAbout: '',
-      heardAboutFrom: '',
-    }
-  );
-  const [members, setMembers] = useState(
-    existing?.members?.length ? existing.members : [{ ...emptyMember }]
-  );
-  const [weekIdx, setWeekIdx] = useState(() => {
-    const i = weeks.findIndex((w) => w.eventId === existing?.eventId);
-    return i >= 0 ? i : 0;
-  });
+  const [family, setFamily] = useState(() => startFamily(existing, defaultEmail));
+  const [members, setMembers] = useState(() => startMembers(existing));
+  const [weekIdx, setWeekIdx] = useState(() => startWeekIdx(weeks, existing));
   const [notes, setNotes] = useState(existing?.notes ?? '');
+  // Which cards are open. A NEW registration opens every card -- it is read
+  // top to bottom. EDITING a saved one opens only the cards that still need
+  // something, worked out once from the saved answers (never re-folded as the
+  // family types: a card snapping shut under the cursor would lose their
+  // place). Lawrence, 26 Oct 2026.
+  const [openCards, setOpenCards] = useState(() => {
+    if (!isUpdate) return Object.fromEntries(CARD_KEYS.map((k) => [k, true]));
+    const { needs } = cardNeeds({
+      week: weeks[startWeekIdx(weeks, existing)] ?? weeks[0],
+      family: startFamily(existing, defaultEmail),
+      members: startMembers(existing),
+      agreements,
+      agreed: new Set(),
+      signerName: '',
+      affirmOthers: false,
+      capacityFor: {},
+      signedAlready,
+      existing,
+    });
+    return Object.fromEntries(CARD_KEYS.map((k) => [k, needs[k].length > 0]));
+  });
   const [agreed, setAgreed] = useState(() => new Set());
   const [signerName, setSignerName] = useState('');
   // Replaced the capacity radio (25 Aug). "Myself and my household" versus
@@ -256,7 +590,7 @@ export default function FamilyWizard({
   // Measured at the START OF CAMP, not today: a seventeen-year-old who turns
   // eighteen in June is an adult at camp in July, and the release covers the
   // week, not the day the form was filled in.
-  // (Who is a minor is now decided per person -- isMinor() below.)
+  // (Who is a minor is now decided per person -- isMinor() in signingFacts().)
   // Derived, never stored: storing it would need an effect to keep it honest
   // as dates of birth are typed, and an effect that rewrites the user's answer
   // is how a form starts arguing with the person filling it in.
@@ -273,33 +607,61 @@ export default function FamilyWizard({
       ? existingEvents.find((e) => e.eventId === week.eventId) ?? null
       : null;
 
-  // A signature belongs to the registration it was given for, and therefore
-  // to that EVENT. Reported 25 Aug: switching the event selection left the
-  // "already signed" panel in place, so a signature given for Camp Celebrate
-  // could roll onto the Adult Adventure Retreat without the words ever being
-  // shown again.
-  const signedEventId = signedAlready?.eventId ?? existing?.eventId ?? null;
-  const signedThisEvent =
-    Boolean(signedAlready?.signedAt) && signedEventId != null && week?.eventId === signedEventId;
-  const named = members.filter((m) => m.firstName.trim() && m.lastName.trim());
-  const personKey = (m) => `${m.firstName.trim()}|${m.lastName.trim()}`.toLowerCase();
-  const signedNames = new Set(signedThisEvent ? signedAlready?.people ?? [] : []);
-  // Who still needs signing for: everyone named who is not already signed for
-  // on this registration -- so a person added later is signed for then.
-  const toSign = named.filter((m) => !signedNames.has(personKey(m)));
-  const alreadySigned = signedThisEvent && toSign.length === 0;
-  const normName = (v) => (v || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  const isSigner = (m) =>
-    normName(`${m.firstName} ${m.lastName}`) ===
-    normName(`${family.contactFirst} ${family.contactLast}`);
-  const isMinor = (m) => {
-    const a = ageOn(m.dob, week?.startsOn);
-    return a !== null && a < 18;
-  };
-  const capacityOf = (m) =>
-    isSigner(m) ? 'self' : isMinor(m) ? 'parent_guardian' : capacityFor[personKey(m)] ?? '';
-  const otherAdults = toSign.filter((m) => !isSigner(m) && !isMinor(m));
-  const needsAffirmation = otherAdults.some((m) => capacityOf(m) === 'authorized_adult');
+  // Who is signed for and how (signingFacts), and what each card still
+  // needs -- worked out on every render from the same rules the submit uses.
+  const { facts, needs, notStarted } = cardNeeds({
+    week,
+    family,
+    members,
+    agreements,
+    agreed,
+    signerName,
+    affirmOthers,
+    capacityFor,
+    signedAlready,
+    existing,
+  });
+  const {
+    named,
+    signedNames,
+    toSign,
+    alreadySigned,
+    isSigner,
+    isMinor,
+    capacityOf,
+    otherAdults,
+    needsAffirmation,
+  } = facts;
+  // The cards on this page (Agreements only when the event has any), and
+  // those that still need something.
+  const shownCards = CARD_KEYS.filter((k) => k !== 'agreements' || agreements.length > 0);
+  const needing = shownCards.filter((k) => needs[k].length > 0);
+  const statusOf = (k) =>
+    cardStatus(needs[k], {
+      notStarted: notStarted[k],
+      optional: k === 'notes',
+      filled: k === 'notes' && notes.trim() !== '',
+    });
+  const toggleCard = (k) => () => setOpenCards((o) => ({ ...o, [k]: !o[k] }));
+  const setAllCards = (on) => setOpenCards(Object.fromEntries(CARD_KEYS.map((k) => [k, on])));
+  // Open every card that needs something and take the family to the first
+  // one (or to `focusKey`, the card a refusal is about). Focus goes to the
+  // card's header button, so a keyboard or screen-reader user lands there too.
+  function showNeeding(focusKey = needing[0]) {
+    setOpenCards((o) => {
+      const next = { ...o };
+      for (const k of needing) next[k] = true;
+      if (focusKey) next[focusKey] = true;
+      return next;
+    });
+    if (!focusKey) return;
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`card-${focusKey}-head`);
+      if (!el) return;
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      el.focus({ preventScroll: true });
+    });
+  }
   // The words of each agreement for THIS event (v2 agreements carry {{event}}).
   const eventForText = week
     ? { name: week.name, starts_on: week.startsOn, ends_on: week.endsOn }
@@ -415,100 +777,24 @@ export default function FamilyWizard({
   };
 
   async function handleSubmit() {
-    // HARD requirement: role. DOB and sex below are soft confirms, but a
-    // missing role has no sensible fallback -- fees, rosters, and volunteer
-    // review all key off it.
-    const missingRole = named.filter((m) => !m.role);
-    if (missingRole.length > 0) {
-      const names = missingRole.map((m) => `${m.firstName} ${m.lastName}`.trim()).join(', ');
-      setError(`Please choose a role for: ${names} — in “Who's coming” above.`);
-      return;
-    }
-    // HARD requirement (16 Oct 2026): a camper's support and medical details,
-    // and the detail behind any "yes" for everyone. Same rule as the
-    // dashboard form; the server applies it again.
-    for (const m of named) {
-      const camper = m.role === 'Camper with disability';
-      const problems = supportProblems(m.support ?? {}, { isCamper: camper });
-      if (problems.length > 0) {
-        setError(
-          `Support details for ${m.firstName.trim()}: ${problems.join('; ')} — in “Support and medical details” above.`
-        );
+    // The same lists the cards' chips show, in card order. Any HARD problem
+    // refuses the submit with that problem's words, opens every card that
+    // needs something and takes the family to the card it is about. The two
+    // SOFT ones (a missing date of birth or sex) are asked, not refused.
+    for (const k of shownCards) {
+      const hard = needs[k].find((x) => !x.confirm);
+      if (hard) {
+        setError(hard.message);
+        showNeeding(k);
         return;
       }
     }
-    // Soft requirement: date of birth. It is one of the ways family members
-    // are told apart, so warn (but do not block) when it is missing.
-    const missingDob = named.filter((m) => !m.dob);
-    if (missingDob.length > 0) {
-      const names = missingDob.map((m) => `${m.firstName} ${m.lastName}`.trim()).join(', ');
-      const ok = window.confirm(
-        `No date of birth entered for: ${names}.\n\nBirth dates help us tell family members apart, and help program leaders at camp plan resources and accommodations appropriately. Save anyway?`
-      );
-      if (!ok) return;
-    }
-    // Same soft requirement for sex: program leaders use it for volunteer
-    // pairing, adult programming, and rooming assignments.
-    const missingSex = named.filter((m) => !m.sex);
-    if (missingSex.length > 0) {
-      const names = missingSex.map((m) => `${m.firstName} ${m.lastName}`.trim()).join(', ');
-      const ok = window.confirm(
-        `Sex not selected for: ${names}.\n\nCamp leaders use this for rooming assignments, volunteer pairing, and program planning. Save anyway?`
-      );
-      if (!ok) return;
-    }
-    // A malformed email is worth catching here rather than after a
-    // confirmation silently fails to arrive (asked for 25 Aug). Loose on
-    // purpose -- see emailLooksValid.
-    if (family.email && !emailLooksValid(family.email)) {
-      setError(
-        `That email address doesn't look right — "${family.email}". Please check it in "Your family or group" above; it is where your confirmation goes.`
-      );
-      return;
-    }
-
-    // HARD requirement: the agreements. These are conditions of attending, not
-    // preferences -- so unlike the two permissions below, an unanswered one
-    // stops the submit rather than saving as null.
-    if (!alreadySigned && agreements.length > 0) {
-      const unchecked = agreements.filter((a) => !agreed.has(a.key));
-      if (unchecked.length > 0) {
-        setError(
-          `Please read and agree to: ${unchecked.map((a) => a.title).join(', ')} — in the “Agreements” card below.`
-        );
-        return;
-      }
-      if (!signerName.trim()) {
-        setError('Please type your full name as your signature at the bottom of the “Agreements” card.');
-        return;
-      }
-      const undecided = otherAdults.filter((m) => !capacityOf(m));
-      if (undecided.length > 0) {
-        setError(
-          `Please say how you are signing for ${undecided
-            .map((m) => m.firstName.trim())
-            .join(', ')} — in the “Agreements” card below.`
-        );
-        return;
-      }
-      if (needsAffirmation && !affirmOthers) {
-        setError(
-          'Please confirm that the other adults you are signing for have given you permission — in the “Agreements” card below.'
-        );
-        return;
-      }
-      // The signature must name the accountable adult filling in this form --
-      // the primary contact from "Your family or group" above. Testing proved the need:
-      // "Alberto Gonzales" signed for a family containing no such person. A
-      // guardian with a different name corrects the contact fields, which sit
-      // one card up and are theirs to edit.
-      const norm2 = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-      const contactFull = norm2(`${family.contactFirst} ${family.contactLast}`);
-      if (norm2(signerName) !== contactFull) {
-        setError(
-          `The signature must match the primary contact's name — "${family.contactFirst} ${family.contactLast}". If someone else is completing this form, update the primary contact in "Your family" first, so the signature names the person actually responsible.`
-        );
-        return;
+    for (const k of shownCards) {
+      for (const x of needs[k]) {
+        if (x.confirm && !window.confirm(x.confirm)) {
+          showNeeding(k);
+          return;
+        }
       }
     }
     setError('');
@@ -539,8 +825,12 @@ export default function FamilyWizard({
         setResult(res);
       } else {
         setError(res?.error || 'Something went wrong. Please try again.');
+        // The server's checks are copies of the ones above, so a refusal
+        // usually names a card that already shows "Needs"; open those.
+        if (needing.length > 0) showNeeding();
       }
     } catch (e) {
+      console.error('submitFamilyRegistration:', e);
       setError('Something went wrong submitting your registration. Please try again.');
     } finally {
       setBusy(false);
@@ -654,9 +944,38 @@ export default function FamilyWizard({
         </Link>
       </p>
 
+      {/* Editing a saved registration: the complete cards start folded, so
+          what still needs doing is what shows. */}
+      {isUpdate && (
+        <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-sm text-neutral-600">
+          <span>Cards that are complete are folded — open any to change it.</span>
+          <span className="flex items-center gap-2">
+            <button
+              type="button"
+              className="text-brand underline font-semibold"
+              onClick={() => setAllCards(true)}
+            >
+              Open all
+            </button>
+            <span aria-hidden="true">·</span>
+            <button
+              type="button"
+              className="text-brand underline font-semibold"
+              onClick={() => setAllCards(false)}
+            >
+              Fold all
+            </button>
+          </span>
+        </p>
+      )}
+
       {/* 1 — what they're registering for. First, because it sets the price. */}
       <Card
+        id="session"
         n={1}
+        open={openCards.session}
+        onToggle={toggleCard('session')}
+        status={statusOf('session')}
         title="What you're registering for"
         subtitle={
           weeks.length === 1
@@ -719,7 +1038,11 @@ export default function FamilyWizard({
 
       {/* 2 — the family's own details. */}
       <Card
+        id="family"
         n={2}
+        open={openCards.family}
+        onToggle={toggleCard('family')}
+        status={statusOf('family')}
         title="Your family or group"
         subtitle="We've filled in what we know from your account. The primary contact is who camp staff will call or email about this registration — if that should be someone else, just change the details below."
       >
@@ -837,7 +1160,11 @@ export default function FamilyWizard({
 
       {/* 3 — the people. */}
       <Card
+        id="people"
         n={3}
+        open={openCards.people}
+        onToggle={toggleCard('people')}
+        status={statusOf('people')}
         title="Who's coming"
         subtitle="Everyone attending — including yourself if you're coming. Each person gets their own place and fee."
       >
@@ -1131,7 +1458,11 @@ export default function FamilyWizard({
           version for everyone else, with "tell us more" one click away. The
           dashboard's per-person form stays for edits and for the photo. */}
       <Card
+        id="support"
         n={4}
+        open={openCards.support}
+        onToggle={toggleCard('support')}
+        status={statusOf('support')}
         title="Support and medical details"
         subtitle="Required for each camper before you submit — “N/A” is an answer in any box. Volunteers and other adults get the short version."
       >
@@ -1182,7 +1513,11 @@ export default function FamilyWizard({
 
       {/* 5 — free text. */}
       <Card
+        id="notes"
         n={5}
+        open={openCards.notes}
+        onToggle={toggleCard('notes')}
+        status={statusOf('notes')}
         title="Anything else?"
         subtitle="Optional — anything that doesn't fit neatly above."
       >
@@ -1198,7 +1533,11 @@ export default function FamilyWizard({
           and recorded for EACH person it covers (Lawrence, 30 Sep 2026). */}
       {agreements.length > 0 && (
         <Card
+          id="agreements"
           n={6}
+          open={openCards.agreements}
+          onToggle={toggleCard('agreements')}
+          status={statusOf('agreements')}
           title="Agreements"
           subtitle={
             alreadySigned
@@ -1374,6 +1713,15 @@ export default function FamilyWizard({
               {week ? fmtWeek(week) : 'Choose a session above'} · payment happens on your
               dashboard afterwards
             </p>
+            {namedCount > 0 && needing.length > 0 && (
+              <button
+                type="button"
+                className="mt-0.5 text-xs font-semibold text-amber-700 underline"
+                onClick={() => showNeeding()}
+              >
+                {needing.length} {needing.length === 1 ? 'card needs' : 'cards need'} something
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-4">
             <Link
