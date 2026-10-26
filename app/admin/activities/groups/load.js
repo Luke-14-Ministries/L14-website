@@ -131,8 +131,7 @@ export async function loadActivityGroups(supabase, activityId) {
   // alone the page asks the two facts the view asks (an uploaded outfitter
   // confirmation; a signature of our waiver on this registration), so the
   // raft list does not show a buddy as "on file" by silence.
-  // FOLLOW-UP when 0124 lands: a REJECTED upload is outstanding there, so the
-  // upload read below should then skip review_status = 'rejected'.
+  // A REJECTED upload counts as missing, as it does in the view since 0124.
   const unsignedBuddies = [...buddyIds].filter((id) => !statusById.has(id));
   const buddyUpload = new Set();
   const buddySigned = new Set();
@@ -142,6 +141,7 @@ export async function loadActivityGroups(supabase, activityId) {
         .from('activity_waiver_uploads')
         .select('registration_participant_id')
         .eq('activity_id', activityId)
+        .neq('review_status', 'rejected')
         .in('registration_participant_id', unsignedBuddies);
       if (error) fail('buddy waiver uploads', error);
       for (const u of data ?? []) buddyUpload.add(u.registration_participant_id);
