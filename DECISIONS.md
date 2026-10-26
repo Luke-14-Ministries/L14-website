@@ -3182,3 +3182,14 @@ access. Deleting a group sends its people back to *To place* rather than refusin
 from signups), so for them alone the loader asks the same two facts (an uploaded confirmation, a
 signature of our waiver) — when 0124's upload review lands, that read should skip rejected uploads.
 `admin_create_event()` was restated so a copied event keeps `min_age`; groups are not copied.
+
+## 2026-10-26 — Event Payments opens on current events; the QuickBooks CSV is a date range
+
+Event Payments' default scope is `isCurrentEventRow()` (*Current events*), the rule every other staff
+page uses, not "90 days each way", which left Camp Celebrate 2027 out of the balances while its
+registration is open (Script 6, 13.40). The 90-day windows, one event and full history stay in the
+*Showing* select; the page and its Balances and Payments CSVs share `inPaymentsScope()`. The
+QuickBooks CSV is about money, not events: From/To on the day the money moved (this month so far by
+default, *All time* one link away), across every event, sorted by date, ignoring the page's scope
+and payment-state pill. A payment since refunded is included, so its negative refund row is never
+booked without the money it reverses.
