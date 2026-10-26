@@ -3160,3 +3160,25 @@ Every person card on Manage Household folds (a real button header with name, age
 and chevron), folded by default unless it needs something; folding hides the body and never unmounts
 it, so unsaved edits and the unsaved bar survive. *Open all / Fold all* sit above the cards; the
 household contact card stays open.
+
+## 2026-10-26 — Activity groups: rafts, a buddy travels with their camper, and a minimum age
+
+Lawrence (W62): white water rafting has 100+ people — campers, their paired buddies, siblings,
+parents — to put into rafts, and staff need lists. Decided: groups are **generic** for any activity
+(`activity_groups`, `activity_group_members`, migration `0125`; pontoon boats next), sized per group
+with a **default of 6**; the outfitter gets **names only** (we set the boats); **anyone signed up**
+can go, and **a camper's paired buddy goes with them automatically** — the buddy is shown even if
+they did not sign up, and a buddy who also signed up is listed once, in their camper's unit (a buddy
+paired with two signed-up campers joins them into one unit; a signed-up buddy whose camper is not
+going stands alone). The database stores one row per person (`unique (registration_participant_id,
+activity_id)`, `activity_id` kept from the group by trigger, which also refuses a person from another
+event); the pairing is the page's (`buildUnits()` in `lib/activityGroups.js`), and the place/unplace
+actions work the unit out again from the database. **Minimum age** is `activities.min_age` (8 for
+rafting on current events): a red *Under 8 — check with camp staff* pill and a filter, **never a
+block**. Capacity is a warning too (red when over). Access is the `activities` area (0101: placements
+are Activities, definitions are Setup): read sees the board, write places; no family or leader
+access. Deleting a group sends its people back to *To place* rather than refusing. Waivers come from
+`activity_waivers_outstanding`; a buddy riding **without** a signup is not in that view (it is built
+from signups), so for them alone the loader asks the same two facts (an uploaded confirmation, a
+signature of our waiver) — when 0124's upload review lands, that read should skip rejected uploads.
+`admin_create_event()` was restated so a copied event keeps `min_age`; groups are not copied.

@@ -337,6 +337,15 @@ Volunteers arrive a day early (`events.volunteer_arrives_on`).
 Data-deletion requests: `/account/delete-data` → `/admin/deletion-requests`; nothing is deleted
 automatically.
 
+**Activity groups** (`0125`, 26 Oct): rafts, and any activity's groups, at
+`/admin/activities/groups/?activity=<id>` (with `/print/` — ending in the names-only outfitter list —
+and `/export/`), linked "Rafts →" / "Groups →" from each activity. Activities read sees it, Activities
+write places. **A camper's paired buddy travels with their camper** — one unit, placed and removed
+together, the buddy listed once even if they also signed up (`buildUnits()` in
+`lib/activityGroups.js`; the actions recompute it from the database). One row per person per
+activity in `activity_group_members`. `activities.min_age` (8 for rafting) is a red *Under 8 — check
+with camp staff* flag, never a block; group size (default 6) is a warning, never a lock.
+
 ---
 
 ## Stack
