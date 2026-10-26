@@ -95,7 +95,20 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
               type="checkbox"
               checked={m.role === 'admin'}
               disabled={busy || (isSelf && m.role === 'admin')}
-              onChange={(e) => onPatch(m.profileId, { role: e.target.checked ? 'admin' : 'coordinator' })}
+              onChange={(e) => {
+                // Ticking it also sets every area to write (actions.js); say so first.
+                if (
+                  e.target.checked &&
+                  !window.confirm(
+                    `Make ${m.name} an administrator?
+
+An administrator can grant and remove access, manage accounts and name program leaders. This also sets every area, Giving included, to write. Taking the tick away later leaves the grants as they are.`
+                  )
+                ) {
+                  return;
+                }
+                onPatch(m.profileId, { role: e.target.checked ? 'admin' : 'coordinator' });
+              }}
               className="h-4 w-4"
             />
             {m.role === 'admin' ? 'Yes' : 'No'}
@@ -282,6 +295,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
         const fields = {};
         if (changes.role !== undefined) fields.role = changes.role;
         if (changes.active !== undefined) fields.active = !!changes.active;
+        if (res.grants) fields.grants = res.grants;
         if (Object.keys(fields).length) remember(profileId, fields);
       }
       setBusyId(null);

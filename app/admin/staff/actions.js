@@ -39,6 +39,19 @@ export async function updateStaffMember(profileId, patch) {
   const supabase = await createClient();
   const { error } = await supabase.from('staff').update(clean).eq('profile_id', profileId);
   if (error) return { ok: false, error: error.message };
+
+  // Making someone an administrator also gives every area write, Giving
+  // included -- an administrator can grant themselves anything anyway, so the
+  // ticks should say so (Lawrence, 26 Oct 2026). It never runs the other way:
+  // every area at write does NOT make an administrator, and taking the tick
+  // away leaves the grants as they are.
+  if (clean.role === 'admin') {
+    const all = Object.fromEntries(AREA_KEYS.map((k) => [k, 'write']));
+    const res = await setStaffGrants(profileId, all);
+    if (!res.ok) return { ok: false, error: `Made an administrator, but the grants did not save: ${res.error}` };
+    revalidatePath('/admin/staff');
+    return { ok: true, grants: res.grants };
+  }
   revalidatePath('/admin/staff');
   return { ok: true };
 }
