@@ -490,6 +490,14 @@ function ProviderUploads({ section: s, withIntro }) {
           This can be done after the event starts, once pairings are known.
         </p>
       )}
+      {/* Lawrence, 26 Oct 2026: a volunteer must not read the form as a
+          sign-up. Whether they go is their camper's choice; the form only
+          makes them ready in case. */}
+      <p className="mt-3 rounded-sm border border-brand/30 bg-brand-light px-3 py-2 text-sm text-brand-dark">
+        <span className="font-semibold">This does not sign you up.</span> Whether you go depends
+        on the camper you are paired with: if they choose the activity, you go with them.
+        Completing the provider&rsquo;s form now simply means you are ready in case they do.
+      </p>
       {s.volunteers.map((v) => (
         <div key={v.participantId} className="mt-4">
           <p className="font-semibold">{v.name}</p>
