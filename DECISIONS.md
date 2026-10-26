@@ -3236,3 +3236,21 @@ flag, the *Family replied (N)* tab and the Awaiting Review badge, which now also
 registration with an unread reply and nobody still submitted. `guard_awaiting_family()` became an
 invoker trigger: as a definer trigger it asked the family *caller* for Registration write and so
 refused the reply function too.
+
+## 2026-10-26 — A deposit waiver can be undone (0127)
+
+Lawrence: "why can't waive deposit be undone? it is an administrative tick -- suppose it was done in
+error??" **`undo_deposit_waiver(registration, reason)`** takes it back, for the same people who may
+waive (`can_decide_scholarships()`), with a reason required. The waiver overwrote any smaller
+scholarship, so the undo **restores the one from before**, read from `money_change_log` — the
+waiver's own `participant_money` write is the one whose new scholarship is the waived amount, at the
+scholarship row's `reviewed_at` (stamped in the same transaction), and its *before* value is the
+answer; none found means 0. Anchored on `reviewed_at`, not `deposit_waived_at`, because waiving
+twice re-stamps the mark but writes nothing for people already at the deposit. Only people whose
+scholarship is **still the waiver's** are touched (the row granted with a *Deposit waived* note and
+the money still equal to it); one staff have decided since is left alone. The row reads *Deposit
+waiver undone: reason*, granted at the restored amount or **declined** at 0 — not *withdrawn*,
+which in this codebase means the family took a request back. The mark is cleared and the family
+and early discounts re-run. **Nobody is un-approved**: the registration reads its real deposit again
+(*No full deposit yet* / deposit short) and staff decide what follows. The scholarship row's note
+from before the waiver is not recoverable (`scholarships` is not in the money log); the amount is.
