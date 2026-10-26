@@ -312,7 +312,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
         <nav className="flex gap-3 text-sm">
           <span className="font-semibold text-brand-dark border-b-2 border-brand">Balances</span>
           <Link href="/admin/scholarships/" className="text-neutral-600 hover:text-brand-dark hover:underline">
-            Scholarship requests →
+            Scholarship Requests →
           </Link>
           <Link href="/admin/review/" className="text-neutral-600 hover:text-brand-dark hover:underline">
             Review queue →

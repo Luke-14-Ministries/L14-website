@@ -5,7 +5,7 @@ import BackLink from '@/components/BackLink';
 import { AREA_LABEL } from '@/lib/grants';
 import { whenInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Access changes — Staff Admin' };
+export const metadata = { title: 'Access Changes — Staff Admin' };
 
 // Who gained what, when, and who gave it to them.
 //
@@ -74,7 +74,7 @@ export default async function AccessLogPage() {
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <BackLink href="/admin/staff" label="Back to Staff &amp; Access" />
-      <h1 className="text-2xl font-bold mb-1">Access changes</h1>
+      <h1 className="text-2xl font-bold mb-1">Access Changes</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-prose">
         Every change to what a staff member may see or do — their grants on
         each area, the role label, and whether their account is active. Written

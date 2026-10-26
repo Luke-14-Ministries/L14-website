@@ -5,7 +5,7 @@ import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
 import { dayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Background screening — Staff Admin' };
+export const metadata = { title: 'Background Screening — Staff Admin' };
 
 // Who is due a background check, and the two file moves that get them one.
 //
@@ -37,7 +37,7 @@ export default async function ScreeningPage() {
     return (
       <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
         <BackLink href="/admin/volunteers" label="Back to Volunteers" />
-        <h1 className="text-2xl font-bold mb-1">Background screening</h1>
+        <h1 className="text-2xl font-bold mb-1">Background Screening</h1>
         <p className="text-neutral-600">
           No upcoming events, so nobody is due a background check for one.
         </p>
@@ -168,7 +168,7 @@ export default async function ScreeningPage() {
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <BackLink href="/admin/volunteers" label="Back to Volunteers" />
-      <h1 className="text-2xl font-bold mb-1">Background screening</h1>
+      <h1 className="text-2xl font-bold mb-1">Background Screening</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-prose">
         Checkr&rsquo;s bulk upload takes a list of email addresses and invites each
         person to fill in their own details. We never see or hold a Social Security

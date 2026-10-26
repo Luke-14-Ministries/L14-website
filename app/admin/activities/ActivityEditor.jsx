@@ -438,7 +438,7 @@ function OwedNotice({ owed, canEmail, onClose }) {
           Email their families →
         </Link>
       ) : (
-        <span>Someone with Registration write can email their families from Email families.</span>
+        <span>Someone with Registration write can email their families from Email Families.</span>
       )}
       <button type="button" onClick={onClose} className="ml-3 text-xs text-amber-800 underline">
         Dismiss

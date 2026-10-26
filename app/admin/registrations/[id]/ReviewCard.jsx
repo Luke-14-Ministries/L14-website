@@ -205,7 +205,7 @@ export default function ReviewCard({
               <p className="text-sm font-semibold mb-1">Put this registration on hold?</p>
               <p className="text-xs text-neutral-600 mb-2">
                 Everyone confirmed or waitlisted goes back to <em>submitted</em> and the
-                registration returns to Awaiting review. The reason is shown to the family.
+                registration returns to Awaiting Review. The reason is shown to the family.
                 Nothing is emailed — write to them from Outlook if they should hear from you.
               </p>
               <input
@@ -267,7 +267,7 @@ export default function ReviewCard({
             <span className="font-medium text-neutral-800">
               {waiting.map((p) => p.name).join(', ')}
             </span>
-            . Approving confirms them and takes this family out of Awaiting review; to decide
+            . Approving confirms them and takes this family out of Awaiting Review; to decide
             person by person, use <em>People on this week</em>.
           </p>
           <div className="flex flex-wrap items-center gap-2">

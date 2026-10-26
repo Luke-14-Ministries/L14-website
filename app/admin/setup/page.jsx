@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import SetupManager from './SetupManager';
 import { enrollmentOption, todayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Setup — Staff Admin' };
+export const metadata = { title: 'Setup & Manage Events — Staff Admin' };
 
 // The registration switchboard: which events exist, which are visible, and
 // when each one's registration opens and closes. Admin-only; the events_write
@@ -65,7 +65,7 @@ export default async function SetupPage() {
 
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
-      <h1 className="text-2xl font-bold mb-1">Setup</h1>
+      <h1 className="text-2xl font-bold mb-1">Setup &amp; Manage Events</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-prose">
         Create events, and open and close registration, event by event. <span className="font-semibold">Visible</span>{' '}
         is the master switch — an event that isn&rsquo;t visible appears nowhere

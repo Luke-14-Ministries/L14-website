@@ -7,7 +7,7 @@ import { REVIEW_CLASS, REVIEW_FLAG, planStoppedAt } from '@/lib/plans';
 import { statusPill } from '@/lib/format';
 import { dayInMorristown, isCurrentEventRow } from '@/lib/events';
 
-export const metadata = { title: 'Awaiting review — Staff Admin' };
+export const metadata = { title: 'Awaiting Review — Staff Admin' };
 
 // The review queue, as one page (14 Oct 2026, Lawrence).
 //
@@ -193,7 +193,7 @@ export default async function ReviewQueuePage({ searchParams }) {
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">Awaiting review</h2>
+        <h2 className="text-xl font-bold">Awaiting Review</h2>
         <div className="flex gap-2 text-sm">
           <Link
             href={`/admin/review/${eventFilter ? `?event=${eventFilter}` : ''}`}

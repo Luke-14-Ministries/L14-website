@@ -109,7 +109,7 @@ export default async function RecentChangesPage() {
           just confirms staff have seen it. New people added to a registration don&rsquo;t appear
           here; they land in the{' '}
           <Link href="/admin#awaiting-review" className="text-brand underline font-semibold">
-            &ldquo;Awaiting review&rdquo; queue on the Overview
+            &ldquo;Awaiting Review&rdquo; queue on the Overview
           </Link>
           , where they
           can be confirmed or waitlisted.

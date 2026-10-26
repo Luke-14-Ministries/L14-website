@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
 import { todayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Buddy sheets — Staff Admin' };
+export const metadata = { title: 'Buddy Sheets — Staff Admin' };
 
 // One sheet per buddy, to hand out at orientation (asked for 14 Oct 2026).
 //
@@ -124,7 +124,7 @@ export default async function BuddyPrintPage({ searchParams }) {
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
       <div className="mb-2 flex items-center justify-between print:hidden">
-        <h1 className="text-xl font-bold">Buddy sheets</h1>
+        <h1 className="text-xl font-bold">Buddy Sheets</h1>
         <PrintButton />
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">

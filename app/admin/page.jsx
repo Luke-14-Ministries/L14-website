@@ -171,7 +171,7 @@ export default async function AdminOverview({ searchParams }) {
           value={totalPeople}
         />
         <Stat
-          label="Awaiting review"
+          label="Awaiting Review"
           sub={
             totalPending > 0
               ? 'needs staff action below'
@@ -196,7 +196,7 @@ export default async function AdminOverview({ searchParams }) {
 
       {/* The work queue: families with someone still pending review.
           Given an id (25 Aug) because other pages point at it in words --
-          Recent Changes says new people "land in the Awaiting review queue on
+          Recent Changes says new people "land in the Awaiting Review queue on
           the Overview" -- and a page you have to hunt for is not really a
           queue. That sentence is now a link to this card. */}
       {can(staff, 'read:registration') && reviewList.length > 0 && (
@@ -274,7 +274,7 @@ export default async function AdminOverview({ searchParams }) {
                   <th className="py-2 pr-4 font-semibold text-right">People</th>
                   <th className="py-2 pr-4 font-semibold text-right">Confirmed</th>
                   <th className="py-2 pr-4 font-semibold text-right">Waitlisted</th>
-                  <th className="py-2 font-semibold text-right">Awaiting review</th>
+                  <th className="py-2 font-semibold text-right">Awaiting Review</th>
                 </tr>
               </thead>
               <tbody>

@@ -6,7 +6,7 @@ import { isCurrentEventRow } from '@/lib/events';
 import EmailFamiliesForm from './EmailFamiliesForm';
 import { previewFamilyEmail } from './actions';
 
-export const metadata = { title: 'Email families — Staff Admin' };
+export const metadata = { title: 'Email Families — Staff Admin' };
 
 // A long list is sent one email at a time, with a pause between (actions.js),
 // so the Send can take a minute; the default function time would cut it off.
@@ -89,7 +89,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Email families</h2>
+      <h2 className="text-xl font-bold mb-1">Email Families</h2>
       <p className="text-sm text-neutral-500 mb-4">
         Tell the families of an event — or of one activity — about a change. One email per
         family, to the household&rsquo;s email, sent from registration@ when you press Send and

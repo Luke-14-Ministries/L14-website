@@ -5,7 +5,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
 
-export const metadata = { title: 'Volunteer list — Staff Admin' };
+export const metadata = { title: 'Volunteer List — Staff Admin' };
 
 // The volunteer list on paper (Ellen, 14 Oct 2026): who is volunteering at
 // which event, where they want to serve, whether they are new, and where the
@@ -89,7 +89,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
   return (
     <div className="mx-auto max-w-4xl bg-white p-8 print:p-0 print:text-[11px]">
       <div className="mb-2 flex items-center justify-between print:hidden">
-        <h1 className="text-xl font-bold">Volunteer list</h1>
+        <h1 className="text-xl font-bold">Volunteer List</h1>
         <PrintButton />
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">

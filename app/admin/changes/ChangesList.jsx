@@ -325,7 +325,7 @@ export default function ChangesList({ groups }) {
                   <button
                     onClick={() => hold(c)}
                     disabled={busy === `hold:${c.id}`}
-                    title="Send this person's registration back to Awaiting review, with a reason the family sees"
+                    title="Send this person's registration back to Awaiting Review, with a reason the family sees"
                     className="text-xs text-amber-900 underline hover:text-amber-700"
                   >
                     {busy === `hold:${c.id}` ? '…' : 'Put on hold…'}
