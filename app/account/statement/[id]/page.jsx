@@ -2,12 +2,13 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
 import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
-import { participantMoney } from '@/lib/payments';
+import { participantMoney, dollars } from '@/lib/payments';
 import FeeLines from '@/components/FeeLines';
 
 export const metadata = { title: 'My Statement — Luke 14 Ministries' };
 
-const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+// The site's one money formatter (lib/payments.js).
+const money = dollars;
 
 const ROLE_LABEL = {
   camper: 'Camper',

@@ -4,11 +4,18 @@ import { createClient } from '@/lib/supabase/server';
 import { getStaff } from '@/lib/staff';
 import PayPanel from './PayPanel';
 import RegistrationCard from './RegistrationCard';
+import RegistrationsPanel from './RegistrationsPanel';
 import CancelRequest from './CancelRequest';
 import SupportDetailsCard from './SupportDetailsCard';
-import { registrationDepositCents, registrationHeads, participantMoney } from '@/lib/payments';
+import {
+  registrationDepositCents,
+  registrationHeads,
+  participantMoney,
+  dollars,
+  fullScholarshipRequested,
+} from '@/lib/payments';
 import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from '@/lib/events';
-import { requiresPaymentChoice, offersPaymentPlan, feeLabel } from '@/lib/plans';
+import { requiresPaymentChoice, offersPaymentPlan, feeLabel, planHasProblem } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
 import FeedbackBox from './FeedbackBox';
 import { getProgramLeadership } from '@/lib/programs';
@@ -51,8 +58,31 @@ function eventDates(ev) {
     : `${fmt(s)} \u2013 ${fmt(e, true)}`;
 }
 
-const money = (cents) =>
-  `$${((cents ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
+// Money is always dollars() (lib/payments.js): two decimals, every time. The
+// page had its own formatter with no minimum, and printed "$742.5 balance"
+// (Lawrence's screenshot, 26 Oct 2026).
+
+// "Pip", "Pip and Rook", "Pip, Rook and Wren".
+function nameList(names) {
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+// Is the deposit being asked for right now? The rule the title-bar pill and
+// the deposit banner have always used -- not waived, a deposit set, nothing
+// paid or clearing, something still owed -- plus "no full scholarship
+// requested" (26 Oct 2026), because the banner itself tells a family asking
+// for a full scholarship that no deposit is needed.
+function depositDueNow({ registration, balance, clearingCents, depositCents, fullScholarship }) {
+  const nothingPaid = balance && (balance.paid_cents ?? 0) === 0 && (clearingCents ?? 0) === 0;
+  return (
+    !registration.deposit_waived_at &&
+    depositCents > 0 &&
+    Boolean(nothingPaid) &&
+    (balance?.balance_cents ?? 0) > 0 &&
+    !fullScholarship
+  );
+}
 
 const ROLE_LABEL = {
   camper: 'Camper',
@@ -207,7 +237,7 @@ export default async function DashboardPage({ searchParams }) {
            events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url, returned_payment_fee_cents,
                     event_medical_contacts ( name, phone ) ),
            registration_participants ( id, camp_role, status, checked_in_at,
-             participant_money ( fee_cents ),
+             participant_money ( fee_cents, discount_cents, early_discount_cents, family_discount_cents ),
              people ( id, first_name, last_name ) )`
         )
         .in('household_id', householdIds)
@@ -487,6 +517,18 @@ export default async function DashboardPage({ searchParams }) {
   const myParticipantIds = regs.flatMap((r) =>
     (r.registration_participants ?? []).map((p) => p.id)
   );
+
+  // Scholarship requests on these registrations, for one question only: has
+  // the family asked for a FULL scholarship (then no deposit is asked --
+  // fullScholarshipRequested in lib/payments.js). Scoped to this household's
+  // own participants explicitly.
+  const { data: scholarshipRows, error: scholarshipError } = myParticipantIds.length
+    ? await supabase
+        .from('scholarships')
+        .select('registration_participant_id, requested_cents, granted_cents, status')
+        .in('registration_participant_id', myParticipantIds)
+    : { data: [], error: null };
+  if (scholarshipError) throw new Error(`Dashboard scholarships: ${scholarshipError.message}`);
   const buddyNameByParticipant = new Map();
   if (myParticipantIds.length) {
     const { data: buddyRows } = await supabase
@@ -645,6 +687,79 @@ export default async function DashboardPage({ searchParams }) {
     refunded: ['Refunded', 'bg-neutral-200 text-neutral-600'],
   };
   const payDate = (p) => dayInMorristown(p.received_on ?? p.created_at);
+
+  // WHAT EACH REGISTRATION STILL NEEDS FROM THE FAMILY (Lawrence, 26 Oct
+  // 2026: rows with something outstanding open with an amber "Needs:" chip,
+  // and the card's title counts them). Built only from facts this page has
+  // already read, scoped to the household, each from the place that already
+  // answers it -- nothing here is a new rule:
+  //   deposit                 depositDueNow() -- the deposit pill and banner
+  //   choose how to pay       unfinished() (off while requiresPaymentChoice is)
+  //   payment plan            planHasProblem() -- the plan card's red panel
+  //   balance past due        owes, and balanceDueOn() is behind us
+  //   staff asked a question  registrations.awaiting_family_since (0089)
+  //   support details         the Support details card's own status: anything
+  //                           but "Details on file" for someone on it
+  //   waivers                 the activity_waivers_outstanding view (0120)
+  // The page does not read signatures, so an unsigned agreement is not here.
+  // Support details and waivers are about going, so a past event's
+  // registration does not ask for them.
+  const scholarshipsByPart = scholarshipRows ?? [];
+  const needsByReg = new Map();
+  for (const r of regs) {
+    const bal = balByReg.get(r.id);
+    const live = (r.registration_participants ?? []).filter((p) => p.status !== 'cancelled');
+    const depositDue = depositDueNow({
+      registration: r,
+      balance: bal,
+      clearingCents: pendingByReg.get(r.id) ?? 0,
+      depositCents: registrationDepositCents({
+        perPersonCents: r.events?.deposit_cents,
+        participants: r.registration_participants,
+        balanceCents: bal?.balance_cents,
+      }),
+      fullScholarship: fullScholarshipRequested(live, scholarshipsByPart),
+    });
+    const needs = [];
+    if (unfinished(r)) needs.push('choose how to pay');
+    if (depositDue) needs.push('deposit');
+    const plan = planByReg.get(r.id);
+    if (plan && plan.status !== 'pending' && planHasProblem(plan)) {
+      needs.push(plan.status === 'failed' ? 'payment plan stopped' : 'plan payment failed');
+    }
+    const dueOn = balanceDueOn(r.events);
+    if ((bal?.balance_cents ?? 0) > 0 && dueOn && dueOn < todayISO) needs.push('balance past due');
+    if (r.awaiting_family_since) needs.push('staff asked a question');
+    if (!isPast(r)) {
+      const seen = new Set();
+      const supportNames = [];
+      for (const p of live) {
+        const id = p.people?.id;
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        if ((supportStatus.get(id) ?? 'empty') !== 'complete') {
+          supportNames.push(p.people?.first_name || 'someone');
+        }
+      }
+      if (supportNames.length) needs.push(`support details for ${nameList(supportNames)}`);
+      for (const o of (owedRows ?? []).filter((x) => x.registration_id === r.id)) {
+        const who = firstNameByPerson.get(o.person_id) || 'someone';
+        needs.push(
+          o.kind === 'ours'
+            ? `${o.activity_name} waiver for ${who}`
+            : `${o.activity_name} confirmation for ${who}`
+        );
+      }
+    }
+    needsByReg.set(r.id, { needs, depositDue });
+  }
+  const needCount = [...needsByReg.values()].filter((x) => x.needs.length > 0).length;
+  // The card's remembered "closed" holds only while the same registrations
+  // need something; a new one opens it again (visitChoice.js).
+  const registrationsStateKey = `l14.dashboard.registrations:${regs
+    .filter((r) => needsByReg.get(r.id)?.needs.length)
+    .map((r) => r.id)
+    .join(',')}`;
 
   // Order, settled 25 Aug after a first attempt got it backwards.
   //
@@ -887,8 +1002,12 @@ export default async function DashboardPage({ searchParams }) {
         <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
           <div className="contents lg:flex lg:flex-col lg:gap-6 lg:col-span-2">
           {/* Registrations -- real */}
-          <div className={`rounded-lg bg-white border border-neutral-200 shadow-xs p-6 ${donorFirst ? 'order-3' : 'order-1'}`}>
-            <h2 className="text-xl font-bold mb-4">My Registrations</h2>
+          <RegistrationsPanel
+            className={donorFirst ? 'order-3' : 'order-1'}
+            needCount={needCount}
+            hasRegistrations={regs.length > 0}
+            stateKey={registrationsStateKey}
+          >
 
             {regs.length === 0 ? (
               <div className="rounded-sm border border-dashed border-neutral-300 p-6 text-center text-neutral-600">
@@ -923,10 +1042,8 @@ export default async function DashboardPage({ searchParams }) {
                     participants: r.registration_participants,
                     balanceCents: bal?.balance_cents,
                   });
-                  const nothingPaid =
-                    bal && (bal.paid_cents ?? 0) === 0 && clearing === 0;
-                  const depositDue =
-                    !r.deposit_waived_at && depositCents > 0 && nothingPaid && (bal?.balance_cents ?? 0) > 0;
+                  // One rule for the pill, the banner and the Needs chip.
+                  const { needs, depositDue } = needsByReg.get(r.id);
                   const owes = (bal?.balance_cents ?? 0) > 0;
                   // The event's own date (0096); null for events without one,
                   // whose pill stays as it was.
@@ -948,12 +1065,12 @@ export default async function DashboardPage({ searchParams }) {
                     ? [
                         {
                           text: dueOn
-                            ? `${money(bal.balance_cents)} balance · due ${formatDueDateShort(dueOn)}`
-                            : `${money(bal.balance_cents)} balance`,
+                            ? `${dollars(bal.balance_cents)} balance · due ${formatDueDateShort(dueOn)}`
+                            : `${dollars(bal.balance_cents)} balance`,
                           tone: 'amber',
                         },
                         ...(depositDue
-                          ? [{ text: `${money(depositCents)} deposit due now`, tone: 'ask' }]
+                          ? [{ text: `${dollars(depositCents)} deposit due now`, tone: 'ask' }]
                           : []),
                       ]
                     : clearing > 0
@@ -962,9 +1079,11 @@ export default async function DashboardPage({ searchParams }) {
                         ? [{ text: 'Paid in full', tone: 'green' }]
                         : null;
 
-                  // Open by default when something is outstanding, or when
-                  // there is only one registration (nothing to tidy away).
-                  const defaultOpen = notFinished || depositDue || owes || regs.length === 1;
+                  // Open by default when something is outstanding; closed
+                  // otherwise, with "All set" -- or nothing at all for a past
+                  // event that owes nothing (Lawrence, 26 Oct 2026).
+                  const defaultOpen = needs.length > 0;
+                  const allSet = needs.length === 0 && !(isPast(r) && !owes);
 
                   return (
                     <RegistrationCard
@@ -976,8 +1095,11 @@ export default async function DashboardPage({ searchParams }) {
                         const n = registrationHeads(parts);
                         return `${n} ${n === 1 ? 'person' : 'people'}`;
                       })()}
-                      totalLabel={total == null ? '—' : money(total)}
+                      totalLabel={total == null ? '—' : dollars(total)}
                       status={status}
+                      needs={needs}
+                      allSet={allSet}
+                      stateKey={`l14.dashboard.registration:${r.id}:${needs.join('|')}`}
                       defaultOpen={defaultOpen}
                     >
                       {/* The camp's medical contact, for the people going
@@ -1181,11 +1303,11 @@ export default async function DashboardPage({ searchParams }) {
                                 >
                                   <span className="text-neutral-700">
                                     {payDate(p)} · {PAY_METHOD_LABEL[p.method] ?? p.method} ·{' '}
-                                    <span className="font-semibold">{money(p.amount_cents)}</span>
+                                    <span className="font-semibold">{dollars(p.amount_cents)}</span>
                                     {(p.fee_cover_cents ?? 0) > 0 && (
                                       <span className="text-neutral-500">
                                         {' '}
-                                        + {money(p.fee_cover_cents)} fee cover
+                                        + {dollars(p.fee_cover_cents)} fee cover
                                       </span>
                                     )}
                                   </span>
@@ -1207,10 +1329,10 @@ export default async function DashboardPage({ searchParams }) {
                                 <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-1">
                                   <span className="text-neutral-700">
                                     {dayInMorristown(rf.refunded_on ?? rf.created_at)} · Refunded{' '}
-                                    <span className="font-semibold">{money(rf.amount_cents)}</span>
+                                    <span className="font-semibold">{dollars(rf.amount_cents)}</span>
                                     {(rf.fee_cover_cents ?? 0) > 0 && (
                                       <span className="text-neutral-500">
-                                        {' '}+ {money(rf.fee_cover_cents)} processing
+                                        {' '}+ {dollars(rf.fee_cover_cents)} processing
                                       </span>
                                     )}
                                     {rf.reason && (
@@ -1256,24 +1378,24 @@ export default async function DashboardPage({ searchParams }) {
                           <div className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm max-w-xs">
                             <div className="flex justify-between py-0.5">
                               <span className="text-neutral-500">Fees</span>
-                              <span>{money(b.fee_cents)}</span>
+                              <span>{dollars(b.fee_cents)}</span>
                             </div>
                             {(b.scholarship_cents ?? 0) > 0 && (
                               <div className="flex justify-between py-0.5 text-green-700">
                                 <span>Scholarship</span>
-                                <span>−{money(b.scholarship_cents)}</span>
+                                <span>−{dollars(b.scholarship_cents)}</span>
                               </div>
                             )}
                             {(b.discount_cents ?? 0) > 0 && (
                               <div className="flex justify-between py-0.5 text-green-700">
                                 <span>Discount</span>
-                                <span>−{money(b.discount_cents)}</span>
+                                <span>−{dollars(b.discount_cents)}</span>
                               </div>
                             )}
                             {(b.coupon_cents ?? 0) > 0 && (
                               <div className="flex justify-between py-0.5 text-green-700">
                                 <span>Coupon</span>
-                                <span>−{money(b.coupon_cents)}</span>
+                                <span>−{dollars(b.coupon_cents)}</span>
                               </div>
                             )}
                             {/* 0123: each fee on its own line, with its date; a
@@ -1287,13 +1409,13 @@ export default async function DashboardPage({ searchParams }) {
                                   {feeLabel(f)} ({dayInMorristown(f.created_at)})
                                   {f.waived_at && <span className="ml-1 text-xs">waived</span>}
                                 </span>
-                                <span className={f.waived_at ? 'line-through' : ''}>{money(f.amount_cents)}</span>
+                                <span className={f.waived_at ? 'line-through' : ''}>{dollars(f.amount_cents)}</span>
                               </div>
                             ))}
                             <div className="flex justify-between py-0.5">
                               <span className="text-neutral-500">Paid</span>
                               {/* Nothing paid reads "$0", never "−$0". */}
-                              <span>{(b.paid_cents ?? 0) > 0 ? `−${money(b.paid_cents)}` : money(0)}</span>
+                              <span>{(b.paid_cents ?? 0) > 0 ? `−${dollars(b.paid_cents)}` : dollars(0)}</span>
                             </div>
                             {/* Beside the balance, never inside it (0053). A
                                 refund that has not landed is not money the
@@ -1302,13 +1424,13 @@ export default async function DashboardPage({ searchParams }) {
                             {(b.refund_pending_cents ?? 0) > 0 && (
                               <div className="flex justify-between py-0.5 text-amber-800">
                                 <span>Refund on its way</span>
-                                <span>{money(b.refund_pending_cents)}</span>
+                                <span>{dollars(b.refund_pending_cents)}</span>
                               </div>
                             )}
                             <div className="flex justify-between py-0.5 border-t border-neutral-200 font-semibold">
                               <span>{bal < 0 ? 'Credit' : 'Balance'}</span>
                               <span className={bal < 0 ? 'text-green-700' : bal > 0 ? 'text-amber-700' : ''}>
-                                {bal < 0 ? `−${money(-bal)}` : money(bal)}
+                                {bal < 0 ? `−${dollars(-bal)}` : dollars(bal)}
                               </span>
                             </div>
                           </div>
@@ -1356,20 +1478,19 @@ export default async function DashboardPage({ searchParams }) {
                         // Distinct people, not participant rows -- a parent who is
                         // also volunteering is one head (§14.3, 29 Sep).
                         const heads = registrationHeads(r.registration_participants);
-                        const nothingPaid =
-                          b && (b.paid_cents ?? 0) === 0 && (pendingByReg.get(r.id) ?? 0) === 0;
-                        if (!(dep > 0 && nothingPaid && (b?.balance_cents ?? 0) > 0)) return null;
-                        // Waived by staff (0096): nothing is asked.
-                        if (r.deposit_waived_at) return null;
+                        // Waived by staff (0096), something paid or clearing,
+                        // or a full scholarship asked for: nothing is asked
+                        // (depositDueNow, the pill's rule too).
+                        if (!needsByReg.get(r.id).depositDue) return null;
                         // Camp weeks ask for the deposit through "choose how
                         // to pay" (and a plan takes it as its first payment).
                         if (unfinished(r) || planByReg.get(r.id)) return null;
                         return (
                           <div className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                             <p className="font-semibold">
-                              A {money(dep)} deposit is needed before staff can approve this registration
+                              A {dollars(dep)} deposit is needed before staff can approve this registration
                               {heads > 1
-                                ? ` — ${money(r.events?.deposit_cents ?? 0)} for each of the ${heads} people on this registration.`
+                                ? ` — ${dollars(r.events?.deposit_cents ?? 0)} for each of the ${heads} people on this registration.`
                                 : '.'}
                             </p>
                             <p className="mt-1">
@@ -1508,7 +1629,7 @@ export default async function DashboardPage({ searchParams }) {
                 </Link>
               </div>
             )}
-          </div>
+          </RegistrationsPanel>
 
           {/* Giving -- real history, giving-first for donors */}
           <div className={`rounded-lg bg-white border border-neutral-200 shadow-xs p-6 ${donorFirst ? 'order-1' : 'order-3'}`}>
@@ -1516,7 +1637,7 @@ export default async function DashboardPage({ searchParams }) {
               <h2 className="text-xl font-bold">My Giving</h2>
               {givenTotal > 0 && (
                 <span className="text-sm text-neutral-600">
-                  Total given: <strong>{money(givenTotal)}</strong>
+                  Total given: <strong>{dollars(givenTotal)}</strong>
                 </span>
               )}
             </div>
@@ -1534,7 +1655,7 @@ export default async function DashboardPage({ searchParams }) {
                     <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="text-neutral-700">
                         {dayInMorristown(g.received_on ?? g.created_at)} ·{' '}
-                        <span className="font-semibold">{money(g.amount_cents)}</span>
+                        <span className="font-semibold">{dollars(g.amount_cents)}</span>
                         <span className="text-neutral-500"> — {g.fund}</span>
                       </span>
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>

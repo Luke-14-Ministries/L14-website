@@ -7,7 +7,7 @@
 import { useState, useTransition } from 'react';
 import { dollars } from '@/lib/payments';
 import { formatDueDateShort } from '@/lib/events';
-import { SCHEDULE_LABEL, PLAN_STATUS_LABEL } from '@/lib/plans';
+import { SCHEDULE_LABEL, PLAN_STATUS_LABEL, planHasProblem } from '@/lib/plans';
 import { updatePlanPaymentMethod } from '@/app/account/finish/[registrationId]/actions';
 
 export default function PlanPanel({ registrationId, plan, installments, balanceCents }) {
@@ -18,7 +18,8 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
 
   const upcoming = (installments ?? []).filter((i) => ['scheduled', 'failed', 'processing'].includes(i.status));
   const next = upcoming[0];
-  const failed = plan.status === 'failed' || upcoming.some((i) => i.status === 'failed');
+  // The same answer as the dashboard's "Needs:" chip (lib/plans.js).
+  const failed = planHasProblem({ ...plan, payment_installments: installments });
   // The real amount is worked out on the day from the balance, so the
   // estimate shown is the balance shared across what is left.
   const left = upcoming.filter((i) => i.status !== 'processing').length;

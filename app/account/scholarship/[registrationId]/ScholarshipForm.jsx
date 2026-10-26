@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { requestScholarship, withdrawScholarship } from './actions';
+import { dollars } from '@/lib/payments';
 
 const ROLE_LABEL = {
   camper: 'Camper',
@@ -19,7 +20,8 @@ const ROLE_LABEL = {
   support_team: 'Support team',
 };
 
-const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US')}`;
+// Two decimals, always (dollars(), lib/payments.js): this printed "$742.5".
+const money = dollars;
 
 const STATUS = {
   requested: ['Requested — staff will review', 'bg-amber-100 text-amber-800'],

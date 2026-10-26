@@ -15,15 +15,17 @@
 //      people · $960" hides the one thing that mattered.
 //
 //   2. Anything needing attention opens itself. `defaultOpen` is decided by
-//      the server from real payment state, not by position in the list. A
-//      single registration also opens, because there is nothing to tidy when
-//      there is only one of them.
+//      the server from what is outstanding (the "Needs:" list the page works
+//      out), not by position in the list. Since 26 Oct 2026 (Lawrence) a
+//      registration with nothing outstanding starts closed with a green "All
+//      set" -- a balance not yet due is a fact on the bar, not an errand.
 //
-// State is deliberately NOT persisted. A remembered collapse would fight rule
-// 2 — a family who collapsed a card in June would not see July's deposit ask —
-// and predictable beats clever on a page about money.
+// The person's own Show/Hide is kept for this visit only (visitChoice.js):
+// never across visits, because a remembered collapse would fight rule 2 -- a
+// family who collapsed a card in June would not see July's deposit ask. The
+// key carries what is outstanding, so a new need opens the card again.
 
-import { useState } from 'react';
+import { useVisitChoice } from './visitChoice';
 
 export default function RegistrationCard({
   eventName,
@@ -37,10 +39,17 @@ export default function RegistrationCard({
   // cards: "$1,400 balance" beside "$50 deposit due" invites the reader to
   // compare two numbers that are not comparable (flagged 26 Aug).
   status,          // [{ text, tone }] | { text, tone } | null
+  // What the family still has to do, in short phrases ("deposit", "support
+  // details for Pip"). Shown as one amber "Needs:" chip.
+  needs = [],
+  // A small green "All set" when nothing is outstanding. The page leaves it
+  // off for a past event that owes nothing: there is nothing to reassure.
+  allSet = false,
+  stateKey,
   defaultOpen = false,
   children,
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useVisitChoice(stateKey, defaultOpen);
 
   const pills = (Array.isArray(status) ? status : status ? [status] : []).filter(Boolean);
 
@@ -61,11 +70,11 @@ export default function RegistrationCard({
           and announce its own state, since it governs everything below it. */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(!open)}
         aria-expanded={open}
         className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-neutral-50 rounded-sm"
       >
-        <span className="flex min-w-0 items-center gap-2">
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
           <span
             aria-hidden
             className={`shrink-0 text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
@@ -89,6 +98,16 @@ export default function RegistrationCard({
               {p.text}
             </span>
           ))}
+          {needs.length > 0 && (
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-300">
+              Needs: {needs.join(', ')}
+            </span>
+          )}
+          {needs.length === 0 && allSet && (
+            <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+              All set
+            </span>
+          )}
         </span>
         <span className="flex items-center gap-3 text-sm text-neutral-600">
           <span>

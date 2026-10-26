@@ -11,7 +11,7 @@
 import { headers } from 'next/headers';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
-import { coverFeeCents, registrationDepositCents } from '@/lib/payments';
+import { coverFeeCents, registrationDepositCents, dollars } from '@/lib/payments';
 
 export async function createCheckout({ registrationId, kind, method, coverFee, customCents }) {
   const user = await getCurrentUser();
@@ -78,7 +78,7 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
     if (amt > balance) {
       return {
         ok: false,
-        error: `That is more than the remaining balance. The most you can pay is $${(balance / 100).toFixed(2)}.`,
+        error: `That is more than the remaining balance. The most you can pay is ${dollars(balance)}.`,
       };
     }
     base = amt;
