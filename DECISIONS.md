@@ -3209,3 +3209,10 @@ edge function touches events), and the public pages already refuse an archived e
 `registrationOpen()`, so the mixed row does no harm in the meantime. If a second writer ever
 appears, add `check (not (published and archived_at is not null))` after setting `published = false`
 where `archived_at is not null`.
+
+## 26 Oct 2026 — Administrator tick sets every area to write; never the reverse
+
+Ticking *Administrator — grants access* on Staff & Access now also sets every area, Giving
+included, to write (after a confirm), because an administrator can grant themselves anything
+anyway and the ticks should say so. Every area at write does **not** make someone an
+administrator, and removing the tick leaves the grants as they are. (Lawrence.)
