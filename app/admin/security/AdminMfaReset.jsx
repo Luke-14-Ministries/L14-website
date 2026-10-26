@@ -42,7 +42,7 @@ export default function AdminMfaReset() {
   return (
     <div>
       <h2 className="text-xl font-bold mb-1">Reset a user&rsquo;s two-factor</h2>
-      <p className="text-sm text-neutral-500 mb-5 max-w-prose">
+      <p className="text-sm text-neutral-500 mb-5 max-w-4xl">
         For someone locked out because they lost their phone or reinstalled their
         authenticator app. This removes their two-factor so they can log in with
         their password and set it up again. It does not change their password.

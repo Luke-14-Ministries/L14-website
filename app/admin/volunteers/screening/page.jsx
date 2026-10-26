@@ -169,7 +169,7 @@ export default async function ScreeningPage() {
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <BackLink href="/admin/volunteers" label="Back to Volunteers" />
       <h1 className="text-2xl font-bold mb-1">Background Screening</h1>
-      <p className="text-sm text-neutral-500 mb-6 max-w-prose">
+      <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Checkr&rsquo;s bulk upload takes a list of email addresses and invites each
         person to fill in their own details. We never see or hold a Social Security
         number, and there is no API key involved — the file is the whole integration.

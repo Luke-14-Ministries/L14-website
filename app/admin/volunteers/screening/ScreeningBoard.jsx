@@ -126,7 +126,7 @@ export default function ScreeningBoard({ candidates }) {
     <div className="space-y-8">
       <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h2 className="text-xl font-bold">1 · Who is due</h2>
-        <p className="mt-1 mb-4 max-w-prose text-sm text-neutral-500">
+        <p className="mt-1 mb-4 max-w-4xl text-sm text-neutral-500">
           Adult volunteers with no background check on file, or whose background check has expired.
           Nothing here has been ordered yet and nothing is charged until you
           upload the file to Checkr.
@@ -315,7 +315,7 @@ export default function ScreeningBoard({ candidates }) {
 
       <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h2 className="text-xl font-bold">3 · Bring the results back</h2>
-        <p className="mt-1 mb-3 max-w-prose text-sm text-neutral-500">
+        <p className="mt-1 mb-3 max-w-4xl text-sm text-neutral-500">
           Export the reports from Checkr and choose the file here (or paste its contents).
           Batches sent from this screen match on the address we invited, so somebody who
           changes their email in between still matches. Background checks ordered by hand at

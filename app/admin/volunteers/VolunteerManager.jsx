@@ -488,7 +488,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
           </Link>
         )}
       </div>
-      <p className="text-sm text-neutral-500 mb-6 max-w-prose">
+      <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Everyone registered with the Volunteer role, with their application and background-check
         status. The check paperwork itself lives in the restricted SharePoint folder. The record
         here — ordering, Checkr&rsquo;s import, the check date and the verdict — is an

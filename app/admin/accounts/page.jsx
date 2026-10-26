@@ -51,7 +51,7 @@ export default async function AccountsPage() {
           to read back. At five lines it looked like a wrapping fault rather
           than a choice (26 Aug), so the answer was less text, not a wider
           column -- it was explaining three things where two do. */}
-      <p className="text-sm text-neutral-500 mb-6 max-w-prose">
+      <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Every login on the platform. Removing a login never deletes a
         family&rsquo;s registrations or payments &mdash; that takes the separate
         &ldquo;delete family &amp; data&rdquo; action, which spells out what it
