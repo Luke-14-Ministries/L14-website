@@ -369,7 +369,14 @@ export default function LoginForm() {
   // --- the two-factor code step ---------------------------------------------
   if (mfa) {
     return (
+      // A DIFFERENT form element from the password step, not the same one with
+      // new contents (26 Oct 2026). Without its own key React reused the login
+      // <form> node, so Bitwarden -- which had already filed that form as a
+      // username/password form -- offered logins in the code box instead of
+      // the code it holds for this site. A fresh element is classified afresh.
       <form
+        key="login-code-step"
+        id="login-code-form"
         className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8"
         onSubmit={handleVerify}
       >
@@ -437,6 +444,7 @@ export default function LoginForm() {
         <input
           id="login-totp-code"
           name="totp"
+          type="text"
           maxLength={6}
           pattern="[0-9]{6}"
           inputMode="numeric"
@@ -473,6 +481,8 @@ export default function LoginForm() {
   // --- the password step ----------------------------------------------------
   return (
     <form
+      key="login-password-step"
+      id="login-password-form"
       className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8"
       onSubmit={handleSubmit}
     >
