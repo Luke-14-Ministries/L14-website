@@ -91,7 +91,7 @@ async function familyAudience(supabase, { eventId, activityId, outstandingOnly }
   if (outstandingOnly) {
     let q = supabase
       .from('activity_waivers_outstanding')
-      .select('registration_participant_id, activity_name, kind, agreement_title')
+      .select('registration_participant_id, activity_name, kind, agreement_title, upload_status, review_note')
       .eq('event_id', eventId);
     if (activity) q = q.eq('activity_id', activity.id);
     const { data, error } = await q;
@@ -124,6 +124,8 @@ async function familyAudience(supabase, { eventId, activityId, outstandingOnly }
               personName: p.people?.first_name ?? '',
               kind: o.kind,
               agreementTitle: o.agreement_title ?? null,
+              uploadStatus: o.upload_status ?? null,
+              reviewNote: o.review_note ?? null,
             }))
           )
           .sort((a, b) => `${a.activityName} ${a.personName}`.localeCompare(`${b.activityName} ${b.personName}`))

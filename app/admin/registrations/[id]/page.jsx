@@ -401,7 +401,7 @@ export default async function RegistrationDetailPage({ params }) {
   // confirmed place stays confirmed while the paperwork is chased.
   const { data: owedRows, error: owedError } = await supabase
     .from('activity_waivers_outstanding')
-    .select('person_id, activity_name, kind, agreement_title')
+    .select('person_id, activity_name, kind, agreement_title, upload_status, review_note')
     .eq('registration_id', id);
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
   const personName = new Map(
@@ -416,7 +416,9 @@ export default async function RegistrationDetailPage({ params }) {
       text:
         o.kind === 'ours'
           ? `${o.activity_name}: ${personName.get(o.person_id) || 'someone'} has not signed the ${o.agreement_title || 'waiver'}.`
-          : `${o.activity_name}: no outfitter's confirmation uploaded for ${personName.get(o.person_id) || 'someone'}.`,
+          : o.upload_status === 'rejected'
+            ? `${o.activity_name}: the outfitter's confirmation for ${personName.get(o.person_id) || 'someone'} was rejected (${o.review_note || 'no reason given'}) — the family needs to upload it again.`
+            : `${o.activity_name}: no outfitter's confirmation uploaded for ${personName.get(o.person_id) || 'someone'}.`,
     }))
     .sort((a, b) => a.text.localeCompare(b.text));
 

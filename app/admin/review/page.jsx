@@ -89,7 +89,7 @@ export default async function ReviewQueuePage({ searchParams }) {
         : Promise.resolve({ data: [] }),
       supabase
         .from('activity_waivers_outstanding')
-        .select('registration_id, person_id, activity_name, kind'),
+        .select('registration_id, person_id, activity_name, kind, upload_status'),
       seesMoney
         ? supabase
             .from('payment_plans')
@@ -410,7 +410,11 @@ export default async function ReviewQueuePage({ searchParams }) {
                                 className="text-xs font-semibold text-amber-800"
                               >
                                 ⚑ {o.activity_name}: {nameOf.get(`${r.id}:${o.person_id}`) || 'someone'}{' '}
-                                {o.kind === 'ours' ? 'needs the waiver signed' : "needs the outfitter's confirmation"}
+                                {o.kind === 'ours'
+                                  ? 'needs the waiver signed'
+                                  : o.upload_status === 'rejected'
+                                    ? "outfitter's confirmation rejected — needs a new upload"
+                                    : "needs the outfitter's confirmation"}
                               </li>
                             ))}
                             {r.awaitingSince && (
