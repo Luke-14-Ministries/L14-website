@@ -11,6 +11,7 @@ import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from
 import { requiresPaymentChoice, offersPaymentPlan, feeLabel } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
 import FeedbackBox from './FeedbackBox';
+import { getProgramLeadership } from '@/lib/programs';
 import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport, supportProblems } from '@/lib/support';
 
@@ -115,6 +116,10 @@ export default async function DashboardPage({ searchParams }) {
   // registrar) always knows which "hat" they are wearing. Their family view
   // (here) still shows only their own household; the staff view shows everyone.
   const staff = await getStaff();
+  // A program leader is not staff (0061) and had no door to their roster from
+  // here -- they had to type /admin (Lawrence, 26 Oct 2026). Only leaders who
+  // are not also staff: staff already have the Staff Area button.
+  const leaderships = staff ? [] : await getProgramLeadership();
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -781,6 +786,15 @@ export default async function DashboardPage({ searchParams }) {
                   </Link>
                 );
               })()}
+            {!staff && leaderships.length > 0 && (
+              <Link
+                href="/admin/my-program/"
+                title={`You lead: ${leaderships.map((l) => `${l.programName} — ${l.eventName}`).join('; ')}`}
+                className="rounded-sm bg-brand-dark px-5 py-2 font-semibold text-white hover:bg-brand"
+              >
+                My Program
+              </Link>
+            )}
             {/* A form, not a link. See app/auth/signout/route.js for why. */}
             <form action="/auth/signout/" method="post">
               <button type="submit" className="btn-outline py-2!">
