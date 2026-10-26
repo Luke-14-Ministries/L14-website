@@ -342,6 +342,10 @@ export default async function AdminActivitiesPage({ searchParams }) {
                 {a.description && (
                   <p className="mt-1 text-sm text-neutral-600">{a.description}</p>
                 )}
+                {/* 0125: the groups board (rafts, boats) for this activity. */}
+                <a href={`/admin/activities/groups/?activity=${a.id}`} className="mt-1 inline-block text-sm font-semibold text-brand underline">
+                  {/\braft/i.test(a.name) ? 'Rafts →' : 'Groups →'}
+                </a>
 
                 {(a.provider_name || a.provider_url) && (
                   <p className="mt-1 text-sm text-amber-800">
