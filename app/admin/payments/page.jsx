@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { balanceDueOn, formatDueDateShort, todayInMorristown, dayInMorristown, inPaymentsScope } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import RecordPaymentForm from './RecordPaymentForm';
+import FoldCard from '@/components/FoldCard';
 import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 
 export const metadata = { title: 'Event Payments — Staff Admin' };
@@ -74,6 +75,10 @@ export default async function AdminPaymentsPage({ searchParams }) {
   if (peopleError) throw new Error(`Participants: ${peopleError.message}`);
   const countByReg = new Map();
   for (const x of people ?? []) countByReg.set(x.registration_id, (countByReg.get(x.registration_id) ?? 0) + 1);
+  // The 15 payments Recent activity lists, counted by status for its title.
+  const recentCounts = [
+    ...(pays ?? []).slice(0, 15).reduce((m, p) => m.set(p.status, (m.get(p.status) ?? 0) + 1), new Map()),
+  ];
   const reviewByReg = new Map((reviews ?? []).map((x) => [x.registration_id, x]));
   if (routesError) throw new Error(`Payment routes: ${routesError.message}`);
   const routeByReg = new Map((routes ?? []).map((x) => [x.registration_id, x]));
@@ -353,11 +358,24 @@ export default async function AdminPaymentsPage({ searchParams }) {
       {/* Above the table (Lawrence, 26 Oct 2026): recording a check is the
           everyday job here, and the table is long. */}
       <h3 className="font-semibold text-neutral-700 mb-2">Record a payment &amp; recent activity</h3>
-      <div className="grid gap-6 lg:grid-cols-2 mb-8">
-        <RecordPaymentForm registrations={regOptions} />
+      <div className="grid items-start gap-6 lg:grid-cols-2 mb-8">
+        <FoldCard title="Record a check or cash payment">
+          <RecordPaymentForm registrations={regOptions} />
+        </FoldCard>
 
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
-          <h4 className="font-bold mb-3">Recent activity</h4>
+        {/* The status counts sit in the title, so they read with the card
+            closed (Lawrence, 26 Oct 2026). */}
+        <FoldCard
+          title="Recent activity"
+          badges={recentCounts.map(([status, n]) => (
+            <span
+              key={status}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLS[status] ?? 'bg-neutral-100 text-neutral-600'}`}
+            >
+              {n} {status}
+            </span>
+          ))}
+        >
           {(pays ?? []).length === 0 ? (
             <p className="text-neutral-500 text-sm">No payments yet.</p>
           ) : (
@@ -385,7 +403,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
               })}
             </ul>
           )}
-        </div>
+        </FoldCard>
       </div>
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
         <h3 className="font-semibold text-neutral-700">Balances by family</h3>

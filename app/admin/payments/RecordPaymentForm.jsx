@@ -56,8 +56,8 @@ export default function RecordPaymentForm({ registrations }) {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
-      <h3 className="font-bold mb-1">Record a check or cash payment</h3>
+    // The card and its title are the page's FoldCard (page.jsx).
+    <form onSubmit={submit}>
       <p className="text-sm text-neutral-500 mb-4">
         For money that arrived by mail or in person. Online card and bank payments record
         themselves.
