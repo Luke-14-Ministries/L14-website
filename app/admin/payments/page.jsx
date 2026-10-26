@@ -46,6 +46,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     { data: pays, error: paysError },
     { data: routes, error: routesError },
     { data: reviews, error: reviewError },
+    { data: people, error: peopleError },
   ] = await Promise.all([
     supabase
       .from('registration_balances')
@@ -61,12 +62,18 @@ export default async function AdminPaymentsPage({ searchParams }) {
     supabase.from('registration_payment_routes').select('registration_id, route, plan_status, plan_schedule'),
     // The three review classes and the flags (0081, Lawrence 30 Sep 2026).
     supabase.from('registration_review').select('registration_id, review_class, flags'),
+    // How many are registered on each family's registration, for the
+    // "3 registered" line under the name (Lawrence, 26 Oct 2026).
+    supabase.from('registration_participants').select('registration_id').neq('status', 'cancelled'),
   ]);
   // Never an empty table in place of an error (CLAUDE.md).
   if (balancesError) throw new Error(`Balances: ${balancesError.message}`);
   if (regsError) throw new Error(`Registrations: ${regsError.message}`);
   if (paysError) throw new Error(`Payments: ${paysError.message}`);
   if (reviewError) throw new Error(`Review classes: ${reviewError.message}`);
+  if (peopleError) throw new Error(`Participants: ${peopleError.message}`);
+  const countByReg = new Map();
+  for (const x of people ?? []) countByReg.set(x.registration_id, (countByReg.get(x.registration_id) ?? 0) + 1);
   const reviewByReg = new Map((reviews ?? []).map((x) => [x.registration_id, x]));
   if (routesError) throw new Error(`Payment routes: ${routesError.message}`);
   const routeByReg = new Map((routes ?? []).map((x) => [x.registration_id, x]));
@@ -343,6 +350,43 @@ export default async function AdminPaymentsPage({ searchParams }) {
         </div>
       </div>
 
+      {/* Above the table (Lawrence, 26 Oct 2026): recording a check is the
+          everyday job here, and the table is long. */}
+      <h3 className="font-semibold text-neutral-700 mb-2">Record a payment &amp; recent activity</h3>
+      <div className="grid gap-6 lg:grid-cols-2 mb-8">
+        <RecordPaymentForm registrations={regOptions} />
+
+        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
+          <h4 className="font-bold mb-3">Recent activity</h4>
+          {(pays ?? []).length === 0 ? (
+            <p className="text-neutral-500 text-sm">No payments yet.</p>
+          ) : (
+            <ul className="divide-y divide-neutral-100 text-sm">
+              {(pays ?? []).slice(0, 15).map((p, i) => {
+                const r = regById.get(p.registration_id);
+                return (
+                  <li key={i} className="py-2 flex flex-wrap items-center justify-between gap-2">
+                    <span className="min-w-0">
+                      <span className="font-medium">{r?.households?.display_name ?? 'Household'}</span>{' '}
+                      <span className="text-neutral-500">
+                        · {dayInMorristown(p.received_on ?? p.created_at)} · {METHOD_LABEL[p.method] ?? p.method}
+                      </span>
+                      <br />
+                      <span className="font-semibold">{money(p.amount_cents)}</span>
+                      {(p.fee_cover_cents ?? 0) > 0 && (
+                        <span className="text-neutral-500"> + {money(p.fee_cover_cents)} fee cover</span>
+                      )}
+                    </span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLS[p.status] ?? ''}`}>
+                      {p.status}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
         <h3 className="font-semibold text-neutral-700">Balances by family</h3>
         {/* Scholarship decisions are money decisions (Lawrence, 14 Oct 2026),
@@ -428,6 +472,11 @@ export default async function AdminPaymentsPage({ searchParams }) {
                     <Link href={`/admin/registrations/${b.registration_id}`} className="text-brand underline font-medium">
                       {r?.households?.display_name ?? 'Household'}
                     </Link>
+                    {countByReg.get(b.registration_id) > 0 && (
+                      <span className="block text-xs text-neutral-500">
+                        {countByReg.get(b.registration_id)} registered
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2">{r?.events?.name ?? ''}</td>
                   <td className="px-4 py-2 text-right">
@@ -565,41 +614,6 @@ export default async function AdminPaymentsPage({ searchParams }) {
         </table>
       </div>
 
-      <h3 className="font-semibold text-neutral-700 mb-2">Record a payment &amp; recent activity</h3>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <RecordPaymentForm registrations={regOptions} />
-
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
-          <h4 className="font-bold mb-3">Recent activity</h4>
-          {(pays ?? []).length === 0 ? (
-            <p className="text-neutral-500 text-sm">No payments yet.</p>
-          ) : (
-            <ul className="divide-y divide-neutral-100 text-sm">
-              {(pays ?? []).slice(0, 15).map((p, i) => {
-                const r = regById.get(p.registration_id);
-                return (
-                  <li key={i} className="py-2 flex flex-wrap items-center justify-between gap-2">
-                    <span className="min-w-0">
-                      <span className="font-medium">{r?.households?.display_name ?? 'Household'}</span>{' '}
-                      <span className="text-neutral-500">
-                        · {dayInMorristown(p.received_on ?? p.created_at)} · {METHOD_LABEL[p.method] ?? p.method}
-                      </span>
-                      <br />
-                      <span className="font-semibold">{money(p.amount_cents)}</span>
-                      {(p.fee_cover_cents ?? 0) > 0 && (
-                        <span className="text-neutral-500"> + {money(p.fee_cover_cents)} fee cover</span>
-                      )}
-                    </span>
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLS[p.status] ?? ''}`}>
-                      {p.status}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

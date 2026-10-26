@@ -132,6 +132,9 @@ export default async function DashboardPage({ searchParams }) {
   // checkout. Landing here with a plain notice replaces being stranded deep
   // in Stripe's back-history (reported 24 Aug).
   const payCancelled = params?.pay === 'cancelled';
+  // Set when a signed-in family account opens a staff page (app/admin/layout,
+  // bounceNonStaff in lib/staff.js).
+  const noAccess = params?.noaccess === '1';
   const supabase = await createClient();
 
   const {
@@ -921,6 +924,16 @@ export default async function DashboardPage({ searchParams }) {
             </form>
           </div>
         </div>
+
+        {noAccess && !staff && (
+          <div className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-5" role="status">
+            <p className="font-semibold">You don&rsquo;t have access to the staff area.</p>
+            <p className="mt-1 text-sm text-neutral-700">
+              This account is a family account, so we brought you to your own page. If you
+              think you should have staff access, check with Luke 14 staff.
+            </p>
+          </div>
+        )}
 
         {payCancelled && (
           <div className="mb-8 rounded-lg border border-neutral-300 bg-white p-5">

@@ -118,7 +118,9 @@ export default async function AdminLayout({ children }) {
     // this layout again, and the browser gives up (ERR_TOO_MANY_REDIRECTS;
     // Testing Script 3 §7.5, 29 Sep 2026). They go to their own dashboard.
     const user = await getCurrentUser();
-    redirect(user ? '/account/dashboard/' : '/account/?next=/admin/');
+    // ?noaccess=1 makes the dashboard say why they landed there (Script 6
+    // 13.5): someone who thinks they should have access is told whom to ask.
+    redirect(user ? '/account/dashboard/?noaccess=1' : '/account/?next=/admin/');
   }
 
   // Staff must have two-factor turned on before they can open the staff area,
