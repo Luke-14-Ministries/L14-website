@@ -183,7 +183,19 @@ export default async function ReviewQueuePage({ searchParams }) {
   const groups = [...byEvent.values()].sort((a, b) =>
     String(a.event?.starts_on ?? '9999').localeCompare(String(b.event?.starts_on ?? '9999'))
   );
-  for (const g of groups) g.rows.sort((a, b) => String(a.created).localeCompare(String(b.created)));
+  // An unread family reply goes to the top of its event (26 Oct 2026): it is
+  // the family waiting on a person, not on a process.
+  for (const g of groups) {
+    g.rows.sort(
+      (a, b) =>
+        Number(b.familyReplied) - Number(a.familyReplied) ||
+        String(a.created).localeCompare(String(b.created))
+    );
+  }
+  // The same families, for the strip above the list (every event).
+  const unreadReplies = (regs ?? [])
+    .filter((r) => r.family_reply_unread)
+    .sort((a, b) => String(a.family_replied_at).localeCompare(String(b.family_replied_at)));
 
   const totalPending = rows.reduce((s, r) => s + r.pending.length, 0);
   // How many families are parked with the family, so the "waiting on staff"
@@ -291,6 +303,27 @@ export default async function ReviewQueuePage({ searchParams }) {
         )}
         .
       </p>
+
+      {/* Unread family replies first, on every tab but their own (26 Oct
+          2026): with many families waiting, a reply was lost in the list. */}
+      {unreadReplies.length > 0 && show !== 'replied' && (
+        <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-4 text-sm">
+          <p className="font-semibold text-blue-900">
+            <span aria-hidden>✉</span>{' '}
+            {unreadReplies.length === 1 ? 'A family wrote back' : `${unreadReplies.length} families wrote back`} — read first:
+          </p>
+          <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+            {unreadReplies.map((r) => (
+              <li key={r.id}>
+                <Link href={`/admin/registrations/${r.id}/#review`} className="font-semibold text-brand underline">
+                  {r.households?.display_name ?? 'Household'}
+                </Link>
+                <span className="text-neutral-500"> · {r.events?.name ?? ''}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <EventFilter
         events={eventsForFilter}

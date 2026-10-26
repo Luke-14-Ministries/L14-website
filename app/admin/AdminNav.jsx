@@ -88,6 +88,10 @@ export default function AdminNav({
   badgeTitles = {},
   redBadges = {},
   redBadgeTitles = {},
+  // A family wrote back in the app and nobody has read it (0126; Lawrence,
+  // 26 Oct 2026: a reply was lost among the sign-ups). Amber -- it drains --
+  // with an envelope so it reads as a message, not one more sign-up.
+  mailBadges = {},
   showLegend = true,
 }) {
   const pathname = usePathname();
@@ -128,8 +132,17 @@ export default function AdminNav({
         }`}
       >
         <span className="min-w-0">{n.label}</span>
-        {((badges[n.href] ?? 0) > 0 || (redBadges[n.href] ?? 0) > 0) && (
+        {((badges[n.href] ?? 0) > 0 || (redBadges[n.href] ?? 0) > 0 || (mailBadges[n.href] ?? 0) > 0) && (
           <span className="flex shrink-0 items-center gap-1">
+            {(mailBadges[n.href] ?? 0) > 0 && (
+              <span
+                title={`${mailBadges[n.href]} ${mailBadges[n.href] === 1 ? 'family reply' : 'family replies'} to read`}
+                className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-400"
+              >
+                <span aria-hidden>✉</span>
+                {mailBadges[n.href]}
+              </span>
+            )}
             {(badges[n.href] ?? 0) > 0 && (
               <span
                 title={`${badges[n.href]} ${badgeWords(badgeTitles[n.href], badges[n.href], 'needing review')}`}
@@ -223,7 +236,11 @@ export default function AdminNav({
           <span className="inline-block rounded-full bg-red-100 px-1.5 font-semibold text-red-800">
             red
           </span>{' '}
-          adults without a background check
+          adults without a background check ·{' '}
+          <span className="inline-block rounded-full bg-amber-100 px-1.5 font-semibold text-amber-800 ring-1 ring-amber-400">
+            ✉
+          </span>{' '}
+          a family wrote back
         </p>
       )}
     </nav>

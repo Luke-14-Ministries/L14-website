@@ -228,6 +228,9 @@ export default async function AdminLayout({ children }) {
   let openDeletions = 0;
   let openScholarships = 0;
   let awaitingReview = 0;
+  // Unread family replies (0126), counted apart so they show as their own
+  // envelope badge rather than vanishing into the sign-up number.
+  let unreadReplies = 0;
   let campersWithoutBuddy = 0;
   if (staff && can(staff, 'admin')) {
     // Accounts created in the last 7 days -- the same amber treatment as the
@@ -358,11 +361,8 @@ export default async function AdminLayout({ children }) {
       openDeletions = delCount ?? 0;
     }
     openScholarships = scholCount ?? 0;
-    awaitingReview =
-      (reviewCount ?? 0) +
-      (repliedRows ?? []).filter(
-        (r) => !(r.registration_participants ?? []).some((p) => p.status === 'submitted')
-      ).length;
+    awaitingReview = reviewCount ?? 0;
+    unreadReplies = (repliedRows ?? []).length;
   }
 
   // Campers who asked for a one-to-one buddy and still have nobody. Asked for
@@ -576,7 +576,7 @@ export default async function AdminLayout({ children }) {
             }}
             badgeTitles={{
               // [one, many]: AdminNav picks by the count.
-              '/admin/review': ['new sign-up or family reply waiting on staff', 'new sign-ups or family replies waiting on staff'],
+              '/admin/review': ['person newly signed up and waiting on staff', 'people newly signed up and waiting on staff'],
               '/admin/accounts': 'created in the last 7 days',
               '/admin/cancellations': ['family waiting to hear back', 'families waiting to hear back'],
               '/admin/deletion-requests': ['family asking for its data to be deleted', 'families asking for their data to be deleted'],
@@ -589,6 +589,7 @@ export default async function AdminLayout({ children }) {
             // The colour key is staff vocabulary ("waiting on staff",
             // background checks); a leader sees one blue number (26 Oct 2026).
             showLegend={!isLeaderOnly}
+            mailBadges={{ '/admin/review': unreadReplies }}
             redBadges={{ '/admin/volunteers': volunteersMissingCheck }}
             redBadgeTitles={{
               '/admin/volunteers': ['adult volunteer without a current background check marked OK', 'adult volunteers without a current background check marked OK'],
