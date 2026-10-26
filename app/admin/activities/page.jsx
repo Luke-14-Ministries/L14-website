@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow, dayInMorristown } from '@/lib/events';
 import { ActivityEditor, AddActivity, ActivityCard, SlotEditor, slotLabel } from './ActivityEditor';
 import EventFilter from '@/components/EventFilter';
+import WaiverReview from './WaiverReview';
 
 export const metadata = { title: 'Activities — Staff Admin' };
 
@@ -26,6 +27,9 @@ export default async function AdminActivitiesPage({ searchParams }) {
   if (!can(staff, 'read:activities')) redirect('/admin');
   // Defining activities, times and capacity is Events & camp setup (0101).
   const canDefine = can(staff, 'write:setup');
+  // Accepting or rejecting a family's provider confirmation is a decision
+  // about their paperwork: Registration write (0124), as the email button.
+  const canReview = can(staff, 'write:registration');
 
   const supabase = await createClient();
 
@@ -163,23 +167,45 @@ export default async function AdminActivitiesPage({ searchParams }) {
   // URLs are minted here, server-side, for ten minutes -- the bucket is
   // private and staff open the file from this page. Volunteers upload without
   // being signed up, so they are listed separately under the provider note.
-  const { data: waiverRows } = activityIds.length
+  // Each upload carries staff's review (0124): awaiting check, accepted, or
+  // rejected with the reason the family reads.
+  const { data: waiverRows, error: waiverError } = activityIds.length
     ? await supabase
         .from('activity_waiver_uploads')
         .select(
-          `activity_id, registration_participant_id, storage_path, uploaded_at,
+          `id, activity_id, registration_participant_id, storage_path, uploaded_at,
+           review_status, reviewed_by, reviewed_at, review_note,
            registration_participants ( id, camp_role, people ( first_name, last_name ) )`
         )
         .in('activity_id', activityIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (waiverError) throw new Error(`Waiver confirmations: ${waiverError.message}`);
+  // Who reviewed: a plain lookup -- the upload has two keys to profiles
+  // (uploaded_by, reviewed_by), so an embed would be refused (PGRST201).
+  const reviewerIds = [...new Set((waiverRows ?? []).map((w) => w.reviewed_by).filter(Boolean))];
+  const { data: reviewerRows, error: reviewerError } = reviewerIds.length
+    ? await supabase.from('profiles').select('id, first_name, last_name').in('id', reviewerIds)
+    : { data: [], error: null };
+  if (reviewerError) throw new Error(`Waiver reviewers: ${reviewerError.message}`);
+  const reviewerName = new Map(
+    (reviewerRows ?? []).map((r) => [r.id, `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()])
+  );
   const waiverByKey = new Map();
   for (const w of waiverRows ?? []) {
-    const { data: signed } = await supabase.storage
+    const { data: signed, error: signError } = await supabase.storage
       .from('waiver-confirmations')
       .createSignedUrl(w.storage_path, 600);
+    // A file that cannot be linked still shows its review; the pill just
+    // does not open it. Logged, never hidden.
+    if (signError) console.error(`Waiver confirmation link (${w.storage_path}): ${signError.message}`);
     waiverByKey.set(`${w.activity_id}:${w.registration_participant_id}`, {
+      id: w.id,
       url: signed?.signedUrl ?? null,
-      uploadedAt: w.uploaded_at,
+      uploadedAt: dayInMorristown(w.uploaded_at),
+      status: w.review_status,
+      note: w.review_note,
+      reviewedAt: w.reviewed_at ? dayInMorristown(w.reviewed_at) : null,
+      reviewerName: w.reviewed_by ? reviewerName.get(w.reviewed_by) || null : null,
       name: `${w.registration_participants?.people?.first_name ?? ''} ${w.registration_participants?.people?.last_name ?? ''}`.trim(),
       role: w.registration_participants?.camp_role,
     });
@@ -320,9 +346,10 @@ export default async function AdminActivitiesPage({ searchParams }) {
                 {(a.provider_name || a.provider_url) && (
                   <p className="mt-1 text-sm text-amber-800">
                     Outside provider: {a.provider_name || 'named by link only'}. Their own waiver is the family&rsquo;s
-                    to complete; &ldquo;confirmation&rdquo; below means they uploaded the
-                    provider&rsquo;s proof, and opens it. &ldquo;told&rdquo; records only that
-                    we said so.
+                    to complete and upload proof of; the pill below opens the file. Each upload is
+                    <em> awaiting check</em> until someone with Registration write accepts it, or
+                    rejects it with a reason &mdash; the family then uploads again.
+                    &ldquo;told&rdquo; records only that we said so.
                   </p>
                 )}
                 {(a.provider_name || a.provider_url) && (() => {
@@ -335,21 +362,16 @@ export default async function AdminActivitiesPage({ searchParams }) {
                     .sort((x, y) => x.name.localeCompare(y.name));
                   if (extra.length === 0) return null;
                   return (
-                    <p className="mt-1 text-sm text-neutral-700">
-                      <span className="font-semibold">Volunteer confirmations:</span>{' '}
-                      {extra.map((v, i) => (
-                        <span key={v.participantId}>
-                          {i > 0 && ', '}
-                          {v.url ? (
-                            <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-brand underline">
-                              {v.name}
-                            </a>
-                          ) : (
-                            v.name
-                          )}
-                        </span>
-                      ))}
-                    </p>
+                    <div className="mt-1 text-sm text-neutral-700">
+                      <span className="font-semibold">Volunteer confirmations:</span>
+                      <ul className="mt-1 grid gap-1 sm:grid-cols-2">
+                        {extra.map((v) => (
+                          <li key={v.participantId}>
+                            <WaiverReview upload={v} canReview={canReview} label={v.name || 'Unnamed'} />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   );
                 })()}
 
@@ -358,7 +380,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                 ) : (
                   <ul className="mt-3 grid gap-1 sm:grid-cols-2">
                     {people.map((p, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
+                      <li key={i} className="flex flex-wrap items-center gap-2 text-sm">
                         <span className="font-medium">{p.name}</span>
                         {/* Which boat. Without it this list answers "how many"
                             and not "who is on the 2 o'clock", which is the
@@ -418,15 +440,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                         {(a.provider_name || a.provider_url) && (() => {
                           const w = waiverByKey.get(`${a.id}:${p.participantId}`);
                           return w ? (
-                            <a
-                              href={w.url ?? '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={`Provider confirmation uploaded ${dayInMorristown(w.uploadedAt)} — opens the file`}
-                              className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 underline"
-                            >
-                              confirmation ✓
-                            </a>
+                            <WaiverReview upload={w} canReview={canReview} />
                           ) : (
                             <span
                               title="No provider confirmation uploaded yet"

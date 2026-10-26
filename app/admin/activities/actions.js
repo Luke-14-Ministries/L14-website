@@ -488,6 +488,36 @@ function revalidateAll() {
   revalidatePath('/account/activities');
 }
 
+// Accept or reject a family's outside-provider waiver confirmation (0124).
+// Registration write -- a decision about a family's paperwork, the same grant
+// as this page's "email the families" button; review_waiver_upload() checks it
+// again and stamps who and when. A rejection needs the reason the family reads.
+export async function reviewWaiverUpload(uploadId, status, note = null) {
+  const staff = await getStaff();
+  if (!can(staff, 'write:registration')) {
+    return { ok: false, error: 'Accepting or rejecting a confirmation needs Registration write.' };
+  }
+  if (!uploadId) return { ok: false, error: 'Which upload?' };
+  if (!['accepted', 'rejected'].includes(status)) return { ok: false, error: 'Accept or reject?' };
+  const reason = String(note ?? '').trim();
+  if (status === 'rejected' && !reason) {
+    return { ok: false, error: 'Give the family a reason.' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('review_waiver_upload', {
+    p_upload_id: uploadId,
+    p_status: status,
+    p_note: status === 'rejected' ? reason.slice(0, 500) : null,
+  });
+  if (error) return { ok: false, error: `That could not be saved: ${error.message}` };
+
+  revalidateAll();
+  revalidatePath('/account/dashboard');
+  revalidatePath('/admin/review');
+  return { ok: true };
+}
+
 // ---------------------------------------------------------------------------
 // Time slots (0052). The pontoon goes out four times on the Tuesday; the salon
 // takes one person at a time. "Who is on the 2 o'clock boat" is the question

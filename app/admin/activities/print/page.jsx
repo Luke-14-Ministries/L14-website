@@ -3,6 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
 import { dayInMorristown } from '@/lib/events';
+import { waiverReviewPill } from '@/lib/format';
 
 export const metadata = { title: 'Activity Sheets — Staff Admin' };
 
@@ -46,7 +47,7 @@ export default async function ActivityPrintPage({ searchParams }) {
   const { data: activities } = selected
     ? await supabase
         .from('activities')
-        .select('id, name, description, capacity, active, sort_order, provider_name')
+        .select('id, name, description, capacity, active, sort_order, provider_name, provider_url')
         .eq('event_id', selected)
         .eq('active', true)
         .order('sort_order')
@@ -83,14 +84,27 @@ export default async function ActivityPrintPage({ searchParams }) {
 
   // Provider confirmations (0087): on a provider-run activity the sheet says
   // who has one and who has not, so the day starts with the list, not a hunt.
-  const providerIds = new Set((activities ?? []).filter((a) => a.provider_name).map((a) => a.id));
-  const { data: waiverRows } = activityIds.length
+  // Since 0124 it says what staff made of it -- awaiting check, accepted, or
+  // rejected with the reason -- the same three states as the Activities page.
+  // A provider named only by its link counts, as in activity_waivers_outstanding.
+  const providerIds = new Set(
+    (activities ?? [])
+      .filter((a) => (a.provider_name ?? '').trim() || (a.provider_url ?? '').trim())
+      .map((a) => a.id)
+  );
+  const { data: waiverRows, error: waiverError } = activityIds.length
     ? await supabase
         .from('activity_waiver_uploads')
-        .select('activity_id, registration_participant_id')
+        .select('activity_id, registration_participant_id, review_status, review_note')
         .in('activity_id', activityIds)
-    : { data: [] };
-  const hasWaiver = new Set((waiverRows ?? []).map((w) => `${w.activity_id}:${w.registration_participant_id}`));
+    : { data: [], error: null };
+  if (waiverError) throw new Error(`Waiver confirmations: ${waiverError.message}`);
+  const uploadByKey = new Map(
+    (waiverRows ?? []).map((w) => [
+      `${w.activity_id}:${w.registration_participant_id}`,
+      { status: w.review_status, note: w.review_note },
+    ])
+  );
 
   // The ministry's own waiver (0116, horseback): on an activity that carries
   // one the sheet gets a Waiver column -- signed on the site, with the date,
@@ -140,8 +154,10 @@ export default async function ActivityPrintPage({ searchParams }) {
       ask: Boolean(
         s?.has_allergies || s?.has_seizures || s?.has_rescue_medication || s?.buddy_required
       ),
-      waiver: providerIds.has(g.activity_id)
-        ? hasWaiver.has(`${g.activity_id}:${rp?.id}`) ? 'yes' : 'no'
+      // The provider's confirmation: null where the activity has no outside
+      // provider, 'missing' with no upload, else the upload's review.
+      provider: providerIds.has(g.activity_id)
+        ? uploadByKey.get(`${g.activity_id}:${rp?.id}`) ?? 'missing'
         : null,
       // The site's own waiver: the day it was signed, '' for not signed, null
       // where the activity has none (the column is then left off the sheet).
@@ -188,8 +204,9 @@ export default async function ActivityPrintPage({ searchParams }) {
       .filter(Boolean)
       .join(' · ');
 
-  // waiverColumn: the activity carries the site's own waiver (0116), so the
-  // sheet says per rider whether it is signed. Left off every other sheet.
+  // waiverColumn: the activity carries the site's own waiver (0116) or an
+  // outside provider's (0087/0124), so the sheet says per rider where each
+  // stands. Left off every other sheet.
   const Register = ({ rows, waiverColumn = false }) =>
     rows.length === 0 ? (
       <p className="text-sm text-neutral-500">Nobody signed up.</p>
@@ -223,17 +240,25 @@ export default async function ActivityPrintPage({ searchParams }) {
                 ) : (
                   <span className="text-neutral-400">&mdash;</span>
                 )}
-                {r.waiver === 'yes' && <span className="ml-2 text-xs">· provider form ✓</span>}
-                {r.waiver === 'no' && (
-                  <span className="ml-2 text-xs font-semibold">· NO provider confirmation</span>
-                )}
               </td>
               {waiverColumn && (
                 <td className="py-1.5 pl-3">
-                  {r.signed ? (
-                    <span className="text-xs">signed {r.signed}</span>
-                  ) : (
-                    <span className="text-xs font-semibold">NOT signed</span>
+                  {r.signed !== null && (
+                    r.signed ? (
+                      <span className="block text-xs">signed {r.signed}</span>
+                    ) : (
+                      <span className="block text-xs font-semibold">NOT signed</span>
+                    )
+                  )}
+                  {r.provider === 'missing' && (
+                    <span className="block text-xs font-semibold">NO provider confirmation</span>
+                  )}
+                  {r.provider && r.provider !== 'missing' && (
+                    <span
+                      className={`block text-xs ${r.provider.status === 'accepted' ? '' : 'font-semibold'}`}
+                    >
+                      provider form: {waiverReviewPill(r.provider).text}
+                    </span>
                   )}
                 </td>
               )}
@@ -295,7 +320,7 @@ export default async function ActivityPrintPage({ searchParams }) {
             {a.description && <p className="mb-3 text-sm text-neutral-600">{a.description}</p>}
 
             {slots.length === 0 ? (
-              <Register rows={loose} waiverColumn={agreementIdByActivity.has(a.id)} />
+              <Register rows={loose} waiverColumn={agreementIdByActivity.has(a.id) || providerIds.has(a.id)} />
             ) : (
               slots.map((sl) => (
                 <div key={sl.id} className="mb-5 break-inside-avoid">
@@ -307,7 +332,7 @@ export default async function ActivityPrintPage({ searchParams }) {
                       {sl.capacity ? ` of ${sl.capacity}` : ''} signed up
                     </span>
                   </p>
-                  <Register rows={bySlot.get(sl.id) ?? []} waiverColumn={agreementIdByActivity.has(a.id)} />
+                  <Register rows={bySlot.get(sl.id) ?? []} waiverColumn={agreementIdByActivity.has(a.id) || providerIds.has(a.id)} />
                 </div>
               ))
             )}
@@ -318,7 +343,7 @@ export default async function ActivityPrintPage({ searchParams }) {
             {slots.length > 0 && loose.length > 0 && (
               <div className="mt-4">
                 <p className="mb-1 text-sm font-semibold">No sitting chosen</p>
-                <Register rows={loose} waiverColumn={agreementIdByActivity.has(a.id)} />
+                <Register rows={loose} waiverColumn={agreementIdByActivity.has(a.id) || providerIds.has(a.id)} />
               </div>
             )}
           </div>
