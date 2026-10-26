@@ -150,8 +150,8 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
           </button>
         )}
         <span className="text-xs text-neutral-500">
-          These ticks are what the database enforces. The role on the left is a label, except
-          that <em>Administrator</em> is what lets a person grant anything.
+          These ticks are what the database enforces. Granting access to others is not an area
+          here: it is the <em>Administrator — grants access</em> tick on the person&rsquo;s row.
         </span>
       </div>
     </div>
