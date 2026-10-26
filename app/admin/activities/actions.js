@@ -80,6 +80,17 @@ function shape(input) {
   // shown to nobody, so it is dropped rather than quietly stored.
   if (mode === 'interest') capacity = null;
 
+  // The youngest age the activity takes (0125): a flag on the groups board,
+  // never a block. Blank means no minimum.
+  let minAge = null;
+  if (String(input?.minAge ?? '').trim() !== '') {
+    const n = Number(String(input.minAge).trim());
+    if (!Number.isInteger(n) || n < 0 || n > 120) {
+      return { error: 'Minimum age has to be a whole number of years (0 to 120), or blank for none.' };
+    }
+    minAge = n;
+  }
+
   const { waiver, error: waiverError } = shapeWaiver(input?.waiver);
   if (waiverError) return { error: waiverError };
 
@@ -99,6 +110,7 @@ function shape(input) {
       description: String(input?.description ?? '').trim() || null,
       booking_mode: mode,
       capacity,
+      min_age: minAge,
       // A provider name is what makes the site tell families the outfitter has
       // their own form. Blank means the ministry runs it.
       provider_name: provider || null,

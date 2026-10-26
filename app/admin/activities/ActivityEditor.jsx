@@ -402,6 +402,20 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
             placeholder="no limit"
           />
         </label>
+        {/* 0125: a flag on the groups board ("Under 8 — check with camp
+            staff"), never a block. */}
+        <label className="text-sm">
+          <span className={label}>
+            Minimum age <span className="font-normal text-neutral-500">(optional)</span>
+          </span>
+          <input
+            className={input}
+            inputMode="numeric"
+            value={f.minAge}
+            onChange={set('minAge')}
+            placeholder="none"
+          />
+        </label>
       </div>
 
       <WaiverBlock
@@ -458,6 +472,7 @@ export function ActivityEditor({ activity, eventId = null, canEmail = false, wai
     description: activity.description ?? '',
     mode: activity.booking_mode ?? 'interest',
     capacity: activity.capacity == null ? '' : String(activity.capacity),
+    minAge: activity.min_age == null ? '' : String(activity.min_age),
     providerName: activity.provider_name ?? '',
     providerUrl: activity.provider_url ?? '',
     sortOrder: String(activity.sort_order ?? 0),
@@ -576,6 +591,7 @@ export function AddActivity({ eventId, eventName, waiverChoices = [] }) {
     description: '',
     mode: 'interest',
     capacity: '',
+    minAge: '',
     providerName: '',
     providerUrl: '',
     sortOrder: '50',

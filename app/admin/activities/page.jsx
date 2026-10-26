@@ -51,7 +51,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
     ? await supabase
         .from('activities')
         .select(
-          'id, name, description, booking_mode, capacity, provider_name, provider_url, active, sort_order'
+          'id, name, description, booking_mode, capacity, provider_name, provider_url, active, sort_order, min_age'
         )
         .eq('event_id', selected)
         // Inactive last. Staff see activities families cannot (that is the
