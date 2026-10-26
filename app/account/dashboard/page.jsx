@@ -18,6 +18,7 @@ import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from
 import { requiresPaymentChoice, offersPaymentPlan, feeLabel, planHasProblem } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
 import FeedbackBox from './FeedbackBox';
+import ReplyToStaff from './ReplyToStaff';
 import { getProgramLeadership } from '@/lib/programs';
 import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport, supportProblems } from '@/lib/support';
@@ -236,6 +237,7 @@ export default async function DashboardPage({ searchParams }) {
         .from('registrations')
         .select(
           `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
+           family_replied_at, family_reply_unread,
            hold_since, hold_reason, deposit_waived_at,
            events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url, returned_payment_fee_cents,
                     event_medical_contacts ( name, phone ) ),
@@ -285,15 +287,18 @@ export default async function DashboardPage({ searchParams }) {
   });
   const regIds = regs.map((r) => r.id);
 
-  // Short notes from staff TO the family, per registration (0019), shown on
-  // each registration card. Scoped by regIds (own household's registrations).
-  const { data: staffMsgs } = regIds.length
+  // The conversation with camp staff, per registration: staff notes (0019)
+  // and the family's own replies (0126), OLDEST first so it reads as a
+  // thread. Scoped by regIds (own household's registrations) -- never RLS
+  // alone, which hands a staff member every family's rows.
+  const { data: staffMsgs, error: staffMsgsError } = regIds.length
     ? await supabase
         .from('registration_family_messages')
-        .select('registration_id, body, created_at')
+        .select('registration_id, body, created_at, author_kind')
         .in('registration_id', regIds)
-        .order('created_at', { ascending: false })
-    : { data: [] };
+        .order('created_at', { ascending: true })
+    : { data: [], error: null };
+  if (staffMsgsError) throw new Error(`Notes from camp staff: ${staffMsgsError.message}`);
   const msgsByReg = new Map();
   for (const m of staffMsgs ?? []) {
     if (!msgsByReg.has(m.registration_id)) msgsByReg.set(m.registration_id, []);
@@ -1247,22 +1252,19 @@ export default async function DashboardPage({ searchParams }) {
 
                       {/* Staff sent this registration back for more information
                           (0089, 15 Oct 2026). Amber, because it is the family's
-                          move; it clears when staff mark it answered. */}
-                      {r.awaiting_family_since && (
-                        <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
-                          <p className="font-bold text-amber-900">Camp staff need something from you</p>
-                          {r.awaiting_family_reason && (
-                            <p className="mt-1 text-amber-900">{r.awaiting_family_reason}</p>
-                          )}
-                          <p className="mt-1 text-xs text-amber-900">
-                            Update your registration below, or reply to{' '}
-                            <a href="mailto:registration@luke14ministries.net" className="underline">
-                              registration@luke14ministries.net
-                            </a>
-                            . Your registration is held in the meantime.
-                          </p>
-                        </div>
-                      )}
+                          move; since 0126 the family answers right here, which
+                          clears it and puts the registration back in front of
+                          staff, and the box turns calm ("Your reply was
+                          sent…"). Always rendered, so its thank-you line
+                          survives the refresh after a send. */}
+                      <ReplyToStaff
+                        registrationId={r.id}
+                        awaitingSince={r.awaiting_family_since ?? null}
+                        awaitingReason={r.awaiting_family_reason ?? null}
+                        repliedAt={r.family_replied_at ?? null}
+                        replyUnread={Boolean(r.family_reply_unread)}
+                        offerWrite={(msgsByReg.get(r.id) ?? []).length > 0}
+                      />
 
                       {/* Staff put the registration on hold to re-check a
                           change (0098, 16 Oct 2026). Amber, but it is staff's
@@ -1284,7 +1286,9 @@ export default async function DashboardPage({ searchParams }) {
                       )}
 
                       {/* Notes FROM camp staff — e.g. "We added a $100
-                          scholarship credit to your registration on 8/17." */}
+                          scholarship credit to your registration on 8/17." —
+                          and, since 0126, the family's own replies, oldest
+                          first, so the two sides read one thread. */}
                       {(msgsByReg.get(r.id) ?? []).length > 0 && (
                         <div className="mt-3 rounded-sm border border-brand/30 bg-brand-light/50 p-3">
                           <p className="text-sm font-semibold text-brand-dark mb-1">
@@ -1292,8 +1296,14 @@ export default async function DashboardPage({ searchParams }) {
                           </p>
                           <ul className="space-y-1 text-sm text-neutral-700">
                             {(msgsByReg.get(r.id) ?? []).map((m, i) => (
-                              <li key={i}>
-                                {m.body}{' '}
+                              <li
+                                key={i}
+                                className={m.author_kind === 'family' ? 'border-l-2 border-brand/40 pl-2' : ''}
+                              >
+                                {m.author_kind === 'family' && (
+                                  <span className="font-semibold text-neutral-800">You wrote: </span>
+                                )}
+                                <span className="whitespace-pre-wrap">{m.body}</span>{' '}
                                 <span className="text-xs text-neutral-500">
                                   · {dayInMorristown(m.created_at)}
                                 </span>
