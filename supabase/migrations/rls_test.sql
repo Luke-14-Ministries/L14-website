@@ -341,7 +341,7 @@ declare
   rpA uuid; rpB uuid; agr uuid; pNew uuid; optGen uuid;
   act uuid; evCopy uuid;
   horses uuid; horsesAgr uuid; regB uuid; logId uuid;
-  planId uuid; planLogId uuid; upId uuid;
+  planId uuid; planLogId uuid; upId uuid; msgId uuid;
   n bigint; m bigint;
   oldStatus text;
 begin
@@ -1145,6 +1145,88 @@ begin
   select count(*) into n from public.activity_waiver_uploads
    where id = upId and review_status = 'pending' and reviewed_by is null;
   perform pg_temp.expect('replacing an accepted file sends it back to awaiting check (0124)', n, 1);
+
+  -- Family replies (0126): the thread on a registration, written only
+  -- through family_reply_to_staff() and staff_message_to_family().
+  perform pg_temp.as_user(uR);
+  update public.registrations
+     set awaiting_family_since = now(), awaiting_family_reason = 'Please add the seizure plan'
+   where id = regA;
+  select count(*) into n from public.registrations where id = regA and awaiting_family_since is not null;
+  perform pg_temp.expect('Registration write still asks the family directly (0089/0126)', n, 1);
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('a family cannot clear waiting-on-the-family directly (0126)',
+    format('update public.registrations set awaiting_family_since = null, awaiting_family_reason = null where id = %L', regA));
+  perform pg_temp.expect_denied('a family cannot set family_replied_at directly (0126)',
+    format('update public.registrations set family_replied_at = now() where id = %L', regA));
+  perform pg_temp.expect_denied('a family cannot mark its own reply as read (0126)',
+    format('update public.registrations set family_reply_seen_at = now() where id = %L', regA));
+  perform pg_temp.expect_denied('a family cannot insert into the thread directly (0126)',
+    format('insert into public.registration_family_messages (registration_id, body, author_kind, created_by) values (%L, ''hi'', ''family'', %L)', regA, uA));
+  perform pg_temp.expect_denied('an empty reply is refused (0126)',
+    format('select public.family_reply_to_staff(%L, ''   '')', regA));
+  perform pg_temp.expect_denied('a reply over 4000 characters is refused (0126)',
+    format('select public.family_reply_to_staff(%L, %L)', regA, repeat('x', 4001)));
+  perform pg_temp.expect_denied('a family cannot reply on another family''s registration (0126)',
+    format('select public.family_reply_to_staff(%L, ''hello'')', regB));
+  select public.family_reply_to_staff(regA, 'Added the seizure plan under Medical.') into msgId;
+  select count(*) into n from public.registrations
+   where id = regA and awaiting_family_since is null and awaiting_family_reason is null
+     and family_replied_at is not null and family_reply_unread;
+  perform pg_temp.expect('a reply puts the registration back to staff, unread (0126)', n, 1);
+  select count(*) into n from public.registration_family_messages
+   where id = msgId and author_kind = 'family' and created_by = uA;
+  perform pg_temp.expect('the family reads its own reply in the thread (0126)', n, 1);
+  perform pg_temp.as_user(uB);
+  select count(*) into n from public.registration_family_messages where registration_id = regA;
+  perform pg_temp.expect('family B cannot read family A''s thread (0126)', n, 0);
+  perform pg_temp.as_user(uC);
+  select count(*) into n from public.registration_family_messages where id = msgId;
+  perform pg_temp.expect('Registration read staff read the thread (0126)', n, 1);
+  perform pg_temp.expect_denied('Registration READ cannot write to the family (0126)',
+    format('select public.staff_message_to_family(%L, ''Thanks'')', regA));
+  perform pg_temp.expect_no_effect('Registration READ cannot mark a reply as read (0126)',
+    format('update public.registrations set family_reply_seen_at = clock_timestamp() where id = %L', regA));
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('staff cannot insert into the thread directly either (0126)',
+    format('insert into public.registration_family_messages (registration_id, body) values (%L, ''note'')', regA));
+  perform pg_temp.expect_denied('staff cannot set family_replied_at (0126)',
+    format('update public.registrations set family_replied_at = null where id = %L', regA));
+  perform pg_temp.expect_no_effect('staff cannot remove a family''s reply (0126)',
+    format('delete from public.registration_family_messages where id = %L', msgId));
+  update public.registrations set family_reply_seen_at = clock_timestamp() where id = regA;
+  select count(*) into n from public.registrations where id = regA and not family_reply_unread;
+  perform pg_temp.expect('Registration write marks the reply as read (0126)', n, 1);
+  -- Unasked: a family may write at any time; it only sets family_replied_at.
+  perform pg_temp.as_user(uA);
+  perform public.family_reply_to_staff(regA, 'One more thing: Sam is bringing his own pillow.');
+  select count(*) into n from public.registrations
+   where id = regA and family_reply_unread and awaiting_family_since is null;
+  perform pg_temp.expect('an unasked reply is unread again and asks nothing of staff''s state (0126)', n, 1);
+  perform pg_temp.as_user(uR);
+  select public.staff_message_to_family(regA, 'Thank you -- all set.') into msgId;
+  select count(*) into n from public.registration_family_messages
+   where id = msgId and author_kind = 'staff' and created_by = uR;
+  perform pg_temp.expect('staff write to the family through staff_message_to_family (0126)', n, 1);
+  select count(*) into n from public.registrations where id = regA and not family_reply_unread;
+  perform pg_temp.expect('writing back marks the family''s reply as read (0126)', n, 1);
+  delete from public.registration_family_messages where id = msgId;
+  select count(*) into n from public.registration_family_messages where id = msgId;
+  perform pg_temp.expect('Registration write can remove a staff note (0126)', n, 0);
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.registration_family_messages
+   where registration_id = regA and author_kind = 'family';
+  perform pg_temp.expect('the family reads both its replies (0126)', n, 2);
+  set local role anon;
+  perform pg_temp.expect_denied('anon cannot reply (0126)',
+    format('select public.family_reply_to_staff(%L, ''hi'')', regA));
+  set local role postgres;
+  delete from public.registration_family_messages where registration_id = regA;
+  update public.registrations
+     set awaiting_family_since = null, awaiting_family_reason = null,
+         family_replied_at = null, family_reply_seen_at = null
+   where id = regA;
+  set local role authenticated;
 
   -- The log of staff-sent family emails: Registration write, through the function only.
   perform pg_temp.as_user(uA);
