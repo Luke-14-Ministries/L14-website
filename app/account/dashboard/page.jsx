@@ -303,7 +303,7 @@ export default async function DashboardPage({ searchParams }) {
   const { data: owedRows, error: owedError } = householdIds.length
     ? await supabase
         .from('activity_waivers_outstanding')
-        .select('registration_id, person_id, activity_id, activity_name, kind')
+        .select('registration_id, person_id, activity_id, activity_name, kind, upload_status, review_note')
         .in('household_id', householdIds)
     : { data: [], error: null };
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
@@ -320,7 +320,10 @@ export default async function DashboardPage({ searchParams }) {
       text:
         o.kind === 'ours'
           ? `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'} needs a waiver signed`
-          : `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'}: upload the outfitter's confirmation`,
+          : o.upload_status === 'rejected'
+            ? // Camp staff rejected the upload (0124): say why, and ask again.
+              `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'}: camp staff couldn't accept the confirmation (${o.review_note || 'no reason given'}) — please upload it again`
+            : `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'}: upload the outfitter's confirmation`,
     }))
     .sort((a, b) => a.text.localeCompare(b.text));
 

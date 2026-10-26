@@ -443,8 +443,9 @@ function ActivityRow({ person, activity }) {
           provider-run activity, the family uploads the provider's own
           confirmation. Staff see who has one. */}
       {/* The same amber line as a waiver of our own (0120), above the upload
-          box, while the provider's confirmation is still missing. */}
-      {owesProvider && needsProvider && (
+          box, while the provider's confirmation is still missing. A REJECTED
+          upload (0124) is outstanding too, but the upload box says why itself. */}
+      {owesProvider && needsProvider && person.waivers?.[activity.id]?.review_status !== 'rejected' && (
         <p className="mt-2 ml-7 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
           {activity.name} now needs a waiver for {firstName}
           <span className="font-normal">

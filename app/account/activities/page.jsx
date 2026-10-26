@@ -103,11 +103,12 @@ export default async function ActivitiesPage({ searchParams }) {
 
   // Proof that an outside provider's form was done (0087, 14 Oct 2026):
   // one upload per person per activity, shown beside the activity and, for
-  // volunteers, in their own block in that event's card.
+  // volunteers, in their own block in that event's card. With staff's review
+  // of it (0124): awaiting check, accepted, or rejected with the reason.
   const { data: waiverRows, error: waiverError } = participantIds.length
     ? await supabase
         .from('activity_waiver_uploads')
-        .select('registration_participant_id, activity_id, storage_path, uploaded_at')
+        .select('registration_participant_id, activity_id, storage_path, uploaded_at, review_status, review_note')
         .in('registration_participant_id', participantIds)
     : { data: [], error: null };
   if (waiverError) throw new Error(`Provider confirmations: ${waiverError.message}`);
