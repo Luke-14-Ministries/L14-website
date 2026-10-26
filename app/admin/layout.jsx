@@ -186,25 +186,32 @@ export default async function AdminLayout({ children }) {
 
   // A leader's whole navigation. Not NAV filtered down -- built separately, so
   // that adding a page to NAV can never accidentally hand it to a leader.
+  //
+  // Staff who ALSO hold a current leadership get My Program too (Lawrence,
+  // 26 Oct 2026), as an item of its own after the top two, from the same
+  // getProgramLeadership() result read above. Staff who lead nothing see no
+  // change.
+  const myProgramItem = { href: '/admin/my-program', label: 'My Program', ready: true };
   const items = isLeaderOnly
-    ? [{ href: '/admin/my-program', label: 'My Program', ready: true }]
-    : NAV.filter((n) => can(staff, n.need));
+    ? [myProgramItem]
+    : [...NAV.filter((n) => can(staff, n.need)), ...(leaderships.length > 0 ? [myProgramItem] : [])];
 
   // The leader's own count: how many people are in their program(s). This is a
   // BLUE badge, not amber, and the distinction is the one AdminNav documents --
   // amber is a queue that drains when you act, blue is a number that just is.
   // A leader has nothing to clear here; they are being told the size of their
-  // group, which is exactly the thing they want to know before Monday.
+  // group, which is exactly the thing they want to know before Monday. The
+  // same count for a staff member who leads.
   let myProgramCount = 0;
-  if (isLeaderOnly) {
-    for (const g of leaderships) {
-      const { count } = await supabase
-        .from('program_roster')
-        .select('participant_id', { count: 'exact', head: true })
-        .eq('program_id', g.programId)
-        .eq('event_id', g.eventId);
-      myProgramCount += count ?? 0;
-    }
+  for (const g of leaderships) {
+    const { count, error } = await supabase
+      .from('program_roster')
+      .select('participant_id', { count: 'exact', head: true })
+      .eq('program_id', g.programId)
+      .eq('event_id', g.eventId);
+    // A badge, not a page: logged, and that program adds nothing to it.
+    if (error) console.error('my-program badge:', error.message);
+    myProgramCount += count ?? 0;
   }
 
   // A small attention dot on "Recent Changes" when unreviewed family edits
@@ -437,9 +444,14 @@ export default async function AdminLayout({ children }) {
             underneath (seen in testing screenshots, 24 Aug). */}
         <div className="mb-6 print:hidden flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-            Staff Admin
-          </p>
+          {/* A program leader is not staff (Lawrence, 26 Oct 2026: "STAFF
+              ADMIN" above a leader's name). Their pill below already says
+              Program Leader, so the eyebrow is simply left off for them. */}
+          {!isLeaderOnly && (
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Staff Admin
+            </p>
+          )}
           <h1 className="text-2xl font-bold">{fullName}</h1>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <span className="rounded-full bg-brand-light text-brand-dark px-2.5 py-0.5 text-xs font-semibold">
@@ -550,6 +562,9 @@ export default async function AdminLayout({ children }) {
               '/admin/programs': ['person on a roster with no program yet', 'people on a roster with no program yet'],
               '/admin/my-program': ['person in your program', 'people in your program'],
             }}
+            // The colour key is staff vocabulary ("waiting on staff",
+            // background checks); a leader sees one blue number (26 Oct 2026).
+            showLegend={!isLeaderOnly}
             redBadges={{ '/admin/volunteers': volunteersMissingCheck }}
             redBadgeTitles={{
               '/admin/volunteers': ['adult volunteer without a current background check marked OK', 'adult volunteers without a current background check marked OK'],

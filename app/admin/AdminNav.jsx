@@ -88,6 +88,7 @@ export default function AdminNav({
   badgeTitles = {},
   redBadges = {},
   redBadgeTitles = {},
+  showLegend = true,
 }) {
   const pathname = usePathname();
   const open = useSyncExternalStore(subscribeOpen, readOpen, () => true);
@@ -206,22 +207,25 @@ export default function AdminNav({
       {/* Said once, here, rather than left as tribal knowledge -- the whole
           point of two colours is lost if nobody knows there are two. */}
       {/* Read as a counter by more than one person (14 Oct 2026) -- it is a
-          key, and now says so. */}
-      <p className="mt-3 px-3 text-xs leading-relaxed text-neutral-500">
-        Badge colours:{' '}
-        <span className="inline-block rounded-full bg-amber-100 px-1.5 font-semibold text-amber-800">
-          amber
-        </span>{' '}
-        waiting on staff — reaches zero when the work is done ·{' '}
-        <span className="inline-block rounded-full bg-blue-100 px-1.5 font-semibold text-blue-800">
-          blue
-        </span>{' '}
-        activity in the last 7 days ·{' '}
-        <span className="inline-block rounded-full bg-red-100 px-1.5 font-semibold text-red-800">
-          red
-        </span>{' '}
-        adults without a background check
-      </p>
+          key, and now says so. Not shown to a program leader (26 Oct 2026):
+          it speaks of staff queues and background checks. */}
+      {showLegend && (
+        <p className="mt-3 px-3 text-xs leading-relaxed text-neutral-500">
+          Badge colours:{' '}
+          <span className="inline-block rounded-full bg-amber-100 px-1.5 font-semibold text-amber-800">
+            amber
+          </span>{' '}
+          waiting on staff — reaches zero when the work is done ·{' '}
+          <span className="inline-block rounded-full bg-blue-100 px-1.5 font-semibold text-blue-800">
+            blue
+          </span>{' '}
+          activity in the last 7 days ·{' '}
+          <span className="inline-block rounded-full bg-red-100 px-1.5 font-semibold text-red-800">
+            red
+          </span>{' '}
+          adults without a background check
+        </p>
+      )}
     </nav>
   );
 }

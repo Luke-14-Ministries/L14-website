@@ -1,7 +1,13 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff } from '@/lib/staff';
-import { getProgramLeadership, getProgramRoster, getProgramLeaders, ageAt } from '@/lib/programs';
+import {
+  getProgramLeadership,
+  getProgramRoster,
+  getProgramLeaders,
+  programRosterRows,
+} from '@/lib/programs';
+import FlagsNote from './FlagsNote';
 
 export const metadata = { title: 'My Program — Luke 14 Ministries' };
 
@@ -45,34 +51,10 @@ export default async function MyProgramPage({ searchParams }) {
   const lead = leaders.find((l) => l.isLead) ?? null;
   const assistants = leaders.filter((l) => !l.isLead);
 
-  const rows = roster
-    .map((r) => ({
-      id: r.participant_id,
-      name: [r.display_name, r.last_name].filter(Boolean).join(' '),
-      formalName:
-        r.first_name && r.display_name && r.first_name !== r.display_name
-          ? `${r.first_name} ${r.last_name}`
-          : null,
-      age: ageAt(r.date_of_birth, current.startsOn),
-      role: r.camp_role,
-      buddy: r.buddy_name,
-      buddyRequired: r.buddy_required,
-      allergies: r.has_allergies,
-      support: r.has_support_needs,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
+  // Built in lib/programs.js so the CSV and the print view show the same rows.
+  const rows = programRosterRows(roster, current.startsOn);
   const needAsking = rows.filter((r) => r.allergies || r.support).length;
-
-  const ROLE_LABEL = {
-    camper: 'Camper',
-    sibling: 'Sibling',
-    parent_guardian: 'Parent / guardian',
-    caregiver: 'Caregiver',
-    volunteer: 'Volunteer',
-    childcare: 'Childcare',
-    support_team: 'Support team',
-  };
+  const grant = encodeURIComponent(`${current.programId}:${current.eventId}`);
 
   return (
     <div>
@@ -121,25 +103,24 @@ export default async function MyProgramPage({ searchParams }) {
         </div>
       )}
 
-      {/* Said once, plainly, at the top -- so that a leader who wonders where
-          the allergy details are does not go hunting, or worse, ask a family
-          directly. */}
-      <div className="mb-5 rounded-sm border border-brand/30 bg-brand-light/50 px-4 py-3 text-sm">
-        <strong>What the flags mean.</strong> A marker here tells you there is
-        something to ask about — it does not tell you what. Allergy details,
-        medications and support plans stay with the camp coordinator, who will
-        go through them with you before the week starts.{' '}
-        {needAsking > 0 ? (
-          <>
-            <strong>
-              {needAsking} {needAsking === 1 ? 'person' : 'people'}
-            </strong>{' '}
-            in this list {needAsking === 1 ? 'has' : 'have'} a flag.
-          </>
-        ) : (
-          'Nobody in this list has a flag yet.'
-        )}
-      </div>
+      <FlagsNote
+        needAsking={needAsking}
+        className="mb-5 rounded-sm border border-brand/30 bg-brand-light/50 px-4 py-3 text-sm"
+      />
+
+      {/* Export (Lawrence, 26 Oct 2026). Both carry exactly this table and
+          nothing more; see export/route.js and print/page.jsx. Plain links:
+          the CSV is a download, the print view a page of its own. */}
+      {rows.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          <a href={`/admin/my-program/export/?grant=${grant}`} className="btn-outline py-1.5! text-sm">
+            Download CSV
+          </a>
+          <Link href={`/admin/my-program/print/?grant=${grant}`} className="btn-outline py-1.5! text-sm">
+            Print / PDF
+          </Link>
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <p className="rounded-sm border border-neutral-200 bg-white p-6 text-neutral-500">
@@ -170,7 +151,7 @@ export default async function MyProgramPage({ searchParams }) {
                     )}
                   </td>
                   <td className="px-3 py-2">{r.age ?? '—'}</td>
-                  <td className="px-3 py-2">{ROLE_LABEL[r.role] ?? r.role}</td>
+                  <td className="px-3 py-2">{r.roleLabel}</td>
                   <td className="px-3 py-2">
                     {r.buddy ? (
                       r.buddy

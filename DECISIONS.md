@@ -3060,3 +3060,20 @@ registration opens every card** (it is read top to bottom); **editing a saved on
 cards that need something**, decided once from the saved answers so nothing snaps shut while the
 family types. Folded bodies are hidden, not unmounted, so no answer or chosen file is lost. A refused
 submit opens every card that needs something and moves focus to the one the refusal is about.
+
+## 2026-10-26 — A program leader can download and print their own roster
+
+Lawrence, on `/admin/my-program` as a leader: "need a way to export". **Download CSV**
+(`/admin/my-program/export/?grant=<program>:<event>`) and **Print / PDF** (`/admin/my-program/print/`,
+the browser's Save as PDF — no PDF library) carry **the page's table and nothing more**: Name, Age (at
+camp), Role, Buddy, Ask about (the flag words). Both read only `program_roster` through
+`programRosterRows()` in `lib/programs.js`, which the page now uses too, so the three cannot drift.
+**The gate is `app/admin/my-program/access.js`**, because a route handler does not run the admin
+layout: the caller holds *that* leadership (`getProgramLeadership`) on a strong session
+(`session_is_strong()`, the rule `leads_program()` applies, 0106), or is staff with `read:programs`
+(whose `can()` already refuses a weak session); a leader asking for another program is refused, never
+given their own instead. `getProgramRoster`/`getProgramLeaders` now throw rather than return an empty
+list, so a failed read is an error, not "nobody placed yet" or a blank file. In the header a leader
+no longer sees "Staff Admin" (their pill says Program Leader) or the badge-colour key (staff
+vocabulary); **staff who hold a current leadership** get My Program in the sidebar with the same blue
+count, from the layout's existing `getProgramLeadership()` read.
