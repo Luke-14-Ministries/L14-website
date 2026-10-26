@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // A card that folds.
 //
@@ -17,10 +17,35 @@ import { useState } from 'react';
 // bottom of the page (StaffPlanPanel, rendered by page.jsx beside the
 // manager) folds the same way as every card above it. It used to be the one
 // card with no title and no fold (Lawrence, 15 Oct).
-export default function Panel({ title, count = null, children, defaultOpen = true, id }) {
+//
+// Linked to (26 Oct 2026): a link to "#<id>" -- or, with opensFor, to any
+// "#<opensFor>..." inside the card, such as one person's row in People on
+// this week -- opens a folded card and scrolls to the target once it is
+// drawn. A folded card's contents are not in the page, so the browser's own
+// jump to the anchor would find nothing. Use PanelLink below for such links:
+// it also works when the address already ends in that anchor.
+export default function Panel({ title, count = null, children, defaultOpen = true, id, opensFor = null }) {
   // count may be a number ("3") or a phrase ("4 signed") — whichever says the
   // most in the fewest characters for that card.
   const [open, setOpen] = useState(defaultOpen);
+  const [scrollTo, setScrollTo] = useState(null);
+  useEffect(() => {
+    if (!id && !opensFor) return undefined;
+    const check = () => {
+      const target = decodeURIComponent(window.location.hash.slice(1));
+      if (!target) return;
+      if (target === id || (opensFor && target.startsWith(opensFor))) {
+        setOpen(true);
+        setScrollTo({ target });
+      }
+    };
+    check();
+    window.addEventListener('hashchange', check);
+    return () => window.removeEventListener('hashchange', check);
+  }, [id, opensFor]);
+  useEffect(() => {
+    if (open && scrollTo) document.getElementById(scrollTo.target)?.scrollIntoView({ block: 'start' });
+  }, [open, scrollTo]);
   return (
     <div id={id} className="rounded-lg bg-white border border-neutral-200 shadow-xs scroll-mt-4">
       <button
@@ -47,5 +72,24 @@ export default function Panel({ title, count = null, children, defaultOpen = tru
       </button>
       {open && <div className="border-t border-neutral-100 px-6 pb-6 pt-4">{children}</div>}
     </div>
+  );
+}
+
+// An in-page link to a Panel, or to something inside one (see opensFor). A
+// plain <a href="#x"> fires no hashchange when the address already ends in
+// #x -- after the card was folded again, say -- so this one announces it.
+export function PanelLink({ to, className = 'underline', children }) {
+  return (
+    <a
+      href={`#${to}`}
+      className={className}
+      onClick={() => {
+        if (decodeURIComponent(window.location.hash.slice(1)) === to) {
+          window.dispatchEvent(new HashChangeEvent('hashchange'));
+        }
+      }}
+    >
+      {children}
+    </a>
   );
 }

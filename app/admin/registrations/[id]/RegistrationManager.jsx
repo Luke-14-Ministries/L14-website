@@ -125,6 +125,20 @@ function ErrorNote({ children }) {
   );
 }
 
+// Under a waitlisted person's status (0128): why, as the family also reads it.
+function WaitlistReason({ participant }) {
+  if (participant.status !== 'waitlisted') return null;
+  return (
+    <p className="mt-1 max-w-xs text-xs text-orange-900">
+      {participant.waitlist_reason ? (
+        <>Why: &ldquo;{participant.waitlist_reason}&rdquo; <span className="text-neutral-500">(the family sees this)</span></>
+      ) : (
+        <span className="text-neutral-500">No waitlist reason recorded</span>
+      )}
+    </p>
+  );
+}
+
 // --- the per-participant status control (#14) --------------------------------
 function StatusControl({ registrationId, participant }) {
   const router = useRouter();
@@ -134,8 +148,29 @@ function StatusControl({ registrationId, participant }) {
   function change(e) {
     const next = e.target.value;
     setError('');
+    // Waitlisting says why (0128), asked the way this control already asks
+    // about a short deposit. Cancelling the prompt changes nothing.
+    let options = {};
+    if (next === 'waitlisted') {
+      const typed = window.prompt(
+        'Why is this person waitlisted? (required, up to 500 characters)\n\nThe family can see this reason.',
+        ''
+      );
+      const reason = (typed ?? '').trim();
+      if (!reason) {
+        if (typed != null) setError('Say why they are waitlisted — nothing was changed.');
+        router.refresh(); // put the dropdown back where it was
+        return;
+      }
+      if (reason.length > 500) {
+        setError('Keep the waitlist reason to 500 characters — nothing was changed.');
+        router.refresh();
+        return;
+      }
+      options = { reason };
+    }
     start(async () => {
-      const res = await setParticipantStatus(registrationId, participant.id, next);
+      const res = await setParticipantStatus(registrationId, participant.id, next, options);
       if (res.needsOverride) {
         // The deposit is short. Say the numbers and let the registrar decide
         // — a cheque in the post is real, and a block they cannot pass is
@@ -147,7 +182,7 @@ Confirm anyway?`)) {
             registrationId,
             participant.id,
             next,
-            { override: true }
+            { ...options, override: true }
           );
           if (!forced.ok) setError(forced.error);
           else router.refresh();
@@ -185,6 +220,7 @@ Confirm anyway?`)) {
         </select>
         {pending && <span className="text-xs text-neutral-400">saving…</span>}
       </div>
+      <WaitlistReason participant={participant} />
       <ErrorNote>{error}</ErrorNote>
     </div>
   );
@@ -402,7 +438,12 @@ function ParticipantRow({
   }
 
   return (
-    <div className="border-t border-neutral-100 py-4 first:border-t-0">
+    // The Review card links each decided person here (#person-<id>, 0128);
+    // People on this week opens itself for it (Panel's opensFor).
+    <div
+      id={`person-${participant.id}`}
+      className="scroll-mt-4 border-t border-neutral-100 py-4 first:border-t-0 target:rounded-sm target:bg-amber-50"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
         {/* As on Check-In: absent when there is no photo, or when this staff
@@ -495,9 +536,12 @@ function ParticipantRow({
         {canWrite ? (
           <StatusControl registrationId={registrationId} participant={participant} />
         ) : (
-          <span className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-700">
-            {participant.status}
-          </span>
+          <div className="shrink-0">
+            <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-700">
+              {participant.status}
+            </span>
+            <WaitlistReason participant={participant} />
+          </div>
         )}
       </div>
 
@@ -1207,7 +1251,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
   }
 
   return (
-    <Panel title="Payments" count={payments.length}>
+    <Panel title="Payments" count={payments.length} id="payments">
       <p className="text-sm text-neutral-500 mb-4">
         Refunds go back against the payment they came from. Card and bank payments are
         refunded through Stripe here; checks and cash are recorded here and paid by the
@@ -1873,6 +1917,10 @@ export default function RegistrationManager({
             id: p.id,
             status: p.status,
             name: `${p.person?.preferred_name || p.person?.first_name || ''} ${p.person?.last_name || ''}`.trim(),
+            // 0128: why waitlisted, and who last changed the status, when.
+            waitlistReason: p.waitlist_reason ?? null,
+            changedAt: p.status_changed_at ?? null,
+            changedBy: p.status_changed_by_name ?? null,
           }))}
           review={review}
           awaiting={awaiting}
@@ -1948,7 +1996,7 @@ export default function RegistrationManager({
           depositWaived={Boolean(depositWaived)}
         />}
 
-        <Panel title="People on this week" count={parts.length}>
+        <Panel title="People on this week" count={parts.length} id="people" opensFor="person-">
           <p className="text-sm text-neutral-500 mb-2">
             Change a status to move someone off &ldquo;submitted — pending review.&rdquo;
           </p>

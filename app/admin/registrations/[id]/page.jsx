@@ -36,7 +36,8 @@ export default async function RegistrationDetailPage({ params }) {
                     home_church, how_did_you_hear, how_did_you_hear_from ),
        events ( id, name, event_type, starts_on, ends_on, deposit_cents ),
        registration_participants (
-         id, camp_role, status,
+         id, camp_role, status, confirmed_at,
+         status_changed_at, status_changed_by, waitlist_reason,
          tshirt_size, first_time_attending,
          participant_money ( fee_cents, scholarship_cents, discount_cents, discount_reason ),
          people ( id, first_name, last_name, preferred_name, date_of_birth,
@@ -71,6 +72,24 @@ export default async function RegistrationDetailPage({ params }) {
   const hold = reg.hold_since
     ? { since: reg.hold_since, reason: reg.hold_reason ?? null, by: holdBy }
     : null;
+
+  // Who last changed each person's status (0128), by name, for the Review
+  // card's "Waitlisted: ... (when, by whom)" lines. Rows from before 0128
+  // have no stamp; a server-side change has a time but no name.
+  const changerIds = [
+    ...new Set((reg.registration_participants ?? []).map((p) => p.status_changed_by).filter(Boolean)),
+  ];
+  let changerNames = new Map();
+  if (changerIds.length) {
+    const { data: changers, error: changersError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .in('id', changerIds);
+    if (changersError) throw new Error(`Status changed by: ${changersError.message}`);
+    changerNames = new Map(
+      (changers ?? []).map((c) => [c.id, `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || null])
+    );
+  }
 
   // Every registration this household holds, for the header's "Registered
   // for" list (15 Oct 2026): a family at two events is one family, and the
@@ -338,6 +357,12 @@ export default async function RegistrationDetailPage({ params }) {
         id: p.id,
         camp_role: p.camp_role,
         status: p.status,
+        // 0128: why they are waitlisted (the family reads it too), and who
+        // last changed the status and when. Confirmed rows from before 0128
+        // fall back to confirmed_at for the when.
+        waitlist_reason: p.waitlist_reason ?? null,
+        status_changed_at: p.status_changed_at ?? (p.status === 'confirmed' ? p.confirmed_at : null) ?? null,
+        status_changed_by_name: changerNames.get(p.status_changed_by) ?? null,
         // Flattened from participant_money so the client component keeps
         // its column names; each is null when the money is not this
         // staffer's to see (canSeeMoney below is false in the same case).

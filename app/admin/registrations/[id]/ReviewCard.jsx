@@ -27,16 +27,40 @@
 // as a blue "Family replied" box until someone with Registration write marks
 // it read (or writes back to the family, which counts as reading it). No
 // email is sent on a reply -- the app is the one place it arrives.
+//
+// Decided people come first (0128, Lawrence 26 Oct 2026: a waitlisted family
+// read as "nobody waiting / No review needed yet" -- "not obvious they were
+// waitlisted or why"). Waitlisting asks for a reason the family can read; the
+// top of the card lists who is waitlisted (amber, with the reason, when and
+// by whom) and who is confirmed (a plain line), each name a link to that
+// person's row in People on this week.
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import Panel from './Panel';
+import Panel, { PanelLink } from './Panel';
 import { reviewRegistration, markFamilyReplyRead } from './actions';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
+import { whenInMorristown } from '@/lib/events';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 const when = (iso) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+// " (Oct 26, 3:21 PM, by Ellen Smith)" -- when and by whom a status was last
+// changed (0128); '' for rows from before the stamp existed.
+function changedNote(p) {
+  if (!p.changedAt) return p.changedBy ? ` (by ${p.changedBy})` : '';
+  return ` (${whenInMorristown(p.changedAt)}${p.changedBy ? `, by ${p.changedBy}` : ''})`;
+}
+
+// The link to People on this week, which opens it if folded (Panel opensFor).
+function PeopleLink() {
+  return (
+    <PanelLink to="people">
+      <em>People on this week</em>
+    </PanelLink>
+  );
+}
 
 export default function ReviewCard({
   registrationId,
@@ -64,6 +88,8 @@ export default function ReviewCard({
   const [undoReason, setUndoReason] = useState('');
   const [holding, setHolding] = useState(false);
   const [holdReason, setHoldReason] = useState('');
+  const [waitlisting, setWaitlisting] = useState(false);
+  const [waitlistReason, setWaitlistReason] = useState('');
 
   const waiting = participants.filter((p) => p.status === 'submitted');
   const cls = review ? REVIEW_CLASS[review.review_class] : null;
@@ -107,6 +133,8 @@ export default function ReviewCard({
       setUndoReason('');
       setHolding(false);
       setHoldReason('');
+      setWaitlisting(false);
+      setWaitlistReason('');
       router.refresh();
     });
   }
@@ -114,19 +142,68 @@ export default function ReviewCard({
   // A hold (0098) is offered while somebody holds a decided place.
   const canHold = participants.some((p) => p.status === 'confirmed' || p.status === 'waitlisted');
 
+  // Who has been decided (0128): the first thing the card says about them.
+  const confirmed = participants.filter((p) => p.status === 'confirmed');
+  const waitlisted = participants.filter((p) => p.status === 'waitlisted');
+  const decidedOnly = waiting.length === 0 && confirmed.length + waitlisted.length > 0;
+  // "No review needed yet" is wrong once people are decided: say so instead.
+  const hint = !cls
+    ? ''
+    : !decidedOnly
+      ? cls.hint
+      : review.review_class === 'neither' && review.deposit_expected_cents > 0
+        ? 'Decided — the deposit is still owed'
+        : 'Decided';
+
   const count = waiting.length === 0
-    ? 'nobody waiting'
+    ? decidedOnly
+      ? [confirmed.length && `${confirmed.length} confirmed`, waitlisted.length && `${waitlisted.length} waitlisted`]
+          .filter(Boolean)
+          .join(' · ')
+      : 'nobody waiting'
     : onFamily
       ? `${waiting.length} waiting on the family`
       : `${waiting.length} waiting on staff`;
 
   return (
     <Panel title="Review" count={count} id="review">
+      {waitlisted.length > 0 && (
+        <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-bold">Waitlisted</p>
+          <ul className="mt-1 space-y-1">
+            {waitlisted.map((p) => (
+              <li key={p.id}>
+                <PanelLink to={`person-${p.id}`} className="font-semibold underline">
+                  {p.name || 'Person'}
+                </PanelLink>
+                {' — '}
+                {p.waitlistReason ? <>&ldquo;{p.waitlistReason}&rdquo;</> : <em>no reason recorded</em>}
+                {changedNote(p)}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs">The family sees the reason on their dashboard.</p>
+        </div>
+      )}
+      {confirmed.length > 0 && (
+        <p className="mb-3 text-sm text-neutral-700">
+          <span className="font-semibold">Confirmed:</span>{' '}
+          {confirmed.map((p, i) => (
+            <span key={p.id}>
+              {i > 0 && ', '}
+              <PanelLink to={`person-${p.id}`} className="underline">
+                {p.name || 'Person'}
+              </PanelLink>
+              {changedNote(p)}
+            </span>
+          ))}
+        </p>
+      )}
       {cls && (
         <p className="text-sm mb-3">
           <span className={`inline-block rounded-sm px-2 py-0.5 font-semibold ${cls.cls}`}>{cls.label}</span>{' '}
           <span className="text-neutral-600">
-            {cls.hint}
+            {hint}
             {review.deposit_expected_cents > 0 && (
               <>
                 {' '}· received {money(review.confirmed_paid_cents)} of a {money(review.deposit_expected_cents)} deposit
@@ -359,7 +436,7 @@ export default function ReviewCard({
       ) : waiting.length === 0 ? (
         <p className="text-sm text-neutral-600">
           Nobody on this registration is waiting on review. Each person&rsquo;s status is in{' '}
-          <em>People on this week</em>.
+          <PeopleLink />.
         </p>
       ) : (
         <>
@@ -369,7 +446,7 @@ export default function ReviewCard({
               {waiting.map((p) => p.name).join(', ')}
             </span>
             . Approving confirms them and takes this family out of Awaiting Review; to decide
-            person by person, use <em>People on this week</em>.
+            person by person, use <PeopleLink />.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -380,14 +457,16 @@ export default function ReviewCard({
             >
               {pending ? 'Saving…' : `Approve ${waiting.length === 1 ? 'this person' : `all ${waiting.length}`}`}
             </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => run('waitlist')}
-              className="btn-outline py-1.5! text-sm"
-            >
-              Waitlist {waiting.length === 1 ? 'this person' : `all ${waiting.length}`}
-            </button>
+            {!waitlisting && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => setWaitlisting(true)}
+                className="btn-outline py-1.5! text-sm"
+              >
+                Waitlist {waiting.length === 1 ? 'this person' : `all ${waiting.length}`}…
+              </button>
+            )}
             {!asking && (
               <button
                 type="button"
@@ -399,6 +478,40 @@ export default function ReviewCard({
               </button>
             )}
           </div>
+          {/* Waitlisting says why (0128): required, and the family reads it. */}
+          {waitlisting && (
+            <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+              <label className="block text-sm font-semibold mb-1" htmlFor="waitlist-reason">
+                Why {waiting.length === 1 ? 'is this person' : 'are they'} waitlisted?
+              </label>
+              <textarea
+                id="waitlist-reason"
+                rows={2}
+                value={waitlistReason}
+                onChange={(e) => setWaitlistReason(e.target.value)}
+                maxLength={500}
+                placeholder="e.g. The camper cabins are full for this week; we will call if a place opens."
+                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-neutral-500">
+                The family can see this reason. It is kept with each person and shown at the top of
+                this card; nothing is emailed.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={pending || !waitlistReason.trim()}
+                  onClick={() => run('waitlist', { reason: waitlistReason })}
+                  className="btn-primary py-1.5! text-sm disabled:opacity-50"
+                >
+                  {pending ? 'Saving…' : `Waitlist ${waiting.length === 1 ? 'this person' : `all ${waiting.length}`}`}
+                </button>
+                <button type="button" onClick={() => setWaitlisting(false)} className="text-sm underline">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
           {asking && (
             <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
               <label className="block text-sm font-semibold mb-1" htmlFor="ask-reason">

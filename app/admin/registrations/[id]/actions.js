@@ -135,6 +135,19 @@ export async function setParticipantStatus(
   if (authError) return { ok: false, error: authError };
   if (!STATUSES.includes(status)) return { ok: false, error: 'Unknown status.' };
 
+  // Waitlisting says why (0128, Lawrence 26 Oct 2026: "not obvious they were
+  // waitlisted or why"). Written in the same update as the status; the
+  // database stamps who and when, and clears the reason when the person
+  // leaves the waitlist. The family reads it on their dashboard.
+  let waitlistReason = null;
+  if (status === 'waitlisted') {
+    waitlistReason = typeof options.reason === 'string' ? options.reason.trim() : '';
+    if (!waitlistReason) return { ok: false, error: 'Say why they are waitlisted — the family sees the reason.' };
+    if (waitlistReason.length > 500) {
+      return { ok: false, error: 'Keep the waitlist reason to 500 characters.' };
+    }
+  }
+
   // CONFIRMED MEANS THE PLACE IS HELD, AND A PLACE IS HELD BY A DEPOSIT.
   //
   // Asked for 31 Aug 2026. Nothing checked before: a registrar could confirm a
@@ -203,6 +216,7 @@ export async function setParticipantStatus(
   if (status === 'submitted') patch.submitted_at = now;
   if (status === 'confirmed') patch.confirmed_at = now;
   if (status === 'cancelled') patch.cancelled_at = now;
+  if (status === 'waitlisted') patch.waitlist_reason = waitlistReason;
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -807,8 +821,17 @@ export async function reviewRegistration(registrationId, { action, reason = '', 
     if (error) return { ok: false, error: error.message };
     if (!rows?.length) return { ok: false, error: 'Nobody on this registration is waiting on review.' };
     const next = action === 'approve' ? 'confirmed' : 'waitlisted';
+    // Waitlisting needs its reason (0128); checked once, before anybody moves.
+    const waitlistReason = next === 'waitlisted' && typeof reason === 'string' ? reason.trim() : '';
+    if (next === 'waitlisted' && !waitlistReason) {
+      return { ok: false, error: 'Say why they are waitlisted — the family sees the reason.' };
+    }
+    if (waitlistReason.length > 500) return { ok: false, error: 'Keep the waitlist reason to 500 characters.' };
     for (const r of rows) {
-      const res = await setParticipantStatus(registrationId, r.id, next, { override });
+      const res = await setParticipantStatus(registrationId, r.id, next, {
+        override,
+        ...(next === 'waitlisted' ? { reason: waitlistReason } : {}),
+      });
       if (!res.ok) return res;
     }
     // A decision made is no longer waiting on anybody, and lifts a hold (0098).
