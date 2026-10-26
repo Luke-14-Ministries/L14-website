@@ -48,15 +48,21 @@ export default async function BuddyPrintPage({ searchParams }) {
   const eventId = typeof params?.event === 'string' ? params.event : '';
   const only = typeof params?.buddy === 'string' ? params.buddy : '';
 
-  const { data: event } = eventId
+  const { data: event, error: eventError } = eventId
     ? await supabase
         .from('events')
         .select('id, name, starts_on, ends_on, lodging_assignments_published_at')
         .eq('id', eventId)
         .maybeSingle()
-    : { data: null };
+    : { data: null, error: null };
+  // A failed read is an error page, never an empty sheet (CLAUDE.md).
+  if (eventError) throw new Error(`Buddy sheets — event: ${eventError.message}`);
 
-  const [{ data: assignments }, { data: participants }, { data: programs }] = await Promise.all([
+  const [
+    { data: assignments, error: assignError },
+    { data: participants, error: partError },
+    { data: programs, error: progError },
+  ] = await Promise.all([
     eventId
       ? supabase
           .from('buddy_assignments')
@@ -80,19 +86,23 @@ export default async function BuddyPrintPage({ searchParams }) {
       : Promise.resolve({ data: [] }),
     supabase.from('programs').select('id, name'),
   ]);
+  if (assignError) throw new Error(`Buddy sheets — pairings: ${assignError.message}`);
+  if (partError) throw new Error(`Buddy sheets — people: ${partError.message}`);
+  if (progError) throw new Error(`Buddy sheets — programs: ${progError.message}`);
   const programName = new Map((programs ?? []).map((g) => [g.id, g.name]));
   const byId = new Map((participants ?? []).map((p) => [p.id, p]));
 
   // Rooms only once published to families -- the same rule the dashboard
   // follows, so a buddy never knows a room before the family does.
   const camperIds = (assignments ?? []).map((a) => a.camper_participant_id);
-  const { data: lodgingRows } =
+  const { data: lodgingRows, error: lodgingError } =
     event?.lodging_assignments_published_at && camperIds.length
       ? await supabase
           .from('lodging_assignments')
           .select('registration_participant_id, lodgings ( name, parent_id )')
           .in('registration_participant_id', camperIds)
-      : { data: [] };
+      : { data: [], error: null };
+  if (lodgingError) throw new Error(`Buddy sheets — rooms: ${lodgingError.message}`);
   const roomOf = new Map((lodgingRows ?? []).map((r) => [r.registration_participant_id, r.lodgings?.name]));
 
   // Group by buddy: one sheet per volunteer, every camper they are paired with.

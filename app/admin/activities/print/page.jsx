@@ -36,23 +36,26 @@ export default async function ActivityPrintPage({ searchParams }) {
 
   const supabase = await createClient();
 
-  const { data: events } = await supabase
+  const { data: events, error: eventsError } = await supabase
     .from('events')
     .select('id, name, starts_on, ends_on')
     .order('starts_on');
+  // A failed read is an error page, never an empty register (CLAUDE.md).
+  if (eventsError) throw new Error(`Activity sheets — events: ${eventsError.message}`);
 
   const selected =
     (typeof params?.event === 'string' && params.event) || events?.[0]?.id || null;
   const event = (events ?? []).find((e) => e.id === selected) ?? null;
 
-  const { data: activities } = selected
+  const { data: activities, error: activitiesError } = selected
     ? await supabase
         .from('activities')
         .select('id, name, description, capacity, active, sort_order, provider_name, provider_url')
         .eq('event_id', selected)
         .eq('active', true)
         .order('sort_order')
-    : { data: [] };
+    : { data: [], error: null };
+  if (activitiesError) throw new Error(`Activity sheets — activities: ${activitiesError.message}`);
 
   // ?activity=<id> prints one sheet. Asked for 14 Oct 2026: the leader of
   // one activity wants their own register, not the whole booklet.
@@ -61,16 +64,17 @@ export default async function ActivityPrintPage({ searchParams }) {
 
   const activityIds = (activities ?? []).map((a) => a.id);
 
-  const { data: slotRows } = activityIds.length
+  const { data: slotRows, error: slotsError } = activityIds.length
     ? await supabase
         .from('activity_slots')
         .select('id, activity_id, slot_date, start_time, end_time, label, capacity')
         .in('activity_id', activityIds)
         .order('slot_date')
         .order('start_time')
-    : { data: [] };
+    : { data: [], error: null };
+  if (slotsError) throw new Error(`Activity sheets — times: ${slotsError.message}`);
 
-  const { data: signups } = activityIds.length
+  const { data: signups, error: signupsError } = activityIds.length
     ? await supabase
         .from('activity_signups')
         .select(
@@ -81,7 +85,8 @@ export default async function ActivityPrintPage({ searchParams }) {
              registrations ( households ( display_name ) ) )`
         )
         .in('activity_id', activityIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (signupsError) throw new Error(`Activity sheets — sign-ups: ${signupsError.message}`);
 
   // Provider confirmations (0087): on a provider-run activity the sheet says
   // who has one and who has not, so the day starts with the list, not a hunt.
