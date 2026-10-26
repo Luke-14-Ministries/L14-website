@@ -28,6 +28,7 @@ export default async function RegistrationDetailPage({ params }) {
     .from('registrations')
     .select(
       `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
+       family_replied_at, family_reply_seen_at, family_reply_unread,
        deposit_waived_at, deposit_waived_by, deposit_waived_reason,
        hold_since, hold_reason, hold_by,
        households ( id, display_name, email, phone,
@@ -187,13 +188,15 @@ export default async function RegistrationDetailPage({ params }) {
       .filter((r) => !r.cancelled);
   }
 
-  // Notes TO the family (short staff messages shown on their dashboard),
-  // newest first, with author names looked up separately.
-  const { data: msgs } = await supabase
+  // The conversation with the family (0019; their replies since 0126): staff
+  // notes and the family's replies, OLDEST first so it reads as a thread,
+  // with author names looked up separately.
+  const { data: msgs, error: msgsError } = await supabase
     .from('registration_family_messages')
-    .select('id, body, created_by, created_at')
+    .select('id, body, created_by, created_at, author_kind')
     .eq('registration_id', id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
+  if (msgsError) throw new Error(`Notes to the family: ${msgsError.message}`);
   const authorIds = [...new Set((msgs ?? []).map((m) => m.created_by).filter(Boolean))];
   let authorNames = new Map();
   if (authorIds.length) {
@@ -206,9 +209,27 @@ export default async function RegistrationDetailPage({ params }) {
   const familyMessages = (msgs ?? []).map((m) => ({
     id: m.id,
     body: m.body,
-    author: authorNames.get(m.created_by) ?? 'Staff',
+    fromFamily: m.author_kind === 'family',
+    author:
+      authorNames.get(m.created_by) ?? (m.author_kind === 'family' ? 'The family' : 'Staff'),
     at: dayInMorristown(m.created_at),
+    createdAt: m.created_at,
   }));
+  // The family's latest reply (0126) and whether staff have read it since --
+  // family_reply_unread is generated in the database, the one rule.
+  const familyReply = reg.family_replied_at
+    ? {
+        at: reg.family_replied_at,
+        unread: Boolean(reg.family_reply_unread),
+        // What they wrote since staff last read (or the last reply).
+        messages: familyMessages.filter(
+          (m) =>
+            m.fromFamily &&
+            (!reg.family_reply_seen_at ||
+              Date.parse(m.createdAt) > Date.parse(reg.family_reply_seen_at))
+        ),
+      }
+    : null;
 
   // Current media / directory answers for these people, and the agreements
   // this household signed for this registration. Both are new surfaces: until
@@ -456,6 +477,7 @@ export default async function RegistrationDetailPage({ params }) {
       familyRegistrations={familyRegistrations}
       review={reviewRow ?? null}
       awaiting={{ since: reg.awaiting_family_since ?? null, reason: reg.awaiting_family_reason ?? null }}
+      familyReply={familyReply}
       hold={hold}
       depositWaived={reg.deposit_waived_at ? { at: reg.deposit_waived_at, reason: reg.deposit_waived_reason ?? null } : null}
       depositCents={reg.events?.deposit_cents ?? 0}

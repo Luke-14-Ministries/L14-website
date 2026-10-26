@@ -736,25 +736,51 @@ export async function setAdjustments(registrationId, participantId, input) {
 // ---------------------------------------------------------------------------
 // Notes TO the family (registration_family_messages, 0019): short messages
 // shown on the family's dashboard — "We added a $100 scholarship credit to
-// your registration on 8/17." Registrar-gated here; RLS is the boundary.
+// your registration on 8/17." Since 0126 the same table is the whole
+// conversation: the family's replies (family_reply_to_staff(), from their
+// dashboard) sit in it too, and nobody signed in inserts directly -- staff
+// write through staff_message_to_family(), which checks Registration write
+// and counts an unread family reply as read (writing back is reading it).
 
 export async function addFamilyMessage(registrationId, body) {
   const staff = await getStaff();
   if (!can(staff, 'write:registration')) return { ok: false, error: 'Not permitted.' };
-  const text = typeof body === 'string' ? body.trim().slice(0, 1000) : '';
+  const text = typeof body === 'string' ? body.trim() : '';
   if (!text) return { ok: false, error: 'Write the note first.' };
+  if (text.length > 4000) return { ok: false, error: 'That note is too long — please keep it under 4,000 characters.' };
 
   const supabase = await createClient();
-  const { error } = await supabase.from('registration_family_messages').insert({
-    registration_id: registrationId,
-    body: text,
-    created_by: staff.userId,
+  const { error } = await supabase.rpc('staff_message_to_family', {
+    p_registration_id: registrationId,
+    p_body: text,
   });
   if (error) {
     console.error('addFamilyMessage:', error.message);
-    return { ok: false, error: 'The note could not be saved.' };
+    return { ok: false, error: `The note could not be saved: ${error.message}` };
   }
   revalidatePath(`/admin/registrations/${registrationId}`);
+  revalidatePath('/admin/review');
+  revalidatePath('/account/dashboard');
+  return { ok: true };
+}
+
+// "Mark as read" on a family's reply (0126): stamps family_reply_seen_at,
+// which turns off the blue "Family replied" flag, the queue's tab and the nav
+// count. family_replied_at is left alone, so the family's dashboard still says
+// when their reply was sent. The guard on registrations lets only
+// Registration write move the stamp.
+export async function markFamilyReplyRead(registrationId) {
+  const { error: authError } = await requireRegistrar();
+  if (authError) return { ok: false, error: authError };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('registrations')
+    .update({ family_reply_seen_at: new Date().toISOString() })
+    .eq('id', registrationId)
+    .select('id');
+  if (error) return { ok: false, error: error.message };
+  if (!data?.length) return { ok: false, error: 'That registration could not be updated.' };
+  revalidateAll(registrationId);
   return { ok: true };
 }
 
@@ -911,15 +937,20 @@ export async function deleteFamilyMessage(registrationId, messageId) {
   if (!can(staff, 'write:registration')) return { ok: false, error: 'Not permitted.' };
 
   const supabase = await createClient();
-  const { error } = await supabase
+  // Only a STAFF note can be removed (0126's delete policy): a family's reply
+  // is their words and stays in the record.
+  const { data, error } = await supabase
     .from('registration_family_messages')
     .delete()
     .eq('id', messageId)
-    .eq('registration_id', registrationId);
+    .eq('registration_id', registrationId)
+    .eq('author_kind', 'staff')
+    .select('id');
   if (error) {
     console.error('deleteFamilyMessage:', error.message);
     return { ok: false, error: 'The note could not be removed.' };
   }
+  if (!data?.length) return { ok: false, error: 'That note could not be removed — a family’s reply stays in the record.' };
   revalidatePath(`/admin/registrations/${registrationId}`);
   return { ok: true };
 }

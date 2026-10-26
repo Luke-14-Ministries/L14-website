@@ -1105,7 +1105,10 @@ function HouseholdEditor({ registrationId, household }) {
 }
 
 // Short notes TO the family — shown on their dashboard the moment they're
-// saved. Kept separate from the staff-internal registration notes.
+// saved. Kept separate from the staff-internal registration notes. Since 0126
+// this is the whole conversation: the family's replies from their dashboard
+// are in it too, oldest first, highlighted blue. A family's reply cannot be
+// removed (their words are the record); a staff note can.
 function FamilyMessages({ registrationId, messages, canWrite = true }) {
   const router = useRouter();
   const [body, setBody] = useState('');
@@ -1132,23 +1135,32 @@ function FamilyMessages({ registrationId, messages, canWrite = true }) {
   }
 
   return (
-    <Panel title="Notes to the family" count={messages.length || null}>
+    <Panel title="Notes to and from the family" count={messages.length || null} id="family-messages">
       <p className="text-sm text-neutral-500 mb-3">
         Shown on the family&rsquo;s dashboard under this registration — e.g. &ldquo;We added a
         $100 scholarship credit to your registration on 8/17.&rdquo; Everything written here is
-        visible to the family. The one note only staff can see is the one kept with a
+        visible to the family, and they can reply from their dashboard; their replies appear
+        here in blue. The one note only staff can see is the one kept with a
         scholarship or discount (People on this week → Scholarship &amp; discount → Note).
       </p>
       {messages.length > 0 && (
         <ul className="mb-4 space-y-2">
           {messages.map((m) => (
-            <li key={m.id} className="rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">
+            <li
+              key={m.id}
+              className={`rounded-sm border px-3 py-2 text-sm ${
+                m.fromFamily ? 'border-blue-300 bg-blue-50' : 'border-neutral-200 bg-neutral-50'
+              }`}
+            >
+              {m.fromFamily && (
+                <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-blue-800">Family replied</p>
+              )}
               <p className="text-neutral-800 whitespace-pre-wrap">{m.body}</p>
               <p className="mt-1 flex items-center justify-between text-xs text-neutral-500">
                 <span>
                   {m.author} · {m.at}
                 </span>
-                {canWrite && (
+                {canWrite && !m.fromFamily && (
                   <button onClick={() => remove(m.id)} className="text-red-700 underline">
                     Remove
                   </button>
@@ -1743,6 +1755,8 @@ export default function RegistrationManager({
   familyRegistrations = [],
   review = null,
   awaiting = null,
+  // The family's reply (0126): { at, unread, messages } or null.
+  familyReply = null,
   hold = null,
   depositWaived = null,
   // Payments read (0101/0103). Without it the balances read as $0 paid, so
@@ -1862,12 +1876,19 @@ export default function RegistrationManager({
           }))}
           review={review}
           awaiting={awaiting}
+          familyReply={familyReply}
           hold={hold}
           depositWaived={depositWaived}
           depositCents={depositCents}
           canWrite={canWrite}
           canDecide={canDecide}
         />
+      </div>
+
+      {/* The conversation sits with the Review card (0126): a family's reply
+          is part of the review, not something to scroll for. */}
+      <div className="mb-6">
+        <FamilyMessages registrationId={registration.id} messages={familyMessages} canWrite={canWrite} />
       </div>
 
       {depositShort && (
@@ -2029,8 +2050,6 @@ export default function RegistrationManager({
             </div>
           )}
         </Panel>
-
-        <FamilyMessages registrationId={registration.id} messages={familyMessages} canWrite={canWrite} />
 
         {registration.family_notes && (
           <Panel title="Notes from the family">

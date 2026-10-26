@@ -21,11 +21,17 @@
 //                 until a registrar says the family has answered, or
 //                 approves or waitlists them.
 // Person-by-person decisions stay in "People on this week".
+//
+// The family answers in the app (0126, Lawrence 26 Oct 2026): their reply
+// from the dashboard clears "waiting on the family" by itself and shows here
+// as a blue "Family replied" box until someone with Registration write marks
+// it read (or writes back to the family, which counts as reading it). No
+// email is sent on a reply -- the app is the one place it arrives.
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Panel from './Panel';
-import { reviewRegistration } from './actions';
+import { reviewRegistration, markFamilyReplyRead } from './actions';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -37,6 +43,8 @@ export default function ReviewCard({
   participants,
   review,
   awaiting,
+  // { at, unread, messages } -- the family's reply (0126), or null.
+  familyReply = null,
   hold = null,
   depositWaived = null,
   depositCents = 0,
@@ -59,6 +67,18 @@ export default function ReviewCard({
   const cls = review ? REVIEW_CLASS[review.review_class] : null;
   const flags = review?.flags ?? [];
   const onFamily = Boolean(awaiting?.since);
+
+  function markRead() {
+    setError('');
+    start(async () => {
+      const res = await markFamilyReplyRead(registrationId);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      router.refresh();
+    });
+  }
 
   function run(action, extra = {}) {
     setError('');
@@ -232,12 +252,42 @@ export default function ReviewCard({
           )}
         </div>
       )}
+      {/* The family replied in the app (0126). Blue: it is news for staff,
+          not a problem. */}
+      {familyReply?.unread && (
+        <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 text-sm">
+          <p className="font-bold text-blue-900">Family replied {when(familyReply.at)}</p>
+          {(familyReply.messages ?? []).map((m) => (
+            <p key={m.id} className="mt-1 whitespace-pre-wrap text-blue-900">
+              &ldquo;{m.body}&rdquo; <span className="text-xs text-blue-800">· {m.at}</span>
+            </p>
+          ))}
+          <p className="mt-1 text-xs text-blue-900">
+            Their reply put this registration back in front of staff. The whole conversation is in{' '}
+            <a href="#family-messages" className="underline">
+              Notes to and from the family
+            </a>
+            ; writing back to them there also marks this as read.
+          </p>
+          {canWrite && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={markRead}
+              className="btn-outline py-1.5! mt-2 text-sm"
+            >
+              Mark as read
+            </button>
+          )}
+        </div>
+      )}
       {onFamily && (
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
           <p className="font-bold text-amber-900">Waiting on the family since {when(awaiting.since)}</p>
           {awaiting.reason && <p className="mt-1 text-amber-900">&ldquo;{awaiting.reason}&rdquo;</p>}
           <p className="mt-1 text-xs text-amber-900">
-            Not counted as waiting on staff while this is set. Their edits still arrive in Recent
+            Not counted as waiting on staff while this is set. The family can reply from their
+            dashboard, which brings it back to staff by itself; their edits still arrive in Recent
             Changes.
           </p>
           {canWrite && <button
@@ -314,8 +364,9 @@ export default function ReviewCard({
               />
               <p className="mt-1 text-xs text-neutral-500">
                 Sent to the family as a note on their dashboard, and recorded here as the reason
-                this registration is waiting on them. Nothing is emailed automatically — write to
-                them as well if it is urgent.
+                this registration is waiting on them. They reply on their dashboard, and the reply
+                brings it back to staff. Nothing is emailed automatically — write to them as well
+                if it is urgent.
               </p>
               <div className="mt-2 flex gap-2">
                 <button

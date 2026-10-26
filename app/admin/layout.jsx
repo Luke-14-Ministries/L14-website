@@ -244,6 +244,7 @@ export default async function AdminLayout({ children }) {
       { count: cancelCount },
       { count: scholCount },
       { count: reviewCount },
+      { data: repliedRows, error: repliedError },
     ] = await Promise.all([
         supabase
           .from('family_change_log')
@@ -299,7 +300,19 @@ export default async function AdminLayout({ children }) {
           .select('id, registrations!inner ( awaiting_family_since )', { count: 'exact', head: true })
           .eq('status', 'submitted')
           .is('registrations.awaiting_family_since', null),
+        // A family that replied in the app and nobody has read it yet (0126)
+        // is waiting on staff too. A reply clears "waiting on the family",
+        // so anyone still submitted is already in the count above; what this
+        // adds is the registration with nobody submitted (everyone already
+        // confirmed or waitlisted) -- one per registration, so the family is
+        // counted once.
+        supabase
+          .from('registrations')
+          .select('id, registration_participants ( status )')
+          .eq('family_reply_unread', true)
+          .is('awaiting_family_since', null),
       ]);
+    if (repliedError) console.error('review badge (family replies):', repliedError.message);
     unreviewedChanges = changesCount ?? 0;
     volunteersAwaiting = volCount ?? 0;
 
@@ -345,7 +358,11 @@ export default async function AdminLayout({ children }) {
       openDeletions = delCount ?? 0;
     }
     openScholarships = scholCount ?? 0;
-    awaitingReview = reviewCount ?? 0;
+    awaitingReview =
+      (reviewCount ?? 0) +
+      (repliedRows ?? []).filter(
+        (r) => !(r.registration_participants ?? []).some((p) => p.status === 'submitted')
+      ).length;
   }
 
   // Campers who asked for a one-to-one buddy and still have nobody. Asked for
@@ -559,7 +576,7 @@ export default async function AdminLayout({ children }) {
             }}
             badgeTitles={{
               // [one, many]: AdminNav picks by the count.
-              '/admin/review': ['new sign-up waiting to be confirmed or waitlisted', 'new sign-ups waiting to be confirmed or waitlisted'],
+              '/admin/review': ['new sign-up or family reply waiting on staff', 'new sign-ups or family replies waiting on staff'],
               '/admin/accounts': 'created in the last 7 days',
               '/admin/cancellations': ['family waiting to hear back', 'families waiting to hear back'],
               '/admin/deletion-requests': ['family asking for its data to be deleted', 'families asking for their data to be deleted'],

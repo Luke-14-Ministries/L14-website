@@ -53,8 +53,16 @@ export default async function ReviewQueuePage({ searchParams }) {
   // confirmed registrations included, nobody's status changes. Plans are
   // money, so the tab exists only for Payments read -- the same grant
   // payment_plans_select asks (0101), read with the staff's own client.
+  // ?show=replied (0126, 26 Oct 2026): every registration whose family wrote
+  // to staff in the app and nobody has read it yet (registrations.
+  // family_reply_unread, generated in the database). A reply also clears
+  // "waiting on the family", so those registrations are back under Waiting
+  // on staff -- and an unread reply puts a registration there even when
+  // nobody on it is still submitted, because the family is waiting on an
+  // answer. Every event, not just current ones: an unread message never
+  // hides.
   const seesMoney = can(staff, 'read:payments');
-  const shows = ['all', 'family', 'nodeposit', 'waiver', ...(seesMoney ? ['plan'] : [])];
+  const shows = ['all', 'family', 'replied', 'nodeposit', 'waiver', ...(seesMoney ? ['plan'] : [])];
   const show = shows.includes(params?.show) ? params.show : 'staff';
   const showAll = show === 'all';
   // One event, or every current one (the shared filter, 16 Oct 2026).
@@ -65,7 +73,7 @@ export default async function ReviewQueuePage({ searchParams }) {
   // the caller's rights and shows $0 paid to everyone else, which reads as a
   // family that has not paid. (seesMoney is set above, with the tabs.)
   const [
-    { data: regs },
+    { data: regs, error: regsError },
     { data: parts },
     { data: reviews },
     { data: balances },
@@ -76,7 +84,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       supabase
         .from('registrations')
         .select(
-          'id, created_at, awaiting_family_since, awaiting_family_reason, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'
+          'id, created_at, awaiting_family_since, awaiting_family_reason, family_replied_at, family_reply_unread, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'
         ),
       supabase
         .from('registration_participants')
@@ -97,6 +105,7 @@ export default async function ReviewQueuePage({ searchParams }) {
             .eq('status', 'failed')
         : Promise.resolve({ data: [], error: null }),
     ]);
+  if (regsError) throw new Error(`Registrations: ${regsError.message}`);
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
   if (stoppedError) throw new Error(`Stopped payment plans: ${stoppedError.message}`);
   const stoppedByReg = new Map((stoppedPlans ?? []).map((p) => [p.registration_id, planStoppedAt(p)]));
@@ -133,6 +142,8 @@ export default async function ReviewQueuePage({ searchParams }) {
         created: r.created_at,
         awaitingSince: r.awaiting_family_since ?? null,
         awaitingReason: r.awaiting_family_reason ?? null,
+        familyReplied: Boolean(r.family_reply_unread),
+        familyRepliedAt: r.family_replied_at ?? null,
         owed: owedByReg.get(r.id) ?? [],
         planStopped: stoppedByReg.has(r.id),
         planStoppedAt: stoppedByReg.get(r.id) ?? null,
@@ -143,6 +154,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       if (eventFilter && r.event?.id !== eventFilter) return false;
       if (show === 'all') return true;
       if (show === 'family') return Boolean(r.awaitingSince);
+      if (show === 'replied') return r.familyReplied;
       // Every current event unless one is chosen, as the "All current
       // events" pill says -- a past camp's paperwork is not live work.
       if (show === 'waiver') return r.owed.length > 0 && (eventFilter || isCurrentEventRow(r.event));
@@ -150,7 +162,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       if (show === 'nodeposit') {
         return r.pending.length > 0 && !r.awaitingSince && (r.review?.review_class ?? 'neither') === 'neither';
       }
-      return r.pending.length > 0 && !r.awaitingSince;
+      return (r.pending.length > 0 || r.familyReplied) && !r.awaitingSince;
     });
 
   // The events on the queue, for the filter's pills.
@@ -177,6 +189,8 @@ export default async function ReviewQueuePage({ searchParams }) {
   // How many families are parked with the family, so the "waiting on staff"
   // view can say where the rest went.
   const onFamily = (regs ?? []).filter((r) => r.awaiting_family_since).length;
+  // For the Family replied tab's count (0126): unread replies, every event.
+  const repliedRegs = (regs ?? []).filter((r) => r.family_reply_unread).length;
   const totalFlags = rows.reduce((s, r) => s + (r.review?.flags?.length ?? 0), 0);
   // For the tab's count: registrations at a current event with a waiver owed.
   const waiverRegs = (regs ?? []).filter(
@@ -218,6 +232,18 @@ export default async function ReviewQueuePage({ searchParams }) {
             }`}
           >
             Waiting on the family{onFamily > 0 && ` (${onFamily})`}
+          </Link>
+          <Link
+            href={`/admin/review/?show=replied${eventFilter ? `&event=${eventFilter}` : ''}`}
+            className={`rounded-full px-3 py-1 font-semibold border ${
+              show === 'replied'
+                ? 'bg-blue-700 text-white border-blue-700'
+                : repliedRegs > 0
+                  ? 'border-blue-300 text-blue-800 hover:border-blue-700'
+                  : 'border-neutral-300 text-neutral-700 hover:border-brand'
+            }`}
+          >
+            Family replied{repliedRegs > 0 && ` (${repliedRegs})`}
           </Link>
           <Link
             href={`/admin/review/?show=waiver${eventFilter ? `&event=${eventFilter}` : ''}`}
@@ -303,7 +329,9 @@ export default async function ReviewQueuePage({ searchParams }) {
         <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
           {show === 'family'
             ? 'Nothing is waiting on a family.'
-            : show === 'nodeposit'
+            : show === 'replied'
+              ? 'No family reply is waiting to be read.'
+              : show === 'nodeposit'
               ? 'Everyone waiting on staff has a deposit in, a scholarship requested, or the deposit waived.'
               : show === 'waiver'
                 ? 'Every activity waiver is signed or uploaded.'
@@ -389,10 +417,18 @@ export default async function ReviewQueuePage({ searchParams }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        {flags.length === 0 && !r.awaitingSince && r.owed.length === 0 && !r.planStopped ? (
+                        {flags.length === 0 && !r.awaitingSince && r.owed.length === 0 && !r.planStopped && !r.familyReplied ? (
                           <span className="text-neutral-400">—</span>
                         ) : (
                           <ul className="space-y-0.5">
+                            {r.familyReplied && (
+                              <li>
+                                <span className="inline-block whitespace-nowrap rounded-sm bg-blue-100 px-1.5 py-0.5 text-xs font-semibold text-blue-800">
+                                  Family replied
+                                  {r.familyRepliedAt ? ` ${dayInMorristown(r.familyRepliedAt)}` : ''}
+                                </span>
+                              </li>
+                            )}
                             {r.planStopped && (
                               <li className="whitespace-nowrap text-xs font-semibold text-red-700">
                                 ⚑ Payment plan stopped
