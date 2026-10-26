@@ -212,6 +212,123 @@ begin
 end;
 $$;
 
+-- ---------------------------------------------------------------------
+-- Activity groups (0125): rafts. Its own block, cleaned up after itself,
+-- so the checks below see the seed exactly as it was.
+-- ---------------------------------------------------------------------
+do $$
+declare
+  uA uuid; uR uuid; uC uuid;
+  act uuid; rpA uuid; rpVol uuid; ev uuid;
+  g1 uuid; g2 uuid; pontoon uuid; gP uuid;
+  n bigint;
+begin
+  select v into uA from t where k='uA';   select v into uR from t where k='uR';
+  select v into uC from t where k='uC';   select v into act from t where k='act';
+  select v into rpA from t where k='rpA'; select v into rpVol from t where k='rpVol';
+  select v into ev from t where k='ev';
+
+  set local role authenticated;
+
+  -- Only Activities write creates a group; the default size is 6.
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('activities READ may NOT add a raft (0125)',
+    format('insert into public.activity_groups (activity_id, name) values (%L, ''Raft 1'')', act));
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('a family may NOT add a raft (0125)',
+    format('insert into public.activity_groups (activity_id, name) values (%L, ''Raft 1'')', act));
+  perform pg_temp.as_user(uC);
+  insert into public.activity_groups (activity_id, name, sort_order) values (act, 'Raft 1', 1)
+    returning id into g1;
+  insert into public.activity_groups (activity_id, name, sort_order) values (act, 'Raft 2', 2)
+    returning id into g2;
+  select capacity into n from public.activity_groups where id = g1;
+  perform pg_temp.expect('a new raft holds 6 by default (0125)', n, 6);
+  perform pg_temp.expect_denied('a raft cannot hold 0 (0125)',
+    format('update public.activity_groups set capacity = 0 where id = %L', g1));
+  perform pg_temp.expect_denied('two rafts of one activity cannot share a name (0125)',
+    format('update public.activity_groups set name = ''Raft 1'' where id = %L', g2));
+
+  -- Only Activities write places; the trigger fills the activity.
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('activities READ may NOT place anyone in a raft (0125)',
+    format('insert into public.activity_group_members (group_id, registration_participant_id) values (%L, %L)', g1, rpA));
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('a family may NOT place anyone in a raft (0125)',
+    format('insert into public.activity_group_members (group_id, registration_participant_id) values (%L, %L)', g1, rpA));
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_allowed('activities WRITE places a camper in a raft (0125)',
+    format('insert into public.activity_group_members (group_id, registration_participant_id) values (%L, %L)', g1, rpA));
+  perform pg_temp.expect_allowed('activities WRITE places the camper''s buddy in the same raft (0125)',
+    format('insert into public.activity_group_members (group_id, registration_participant_id) values (%L, %L)', g1, rpVol));
+  select count(*) into n from public.activity_group_members
+   where group_id = g1 and activity_id = act and placed_by = uC;
+  perform pg_temp.expect('the member rows carry the group''s activity and who placed them (0125)', n, 2);
+
+  -- One person, one group per activity.
+  perform pg_temp.expect_denied('a person cannot be in two rafts of one activity (0125)',
+    format('insert into public.activity_group_members (group_id, registration_participant_id) values (%L, %L)', g2, rpA));
+  -- Moving is the upsert the board does: the row changes group.
+  perform pg_temp.expect_allowed('moving a person to another raft is one row changing group (0125)',
+    format('insert into public.activity_group_members (group_id, activity_id, registration_participant_id) values (%L, %L, %L)
+            on conflict (registration_participant_id, activity_id) do update set group_id = excluded.group_id', g2, act, rpA));
+  select count(*) into n from public.activity_group_members where registration_participant_id = rpA;
+  perform pg_temp.expect('after the move the camper is in exactly one raft (0125)', n, 1);
+  select count(*) into n from public.activity_group_members where registration_participant_id = rpA and group_id = g2;
+  perform pg_temp.expect('after the move the camper is in Raft 2 (0125)', n, 1);
+
+  -- A member row cannot claim another activity than its group's.
+  set local role postgres;
+  insert into public.activities (event_id, name, booking_mode) values (ev, 'Pontoon (0125 test)', 'signup')
+    returning id into pontoon;
+  insert into public.activity_groups (activity_id, name) values (pontoon, 'Boat 1') returning id into gP;
+  set local role authenticated;
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_denied('a member row''s activity must be its group''s (0125)',
+    format('insert into public.activity_group_members (group_id, activity_id, registration_participant_id) values (%L, %L, %L)', gP, act, rpVol));
+
+  -- Reading: Activities read sees the rafts; a family sees nothing.
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.activity_groups where activity_id = act;
+  perform pg_temp.expect('activities READ staff see the rafts (0125)', n, 2);
+  select count(*) into n from public.activity_group_members where activity_id = act;
+  perform pg_temp.expect('activities READ staff see who is in them (0125)', n, 2);
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.activity_groups;
+  perform pg_temp.expect('a family sees no rafts, not even its own camper''s (0125)', n, 0);
+  select count(*) into n from public.activity_group_members;
+  perform pg_temp.expect('a family sees no raft members (0125)', n, 0);
+
+  -- Unplacing and deleting: Activities write only.
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_no_effect('activities READ may NOT unplace anyone (0125)',
+    format('delete from public.activity_group_members where registration_participant_id = %L', rpA));
+  perform pg_temp.expect_no_effect('activities READ may NOT delete a raft (0125)',
+    format('delete from public.activity_groups where id = %L', g1));
+  perform pg_temp.expect_no_effect('activities READ may NOT resize a raft (0125)',
+    format('update public.activity_groups set capacity = 8 where id = %L', g1));
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_allowed('activities WRITE unplaces a person (0125)',
+    format('delete from public.activity_group_members where activity_id = %L and registration_participant_id = %L', act, rpA));
+  -- Deleting a raft sends its members back to "to place" (the cascade).
+  perform pg_temp.expect_allowed('activities WRITE deletes a raft (0125)',
+    format('delete from public.activity_groups where id = %L', g1));
+  select count(*) into n from public.activity_group_members where registration_participant_id = rpVol;
+  perform pg_temp.expect('deleting a raft unplaces its members (0125)', n, 0);
+
+  set local role anon;
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform pg_temp.expect_denied('anon cannot read rafts (0125)',
+    'select count(*) from public.activity_groups');
+  perform pg_temp.expect_denied('anon cannot read raft members (0125)',
+    'select count(*) from public.activity_group_members');
+
+  set local role postgres;
+  delete from public.activity_groups where activity_id in (act, pontoon);
+  delete from public.activities where id = pontoon;
+end;
+$$;
+
 
 -- ---------------------------------------------------------------------
 -- Checks
