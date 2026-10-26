@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as
 working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0127`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0128`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -194,6 +194,10 @@ clears waiting-on-the-family and stamps `family_replied_at`; staff *Mark as read
 out on a reply — the app is the one place it arrives (Lawrence, 26 Oct).
 `registration_review` carries `on_hold`; the review queue's badge counts *waiting on staff*,
 including a registration with an unread family reply.
+**A person's status carries who changed it, when, and — waitlisted — why** (`0128`:
+`status_changed_at`/`_by`, stamped by the invoker trigger `stamp_participant_status()`;
+`waitlist_reason`, Registration write, required by the app, cleared off the waitlist, **read by the
+family** on their dashboard).
 Staff idle logout is 60 minutes.
 
 **Background checks** (`0091`–`0095`). `person_clearances.verdict` is the ministry's word (`ok`,

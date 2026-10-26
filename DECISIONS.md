@@ -3254,3 +3254,23 @@ which in this codebase means the family took a request back. The mark is cleared
 and early discounts re-run. **Nobody is un-approved**: the registration reads its real deposit again
 (*No full deposit yet* / deposit short) and staff decide what follows. The scholarship row's note
 from before the waiver is not recoverable (`scholarships` is not in the money log); the amount is.
+
+## 2026-10-26 — Waitlisting says why, and the Review card says who is decided (0128)
+
+Lawrence, on a test registration whose camper was granted a larger scholarship and then waitlisted:
+the Review card read "nobody waiting" and "No review needed yet", and the waitlist showed only far
+down the page in *People on this week* — "not obvious they were waitlisted or why". Nothing recorded
+who changed a status or when. **`registration_participants` gains `status_changed_at`,
+`status_changed_by` and `waitlist_reason`** (≤ 500 characters, only while waitlisted), on the person
+rather than the registration because a camper can be confirmed while a sibling is waitlisted (0001).
+An **invoker** trigger, last of the table's BEFORE triggers, owns the stamps (now/`auth.uid()`
+whenever the status changes; untouchable by any signed-in caller otherwise), keeps the reason to
+Registration write, and drops it when the person leaves the waitlist — so a hold, an approval or a
+cancellation never leaves a stale reason. **The reason is family-visible**: RLS is per row and the
+family reads every column of its own participant rows, so rather than a second table the reason is
+written for the family — the form says "The family can see this reason." and their dashboard shows it.
+The app requires a reason for every waitlisting (both "Waitlist all" and the per-person dropdown).
+The Review card now opens with the decided people — waitlisted in amber with reason, when and by
+whom; confirmed as a plain line — each name linking to (and unfolding) their row, its count pill
+summarises them, and the class hint reads *Decided* (or *Decided — the deposit is still owed*).
+Rows from before 0128 have no stamp and say "no reason recorded".
