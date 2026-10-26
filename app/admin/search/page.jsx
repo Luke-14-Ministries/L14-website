@@ -82,7 +82,11 @@ export default async function SearchPage({ searchParams }) {
     // Same two-path problem in the other direction: name the key.
     const { data, error } = await supabase
       .from('households')
-      .select('id, display_name, email, people!people_household_id_fkey ( id, first_name, last_name )')
+      .select(
+        `id, display_name, email,
+         people!people_household_id_fkey ( id, first_name, last_name ),
+         registrations ( id, events ( name, starts_on ) )`
+      )
       .or(`display_name.ilike.${householdLike},email.ilike.${householdLike}`)
       .limit(20);
     if (error) throw new Error(`Search failed: ${error.message}`);
@@ -194,11 +198,34 @@ export default async function SearchPage({ searchParams }) {
               <li key={h.id} className="rounded-sm border border-neutral-200 bg-white px-3 py-2">
                 <span className="font-medium">{h.display_name}</span>
                 {h.email && <span className="ml-2 text-xs text-neutral-500">{h.email}</span>}
+                {/* Staff have no family page; the family's REGISTRATIONS are
+                    where its business is, and each person has a page. Both
+                    are links (Lawrence, 26 Oct 2026: the row was dead text). */}
                 <span className="ml-2 text-xs text-neutral-500">
-                  {(h.people ?? [])
-                    .map((p) => `${p.first_name} ${p.last_name}`)
-                    .join(', ')}
+                  {(h.people ?? []).map((p, i) => (
+                    <span key={p.id}>
+                      {i > 0 && ', '}
+                      <Link href={`/admin/people/${p.id}/`} className="underline hover:text-brand">
+                        {p.first_name} {p.last_name}
+                      </Link>
+                    </span>
+                  ))}
                 </span>
+                {(h.registrations ?? []).length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                    {[...h.registrations]
+                      .sort((a, b) => (b.events?.starts_on ?? '').localeCompare(a.events?.starts_on ?? ''))
+                      .map((r) => (
+                        <Link
+                          key={r.id}
+                          href={`/admin/registrations/${r.id}/`}
+                          className="rounded-sm border border-brand/30 bg-brand-light px-2 py-0.5 font-semibold text-brand-dark hover:bg-brand hover:text-white"
+                        >
+                          {r.events?.name ?? 'Registration'} →
+                        </Link>
+                      ))}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
