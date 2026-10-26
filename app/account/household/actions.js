@@ -1,6 +1,7 @@
 'use server';
 
 import { dobProblem } from '@/lib/format';
+import { caregiverLinkProblem, caregiverPhoneProblem } from '@/lib/caregivers';
 // Manage Household: families edit their own household's contact info, their
 // people's basic details (incl. a phone per adult), and each person's two
 // linked caregivers. RLS is the real gate everywhere: households_update /
@@ -19,6 +20,52 @@ const clean = (v) => {
   const s = String(v ?? '').trim();
   return s === '' ? null : s;
 };
+
+// Explicit household scope, not RLS alone (CLAUDE.md): staff RLS is broad, so
+// a staff member who is also a family must still only edit their own people.
+// Returns { person } (id, names, date of birth, phone, household_id) or
+// { error } -- a read error is reported, never treated as "not found".
+async function myPerson(supabase, personId) {
+  const { data: { user } = {} } = await supabase.auth.getUser();
+  if (!user) return { error: 'Please sign in again.' };
+  const { data: memberships, error: memError } = await supabase
+    .from('household_members')
+    .select('household_id')
+    .eq('profile_id', user.id);
+  if (memError) return { error: `Your household could not be read: ${memError.message}` };
+  const householdIds = (memberships ?? []).map((m) => m.household_id);
+  if (householdIds.length === 0) return { error: 'That person is not in your household.' };
+  const { data: person, error } = await supabase
+    .from('people')
+    .select('id, first_name, last_name, date_of_birth, phone, household_id')
+    .eq('id', personId)
+    .in('household_id', householdIds)
+    .maybeSingle();
+  if (error) return { error: `That person could not be read: ${error.message}` };
+  if (!person) return { error: 'That person is not in your household.' };
+  return { person };
+}
+
+// First names of the people `personId` is a linked caregiver for, within the
+// household. Two simple reads rather than an embed: person_caregivers has two
+// keys to people, which PostgREST refuses to guess between.
+async function caresForNames(supabase, personId, householdId) {
+  const { data: links, error } = await supabase
+    .from('person_caregivers')
+    .select('person_id')
+    .eq('caregiver_person_id', personId);
+  if (error) return { error: `Caregiver links could not be read: ${error.message}` };
+  const ids = (links ?? []).map((l) => l.person_id);
+  if (ids.length === 0) return { names: [] };
+  const { data: people, error: peopleError } = await supabase
+    .from('people')
+    .select('id, first_name')
+    .in('id', ids)
+    .eq('household_id', householdId)
+    .order('created_at');
+  if (peopleError) return { error: `Caregiver links could not be read: ${peopleError.message}` };
+  return { names: (people ?? []).map((p) => p.first_name) };
+}
 
 export async function updateHouseholdInfo(householdId, form) {
   if (!emailLooksValid(form.email)) {
@@ -61,6 +108,8 @@ export async function updateHouseholdInfo(householdId, form) {
 
 export async function updatePersonInfo(personId, form) {
   const supabase = await createClient();
+  const { person: current, error: scopeError } = await myPerson(supabase, personId);
+  if (scopeError) return { ok: false, error: scopeError };
 
   // A cleared name used to be dropped from the patch and the save then
   // reported "Saved" -- so the form said yes, the name stayed, and the card
@@ -93,23 +142,18 @@ export async function updatePersonInfo(personId, form) {
   const nextLast = clean(form.last_name);
   const nextDob = clean(form.date_of_birth);
   if (nextFirst || nextLast || nextDob) {
-    const { data: current } = await supabase
-      .from('people')
-      .select('first_name, last_name, date_of_birth')
-      .eq('id', personId)
-      .maybeSingle();
-
     const changed =
       (nextFirst && nextFirst !== (current?.first_name ?? '')) ||
       (nextLast && nextLast !== (current?.last_name ?? '')) ||
       (nextDob && nextDob !== (current?.date_of_birth ?? ''));
 
     if (changed) {
-      const { count } = await supabase
+      const { count, error: countError } = await supabase
         .from('registration_participants')
         .select('id', { count: 'exact', head: true })
         .eq('person_id', personId)
         .neq('status', 'cancelled');
+      if (countError) return { ok: false, error: `Registrations could not be read: ${countError.message}` };
       if ((count ?? 0) > 0) {
         return {
           ok: false,
@@ -124,6 +168,18 @@ export async function updatePersonInfo(personId, form) {
   }
   {
     const bad = dobProblem(clean(form.date_of_birth));
+    if (bad) return { ok: false, error: bad };
+  }
+  // A linked caregiver must have a phone (lib/caregivers.js) -- the same
+  // sentence the card shows before it ever gets here.
+  if ('phone' in form) {
+    const { names, error: cgError } = await caresForNames(supabase, personId, current.household_id);
+    if (cgError) return { ok: false, error: cgError };
+    const bad = caregiverPhoneProblem({
+      name: nextFirst ?? current.first_name,
+      phone: form.phone,
+      caresFor: names,
+    });
     if (bad) return { ok: false, error: bad };
   }
 
@@ -141,7 +197,11 @@ export async function updatePersonInfo(personId, form) {
     phone: clean(form.phone),
     email: clean(form.email),
   };
-  const { error } = await supabase.from('people').update(patch).eq('id', personId);
+  const { error } = await supabase
+    .from('people')
+    .update(patch)
+    .eq('id', personId)
+    .eq('household_id', current.household_id);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/account/household');
   revalidatePath('/account/dashboard');
@@ -270,8 +330,41 @@ export async function removeHouseholdPerson(personId) {
 }
 
 // Replace a person's caregiver links with the given pair (either may be null).
+//
+// Both ends must be in the caller's own household (checked here as well as by
+// person_caregivers_write), and a NEW link needs a caregiver with a phone
+// (lib/caregivers.js). Everything is checked before the old links are
+// deleted, so a refusal leaves the saved links exactly as they were. A link
+// already on file is kept even if that caregiver has no phone -- existing
+// data is flagged on the page, not rewritten.
 export async function setCaregivers(personId, caregiver1Id, caregiver2Id) {
   const supabase = await createClient();
+  const { person, error: scopeError } = await myPerson(supabase, personId);
+  if (scopeError) return { ok: false, error: scopeError };
+
+  const chosen = [...new Set([caregiver1Id, caregiver2Id].filter(Boolean))];
+  if (chosen.length > 0) {
+    const { data: existing, error: exError } = await supabase
+      .from('person_caregivers')
+      .select('caregiver_person_id')
+      .eq('person_id', personId);
+    if (exError) return { ok: false, error: `Caregiver links could not be read: ${exError.message}` };
+    const { data: carers, error: carerError } = await supabase
+      .from('people')
+      .select('id, first_name, phone')
+      .in('id', chosen)
+      .eq('household_id', person.household_id);
+    if (carerError) return { ok: false, error: `Caregivers could not be read: ${carerError.message}` };
+    if ((carers ?? []).length !== chosen.length) {
+      return { ok: false, error: 'A linked caregiver has to be someone in your household.' };
+    }
+    const already = new Set((existing ?? []).map((l) => l.caregiver_person_id));
+    for (const c of carers) {
+      if (already.has(c.id)) continue;
+      const bad = caregiverLinkProblem({ name: c.first_name, phone: c.phone });
+      if (bad) return { ok: false, error: bad };
+    }
+  }
 
   const { error: delError } = await supabase
     .from('person_caregivers')

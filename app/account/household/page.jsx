@@ -24,10 +24,11 @@ export default async function ManageHouseholdPage() {
   if (!user) redirect('/account/?next=/account/household/');
 
   const supabase = await createClient();
-  const { data: memberRows } = await supabase
+  const { data: memberRows, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id);
+  if (memberError) throw new Error(`Your household could not be read: ${memberError.message}`);
   const householdId = memberRows?.[0]?.household_id;
 
   if (!householdId) {
@@ -51,8 +52,11 @@ export default async function ManageHouseholdPage() {
     );
   }
 
-  const [{ data: household }, { data: people }, { data: careLinks }, { data: guardianRoles }] =
-    await Promise.all([
+  const [
+    { data: household, error: householdError },
+    { data: people, error: peopleError },
+    { data: guardianRoles, error: guardianError },
+  ] = await Promise.all([
       supabase
         .from('households')
         .select('id, display_name, email, phone, address_line1, city, state, postal_code, primary_contact_person_id')
@@ -63,13 +67,29 @@ export default async function ManageHouseholdPage() {
         .select('id, first_name, last_name, preferred_name, date_of_birth, gender, phone, email')
         .eq('household_id', householdId)
         .order('created_at'),
-      supabase.from('person_caregivers').select('person_id, caregiver_person_id, position'),
       supabase
         .from('registration_participants')
         .select('camp_role, people!inner ( id, household_id )')
         .eq('people.household_id', householdId)
         .eq('camp_role', 'parent_guardian'),
     ]);
+  if (householdError) throw new Error(`Your household could not be read: ${householdError.message}`);
+  if (peopleError) throw new Error(`Your household's people could not be read: ${peopleError.message}`);
+  if (guardianError) throw new Error(`Parent/guardian roles could not be read: ${guardianError.message}`);
+
+  // Caregiver links for THIS household's people only. It used to read every
+  // link RLS allowed, which for a staff member who is also a family is every
+  // link in the system (CLAUDE.md: /account/* scopes by household explicitly).
+  const personIds = (people ?? []).map((p) => p.id);
+  let careLinks = [];
+  if (personIds.length) {
+    const { data, error } = await supabase
+      .from('person_caregivers')
+      .select('person_id, caregiver_person_id, position')
+      .in('person_id', personIds);
+    if (error) throw new Error(`Caregiver links could not be read: ${error.message}`);
+    careLinks = data ?? [];
+  }
 
   const guardianIds = new Set((guardianRoles ?? []).map((g) => g.people?.id).filter(Boolean));
   const members = (people ?? []).map((p) => ({
