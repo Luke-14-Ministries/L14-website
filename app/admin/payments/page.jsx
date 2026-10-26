@@ -41,9 +41,9 @@ export default async function AdminPaymentsPage({ searchParams }) {
   const supabase = await createClient();
 
   const [
-    { data: balances },
-    { data: regs },
-    { data: pays },
+    { data: balances, error: balancesError },
+    { data: regs, error: regsError },
+    { data: pays, error: paysError },
     { data: routes, error: routesError },
     { data: reviews, error: reviewError },
   ] = await Promise.all([
@@ -62,6 +62,10 @@ export default async function AdminPaymentsPage({ searchParams }) {
     // The three review classes and the flags (0081, Lawrence 30 Sep 2026).
     supabase.from('registration_review').select('registration_id, review_class, flags'),
   ]);
+  // Never an empty table in place of an error (CLAUDE.md).
+  if (balancesError) throw new Error(`Balances: ${balancesError.message}`);
+  if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+  if (paysError) throw new Error(`Payments: ${paysError.message}`);
   if (reviewError) throw new Error(`Review classes: ${reviewError.message}`);
   const reviewByReg = new Map((reviews ?? []).map((x) => [x.registration_id, x]));
   if (routesError) throw new Error(`Payment routes: ${routesError.message}`);

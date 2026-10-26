@@ -22,12 +22,17 @@ export async function GET(request) {
   const eventFilter = url.searchParams.get('event') || '';
 
   const supabase = await createClient();
-  const [{ data: balances }, { data: regs }] = await Promise.all([
+  const [{ data: balances, error: balancesError }, { data: regs, error: regsError }] = await Promise.all([
     supabase
       .from('registration_balances')
       .select('registration_id, event_id, fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents, fees_cents'),
     supabase.from('registrations').select('id, events ( id, name, starts_on, ends_on, archived_at ), households ( display_name, email, phone )'),
   ]);
+  // Never a short file in place of an error.
+  const failed = balancesError ?? regsError;
+  if (failed) {
+    return new Response(`Could not read the balances: ${failed.message}`, { status: 500 });
+  }
   const regById = new Map((regs ?? []).map((r) => [r.id, r]));
 
   // Same event scope as the Event Payments page: '' = current events
