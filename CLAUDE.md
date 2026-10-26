@@ -185,7 +185,15 @@ leader is administrator-only, in the database as well as the app.
 **Registrar-guarded states on `registrations`:** waiting on the family (`awaiting_family_since`,
 `awaiting_family_reason`, `0089`) and on hold (`hold_since`, `hold_reason`, `hold_by`, `0098` —
 confirmed and waitlisted people go back to `submitted`; approve, waitlist or "lift" clears it).
-`registration_review` carries `on_hold`; the review queue's badge counts only *waiting on staff*.
+**Families reply through `family_reply_to_staff()`** (`0126`) — the only way a family moves
+`awaiting_family_*`: it adds their message to the registration's thread (`registration_family_messages`,
+`author_kind` staff | family; no signed-in INSERT — staff write through `staff_message_to_family()`),
+clears waiting-on-the-family and stamps `family_replied_at`; staff *Mark as read* stamps
+`family_reply_seen_at` (generated `family_reply_unread` is the one rule). The invoker guard
+`guard_awaiting_family()` refuses any signed-in caller setting those columns directly. No email goes
+out on a reply — the app is the one place it arrives (Lawrence, 26 Oct).
+`registration_review` carries `on_hold`; the review queue's badge counts *waiting on staff*,
+including a registration with an unread family reply.
 Staff idle logout is 60 minutes.
 
 **Background checks** (`0091`–`0095`). `person_clearances.verdict` is the ministry's word (`ok`,

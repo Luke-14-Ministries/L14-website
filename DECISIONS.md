@@ -3216,3 +3216,23 @@ Ticking *Administrator — grants access* on Staff & Access now also sets every 
 included, to write (after a confirm), because an administrator can grant themselves anything
 anyway and the ticks should say so. Every area at write does **not** make someone an
 administrator, and removing the tick leaves the grants as they are. (Lawrence.)
+## 2026-10-26 — Families answer camp staff in the app, and only there (0126)
+
+Lawrence (Script 6, 2.8/2.9): a family asked "for more information" should be able to answer on the
+site, and the answer should put the registration back in front of staff. **The conversation lives in
+`registration_family_messages`** — the table the staff notes to the family already used (0019) —
+with an `author_kind` of `staff` or `family`, not a second table: one thread both sides read, and the
+"Ask the family…" question was already written there as a note. Nobody signed in inserts into it any
+more: families write through `family_reply_to_staff()` (household membership checked in the
+function), staff through `staff_message_to_family()` (Registration write). A reply clears
+`awaiting_family_since`/`_reason` — the same effect as "The family has answered — back to staff" —
+and stamps `registrations.family_replied_at`; a family may write unasked. Staff read it with
+**Mark as read**, which stamps `family_reply_seen_at` rather than clearing `family_replied_at`, so
+the family's dashboard can still say when their reply went; writing back also counts as reading.
+`family_reply_unread` is a generated column so the review queue and the nav badge can filter on one
+rule. **One way to answer** (Lawrence, same day): no notification email to the registration inbox
+and no "or reply to registration@" line — staff learn of a reply from the blue *Family replied*
+flag, the *Family replied (N)* tab and the Awaiting Review badge, which now also counts a
+registration with an unread reply and nobody still submitted. `guard_awaiting_family()` became an
+invoker trigger: as a definer trigger it asked the family *caller* for Registration write and so
+refused the reply function too.
