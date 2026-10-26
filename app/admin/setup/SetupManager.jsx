@@ -9,6 +9,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateEventRegistration, updateEventDetails, createEvent } from './actions';
 import { EVENT_TYPE_LABELS } from '@/lib/events';
+import { PLAN_MIN_DAYS } from '@/lib/plans';
 
 const money = (cents) =>
   cents == null ? '—' : `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
@@ -323,6 +324,13 @@ function EventRow({ e }) {
                 onChange={(ev) => setBalanceDueOn(ev.target.value)}
                 className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
+              {/* Lawrence, 26 Oct 2026: say here what the date switches on. The
+                  rule is offersPaymentPlan()/planAvailable() in lib/plans.js. */}
+              <span className="mt-1 block text-xs text-neutral-500">
+                Families are offered a payment plan only when this is set and more than{' '}
+                {PLAN_MIN_DAYS} days away. Blank: pay in full, or the deposit now and the rest
+                when staff say.
+              </span>
             </label>
             <label className="text-sm">
               <span className="block font-semibold text-neutral-700 mb-0.5">Family discount ($/person)</span>
