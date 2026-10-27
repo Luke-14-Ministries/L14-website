@@ -72,11 +72,15 @@ export default async function FamilyRegisterPage({ searchParams }) {
   // Published Camp Celebrate weeks and their single enrollment option each.
   // RLS already limits this to published rows, so this is safe to run as the family.
   const supabase = await createClient();
-  const { data: events } = await supabase
+  const { data: events, error: eventsError } = await supabase
     .from('events')
     .select(OPEN_EVENT_COLUMNS)
     .eq('published', true)
     .order('starts_on', { ascending: true });
+  // CLAUDE.md: never turn a query error into an empty list -- here it would
+  // read as "no weeks are open", and a missed read below would prefill an
+  // update as a blank registration or skip an agreement.
+  if (eventsError) throw new Error(`Open events: ${eventsError.message}`);
 
   // Honor the registration windows staff set on the Setup page, and -- when
   // the chooser sent a ?program= -- narrow the week picker to that program's
@@ -112,12 +116,13 @@ export default async function FamilyRegisterPage({ searchParams }) {
     // 'volunteer' is not a legal applies_to value yet (0001 allows the two
     // below); when somebody widens that constraint, this list is what keeps
     // the new value out of the family wizard by default rather than by luck.
-    const { data: reqRows } = await supabase
+    const { data: reqRows, error: reqError } = await supabase
       .from('agreement_requirements')
       .select('agreement_id, is_required, applies_to, agreements ( key, title, body, active )')
       .in('event_id', openEventIds)
       .in('applies_to', ['household', 'participant'])
       .eq('is_required', true);
+    if (reqError) throw new Error(`Required agreements: ${reqError.message}`);
 
     const seen = new Set();
     requiredAgreements = (reqRows ?? [])
@@ -172,7 +177,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
   // once per family and never again. CampSite asks it on every enrolment, which
   // is why their export repeats the same answer for every child every year.
   let askHeardAbout = true;
-  const [{ data: memberRows }, { data: profile }] = await Promise.all([
+  const [{ data: memberRows, error: memberError }, { data: profile, error: profileError }] = await Promise.all([
     supabase
       .from('household_members')
       .select('household_id')
@@ -184,10 +189,12 @@ export default async function FamilyRegisterPage({ searchParams }) {
       .eq('id', user.id)
       .maybeSingle(),
   ]);
+  if (memberError) throw new Error(`Household: ${memberError.message}`);
+  if (profileError) throw new Error(`Profile: ${profileError.message}`);
   const householdId = memberRows?.[0]?.household_id;
 
   if (householdId) {
-    const [{ data: household }, { data: regs }] = await Promise.all([
+    const [{ data: household, error: householdError }, { data: regs, error: regsError }] = await Promise.all([
       supabase
         .from('households')
         .select('email, phone, address_line1, city, state, postal_code, home_church, how_did_you_hear, primary_contact_person_id')
@@ -203,6 +210,8 @@ export default async function FamilyRegisterPage({ searchParams }) {
         .eq('household_id', householdId)
         .order('created_at', { ascending: false }),
     ]);
+    if (householdError) throw new Error(`Household details: ${householdError.message}`);
+    if (regsError) throw new Error(`Registrations: ${regsError.message}`);
 
     const wanted = typeof params?.event === 'string' ? params.event : null;
 
@@ -229,7 +238,11 @@ export default async function FamilyRegisterPage({ searchParams }) {
     //   * one household-wide row from before, which covered everyone on the
     //     registration at the moment it was signed, and nobody added after.
     if (reg?.id) {
-      const [{ data: personSigs }, { data: householdSigs }, { data: partRows }] = await Promise.all([
+      const [
+        { data: personSigs, error: personSigsError },
+        { data: householdSigs, error: householdSigsError },
+        { data: partRows, error: partRowsError },
+      ] = await Promise.all([
         supabase
           .from('agreement_signatures')
           .select('person_id, signer_name, signed_at')
@@ -247,6 +260,9 @@ export default async function FamilyRegisterPage({ searchParams }) {
           .select('person_id, created_at, people ( first_name, last_name )')
           .eq('registration_id', reg.id),
       ]);
+      if (personSigsError) throw new Error(`Signatures: ${personSigsError.message}`);
+      if (householdSigsError) throw new Error(`Household signatures: ${householdSigsError.message}`);
+      if (partRowsError) throw new Error(`Registration participants: ${partRowsError.message}`);
       const signedIds = new Set((personSigs ?? []).map((r) => r.person_id));
       const legacy = householdSigs?.[0] ?? null;
       const names = new Set();
@@ -276,11 +292,12 @@ export default async function FamilyRegisterPage({ searchParams }) {
     // Latest media / directory answer per person, so the form opens showing
     // what this family already told us rather than a blank select that reads
     // as "we never asked".
-    const { data: consentRows } = await supabase
+    const { data: consentRows, error: consentError } = await supabase
       .from('person_consents')
       .select('person_id, kind, granted, recorded_at, people!inner ( household_id )')
       .eq('people.household_id', householdId)
       .order('recorded_at', { ascending: false });
+    if (consentError) throw new Error(`Consents: ${consentError.message}`);
 
     const latestConsent = new Map(); // `${personId}:${kind}` -> 'true' | 'false'
     for (const c of consentRows ?? []) {
@@ -343,11 +360,12 @@ export default async function FamilyRegisterPage({ searchParams }) {
     // EVERY person in the household, not only those on the last registration.
     // This is what lets the wizard offer "add someone you've already saved"
     // instead of making a family retype the same children each year (24 Aug).
-    const { data: allPeople } = await supabase
+    const { data: allPeople, error: allPeopleError } = await supabase
       .from('people')
       .select('id, first_name, last_name, preferred_name, date_of_birth, gender, phone')
       .eq('household_id', householdId)
       .order('created_at');
+    if (allPeopleError) throw new Error(`Household members: ${allPeopleError.message}`);
     householdPeople = (allPeople ?? []).map((p) => ({
       personId: p.id,
       firstName: p.first_name ?? '',
@@ -371,9 +389,10 @@ export default async function FamilyRegisterPage({ searchParams }) {
     // own rows; the staff-only columns that come with '*' are harmless here
     // and emptySupport() keeps only what the form shows.
     const householdIds = (allPeople ?? []).map((p) => p.id);
-    const { data: supportRows } = householdIds.length
+    const { data: supportRows, error: supportError } = householdIds.length
       ? await supabase.from('person_support').select('*').in('person_id', householdIds)
       : { data: [] };
+    if (supportError) throw new Error(`Support details: ${supportError.message}`);
     const supportById = new Map((supportRows ?? []).map((r) => [r.person_id, r]));
     for (const m of members) {
       m.support = emptySupport(m.personId ? supportById.get(m.personId) ?? null : null);
@@ -414,11 +433,12 @@ export default async function FamilyRegisterPage({ searchParams }) {
     // for a household that has never named one.
     let contactPerson = null;
     if (household?.primary_contact_person_id) {
-      const { data: pc } = await supabase
+      const { data: pc, error: pcError } = await supabase
         .from('people')
         .select('first_name, last_name')
         .eq('id', household.primary_contact_person_id)
         .maybeSingle();
+      if (pcError) throw new Error(`Primary contact: ${pcError.message}`);
       contactPerson = pc ?? null;
     }
 

@@ -13,21 +13,24 @@ import { volunteerApplicationProblem } from '@/lib/volunteer';
 // Returns the participant's ids when this login owns it, or null. It used to
 // return a boolean; the Creed signature needs person_id and registration_id,
 // and re-querying for them would be a second chance to get the ownership check
-// wrong. One lookup, one answer.
+// wrong. One lookup, one answer. A failed lookup returns { queryError } rather
+// than null, so the family hears "try again", not "not on your account".
 async function ownParticipant(supabase, userId, participantId) {
-  const { data: memberships } = await supabase
+  const { data: memberships, error: membershipsError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', userId);
+  if (membershipsError) return { queryError: membershipsError.message };
   const householdIds = (memberships ?? []).map((m) => m.household_id);
   if (!householdIds.length) return null;
 
-  const { data: part } = await supabase
+  const { data: part, error: partError } = await supabase
     .from('registration_participants')
     .select('id, person_id, registration_id, registrations!inner ( household_id )')
     .eq('id', participantId)
     .in('registrations.household_id', householdIds)
     .maybeSingle();
+  if (partError) return { queryError: partError.message };
   return part ? { personId: part.person_id, registrationId: part.registration_id } : null;
 }
 
@@ -38,6 +41,10 @@ export async function submitVolunteerApplication(payload) {
   const supabase = await createClient();
   const participantId = payload?.participantId;
   const owned = participantId ? await ownParticipant(supabase, user.id, participantId) : null;
+  if (owned?.queryError) {
+    console.error('submitVolunteerApplication:', owned.queryError);
+    return { ok: false, error: 'The application could not be saved. Please try again.' };
+  }
   if (!owned) {
     return { ok: false, error: 'That registration could not be found on your account.' };
   }
@@ -52,13 +59,18 @@ export async function submitVolunteerApplication(payload) {
   // volunteers, never of families or campers -- which is why it is looked up
   // by key here rather than through agreement_requirements.
   //
-  const { data: creedRows } = await supabase
+  const { data: creedRows, error: creedError } = await supabase
     .from('agreements')
     .select('id, version')
     .eq('key', 'apostles_creed')
     .eq('active', true)
     .order('version', { ascending: false })
     .limit(1);
+  // A failed read would save the application as though no Creed were asked.
+  if (creedError) {
+    console.error('submitVolunteerApplication:', creedError.message);
+    return { ok: false, error: 'The application could not be saved. Please try again.' };
+  }
   const creed = creedRows?.[0] ?? null;
 
   // NOT REQUIRED. Until 29 Sep 2026 an application without the affirmation
@@ -111,12 +123,22 @@ export async function submitVolunteerApplication(payload) {
   // again. It is logged loudly instead, and staff review every application
   // anyway.
   if (creed && owned.personId && payload?.creedAffirmed === true) {
-    const { data: already } = await supabase
+    const { data: already, error: alreadyError } = await supabase
       .from('agreement_signatures')
       .select('id')
       .eq('agreement_id', creed.id)
       .eq('person_id', owned.personId)
       .limit(1);
+    // A failed read is not "no signature yet": inserting would stack a
+    // duplicate. Same warning as a failed insert below.
+    if (alreadyError) {
+      console.error('creed signature not recorded:', alreadyError.message);
+      return {
+        ok: true,
+        warning:
+          'Your application was saved, but the Creed affirmation could not be recorded. Please tell the volunteer team.',
+      };
+    }
 
     if (!already?.length) {
       // SIGNED WITH A NAME. Found 29 Sep 2026 (Testing Script 3 §3.5): this
@@ -126,11 +148,19 @@ export async function submitVolunteerApplication(payload) {
       // every edit -- with nothing on record. An affirmation is signed by the
       // person affirming it, so the name is theirs (migration 0073 lets a
       // 'self' signature name the person rather than the household contact).
-      const { data: who } = await supabase
+      const { data: who, error: whoError } = await supabase
         .from('people')
         .select('first_name, last_name')
         .eq('id', owned.personId)
         .maybeSingle();
+      if (whoError) {
+        console.error('creed signature not recorded:', whoError.message);
+        return {
+          ok: true,
+          warning:
+            'Your application was saved, but the Creed affirmation could not be recorded. Please tell the volunteer team.',
+        };
+      }
       const signerName = `${who?.first_name ?? ''} ${who?.last_name ?? ''}`.trim();
       const { error: sigError } = await supabase.from('agreement_signatures').insert({
         agreement_id: creed.id,
@@ -164,7 +194,12 @@ export async function withdrawVolunteerApplication(participantId) {
   if (!user) return { ok: false, error: 'Your session has expired. Please log in and try again.' };
 
   const supabase = await createClient();
-  if (!participantId || !(await ownParticipant(supabase, user.id, participantId))) {
+  const owned = participantId ? await ownParticipant(supabase, user.id, participantId) : null;
+  if (owned?.queryError) {
+    console.error('withdrawVolunteerApplication:', owned.queryError);
+    return { ok: false, error: 'The application could not be withdrawn. Please try again.' };
+  }
+  if (!owned) {
     return { ok: false, error: 'That registration could not be found on your account.' };
   }
 

@@ -32,11 +32,14 @@ export default async function RegisterPage() {
   const user = await getCurrentUser();
   const supabase = await createClient();
 
-  const { data: events } = await supabase
+  const { data: events, error: eventsError } = await supabase
     .from('events')
     .select(OPEN_EVENT_COLUMNS)
     .eq('published', true)
     .order('starts_on', { ascending: true });
+  // CLAUDE.md: never turn a query error into an empty list -- here it would
+  // read as "registration is closed for everything".
+  if (eventsError) throw new Error(`Open events: ${eventsError.message}`);
 
   const open = (events ?? []).filter((e) => registrationOpen(e));
 

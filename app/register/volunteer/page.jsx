@@ -65,13 +65,16 @@ export default async function VolunteerPage() {
 
   // Which household(s) this login belongs to, by membership — the same
   // explicit scoping every account page uses; RLS is the backstop.
-  const { data: memberships } = await supabase
+  const { data: memberships, error: membershipsError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id);
+  // CLAUDE.md: never turn a query error into an empty list -- here it would
+  // read as "register for the week first".
+  if (membershipsError) throw new Error(`Household: ${membershipsError.message}`);
   const householdIds = (memberships ?? []).map((m) => m.household_id);
 
-  const { data: registrations } = householdIds.length
+  const { data: registrations, error: registrationsError } = householdIds.length
     ? await supabase
         .from('registrations')
         .select(
@@ -83,6 +86,7 @@ export default async function VolunteerPage() {
         .in('household_id', householdIds)
         .order('created_at', { ascending: false })
     : { data: [] };
+  if (registrationsError) throw new Error(`Registrations: ${registrationsError.message}`);
 
   // Every registered volunteer in the household, newest event first.
   const volunteers = [];
@@ -128,22 +132,24 @@ export default async function VolunteerPage() {
 
   // Existing applications for these volunteers.
   const volIds = volunteers.map((v) => v.participant.id);
-  const { data: apps } = await supabase
+  const { data: apps, error: appsError } = await supabase
     .from('volunteer_applications')
     .select(
       'registration_participant_id, first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills, disability_experience, first_time_disability_ministry, accompanying_adult_person_id, status, creed_affirmed'
     )
     .in('registration_participant_id', volIds);
+  if (appsError) throw new Error(`Volunteer applications: ${appsError.message}`);
   const appByPart = new Map((apps ?? []).map((a) => [a.registration_participant_id, a]));
 
   // The family wizard already asked for the home church; hand it to the
   // application as the default so nobody types it twice. Their own earlier
   // answer on a saved application still wins.
-  const { data: hh } = await supabase
+  const { data: hh, error: hhError } = await supabase
     .from('households')
     .select('home_church')
     .in('id', householdIds)
     .limit(1);
+  if (hhError) throw new Error(`Household: ${hhError.message}`);
   const defaultChurch = hh?.[0]?.home_church ?? '';
 
   // The Apostles' Creed affirmation (migration 0062, item L2).
@@ -156,13 +162,14 @@ export default async function VolunteerPage() {
   // Highest active version wins, so a future reworded version 2 takes over
   // here while every signature already given still points at the text its
   // signer actually read.
-  const { data: creedRows } = await supabase
+  const { data: creedRows, error: creedError } = await supabase
     .from('agreements')
     .select('id, title, body, version')
     .eq('key', 'apostles_creed')
     .eq('active', true)
     .order('version', { ascending: false })
     .limit(1);
+  if (creedError) throw new Error(`Apostles' Creed: ${creedError.message}`);
   const creed = creedRows?.[0] ?? null;
 
   // Who has already affirmed it. Scoped to this household's volunteers, and
@@ -172,20 +179,22 @@ export default async function VolunteerPage() {
   if (creed) {
     const personIds = volunteers.map((v) => v.participant.people?.id).filter(Boolean);
     if (personIds.length) {
-      const { data: sigs } = await supabase
+      const { data: sigs, error: sigsError } = await supabase
         .from('agreement_signatures')
         .select('person_id')
         .eq('agreement_id', creed.id)
         .in('person_id', personIds);
+      if (sigsError) throw new Error(`Creed signatures: ${sigsError.message}`);
       creedSignedBy = new Set((sigs ?? []).map((r) => r.person_id));
     }
   }
 
   // Adults in the household, for a minor volunteer's accompanying adult.
-  const { data: householdPeople } = await supabase
+  const { data: householdPeople, error: householdPeopleError } = await supabase
     .from('people')
     .select('id, first_name, last_name, date_of_birth')
     .in('household_id', householdIds);
+  if (householdPeopleError) throw new Error(`Household members: ${householdPeopleError.message}`);
   // ISO dates read as database output, not as dates. Parsed by parts because
   // new Date('2026-10-29') is UTC midnight and shows as the 28th in the US.
   const fmtRange = (a, b) => {

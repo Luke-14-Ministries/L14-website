@@ -179,10 +179,15 @@ export async function submitFamilyRegistration(payload) {
   // archived event by calling the action). Editing an existing registration
   // after close stays allowed.
   {
-    const [{ data: ev }, { data: existingReg }] = await Promise.all([
+    const [{ data: ev, error: evError }, { data: existingReg, error: existingError }] = await Promise.all([
       supabase.from('events').select(OPEN_EVENT_COLUMNS).eq('id', eventId).maybeSingle(),
       supabase.from('registrations').select('id').eq('event_id', eventId).limit(1),
     ]);
+    // A failed read is not "closed" and not "no registration yet".
+    const openCheckError = evError ?? existingError;
+    if (openCheckError) {
+      return { ok: false, error: `Could not save your registration: ${openCheckError.message}` };
+    }
     if (!existingReg?.length && !registrationOpen(ev)) {
       return { ok: false, error: 'Registration for that event is not open.' };
     }
@@ -249,11 +254,12 @@ export async function submitFamilyRegistration(payload) {
     const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
     const proto = hdrs.get('x-forwarded-proto') ?? 'https';
     const origin = host ? `${proto}://${host}` : '';
-    const { data: ev } = await supabase
+    const { data: ev, error: evError } = await supabase
       .from('events')
       .select('name, deposit_cents, event_type, starts_on, balance_due_on')
       .eq('id', eventId)
       .maybeSingle();
+    if (evError) throw new Error(evError.message);
     const to = (family.email || '').trim() || user.email;
     if (origin && to && ev?.name) {
       const { subject, html } = registrationConfirmationEmail({
@@ -328,10 +334,11 @@ export async function submitFamilyRegistration(payload) {
     // were saved only for families who happened to have a volunteer — caught
     // before it shipped, but it is exactly the shape of bug that hides.
     if (regId2 && (wantVolunteer.size > 0 || wantPreferred.size > 0)) {
-      const { data: saved } = await supabase
+      const { data: saved, error: savedError } = await supabase
         .from('registration_participants')
         .select('person_id, event_option_id, people ( first_name, last_name )')
         .eq('registration_id', regId2);
+      if (savedError) throw new Error(savedError.message);
 
       const already = new Set(
         (saved ?? [])
@@ -392,14 +399,18 @@ export async function submitFamilyRegistration(payload) {
     // the family this is most likely to be wrong for.
     const regId = data?.registrationId;
     if (regId) {
-      const { data: savedParts } = await supabase
+      const { data: savedParts, error: savedPartsError } = await supabase
         .from('registration_participants')
         .select('person_id')
         .eq('registration_id', regId);
+      if (savedPartsError) throw new Error(savedPartsError.message);
       const ids = [...new Set((savedParts ?? []).map((r) => r.person_id).filter(Boolean))];
-      await Promise.all(
+      const results = await Promise.all(
         ids.map((id) => supabase.rpc('recalc_multi_week_discount', { p_person_id: id }))
       );
+      for (const { error: recalcError } of results) {
+        if (recalcError) console.error('multi-week discount recalc:', recalcError.message);
+      }
     }
   } catch (e) {
     console.error('multi-week discount recalc:', e?.message);
@@ -409,7 +420,10 @@ export async function submitFamilyRegistration(payload) {
   // gets $50 off. Before the early discount, which leaves room for it.
   try {
     if (data?.registrationId) {
-      await supabase.rpc('recalc_family_discount', { p_registration_id: data.registrationId });
+      const { error: recalcError } = await supabase.rpc('recalc_family_discount', {
+        p_registration_id: data.registrationId,
+      });
+      if (recalcError) console.error('family discount recalc:', recalcError.message);
     }
   } catch (e) {
     console.error('family discount recalc:', e?.message);
@@ -422,7 +436,13 @@ export async function submitFamilyRegistration(payload) {
   let signatureError = null;
   if (signature && data?.registrationId && signature.keys.length > 0) {
     try {
-      const [{ data: agreementRows }, { data: parts }, { data: ev }] = await Promise.all([
+      // A failed read throws to the catch below, which reports the signatures
+      // as not recorded -- never "signed nothing" in silence.
+      const [
+        { data: agreementRows, error: agreementError },
+        { data: parts, error: partsError },
+        { data: ev, error: evError },
+      ] = await Promise.all([
         supabase
           .from('agreements')
           .select('id, key, version')
@@ -435,15 +455,18 @@ export async function submitFamilyRegistration(payload) {
           .eq('registration_id', data.registrationId),
         supabase.from('events').select('starts_on').eq('id', eventId).maybeSingle(),
       ]);
+      const readError = agreementError ?? partsError ?? evError;
+      if (readError) throw new Error(readError.message);
       const latest = new Map();
       for (const a of agreementRows ?? []) if (!latest.has(a.key)) latest.set(a.key, a.id);
       const agreementIds = [...latest.values()];
 
-      const { data: already } = await supabase
+      const { data: already, error: alreadyError } = await supabase
         .from('agreement_signatures')
         .select('agreement_id, person_id')
         .eq('registration_id', data.registrationId)
         .not('person_id', 'is', null);
+      if (alreadyError) throw new Error(alreadyError.message);
       const have = new Set((already ?? []).map((r) => `${r.agreement_id}|${r.person_id}`));
 
       const capacityByName = new Map(signature.people.map((p) => [p.key, p.capacity]));
@@ -524,10 +547,11 @@ export async function submitFamilyRegistration(payload) {
         .map((m) => [`${m.firstName}|${m.lastName}`.toLowerCase(), m.support])
     );
     if (regId && bySupportKey.size > 0) {
-      const { data: parts } = await supabase
+      const { data: parts, error: partsError } = await supabase
         .from('registration_participants')
         .select('person_id, people ( first_name, last_name )')
         .eq('registration_id', regId);
+      if (partsError) throw new Error(partsError.message);
       const now = new Date().toISOString();
       const seen = new Set();
       for (const r of parts ?? []) {
@@ -635,9 +659,10 @@ export async function submitFamilyRegistration(payload) {
   // to a registration that is already on a plan earns them their share.
   try {
     if (data?.registrationId) {
-      await supabase.rpc('recalc_early_registration_discount', {
+      const { error: recalcError } = await supabase.rpc('recalc_early_registration_discount', {
         p_registration_id: data.registrationId,
       });
+      if (recalcError) console.error('early discount recalc:', recalcError.message);
     }
   } catch (e) {
     console.error('early discount recalc:', e?.message);
@@ -658,7 +683,7 @@ export async function submitFamilyRegistration(payload) {
   try {
     const regId = data?.registrationId;
     if (regId) {
-      const [{ data: bal }, { data: ev2 }] = await Promise.all([
+      const [{ data: bal, error: balError }, { data: ev2, error: ev2Error }] = await Promise.all([
         supabase
           .from('registration_balances')
           .select('paid_cents, balance_cents')
@@ -670,6 +695,10 @@ export async function submitFamilyRegistration(payload) {
           .eq('id', eventId)
           .maybeSingle(),
       ]);
+      // A failed balance read once read as "nothing due"; to the catch, which
+      // leaves depositDue undefined and the card asking.
+      if (balError) throw new Error(balError.message);
+      if (ev2Error) throw new Error(ev2Error.message);
       const deposit = ev2?.deposit_cents ?? 0;
       // The family's whole deposit, for the confirmation card. It said "$50"
       // whatever the family size until 14 Oct 2026 (Script 4 round, Track F).
@@ -678,11 +707,12 @@ export async function submitFamilyRegistration(payload) {
       balanceDue = balanceDueOn(ev2);
       needsPaymentChoice = requiresPaymentChoice(ev2);
       if (needsPaymentChoice) {
-        const { data: rt } = await supabase
+        const { data: rt, error: rtError } = await supabase
           .from('registration_payment_routes')
           .select('route')
           .eq('registration_id', regId)
           .maybeSingle();
+        if (rtError) throw new Error(rtError.message);
         paymentChosen = Boolean(rt?.route && rt.route !== 'none');
       }
       depositDue =
