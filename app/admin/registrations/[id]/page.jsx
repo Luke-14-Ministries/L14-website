@@ -12,6 +12,7 @@ import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { loadEmailLog } from '@/lib/emailLog';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import EmailLog from '@/components/EmailLog';
+import ReminderPause from './ReminderPause';
 import Panel from './Panel';
 
 export const metadata = { title: 'Registration — Staff Admin' };
@@ -167,6 +168,19 @@ export default async function RegistrationDetailPage({ params }) {
   const emails = reg.households?.id ? await loadEmailLog(supabase, { householdId: reg.households.id, limit: 50 }) : [];
   const eventNameByReg = new Map((familyRegs ?? []).map((r) => [r.id, r.events?.name ?? null]));
   const manyEvents = (familyRegs ?? []).length > 1;
+
+  // Paused automatic reminders (0138), with who paused them.
+  const { data: pauseRow, error: pauseError } = await supabase
+    .from('reminder_pauses')
+    .select('paused_at, paused_by')
+    .eq('registration_id', id)
+    .maybeSingle();
+  if (pauseError) throw new Error(`Reminder pause: ${pauseError.message}`);
+  let reminderPause = pauseRow ?? null;
+  if (reminderPause?.paused_by) {
+    const { data: who } = await supabase.from('profiles').select('first_name, last_name').eq('id', reminderPause.paused_by).maybeSingle();
+    reminderPause = { ...reminderPause, byName: [who?.first_name, who?.last_name].filter(Boolean).join(' ') || null };
+  }
 
   // Camp options for this event, so a staff member adding a person can pick the
   // one that sets the fee. Without an event there is nothing to ask for (and
@@ -644,6 +658,7 @@ export default async function RegistrationDetailPage({ params }) {
       balance={balanceRow}
       emailsPanel={
         <Panel title="Emails sent" count={emails.length || 'none'} defaultOpen={false}>
+          <ReminderPause registrationId={id} pause={reminderPause} canWrite={can(staff, 'write:registration')} />
           <EmailLog
             emails={emails}
             eventOf={manyEvents ? (rid) => eventNameByReg.get(rid) ?? null : null}

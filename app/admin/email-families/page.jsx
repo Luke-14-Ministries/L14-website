@@ -7,6 +7,10 @@ import EmailFamiliesForm from './EmailFamiliesForm';
 import { previewFamilyEmail } from './actions';
 import { searchEmailLog, emailFiltersFrom, groupEmailsBySend, groupSendsByEvent } from '@/lib/emailLog';
 import EmailsSentSection from './EmailsSentSection';
+import UpcomingReminders from './UpcomingReminders';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { upcomingReminders, reminderMode } from '@/lib/reminders/run';
+import { todayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Email Families — Staff Admin' };
 
@@ -103,6 +107,23 @@ export default async function EmailFamiliesPage({ searchParams }) {
   const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
   const origin = host ? `${hdrs.get('x-forwarded-proto') ?? 'https'}://${host}` : '';
 
+  // The automatic emails' next 7 days (0138). Read with the job's own
+  // service-role client -- it has to see every family's money and details to
+  // know who is owed what -- and shown as names, events and kinds only. A
+  // failure is said on the card, never shown as "nothing due".
+  const remindersAdmin = createAdminClient();
+  let upcoming = null;
+  let upcomingError = null;
+  if (!remindersAdmin) {
+    upcomingError = 'Not set up yet: SUPABASE_SERVICE_ROLE_KEY is not set in Vercel, so the automatic emails cannot run.';
+  } else {
+    try {
+      upcoming = await upcomingReminders(remindersAdmin, { today: todayInMorristown(), origin, days: 7 });
+    } catch (e) {
+      upcomingError = `The list could not be worked out: ${e?.message ?? 'unknown error'}`;
+    }
+  }
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-1">Email Families</h2>
@@ -121,6 +142,8 @@ export default async function EmailFamiliesPage({ searchParams }) {
         preview={preview}
         origin={origin}
       />
+
+      <UpcomingReminders rows={upcoming ?? []} mode={reminderMode()} error={upcomingError} />
 
       <EmailsSentSection
         result={sent}

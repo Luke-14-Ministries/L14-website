@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as
 working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0137`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0138`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -375,6 +375,19 @@ write) sets the review; an invoker guard refuses any direct signed-in change and
 pending whenever the file is replaced. A waiver or provider added after people signed up is a **flag, not a
 status change** (`0120`): the review queue's *Waiver outstanding* tab, an amber line on the
 registration, the family's dashboard card and Activities page (`signActivityWaiver` signs alone).
+**The automatic emails** (`0138`, 27 Oct 2026): a daily Vercel Cron (`vercel.json`, 13:00 UTC) calls
+`/api/cron/reminders/` (Vercel's `CRON_SECRET` as a Bearer header), which runs `lib/reminders/run.js`
+with the site's **one service-role client**, `lib/supabase/admin.js` (`SUPABASE_SERVICE_ROLE_KEY` in
+Vercel; `server-only`). The rules are the dashboard's own (`lib/familyNeeds.js`: `depositDueNow`,
+`supportState`; `lib/payments.js`; `lib/plans.js`) and the dates are `lib/reminders/schedule.js`
+(decided 27 Oct: deposit and balance monthly on the 15th, then 2 weeks before the balance due date and
+on it, then weekly past due; missing details monthly, then 2 weeks and 5 days before camp; a plan
+notice 1 week before each payment; confirmations and off-the-waitlist the next morning; not-submitted
+at 3/10/17/24 days; a staff summary on Mondays). Wording: `lib/reminders/templates.js`. One email per
+family per day; `reminder_sends` records each thing said once (kind, item_key); a staff **Pause
+reminders** (`reminder_pauses`, `set_reminder_pause()`, Registration write) stops the nagging kinds.
+**`REMINDERS_MODE`**: unset/`test` emails only @luke14ministries.net (others recorded `skipped`),
+`live` emails everyone, `off` stops it. Email Families shows the next 7 days.
 **Staff email to families lives at `/admin/email-families`** (Registration write): staff-pressed,
 never automatic, one email per household through `lib/email.js`, each logged to `message_log`.
 Staff see what was sent in **Emails sent** on each registration page (`loadEmailLog()`) and **Emails
@@ -460,7 +473,9 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   go-live, and only in Vercel's environment settings.
 - **The Supabase `service_role` / secret key bypasses row-level security entirely.** It never
   goes in the browser, in this repository, in SharePoint, or in a chat transcript. Server-side
-  only, from an environment variable, and only where genuinely required.
+  only, from an environment variable, and only where genuinely required. **The site uses it in one
+  place**: `lib/supabase/admin.js`, for the automatic emails (a daily job has no signed-in person);
+  `server-only` fails the build if it is ever imported into browser code. Nothing else may use it.
 - **Row-level security is enforced at the database level**, not in application code. Every table
   holding family data gets RLS policies. A query that works because the app "wouldn't ask for
   that row" is not secured.

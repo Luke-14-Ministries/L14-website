@@ -1398,3 +1398,20 @@ export async function waiveRegistrationFee(registrationId, feeId, reason) {
   revalidatePath('/admin/payments');
   return { ok: true };
 }
+
+// Pause or resume the automatic reminders for this registration (0138).
+// set_reminder_pause() checks Registration write itself and stamps who and
+// when; this only calls it.
+export async function setReminderPause(registrationId, paused) {
+  const staff = await getStaff();
+  if (!can(staff, 'write:registration')) return { ok: false, error: 'Registration write is needed to pause reminders.' };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('set_reminder_pause', {
+    p_registration_id: registrationId,
+    p_paused: Boolean(paused),
+    p_note: null,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/admin/registrations/${registrationId}`);
+  return { ok: true };
+}

@@ -1,4 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "[ \"${VERCEL_GIT_COMMIT_REF#dependabot/}\" != \"$VERCEL_GIT_COMMIT_REF\" ] && exit 0; git cat-file -e ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} 2>/dev/null && git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- ':!*.md' ':!LICENSE' || exit 1"
+  "ignoreCommand": "[ \"${VERCEL_GIT_COMMIT_REF#dependabot/}\" != \"$VERCEL_GIT_COMMIT_REF\" ] && exit 0; git cat-file -e ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} 2>/dev/null && git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- ':!*.md' ':!LICENSE' || exit 1",
+  "crons": [
+    {
+      "path": "/api/cron/reminders/",
+      "schedule": "0 13 * * *"
+    }
+  ]
 }

@@ -20,7 +20,7 @@ import FeedbackBox from './FeedbackBox';
 import ReplyToStaff from './ReplyToStaff';
 import { getProgramLeadership } from '@/lib/programs';
 import WelcomeNotice from '@/components/WelcomeNotice';
-import { emptySupport, supportProblems } from '@/lib/support';
+import { depositDueNow, supportState, volunteerApplicationNeeded } from '@/lib/familyNeeds';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { CHOOSES_ACTIVITIES } from '@/lib/activityRoles';
 
@@ -70,21 +70,8 @@ function nameList(names) {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-// Is the deposit being asked for right now? The rule the title-bar pill and
-// the deposit banner have always used -- not waived, a deposit set, nothing
-// paid or clearing, something still owed -- plus "no full scholarship
-// requested" (26 Oct 2026), because the banner itself tells a family asking
-// for a full scholarship that no deposit is needed.
-function depositDueNow({ registration, balance, clearingCents, depositCents, fullScholarship }) {
-  const nothingPaid = balance && (balance.paid_cents ?? 0) === 0 && (clearingCents ?? 0) === 0;
-  return (
-    !registration.deposit_waived_at &&
-    depositCents > 0 &&
-    Boolean(nothingPaid) &&
-    (balance?.balance_cents ?? 0) > 0 &&
-    !fullScholarship
-  );
-}
+// Is the deposit being asked for right now? depositDueNow() in
+// lib/familyNeeds.js, shared with the automatic emails since 27 Oct 2026.
 
 // The Needs that are a payment wanted now: the Ways to pay button is solid
 // for these and an outline otherwise.
@@ -452,24 +439,14 @@ export default async function DashboardPage({ searchParams }) {
     if (supportError) throw new Error(`Support details: ${supportError.message}`);
     if (photoError) throw new Error(`Photos: ${photoError.message}`);
     const hasPhoto = new Set((photoRows ?? []).map((r) => r.person_id));
+    // supportState() in lib/familyNeeds.js -- the same answer the automatic
+    // emails use (27 Oct 2026). A camper's required support details (16 Oct)
+    // count: the wizard refuses to update a registration until they are in.
     for (const row of supportRows ?? []) {
-      if (!row.details_saved_at) {
-        supportStatus.set(row.person_id, 'empty');
-        continue;
-      }
-      const missing = [];
-      if (!hasPhoto.has(row.person_id)) missing.push('a photo');
-      if (!row.emergency_contact_name?.trim() || !row.emergency_contact_phone?.trim()) {
-        missing.push('an emergency contact');
-      }
-      // A camper's required support details (16 Oct 2026). The wizard refuses
-      // to update a registration until they are in, so say it here first.
       const person = attendingPeople.find((ap) => ap.id === row.person_id);
       const isCamper = (person?.roles ?? []).some((r) => r.role === 'camper');
-      if (isCamper && supportProblems(emptySupport(row), { isCamper: true }).length > 0) {
-        missing.push('the support details a camper needs');
-      }
-      supportStatus.set(row.person_id, missing.length ? 'incomplete' : 'complete');
+      const { state, missing } = supportState({ row, hasPhoto: hasPhoto.has(row.person_id), isCamper });
+      supportStatus.set(row.person_id, state);
       if (missing.length) supportMissing.set(row.person_id, missing);
     }
   }
@@ -499,9 +476,7 @@ export default async function DashboardPage({ searchParams }) {
       .in('registration_participant_id', volunteerParts.map((p) => p.id));
     if (vappsError) throw new Error(`Volunteer applications: ${vappsError.message}`);
     for (const a of vapps ?? []) volAppStatus.set(a.registration_participant_id, a.status);
-    volunteersNeedingApp = volunteerParts.filter(
-      (p) => !volAppStatus.has(p.id) || volAppStatus.get(p.id) === 'withdrawn'
-    );
+    volunteersNeedingApp = volunteerParts.filter((p) => volunteerApplicationNeeded(volAppStatus.get(p.id)));
   }
   // "Reviewed separately" matters: the registration pill (e.g. Confirmed)
   // tracks the week's registration, while the application is reviewed by the

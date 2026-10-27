@@ -3664,6 +3664,23 @@ event panel says which dates they run from (folded). The event card on Setup los
 aligned columns, labels only, the explanations folded into "How these settings work", and the top button
 reads "Save status" so it is not mistaken for the event-details save.
 
+## 27 Oct 2026 — The automatic emails are built (0138)
+
+Lawrence: "build all the rest of the email drafts and triggers as proposed" (draft §2–§5, less 5.4 and 5.5,
+left to do). The job is the website's, not a Supabase function: a daily Vercel Cron calls
+`/api/cron/reminders/`, so it reads the very rules the dashboard reads (`lib/familyNeeds.js`, shared now)
+instead of a second copy in Deno that would drift. That needs a service-role client with no signed-in
+person behind it — `lib/supabase/admin.js`, the site's only one, `server-only`, key set in Vercel by
+Lawrence. One email per family per day; `reminder_sends` (kind, item_key) keeps anything from being said
+twice; a failed send is not recorded, so it is tried again. Staff can **pause** a registration's nagging
+reminders (deposit, balance, past due, missing details, not submitted); confirmations and plan notices
+still go. Confirmations read `registration_participants.status_before` (a new trigger-only column) to tell
+"off the waitlist" from "confirmed", and only for a change in the last three days, so switching it on
+never announces old news. **Test mode until go-live**: only @luke14ministries.net addresses are emailed;
+everyone else is recorded as skipped, so the test families' made-up addresses get nothing. Left out on
+purpose: the "agreement for someone added later" line (nothing on the site works that out today) and the
+two to-do emails. Email Families shows the next 7 days; the registration page's Emails sent has the pause.
+
 ## 27 Oct 2026 — One Save on each Setup event
 
 Lawrence: "just one save is still more sensible ... unless there is a strong reason". There was not: the
