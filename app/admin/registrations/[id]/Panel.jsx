@@ -9,32 +9,44 @@ import { useEffect, useState } from 'react';
 // Open by default, because most visits want most of the page — this is about
 // getting things out of the way, not hiding them.
 //
+// Since 26 Oct 2026 the registration page passes defaultOpen card by card
+// (Lawrence: "everything default open when items are outstanding and default
+// folded when done"); each card's rule is written beside it in
+// RegistrationManager. It only sets the first state: a card someone opened
+// or folded stays that way when the page refreshes after a save.
+//
 // Deliberately NOT remembered between visits. A card someone folded in June
 // staying folded in July is how a registrar stops seeing the payments panel
 // and never notices they have stopped.
 //
-// Its own file from 15 Oct 2026, so the "how it is being paid" card at the
-// bottom of the page (StaffPlanPanel, rendered by page.jsx beside the
-// manager) folds the same way as every card above it. It used to be the one
-// card with no title and no fold (Lawrence, 15 Oct).
+// Its own file from 15 Oct 2026, so the "how it is being paid" card
+// (StaffPlanPanel, built by page.jsx) could fold the same way as every card
+// above it; it used to be the one card with no title and no fold (Lawrence,
+// 15 Oct). Since 26 Oct it is a section inside the Money card instead.
 //
 // Linked to (26 Oct 2026): a link to "#<id>" -- or, with opensFor, to any
 // "#<opensFor>..." inside the card, such as one person's row in People on
 // this week -- opens a folded card and scrolls to the target once it is
 // drawn. A folded card's contents are not in the page, so the browser's own
 // jump to the anchor would find nothing. Use PanelLink below for such links:
-// it also works when the address already ends in that anchor.
+// it also works when the address already ends in that anchor. opensFor may
+// be a list, for a card holding several linked sections (Money: #payments,
+// #plan).
 export default function Panel({ title, count = null, children, defaultOpen = true, id, opensFor = null }) {
   // count may be a number ("3") or a phrase ("4 signed") — whichever says the
   // most in the fewest characters for that card.
   const [open, setOpen] = useState(defaultOpen);
   const [scrollTo, setScrollTo] = useState(null);
+  // Joined into one string so a list written inline does not re-run the
+  // effect below on every render.
+  const opensKey = opensFor == null ? '' : [].concat(opensFor).join('|');
   useEffect(() => {
-    if (!id && !opensFor) return undefined;
+    if (!id && !opensKey) return undefined;
+    const prefixes = opensKey ? opensKey.split('|') : [];
     const check = () => {
       const target = decodeURIComponent(window.location.hash.slice(1));
       if (!target) return;
-      if (target === id || (opensFor && target.startsWith(opensFor))) {
+      if (target === id || prefixes.some((p) => target.startsWith(p))) {
         setOpen(true);
         setScrollTo({ target });
       }
@@ -42,7 +54,7 @@ export default function Panel({ title, count = null, children, defaultOpen = tru
     check();
     window.addEventListener('hashchange', check);
     return () => window.removeEventListener('hashchange', check);
-  }, [id, opensFor]);
+  }, [id, opensKey]);
   useEffect(() => {
     if (open && scrollTo) document.getElementById(scrollTo.target)?.scrollIntoView({ block: 'start' });
   }, [open, scrollTo]);
