@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import RegistrationManager from './RegistrationManager';
 import StaffPlanPanel from './StaffPlanPanel';
 import FeesPanel from './FeesPanel';
-import { requiresPaymentChoice } from '@/lib/plans';
+import { requiresPaymentChoice, planFailingSince } from '@/lib/plans';
 import { dayInMorristown, balanceDueOn, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
@@ -571,14 +571,13 @@ export default async function RegistrationDetailPage({ params }) {
   // server has: a balance still owed after the due date (today on the
   // ministry's calendar, worked out here so the browser's clock cannot draw
   // the card differently from the server's render), and a payment plan in
-  // trouble (stopped after three failed tries, or an installment that failed
-  // and is waiting to retry).
+  // trouble (stopped after three failed tries -- status 'failed' -- or a
+  // charge that failed and is waiting to retry -- planFailingSince(); the
+  // same two rules as the review queue's Plan problems tab).
   const dueOn = balanceDueOn(reg.events);
   const moneyAlerts = {
     overdue: Boolean(dueOn) && dueOn < todayInMorristown() && (balanceRow?.balance_cents ?? 0) > 0,
-    planTrouble:
-      planRow?.status === 'failed' ||
-      (['active', 'paused'].includes(planRow?.status) && planInstallments.some((i) => i.status === 'failed')),
+    planTrouble: planRow?.status === 'failed' || planFailingSince(planRow) != null,
   };
 
   return (

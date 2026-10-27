@@ -7,7 +7,14 @@
 
 import { useState, useTransition } from 'react';
 import { setPlanStatus } from './actions';
-import { ROUTE_LABEL, SCHEDULE_LABEL, PLAN_STATUS_LABEL, planStoppedAt } from '@/lib/plans';
+import {
+  ROUTE_LABEL,
+  SCHEDULE_LABEL,
+  PLAN_STATUS_LABEL,
+  planStoppedAt,
+  planFailingSince,
+  planFailingNext,
+} from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -45,6 +52,9 @@ export default function StaffPlanPanel({
   }
 
   const unfinished = requiresChoice && route === 'none';
+  // A charge failed and the plan is still running (27 Oct 2026): the amber
+  // line below, before the red one a third failure brings.
+  const failing = planFailingSince(plan);
 
   // The last section of the Money card (26 Oct 2026), under a heading of its
   // own and without card chrome of its own: it folds with the rest of the
@@ -70,6 +80,16 @@ export default function StaffPlanPanel({
             <p className="mb-2 text-sm font-semibold text-red-700">
               This plan stopped after 3 failed payments
               {planStoppedAt(plan) ? ` on ${dayInMorristown(planStoppedAt(plan))}` : ''}.
+            </p>
+          )}
+          {/* The earlier flag (Lawrence, 27 Oct 2026): one failed payment is
+              worth knowing about before the plan stops. Amber -- the charger
+              is still trying; it turns into the red line above if the third
+              try fails. */}
+          {failing && (
+            <p className="mb-2 text-sm font-semibold text-amber-800">
+              ⚑ A plan payment failed{failing.since ? ` on ${dayInMorristown(failing.since)}` : ''} —{' '}
+              {planFailingNext(failing)}.
             </p>
           )}
           <p className="text-sm">
