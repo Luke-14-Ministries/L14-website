@@ -3420,3 +3420,15 @@ the page opens on the first current event with something to check. Pending uploa
 else on purpose: Awaiting Review's *Waiver outstanding* tab is the family's work (missing or rejected);
 checking an upload is staff's.
 
+
+## 26 Oct 2026 — Stale pending refunds are flagged; rafts are placed by family
+
+A refund still pending more than ten days after it was created has probably gone wrong (two bank
+refunds sat pending from 26 Aug, quietly changing the balance note). `isStaleRefund()` /
+`STALE_REFUND_DAYS` in `lib/payments.js` is the one rule: an amber "pending since <date> — check Stripe"
+on the registration's Payments, a warning under the money note, and a strip on Event Payments listing
+every such refund. A flag only; the money is unchanged. The rafts/groups "To place" list drops its
+separate "Campers with their buddies" section: everything is grouped by family, each camper with their
+buddy on one row under the camper's family (the buddy goes in the raft too, unlike rooming; a buddy
+from another household is named with their household and not listed again). Rows stay individually
+pickable so large families can be split; "Place the whole family" takes them all.
