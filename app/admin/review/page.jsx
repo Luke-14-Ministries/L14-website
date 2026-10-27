@@ -75,9 +75,9 @@ export default async function ReviewQueuePage({ searchParams }) {
   // family that has not paid. (seesMoney is set above, with the tabs.)
   const [
     { data: regs, error: regsError },
-    { data: parts },
-    { data: reviews },
-    { data: balances },
+    { data: parts, error: partsError },
+    { data: reviews, error: reviewsError },
+    { data: balances, error: balancesError },
     { data: owed, error: owedError },
     { data: stoppedPlans, error: stoppedError },
     { data: creedRows, error: creedError },
@@ -110,6 +110,11 @@ export default async function ReviewQueuePage({ searchParams }) {
       supabase.from('creed_status').select(CREED_COLUMNS),
     ]);
   if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+  // A failed read of the people would empty the queue ("nobody waiting"),
+  // and of the review view would hide every class and flag.
+  if (partsError) throw new Error(`People on registrations: ${partsError.message}`);
+  if (reviewsError) throw new Error(`Review classes: ${reviewsError.message}`);
+  if (balancesError) throw new Error(`Balances: ${balancesError.message}`);
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
   if (stoppedError) throw new Error(`Stopped payment plans: ${stoppedError.message}`);
   if (creedError) throw new Error(`Creed status: ${creedError.message}`);

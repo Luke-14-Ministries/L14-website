@@ -28,7 +28,11 @@ export default async function PrintRostersPage({ searchParams }) {
   if (!can(staff, 'read:registration')) redirect('/admin');
 
   const supabase = await createClient();
-  const [{ data: events }, { data: regs }, { data: consents }] = await Promise.all([
+  const [
+    { data: events, error: eventsError },
+    { data: regs, error: regsError },
+    { data: consents, error: consentsError },
+  ] = await Promise.all([
     supabase.from('events').select('id, name, starts_on, ends_on').order('starts_on'),
     supabase
       .from('registrations')
@@ -40,6 +44,11 @@ export default async function PrintRostersPage({ searchParams }) {
       ),
     supabase.from('person_current_consents').select('person_id, kind, granted'),
   ]);
+  // CLAUDE.md: never turn a query error into an empty list -- a failed read
+  // here would show a printed roster with nobody on it.
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
+  if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+  if (consentsError) throw new Error(`Consents: ${consentsError.message}`);
 
   const consentOf = new Map();
   for (const c of consents ?? []) consentOf.set(`${c.person_id}:${c.kind}`, c.granted);

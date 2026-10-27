@@ -18,7 +18,7 @@ export default async function MedicalPage({ searchParams }) {
   if (!can(staff, 'sensitive')) redirect('/admin');
 
   const supabase = await createClient();
-  const [{ data: events }, { data: regs }] = await Promise.all([
+  const [{ data: events, error: eventsError }, { data: regs, error: regsError }] = await Promise.all([
     supabase
       .from('events')
       .select('id, name, event_type, starts_on, ends_on, archived_at, event_medical_contacts ( name, phone )')
@@ -35,6 +35,10 @@ export default async function MedicalPage({ searchParams }) {
                emergency_contact_name, emergency_contact_phone, emergency_contact_relationship ) ) )`
       ),
   ]);
+  // CLAUDE.md: never turn a query error into an empty list -- here it would
+  // read as "nobody has medical notes".
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
+  if (regsError) throw new Error(`Registrations and support details: ${regsError.message}`);
 
   // No buddy pill for a retreat: buddies are paired on arrival (2 Oct 2026).
   const assignsBuddies = new Set((events ?? []).filter(staffAssigns).map((e) => e.id));

@@ -17,12 +17,12 @@ export default async function RostersPage() {
   const supabase = await createClient();
 
   const [
-    { data: events },
-    { data: regs },
-    { data: consents },
-    { data: sigs },
-    { data: balances },
-    { data: programs },
+    { data: events, error: eventsError },
+    { data: regs, error: regsError },
+    { data: consents, error: consentsError },
+    { data: sigs, error: sigsError },
+    { data: balances, error: balancesError },
+    { data: programs, error: programsError },
   ] =
     await Promise.all([
     supabase
@@ -59,6 +59,14 @@ export default async function RostersPage() {
     // and this is three rows.
     supabase.from('programs').select('id, name, sort_order').order('sort_order'),
   ]);
+  // CLAUDE.md: never turn a query error into an empty list -- a failed read
+  // here would show a roster with nobody on it.
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
+  if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+  if (consentsError) throw new Error(`Consents: ${consentsError.message}`);
+  if (sigsError) throw new Error(`Agreement signatures: ${sigsError.message}`);
+  if (balancesError) throw new Error(`Balances: ${balancesError.message}`);
+  if (programsError) throw new Error(`Programs: ${programsError.message}`);
 
   const consentOf = new Map();
   for (const c of consents ?? []) consentOf.set(`${c.person_id}:${c.kind}`, c.granted);
