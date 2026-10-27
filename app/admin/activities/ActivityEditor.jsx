@@ -761,6 +761,9 @@ export function SlotEditor({ activity, slots = [], event = null }) {
   const [g, setG] = useState(genBlank);
   const setG_ = (k) => (e) => setG((prev) => ({ ...prev, [k]: e.target.value }));
   const [genOpen, setGenOpen] = useState(false);
+  // Folded by default, title and sub-title showing what it is for (Lawrence,
+  // 26 Oct 2026): most activities never run in sittings.
+  const [open, setOpen] = useState(false);
 
   // A time must fall during the event (Lawrence, 22 Oct 2026; 0119). Until
   // then this was only a warning, kept advisory so an arrival-evening sitting
@@ -797,13 +800,38 @@ export function SlotEditor({ activity, slots = [], event = null }) {
     });
   }
 
+  const misplaced = slots.filter((s) => outsideCamp(s.slot_date)).length;
+
   return (
     <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-      <h4 className="text-sm font-bold">Times</h4>
+      <h4 className="text-sm font-bold">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="flex w-full flex-wrap items-center gap-2 text-left"
+        >
+          <span aria-hidden className={`inline-block text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}>
+            ▶
+          </span>
+          Times
+          <span className="text-xs font-normal text-neutral-500">
+            {slots.length === 0 ? 'none set' : `${slots.length} ${slots.length === 1 ? 'time' : 'times'}`}
+          </span>
+          {misplaced > 0 && (
+            <span className="rounded-sm bg-amber-100 px-1.5 text-xs font-semibold text-amber-900">
+              {misplaced} not during the event
+            </span>
+          )}
+          <span className="ml-auto text-xs font-normal text-neutral-500">{open ? 'Hide' : 'Show'}</span>
+        </button>
+      </h4>
       <p className="mt-0.5 text-xs text-neutral-500">
         For activities that run in sittings — the 2 o&rsquo;clock trip, chair 3. Times are as
         they are at camp; nothing is adjusted for where you are sitting.
       </p>
+      {open && (
+      <>
 
       {slots.length === 0 ? (
         <p className="mt-3 text-sm text-neutral-500">
@@ -986,6 +1014,8 @@ export function SlotEditor({ activity, slots = [], event = null }) {
             {pending ? 'Making…' : 'Make these times'}
           </button>
         </div>
+      )}
+      </>
       )}
     </div>
   );
