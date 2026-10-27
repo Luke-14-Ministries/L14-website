@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow } from '@/lib/events';
 import EmailFamiliesForm from './EmailFamiliesForm';
 import { previewFamilyEmail } from './actions';
+import { loadEmailLog } from '@/lib/emailLog';
+import EmailLog from '@/components/EmailLog';
 
 export const metadata = { title: 'Email Families — Staff Admin' };
 
@@ -83,6 +85,10 @@ export default async function EmailFamiliesPage({ searchParams }) {
 
   // The address the email's Activities link uses, so the preview shows it as
   // the family will see it.
+  // The latest emails the site sent families, so a send stays visible after
+  // its "N emails sent" card is gone (26 Oct 2026).
+  const recent = await loadEmailLog(supabase, { limit: 30 });
+
   const hdrs = await headers();
   const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
   const origin = host ? `${hdrs.get('x-forwarded-proto') ?? 'https'}://${host}` : '';
@@ -105,6 +111,18 @@ export default async function EmailFamiliesPage({ searchParams }) {
         preview={preview}
         origin={origin}
       />
+
+      <section className="mt-8">
+        <h3 className="text-lg font-bold mb-1">Recently sent</h3>
+        <p className="text-sm text-neutral-500 mb-2">
+          The latest emails to families, from here and the site&rsquo;s own (payment plans). Each
+          family&rsquo;s full list is on their registration page. <em>Delivery</em> opens the mail
+          service&rsquo;s record: delivered, bounced or opened.
+        </p>
+        <div className="rounded-lg border border-neutral-200 bg-white p-4">
+          <EmailLog emails={recent} showHousehold empty="Nothing sent yet." />
+        </div>
+      </section>
     </div>
   );
 }

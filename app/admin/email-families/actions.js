@@ -229,6 +229,7 @@ export async function sendFamilyEmail({
       p_subject: subj,
       p_status: status,
       p_error: sent.ok ? null : sent.error ?? 'Not sent.',
+      p_provider_message_id: sent.ok ? sent.id ?? null : null,
     });
     if (logError) console.error('log_family_email:', logError.message);
     results.push({

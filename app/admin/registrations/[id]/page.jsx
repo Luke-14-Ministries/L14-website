@@ -9,6 +9,9 @@ import { requiresPaymentChoice } from '@/lib/plans';
 import { dayInMorristown, balanceDueOn, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
+import { loadEmailLog } from '@/lib/emailLog';
+import EmailLog from '@/components/EmailLog';
+import Panel from './Panel';
 
 export const metadata = { title: 'Registration — Staff Admin' };
 
@@ -156,6 +159,13 @@ export default async function RegistrationDetailPage({ params }) {
     }
     creed = { ...creed, covered: creed.covered.map((c) => ({ ...c, by: byName.get(c.byId) ?? null })) };
   }
+
+  // Every email the site has sent this household (message_log; 26 Oct 2026 --
+  // the record existed but no staff page showed it). The family's emails, not
+  // just this week's: each line names its event when they have more than one.
+  const emails = reg.households?.id ? await loadEmailLog(supabase, { householdId: reg.households.id, limit: 50 }) : [];
+  const eventNameByReg = new Map((familyRegs ?? []).map((r) => [r.id, r.events?.name ?? null]));
+  const manyEvents = (familyRegs ?? []).length > 1;
 
   // Camp options for this event, so a staff member adding a person can pick the
   // one that sets the fee. Without an event there is nothing to ask for (and
@@ -609,6 +619,15 @@ export default async function RegistrationDetailPage({ params }) {
       familyMessages={familyMessages}
       signatures={signatures}
       balance={balanceRow}
+      emailsPanel={
+        <Panel title="Emails sent" count={emails.length || 'none'} defaultOpen={false}>
+          <EmailLog
+            emails={emails}
+            eventOf={manyEvents ? (rid) => eventNameByReg.get(rid) ?? null : null}
+            empty="The site has not emailed this family yet."
+          />
+        </Panel>
+      }
       feesPanel={
         can(staff, 'read:payments') ? (
           <FeesPanel

@@ -47,6 +47,10 @@ export default function EmailFamiliesForm({
   const [message, setMessage] = useState(suggestion?.message ?? '');
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
+  // Which family's email the preview shows (26 Oct 2026: with one sample,
+  // "Lawrence needs the Horseback Riding Waiver signed" read as the body every
+  // family would get). Defaults to the first on the list.
+  const [sampleId, setSampleId] = useState('');
 
   function choose(next) {
     setError('');
@@ -59,7 +63,12 @@ export default function EmailFamiliesForm({
   const households = preview?.ok ? preview.households : [];
   const sendable = households.filter((h) => h.hasEmail);
   const noEmail = households.filter((h) => !h.hasEmail);
-  const sample = sendable[0] ?? null;
+  const sample = sendable.find((h) => h.householdId === sampleId) ?? sendable[0] ?? null;
+  // What each family will be asked for, when the email lists outstanding
+  // waivers -- the same lines their own email carries.
+  const askedFor = outstanding
+    ? sendable.map((h) => ({ id: h.householdId, name: h.name, lines: familyEmailParts({ items: h.items }).lines }))
+    : [];
   const sampleText = sample
     ? familyEmailParts({
         message,
@@ -200,12 +209,45 @@ export default function EmailFamiliesForm({
                 Not sent — no email on file: {noEmail.map((h) => h.name).join(', ')}.
               </p>
             )}
+            {askedFor.length > 1 && (
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-neutral-600">
+                  Each family&rsquo;s email lists only their own outstanding waivers:
+                </p>
+                <ul className="mt-1 space-y-1">
+                  {askedFor.map((f) => (
+                    <li key={f.id} className="text-sm">
+                      <span className="font-medium">{f.name}</span>
+                      {f.lines.length > 0 ? ` — ${f.lines.join(' ')}` : ' — nothing listed'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {sample && (
               <>
-                <p className="mt-3 text-xs font-semibold text-neutral-600">
-                  The email {sample.name} will get
-                  {outstanding ? ' (each family’s list is their own)' : ''}:
-                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-neutral-600">
+                  {sendable.length > 1 ? (
+                    <>
+                      <label htmlFor="email-sample">The email</label>
+                      <select
+                        id="email-sample"
+                        value={sample.householdId}
+                        onChange={(e) => setSampleId(e.target.value)}
+                        className="rounded-sm border border-neutral-300 px-2 py-1 text-xs font-normal"
+                      >
+                        {sendable.map((h) => (
+                          <option key={h.householdId} value={h.householdId}>
+                            {h.name}
+                          </option>
+                        ))}
+                      </select>
+                      <span>will get:</span>
+                    </>
+                  ) : (
+                    <span>The email {sample.name} will get:</span>
+                  )}
+                </div>
                 <div className="mt-1 rounded-sm border border-neutral-200 bg-neutral-50 p-3">
                   <p className="font-semibold">{subject.trim() || '(no subject yet)'}</p>
                   <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-neutral-800">
