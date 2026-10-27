@@ -5,6 +5,7 @@ import { balanceDueOn, formatDueDate, dateISO } from '@/lib/events';
 import { registrationDepositCents } from '@/lib/payments';
 import { planAvailable, planConsentText } from '@/lib/plans';
 import FinishChoices from './FinishChoices';
+import BackLink from '@/components/BackLink';
 
 export const metadata = { title: 'Finish Registering — Luke 14 Ministries' };
 
@@ -125,13 +126,15 @@ export default async function FinishPage({ params }) {
   return (
     <section className="section">
       <div className="max-w-2xl mx-auto">
-        <Link href="/account/dashboard/" className="text-sm text-brand underline">
-          ← Back to dashboard
-        </Link>
         {/* Retitled 30 Sep 2026: choosing is optional now -- a registration
             is complete when submitted; the deposit is what staff need to
-            approve it (Lawrence). This page is simply the ways to pay. */}
-        <h1 className="text-3xl font-bold mt-3 mb-1">Ways to pay</h1>
+            approve it (Lawrence). This page is simply the ways to pay. The
+            header matches the other account pages: title left, the Back to
+            dashboard pill right (26 Oct 2026). */}
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
+          <h1 className="text-3xl font-bold">Ways to pay</h1>
+          <BackLink />
+        </div>
         <p className="text-neutral-600 mb-6">
           {ev.name}. Pay in full, set up a payment plan, or request help with the fee.
           {due && (

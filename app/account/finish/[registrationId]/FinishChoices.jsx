@@ -1,9 +1,15 @@
 'use client';
 
-// The three ways to finish registering. Each one hands off to Stripe's hosted
+// The ways to finish registering. Each one hands off to Stripe's hosted
 // pages (no card details on our site) or to the scholarship request page.
+//
+// Since 26 Oct 2026 (Lawrence: the plan's details sat in a panel at the
+// bottom, so choosing a card "jumps to bottom which is weird"): the payment
+// plan and pay-in-full are expandable cards, one open at a time, each with
+// its own details inside it; the scholarship request is a quieter line
+// underneath ("de-emphasize scholarship request to bottom").
 
-import { useState, useTransition } from 'react';
+import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { dollars } from '@/lib/payments';
 import { formatDueDateShort } from '@/lib/events';
@@ -13,18 +19,74 @@ import { startPaymentPlan } from './actions';
 
 // Module level, never inside the component (CLAUDE.md: a component defined in
 // another's body remounts on every render).
-function Choice({ value, cur, set, title, children }) {
-  const on = cur === value;
+// One way to pay: a header that opens and closes it (a real button, as in
+// components/FoldCard.jsx), and its own details inside. Opening one by hand
+// brings its header gently into view; the first draw does not scroll.
+function OptionCard({ open, onToggle, title, summary, children }) {
+  const bodyId = useId();
+  const ref = useRef(null);
+  const firstDraw = useRef(true);
+  useEffect(() => {
+    if (firstDraw.current) {
+      firstDraw.current = false;
+      return;
+    }
+    if (open) ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [open]);
   return (
-    <label
-      className={`block cursor-pointer rounded-lg border p-4 ${
-        on ? 'border-brand bg-brand-light' : 'border-neutral-300 bg-white'
-      }`}
+    <div
+      ref={ref}
+      className={`scroll-mt-6 rounded-lg border ${open ? 'border-brand bg-brand-light/40' : 'border-neutral-300 bg-white'}`}
     >
-      <input type="radio" name="route" className="sr-only" checked={on} onChange={() => set(value)} />
-      <span className="font-semibold">{title}</span>
-      <span className="block text-sm text-neutral-600 mt-1">{children}</span>
-    </label>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={bodyId}
+        className="flex w-full items-start justify-between gap-3 p-4 text-left"
+      >
+        <span>
+          <span className="font-semibold">{title}</span>
+          <span className="block text-sm text-neutral-600 mt-1">{summary}</span>
+        </span>
+        <span
+          aria-hidden
+          className={`mt-1 inline-block text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
+        >
+          ▶
+        </span>
+      </button>
+      <div id={bodyId} hidden={!open} className="space-y-3 border-t border-neutral-200 px-4 pb-4 pt-3">
+        {open && children}
+      </div>
+    </div>
+  );
+}
+
+// Bank or card, with the bank line and the returned-payment fee (0123) --
+// the same in both cards. Bank first and the default.
+function PayWith({ method, setMethod, returnedFeeCents }) {
+  return (
+    <>
+      <p className="text-xs font-semibold text-neutral-500">Pay with</p>
+      <div className="flex gap-2">
+        <Pill value="bank" cur={method} set={setMethod}>Bank account</Pill>
+        <Pill value="card" cur={method} set={setMethod}>Card</Pill>
+      </div>
+      {/* Lawrence, 22 Oct 2026: say it beside the choice, whichever is
+          picked, and without a dollar figure. Bank stays first and is the
+          default. Nothing here changes an amount. */}
+      <p className="text-xs text-neutral-500">
+        Paying from your bank account costs the camp less in processing fees than a card.
+        {' '}Thank you for considering a bank payment — it extends the impact of Luke 14 Ministries.
+      </p>
+      {/* 0123: the returned-payment fee is disclosed BEFORE a family chooses
+          a bank payment, and only when the event has one. The amount shown is
+          the one the checkout carries and the only one that can be charged. */}
+      {returnedFeeDisclosure(returnedFeeCents) && (
+        <p className="text-xs text-neutral-500">{returnedFeeDisclosure(returnedFeeCents)}</p>
+      )}
+    </>
   );
 }
 
@@ -66,6 +128,12 @@ export default function FinishChoices({
   const plan = preview?.[schedule];
   const early = earlySavingCents > 0;
 
+  // One card open at a time; pressing the open one's header closes it.
+  function toggle(next) {
+    setError('');
+    setRoute((cur) => (cur === next ? null : next));
+  }
+
   function go() {
     setError('');
     start(async () => {
@@ -98,28 +166,13 @@ export default function FinishChoices({
       )}
 
       {canPlan && (
-        <Choice value="plan" cur={route} set={setRoute} title="Set up a payment plan">
-          Pay the {dollars(depositCents)} deposit now, and the rest is charged automatically to
-          the card or bank account you save, ending on the due date.
-        </Choice>
-      )}
-      <Choice
-        value="full"
-        cur={route}
-        set={setRoute}
-        title={`Pay in full now — ${dollars(payInFullCents)}`}
-      >
-        {early
-          ? `Includes your ${dollars(earlySavingCents)} early-registration discount.`
-          : 'One payment, and you are done.'}
-      </Choice>
-      <Choice value="scholarship" cur={route} set={setRoute} title="Request help with the fee">
-        Ask for a scholarship. It will not affect anyone&rsquo;s place, and staff will be in touch.
-      </Choice>
-
-      {route !== 'scholarship' && (
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 space-y-3">
-          {route === 'plan' && plan && (
+        <OptionCard
+          open={route === 'plan'}
+          onToggle={() => toggle('plan')}
+          title="Set up a payment plan"
+          summary={`Pay the ${dollars(depositCents)} deposit now, and the rest is charged automatically to the card or bank account you save, ending on the due date.`}
+        >
+          {plan && (
             <>
               <p className="text-xs font-semibold text-neutral-500">How often</p>
               <div className="flex gap-2">
@@ -151,28 +204,8 @@ export default function FinishChoices({
               </div>
             </>
           )}
-
-          <p className="text-xs font-semibold text-neutral-500">Pay with</p>
-          <div className="flex gap-2">
-            <Pill value="bank" cur={method} set={setMethod}>Bank account</Pill>
-            <Pill value="card" cur={method} set={setMethod}>Card</Pill>
-          </div>
-          {/* Lawrence, 22 Oct 2026: say it beside the choice, whichever is
-              picked, and without a dollar figure. Bank stays first and is
-              the default. Nothing here changes an amount. */}
-          <p className="text-xs text-neutral-500">
-            Paying from your bank account costs the camp less in processing fees than a card.
-            {' '}Thank you for considering a bank payment — it extends the impact of Luke 14 Ministries.
-          </p>
-          {/* 0123: the returned-payment fee is disclosed BEFORE a family
-              chooses a bank payment, and only when the event has one. The
-              amount shown is the one the checkout carries and the only one
-              that can be charged. */}
-          {returnedFeeDisclosure(returnedFeeCents) && (
-            <p className="text-xs text-neutral-500">{returnedFeeDisclosure(returnedFeeCents)}</p>
-          )}
-
-          {route === 'plan' && plan && (
+          <PayWith method={method} setMethod={setMethod} returnedFeeCents={returnedFeeCents} />
+          {plan && (
             <label className="flex gap-2 text-sm">
               <input
                 type="checkbox"
@@ -183,28 +216,47 @@ export default function FinishChoices({
               <span>{plan.consent}</span>
             </label>
           )}
-
           {error && <p className="text-sm text-red-700">{error}</p>}
           <button
             type="button"
             onClick={go}
-            disabled={pending || (route === 'plan' && !agreed)}
+            disabled={pending || !agreed}
             className="btn-primary py-2! disabled:opacity-50"
           >
-            {pending
-              ? 'Opening secure checkout…'
-              : route === 'plan'
-                ? `Pay ${dollars(depositCents)} deposit and start plan`
-                : `Pay ${dollars(payInFullCents)}`}
+            {pending ? 'Opening secure checkout…' : `Pay ${dollars(depositCents)} deposit and start plan`}
           </button>
-        </div>
+        </OptionCard>
       )}
+      <OptionCard
+        open={route === 'full'}
+        onToggle={() => toggle('full')}
+        title={`Pay in full now — ${dollars(payInFullCents)}`}
+        summary={
+          early
+            ? `Includes your ${dollars(earlySavingCents)} early-registration discount.`
+            : 'One payment, and you are done.'
+        }
+      >
+        <PayWith method={method} setMethod={setMethod} returnedFeeCents={returnedFeeCents} />
+        {error && <p className="text-sm text-red-700">{error}</p>}
+        <button
+          type="button"
+          onClick={go}
+          disabled={pending}
+          className="btn-primary py-2! disabled:opacity-50"
+        >
+          {pending ? 'Opening secure checkout…' : `Pay ${dollars(payInFullCents)}`}
+        </button>
+      </OptionCard>
 
-      {route === 'scholarship' && (
-        <Link href={`/account/scholarship/${registrationId}/`} className="btn-primary inline-block py-2!">
-          Go to the scholarship request
-        </Link>
-      )}
+      {/* The quieter way (26 Oct 2026): still one click to the request page. */}
+      <p className="pt-2 text-sm text-neutral-600">
+        Need help with the fee?{' '}
+        <Link href={`/account/scholarship/${registrationId}/`} className="font-semibold text-brand underline">
+          Request a scholarship
+        </Link>{' '}
+        — it will not affect anyone&rsquo;s place, and staff will be in touch.
+      </p>
 
       {!canPlan && balanceCents > 0 && (
         <p className="text-xs text-neutral-500">
