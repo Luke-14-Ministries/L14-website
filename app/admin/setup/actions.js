@@ -158,13 +158,19 @@ export async function updateEventDetails(
       return { ok: false, error: 'The family discount starts from the 2nd person at the earliest.' };
     }
   }
-  // Blank is not zero (18 Oct review: an emptied box silently saved 0%).
-  if (String(multiWeekPercent ?? '').trim() === '') {
-    return { ok: false, error: 'Give the both-weeks discount as a percentage — 0 for none.' };
-  }
-  const pct = Number.parseInt(String(multiWeekPercent).replace(/[^0-9]/g, ''), 10);
-  if (!Number.isInteger(pct) || pct < 0 || pct > 100) {
-    return { ok: false, error: 'The both-weeks discount is a percentage from 0 to 100.' };
+  // The both-weeks discount is set on a camp's later week only, where it
+  // applies (Lawrence, 27 Oct 2026); an earlier week's form does not send it
+  // (undefined), and its stored figure is left alone. Blank is not zero
+  // (18 Oct review: an emptied box silently saved 0%).
+  let pct;
+  if (multiWeekPercent !== undefined) {
+    if (String(multiWeekPercent ?? '').trim() === '') {
+      return { ok: false, error: 'Give the both-weeks discount as a percentage — 0 for none.' };
+    }
+    pct = Number.parseInt(String(multiWeekPercent).replace(/[^0-9]/g, ''), 10);
+    if (!Number.isInteger(pct) || pct < 0 || pct > 100) {
+      return { ok: false, error: 'The both-weeks discount is a percentage from 0 to 100.' };
+    }
   }
 
   // 0123: the returned bank payment fee. Blank is not zero (the 18 Oct
@@ -178,19 +184,26 @@ export async function updateEventDetails(
   }
   const returnedFeeCents = Math.round(feeN * 100);
 
+  // The settings a later week takes from this one (0137). Dates are each
+  // week's own; the both-weeks discount is the later week's.
+  const shared = {
+    capacity: cap,
+    early_registration_ends_on: earlyEndsOn || null,
+    early_registration_discount_cents: earlyCents,
+    balance_due_on: dueOn,
+    family_discount_cents: familyCents,
+    family_discount_from_person: fromPerson,
+    returned_payment_fee_cents: returnedFeeCents,
+  };
   const { error } = await supabase
     .from('events')
     .update({
       starts_on: startsOn,
       ends_on: endsOn,
-      capacity: cap,
-      early_registration_ends_on: earlyEndsOn || null,
-      early_registration_discount_cents: earlyCents,
-      balance_due_on: dueOn,
-      family_discount_cents: familyCents,
-      family_discount_from_person: fromPerson,
-      multi_week_discount_percent: pct,
-      returned_payment_fee_cents: returnedFeeCents,
+      ...shared,
+      ...(pct !== undefined ? { multi_week_discount_percent: pct } : {}),
+      // Saved by hand: a later week stops following its earlier week (0137).
+      details_set_by_hand_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq('id', eventId);
@@ -202,48 +215,21 @@ export async function updateEventDetails(
   // recomputed from stored facts (0070, 0081), not a price copied at sign-up.
   // Never fatal: the settings have saved, and a stale discount is a visible
   // number an administrator can re-run.
-  // The both-weeks discount is one figure for the camp (Lawrence, 27 Oct
-  // 2026: "force it to be the same so no mismatch is possible"). The weeks of
-  // a camp are the events whose names share the part before " — " ("Camp
-  // Celebrate 2027 — Week 1" / "— Week 2"), the same pairing
-  // recalc_multi_week_discount() uses, so the percentage saved here is set on
-  // every one of them and their discounts re-run too.
-  const recalcIds = [eventId];
-  const { data: me, error: meError } = await supabase.from('events').select('name').eq('id', eventId).maybeSingle();
-  if (meError) {
-    return { ok: false, error: `The event saved, but its other weeks could not be checked: ${meError.message}` };
-  }
-  const program = String(me?.name ?? '').split(' — ')[0].trim();
-  if (program && String(me?.name ?? '').includes(' — ')) {
-    // LIKE wildcards in a camp's name are matched literally.
-    const like = `${program.replace(/[\\%_]/g, (c) => `\\${c}`)} — %`;
-    const { data: siblings, error: sibError } = await supabase
-      .from('events')
-      .update({ multi_week_discount_percent: pct, updated_at: new Date().toISOString() })
-      .like('name', like)
-      .neq('id', eventId)
-      .neq('multi_week_discount_percent', pct)
-      .select('id');
-    if (sibError) {
-      return { ok: false, error: `The event saved, but the other weeks' both-weeks discount did not: ${sibError.message}` };
-    }
-    for (const sib of siblings ?? []) recalcIds.push(sib.id);
-  }
-  for (const id of recalcIds) {
-    try {
-      const { error: recalcError } = await supabase.rpc('recalc_event_discounts', { p_event_id: id });
-      if (recalcError) console.error('recalc_event_discounts:', recalcError.message);
-    } catch (e) {
-      console.error('recalc_event_discounts:', e?.message);
-    }
+  try {
+    const { error: recalcError } = await supabase.rpc('recalc_event_discounts', { p_event_id: eventId });
+    if (recalcError) console.error('recalc_event_discounts:', recalcError.message);
+  } catch (e) {
+    console.error('recalc_event_discounts:', e?.message);
   }
 
+  let priceCents = null;
   if (String(feeDollars ?? '').trim() !== '') {
     const n = Number.parseFloat(String(feeDollars).replace(/[$,\s]/g, ''));
     if (Number.isNaN(n) || n < 0) {
       return { ok: false, error: 'The dates and capacity saved, but the price is not a number.' };
     }
     const cents = Math.round(n * 100);
+    priceCents = cents;
     const { data: opt, error: optError } = await supabase
       .from('event_options')
       .select('id')
@@ -274,11 +260,75 @@ export async function updateEventDetails(
     }
   }
 
+  // Week 1's details are the later weeks' defaults (Lawrence, 27 Oct 2026):
+  // copied to each later week of the same camp that has never been saved by
+  // hand. The weeks of a camp share the part of the name before " — ", the
+  // pairing recalc_multi_week_discount() uses. A week with more people
+  // registered than the places copied keeps its own places, and says so.
+  const copiedTo = [];
+  const kept = [];
+  const { data: me, error: meError } = await supabase.from('events').select('name').eq('id', eventId).maybeSingle();
+  if (meError) {
+    return { ok: false, error: `The event saved, but its later weeks could not be checked: ${meError.message}` };
+  }
+  const name = String(me?.name ?? '');
+  if (name.includes(' — ')) {
+    const program = name.split(' — ')[0].trim();
+    // LIKE wildcards in a camp's name are matched literally.
+    const like = `${program.replace(/[\\%_]/g, (c) => `\\${c}`)} — %`;
+    const { data: later, error: laterError } = await supabase
+      .from('events')
+      .select('id, name')
+      .like('name', like)
+      .gt('starts_on', startsOn)
+      .is('details_set_by_hand_at', null);
+    if (laterError) {
+      return { ok: false, error: `The event saved, but its later weeks could not be read: ${laterError.message}` };
+    }
+    for (const w of later ?? []) {
+      const theirs = { ...shared };
+      if (cap != null) {
+        const { count, error: countError } = await supabase
+          .from('registration_participants')
+          .select('id, registrations!inner ( event_id )', { count: 'exact', head: true })
+          .eq('registrations.event_id', w.id)
+          .neq('status', 'cancelled');
+        if (countError) return { ok: false, error: `This week saved, but ${w.name} could not be checked: ${countError.message}` };
+        if ((count ?? 0) > cap) {
+          delete theirs.capacity;
+          kept.push(`${w.name} kept its places (${count} already registered).`);
+        }
+      }
+      const { error: copyError } = await supabase
+        .from('events')
+        .update({ ...theirs, updated_at: new Date().toISOString() })
+        .eq('id', w.id);
+      if (copyError) return { ok: false, error: `This week saved, but ${w.name} did not: ${copyError.message}` };
+      if (priceCents != null) {
+        // The enrollment option only, as above: never the volunteer row.
+        const { error: priceError } = await supabase
+          .from('event_options')
+          .update({ fee_cents: priceCents, updated_at: new Date().toISOString() })
+          .eq('event_id', w.id)
+          .eq('published', true)
+          .is('participant_role', null);
+        if (priceError) return { ok: false, error: `This week saved, but ${w.name}'s price did not: ${priceError.message}` };
+      }
+      try {
+        const { error: recalcError } = await supabase.rpc('recalc_event_discounts', { p_event_id: w.id });
+        if (recalcError) console.error('recalc_event_discounts:', recalcError.message);
+      } catch (e) {
+        console.error('recalc_event_discounts:', e?.message);
+      }
+      copiedTo.push(w.name);
+    }
+  }
+
   revalidatePath('/admin/setup');
   revalidatePath('/register');
   revalidatePath('/register/family');
   revalidatePath('/account/dashboard');
-  return { ok: true };
+  return { ok: true, copiedTo, notCopied: kept.join(' ') || null };
 }
 
 // Create an event (2 Oct 2026). Until now every event was a migration, so a

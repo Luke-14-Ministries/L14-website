@@ -93,6 +93,12 @@ function EventRow({ e }) {
   const [returnedFee, setReturnedFee] = useState(((e.returnedFeeCents ?? 0) / 100).toFixed(2));
   const [detailBusy, setDetailBusy] = useState(false);
   const [detailNotice, setDetailNotice] = useState(null);
+  // The weeks of one camp (page.jsx; Lawrence, 27 Oct 2026). A later week
+  // carries the both-weeks discount, where it applies; an earlier week's
+  // details are the defaults for any later week not yet saved by hand.
+  const isLaterWeek = (e.earlierWeeks ?? []).length > 0;
+  const followers = (e.laterWeeks ?? []).filter((w) => !w.setByHand).map((w) => w.name);
+  const ownSet = (e.laterWeeks ?? []).filter((w) => w.setByHand).map((w) => w.name);
 
   function saveDetails() {
     setDetailBusy(true);
@@ -108,13 +114,19 @@ function EventRow({ e }) {
         balanceDueOn,
         familyDollars: family,
         familyFromPerson: familyFrom,
-        multiWeekPercent: multiWeek,
+        // Only a later week carries the both-weeks discount (0137 note).
+        multiWeekPercent: isLaterWeek ? multiWeek : undefined,
         returnedFeeDollars: returnedFee,
       });
       setDetailBusy(false);
       setDetailNotice(
         res.ok
-          ? { ok: true, message: 'Saved. The public pages and the registration form use this now.' }
+          ? {
+              ok: true,
+              message: `Saved. The public pages and the registration form use this now.${
+                res.copiedTo?.length ? ` Copied to ${res.copiedTo.join(' and ')}.` : ''
+              }${res.notCopied ? ` ${res.notCopied}` : ''}`,
+            }
           : { ok: false, message: res.error }
       );
       if (res.ok) router.refresh();
@@ -373,20 +385,29 @@ function EventRow({ e }) {
                 className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
             </label>
-            <label className="text-sm">
-              <span className="block font-semibold text-neutral-700 mb-0.5">Both-weeks volunteer discount (%)</span>
-              <input
-                inputMode="numeric"
-                value={multiWeek}
-                onChange={(ev) => setMultiWeek(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
-              />
-              {/* One number for the camp (Lawrence, 27 Oct 2026): saving it
-                  here sets every week of the same camp (updateEventDetails). */}
-              <span className="mt-1 block text-xs text-neutral-500">
-                One figure for the whole camp: saving it here sets every week.
-              </span>
-            </label>
+            {/* On the later week only (Lawrence, 27 Oct 2026): it comes off the
+                later week's fee, so that is the one figure that counts. */}
+            {isLaterWeek ? (
+              <label className="text-sm">
+                <span className="block font-semibold text-neutral-700 mb-0.5">Both-weeks volunteer discount (%)</span>
+                <input
+                  inputMode="numeric"
+                  value={multiWeek}
+                  onChange={(ev) => setMultiWeek(ev.target.value)}
+                  className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                />
+                <span className="mt-1 block text-xs text-neutral-500">
+                  Off this week&rsquo;s fee for a confirmed volunteer at both weeks.
+                </span>
+              </label>
+            ) : (e.laterWeeks ?? []).length > 0 ? (
+              <p className="text-xs text-neutral-500 self-end">
+                The both-weeks volunteer discount is set on{' '}
+                {(e.laterWeeks ?? []).map((w) => w.name).join(' and ')}, where it applies.
+              </p>
+            ) : (
+              <span />
+            )}
             <p className="text-xs text-neutral-600 self-end">
               The family discount comes off the chosen person and every later fee-paying person on
               one registration; the both-weeks discount comes off the later week for a volunteer
@@ -436,6 +457,27 @@ function EventRow({ e }) {
               }`}
             >
               {detailNotice.message}
+            </p>
+          )}
+
+          {/* Week 1's details are the later weeks' defaults (0137). */}
+          {followers.length > 0 && (
+            <p className="mt-3 text-xs text-neutral-600">
+              Saving also copies the price, places, early registration, balance due, family discount
+              and returned-payment fee to <strong>{followers.join(' and ')}</strong>, which has not
+              been saved by hand.
+              {ownSet.length > 0 && <> {ownSet.join(' and ')} keeps its own settings.</>}
+            </p>
+          )}
+          {followers.length === 0 && ownSet.length > 0 && (
+            <p className="mt-3 text-xs text-neutral-600">
+              {ownSet.join(' and ')} has its own settings, so saving here changes this week only.
+            </p>
+          )}
+          {isLaterWeek && !e.setByHand && (
+            <p className="mt-3 text-xs text-neutral-600">
+              These follow {(e.earlierWeeks ?? []).join(' and ')} until they are saved here; after
+              that, this week keeps its own.
             </p>
           )}
 

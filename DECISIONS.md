@@ -3638,11 +3638,17 @@ was declined.)." (`declineReason`, in lib/plans.js and `_shared/plans.ts`; the e
 functions are next deployed). On the staff registration page the volunteer role pill is indigo: amber is
 the site's "needs attention" colour, and purple is caregivers'.
 
-## 27 Oct 2026 — The both-weeks discount is one figure per camp; Setup regrouped; horseback waiver accepted
+## 27 Oct 2026 — The both-weeks discount lives on the later week; Week 1's details are Week 2's defaults; Setup regrouped; horseback waiver accepted
 
-Lawrence: "force the both-weeks discount to be the same so no mismatch is possible". Saving the percentage
-on one week of a camp sets it on every event whose name shares the part before " — " (the pairing
-`recalc_multi_week_discount()` already uses) and re-runs their discounts. Setup's event details now put the
+Lawrence: the both-weeks discount "can only be on week 2 (since that's where it applies)", and "details
+from week 1 should copy to week 2 as defaults ... IF week 2 have been manually edited ever they don't get
+overwritten". The discount comes off the later week's fee (`recalc_multi_week_discount()` uses the later
+event's percentage), so the field shows only on a camp's later week. Saving an earlier week copies its
+price, places, early registration, balance due, family discount and returned-payment fee to each later week
+of the same camp (names sharing the part before " — ") that has never been saved by hand —
+`events.details_set_by_hand_at` (`0137`), stamped by Setup's own save, never by the copy. A later week with
+more people registered than the copied places keeps its places, and the save says so. (A first version that
+synced the percentage across weeks was replaced the same hour.) Setup's event details now put the
 dates on one line (early registration ends, early discount, balance due) and every discount on the next
 (family discount, from person, both-weeks). Larry, 27 Oct: the horseback waiver text (version 1, `0116`) is
 acceptable; the Staff Questions item is closed.

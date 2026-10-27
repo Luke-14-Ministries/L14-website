@@ -24,7 +24,7 @@ export default async function SetupPage() {
   const { data: events, error: eventsError } = await supabase
     .from('events')
     .select(
-      'id, name, event_type, starts_on, ends_on, archived_at, deposit_cents, balance_due_on, family_discount_cents, family_discount_from_person, multi_week_discount_percent, returned_payment_fee_cents, location, published, registration_opens_at, registration_closes_at, capacity, early_registration_ends_on, early_registration_discount_cents, event_options ( id, fee_cents, published, participant_role )'
+      'id, name, event_type, starts_on, ends_on, archived_at, deposit_cents, balance_due_on, family_discount_cents, family_discount_from_person, multi_week_discount_percent, returned_payment_fee_cents, location, published, registration_opens_at, registration_closes_at, capacity, early_registration_ends_on, early_registration_discount_cents, details_set_by_hand_at, event_options ( id, fee_cents, published, participant_role )'
     )
     .order('starts_on', { ascending: true });
   // Never an empty list for a failed read: "No events yet" would invite
@@ -64,7 +64,24 @@ export default async function SetupPage() {
     // option per event, and "the first published one" could return either).
     feeCents: enrollmentOption(e)?.fee_cents ?? null,
     hasPublishedOption: (e.event_options ?? []).some((o) => o.published),
+    // 0137: saved by hand on Setup at least once (a later week then stops
+    // taking the earlier week's details).
+    setByHand: Boolean(e.details_set_by_hand_at),
   }));
+
+  // The weeks of one camp (Lawrence, 27 Oct 2026): events whose names share
+  // the part before " — ", the pairing recalc_multi_week_discount() uses. The
+  // both-weeks discount is set on the later week, where it applies, and an
+  // earlier week's details are the later weeks' defaults.
+  const programOf = (name) => (String(name ?? '').includes(' — ') ? String(name).split(' — ')[0].trim() : null);
+  for (const r of rows) {
+    const program = programOf(r.name);
+    const weeks = program ? rows.filter((o) => programOf(o.name) === program) : [r];
+    r.earlierWeeks = weeks.filter((o) => o.startsOn < r.startsOn).map((o) => o.name);
+    r.laterWeeks = weeks
+      .filter((o) => o.startsOn > r.startsOn)
+      .map((o) => ({ name: o.name, setByHand: o.setByHand }));
+  }
 
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
