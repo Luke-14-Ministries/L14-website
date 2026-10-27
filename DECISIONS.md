@@ -3392,3 +3392,15 @@ volunteer's legacy signup still makes a row, which signing now clears. The signi
 line before an agreement that opens with the statutory WARNING notice (TCA 44-20-105); the notice itself stays
 verbatim.
 
+## 26 Oct 2026 — Staff can see what was emailed, and Resend's id is kept (0132)
+
+A test email went to a mistyped household address (luke14ministries.com); the "2 emails sent" card
+vanished on reload and no staff page read `message_log`, so the only record was in the database, and it
+held no provider id to look up at Resend. Now: each registration page has an **Emails sent** card (the
+household's emails, folded), Email Families has **Recently sent** (latest 30, every family, including the
+plan emails), and `sendEmail()` returns Resend's id, which `log_family_email()` stores (restated in full
+in `0132`, the old signature dropped so there is one). The preview on Email Families lists what each
+family will be asked for and can show any family's email, not just the first (one sample read as the
+body everyone would get). Also: bank transfers "may" take a few days to clear, everywhere a family reads
+it (the stripe-webhook receipt wording takes effect when that function is next deployed).
+

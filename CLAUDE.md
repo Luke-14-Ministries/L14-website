@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as
 working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0131`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0132`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -357,6 +357,9 @@ status change** (`0120`): the review queue's *Waiver outstanding* tab, an amber 
 registration, the family's dashboard card and Activities page (`signActivityWaiver` signs alone).
 **Staff email to families lives at `/admin/email-families`** (Registration write): staff-pressed,
 never automatic, one email per household through `lib/email.js`, each logged to `message_log`.
+Staff see what was sent in **Emails sent** on each registration page and **Recently sent** on Email
+Families (`loadEmailLog()` in `lib/emailLog.js`); since `0132` a send keeps Resend's message id
+(`provider_message_id`), linked as *delivery*.
 Volunteers arrive a day early (`events.volunteer_arrives_on`).
 Data-deletion requests: `/account/delete-data` → `/admin/deletion-requests`; nothing is deleted
 automatically.
