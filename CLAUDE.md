@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as
 working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0129`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0130`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -199,9 +199,12 @@ including a registration with an unread family reply.
 `waitlist_reason`, Registration write, required by the app, cleared off the waitlist, **read by the
 family** on their dashboard).
 **Review flags that inform do not hold the Review card open** (`deposit_waived`, `media_declined`,
-`creed_not_affirmed`). The Creed has *Talked with Larry* (`0129`: `creed_discussed_at`/`_by`/`_note`,
-written only by `mark_creed_discussed()` / `clear_creed_discussed()`, Registration write, stamped by
-the database; an invoker guard refuses direct writes); photo-declined links to the photographer's
+`creed_not_affirmed`). **The Creed flag is read from `creed_status`** (`0130`, invoker, no money —
+Registration read sees it; `registration_review`'s copy is ignored by the pages). *Talked with Larry*
+is per person in `creed_conversations` (Registration read; written only by `mark_creed_discussed()` /
+`clear_creed_discussed()`, Registration write, stamped by the database) and covers a person only under
+the name they had then — someone added or renamed since raises the flag again and holds the Review
+card open (Lawrence, 26 Oct). Photo-declined links to the photographer's
 list, `/admin/rosters/photos/` (Registration read; faces for Sensitive read).
 Staff idle logout is 60 minutes.
 

@@ -3330,3 +3330,19 @@ Approve / Waitlist / Ask buttons — each person a link to their row with their 
 "Still submitted: …" sentence. The duplicate-name role label ("Cal (Volunteer)") needs a real
 person id and ignores cancelled rows; "Ro BOTFAMILY-C (Camper)" was the pre-`4a463d0` comparison
 (`person_id`, never selected, so every row matched).
+
+## 26 Oct 2026 — The Creed conversation is per person, and the flag is not money (0130)
+
+Lawrence on 0129: the Creed flag "should not be tied to money -- anyone with registration read should
+see it, and anyone with write should be able to set the flag"; the note being family-readable is fine;
+and the record "needs to apply to registrants at that time... should re-open if someone is added (or
+major change, like name)". So `creed_status` (security invoker, reads no money) gives the flag to every
+reviewer, and `creed_conversations` holds one row per (registration, person) with the person's name at
+the time; a conversation covers someone only while that name still matches. *Talked with Larry* records
+it for everyone the flag is raised for at that moment; Undo clears the registration's rows. 0129's
+columns on `registrations` were dropped (none were set live). A pending conversation now holds the
+Review card open; a recorded one folds. The table is staff-only — no reason to show the family the note
+once it had its own table. Also: the event status dropdown on Setup is colour-coded (unpublished blue,
+published green, archived grey), and giving statements print the tax year large at the top ("2026 Tax
+Year" for a whole calendar year; the year and exact dates otherwise, so a partial statement never
+passes for a year-end one).
