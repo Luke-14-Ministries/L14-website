@@ -6,6 +6,7 @@ import { balanceDueOn, formatDueDateShort, todayInMorristown, dayInMorristown, i
 import EventFilter from '@/components/EventFilter';
 import RecordPaymentForm from './RecordPaymentForm';
 import FoldCard from '@/components/FoldCard';
+import ExportBar from './ExportBar';
 import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 
 export const metadata = { title: 'Event Payments — Staff Admin' };
@@ -216,56 +217,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
   return (
     <div>
       <h2 className="text-xl font-bold mb-2">Event Payments</h2>
-      {/* The exports as one toolbar (Lawrence, 26 Oct 2026): pick the format,
-          the dates, Download. Payments and QuickBooks are lists of money
-          received, so the dates apply to them; a balance is a snapshot of
-          today, so Balances ignores them (the route sends it to the balances
-          export). Payments and Balances follow the events shown below;
-          QuickBooks covers every event. Blank dates mean no limit. */}
-      <form
-        method="get"
-        action="/admin/exports/payments"
-        className="mb-4 flex flex-wrap items-center gap-2 text-sm"
-      >
-        {eventFilter && <input type="hidden" name="event" value={eventFilter} />}
-        {paystate && <input type="hidden" name="paystate" value={paystate} />}
-        <label htmlFor="export-format" className="font-semibold text-neutral-700">
-          Export
-        </label>
-        <select
-          id="export-format"
-          name="format"
-          defaultValue="payments"
-          className="rounded-sm border border-neutral-300 px-2 py-1.5"
-        >
-          <option value="payments">Payments — events shown, received between the dates</option>
-          <option value="quickbooks">QuickBooks — every event, received between the dates</option>
-          <option value="balances">Balances — events shown, as of today (dates not used)</option>
-        </select>
-        <label htmlFor="export-from" className="text-neutral-600">From</label>
-        <input
-          id="export-from"
-          type="date"
-          name="from"
-          defaultValue={monthStart}
-          className="rounded-sm border border-neutral-300 px-2 py-1.5"
-        />
-        <label htmlFor="export-to" className="text-neutral-600">to</label>
-        <input
-          id="export-to"
-          type="date"
-          name="to"
-          defaultValue={dueToday}
-          className="rounded-sm border border-neutral-300 px-2 py-1.5"
-        />
-        <button
-          type="submit"
-          className="btn-outline py-1.5! text-sm"
-          title="Downloads a CSV. Clear both dates for every date. QuickBooks: Date, Name, Memo, Account, Amount — covered fees as their own line, refunds negative; account names are placeholders until the treasurer confirms them."
-        >
-          Download CSV
-        </button>
-      </form>
+      {/* Exports: report, then format, then dates (ExportBar.jsx). */}
+      <ExportBar eventFilter={eventFilter} paystate={paystate} defaultFrom={monthStart} defaultTo={dueToday} />
       <p className="text-sm text-neutral-500 mb-4">
         What each family owes and has paid for an event (Camp Celebrate, retreats, and the rest). Online payments record themselves; checks
         and cash are entered below. Donations live on the separate Giving page.

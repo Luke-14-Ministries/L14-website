@@ -42,16 +42,6 @@ export async function GET(request) {
   const paystate = url.searchParams.get('paystate') || '';
   const eventFilter = url.searchParams.get('event') || '';
   const quickbooks = url.searchParams.get('format') === 'quickbooks';
-  // The Event Payments toolbar has one format dropdown (26 Oct 2026);
-  // Balances is its own export, a snapshot with no date range.
-  if (url.searchParams.get('format') === 'balances') {
-    const keep = new URLSearchParams();
-    for (const k of ['event', 'paystate']) {
-      if (url.searchParams.get(k)) keep.set(k, url.searchParams.get(k));
-    }
-    const q = keep.toString();
-    return Response.redirect(new URL(`/admin/exports/balances/${q ? `?${q}` : ''}`, url), 303);
-  }
   const from = url.searchParams.get('from') || '';
   const to = url.searchParams.get('to') || '';
   // The received-date range applies to the plain CSV too since 26 Oct 2026
