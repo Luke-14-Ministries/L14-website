@@ -436,8 +436,17 @@ export async function activatePlanFromDeposit(
   }
 
   // Already active (Stripe sends completed, then async_payment_succeeded for
-  // a bank transfer): nothing to do. The schedule is built once.
-  if (existing?.activated_at) return;
+  // a bank transfer), or this very deposit already handled: nothing to do.
+  // The schedule is built once. A CANCELLED plan is different: a deposit from
+  // a new checkout starts it again (27 Oct 2026, Testing Script 17.11 -- the
+  // restart after a family cancelled was ignored, and the deposit sat on the
+  // balance with no plan). A repeat delivery of the old deposit never revives it.
+  if (
+    existing?.activated_at &&
+    (existing.status !== 'cancelled' || existing.deposit_payment_intent_id === piId)
+  ) {
+    return;
+  }
 
   let pmId: string | null = null;
   let pm: Stripe.PaymentMethod | null = null;
@@ -465,6 +474,11 @@ export async function activatePlanFromDeposit(
     // bank charge on this plan adds exactly this; 0 or absent = never.
     returned_payment_fee_cents: Math.max(0, parseInt(md.returned_fee_cents ?? '0', 10) || 0),
     note:`Started online (${md.consent_version ?? 'consent'}).`,
+    // A restarted plan starts clean: the old cancellation and the staff
+    // early-discount decision on it belong to the plan that ended.
+    cancelled_at: null,
+    cancelled_by: null,
+    keeps_early_discount: true,
   };
   const { data: plan, error } = await admin
     .from('payment_plans')
