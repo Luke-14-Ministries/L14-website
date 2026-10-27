@@ -424,17 +424,20 @@ export default async function PersonPage({ params }) {
   const sensitive = can(staff, 'read:sensitive');
   const supabase = await createClient();
 
-  const { data: person } = await supabase
+  const { data: person, error: personError } = await supabase
     .from('people')
     .select('id, first_name, last_name, preferred_name, date_of_birth, gender, household_id, phone, email')
     .eq('id', personId)
     .maybeSingle();
+  // CLAUDE.md: never turn a query error into an empty list -- here a failed
+  // read would say "no such person", or "on no registration".
+  if (personError) throw new Error(`Person: ${personError.message}`);
   if (!person) notFound();
 
   // Every registration this person is on. A person can hold several roles
   // across events -- volunteer at one, camper at another -- and this page is
   // the one place that has to show all of them at once rather than picking one.
-  const { data: parts } = await supabase
+  const { data: parts, error: partsError } = await supabase
     .from('registration_participants')
     .select(
       `id, camp_role, status, program_id, registration_id,
@@ -444,10 +447,11 @@ export default async function PersonPage({ params }) {
     )
     .eq('person_id', personId)
     .neq('status', 'cancelled');
+  if (partsError) throw new Error(`Registrations: ${partsError.message}`);
 
   const participantIds = (parts ?? []).map((p) => p.id);
 
-  const [{ data: programs }, { data: lodgingRows }] = await Promise.all([
+  const [{ data: programs, error: programsError }, { data: lodgingRows, error: lodgingError }] = await Promise.all([
     supabase.from('programs').select('id, name'),
     participantIds.length
       ? supabase
@@ -456,6 +460,8 @@ export default async function PersonPage({ params }) {
           .in('registration_participant_id', participantIds)
       : Promise.resolve({ data: [] }),
   ]);
+  if (programsError) throw new Error(`Programs: ${programsError.message}`);
+  if (lodgingError) throw new Error(`Lodging: ${lodgingError.message}`);
   const programName = new Map((programs ?? []).map((g) => [g.id, g.name]));
 
   // Everything else a reviewer asks about a person, by event (14 Oct 2026,
@@ -466,8 +472,13 @@ export default async function PersonPage({ params }) {
   // volunteer application carries the Creed answer; permissions are the
   // latest answer per kind.
   const regIds = [...new Set((parts ?? []).map((p) => p.registration_id).filter(Boolean))];
-  const [{ data: reviewRows }, { data: ownSigs }, { data: householdSigs }, { data: apps }, { data: consents }] =
-    await Promise.all([
+  const [
+    { data: reviewRows, error: reviewError },
+    { data: ownSigs, error: ownSigsError },
+    { data: householdSigs, error: householdSigsError },
+    { data: apps },
+    { data: consents, error: consentsError },
+  ] = await Promise.all([
       regIds.length
         ? supabase.from('registration_review').select('registration_id, review_class, flags').in('registration_id', regIds)
         : Promise.resolve({ data: [] }),
@@ -505,6 +516,10 @@ export default async function PersonPage({ params }) {
         .eq('person_id', personId)
         .order('recorded_at', { ascending: false }),
     ]);
+  if (reviewError) throw new Error(`Review status: ${reviewError.message}`);
+  if (ownSigsError) throw new Error(`Agreements: ${ownSigsError.message}`);
+  if (householdSigsError) throw new Error(`Household agreements: ${householdSigsError.message}`);
+  if (consentsError) throw new Error(`Permissions: ${consentsError.message}`);
   const reviewByReg = new Map((reviewRows ?? []).map((r) => [r.registration_id, r]));
   const sigsByReg = new Map();
   for (const sig of [...(ownSigs ?? []), ...(householdSigs ?? [])]) {
@@ -532,9 +547,10 @@ export default async function PersonPage({ params }) {
   const parentIds = [
     ...new Set((lodgingRows ?? []).map((r) => r.lodgings?.parent_id).filter(Boolean)),
   ];
-  const { data: parentRows } = parentIds.length
+  const { data: parentRows, error: parentError } = parentIds.length
     ? await supabase.from('lodgings').select('id, name').in('id', parentIds)
     : { data: [] };
+  if (parentError) throw new Error(`Cabins: ${parentError.message}`);
   const parentName = new Map((parentRows ?? []).map((r) => [r.id, r.name]));
   const placeFor = (participantId) => {
     const l = (lodgingRows ?? []).find((r) => r.registration_participant_id === participantId)?.lodgings;
@@ -547,20 +563,22 @@ export default async function PersonPage({ params }) {
   // foreign keys to registration_participants, and PostgREST embeds through
   // those are fragile -- a working rule already in CLAUDE.md, learned the hard
   // way. This person may be the camper OR the buddy, and both are worth showing.
-  const { data: asCamper } = participantIds.length
+  const { data: asCamper, error: asCamperError } = participantIds.length
     ? await supabase
         .from('buddy_assignments')
         .select('id, buddy_participant_id, event_id')
         .in('camper_participant_id', participantIds)
         .is('ended_at', null)
     : { data: [] };
-  const { data: asBuddy } = participantIds.length
+  const { data: asBuddy, error: asBuddyError } = participantIds.length
     ? await supabase
         .from('buddy_assignments')
         .select('id, camper_participant_id, event_id')
         .in('buddy_participant_id', participantIds)
         .is('ended_at', null)
     : { data: [] };
+  if (asCamperError) throw new Error(`Buddies: ${asCamperError.message}`);
+  if (asBuddyError) throw new Error(`Buddies: ${asBuddyError.message}`);
 
   const otherPartIds = [
     ...new Set([
@@ -568,12 +586,13 @@ export default async function PersonPage({ params }) {
       ...(asBuddy ?? []).map((b) => b.camper_participant_id),
     ].filter(Boolean)),
   ];
-  const { data: otherParts } = otherPartIds.length
+  const { data: otherParts, error: otherPartsError } = otherPartIds.length
     ? await supabase
         .from('registration_participants')
         .select('id, person_id, people ( id, first_name, last_name )')
         .in('id', otherPartIds)
     : { data: [] };
+  if (otherPartsError) throw new Error(`Buddy names: ${otherPartsError.message}`);
   const personOfPart = new Map(
     (otherParts ?? []).map((r) => [
       r.id,
@@ -584,37 +603,41 @@ export default async function PersonPage({ params }) {
   // E31. Where the rest of this household is sleeping, per event. The Lodging
   // page answers "who is in this room"; a parent at check-in asks the opposite
   // question, and a family split across rooms is exactly when it gets asked.
-  const { data: household } = person.household_id
+  const { data: household, error: householdError } = person.household_id
     ? await supabase
         .from('households')
         .select('id, display_name, email, phone')
         .eq('id', person.household_id)
         .maybeSingle()
     : { data: null };
+  if (householdError) throw new Error(`Household: ${householdError.message}`);
 
-  const { data: siblings } = person.household_id
+  const { data: siblings, error: siblingsError } = person.household_id
     ? await supabase
         .from('people')
         .select('id, first_name, last_name')
         .eq('household_id', person.household_id)
         .neq('id', personId)
     : { data: [] };
+  if (siblingsError) throw new Error(`Household members: ${siblingsError.message}`);
 
   const siblingIds = (siblings ?? []).map((s) => s.id);
-  const { data: sibParts } = siblingIds.length
+  const { data: sibParts, error: sibPartsError } = siblingIds.length
     ? await supabase
         .from('registration_participants')
         .select('id, person_id, registrations!inner ( event_id )')
         .in('person_id', siblingIds)
         .neq('status', 'cancelled')
     : { data: [] };
+  if (sibPartsError) throw new Error(`Household registrations: ${sibPartsError.message}`);
   const sibPartIds = (sibParts ?? []).map((r) => r.id);
-  const { data: sibLodging } = sibPartIds.length
+  const { data: sibLodging, error: sibLodgingError } = sibPartIds.length
     ? await supabase
         .from('lodging_assignments')
         .select('registration_participant_id, lodgings ( name, parent_id )')
         .in('registration_participant_id', sibPartIds)
     : { data: [] };
+  if (sibLodgingError) throw new Error(`Household lodging: ${sibLodgingError.message}`);
   const sibPlace = new Map(
     (sibLodging ?? []).map((r) => [
       r.registration_participant_id,
