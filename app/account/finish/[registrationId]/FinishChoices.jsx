@@ -65,20 +65,57 @@ function OptionCard({ open, onToggle, title, summary, children }) {
 
 // Bank or card, with the bank line and the returned-payment fee (0123) --
 // the same in both cards. Bank first and the default.
+// Bank first, and plainly the one we hope for (Lawrence, 26 Oct 2026: "make
+// the bank preference a little stronger"): the bank account is a full-width
+// choice carrying its reason; the card is a quieter text link beneath it,
+// still one tap away and never hidden. Choosing the card shows it as chosen
+// with a way back to the bank. Nothing here changes an amount.
 function PayWith({ method, setMethod, returnedFeeCents }) {
+  const bank = method === 'bank';
   return (
     <>
       <p className="text-xs font-semibold text-neutral-500">Pay with</p>
-      <div className="flex gap-2">
-        <Pill value="bank" cur={method} set={setMethod}>Bank account</Pill>
-        <Pill value="card" cur={method} set={setMethod}>Card</Pill>
-      </div>
+      <button
+        type="button"
+        onClick={() => setMethod('bank')}
+        aria-pressed={bank}
+        className={`w-full rounded-sm border px-4 py-3 text-left ${
+          bank ? 'border-brand bg-brand-light' : 'border-neutral-300 hover:border-brand'
+        }`}
+      >
+        <span className="block font-semibold">
+          Bank account{' '}
+          <span className="ml-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+            Recommended
+          </span>
+        </span>
+        <span className="mt-0.5 block text-sm text-neutral-700">
+          Lowest processing fee — more of your payment goes to camp.
+        </span>
+      </button>
+      {bank ? (
+        <p className="text-sm">
+          <button
+            type="button"
+            onClick={() => setMethod('card')}
+            className="text-neutral-500 underline hover:text-neutral-700"
+          >
+            Pay by card instead
+          </button>
+        </p>
+      ) : (
+        <p className="rounded-sm border border-brand bg-brand-light px-4 py-2 text-sm">
+          <span className="font-semibold">Card</span> selected.{' '}
+          <button type="button" onClick={() => setMethod('bank')} className="text-brand underline">
+            Use a bank account instead (recommended)
+          </button>
+        </p>
+      )}
       {/* Lawrence, 22 Oct 2026: say it beside the choice, whichever is
-          picked, and without a dollar figure. Bank stays first and is the
-          default. Nothing here changes an amount. */}
-      <p className="text-xs text-neutral-500">
-        Paying from your bank account costs the camp less in processing fees than a card.
-        {' '}Thank you for considering a bank payment — it extends the impact of Luke 14 Ministries.
+          picked, and without a dollar figure. */}
+      <p className="text-sm text-neutral-600">
+        <strong>Paying from your bank account costs the camp less in processing fees than a card.</strong>{' '}
+        Thank you for choosing it — it extends the impact of Luke 14 Ministries.
       </p>
       {/* 0123: the returned-payment fee is disclosed BEFORE a family chooses
           a bank payment, and only when the event has one. The amount shown is

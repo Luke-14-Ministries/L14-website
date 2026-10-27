@@ -193,19 +193,47 @@ export default function PayPanel({
         </div>
       )}
 
+      {/* Bank first, and plainly the one we hope for (Lawrence, 26 Oct 2026):
+          the bank account is the full-width choice with its reason; the card
+          is a quieter link beneath, still one tap away (with the speed bump
+          above). The same pattern as Ways to pay. */}
       <p className="text-xs font-semibold text-neutral-500 mb-1">Method</p>
-      <div className="flex gap-2 mb-3">
-        <Radio name="method" value="bank" cur={method} set={setMethod}>
-          <span className="block">Bank transfer</span>
-          <span className="block text-xs text-neutral-500 mt-0.5">
-            Lower processing fee — more of your payment reaches the ministry
+      <button
+        type="button"
+        onClick={() => setMethod('bank')}
+        aria-pressed={method === 'bank'}
+        className={`mb-2 w-full rounded-sm border px-4 py-3 text-left ${
+          method === 'bank' ? 'border-brand bg-brand-light' : 'border-neutral-300 hover:border-brand'
+        }`}
+      >
+        <span className="block font-semibold">
+          Bank transfer{' '}
+          <span className="ml-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+            Recommended
           </span>
-        </Radio>
-        <Radio name="method" value="card" cur={method} set={setMethod}>
-          <span className="block">Card</span>
-          <span className="block text-xs text-neutral-500 mt-0.5">Instant confirmation</span>
-        </Radio>
-      </div>
+        </span>
+        <span className="mt-0.5 block text-sm text-neutral-700">
+          Lowest processing fee — more of your payment goes to camp.
+        </span>
+      </button>
+      {method === 'bank' ? (
+        <p className="mb-3 text-sm">
+          <button type="button" onClick={() => setMethod('card')} className="text-neutral-500 underline hover:text-neutral-700">
+            Pay by card instead
+          </button>
+        </p>
+      ) : (
+        <p className="mb-3 rounded-sm border border-brand bg-brand-light px-4 py-2 text-sm">
+          <span className="font-semibold">Card</span> selected (instant confirmation).{' '}
+          <button type="button" onClick={() => setMethod('bank')} className="text-brand underline">
+            Use a bank transfer instead (recommended)
+          </button>
+        </p>
+      )}
+      <p className="mb-3 text-sm text-neutral-600">
+        <strong>A bank transfer costs the camp less in processing fees than a card.</strong> Thank you
+        for choosing it — it extends the impact of Luke 14 Ministries.
+      </p>
 
       {/* Offered for CARD only (24 Aug): choosing bank transfer already is
           the saving, and stacking a second ask on top of the better choice
