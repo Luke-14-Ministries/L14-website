@@ -3,7 +3,7 @@ import EventFilter from '@/components/EventFilter';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { REVIEW_CLASS, REVIEW_FLAG, planStoppedAt } from '@/lib/plans';
+import { REVIEW_CLASS, REVIEW_FLAG, planStoppedAt, planFailingSince, planFailingNext, PLAN_MAX_TRIES } from '@/lib/plans';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { statusPill } from '@/lib/format';
@@ -55,6 +55,11 @@ export default async function ReviewQueuePage({ searchParams }) {
   // confirmed registrations included, nobody's status changes. Plans are
   // money, so the tab exists only for Payments read -- the same grant
   // payment_plans_select asks (0101), read with the staff's own client.
+  // Since 27 Oct 2026 (Lawrence, Testing Script 17.11: "flag after ONE
+  // failure") the tab is *Plan problems* and lists the earlier case too: a
+  // plan still running (active or paused) with a charge that failed and is
+  // waiting to retry -- planFailingSince(), amber. The stopped plan keeps its
+  // red flag. Same param (?show=plan), so links into the tab still work.
   // ?show=replied (0126, 26 Oct 2026): every registration whose family wrote
   // to staff in the app and nobody has read it yet (registrations.
   // family_reply_unread, generated in the database). A reply also clears
@@ -80,7 +85,7 @@ export default async function ReviewQueuePage({ searchParams }) {
     { data: reviews, error: reviewsError },
     { data: balances, error: balancesError },
     { data: viewOwed, error: owedError },
-    { data: stoppedPlans, error: stoppedError },
+    { data: planRows, error: planError },
     { data: creedRows, error: creedError },
   ] =
     await Promise.all([
@@ -104,8 +109,8 @@ export default async function ReviewQueuePage({ searchParams }) {
       seesMoney
         ? supabase
             .from('payment_plans')
-            .select('registration_id, status, updated_at, payment_installments ( status, last_attempt_at )')
-            .eq('status', 'failed')
+            .select('registration_id, status, updated_at, payment_installments ( status, attempts, last_attempt_at )')
+            .in('status', ['failed', 'active', 'paused'])
         : Promise.resolve({ data: [], error: null }),
       // The Creed flag without money (0130): every reviewer sees it.
       supabase.from('creed_status').select(CREED_COLUMNS),
@@ -120,10 +125,20 @@ export default async function ReviewQueuePage({ searchParams }) {
   // Plus a volunteer's or buddy's rejected outfitter confirmation, which the
   // view (built from signups) cannot see (Lawrence, 26 Oct 2026).
   const owed = [...(viewOwed ?? []), ...(await rejectedOutsideView(supabase, viewOwed))];
-  if (stoppedError) throw new Error(`Stopped payment plans: ${stoppedError.message}`);
+  if (planError) throw new Error(`Payment plans: ${planError.message}`);
   if (creedError) throw new Error(`Creed status: ${creedError.message}`);
   const creedByReg = creedByRegistration(creedRows);
-  const stoppedByReg = new Map((stoppedPlans ?? []).map((p) => [p.registration_id, planStoppedAt(p)]));
+  // Two flags from the same rows, each from its one helper in lib/plans.js:
+  // stopped (status 'failed', after the third try) and failing (a charge
+  // failed, the plan is still running and will retry).
+  const stoppedByReg = new Map(
+    (planRows ?? []).filter((p) => p.status === 'failed').map((p) => [p.registration_id, planStoppedAt(p)])
+  );
+  const failingByReg = new Map();
+  for (const p of planRows ?? []) {
+    const failing = planFailingSince(p);
+    if (failing) failingByReg.set(p.registration_id, failing);
+  }
 
   const reviewByReg = new Map((reviews ?? []).map((r) => [r.registration_id, r]));
   const balanceByReg = new Map((balances ?? []).map((b) => [b.registration_id, b]));
@@ -165,6 +180,7 @@ export default async function ReviewQueuePage({ searchParams }) {
         owed: owedByReg.get(r.id) ?? [],
         planStopped: stoppedByReg.has(r.id),
         planStoppedAt: stoppedByReg.get(r.id) ?? null,
+        planFailing: failingByReg.get(r.id) ?? null,
         // The Creed (0130): who is still waiting on the conversation with
         // Larry, and who has had it under their current name.
         creed: creedByReg.get(r.id) ?? null,
@@ -179,7 +195,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       // Every current event unless one is chosen, as the "All current
       // events" pill says -- a past camp's paperwork is not live work.
       if (show === 'waiver') return r.owed.length > 0 && (eventFilter || isCurrentEventRow(r.event));
-      if (show === 'plan') return r.planStopped && (eventFilter || isCurrentEventRow(r.event));
+      if (show === 'plan') return (r.planStopped || r.planFailing) && (eventFilter || isCurrentEventRow(r.event));
       if (show === 'nodeposit') {
         return r.pending.length > 0 && !r.awaitingSince && (r.review?.review_class ?? 'neither') === 'neither';
       }
@@ -229,9 +245,13 @@ export default async function ReviewQueuePage({ searchParams }) {
   const waiverRegs = (regs ?? []).filter(
     (r) => owedByReg.has(r.id) && isCurrentEventRow(r.events)
   ).length;
-  // For the Plan stopped tab's count: the same rule, current events only.
+  // For the Plan problems tab's count: the same rule, current events only.
+  // Stopped ones decide its colour (red); failing-only is amber.
   const stoppedRegs = (regs ?? []).filter(
     (r) => stoppedByReg.has(r.id) && isCurrentEventRow(r.events)
+  ).length;
+  const planProblemRegs = (regs ?? []).filter(
+    (r) => (stoppedByReg.has(r.id) || failingByReg.has(r.id)) && isCurrentEventRow(r.events)
   ).length;
   const nameOf = new Map(
     (parts ?? []).map((p) => [`${p.registration_id}:${p.person_id}`, p.people?.first_name ?? ''])
@@ -291,13 +311,17 @@ export default async function ReviewQueuePage({ searchParams }) {
               href={`/admin/review/?show=plan${eventFilter ? `&event=${eventFilter}` : ''}`}
               className={`rounded-full px-3 py-1 font-semibold border ${
                 show === 'plan'
-                  ? 'bg-red-700 text-white border-red-700'
+                  ? stoppedRegs > 0
+                    ? 'bg-red-700 text-white border-red-700'
+                    : 'bg-amber-600 text-white border-amber-600'
                   : stoppedRegs > 0
                     ? 'border-red-300 text-red-700 hover:border-red-700'
-                    : 'border-neutral-300 text-neutral-700 hover:border-brand'
+                    : planProblemRegs > 0
+                      ? 'border-amber-400 bg-amber-50 text-amber-900 hover:border-amber-600'
+                      : 'border-neutral-300 text-neutral-700 hover:border-brand'
               }`}
             >
-              Plan stopped{stoppedRegs > 0 && ` (${stoppedRegs})`}
+              Plan problems{planProblemRegs > 0 && ` (${planProblemRegs})`}
             </Link>
           )}
           <Link
@@ -372,10 +396,12 @@ export default async function ReviewQueuePage({ searchParams }) {
 
       {show === 'plan' && (
         <p className="mb-4 text-sm text-neutral-600">
-          Families whose payment plan stopped after three failed payments. Confirmed families are
-          listed too; nobody&rsquo;s status changes for this. Open the registration to retry,
-          pause or cancel the plan, and to decide whether the family keeps the early-registration
-          discount.
+          Families whose payment plan has a problem: a payment failed and will be tried again
+          (amber — three days later, {PLAN_MAX_TRIES} tries in all), or the plan stopped after{' '}
+          {PLAN_MAX_TRIES} failed payments (red).
+          Confirmed families are listed too; nobody&rsquo;s status changes for this. Open the
+          registration to retry, pause or cancel the plan, and to decide whether the family keeps
+          the early-registration discount.
         </p>
       )}
 
@@ -390,7 +416,7 @@ export default async function ReviewQueuePage({ searchParams }) {
               : show === 'waiver'
                 ? 'Every activity waiver is signed or uploaded.'
                 : show === 'plan'
-                  ? 'No payment plan has stopped.'
+                  ? 'No payment plan has a failed payment or has stopped.'
                   : 'Nothing waiting on staff.'}
         </p>
       )}
@@ -471,7 +497,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        {flags.length === 0 && !r.creed && !r.awaitingSince && r.owed.length === 0 && !r.planStopped && !r.familyReplied ? (
+                        {flags.length === 0 && !r.creed && !r.awaitingSince && r.owed.length === 0 && !r.planStopped && !r.planFailing && !r.familyReplied ? (
                           <span className="text-neutral-400">—</span>
                         ) : (
                           <ul className="space-y-0.5">
@@ -487,6 +513,13 @@ export default async function ReviewQueuePage({ searchParams }) {
                               <li className="whitespace-nowrap text-xs font-semibold text-red-700">
                                 ⚑ Payment plan stopped
                                 {r.planStoppedAt ? ` ${dayInMorristown(r.planStoppedAt)}` : ''}
+                              </li>
+                            )}
+                            {r.planFailing && (
+                              <li className="whitespace-nowrap text-xs font-semibold text-amber-800">
+                                ⚑ Plan payment failed
+                                {r.planFailing.since ? ` ${dayInMorristown(r.planFailing.since)}` : ''} —{' '}
+                                {planFailingNext(r.planFailing)}
                               </li>
                             )}
                             {r.creed?.pending.length > 0 && (
