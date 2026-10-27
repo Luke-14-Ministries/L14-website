@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { passwordIsStale, getStaff, can } from '@/lib/staff';
 import { getProgramLeadership } from '@/lib/programs';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { sinceISO, STAFF_ASSIGNED_TYPES } from '@/lib/events';
+import { sinceISO, STAFF_ASSIGNED_TYPES, isCurrentEventRow } from '@/lib/events';
 import { isMinor } from '@/lib/format';
 import AdminNav from './AdminNav';
 
@@ -477,6 +477,23 @@ export default async function AdminLayout({ children }) {
     unplacedPeople = count ?? 0;
   }
 
+  // Outside-provider confirmations awaiting a staff check (0124), at current
+  // events (Lawrence, 26 Oct 2026: Activities "not showing any indication of
+  // this waiver waiting for review"). A queue that drains -- accept or reject
+  // and it goes -- so amber, and only for those who can clear it
+  // (Registration write). Families' missing and rejected uploads are theirs
+  // to fix and stay on Awaiting Review's Waiver outstanding tab.
+  let waiversToCheck = 0;
+  if (staff && can(staff, 'write:registration')) {
+    const { data: pendingRows, error } = await supabase
+      .from('activity_waiver_uploads')
+      .select('id, activities ( events ( starts_on, ends_on, archived_at ) )')
+      .eq('review_status', 'pending');
+    // Logged, never thrown: a failed count shows no badge.
+    if (error) console.error('activities badge:', error.message);
+    else waiversToCheck = (pendingRows ?? []).filter((r) => isCurrentEventRow(r.activities?.events)).length;
+  }
+
   return (
     <section className="bg-neutral-50 min-h-[70vh] print:bg-white">
       {/* Wider than the public site's container on purpose (24 Aug). The
@@ -603,6 +620,7 @@ export default async function AdminLayout({ children }) {
               '/admin/buddies': campersWithoutBuddy,
               '/admin/payments': recentPayments,
               '/admin/programs': unplacedPeople,
+              '/admin/activities': waiversToCheck,
               '/admin/my-program': myProgramCount,
             }}
             badgeTitles={{
@@ -615,6 +633,7 @@ export default async function AdminLayout({ children }) {
               '/admin/buddies': ['camper who asked for a buddy and still has nobody', 'campers who asked for a buddy and still have nobody'],
               '/admin/payments': ['payment in the last 7 days', 'payments in the last 7 days'],
               '/admin/programs': ['person on a roster with no program yet', 'people on a roster with no program yet'],
+              '/admin/activities': ['outside-provider confirmation waiting to be checked', 'outside-provider confirmations waiting to be checked'],
               '/admin/my-program': ['person in your program', 'people in your program'],
             }}
             // The colour key is staff vocabulary ("waiting on staff",
