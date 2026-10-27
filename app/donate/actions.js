@@ -89,7 +89,7 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: method === 'bank' ? ['us_bank_account'] : ['card'],
+      allowed_payment_method_types: method === 'bank' ? ['us_bank_account'] : ['card'],
       line_items: [
         {
           quantity: 1,

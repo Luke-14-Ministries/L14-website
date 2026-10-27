@@ -40,7 +40,7 @@
 // edge function writes nothing and reports nothing, check GRANTs first.
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import Stripe from 'npm:stripe';
+import Stripe from 'npm:stripe@23.0.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 function fail(where: string, message: string, status: number) {

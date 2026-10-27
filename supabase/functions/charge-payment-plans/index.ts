@@ -17,7 +17,7 @@
 // Stripe webhook. POST ?dry=1 lists what WOULD be charged and charges nothing.
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import Stripe from 'npm:stripe';
+import Stripe from 'npm:stripe@23.0.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { chargeDuePlans } from '../_shared/charger.ts';
 

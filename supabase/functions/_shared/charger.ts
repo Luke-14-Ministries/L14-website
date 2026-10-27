@@ -2,7 +2,7 @@
 // charge-payment-plans/index.ts, so it can be exercised against a scratch
 // database with a stand-in for Stripe. See that file for the why.
 
-import Stripe from 'npm:stripe';
+import Stripe from 'npm:stripe@23.0.0';
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { ministryToday, recordInstallmentOutcome, settledBalance } from './plans.ts';
 
@@ -146,7 +146,7 @@ export async function chargeDuePlans(
             currency: 'usd',
             customer: plan.stripe_customer_id,
             payment_method: plan.stripe_payment_method_id,
-            payment_method_types: [plan.payment_method_kind === 'us_bank_account' ? 'us_bank_account' : 'card'],
+            allowed_payment_method_types: [plan.payment_method_kind === 'us_bank_account' ? 'us_bank_account' : 'card'],
             off_session: true,
             confirm: true,
             description: `${eventName} — scheduled payment`,

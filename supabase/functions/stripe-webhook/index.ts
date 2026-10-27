@@ -12,7 +12,7 @@
 // migration 0005), so Stripe's retries can't record a payment twice.
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import Stripe from 'npm:stripe';
+import Stripe from 'npm:stripe@23.0.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 // The returned-payment fee (0123) and the logged family email share the plan
 // module's code, so the two webhooks word and record it the same way.

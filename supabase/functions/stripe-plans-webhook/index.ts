@@ -19,7 +19,7 @@
 // Every other event, and every other kind, is acknowledged and ignored.
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import Stripe from 'npm:stripe';
+import Stripe from 'npm:stripe@23.0.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   activatePlanFromDeposit,

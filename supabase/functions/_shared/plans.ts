@@ -15,7 +15,7 @@
 //     third the plan stops as 'failed' and staff are told
 //   * staff decide whether a failed or cancelled plan keeps the early discount
 
-import Stripe from 'npm:stripe';
+import Stripe from 'npm:stripe@23.0.0';
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
 export const MAX_ATTEMPTS = 3;
