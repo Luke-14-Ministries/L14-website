@@ -69,7 +69,7 @@ function signatureProblem(signature, participant) {
 async function activityAndPerson(supabase, participantId, activityId, label) {
   const { data: activity, error: actError } = await supabase
     .from('activities')
-    .select('id, name, booking_mode, capacity, provider_name, provider_url, active, signup_opens_at, signup_closes_at')
+    .select('id, event_id, name, booking_mode, capacity, provider_name, provider_url, active, signup_opens_at, signup_closes_at')
     .eq('id', activityId)
     .maybeSingle();
   if (actError) {
@@ -86,9 +86,9 @@ async function activityAndPerson(supabase, participantId, activityId, label) {
   const { data: participant, error: partError } = await supabase
     .from('registration_participants')
     .select(
-      `id, person_id, registration_id,
+      `id, person_id, registration_id, camp_role, status,
        people ( first_name, last_name, date_of_birth ),
-       registrations ( household_id, events ( starts_on ) )`
+       registrations ( household_id, event_id, events ( starts_on ) )`
     )
     .eq('id', participantId)
     .maybeSingle();
@@ -321,8 +321,8 @@ export async function signActivityWaiver({ participantId, activityId, signature 
   if (found.error) return { ok: false, error: found.error };
   const { activity, participant } = found;
 
-  // Only for a place that is actually held: a new signup signs through
-  // setActivityChoice, together with the place.
+  // Only for a place that is actually held, or a volunteer (below): a new
+  // camper signup signs through setActivityChoice, together with the place.
   const { data: signup, error: signupError } = await supabase
     .from('activity_signups')
     .select('status')
@@ -333,7 +333,15 @@ export async function signActivityWaiver({ participantId, activityId, signature 
     console.error('signActivityWaiver signup:', signupError.message);
     return { ok: false, error: `The signup could not be read: ${signupError.message}` };
   }
-  if (!signup || signup.status === 'cancelled') {
+  // A volunteer has no signup of their own -- they go where their camper goes
+  // (26 Oct 2026) -- but may sign the ministry's waiver ahead, "ready in
+  // case", the way they upload an outside provider's form. Their own active
+  // place on a registration for THIS activity's event is what allows it.
+  const volunteerReady =
+    participant.camp_role === 'volunteer' &&
+    participant.status !== 'cancelled' &&
+    activity.event_id === participant.registrations?.event_id;
+  if ((!signup || signup.status === 'cancelled') && !volunteerReady) {
     return { ok: false, error: `${participant.people?.first_name ?? 'This person'} is not signed up for ${activity.name}. Tick the activity to sign up and sign together.` };
   }
 

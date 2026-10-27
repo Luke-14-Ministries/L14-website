@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import ActivityPicker from './ActivityPicker';
 import WaiverUpload from './WaiverUpload';
+import VolunteerWaiver from './VolunteerWaiver';
 import BackBar from '@/components/BackBar';
 import BackLink from '@/components/BackLink';
 import { agreementText, isCurrentEventRow } from '@/lib/events';
@@ -305,32 +306,58 @@ export default async function ActivitiesPage({ searchParams }) {
           };
         });
       // Volunteers do not choose activities (they go where their camper
-      // goes), but an outside provider wants THEIR form too. So each
-      // volunteer gets an upload box per provider-run activity on the event.
+      // goes), but an outside provider wants THEIR form too, and the
+      // ministry's own waiver (horseback) covers whoever goes along. So each
+      // volunteer gets an upload box per provider-run activity on the event
+      // and, since 26 Oct 2026, the ministry's waiver to sign ahead -- a
+      // volunteer's waiver owed with nowhere to sign it was a dead end from
+      // the dashboard.
       const providerActivities = activities.filter((a) => a.provider_name || a.provider_url);
+      const ourActivities = activities.filter((a) => a.agreement);
       const volunteers = (r.registration_participants ?? [])
         .filter((p) => p.status !== 'cancelled' && p.camp_role === 'volunteer')
-        .map((p) => ({
-          participantId: p.id,
-          name: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
-          waivers: Object.fromEntries(
-            providerActivities
-              .map((a) => [a.id, waiverByKey.get(`${p.id}:${a.id}`) ?? null])
-              .filter(([, v]) => v)
-          ),
-        }));
-      return { registrationId: r.id, event: r.events, activities, people, volunteers, providerActivities };
+        .map((p) => {
+          const age = ageAt(p.people?.date_of_birth, r.events?.starts_on);
+          return {
+            participantId: p.id,
+            name: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
+            adult: age == null || age >= 18,
+            waivers: Object.fromEntries(
+              providerActivities
+                .map((a) => [a.id, waiverByKey.get(`${p.id}:${a.id}`) ?? null])
+                .filter(([, v]) => v)
+            ),
+            signed: Object.fromEntries(
+              ourActivities
+                .map((a) => [
+                  a.agreement.id,
+                  signatureByKey.get(`${r.id}:${p.people?.id}:${a.agreement.id}`) ?? null,
+                ])
+                .filter(([, v]) => v)
+            ),
+          };
+        });
+      return {
+        registrationId: r.id,
+        event: r.events,
+        activities,
+        people,
+        volunteers,
+        providerActivities,
+        ourActivities,
+      };
     })
     // All events: only those with something to do here -- a camper with
     // activities to choose from, or a volunteer with an outside provider's
-    // form to upload. The one registration the link named is shown whatever
+    // form to upload or the ministry's waiver to sign. The one registration the link named is shown whatever
     // it holds, with a line saying there is nothing here yet, so the button
     // never lands on a page about other events.
     .filter(
       (s) =>
         scoped ||
         (s.activities.length > 0 &&
-          (s.people.length > 0 || (s.volunteers.length > 0 && s.providerActivities.length > 0)))
+          (s.people.length > 0 ||
+            (s.volunteers.length > 0 && (s.providerActivities.length > 0 || s.ourActivities.length > 0))))
     );
 
   return (
@@ -405,7 +432,8 @@ function EmptyNote({ children }) {
 function EventSection({ section: s }) {
   const hasCampers = s.people.length > 0;
   const hasVolunteers = s.volunteers.length > 0;
-  const showProviders = hasVolunteers && s.providerActivities.length > 0;
+  const showVolunteerWaivers =
+    hasVolunteers && (s.providerActivities.length > 0 || s.ourActivities.length > 0);
   return (
     // The anchor the dashboard's "waiver needed" card and the staff email link to.
     <div
@@ -434,9 +462,10 @@ function EventSection({ section: s }) {
         ) : (
           hasVolunteers && (
             <p className="text-neutral-700">
-              As a volunteer you go where your camper goes. Where an outside provider runs an
-              activity, they need your own form as well — complete it with them, then upload
-              their confirmation here.
+              As a volunteer you go where your camper goes. Some activities need a waiver from
+              everyone who goes, volunteers included: sign ours here, and where an outside
+              provider runs an activity, complete their form with them and upload their
+              confirmation here.
             </p>
           )
         )}
@@ -453,11 +482,11 @@ function EventSection({ section: s }) {
             <ActivityPicker key={p.participantId} person={p} activities={s.activities} />
           ))}
 
-        {showProviders && <ProviderUploads section={s} withIntro={hasCampers} />}
-        {!hasCampers && hasVolunteers && !showProviders && (
+        {showVolunteerWaivers && <VolunteerWaivers section={s} withIntro={hasCampers} />}
+        {!hasCampers && hasVolunteers && !showVolunteerWaivers && (
           <EmptyNote>
-            No activity on this event is run by an outside provider, so there is nothing to
-            upload here.
+            No activity on this event needs a waiver from volunteers, so there is nothing to do
+            here.
           </EmptyNote>
         )}
         {!hasCampers && !hasVolunteers && (
@@ -471,20 +500,22 @@ function EventSection({ section: s }) {
   );
 }
 
-// Each volunteer on the registration, an upload box per provider-run
-// activity on THIS event only. `withIntro`: where campers share the card the
-// explanation lives here; on a volunteer-only card the card's own sentence
-// has already said it.
-function ProviderUploads({ section: s, withIntro }) {
+// Each volunteer on the registration: the ministry's own waivers to sign and
+// an upload box per provider-run activity, on THIS event only. Each
+// volunteer's block is an anchor (#vol-<participant>) the dashboard's
+// "waiver still needed" lines link to. `withIntro`: where campers share the
+// card the explanation lives here; on a volunteer-only card the card's own
+// sentence has already said it.
+function VolunteerWaivers({ section: s, withIntro }) {
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-5">
-      <h3 className="text-lg font-bold">Volunteers and buddies — outside providers</h3>
+      <h3 className="text-lg font-bold">Volunteers and buddies — waivers</h3>
       {withIntro ? (
         <p className="mt-1 text-sm text-neutral-600">
-          A buddy goes wherever their camper goes. Where an activity is run by an outside
-          provider, the provider needs the volunteer&rsquo;s own form as well. Complete it
-          with them, then upload their confirmation here — this can be done after camp
-          starts, once pairings are known.
+          A buddy goes wherever their camper goes, and some activities need a waiver from
+          everyone who goes. Sign ours here; where an activity is run by an outside provider,
+          complete their form with them, then upload their confirmation here — this can be
+          done after camp starts, once pairings are known.
         </p>
       ) : (
         <p className="mt-1 text-sm text-neutral-600">
@@ -497,11 +528,20 @@ function ProviderUploads({ section: s, withIntro }) {
       <p className="mt-3 rounded-sm border border-brand/30 bg-brand-light px-3 py-2 text-sm text-brand-dark">
         <span className="font-semibold">This does not sign you up.</span> Whether you go depends
         on the camper you are paired with: if they choose the activity, you go with them.
-        Completing the provider&rsquo;s form now simply means you are ready in case they do.
+        Signing a waiver or completing a provider&rsquo;s form now simply means you are ready
+        in case they do.
       </p>
       {s.volunteers.map((v) => (
-        <div key={v.participantId} className="mt-4">
+        <div key={v.participantId} id={`vol-${v.participantId}`} className="mt-4 scroll-mt-6">
           <p className="font-semibold">{v.name}</p>
+          {s.ourActivities.map((a) => (
+            <VolunteerWaiver
+              key={a.id}
+              volunteer={v}
+              activity={a}
+              signed={v.signed?.[a.agreement.id] ?? null}
+            />
+          ))}
           {s.providerActivities.map((a) => (
             <div key={a.id} className="mt-2">
               <p className="text-sm">

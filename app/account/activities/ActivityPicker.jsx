@@ -30,8 +30,9 @@ import { dayInMorristown } from '@/lib/events';
 // since 22 Oct 2026, for a place already held when staff attached the waiver
 // afterwards (Save writes the signature only). Module level, not inside
 // ActivityRow (CLAUDE.md: a component defined in another's body remounts
-// every render and loses what was typed).
-function WaiverSigningBox({ person, activity, agreement, intro, pending, onSign, onCancel, setError }) {
+// every render and loses what was typed). Exported for a volunteer's own
+// waiver (VolunteerWaiver.jsx, 26 Oct 2026).
+export function WaiverSigningBox({ person, activity, agreement, intro, pending, onSign, onCancel, setError }) {
   const [agreed, setAgreed] = useState(false);
   const [signerName, setSignerName] = useState('');
   // A minor is always signed for by a parent or guardian; an adult may sign
@@ -84,6 +85,16 @@ function WaiverSigningBox({ person, activity, agreement, intro, pending, onSign,
       <p className="mt-1 text-xs text-neutral-600">
         {intro} Version {agreement.version}.
       </p>
+      {/* A calm word before the statutory notice (Lawrence, 26 Oct 2026:
+          "WARNING" alone read as alarm). The notice itself is required by
+          Tennessee's equine activity law (TCA 44-20-105) and stays verbatim
+          in the agreement; this line only frames it. */}
+      {/^\s*WARNING\b/.test(agreement.body ?? '') && (
+        <p className="mt-2 text-sm text-neutral-600">
+          A notice Tennessee law asks us to include in every horseback agreement — please read
+          it, then the waiver below.
+        </p>
+      )}
       <div className="mt-2 max-h-72 overflow-y-auto whitespace-pre-line rounded-sm border border-neutral-200 bg-white p-3 text-sm text-neutral-800">
         {agreement.body}
       </div>
@@ -490,7 +501,11 @@ export default function ActivityPicker({ person, activities }) {
   }).length;
 
   return (
-    <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
+    // The anchor the dashboard's "waiver still needed" lines link to.
+    <div
+      id={`person-${person.participantId}`}
+      className="scroll-mt-6 rounded-lg bg-white border border-neutral-200 shadow-xs p-6"
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
         <h3 className="text-lg font-bold">{person.name}</h3>
         <span className="text-sm text-neutral-500">
