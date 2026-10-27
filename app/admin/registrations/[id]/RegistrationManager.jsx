@@ -1881,6 +1881,10 @@ export default function RegistrationManager({
   // The family's reply (0126): { at, unread, messages } or null.
   familyReply = null,
   hold = null,
+  // "Talked with Larry about the Apostles' Creed" (0129): { at, by, note } or null.
+  creedDiscussed = null,
+  // For the Review card's "Photographer's list" link.
+  eventId = null,
   depositWaived = null,
   // Payments read (0101/0103). Without it the balances read as $0 paid, so
   // the money block, the deposit warning and the payments card are hidden.
@@ -1951,10 +1955,18 @@ export default function RegistrationManager({
   const anyWaitlisted = parts.some((p) => p.status === 'waitlisted');
   const replyUnread = Boolean(familyReply?.unread);
   // Review: open while anyone is submitted, the family's reply is unread, it
-  // is on hold or waiting on the family, or the review view raises a flag --
-  // all but "deposit waived", which is a decision staff already made (shown
-  // green on the card), not something still to look at.
-  const openFlags = (review?.flags ?? []).filter((f) => f !== 'deposit_waived');
+  // is on hold or waiting on the family, or the review view raises a flag
+  // that is still work. Not these, which only inform (they still show on
+  // the card and in Awaiting Review):
+  //   deposit_waived     -- a decision staff already made (shown green);
+  //   media_declined     -- photo permission declined: a standing fact, kept
+  //                         for the photographer's list, never "done"
+  //                         (Lawrence, 26 Oct 2026: "can fold the declined
+  //                         photo and creed");
+  //   creed_not_affirmed -- the conversation with Larry is recorded on the
+  //                         card (0129), not something that holds it open.
+  const INFO_FLAGS = ['deposit_waived', 'media_declined', 'creed_not_affirmed'];
+  const openFlags = (review?.flags ?? []).filter((f) => !INFO_FLAGS.includes(f));
   const reviewOpen = anySubmitted || replyUnread || Boolean(hold?.since) || Boolean(awaiting?.since) || openFlags.length > 0;
   // People: open while anyone is submitted or waitlisted, or someone still
   // on the week shows a gap on their row -- no date of birth, or a request
@@ -2050,11 +2062,20 @@ export default function RegistrationManager({
             status: p.status,
             // A person on the week twice (an older parent-and-volunteer pair from
             // before 0086) gets their role, so the card does not say "Cal, Cal".
+            // Only a real id can match: a row whose person did not come back
+            // must not pair with another such row (undefined === undefined
+            // gave everyone a role label until 4a463d0), and a cancelled row
+            // never appears on the card, so it does not count either.
             name:
               `${p.person?.preferred_name || p.person?.first_name || ''} ${p.person?.last_name || ''}`.trim() +
-              (parts.filter((q) => q.person?.id === p.person?.id).length > 1
+              (p.person?.id &&
+              parts.filter((q) => q.status !== 'cancelled' && q.person?.id === p.person.id).length > 1
                 ? ` (${ROLE_LABEL[p.camp_role] ?? p.camp_role})`
                 : ''),
+            // The plain name and the role, always shown together on the
+            // "Waiting on your decision" list.
+            baseName: `${p.person?.preferred_name || p.person?.first_name || ''} ${p.person?.last_name || ''}`.trim(),
+            role: ROLE_LABEL[p.camp_role] ?? p.camp_role,
             // 0128: why waitlisted, and who last changed the status, when.
             waitlistReason: p.waitlist_reason ?? null,
             changedAt: p.status_changed_at ?? null,
@@ -2064,6 +2085,8 @@ export default function RegistrationManager({
           awaiting={awaiting}
           familyReply={familyReply}
           hold={hold}
+          creedDiscussed={creedDiscussed}
+          eventId={eventId}
           depositWaived={depositWaived}
           depositCents={depositCents}
           canWrite={canWrite}

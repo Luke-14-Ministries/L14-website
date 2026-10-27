@@ -48,6 +48,7 @@ export default async function RegistrationDetailPage({ params }) {
        family_replied_at, family_reply_seen_at, family_reply_unread,
        deposit_waived_at, deposit_waived_by, deposit_waived_reason,
        hold_since, hold_reason, hold_by,
+       creed_discussed_at, creed_discussed_by, creed_discussed_note,
        households ( id, display_name, email, phone,
                     address_line1, address_line2, city, state, postal_code,
                     home_church, how_did_you_hear, how_did_you_hear_from ),
@@ -89,6 +90,23 @@ export default async function RegistrationDetailPage({ params }) {
   }
   const hold = reg.hold_since
     ? { since: reg.hold_since, reason: reg.hold_reason ?? null, by: holdBy }
+    : null;
+
+  // "Talked with Larry about the Apostles' Creed" (0129): when and by whom
+  // the database stamped it, and the optional note, for the Review card's
+  // Creed flag line.
+  let creedBy = null;
+  if (reg.creed_discussed_by) {
+    const { data: cb, error: cbError } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', reg.creed_discussed_by)
+      .maybeSingle();
+    if (cbError) throw new Error(`Creed conversation recorded by: ${cbError.message}`);
+    creedBy = cb ? `${cb.first_name ?? ''} ${cb.last_name ?? ''}`.trim() || null : null;
+  }
+  const creedDiscussed = reg.creed_discussed_at
+    ? { at: reg.creed_discussed_at, by: creedBy, note: reg.creed_discussed_note ?? null }
     : null;
 
   // Who last changed each person's status (0128), by name, for the Review
@@ -568,6 +586,8 @@ export default async function RegistrationDetailPage({ params }) {
       awaiting={{ since: reg.awaiting_family_since ?? null, reason: reg.awaiting_family_reason ?? null }}
       familyReply={familyReply}
       hold={hold}
+      creedDiscussed={creedDiscussed}
+      eventId={reg.events?.id ?? null}
       depositWaived={reg.deposit_waived_at ? { at: reg.deposit_waived_at, reason: reg.deposit_waived_reason ?? null } : null}
       depositCents={reg.events?.deposit_cents ?? 0}
       options={options ?? []}

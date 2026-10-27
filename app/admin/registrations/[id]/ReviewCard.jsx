@@ -34,9 +34,22 @@
 // top of the card lists who is waitlisted (amber, with the reason, when and
 // by whom) and who is confirmed (a plain line), each name a link to that
 // person's row in People on this week.
+//
+// Who is still undecided gets the same treatment (Lawrence, 26 Oct 2026:
+// "'Still submitted' is odd wording ... not immediately obvious who the '2
+// waiting on staff' were"): a "Waiting on your decision" block naming each
+// person, with their role, as a link to their row -- directly above the
+// buttons that decide them.
+//
+// Two flags inform rather than ask for work, so they no longer hold the card
+// open (the rule is RegistrationManager's): photo permission declined, which
+// links to the photographer's list (/admin/rosters/photos/), and the Creed
+// not affirmed, where Registration write records "Talked with Larry" (0129;
+// the database stamps who and when) and the line turns calm.
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Panel, { PanelLink } from './Panel';
 import { reviewRegistration, markFamilyReplyRead } from './actions';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
@@ -70,6 +83,11 @@ export default function ReviewCard({
   // { at, unread, messages } -- the family's reply (0126), or null.
   familyReply = null,
   hold = null,
+  // { at, by, note } once staff recorded talking with Larry about the Creed
+  // (0129), or null.
+  creedDiscussed = null,
+  // The registration's event, for the photographer's list link.
+  eventId = null,
   depositWaived = null,
   depositCents = 0,
   // Registration write / scholarship decision (0101, 0102). Without them the
@@ -93,6 +111,8 @@ export default function ReviewCard({
   const [holdReason, setHoldReason] = useState('');
   const [waitlisting, setWaitlisting] = useState(false);
   const [waitlistReason, setWaitlistReason] = useState('');
+  const [creedNoting, setCreedNoting] = useState(false);
+  const [creedNote, setCreedNote] = useState('');
 
   const waiting = participants.filter((p) => p.status === 'submitted');
   const cls = review ? REVIEW_CLASS[review.review_class] : null;
@@ -138,6 +158,8 @@ export default function ReviewCard({
       setHoldReason('');
       setWaitlisting(false);
       setWaitlistReason('');
+      setCreedNoting(false);
+      setCreedNote('');
       router.refresh();
     });
   }
@@ -243,10 +265,105 @@ export default function ReviewCard({
         </p>
       )}
       {flags.length > 0 && (
-        <ul className="mb-3 text-sm font-semibold text-amber-800">
-          {flags.map((f) => (
-            <li key={f}>⚑ {REVIEW_FLAG[f] ?? f}</li>
-          ))}
+        <ul className="mb-3 space-y-1 text-sm">
+          {flags.map((f) => {
+            // The Creed, once staff have talked with Larry (0129): calm, with
+            // who, when and the note, and an Undo for Registration write.
+            if (f === 'creed_not_affirmed' && creedDiscussed) {
+              return (
+                <li key={f} className="text-neutral-700">
+                  <span aria-hidden>✓</span> {REVIEW_FLAG[f]} — talked with Larry, {when(creedDiscussed.at)}
+                  {creedDiscussed.by ? ` (${creedDiscussed.by})` : ''}
+                  {creedDiscussed.note ? <>: &ldquo;{creedDiscussed.note}&rdquo;</> : ''}
+                  {canWrite && (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => {
+                        if (window.confirm('Remove the record that you talked with Larry about the Creed?')) {
+                          run('clear_creed_discussed');
+                        }
+                      }}
+                      className="ml-2 text-xs underline"
+                    >
+                      Undo
+                    </button>
+                  )}
+                </li>
+              );
+            }
+            if (f === 'creed_not_affirmed') {
+              return (
+                <li key={f}>
+                  <span className="font-semibold text-amber-800">⚑ {REVIEW_FLAG[f]}</span>
+                  {canWrite && !creedNoting && (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => setCreedNoting(true)}
+                      className="btn-outline py-1! ml-2 text-xs"
+                    >
+                      Talked with Larry…
+                    </button>
+                  )}
+                  {canWrite && creedNoting && (
+                    <div className="mt-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+                      <label className="block text-sm font-semibold mb-1" htmlFor="creed-note">
+                        Talked with Larry about the Apostles&rsquo; Creed
+                      </label>
+                      <input
+                        id="creed-note"
+                        value={creedNote}
+                        onChange={(e) => setCreedNote(e.target.value)}
+                        maxLength={500}
+                        placeholder="Note (optional) — e.g. spoke by phone; happy for them to serve"
+                        className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm"
+                      />
+                      <p className="mt-1 text-xs text-neutral-500">
+                        Recorded with your name and today&rsquo;s date. Keep it factual: the
+                        family&rsquo;s own account can read this registration&rsquo;s record.
+                      </p>
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => run('creed_discussed', { reason: creedNote })}
+                          className="btn-primary py-1.5! text-sm disabled:opacity-50"
+                        >
+                          {pending ? 'Saving…' : 'Record it'}
+                        </button>
+                        <button type="button" onClick={() => setCreedNoting(false)} className="text-sm underline">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            }
+            // Photo permission declined: kept, because the camp photographer
+            // needs the list (Lawrence, 26 Oct 2026).
+            if (f === 'media_declined') {
+              return (
+                <li key={f}>
+                  <span className="font-semibold text-amber-800">⚑ {REVIEW_FLAG[f]}</span>
+                  {eventId && (
+                    <Link
+                      href={`/admin/rosters/photos/?event=${eventId}`}
+                      className="ml-2 text-xs font-semibold text-brand underline"
+                    >
+                      Photographer&rsquo;s list →
+                    </Link>
+                  )}
+                </li>
+              );
+            }
+            return (
+              <li key={f} className="font-semibold text-amber-800">
+                ⚑ {REVIEW_FLAG[f] ?? f}
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -430,6 +547,34 @@ export default function ReviewCard({
         </div>
       )}
 
+      {/* Who is still undecided (26 Oct 2026), as plainly as who is
+          waitlisted or confirmed above: each person a link to their row,
+          with their role, directly above the buttons that decide them. */}
+      {waiting.length > 0 && (
+        <div className="mb-3 rounded-lg border border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+          <p className="font-bold">
+            {canWrite ? 'Waiting on your decision' : 'Waiting on a decision'}
+            {onFamily && <span className="font-normal"> — the family has been asked for more first</span>}
+          </p>
+          <ul className="mt-1 space-y-1">
+            {waiting.map((p) => (
+              <li key={p.id}>
+                <PanelLink to={`person-${p.id}`} className="font-semibold underline">
+                  {p.baseName || p.name || 'Person'}
+                </PanelLink>
+                {p.role && <span className="text-sky-900"> — {p.role}</span>}
+              </li>
+            ))}
+          </ul>
+          {canWrite && (
+            <p className="mt-1 text-xs">
+              Approving confirms them and takes the family out of Awaiting Review. One at a time:{' '}
+              <PeopleLink />.
+            </p>
+          )}
+        </div>
+      )}
+
       {!canWrite ? (
         <p className="text-sm text-neutral-600">
           Read only — approving, waitlisting and asking the family need Registration write.
@@ -441,14 +586,6 @@ export default function ReviewCard({
         </p>
       ) : (
         <>
-          <p className="text-sm text-neutral-600 mb-3">
-            Still submitted:{' '}
-            <span className="font-medium text-neutral-800">
-              {waiting.map((p) => p.name).join(', ')}
-            </span>
-            . Approving confirms them and takes this family out of Awaiting Review; to decide
-            person by person, use <PeopleLink />.
-          </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
