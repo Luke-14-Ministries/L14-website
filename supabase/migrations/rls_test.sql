@@ -443,102 +443,131 @@ $$;
 
 
 -- ---------------------------------------------------------------------
--- "Talked with Larry about the Apostles' Creed" (0129): written only
--- through mark_creed_discussed() / clear_creed_discussed(), Registration
--- write, stamped by the database. Its own block, cleaned up after itself.
+-- "Talked with Larry about the Apostles' Creed" (0129, per person since
+-- 0130): creed_status shows the flag to Registration read without money;
+-- creed_conversations is written only through mark_creed_discussed() /
+-- clear_creed_discussed() (Registration write); a conversation covers a
+-- person only under the name they had then, so a renamed or newly added
+-- volunteer raises the flag again. Its own block, cleaned up after itself.
 -- ---------------------------------------------------------------------
 do $$
 declare
-  uA uuid; uR uuid; uC uuid; hA uuid; regA uuid;
-  evNew uuid; regNew uuid;
+  uA uuid; uR uuid; uC uuid; hA uuid; regA uuid; rpVol uuid; pVol uuid;
+  optVol uuid; pNew uuid; rpNew uuid;
+  oldRole text; oldFirst text;
   was_at timestamptz;
   n bigint;
 begin
   select v into uA from t where k='uA';   select v into uR from t where k='uR';
   select v into uC from t where k='uC';   select v into hA from t where k='hA';
-  select v into regA from t where k='regA';
+  select v into regA from t where k='regA'; select v into rpVol from t where k='rpVol';
+
+  -- Vic is an active volunteer with no Creed affirmation on file.
+  set local role postgres;
+  select person_id, camp_role, event_option_id into pVol, oldRole, optVol
+    from public.registration_participants where id = rpVol;
+  update public.registration_participants set camp_role = 'volunteer' where id = rpVol;
+  update public.volunteer_applications set creed_affirmed = false where registration_participant_id = rpVol;
+  select first_name into oldFirst from public.people where id = pVol;
 
   set local role authenticated;
 
-  -- Registration write marks it; who and when are the database's.
+  -- Registration READ, no Payments read, sees the flag (Lawrence, 26 Oct).
+  perform pg_temp.as_user(uC);
+  select count(*) into n from public.registration_review where registration_id = regA;
+  perform pg_temp.expect('the coordinator (no Payments read) has no registration_review row (0130 premise)', n, 0);
+  select count(*) into n from public.creed_status
+   where registration_id = regA and person_id = pVol and not creed_affirmed and not discussed_current;
+  perform pg_temp.expect('Registration read sees the Creed flag without money (0130)', n, 1);
+  perform pg_temp.expect_denied('Registration READ cannot record the Creed conversation (0130)',
+    format('select public.mark_creed_discussed(%L, ''x'')', regA));
+
+  -- Registration write records it, for the person, with their name then.
   perform pg_temp.as_user(uR);
   select public.mark_creed_discussed(regA, '  Spoke on the phone; happy to serve.  ') into was_at;
-  select count(*) into n from public.registrations
-   where id = regA and creed_discussed_at = was_at and creed_discussed_by = uR
-     and creed_discussed_note = 'Spoke on the phone; happy to serve.';
-  perform pg_temp.expect('Registration write records the Creed conversation, stamped with who and when (0129)', n, 1);
-  perform pg_temp.expect_denied('a Creed note over 500 characters is refused (0129)',
+  select count(*) into n from public.creed_conversations cc join public.people p on p.id = cc.person_id
+   where cc.registration_id = regA and cc.person_id = pVol and cc.discussed_at = was_at
+     and cc.discussed_by = uR and cc.note = 'Spoke on the phone; happy to serve.'
+     and cc.name_at = public.creed_name(p.first_name, p.last_name);
+  perform pg_temp.expect('Registration write records the Creed conversation per person, stamped (0130)', n, 1);
+  select count(*) into n from public.creed_status where registration_id = regA and person_id = pVol and discussed_current;
+  perform pg_temp.expect('the recorded conversation covers the volunteer (0130)', n, 1);
+  perform pg_temp.expect_denied('marking with nobody waiting on the conversation is refused (0130)',
+    format('select public.mark_creed_discussed(%L, null)', regA));
+  perform pg_temp.expect_denied('a Creed note over 500 characters is refused (0130)',
     format('select public.mark_creed_discussed(%L, %L)', regA, repeat('x', 501)));
-  -- Not even Registration write sets the columns directly.
-  perform pg_temp.expect_denied('staff cannot forge the Creed stamps directly (0129)',
-    format('update public.registrations set creed_discussed_by = %L where id = %L', uC, regA));
-  perform pg_temp.expect_denied('staff cannot clear the Creed record directly (0129)',
-    format('update public.registrations set creed_discussed_at = null, creed_discussed_by = null, creed_discussed_note = null where id = %L', regA));
-  -- Other columns still save around it.
-  update public.registrations set family_notes = 'edited 0129' where id = regA;
-  select count(*) into n from public.registrations
-   where id = regA and family_notes = 'edited 0129' and creed_discussed_by = uR;
-  perform pg_temp.expect('an ordinary staff edit leaves the Creed record alone (0129)', n, 1);
+  perform pg_temp.expect_denied('staff cannot forge a Creed conversation directly (0130)',
+    format('insert into public.creed_conversations (registration_id, person_id, name_at) values (%L, %L, ''x'')', regA, pVol));
+  perform pg_temp.expect_denied('staff cannot edit a Creed conversation directly (0130)',
+    format('update public.creed_conversations set note = ''forged'' where registration_id = %L', regA));
+  perform pg_temp.expect_denied('staff cannot delete a Creed conversation directly (0130)',
+    format('delete from public.creed_conversations where registration_id = %L', regA));
 
-  -- A family cannot mark, clear or forge it (it can read its own row).
-  perform pg_temp.as_user(uA);
-  select count(*) into n from public.registrations where id = regA and creed_discussed_at is not null;
-  perform pg_temp.expect('the family''s account reads its own Creed record (0129, accepted)', n, 1);
-  perform pg_temp.expect_denied('a family cannot record the Creed conversation (0129)',
-    format('select public.mark_creed_discussed(%L, ''we did'')', regA));
-  perform pg_temp.expect_denied('a family cannot clear the Creed record (0129)',
-    format('select public.clear_creed_discussed(%L)', regA));
-  perform pg_temp.expect_denied('a family cannot change the Creed record directly (0129)',
-    format('update public.registrations set creed_discussed_note = ''forged'' where id = %L', regA));
-
-  -- Registration READ cannot either.
+  -- Registration read reads it; cannot clear it.
   perform pg_temp.as_user(uC);
-  perform pg_temp.expect_denied('Registration READ cannot record the Creed conversation (0129)',
-    format('select public.mark_creed_discussed(%L, ''x'')', regA));
-  perform pg_temp.expect_denied('Registration READ cannot clear the Creed record (0129)',
+  select count(*) into n from public.creed_conversations where registration_id = regA;
+  perform pg_temp.expect('Registration read reads the Creed conversation (0130)', n, 1);
+  perform pg_temp.expect_denied('Registration READ cannot clear the Creed record (0130)',
     format('select public.clear_creed_discussed(%L)', regA));
-  perform pg_temp.expect_no_effect('Registration READ cannot change the Creed record directly (0129)',
-    format('update public.registrations set creed_discussed_at = null where id = %L', regA));
-  select count(*) into n from public.registrations where id = regA and creed_discussed_by = uR;
-  perform pg_temp.expect('the Creed record survives the refused attempts (0129)', n, 1);
+
+  -- The family sees its volunteer's flag but not the conversation.
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.creed_conversations where registration_id = regA;
+  perform pg_temp.expect('a family reads no Creed conversation rows (0130)', n, 0);
+  select count(*) into n from public.creed_status where registration_id = regA and discussed_at is null;
+  perform pg_temp.expect('a family''s creed_status shows no conversation (0130)', n, 1);
+  perform pg_temp.expect_denied('a family cannot record the Creed conversation (0130)',
+    format('select public.mark_creed_discussed(%L, ''we did'')', regA));
+  perform pg_temp.expect_denied('a family cannot clear the Creed record (0130)',
+    format('select public.clear_creed_discussed(%L)', regA));
 
   set local role anon;
   perform set_config('request.jwt.claim.sub', '', true);
-  perform pg_temp.expect_denied('anon cannot record the Creed conversation (0129)',
+  perform pg_temp.expect_denied('anon cannot record the Creed conversation (0130)',
     format('select public.mark_creed_discussed(%L, null)', regA));
+  perform pg_temp.expect_denied('anon cannot read Creed conversations (0130)',
+    'select count(*) from public.creed_conversations');
+
+  -- A renamed volunteer raises the flag again; marking again re-covers.
+  set local role postgres;
+  update public.people set first_name = oldFirst || 'tor' where id = pVol;
   set local role authenticated;
-
-  -- Marking again re-stamps; a blank note is no note.
   perform pg_temp.as_user(uR);
+  select count(*) into n from public.creed_status where registration_id = regA and person_id = pVol and not discussed_current;
+  perform pg_temp.expect('a name change re-opens the Creed flag (0130)', n, 1);
   perform public.mark_creed_discussed(regA, '   ');
-  select count(*) into n from public.registrations
-   where id = regA and creed_discussed_at >= was_at and creed_discussed_by = uR and creed_discussed_note is null;
-  perform pg_temp.expect('marking again re-stamps and a blank note is stored as none (0129)', n, 1);
+  select count(*) into n from public.creed_conversations cc join public.people p on p.id = cc.person_id
+   where cc.registration_id = regA and cc.person_id = pVol and cc.note is null
+     and cc.name_at = public.creed_name(p.first_name, p.last_name);
+  perform pg_temp.expect('marking again covers the new name; a blank note is none (0130)', n, 1);
 
-  -- Registration write clears it.
+  -- A volunteer added later is not covered by the earlier conversation.
+  set local role postgres;
+  insert into public.people (household_id, first_name, last_name) values (hA, 'Newt', 'AAA') returning id into pNew;
+  insert into public.registration_participants (registration_id, person_id, event_option_id, camp_role)
+    values (regA, pNew, optVol, 'volunteer') returning id into rpNew;
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  select count(*) into n from public.creed_status where registration_id = regA and not discussed_current;
+  perform pg_temp.expect('a volunteer added later re-opens the Creed flag, for them only (0130)', n, 1);
+  select count(*) into n from public.creed_status where registration_id = regA and person_id = pNew and not discussed_current;
+  perform pg_temp.expect('the re-opened flag names the new volunteer (0130)', n, 1);
+
+  -- Registration write clears the registration's records.
   perform public.clear_creed_discussed(regA);
-  select count(*) into n from public.registrations
-   where id = regA and creed_discussed_at is null and creed_discussed_by is null and creed_discussed_note is null;
-  perform pg_temp.expect('Registration write clears the Creed record (0129)', n, 1);
-  perform pg_temp.expect_denied('marking a registration that does not exist is refused (0129)',
+  set local role postgres;
+  select count(*) into n from public.creed_conversations where registration_id = regA;
+  perform pg_temp.expect('Registration write clears the Creed records (0130)', n, 0);
+  set local role authenticated;
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('marking a registration that does not exist is refused (0130)',
     format('select public.mark_creed_discussed(%L, null)', gen_random_uuid()));
 
-  -- A family's new registration is born without a Creed record.
   set local role postgres;
-  insert into public.events (id, name, event_type, starts_on, ends_on, published)
-    values (gen_random_uuid(), 'Creed Week 0129', 'camp_week', current_date + 30, current_date + 34, true)
-    returning id into evNew;
-  set local role authenticated;
-  perform pg_temp.as_user(uA);
-  insert into public.registrations (household_id, event_id, creed_discussed_at, creed_discussed_by, creed_discussed_note)
-    values (hA, evNew, now(), uR, 'forged') returning id into regNew;
-  set local role postgres;
-  select count(*) into n from public.registrations
-   where id = regNew and creed_discussed_at is null and creed_discussed_by is null and creed_discussed_note is null;
-  perform pg_temp.expect('a family''s new registration gets no Creed record (0129)', n, 1);
-  delete from public.registrations where id = regNew;
-  delete from public.events where id = evNew;
-  update public.registrations set family_notes = null where id = regA;
+  delete from public.registration_participants where id = rpNew;
+  delete from public.people where id = pNew;
+  update public.people set first_name = oldFirst where id = pVol;
+  update public.registration_participants set camp_role = oldRole where id = rpVol;
 end;
 $$;
 

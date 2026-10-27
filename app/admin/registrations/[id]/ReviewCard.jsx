@@ -44,8 +44,11 @@
 // Two flags inform rather than ask for work, so they no longer hold the card
 // open (the rule is RegistrationManager's): photo permission declined, which
 // links to the photographer's list (/admin/rosters/photos/), and the Creed
-// not affirmed, where Registration write records "Talked with Larry" (0129;
-// the database stamps who and when) and the line turns calm.
+// not affirmed once Registration write has recorded "Talked with Larry"
+// (0130; the database stamps who and when) and the line turns calm. The
+// Creed comes from creed_status, not the money view, so Registration read
+// sees it; a person added or renamed since the conversation is named again
+// as waiting on it.
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -83,9 +86,9 @@ export default function ReviewCard({
   // { at, unread, messages } -- the family's reply (0126), or null.
   familyReply = null,
   hold = null,
-  // { at, by, note } once staff recorded talking with Larry about the Creed
-  // (0129), or null.
-  creedDiscussed = null,
+  // The Apostles' Creed flag (0130, lib/creed.js): { pending: [{ name,
+  // renamedFrom }], covered: [{ name, at, by, note }] }, or null.
+  creed = null,
   // The registration's event, for the photographer's list link.
   eventId = null,
   depositWaived = null,
@@ -116,7 +119,8 @@ export default function ReviewCard({
 
   const waiting = participants.filter((p) => p.status === 'submitted');
   const cls = review ? REVIEW_CLASS[review.review_class] : null;
-  const flags = review?.flags ?? [];
+  // The Creed is drawn from `creed`, not the money view's copy of the flag.
+  const flags = (review?.flags ?? []).filter((f) => f !== 'creed_not_affirmed');
   const onFamily = Boolean(awaiting?.since);
 
   function markRead() {
@@ -264,83 +268,92 @@ export default function ReviewCard({
           </span>
         </p>
       )}
-      {flags.length > 0 && (
+      {(flags.length > 0 || creed) && (
         <ul className="mb-3 space-y-1 text-sm">
+          {/* The Creed, still waiting on the conversation with Larry: amber,
+              naming who, with the button that records it for them. */}
+          {creed?.pending.length > 0 && (
+            <li>
+              <span className="font-semibold text-amber-800">
+                ⚑ {REVIEW_FLAG.creed_not_affirmed}: {creed.pending.map((p) => p.name).join(', ')}
+              </span>
+              {creed.pending.some((p) => p.renamedFrom) && (
+                <span className="text-neutral-600">
+                  {' '}
+                  (recorded before as {creed.pending.filter((p) => p.renamedFrom).map((p) => p.renamedFrom).join(', ')}
+                  {' '}— the name has changed since)
+                </span>
+              )}
+              {canWrite && !creedNoting && (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setCreedNoting(true)}
+                  className="btn-outline py-1! ml-2 text-xs"
+                >
+                  Talked with Larry…
+                </button>
+              )}
+              {canWrite && creedNoting && (
+                <div className="mt-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+                  <label className="block text-sm font-semibold mb-1" htmlFor="creed-note">
+                    Talked with Larry about the Apostles&rsquo; Creed —{' '}
+                    {creed.pending.map((p) => p.name).join(', ')}
+                  </label>
+                  <input
+                    id="creed-note"
+                    value={creedNote}
+                    onChange={(e) => setCreedNote(e.target.value)}
+                    maxLength={500}
+                    placeholder="Note (optional) — e.g. spoke by phone; happy for them to serve"
+                    className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm"
+                  />
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Recorded for the people named, with your name and today&rsquo;s date. Someone added to
+                    this registration later, or renamed, will show here again.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => run('creed_discussed', { reason: creedNote })}
+                      className="btn-primary py-1.5! text-sm disabled:opacity-50"
+                    >
+                      {pending ? 'Saving…' : 'Record it'}
+                    </button>
+                    <button type="button" onClick={() => setCreedNoting(false)} className="text-sm underline">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </li>
+          )}
+          {/* The Creed, talked through with Larry: calm, per person, with who,
+              when and the note, and one Undo for Registration write. */}
+          {creed?.covered.map((c, i) => (
+            <li key={c.personId} className="text-neutral-700">
+              <span aria-hidden>✓</span> {REVIEW_FLAG.creed_not_affirmed}: {c.name} — talked with Larry,{' '}
+              {when(c.at)}
+              {c.by ? ` (${c.by})` : ''}
+              {c.note ? <>: &ldquo;{c.note}&rdquo;</> : ''}
+              {canWrite && i === creed.covered.length - 1 && (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => {
+                    if (window.confirm('Remove the record that you talked with Larry about the Creed?')) {
+                      run('clear_creed_discussed');
+                    }
+                  }}
+                  className="ml-2 text-xs underline"
+                >
+                  Undo
+                </button>
+              )}
+            </li>
+          ))}
           {flags.map((f) => {
-            // The Creed, once staff have talked with Larry (0129): calm, with
-            // who, when and the note, and an Undo for Registration write.
-            if (f === 'creed_not_affirmed' && creedDiscussed) {
-              return (
-                <li key={f} className="text-neutral-700">
-                  <span aria-hidden>✓</span> {REVIEW_FLAG[f]} — talked with Larry, {when(creedDiscussed.at)}
-                  {creedDiscussed.by ? ` (${creedDiscussed.by})` : ''}
-                  {creedDiscussed.note ? <>: &ldquo;{creedDiscussed.note}&rdquo;</> : ''}
-                  {canWrite && (
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => {
-                        if (window.confirm('Remove the record that you talked with Larry about the Creed?')) {
-                          run('clear_creed_discussed');
-                        }
-                      }}
-                      className="ml-2 text-xs underline"
-                    >
-                      Undo
-                    </button>
-                  )}
-                </li>
-              );
-            }
-            if (f === 'creed_not_affirmed') {
-              return (
-                <li key={f}>
-                  <span className="font-semibold text-amber-800">⚑ {REVIEW_FLAG[f]}</span>
-                  {canWrite && !creedNoting && (
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => setCreedNoting(true)}
-                      className="btn-outline py-1! ml-2 text-xs"
-                    >
-                      Talked with Larry…
-                    </button>
-                  )}
-                  {canWrite && creedNoting && (
-                    <div className="mt-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
-                      <label className="block text-sm font-semibold mb-1" htmlFor="creed-note">
-                        Talked with Larry about the Apostles&rsquo; Creed
-                      </label>
-                      <input
-                        id="creed-note"
-                        value={creedNote}
-                        onChange={(e) => setCreedNote(e.target.value)}
-                        maxLength={500}
-                        placeholder="Note (optional) — e.g. spoke by phone; happy for them to serve"
-                        className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm"
-                      />
-                      <p className="mt-1 text-xs text-neutral-500">
-                        Recorded with your name and today&rsquo;s date. Keep it factual: the
-                        family&rsquo;s own account can read this registration&rsquo;s record.
-                      </p>
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          type="button"
-                          disabled={pending}
-                          onClick={() => run('creed_discussed', { reason: creedNote })}
-                          className="btn-primary py-1.5! text-sm disabled:opacity-50"
-                        >
-                          {pending ? 'Saving…' : 'Record it'}
-                        </button>
-                        <button type="button" onClick={() => setCreedNoting(false)} className="text-sm underline">
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </li>
-              );
-            }
             // Photo permission declined: kept, because the camp photographer
             // needs the list (Lawrence, 26 Oct 2026).
             if (f === 'media_declined') {

@@ -8,6 +8,7 @@ import FeesPanel from './FeesPanel';
 import { requiresPaymentChoice } from '@/lib/plans';
 import { dayInMorristown, balanceDueOn, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
+import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 
 export const metadata = { title: 'Registration — Staff Admin' };
 
@@ -17,7 +18,7 @@ export const metadata = { title: 'Registration — Staff Admin' };
 // reads for all of them. "Submitted" counts only while the registration is
 // not waiting on the family, as the nav's review badge counts it; deposit
 // short is registration_review's flag, so it is there only for Payments read.
-function staffAttention(r, { waiversOwed = false, depositShort = false } = {}) {
+function staffAttention(r, { waiversOwed = false, depositShort = false, creedPending = false } = {}) {
   const out = [];
   const people = r.registration_participants ?? [];
   if (!r.awaiting_family_since && people.some((p) => p.status === 'submitted')) out.push('someone submitted');
@@ -25,6 +26,7 @@ function staffAttention(r, { waiversOwed = false, depositShort = false } = {}) {
   if (r.hold_since) out.push('on hold');
   if (waiversOwed) out.push('activity waiver outstanding');
   if (depositShort) out.push('deposit short');
+  if (creedPending) out.push('Creed conversation');
   return out;
 }
 
@@ -48,7 +50,6 @@ export default async function RegistrationDetailPage({ params }) {
        family_replied_at, family_reply_seen_at, family_reply_unread,
        deposit_waived_at, deposit_waived_by, deposit_waived_reason,
        hold_since, hold_reason, hold_by,
-       creed_discussed_at, creed_discussed_by, creed_discussed_note,
        households ( id, display_name, email, phone,
                     address_line1, address_line2, city, state, postal_code,
                     home_church, how_did_you_hear, how_did_you_hear_from ),
@@ -92,23 +93,6 @@ export default async function RegistrationDetailPage({ params }) {
     ? { since: reg.hold_since, reason: reg.hold_reason ?? null, by: holdBy }
     : null;
 
-  // "Talked with Larry about the Apostles' Creed" (0129): when and by whom
-  // the database stamped it, and the optional note, for the Review card's
-  // Creed flag line.
-  let creedBy = null;
-  if (reg.creed_discussed_by) {
-    const { data: cb, error: cbError } = await supabase
-      .from('profiles')
-      .select('first_name, last_name')
-      .eq('id', reg.creed_discussed_by)
-      .maybeSingle();
-    if (cbError) throw new Error(`Creed conversation recorded by: ${cbError.message}`);
-    creedBy = cb ? `${cb.first_name ?? ''} ${cb.last_name ?? ''}`.trim() || null : null;
-  }
-  const creedDiscussed = reg.creed_discussed_at
-    ? { at: reg.creed_discussed_at, by: creedBy, note: reg.creed_discussed_note ?? null }
-    : null;
-
   // Who last changed each person's status (0128), by name, for the Review
   // card's "Waitlisted: ... (when, by whom)" lines. Rows from before 0128
   // have no stamp; a server-side change has a time but no name.
@@ -146,6 +130,32 @@ export default async function RegistrationDetailPage({ params }) {
   // This registration is always among them, even if the household lookup
   // above had nothing to go on.
   const familyRegIds = [...new Set([id, ...(familyRegs ?? []).map((r) => r.id)])];
+
+  // The Apostles' Creed flag (0130), for this registration and the
+  // household's others (the week tabs' markers): from creed_status, which
+  // reads no money, so Registration read sees it (Lawrence, 26 Oct 2026). A
+  // conversation with Larry covers the people it was about, under the names
+  // they had then -- someone added or renamed since raises the flag again.
+  const { data: creedRows, error: creedError } = await supabase
+    .from('creed_status')
+    .select(CREED_COLUMNS)
+    .in('registration_id', familyRegIds);
+  if (creedError) throw new Error(`Creed status: ${creedError.message}`);
+  const creedByReg = creedByRegistration(creedRows);
+  let creed = creedByReg.get(id) ?? null;
+  if (creed?.covered.length) {
+    const byIds = [...new Set(creed.covered.map((c) => c.byId).filter(Boolean))];
+    let byName = new Map();
+    if (byIds.length) {
+      const { data: cbs, error: cbError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', byIds);
+      if (cbError) throw new Error(`Creed conversation recorded by: ${cbError.message}`);
+      byName = new Map((cbs ?? []).map((c) => [c.id, `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || null]));
+    }
+    creed = { ...creed, covered: creed.covered.map((c) => ({ ...c, by: byName.get(c.byId) ?? null })) };
+  }
 
   // Camp options for this event, so a staff member adding a person can pick the
   // one that sets the fee. Without an event there is nothing to ask for (and
@@ -532,7 +542,11 @@ export default async function RegistrationDetailPage({ params }) {
       id: r.id,
       event: r.events ?? null,
       participants: (r.registration_participants ?? []).map((p) => ({ status: p.status, person: p.people })),
-      attention: staffAttention(r, { waiversOwed: owedRegIds.has(r.id), depositShort: shortRegIds.has(r.id) }),
+      attention: staffAttention(r, {
+        waiversOwed: owedRegIds.has(r.id),
+        depositShort: shortRegIds.has(r.id),
+        creedPending: (creedByReg.get(r.id)?.pending.length ?? 0) > 0,
+      }),
     }))
     .sort((a, b) => String(a.event?.starts_on ?? '').localeCompare(String(b.event?.starts_on ?? '')));
 
@@ -586,7 +600,7 @@ export default async function RegistrationDetailPage({ params }) {
       awaiting={{ since: reg.awaiting_family_since ?? null, reason: reg.awaiting_family_reason ?? null }}
       familyReply={familyReply}
       hold={hold}
-      creedDiscussed={creedDiscussed}
+      creed={creed}
       eventId={reg.events?.id ?? null}
       depositWaived={reg.deposit_waived_at ? { at: reg.deposit_waived_at, reason: reg.deposit_waived_reason ?? null } : null}
       depositCents={reg.events?.deposit_cents ?? 0}

@@ -929,10 +929,12 @@ export async function reviewRegistration(registrationId, { action, reason = '', 
     return { ok: true, count: n ?? 0 };
   }
 
-  // "Talked with Larry about the Apostles' Creed" (0129; Lawrence, 26 Oct
-  // 2026). The database stamps who and when; the note is optional. The
-  // Creed flag itself stays -- it is a fact about the volunteer's
-  // application -- and this records that the conversation happened.
+  // "Talked with Larry about the Apostles' Creed" (0129, per person since
+  // 0130; Lawrence, 26 Oct 2026). The database records it for everyone the
+  // flag is raised for right now, with their names then, and stamps who and
+  // when; the note is optional. The Creed flag itself stays -- it is a fact
+  // about the volunteer's application -- and this records that the
+  // conversation happened.
   if (action === 'creed_discussed') {
     const text = typeof reason === 'string' ? reason.trim() : '';
     if (text.length > 500) return { ok: false, error: 'Keep the note to 500 characters.' };

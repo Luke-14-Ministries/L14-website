@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { REVIEW_CLASS, REVIEW_FLAG, planStoppedAt } from '@/lib/plans';
+import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { statusPill } from '@/lib/format';
 import { dayInMorristown, isCurrentEventRow } from '@/lib/events';
 
@@ -79,12 +80,13 @@ export default async function ReviewQueuePage({ searchParams }) {
     { data: balances },
     { data: owed, error: owedError },
     { data: stoppedPlans, error: stoppedError },
+    { data: creedRows, error: creedError },
   ] =
     await Promise.all([
       supabase
         .from('registrations')
         .select(
-          'id, created_at, awaiting_family_since, awaiting_family_reason, family_replied_at, family_reply_unread, creed_discussed_at, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'
+          'id, created_at, awaiting_family_since, awaiting_family_reason, family_replied_at, family_reply_unread, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'
         ),
       supabase
         .from('registration_participants')
@@ -104,10 +106,14 @@ export default async function ReviewQueuePage({ searchParams }) {
             .select('registration_id, status, updated_at, payment_installments ( status, last_attempt_at )')
             .eq('status', 'failed')
         : Promise.resolve({ data: [], error: null }),
+      // The Creed flag without money (0130): every reviewer sees it.
+      supabase.from('creed_status').select(CREED_COLUMNS),
     ]);
   if (regsError) throw new Error(`Registrations: ${regsError.message}`);
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
   if (stoppedError) throw new Error(`Stopped payment plans: ${stoppedError.message}`);
+  if (creedError) throw new Error(`Creed status: ${creedError.message}`);
+  const creedByReg = creedByRegistration(creedRows);
   const stoppedByReg = new Map((stoppedPlans ?? []).map((p) => [p.registration_id, planStoppedAt(p)]));
 
   const reviewByReg = new Map((reviews ?? []).map((r) => [r.registration_id, r]));
@@ -138,6 +144,9 @@ export default async function ReviewQueuePage({ searchParams }) {
         people,
         pending,
         review: reviewByReg.get(r.id) ?? null,
+        // The money view's flags, less its copy of the Creed flag: that comes
+        // from creed_status (0130), so it shows without Payments read.
+        flags: (reviewByReg.get(r.id)?.flags ?? []).filter((f) => f !== 'creed_not_affirmed'),
         balance: balanceByReg.get(r.id) ?? null,
         created: r.created_at,
         awaitingSince: r.awaiting_family_since ?? null,
@@ -147,9 +156,9 @@ export default async function ReviewQueuePage({ searchParams }) {
         owed: owedByReg.get(r.id) ?? [],
         planStopped: stoppedByReg.has(r.id),
         planStoppedAt: stoppedByReg.get(r.id) ?? null,
-        // 0129: staff recorded talking with Larry about the Creed. The flag
-        // still comes from registration_review; this only calms its line.
-        creedDiscussedAt: r.creed_discussed_at ?? null,
+        // The Creed (0130): who is still waiting on the conversation with
+        // Larry, and who has had it under their current name.
+        creed: creedByReg.get(r.id) ?? null,
       };
     })
     .filter((r) => {
@@ -206,7 +215,7 @@ export default async function ReviewQueuePage({ searchParams }) {
   const onFamily = (regs ?? []).filter((r) => r.awaiting_family_since).length;
   // For the Family replied tab's count (0126): unread replies, every event.
   const repliedRegs = (regs ?? []).filter((r) => r.family_reply_unread).length;
-  const totalFlags = rows.reduce((s, r) => s + (r.review?.flags?.length ?? 0), 0);
+  const totalFlags = rows.reduce((s, r) => s + r.flags.length + (r.creed ? 1 : 0), 0);
   // For the tab's count: registrations at a current event with a waiver owed.
   const waiverRegs = (regs ?? []).filter(
     (r) => owedByReg.has(r.id) && isCurrentEventRow(r.events)
@@ -399,7 +408,7 @@ export default async function ReviewQueuePage({ searchParams }) {
               <tbody>
                 {g.rows.map((r) => {
                   const cls = r.review ? REVIEW_CLASS[r.review.review_class] : null;
-                  const flags = r.review?.flags ?? [];
+                  const flags = r.flags;
                   return (
                     <tr key={r.id} className="border-b border-neutral-100 align-top hover:bg-neutral-50">
                       <td className="px-3 py-2.5">
@@ -453,7 +462,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        {flags.length === 0 && !r.awaitingSince && r.owed.length === 0 && !r.planStopped && !r.familyReplied ? (
+                        {flags.length === 0 && !r.creed && !r.awaitingSince && r.owed.length === 0 && !r.planStopped && !r.familyReplied ? (
                           <span className="text-neutral-400">—</span>
                         ) : (
                           <ul className="space-y-0.5">
@@ -471,18 +480,23 @@ export default async function ReviewQueuePage({ searchParams }) {
                                 {r.planStoppedAt ? ` ${dayInMorristown(r.planStoppedAt)}` : ''}
                               </li>
                             )}
-                            {flags.map((f) =>
-                              f === 'creed_not_affirmed' && r.creedDiscussedAt ? (
-                                // Discussed with Larry (0129): informs, no longer alarms.
-                                <li key={f} className="whitespace-nowrap text-xs text-neutral-600">
-                                  ✓ {REVIEW_FLAG[f]} — talked with Larry {dayInMorristown(r.creedDiscussedAt)}
-                                </li>
-                              ) : (
-                                <li key={f} className="whitespace-nowrap text-xs font-semibold text-amber-800">
-                                  ⚑ {REVIEW_FLAG[f] ?? f}
-                                </li>
-                              )
+                            {r.creed?.pending.length > 0 && (
+                              <li className="text-xs font-semibold text-amber-800">
+                                ⚑ {REVIEW_FLAG.creed_not_affirmed}: {r.creed.pending.map((p) => p.name).join(', ')}
+                              </li>
                             )}
+                            {r.creed?.covered.length > 0 && (
+                              // Talked through with Larry (0130): informs, no longer alarms.
+                              <li className="text-xs text-neutral-600">
+                                ✓ {REVIEW_FLAG.creed_not_affirmed}: {r.creed.covered.map((c) => c.name).join(', ')} —
+                                talked with Larry
+                              </li>
+                            )}
+                            {flags.map((f) => (
+                              <li key={f} className="whitespace-nowrap text-xs font-semibold text-amber-800">
+                                ⚑ {REVIEW_FLAG[f] ?? f}
+                              </li>
+                            ))}
                             {r.owed.map((o) => (
                               <li
                                 key={`${o.person_id}:${o.activity_name}:${o.kind}`}

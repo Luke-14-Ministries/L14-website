@@ -1881,8 +1881,9 @@ export default function RegistrationManager({
   // The family's reply (0126): { at, unread, messages } or null.
   familyReply = null,
   hold = null,
-  // "Talked with Larry about the Apostles' Creed" (0129): { at, by, note } or null.
-  creedDiscussed = null,
+  // The Apostles' Creed flag (0130, lib/creed.js): { pending, covered } or
+  // null when everyone has affirmed it.
+  creed = null,
   // For the Review card's "Photographer's list" link.
   eventId = null,
   depositWaived = null,
@@ -1963,11 +1964,16 @@ export default function RegistrationManager({
   //                         for the photographer's list, never "done"
   //                         (Lawrence, 26 Oct 2026: "can fold the declined
   //                         photo and creed");
-  //   creed_not_affirmed -- the conversation with Larry is recorded on the
-  //                         card (0129), not something that holds it open.
+  //   creed_not_affirmed -- the money view's copy of the Creed flag; the card
+  //                         reads creed_status instead (0130).
+  // The Creed holds the card open only while someone is waiting on the
+  // conversation with Larry -- never recorded, or added or renamed since;
+  // once it is recorded it folds.
   const INFO_FLAGS = ['deposit_waived', 'media_declined', 'creed_not_affirmed'];
   const openFlags = (review?.flags ?? []).filter((f) => !INFO_FLAGS.includes(f));
-  const reviewOpen = anySubmitted || replyUnread || Boolean(hold?.since) || Boolean(awaiting?.since) || openFlags.length > 0;
+  const creedPending = (creed?.pending.length ?? 0) > 0;
+  const reviewOpen =
+    anySubmitted || replyUnread || Boolean(hold?.since) || Boolean(awaiting?.since) || openFlags.length > 0 || creedPending;
   // People: open while anyone is submitted or waitlisted, or someone still
   // on the week shows a gap on their row -- no date of birth, or a request
   // for help with the fee waiting on a decision.
@@ -2085,7 +2091,7 @@ export default function RegistrationManager({
           awaiting={awaiting}
           familyReply={familyReply}
           hold={hold}
-          creedDiscussed={creedDiscussed}
+          creed={creed}
           eventId={eventId}
           depositWaived={depositWaived}
           depositCents={depositCents}
