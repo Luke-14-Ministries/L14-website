@@ -635,6 +635,7 @@ export default async function RegistrationDetailPage({ params }) {
           />
         </Panel>
       }
+      canWritePayments={can(staff, 'write:payments')}
       feesPanel={
         can(staff, 'read:payments') ? (
           <FeesPanel

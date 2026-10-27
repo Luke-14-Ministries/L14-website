@@ -37,6 +37,7 @@ const TSHIRT_SIZES = [
 import Panel from './Panel';
 import ReviewCard from './ReviewCard';
 import { eventDateRange, dayInMorristown, todayInMorristown } from '@/lib/events';
+import RecheckRefund from '../../payments/RecheckRefund';
 
 const SIGNER_ROLE_LABEL = {
   // "for themselves" was a mis-caption, not just terse: the option it
@@ -1264,7 +1265,7 @@ function FamilyMessages({ registrationId, messages, canWrite = true, defaultOpen
 //
 // A section of the Money card since 26 Oct 2026, keeping the id "payments"
 // that /admin/payments links to; the Money card opens itself for it.
-function PaymentsCard({ registrationId, payments, stripeBase = '', event = null, feePeople = 0, depositWaived = false }) {
+function PaymentsCard({ registrationId, payments, stripeBase = '', event = null, feePeople = 0, depositWaived = false, canWritePayments = false }) {
   const [openFor, setOpenFor] = useState(null);
 
   if (payments.length === 0) {
@@ -1389,6 +1390,8 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                         ⚑ pending since {dayInMorristown(r.created_at)} — check Stripe
                       </span>
                     )}
+                    {/* Ask Stripe directly and record its answer (refundRecheckAction.js). */}
+                    {isStaleRefund(r) && canWritePayments && <RecheckRefund refundId={r.id} />}
                     {/* Proof it reached Stripe, and the way to go and look
                         (26 Aug: "no indication of any handshake"). It HAD
                         reached Stripe — the id was recorded and never shown,
@@ -1922,6 +1925,8 @@ export default function RegistrationManager({
   familyMessages = [],
   signatures = [],
   balance = null,
+  // Payments write: offers "Re-check with Stripe" on a stale refund.
+  canWritePayments = false,
   // 0123: the Fees panel (server-built, Payments read), a section of Money.
   feesPanel = null,
   // Emails sent to this household (page.jsx, message_log), a card at the end.
@@ -2312,6 +2317,7 @@ export default function RegistrationManager({
                 event={registration.event}
                 feePeople={livePeople}
                 depositWaived={Boolean(depositWaived)}
+                canWritePayments={canWritePayments}
               />
             </div>
 

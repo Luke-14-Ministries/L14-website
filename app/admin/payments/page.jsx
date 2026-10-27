@@ -9,6 +9,7 @@ import FoldCard from '@/components/FoldCard';
 import ExportBar from './ExportBar';
 import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 import { isStaleRefund, STALE_REFUND_DAYS } from '@/lib/payments';
+import RecheckRefund from './RecheckRefund';
 
 export const metadata = { title: 'Event Payments — Staff Admin' };
 
@@ -244,7 +245,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
           </p>
           <p className="mt-1">
             A refund normally clears within a few business days. Until these clear they are not taken off
-            &ldquo;Paid&rdquo;, so check each one in Stripe.
+            &ldquo;Paid&rdquo;, so check each one: <em>Re-check with Stripe</em> asks Stripe and records
+            its answer.
           </p>
           <ul className="mt-2 space-y-0.5">
             {staleRefunds.map((r) => {
@@ -256,6 +258,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                   </Link>{' '}
                   · {money(r.amount_cents)} · pending since {dayInMorristown(r.created_at)}
                   {reg?.events?.name ? ` · ${reg.events.name}` : ''}
+                  {can(staff, 'write:payments') && <RecheckRefund refundId={r.id} />}
                 </li>
               );
             })}
