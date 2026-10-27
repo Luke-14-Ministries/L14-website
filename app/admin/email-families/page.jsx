@@ -5,8 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow } from '@/lib/events';
 import EmailFamiliesForm from './EmailFamiliesForm';
 import { previewFamilyEmail } from './actions';
-import { loadEmailLog } from '@/lib/emailLog';
-import EmailLog from '@/components/EmailLog';
+import { searchEmailLog, emailFiltersFrom, groupEmailsBySend, groupSendsByEvent } from '@/lib/emailLog';
+import EmailsSentSection from './EmailsSentSection';
 
 export const metadata = { title: 'Email Families — Staff Admin' };
 
@@ -83,12 +83,22 @@ export default async function EmailFamiliesPage({ searchParams }) {
     ? await previewFamilyEmail({ eventId, activityId: activity?.id ?? null, outstandingOnly: outstanding })
     : null;
 
+  // The emails the site sent families, so a send stays visible after its
+  // "N emails sent" card is gone (26 Oct 2026) -- filtered by the sent_*
+  // and q params, grouped by send and by event (27 Oct 2026; lib/emailLog.js).
+  const sentFilters = emailFiltersFrom(params);
+  const sent = await searchEmailLog(supabase, sentFilters);
+  const eventNames = new Map((events ?? []).map((e) => [e.id, e.name]));
+  const sentByEvent = groupSendsByEvent(groupEmailsBySend(sent.emails), (id) => eventNames.get(id) ?? null);
+  // The event filter offers the current events; one chosen from a link to an
+  // older event stays in the list, as the send form's does.
+  const sentEventOptions = [
+    ...current,
+    ...(events ?? []).filter((e) => e.id === sentFilters.eventId && !current.some((c) => c.id === e.id)),
+  ].map((e) => ({ id: e.id, name: e.name }));
+
   // The address the email's Activities link uses, so the preview shows it as
   // the family will see it.
-  // The latest emails the site sent families, so a send stays visible after
-  // its "N emails sent" card is gone (26 Oct 2026).
-  const recent = await loadEmailLog(supabase, { limit: 30 });
-
   const hdrs = await headers();
   const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
   const origin = host ? `${hdrs.get('x-forwarded-proto') ?? 'https'}://${host}` : '';
@@ -112,17 +122,18 @@ export default async function EmailFamiliesPage({ searchParams }) {
         origin={origin}
       />
 
-      <section className="mt-8">
-        <h3 className="text-lg font-bold mb-1">Recently sent</h3>
-        <p className="text-sm text-neutral-500 mb-2">
-          The latest emails to families, from here and the site&rsquo;s own (payment plans). Each
-          family&rsquo;s full list is on their registration page. <em>Delivery</em> opens the mail
-          service&rsquo;s record: delivered, bounced or opened.
-        </p>
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
-          <EmailLog emails={recent} showHousehold empty="Nothing sent yet." />
-        </div>
-      </section>
+      <EmailsSentSection
+        result={sent}
+        byEvent={sentByEvent}
+        filters={sentFilters}
+        eventOptions={sentEventOptions}
+        keepParams={{
+          event: eventId,
+          activity: activity?.id ?? '',
+          outstanding: outstanding ? '1' : '',
+          suggest: params?.suggest === '1' ? '1' : '',
+        }}
+      />
     </div>
   );
 }

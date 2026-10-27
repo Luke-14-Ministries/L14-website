@@ -41,12 +41,12 @@ export default function EmailSends({ byEvent, empty = 'Nothing sent yet.' }) {
     <div className="space-y-5">
       {byEvent.map((ev) => (
         <section key={ev.eventId ?? 'none'}>
-          <h4 className="mb-1 flex flex-wrap items-baseline gap-2 border-b border-neutral-200 pb-1 font-bold">
+          <h5 className="mb-1 flex flex-wrap items-baseline gap-2 border-b border-neutral-200 pb-1 font-bold">
             {ev.name}
             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-600">
               {emailCount(ev)} {emailCount(ev) === 1 ? 'email' : 'emails'}
             </span>
-          </h4>
+          </h5>
           <ul className="divide-y divide-neutral-100">
             {ev.sends.map((s) => (
               <li key={s.id}>
