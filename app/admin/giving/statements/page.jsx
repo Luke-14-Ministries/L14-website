@@ -34,12 +34,32 @@ export default async function GivingStatementsPage({ searchParams }) {
   const to = typeof params?.to === 'string' && params.to ? params.to : `${year}-12-31`;
   const donorFilter = typeof params?.donor === 'string' ? params.donor.toLowerCase() : '';
 
+  // The tax year, printed large at the top of every statement (Lawrence,
+  // 26 Oct 2026): "2026 Tax Year" when the range is one whole calendar year;
+  // otherwise the year (or years) with the exact dates beneath, so a partial
+  // statement never passes for a year-end one.
+  const fromYear = from.slice(0, 4);
+  const toYear = to.slice(0, 4);
+  const wholeYear = fromYear === toYear && from.slice(5) === '01-01' && to.slice(5) === '12-31';
+  const longDay = (d) =>
+    new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
+      timeZone: 'UTC',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  const yearTitle = wholeYear ? `${fromYear} Tax Year` : fromYear === toYear ? fromYear : `${fromYear}–${toYear}`;
+  const rangeLine = `${longDay(from)} – ${longDay(to)}`;
+
   const supabase = await createClient();
-  const { data: gifts } = await supabase
+  const { data: gifts, error: giftsError } = await supabase
     .from('gifts')
     .select('donor_name, email, amount_cents, fund, method, received_on, created_at')
     .eq('status', 'succeeded')
     .order('received_on');
+  // CLAUDE.md: never turn a query error into an empty list -- here it would
+  // read "No settled gifts in this date range".
+  if (giftsError) throw new Error(`Gifts: ${giftsError.message}`);
 
   const giftDate = (g) => dayInMorristown(g.received_on ?? g.created_at);
   const inRange = (gifts ?? []).filter((g) => giftDate(g) >= from && giftDate(g) <= to);
@@ -117,17 +137,18 @@ export default async function GivingStatementsPage({ searchParams }) {
             </p>
           </div>
 
-          <div className="flex flex-wrap justify-between gap-4 mb-4 text-sm">
-            <div>
-              <p className="font-bold">{d.name}</p>
-              {d.email && <p className="text-neutral-600">{d.email}</p>}
-            </div>
-            <div className="text-right">
-              <p className="font-bold">Giving statement</p>
-              <p className="text-neutral-600">
-                {from} – {to}
-              </p>
-            </div>
+          {/* The tax year, large, before anything else on the page. */}
+          <div className="mb-5 text-center">
+            <p className="text-3xl font-bold tracking-tight print:text-[26px]">{yearTitle}</p>
+            <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-neutral-600 print:text-[12px]">
+              Giving statement
+            </p>
+            <p className="text-sm text-neutral-600 print:text-[12px]">Gifts received {rangeLine}</p>
+          </div>
+
+          <div className="mb-4 text-sm">
+            <p className="font-bold">{d.name}</p>
+            {d.email && <p className="text-neutral-600">{d.email}</p>}
           </div>
 
           <table className="w-full text-sm border-collapse mb-3">
