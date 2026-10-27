@@ -86,6 +86,16 @@ function depositDueNow({ registration, balance, clearingCents, depositCents, ful
   );
 }
 
+// The Needs that are a payment wanted now: the Ways to pay button is solid
+// for these and an outline otherwise.
+const MONEY_NEEDS = new Set([
+  'choose how to pay',
+  'deposit',
+  'payment plan stopped',
+  'plan payment failed',
+  'balance past due',
+]);
+
 const ROLE_LABEL = {
   camper: 'Camper',
   parent_guardian: 'Parent/Guardian',
@@ -1142,8 +1152,28 @@ export default async function DashboardPage({ searchParams }) {
                   // two registrations (flagged 26 Aug: "not wrong, just
                   // inconsistent").
                   const notFinished = unfinished(r);
+                  // A plan running as it should is the balance handled
+                  // (Lawrence, 27 Oct 2026: "should somehow indicate a payment
+                  // plan is in progress"): one calm pill with what is left and
+                  // the next charge, not the amber balance. A plan with a
+                  // problem keeps the amber balance; its Needs chip says why.
+                  const runningPlan = planByReg.get(r.id);
+                  const planOk =
+                    owes && runningPlan?.status === 'active' && !planHasProblem(runningPlan);
+                  const nextCharge = planOk
+                    ? runningPlan.payment_installments.find((i) => ['scheduled', 'processing'].includes(i.status))
+                    : null;
                   const status = notFinished
                     ? [{ text: 'Not finished — choose how to pay', tone: 'ask' }]
+                    : planOk
+                    ? [
+                        {
+                          text: `Payment plan · ${dollars(bal.balance_cents)} left${
+                            nextCharge ? ` · next ${formatDueDateShort(nextCharge.due_on)}` : ''
+                          }`,
+                          tone: 'neutral',
+                        },
+                      ]
                     : owes
                     ? [
                         {
@@ -1632,6 +1662,14 @@ export default async function DashboardPage({ searchParams }) {
                         {(() => {
                           const owing = balanceByReg.get(r.id) ?? 0;
                           const clearingNow = pendingByReg.get(r.id) ?? 0;
+                          // Solid only while a payment is needed NOW -- the
+                          // deposit, a plan problem, a past-due balance (the
+                          // same Needs as the pills). A running plan, or a
+                          // balance not yet due, gets the quiet outline: still
+                          // there for an extra payment (27 Oct 2026).
+                          const payNow = needsByReg
+                            .get(r.id)
+                            .needs.some((n) => MONEY_NEEDS.has(n));
                           // Two different truths, two different badges: money
                           // still clearing the bank is NOT the same as paid.
                           if (owing <= 0) {
@@ -1653,7 +1691,7 @@ export default async function DashboardPage({ searchParams }) {
                               <Link
                                 href={`/account/finish/${r.id}/`}
                                 title="Pay the deposit, any amount or in full, set up a payment plan, or request help with the fee."
-                                className="btn-primary py-2!"
+                                className={payNow ? 'btn-primary py-2!' : 'btn-outline py-2!'}
                               >
                                 Ways to pay
                               </Link>

@@ -3586,3 +3586,12 @@ Lawrence: "should support details be in manage household or is this event specif
 keyed by person), so once every attending person's are on file the separate card is no longer drawn; each
 of them gets "Support details on file ✓ · Review" under their name in My Household. While anything is owed
 the card stays at the top of the dashboard as a to-do, unchanged.
+
+## 27 Oct 2026 — The Ways to pay button follows the money state; a running plan has its own pill
+
+The button stays the site's teal (white on the pills' amber fails contrast, and amber means status, not
+action), but it is **solid only while a payment is needed now** — the deposit, a plan problem, a past-due
+balance (`MONEY_NEEDS`, the same Needs as the pills) — and an outline otherwise, still there for an extra
+payment. Paid in full keeps the green badge. A plan running as it should (active, no problem) replaces the
+amber balance pill with a calm "Payment plan · $890.00 left · next Nov 1"; a plan with a problem keeps the
+amber balance and its Needs chip.
