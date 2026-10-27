@@ -84,7 +84,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       supabase
         .from('registrations')
         .select(
-          'id, created_at, awaiting_family_since, awaiting_family_reason, family_replied_at, family_reply_unread, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'
+          'id, created_at, awaiting_family_since, awaiting_family_reason, family_replied_at, family_reply_unread, creed_discussed_at, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'
         ),
       supabase
         .from('registration_participants')
@@ -147,6 +147,9 @@ export default async function ReviewQueuePage({ searchParams }) {
         owed: owedByReg.get(r.id) ?? [],
         planStopped: stoppedByReg.has(r.id),
         planStoppedAt: stoppedByReg.get(r.id) ?? null,
+        // 0129: staff recorded talking with Larry about the Creed. The flag
+        // still comes from registration_review; this only calms its line.
+        creedDiscussedAt: r.creed_discussed_at ?? null,
       };
     })
     .filter((r) => {
@@ -468,11 +471,18 @@ export default async function ReviewQueuePage({ searchParams }) {
                                 {r.planStoppedAt ? ` ${dayInMorristown(r.planStoppedAt)}` : ''}
                               </li>
                             )}
-                            {flags.map((f) => (
-                              <li key={f} className="whitespace-nowrap text-xs font-semibold text-amber-800">
-                                ⚑ {REVIEW_FLAG[f] ?? f}
-                              </li>
-                            ))}
+                            {flags.map((f) =>
+                              f === 'creed_not_affirmed' && r.creedDiscussedAt ? (
+                                // Discussed with Larry (0129): informs, no longer alarms.
+                                <li key={f} className="whitespace-nowrap text-xs text-neutral-600">
+                                  ✓ {REVIEW_FLAG[f]} — talked with Larry {dayInMorristown(r.creedDiscussedAt)}
+                                </li>
+                              ) : (
+                                <li key={f} className="whitespace-nowrap text-xs font-semibold text-amber-800">
+                                  ⚑ {REVIEW_FLAG[f] ?? f}
+                                </li>
+                              )
+                            )}
                             {r.owed.map((o) => (
                               <li
                                 key={`${o.person_id}:${o.activity_name}:${o.kind}`}
