@@ -24,7 +24,7 @@
 //
 // The family answers in the app (0126, Lawrence 26 Oct 2026): their reply
 // from the dashboard clears "waiting on the family" by itself and shows here
-// as a blue "Family replied" box until someone with Registration write marks
+// as an amber "Family replied" box until someone with Registration write marks
 // it read (or writes back to the family, which counts as reading it). No
 // email is sent on a reply -- the app is the one place it arrives.
 //
@@ -167,6 +167,35 @@ export default function ReviewCard({
 
   return (
     <Panel title="Review" count={count} id="review">
+      {/* The family replied in the app (0126). First in the card, and amber:
+          it is waiting on staff to read and answer (Lawrence, 26 Oct 2026). */}
+      {familyReply?.unread && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
+          <p className="font-bold text-amber-900"><span aria-hidden>✉</span> Family replied {when(familyReply.at)}</p>
+          {(familyReply.messages ?? []).map((m) => (
+            <p key={m.id} className="mt-1 whitespace-pre-wrap text-amber-900">
+              &ldquo;{m.body}&rdquo; <span className="text-xs text-amber-800">· {m.at}</span>
+            </p>
+          ))}
+          <p className="mt-1 text-xs text-amber-900">
+            Their reply put this registration back in front of staff. The whole conversation is in{' '}
+            <a href="#family-messages" className="underline">
+              Notes to and from the family
+            </a>
+            ; writing back to them there also marks this as read.
+          </p>
+          {canWrite && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={markRead}
+              className="btn-outline py-1.5! mt-2 text-sm"
+            >
+              Mark as read
+            </button>
+          )}
+        </div>
+      )}
       {waitlisted.length > 0 && (
         <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <p className="font-bold">Waitlisted</p>
@@ -377,35 +406,6 @@ export default function ReviewCard({
                 </button>
               </div>
             </div>
-          )}
-        </div>
-      )}
-      {/* The family replied in the app (0126). Blue: it is news for staff,
-          not a problem. */}
-      {familyReply?.unread && (
-        <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 text-sm">
-          <p className="font-bold text-blue-900">Family replied {when(familyReply.at)}</p>
-          {(familyReply.messages ?? []).map((m) => (
-            <p key={m.id} className="mt-1 whitespace-pre-wrap text-blue-900">
-              &ldquo;{m.body}&rdquo; <span className="text-xs text-blue-800">· {m.at}</span>
-            </p>
-          ))}
-          <p className="mt-1 text-xs text-blue-900">
-            Their reply put this registration back in front of staff. The whole conversation is in{' '}
-            <a href="#family-messages" className="underline">
-              Notes to and from the family
-            </a>
-            ; writing back to them there also marks this as read.
-          </p>
-          {canWrite && (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={markRead}
-              className="btn-outline py-1.5! mt-2 text-sm"
-            >
-              Mark as read
-            </button>
           )}
         </div>
       )}

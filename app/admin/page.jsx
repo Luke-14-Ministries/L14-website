@@ -227,7 +227,7 @@ export default async function AdminOverview({ searchParams }) {
       </div>
 
       {replies.length > 0 && (
-        <div className="rounded-lg border border-blue-300 bg-blue-50 shadow-xs p-6 mb-8">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 shadow-xs p-6 mb-8">
           <h3 className="font-bold mb-1">
             <span aria-hidden>✉</span> {replies.length === 1 ? 'A family wrote back' : `${replies.length} families wrote back`}
           </h3>
@@ -235,7 +235,7 @@ export default async function AdminOverview({ searchParams }) {
             Replies in the app that nobody has read yet, oldest first. Open one to read it; writing
             back, or <em>Mark as read</em>, clears it.
           </p>
-          <ul className="divide-y divide-blue-100">
+          <ul className="divide-y divide-amber-100">
             {replies.map((r) => (
               <li key={r.id} className="py-2">
                 <Link href={`/admin/registrations/${r.id}/#review`} className="font-semibold text-brand underline">

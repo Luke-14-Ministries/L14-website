@@ -1184,7 +1184,7 @@ function FamilyMessages({ registrationId, messages, canWrite = true }) {
         Shown on the family&rsquo;s dashboard under this registration — e.g. &ldquo;We added a
         $100 scholarship credit to your registration on 8/17.&rdquo; Everything written here is
         visible to the family, and they can reply from their dashboard; their replies appear
-        here in blue. The one note only staff can see is the one kept with a
+        here in amber. The one note only staff can see is the one kept with a
         scholarship or discount (People on this week → Scholarship &amp; discount → Note).
       </p>
       {messages.length > 0 && (
@@ -1193,11 +1193,11 @@ function FamilyMessages({ registrationId, messages, canWrite = true }) {
             <li
               key={m.id}
               className={`rounded-sm border px-3 py-2 text-sm ${
-                m.fromFamily ? 'border-blue-300 bg-blue-50' : 'border-neutral-200 bg-neutral-50'
+                m.fromFamily ? 'border-amber-300 bg-amber-50' : 'border-neutral-200 bg-neutral-50'
               }`}
             >
               {m.fromFamily && (
-                <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-blue-800">Family replied</p>
+                <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-amber-800">Family replied</p>
               )}
               <p className="text-neutral-800 whitespace-pre-wrap">{m.body}</p>
               <p className="mt-1 flex items-center justify-between text-xs text-neutral-500">
@@ -1916,7 +1916,13 @@ export default function RegistrationManager({
           participants={parts.map((p) => ({
             id: p.id,
             status: p.status,
-            name: `${p.person?.preferred_name || p.person?.first_name || ''} ${p.person?.last_name || ''}`.trim(),
+            // A person on the week twice (an older parent-and-volunteer pair from
+            // before 0086) gets their role, so the card does not say "Cal, Cal".
+            name:
+              `${p.person?.preferred_name || p.person?.first_name || ''} ${p.person?.last_name || ''}`.trim() +
+              (parts.filter((q) => q.person_id === p.person_id).length > 1
+                ? ` (${ROLE_LABEL[p.camp_role] ?? p.camp_role})`
+                : ''),
             // 0128: why waitlisted, and who last changed the status, when.
             waitlistReason: p.waitlist_reason ?? null,
             changedAt: p.status_changed_at ?? null,

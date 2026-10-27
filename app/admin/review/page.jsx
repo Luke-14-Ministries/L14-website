@@ -249,9 +249,9 @@ export default async function ReviewQueuePage({ searchParams }) {
             href={`/admin/review/?show=replied${eventFilter ? `&event=${eventFilter}` : ''}`}
             className={`rounded-full px-3 py-1 font-semibold border ${
               show === 'replied'
-                ? 'bg-blue-700 text-white border-blue-700'
+                ? 'bg-amber-600 text-white border-amber-600'
                 : repliedRegs > 0
-                  ? 'border-blue-300 text-blue-800 hover:border-blue-700'
+                  ? 'border-amber-400 bg-amber-50 text-amber-900 hover:border-amber-600'
                   : 'border-neutral-300 text-neutral-700 hover:border-brand'
             }`}
           >
@@ -307,8 +307,8 @@ export default async function ReviewQueuePage({ searchParams }) {
       {/* Unread family replies first, on every tab but their own (26 Oct
           2026): with many families waiting, a reply was lost in the list. */}
       {unreadReplies.length > 0 && show !== 'replied' && (
-        <div className="mb-4 rounded-lg border border-blue-300 bg-blue-50 p-4 text-sm">
-          <p className="font-semibold text-blue-900">
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
+          <p className="font-semibold text-amber-900">
             <span aria-hidden>✉</span>{' '}
             {unreadReplies.length === 1 ? 'A family wrote back' : `${unreadReplies.length} families wrote back`} — read first:
           </p>
@@ -456,8 +456,8 @@ export default async function ReviewQueuePage({ searchParams }) {
                           <ul className="space-y-0.5">
                             {r.familyReplied && (
                               <li>
-                                <span className="inline-block whitespace-nowrap rounded-sm bg-blue-100 px-1.5 py-0.5 text-xs font-semibold text-blue-800">
-                                  Family replied
+                                <span className="inline-block whitespace-nowrap rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-400">
+                                  ✉ Family replied
                                   {r.familyRepliedAt ? ` ${dayInMorristown(r.familyRepliedAt)}` : ''}
                                 </span>
                               </li>
