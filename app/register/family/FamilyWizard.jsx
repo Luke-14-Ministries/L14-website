@@ -1013,7 +1013,7 @@ export default function FamilyWizard({
               which case choose &ldquo;Ways to pay&rdquo; on your dashboard and request one, and
               staff will be in touch. You can pay the deposit from &ldquo;Ways to pay&rdquo; in
               about a minute; the rest can be paid in one go, in parts, or with a
-              payment plan.{' '}
+              payment plan, at no extra fee.{' '}
               {result.balanceDue ? (
                 <>
                   The balance is due by{' '}

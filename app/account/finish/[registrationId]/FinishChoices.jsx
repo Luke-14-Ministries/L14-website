@@ -259,7 +259,7 @@ export default function FinishChoices({
           open={route === 'plan'}
           onToggle={() => toggle('plan')}
           title="Set up a payment plan"
-          summary={`Pay ${depositDue ? `the ${dollars(depositCents)} deposit` : `a first ${dollars(depositCents)}`} now, and the rest is charged automatically to the card or bank account you save, ending on the due date.`}
+          summary={`Pay ${depositDue ? `the ${dollars(depositCents)} deposit` : `a first ${dollars(depositCents)}`} now, and the rest is charged automatically to the card or bank account you save, ending on the due date. No extra fee for a plan.`}
         >
           {plan && (
             <>
