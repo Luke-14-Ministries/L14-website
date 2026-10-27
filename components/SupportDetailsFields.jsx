@@ -33,7 +33,7 @@
 
 import Link from 'next/link';
 import { ALLERGENS, hasFullerDetail, SUPPORT_QUESTIONS as Q } from '@/lib/support';
-import { formatPhone } from '@/lib/format';
+import { formatPhone, isFullPhone } from '@/lib/format';
 
 const input = 'w-full rounded-sm border border-neutral-300 px-4 py-2.5';
 const label = 'block font-semibold mb-1.5 mt-4 first:mt-0';
@@ -503,6 +503,11 @@ export default function SupportDetailsFields({
               }))
             }
           />
+          {f.emergency_contact_phone?.trim() && !isFullPhone(f.emergency_contact_phone) && (
+            <p className="mt-1 text-xs font-semibold text-red-700">
+              Please give all 10 digits, area code first — e.g. (423) 555-0123.
+            </p>
+          )}
         </div>
       </div>
       <label className={label}>Relationship to {name}</label>
