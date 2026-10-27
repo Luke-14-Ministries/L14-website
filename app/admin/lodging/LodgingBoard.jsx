@@ -34,6 +34,35 @@ function sexTint(gender) {
   return 'border-neutral-200 bg-white';
 }
 
+// The floor a room is on, from its number: "Lodge 101" is floor 1, "Lodge 312"
+// floor 3 (Lawrence, 26 Oct 2026: the lodge folds by floor). Rooms without a
+// three-digit number have no floor; a building groups by floor only when its
+// rooms span two or more, so Ginn (all 1xx) stays one list.
+function floorOf(name) {
+  const m = String(name ?? '').match(/(\d{3,})\s*$/);
+  return m ? Math.floor(Number(m[1]) / 100) : null;
+}
+
+function floorsOf(rooms) {
+  const m = new Map();
+  for (const r of rooms) {
+    const f = floorOf(r.name);
+    if (!m.has(f)) m.set(f, []);
+    m.get(f).push(r);
+  }
+  if (m.size < 2 || m.has(null)) return null;
+  return [...m.entries()].sort((a, b) => a[0] - b[0]);
+}
+
+// The ▶ that turns when a group is open, as on FoldCard.
+function FoldArrow({ open }) {
+  return (
+    <span aria-hidden className={`inline-block text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}>
+      ▶
+    </span>
+  );
+}
+
 const ROLE_SHORT = {
   camper: 'camper',
   parent_guardian: 'parent',
@@ -170,6 +199,31 @@ export default function LodgingBoard({
   }, [lodgings]);
 
   const roots = lodgings.filter((l) => !l.parentId);
+
+  // Folded groups (26 Oct 2026: "make rooming groups collapsible by building,
+  // and, in the lodge, by floor as well"): building ids, and
+  // "<building id>:floor:<n>" for a floor. Kept here rather than in the card,
+  // so a re-render never opens what a coordinator closed. Everything starts
+  // open.
+  const [folded, setFolded] = useState(() => new Set());
+  const isOpen = (key) => !folded.has(key);
+  function toggleFold(key) {
+    setFolded((cur) => {
+      const next = new Set(cur);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+  const parentIds = roots.filter((l) => (childrenOf.get(l.id) ?? []).length > 0).map((l) => l.id);
+  function foldAll() {
+    const keys = [];
+    for (const id of parentIds) {
+      keys.push(id);
+      for (const [f] of floorsOf(childrenOf.get(id) ?? []) ?? []) keys.push(`${id}:floor:${f}`);
+    }
+    setFolded(new Set(keys));
+  }
 
   // A parent's occupancy includes everyone in its rooms -- how a camp director
   // counts beds, and the only number that answers "is the lodge full?".
@@ -367,7 +421,20 @@ export default function LodgingBoard({
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="font-bold">
-              {lodging.name}
+              {kids.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => toggleFold(lodging.id)}
+                  aria-expanded={isOpen(lodging.id)}
+                  className="inline-flex items-baseline gap-2 text-left hover:underline"
+                  title={isOpen(lodging.id) ? 'Fold its rooms away' : 'Show its rooms'}
+                >
+                  <FoldArrow open={isOpen(lodging.id)} />
+                  {lodging.name}
+                </button>
+              ) : (
+                lodging.name
+              )}
               <span className="ml-2 text-xs font-normal text-neutral-500">
                 {KIND_LABEL[lodging.kind] ?? lodging.kind}
               </span>
@@ -445,7 +512,9 @@ export default function LodgingBoard({
               The server refuses too; this just stops the button appearing. */}
           {kids.length > 0 && (placing || (placingGroup && placingGroup.length > 0)) && (
             <p className="mt-3 text-xs text-neutral-500">
-              Pick one of the rooms below — a building is not assigned itself.
+              {isOpen(lodging.id)
+                ? 'Pick one of the rooms below — a building is not assigned itself.'
+                : `Open ${lodging.name} to pick one of its ${kids.length} rooms — a building is not assigned itself.`}
             </p>
           )}
 
@@ -470,12 +539,52 @@ export default function LodgingBoard({
           )}
         </div>
 
-        {kids.length > 0 && (
-          <div className="mt-2 space-y-2">
-            {kids.map((k) => (
-              <LodgingCard key={k.id} lodging={k} depth={depth + 1} />
-            ))}
-          </div>
+        {kids.length > 0 && isOpen(lodging.id) && (
+          floorsOf(kids) ? (
+            <div className="mt-2 space-y-2">
+              {floorsOf(kids).map(([floor, rooms]) => {
+                const key = `${lodging.id}:floor:${floor}`;
+                const placedHere = rooms.reduce((n, r) => n + occupancyOf(r), 0);
+                const beds = rooms.every((r) => r.capacity != null)
+                  ? rooms.reduce((n, r) => n + r.capacity, 0)
+                  : null;
+                return (
+                  <div key={key} className="ml-4 border-l-2 border-neutral-100 pl-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleFold(key)}
+                      aria-expanded={isOpen(key)}
+                      className="flex w-full flex-wrap items-baseline justify-between gap-2 rounded-sm px-1 py-1 text-left text-sm hover:bg-neutral-50"
+                    >
+                      <span className="inline-flex items-baseline gap-2 font-semibold">
+                        <FoldArrow open={isOpen(key)} />
+                        Floor {floor}
+                        <span className="text-xs font-normal text-neutral-500">
+                          {rooms.length} {rooms.length === 1 ? 'room' : 'rooms'}
+                        </span>
+                      </span>
+                      <span className="text-neutral-500">
+                        {beds != null ? `${placedHere} of ${beds}` : `${placedHere} placed`}
+                      </span>
+                    </button>
+                    {isOpen(key) && (
+                      <div className="mt-1 space-y-2">
+                        {rooms.map((k) => (
+                          <LodgingCard key={k.id} lodging={k} depth={depth + 1} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-2 space-y-2">
+              {kids.map((k) => (
+                <LodgingCard key={k.id} lodging={k} depth={depth + 1} />
+              ))}
+            </div>
+          )
         )}
       </div>
     );
@@ -654,6 +763,20 @@ export default function LodgingBoard({
         )}
       </div>
 
+      {parentIds.length > 0 && (
+        <div className="mb-2 flex justify-end gap-3 text-sm">
+          <button type="button" onClick={foldAll} className="underline text-neutral-600 hover:text-neutral-900">
+            Fold all buildings
+          </button>
+          <button
+            type="button"
+            onClick={() => setFolded(new Set())}
+            className="underline text-neutral-600 hover:text-neutral-900"
+          >
+            Open all
+          </button>
+        </div>
+      )}
       <div className="space-y-3">
         {roots.map((l) => (
           <LodgingCard key={l.id} lodging={l} />
