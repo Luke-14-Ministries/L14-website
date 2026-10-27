@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -700,6 +701,9 @@ export default async function PersonPage({ params }) {
 
   return (
     <div>
+      {/* An admin sub-page's header (26 Oct 2026): the person left, the back
+          pill right, as everywhere signed in. */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="flex items-center gap-4">
       {photoUrl && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -711,7 +715,7 @@ export default async function PersonPage({ params }) {
       )}
       <div className="min-w-0">
       <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Person</p>
-      <h1 className="text-2xl font-bold">
+      <h1 className="text-xl font-bold">
         {displayName}
         {person.preferred_name && person.preferred_name !== person.first_name && (
           <span className="ml-2 text-lg font-normal text-neutral-500">
@@ -729,12 +733,8 @@ export default async function PersonPage({ params }) {
       </p>
       </div>
       </div>
-
-      <p className="mt-3 text-sm">
-        <Link href="/admin/rosters/" className="text-brand underline">
-          &larr; Back to rosters
-        </Link>
-      </p>
+      <BackLink href="/admin/rosters/" label="Back to rosters" />
+      </div>
 
       {!sensitive && (
         <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">

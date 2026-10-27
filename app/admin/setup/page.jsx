@@ -68,7 +68,7 @@ export default async function SetupPage() {
 
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
-      <h1 className="text-2xl font-bold mb-1">Setup &amp; Manage Events</h1>
+      <h1 className="text-xl font-bold mb-1">Setup &amp; Manage Events</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Create events, and open and close registration, event by event. Each event&rsquo;s{' '}
         <span className="font-semibold">Event status</span> is the master switch:{' '}

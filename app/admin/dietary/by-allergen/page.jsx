@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import BackLink from '@/components/BackLink';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow } from '@/lib/events';
@@ -91,9 +92,12 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl p-8 print:p-0 bg-white print:text-[12px]">
-      <div className="flex items-center justify-between mb-2 print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2 print:hidden">
         <h1 className="text-xl font-bold">Allergies by allergen — with names</h1>
-        <PrintButton />
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink href={`/admin/dietary/${eventFilter ? `?event=${eventFilter}` : ""}`} label="Back to Dietary" />
+        </span>
       </div>
       <p className="text-sm text-neutral-500 mb-2 print:hidden">
         Every allergen that anyone on a current event has ticked, with who and how serious —

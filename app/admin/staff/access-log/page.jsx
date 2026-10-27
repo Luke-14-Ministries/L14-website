@@ -73,8 +73,10 @@ export default async function AccessLogPage() {
 
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
-      <BackLink href="/admin/staff" label="Back to Staff &amp; Access" />
-      <h1 className="text-2xl font-bold mb-1">Access Changes</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
+        <h1 className="text-xl font-bold">Access Changes</h1>
+        <BackLink href="/admin/staff" label="Back to Staff &amp; Access" />
+      </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Every change to what a staff member may see or do — their grants on
         each area, the role label, and whether their account is active. Written

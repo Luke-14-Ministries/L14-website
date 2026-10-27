@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import BackLink from '@/components/BackLink';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
@@ -87,9 +88,12 @@ export default async function GivingStatementsPage({ searchParams }) {
   return (
     <div className="mx-auto max-w-2xl p-8 print:p-0 bg-white text-neutral-900 print:text-[12px]">
       <div className="mb-6 print:hidden">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
           <h1 className="text-xl font-bold">Giving statements — print view</h1>
+          <span className="flex flex-wrap items-center gap-3">
           <PrintButton />
+          <BackLink href="/admin/giving/" label="Back to Giving" />
+        </span>
         </div>
         <form method="get" className="mb-2 flex flex-wrap items-end gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm">
           <label className="block">
@@ -109,11 +113,6 @@ export default async function GivingStatementsPage({ searchParams }) {
         <p className="text-sm text-neutral-500">
           {donorList.length} {donorList.length === 1 ? 'donor' : 'donors'} · {from} to {to} · each
           statement prints on its own page · settled gifts only.
-        </p>
-        <p className="text-sm">
-          <a href="/admin/giving" className="text-brand underline">
-            ← Back to Giving
-          </a>
         </p>
       </div>
 

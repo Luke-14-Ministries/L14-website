@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import BackLink from '@/components/BackLink';
 import PrintButton from '@/components/PrintButton';
 import { getProgramRoster, getProgramLeaders, programRosterRows, askAboutWords, buddyWords } from '@/lib/programs';
 import { todayInMorristown } from '@/lib/events';
@@ -39,11 +40,12 @@ export default async function MyProgramPrintPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
-      <div className="mb-2 flex items-center justify-between print:hidden">
-        <a href={`/admin/my-program/?grant=${encodeURIComponent(`${program.programId}:${program.eventId}`)}`} className="text-sm text-brand underline">
-          ← Back to My Program
-        </a>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <PrintButton label="Print / Save as PDF" />
+        <BackLink
+          href={`/admin/my-program/?grant=${encodeURIComponent(`${program.programId}:${program.eventId}`)}`}
+          label="Back to My Program"
+        />
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">
         To make a PDF, choose “Save as PDF” as the printer in the print dialog.

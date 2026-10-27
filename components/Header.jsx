@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { nav, site } from '@/lib/site';
 
 function DesktopDropdown({ group }) {
@@ -35,12 +36,21 @@ function DesktopDropdown({ group }) {
   );
 }
 
+// On the staff pages the header uses the staff area's wider container
+// (app/admin/layout.jsx: max-w-[1500px], the same side padding), so the logo
+// lines up with the left edge of the staff menu and the nav with the right
+// edge of the staff content (Lawrence, 26 Oct 2026). Everywhere else it keeps
+// the public site's container-site.
+const ADMIN_CONTAINER = 'mx-auto max-w-[1500px] px-4 sm:px-6';
+
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname() ?? '';
+  const container = pathname.startsWith('/admin') ? ADMIN_CONTAINER : 'container-site';
 
   return (
     <header className="bg-white border-b border-neutral-200">
-      <div className="container-site flex items-center justify-between py-4">
+      <div className={`${container} flex items-center justify-between py-4`}>
         <Link href="/" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

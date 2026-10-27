@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import BackLink from '@/components/BackLink';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
@@ -93,9 +94,12 @@ export default async function FamilyStatementPage({ params }) {
 
   return (
     <div className="print-sheet mx-auto max-w-2xl p-8 bg-white print:text-[12px] text-neutral-900">
-      <div className="flex items-center justify-between mb-6 print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 print:hidden">
         <h1 className="text-xl font-bold">Family statement — print view</h1>
-        <PrintButton />
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink href={`/admin/registrations/${id}/`} label="Back to the registration" />
+        </span>
       </div>
 
       {/* Letterhead */}

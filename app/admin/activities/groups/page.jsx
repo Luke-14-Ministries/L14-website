@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -56,17 +57,17 @@ export default async function ActivityGroupsPage({ searchParams }) {
 
   return (
     <div>
-      <p className="mb-1 text-sm">
-        <Link
+      {/* An admin sub-page's header (26 Oct 2026): title left, the back pill
+          right, as everywhere signed in. */}
+      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
+        <h2 className="text-xl font-bold">
+          {data.activity.name} &mdash; {noun.many}
+        </h2>
+        <BackLink
           href={`/admin/activities/${data.event ? `?event=${data.event.id}` : ''}`}
-          className="text-brand underline"
-        >
-          &larr; Activities
-        </Link>
-      </p>
-      <h2 className="mb-1 text-xl font-bold">
-        {data.activity.name} &mdash; {noun.many}
-      </h2>
+          label="Back to Activities"
+        />
+      </div>
       <p className="mb-4 max-w-4xl text-sm text-neutral-500">
         Everyone signed up for {data.activity.name}
         {data.event ? ` at ${data.event.name}` : ''}, and each camper&rsquo;s paired buddy, who

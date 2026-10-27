@@ -40,8 +40,10 @@ export default async function ScreeningPage() {
   if (liveEventIds.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
-        <BackLink href="/admin/volunteers" label="Back to Volunteers" />
-        <h1 className="text-2xl font-bold mb-1">Background Screening</h1>
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
+          <h1 className="text-xl font-bold">Background Screening</h1>
+          <BackLink href="/admin/volunteers" label="Back to Volunteers" />
+        </div>
         <p className="text-neutral-600">
           No upcoming events, so nobody is due a background check for one.
         </p>
@@ -173,8 +175,10 @@ export default async function ScreeningPage() {
 
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
-      <BackLink href="/admin/volunteers" label="Back to Volunteers" />
-      <h1 className="text-2xl font-bold mb-1">Background Screening</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
+        <h1 className="text-xl font-bold">Background Screening</h1>
+        <BackLink href="/admin/volunteers" label="Back to Volunteers" />
+      </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Checkr&rsquo;s bulk upload takes a list of email addresses and invites each
         person to fill in their own details. We never see or hold a Social Security

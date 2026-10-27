@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -144,17 +144,16 @@ export default async function PhotographerListPage({ searchParams }) {
 
   return (
     <div className="print-sheet mx-auto max-w-3xl bg-white p-8 print:text-[12px] text-neutral-900">
-      <div className="mb-2 flex items-center justify-between print:hidden">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <h1 className="text-xl font-bold">Photographer&rsquo;s list</h1>
-        <PrintButton />
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink href="/admin/rosters/" label="Back to Rosters" />
+        </span>
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">
         Everyone at one event whose family asked us not to feature them in photos or video.
-        Print it for whoever is photographing. Back to{' '}
-        <Link href="/admin/rosters/" className="text-brand underline">
-          Rosters
-        </Link>
-        .
+        Print it for whoever is photographing.
       </p>
       <div className="mb-6 print:hidden">
         <EventFilter

@@ -43,7 +43,7 @@ export default async function DeletionRequestsPage({ searchParams }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">Deletion Requests</h1>
+      <h1 className="text-xl font-bold">Deletion Requests</h1>
       <p className="mt-1 mb-4 text-sm text-neutral-600">
         Families asking us to delete their medical information or their account. Contact the
         family, delete what can go, and note what was kept and why. Payments, signed releases and
