@@ -4,6 +4,7 @@ import EventJump from './EventJump';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { planFailingSince, planFailingNext } from '@/lib/plans';
 
 export const metadata = { title: 'Overview — Staff Admin' };
 
@@ -41,6 +42,34 @@ function Stat({ label, sub, value, tone, href }) {
   );
 }
 
+// The amber card for payment plans with a failed payment still being retried
+// (Lawrence, 27 Oct 2026: flag after ONE failure). Not a Stat: it names the
+// families, each linked to their registration's plan (#plan opens the Money
+// card), so the card itself cannot also be one link. Module level, like Stat.
+function FailingPlansCard({ plans }) {
+  return (
+    <div className="rounded-lg border border-amber-300 bg-white p-5 shadow-xs">
+      <div className="text-3xl font-bold text-amber-700">{plans.length}</div>
+      <div className="text-sm font-semibold text-neutral-700">
+        {plans.length === 1 ? 'Plan payment failed' : 'Plan payments failed'} — retrying
+      </div>
+      <ul className="mt-1 space-y-0.5 text-xs">
+        {plans.map((p) => (
+          <li key={p.registrationId}>
+            <Link href={`/admin/registrations/${p.registrationId}/#plan`} className="font-semibold text-brand underline">
+              {p.household}
+            </Link>
+            <span className="text-neutral-500"> · {p.next}</span>
+          </li>
+        ))}
+      </ul>
+      <Link href="/admin/review/?show=plan" className="mt-1 inline-block text-xs text-neutral-500 underline">
+        All plan problems
+      </Link>
+    </div>
+  );
+}
+
 export default async function AdminOverview({ searchParams }) {
   const params = await searchParams;
   const showPast = params?.past === '1';
@@ -52,27 +81,32 @@ export default async function AdminOverview({ searchParams }) {
   // As staff, row-level security returns the whole ministry, not one household.
   // Stopped payment plans (22 Oct 2026): money, so only for Payments read --
   // the grant payment_plans_select asks (0101) -- and the card links to the
-  // review queue's Plan stopped tab, which counts the same way.
+  // review queue's Plan problems tab, which counts the same way. Since
+  // 27 Oct 2026 the same read also feeds the amber card for plans still
+  // running with a failed payment (planFailingSince()).
   // The tab is on Awaiting review, which needs Registration read as well.
   const seesStoppedPlans = can(staff, 'read:payments') && can(staff, 'read:registration');
   const [
     { data: regs, error: regsError },
     { data: parts, error: partsError },
-    { data: stoppedPlans, error: stoppedError },
+    { data: planRows, error: planError },
   ] = await Promise.all([
     supabase.from('registrations').select('id, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'),
     supabase
       .from('registration_participants')
       .select('status, registration_id, people ( first_name, last_name )'),
     seesStoppedPlans
-      ? supabase.from('payment_plans').select('registration_id').eq('status', 'failed')
+      ? supabase
+          .from('payment_plans')
+          .select('registration_id, status, payment_installments ( status, attempts, last_attempt_at )')
+          .in('status', ['failed', 'active', 'paused'])
       : Promise.resolve({ data: [], error: null }),
   ]);
   // CLAUDE.md: never turn a query error into an empty list -- the Overview
   // would read as "no registrations".
   if (regsError) throw new Error(`Registrations: ${regsError.message}`);
   if (partsError) throw new Error(`People registered: ${partsError.message}`);
-  if (stoppedError) throw new Error(`Stopped payment plans: ${stoppedError.message}`);
+  if (planError) throw new Error(`Payment plans: ${planError.message}`);
 
   const registrations = regs ?? [];
   const participants = parts ?? [];
@@ -188,18 +222,34 @@ export default async function AdminOverview({ searchParams }) {
   }
 
   // Registrations at a current event whose plan stopped after three failed
-  // payments -- the same rule as the review queue's tab.
+  // payments -- the same rule as the review queue's tab -- and, amber, those
+  // whose plan is still running with a failed payment waiting to retry.
   const eventOfReg = new Map(registrations.map((r) => [r.id, r.events]));
-  const plansStopped = (stoppedPlans ?? []).filter((p) => {
+  const currentPlans = (planRows ?? []).filter((p) => {
     const ev = eventOfReg.get(p.registration_id);
     return ev ? isCurrentEventRow(ev) : false;
-  }).length;
+  });
+  const plansStopped = currentPlans.filter((p) => p.status === 'failed').length;
+  const plansFailing = currentPlans
+    .map((p) => ({ plan: p, failing: planFailingSince(p) }))
+    .filter((x) => x.failing)
+    .sort((a, b) => String(a.failing.since ?? '').localeCompare(String(b.failing.since ?? '')))
+    .map(({ plan, failing }) => ({
+      registrationId: plan.registration_id,
+      household: regById.get(plan.registration_id)?.household ?? 'Household',
+      next: planFailingNext(failing),
+    }));
+  const extraCards = (plansStopped > 0 ? 1 : 0) + (plansFailing.length > 0 ? 1 : 0);
 
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Overview</h2>
 
-      <div className={`grid grid-cols-1 gap-4 mb-8 ${plansStopped > 0 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
+      <div
+        className={`grid grid-cols-1 gap-4 mb-8 ${
+          extraCards === 2 ? 'sm:grid-cols-2 lg:grid-cols-5' : extraCards === 1 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'
+        }`}
+      >
         <Stat
           label="Families signed up"
           sub="each family registers once per event"
@@ -232,6 +282,7 @@ export default async function AdminOverview({ searchParams }) {
             href="/admin/review/?show=plan"
           />
         )}
+        {seesStoppedPlans && plansFailing.length > 0 && <FailingPlansCard plans={plansFailing} />}
       </div>
 
       {replies.length > 0 && (
