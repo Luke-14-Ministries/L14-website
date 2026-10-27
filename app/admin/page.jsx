@@ -55,7 +55,11 @@ export default async function AdminOverview({ searchParams }) {
   // review queue's Plan stopped tab, which counts the same way.
   // The tab is on Awaiting review, which needs Registration read as well.
   const seesStoppedPlans = can(staff, 'read:payments') && can(staff, 'read:registration');
-  const [{ data: regs }, { data: parts }, { data: stoppedPlans, error: stoppedError }] = await Promise.all([
+  const [
+    { data: regs, error: regsError },
+    { data: parts, error: partsError },
+    { data: stoppedPlans, error: stoppedError },
+  ] = await Promise.all([
     supabase.from('registrations').select('id, households ( display_name ), events ( id, name, starts_on, ends_on, archived_at )'),
     supabase
       .from('registration_participants')
@@ -64,6 +68,10 @@ export default async function AdminOverview({ searchParams }) {
       ? supabase.from('payment_plans').select('registration_id').eq('status', 'failed')
       : Promise.resolve({ data: [], error: null }),
   ]);
+  // CLAUDE.md: never turn a query error into an empty list -- the Overview
+  // would read as "no registrations".
+  if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+  if (partsError) throw new Error(`People registered: ${partsError.message}`);
   if (stoppedError) throw new Error(`Stopped payment plans: ${stoppedError.message}`);
 
   const registrations = regs ?? [];

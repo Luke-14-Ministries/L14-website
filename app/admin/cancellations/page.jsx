@@ -24,7 +24,7 @@ export default async function CancellationsPage({ searchParams }) {
 
   const supabase = await createClient();
 
-  const { data: rows } = await supabase
+  const { data: rows, error } = await supabase
     .from('registration_cancellation_requests')
     .select(
       `id, registration_id, participant_ids, reason, status, requested_at,
@@ -37,6 +37,9 @@ export default async function CancellationsPage({ searchParams }) {
        )`
     )
     .order('requested_at', { ascending: false });
+  // CLAUDE.md: never turn a query error into an empty list -- it would read
+  // as "no cancellation requests".
+  if (error) throw new Error(`Cancellation requests: ${error.message}`);
 
   const all = rows ?? [];
   const open = all.filter((r) => r.status === 'open');

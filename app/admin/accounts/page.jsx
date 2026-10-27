@@ -19,7 +19,7 @@ export default async function AccountsPage() {
   if (!can(staff, 'admin')) redirect('/admin/');
 
   const supabase = await createClient();
-  const [{ data: accounts, error }, { data: households }, { data: unclaimedPeople }] =
+  const [{ data: accounts, error }, { data: households, error: householdsError }, { data: unclaimedPeople, error: unclaimedError }] =
     await Promise.all([
       supabase.rpc('admin_list_accounts'),
       // For the "Link to household" picker. Staff RLS on households already
@@ -42,6 +42,10 @@ export default async function AccountsPage() {
   if (error) {
     console.error('admin_list_accounts:', error.message);
   }
+  // CLAUDE.md: never turn a query error into an empty list -- the link
+  // pickers would read as "no households" and "nobody to claim".
+  if (householdsError) throw new Error(`Households: ${householdsError.message}`);
+  if (unclaimedError) throw new Error(`Unclaimed people: ${unclaimedError.message}`);
 
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">

@@ -38,7 +38,12 @@ export default async function RecentChangesPage() {
   const personIds = [...new Set(list.map((r) => r.person_id).filter(Boolean))];
   const actorIds = [...new Set(list.map((r) => r.actor_profile_id).filter(Boolean))];
 
-  const [{ data: households }, { data: people }, { data: actors }, { data: staffActors }] = await Promise.all([
+  const [
+    { data: households, error: householdsError },
+    { data: people, error: peopleError },
+    { data: actors, error: actorsError },
+    { data: staffActors, error: staffActorsError },
+  ] = await Promise.all([
     householdIds.length
       ? supabase.from('households').select('id, display_name').in('id', householdIds)
       : Promise.resolve({ data: [] }),
@@ -56,6 +61,10 @@ export default async function RecentChangesPage() {
       ? supabase.from('staff').select('profile_id').in('profile_id', actorIds)
       : Promise.resolve({ data: [] }),
   ]);
+  // A failed name lookup would print "(household removed)" against real
+  // households, so it stops the page rather than mislabel it.
+  const lookupError = householdsError || peopleError || actorsError || staffActorsError;
+  if (lookupError) throw new Error(`Change log names: ${lookupError.message}`);
   const staffActorIds = new Set((staffActors ?? []).map((s) => s.profile_id));
 
   const householdName = new Map((households ?? []).map((h) => [h.id, h.display_name]));

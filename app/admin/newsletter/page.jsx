@@ -20,7 +20,7 @@ export default async function NewsletterPage() {
   if (!can(staff, 'read:registration')) redirect('/admin');
 
   const supabase = await createClient();
-  const [{ data: list, error }, { data: recent }] = await Promise.all([
+  const [{ data: list, error }, { data: recent, error: recentError }] = await Promise.all([
     supabase.rpc('admin_newsletter_list'),
     supabase
       .from('newsletter_preference_log')
@@ -30,6 +30,9 @@ export default async function NewsletterPage() {
       .limit(100),
   ]);
   if (error) console.error('admin_newsletter_list:', error.message);
+  // CLAUDE.md: never turn a query error into an empty list -- the counts
+  // would read as "nobody joined or left".
+  if (recentError) throw new Error(`Newsletter changes: ${recentError.message}`);
 
   const rows = (list ?? []).map((r) => ({
     ...r,

@@ -27,10 +27,13 @@ export async function GET(request) {
   const quickbooks = url.searchParams.get('format') === 'quickbooks';
 
   const supabase = await createClient();
-  const { data: gifts } = await supabase
+  const { data: gifts, error } = await supabase
     .from('gifts')
     .select('donor_name, email, amount_cents, fund, method, status, received_on, created_at, note')
     .order('created_at');
+  // CLAUDE.md: never turn a query error into an empty list -- an empty file
+  // would read as "no gifts" to the treasurer.
+  if (error) return new Response(`Could not load gifts: ${error.message}`, { status: 500 });
 
   const giftDate = (g) => dayInMorristown(g.received_on ?? g.created_at);
   const filtered = (gifts ?? []).filter(

@@ -64,8 +64,9 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
 
   // Surfaced, not swallowed. An empty page that means "the query failed" must
   // not look like an empty page that means "nothing is waiting" -- that
-  // confusion cost a day on the household card.
-  if (error) console.error('scholarship queue:', error.message);
+  // confusion cost a day on the household card. Logging alone still drew the
+  // empty queue, so it throws.
+  if (error) throw new Error(`Scholarship requests: ${error.message}`);
 
   const all = rows ?? [];
   const open = all.filter((r) => r.status === 'requested');
@@ -78,10 +79,11 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
   const reviewerIds = [...new Set(shown.map((r) => r.reviewed_by).filter(Boolean))];
   let names = new Map();
   if (reviewerIds.length) {
-    const { data: profs } = await supabase
+    const { data: profs, error: profsError } = await supabase
       .from('profiles')
       .select('id, first_name, last_name')
       .in('id', reviewerIds);
+    if (profsError) throw new Error(`Reviewer names: ${profsError.message}`);
     names = new Map((profs ?? []).map((p) => [p.id, `${p.first_name} ${p.last_name}`.trim()]));
   }
 

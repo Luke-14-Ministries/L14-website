@@ -25,13 +25,16 @@ export default async function StaffAccessPage() {
   if (!can(staff, 'admin')) redirect('/admin');
 
   const supabase = await createClient();
-  const { data: rows } = await supabase
+  const { data: rows, error: staffError } = await supabase
     .from('staff')
     .select(
       'profile_id, role, title, can_view_sensitive, can_view_giving, can_view_background_checks, active, profiles ( first_name, last_name )'
     )
         .order('active', { ascending: false })
     .order('role');
+  // CLAUDE.md: never turn a query error into an empty list -- here it would
+  // read as "no staff" or "no access granted".
+  if (staffError) throw new Error(`Staff: ${staffError.message}`);
 
   // The login address, beside every name. Emails live in auth.users, which the
   // client may not read; admin_list_accounts (0023) is the admin-only function
@@ -40,14 +43,16 @@ export default async function StaffAccessPage() {
   // a staff member appeared to have no admin access -- she had it, on a second
   // account, and nothing on this page said which address the row belonged to.
   // The grants (0100): every staff member's areas, for the panel under each row.
-  const { data: grantRows } = await supabase.from('staff_grants').select('profile_id, area, level');
+  const { data: grantRows, error: grantsError } = await supabase.from('staff_grants').select('profile_id, area, level');
+  if (grantsError) throw new Error(`Staff access: ${grantsError.message}`);
   const grantsById = new Map();
   for (const g of grantRows ?? []) {
     if (!grantsById.has(g.profile_id)) grantsById.set(g.profile_id, {});
     grantsById.get(g.profile_id)[g.area] = g.level;
   }
 
-  const { data: accounts } = await supabase.rpc('admin_list_accounts');
+  const { data: accounts, error: accountsError } = await supabase.rpc('admin_list_accounts');
+  if (accountsError) throw new Error(`Login addresses: ${accountsError.message}`);
     const emailById = new Map((accounts ?? []).map((a) => [a.user_id, a.email]));
 
   // The same list feeds the "add a staff member" picker, so an administrator

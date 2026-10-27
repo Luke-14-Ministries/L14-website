@@ -40,10 +40,13 @@ export default async function AdminGivingPage({ searchParams }) {
   if (!can(staff, 'giving')) redirect('/admin');
 
   const supabase = await createClient();
-  const { data: gifts } = await supabase
+  const { data: gifts, error } = await supabase
     .from('gifts')
     .select('donor_name, email, amount_cents, fund, method, status, received_on, created_at, note')
     .order('created_at', { ascending: false });
+  // CLAUDE.md: never turn a query error into an empty list -- the totals would
+  // read as "no gifts".
+  if (error) throw new Error(`Gifts: ${error.message}`);
 
   // Filter by date (received_on, falling back to created date), fund, method.
   // Totals below reflect the filtered set, and the CSV carries the same filters.
