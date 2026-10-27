@@ -35,6 +35,13 @@ export function addDays(iso: string, n: number): string {
 
 export const dollars = (c: number) => `$${(c / 100).toFixed(2)}`;
 
+// A provider's error as a phrase in our sentence: "(your card was declined)",
+// not "(Your card was declined.)." -- lib/plans.js declineReason(), the same rule.
+export function declineReason(message: string | null | undefined): string {
+  const s = String(message ?? '').trim().replace(/[.\s]+$/, '');
+  return /^[A-Z][a-z]/.test(s) ? s[0].toLowerCase() + s.slice(1) : s;
+}
+
 // "Visa ending 4242" / "Bank account ending 6789" -- shown on pages so nobody
 // has to ask Stripe what a plan will charge.
 export function methodLabel(pm: Stripe.PaymentMethod | null): string | null {
@@ -713,7 +720,7 @@ export async function recordInstallmentOutcome(
       plan.status = 'active';
       await alertStaff(admin, {
         subject: `Completed plan reopened — ${ctx.household} — ${eventName}`,
-        body: `<p>A payment of ${dollars(args.amountCents)} from <strong>${esc(ctx.household)}</strong> (${esc(eventName)}) failed after the plan had closed, so the plan was reopened and will retry.${args.error ? ` The error: ${esc(args.error)}.` : ''}</p>
+        body: `<p>A payment of ${dollars(args.amountCents)} from <strong>${esc(ctx.household)}</strong> (${esc(eventName)}) failed after the plan had closed, so the plan was reopened and will retry.${args.error ? ` The error: ${esc(declineReason(args.error))}.` : ''}</p>
          ${returnedFeeStaffLine(fee.feeCents)}
          ${await staffFacts(admin, args.registrationId, ctx, args.amountCents)}`,
         templateKey: 'plan_reopened_staff',
@@ -728,7 +735,7 @@ export async function recordInstallmentOutcome(
       // named the registration only by its UUID before.
       await alertStaff(admin, {
         subject: `Plan stopped — ${ctx.household} — ${eventName}`,
-        body: `<p>The payment plan for <strong>${esc(ctx.household)}</strong> (${esc(eventName)}) could not collect ${dollars(args.amountCents)} after ${MAX_ATTEMPTS} tries. Last error: ${esc(args.error ?? 'unknown')}.</p>
+        body: `<p>The payment plan for <strong>${esc(ctx.household)}</strong> (${esc(eventName)}) could not collect ${dollars(args.amountCents)} after ${MAX_ATTEMPTS} tries. Last error: ${esc(declineReason(args.error) || 'unknown')}.</p>
          ${returnedFeeStaffLine(fee.feeCents)}
          ${await staffFacts(admin, args.registrationId, ctx, args.amountCents)}
          <p>The plan is stopped. On the registration page you can retry, pause or cancel it, and decide whether the family keeps the early-registration discount.</p>`,
@@ -741,7 +748,7 @@ export async function recordInstallmentOutcome(
       subject: `Payment problem — ${eventName}`,
       title: 'We could not take your scheduled payment',
       body: `${hello}
-       <p>Your scheduled payment of <strong>${dollars(args.amountCents)}</strong> for ${esc(eventName)} did not go through${args.error ? ` (${esc(args.error)})` : ''}.</p>
+       <p>Your scheduled payment of <strong>${dollars(args.amountCents)}</strong> for ${esc(eventName)} did not go through${args.error ? ` (${esc(declineReason(args.error))})` : ''}.</p>
        ${returnedFeeParagraph(fee.feeCents, !outOfTries)}
        ${outOfTries
          ? `<p>We have tried ${MAX_ATTEMPTS} times, so your payment plan is paused and camp staff will be in touch.</p>`

@@ -1016,6 +1016,37 @@ export default async function DashboardPage({ searchParams }) {
           </div>
         )}
 
+        {/* A plan payment that did not go through, at the top like the
+            volunteer application (Lawrence, 27 Oct 2026): the plan's own red
+            box is inside the registration card, which a family may not open.
+            The button goes to that box, where the card is changed. */}
+        {regs
+          .filter((r) => needsByReg.get(r.id)?.needs.some((n) => n === 'plan payment failed' || n === 'payment plan stopped'))
+          .map((r) => {
+            const stopped = needsByReg.get(r.id).needs.includes('payment plan stopped');
+            return (
+              <div
+                key={`plan-problem-${r.id}`}
+                className="mb-8 rounded-lg border border-red-300 bg-red-50 p-5 flex flex-wrap items-center justify-between gap-3"
+              >
+                <div>
+                  <p className="font-semibold text-red-900">
+                    {stopped ? 'Your payment plan has stopped' : 'A payment plan payment didn’t go through'} —{' '}
+                    {r.events?.name ?? 'your registration'}
+                  </p>
+                  <p className="text-sm text-red-800">
+                    {stopped
+                      ? 'Camp staff will be in touch. Saving a new card or bank account starts the plan again.'
+                      : 'Change the card or bank account on the plan so the next payment goes through.'}
+                  </p>
+                </div>
+                <a href={`#plan-${r.id}`} className="btn-primary py-2!">
+                  Change card or bank account
+                </a>
+              </div>
+            );
+          })}
+
         {volunteersNeedingApp.length > 0 && (
           <div className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-5 flex flex-wrap items-center justify-between gap-3">
             <div>

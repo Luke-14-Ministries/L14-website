@@ -95,7 +95,9 @@ const ROLE_BADGE = {
   parent_guardian: 'bg-neutral-200 text-neutral-700',
   sibling: 'bg-neutral-200 text-neutral-700',
   caregiver: 'bg-purple-100 text-purple-800',
-  volunteer: 'bg-amber-100 text-amber-800',
+  // Indigo, not amber (Lawrence, 27 Oct 2026): amber is the site's "needs
+  // attention" colour, and a volunteer is not a problem. Purple is caregivers'.
+  volunteer: 'bg-indigo-100 text-indigo-800',
   childcare: 'bg-blue-100 text-blue-800',
   support_team: 'bg-blue-100 text-blue-800',
 };

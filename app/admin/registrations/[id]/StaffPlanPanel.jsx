@@ -15,6 +15,7 @@ import {
   planFailingSince,
   planFailingNext,
   setAsideAfterFailing,
+  declineReason,
 } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 
@@ -138,9 +139,9 @@ export default function StaffPlanPanel({
                         2026): it failed, and what it would have taken is
                         spread over the payments still to come. */}
                     {setAsideAfterFailing(i)
-                      ? `Failed${i.last_error ? ` — ${i.last_error}` : ''} · moved into the later payments`
+                      ? `Failed${i.last_error ? ` — ${declineReason(i.last_error)}` : ''} · moved into the later payments`
                       : INST_LABEL[i.status] ?? i.status}
-                    {i.status === 'failed' && i.last_error ? ` — ${i.last_error}` : ''}
+                    {i.status === 'failed' && i.last_error ? ` — ${declineReason(i.last_error)}` : ''}
                     {i.status === 'failed' && i.next_attempt_on ? ` (retry ${i.next_attempt_on}, try ${i.attempts})` : ''}
                   </td>
                 </tr>

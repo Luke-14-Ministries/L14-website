@@ -8,7 +8,14 @@
 import { useState, useTransition } from 'react';
 import { dollars } from '@/lib/payments';
 import { formatDueDateShort } from '@/lib/events';
-import { SCHEDULE_LABEL, PLAN_STATUS_LABEL, planHasProblem, planFailingSince, setAsideAfterFailing } from '@/lib/plans';
+import {
+  SCHEDULE_LABEL,
+  PLAN_STATUS_LABEL,
+  planHasProblem,
+  planFailingSince,
+  setAsideAfterFailing,
+  declineReason,
+} from '@/lib/plans';
 import { updatePlanPaymentMethod, cancelPaymentPlan } from '@/app/account/finish/[registrationId]/actions';
 
 // The status as a pill (Lawrence, 27 Oct 2026: "active should be highlighted
@@ -62,7 +69,9 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
 
   return (
     <div
-      className={`mt-4 rounded-sm border px-4 py-3 text-sm ${
+      // The dashboard's payment-problem banner links here (27 Oct 2026).
+      id={`plan-${registrationId}`}
+      className={`mt-4 scroll-mt-6 rounded-sm border px-4 py-3 text-sm ${
         failed ? 'border-red-300 bg-red-50 text-red-900' : 'border-neutral-200 bg-neutral-50'
       }`}
     >
@@ -120,11 +129,11 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
       {failed && (
         <p className="mt-1">
           A scheduled payment didn&rsquo;t go through
-          {next?.last_error ? ` (${next.last_error})` : ''}.{' '}
+          {next?.last_error ? ` (${declineReason(next.last_error)})` : ''}.{' '}
           {plan.status === 'failed'
             ? 'The plan is paused and camp staff will be in touch. Saving a new card or bank account starts it again.'
             : setAside
-              ? `The payment on ${formatDueDateShort(setAside.due_on)}${setAside.last_error ? ` (${setAside.last_error})` : ''} has been spread over the payments still to come, but the same card or bank account is still on file — please change it below so the next payment goes through.`
+              ? `The payment on ${formatDueDateShort(setAside.due_on)}${setAside.last_error ? ` (${declineReason(setAside.last_error)})` : ''} has been spread over the payments still to come, but the same card or bank account is still on file — please change it below so the next payment goes through.`
               : next?.next_attempt_on
               ? `We'll try again on ${formatDueDateShort(next.next_attempt_on)}.`
               : ''}

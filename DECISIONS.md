@@ -3628,3 +3628,12 @@ A new plan deposit on a registration whose plan was cancelled restarts that plan
 it until today). The restart clears the cancellation stamps but leaves `keeps_early_discount` as it was
 (Lawrence: "carry the staff decision over -- default should be to keep as whatever it was before"); a
 brand-new plan gets the column default, true.
+
+## 27 Oct 2026 — Plan payment problems flagged at the top; decline wording; volunteers indigo
+
+From the 17.11 run. A plan payment that failed, or a plan that stopped, now has a red banner at the top of
+the family dashboard (like the volunteer application's), with a button to the plan's box where the card is
+changed. A provider's error reads as a phrase in our sentence, "(your card was declined)", not "(Your card
+was declined.)." (`declineReason`, in lib/plans.js and `_shared/plans.ts`; the emails change when the plan
+functions are next deployed). On the staff registration page the volunteer role pill is indigo: amber is
+the site's "needs attention" colour, and purple is caregivers'.
