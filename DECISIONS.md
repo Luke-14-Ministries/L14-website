@@ -3296,3 +3296,37 @@ itself for them (`Panel`'s `opensFor` takes a list). **Open or folded on arrival
 rule, "default open when items are outstanding, folded when done" — each card's rule is written
 beside it in `RegistrationManager.jsx`; Review ignores the *deposit waived* flag (a decision already
 made). Nothing is remembered between visits, as before; a link still opens a folded card.
+
+## 2026-10-26 — Review flags that inform: the Creed talked through with Larry (0129), the photographer's list
+
+Lawrence, on the Review card: *"Can fold the declined photo and creed, but need an explicit flag
+noting they've talked to Larry on the creed, and need to still have photo flag maintained to give list
+to camp photographer."* **The `media_declined` (photo permission declined) and `creed_not_affirmed`
+flags no longer hold the Review card open by themselves** (nor does `deposit_waived`, as before); they
+still show on the card and in Awaiting Review, from `registration_review`, which is unchanged.
+**The Creed:** `registrations` gains `creed_discussed_at`, `creed_discussed_by` (profiles, on delete set
+null) and `creed_discussed_note` (≤ 500) — one record per registration, because the flag is per
+registration. **Written only through two definer functions**, `mark_creed_discussed(registration,
+note)` and `clear_creed_discussed(registration)`, each checking Registration write and stamping
+`now()` / `auth.uid()` itself; an **invoker** guard (`guard_creed_discussed()`, 0126's shape) refuses
+any signed-in direct change — staff with Registration write included — and blanks the columns on a
+family's insert. Functions rather than a stamping trigger on a plain update: the who and when cannot
+be forged by any client, the app has one call to make, and `review_waiver_upload()` (0124) already has
+that shape. **The note is family-readable** (RLS is per row; no family page shows it): the form says
+to keep it factual. On the Review card the Creed flag carries *Talked with Larry…* (Registration
+write, optional note); once recorded the line turns calm — *Apostles' Creed not affirmed — talked with
+Larry, Oct 26, 2026 (name): "note"* — with an Undo. Awaiting Review reads `creed_discussed_at` from
+`registrations` and draws a discussed Creed flag in grey. The flags themselves are still Payments
+read only (`registration_review`, 0103), so a staffer with Registration write but no Payments read
+sees neither the flag nor the button — unchanged, noted. **The photographer's list** is new at
+`/admin/rosters/photos/?event=…` (Registration read): one event's people whose newest media answer
+is *no*, a face beside each name for Sensitive read (names only otherwise, and the sheet says so),
+preferred name, role(s), age at the event, program, household, `print-sheet` so the browser's header
+and footer stay off. No answer on file is counted, never listed as a refusal. It lives under Rosters
+because the photo answer already does (the Rosters box and print view showed it, but nothing was a
+sheet to hand a photographer); linked from that box and from the photo flag on the Review card.
+**The Review card's undecided people** are now a *Waiting on your decision* block above the
+Approve / Waitlist / Ask buttons — each person a link to their row with their role — replacing the
+"Still submitted: …" sentence. The duplicate-name role label ("Cal (Volunteer)") needs a real
+person id and ignores cancelled rows; "Ro BOTFAMILY-C (Camper)" was the pre-`4a463d0` comparison
+(`person_id`, never selected, so every row matched).
