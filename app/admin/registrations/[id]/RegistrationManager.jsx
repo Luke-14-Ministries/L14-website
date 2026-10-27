@@ -1920,7 +1920,7 @@ export default function RegistrationManager({
             // before 0086) gets their role, so the card does not say "Cal, Cal".
             name:
               `${p.person?.preferred_name || p.person?.first_name || ''} ${p.person?.last_name || ''}`.trim() +
-              (parts.filter((q) => q.person_id === p.person_id).length > 1
+              (parts.filter((q) => q.person?.id === p.person?.id).length > 1
                 ? ` (${ROLE_LABEL[p.camp_role] ?? p.camp_role})`
                 : ''),
             // 0128: why waitlisted, and who last changed the status, when.
