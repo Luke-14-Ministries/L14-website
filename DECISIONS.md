@@ -3432,3 +3432,16 @@ separate "Campers with their buddies" section: everything is grouped by family, 
 buddy on one row under the camper's family (the buddy goes in the raft too, unlike rooming; a buddy
 from another household is named with their household and not listed again). Rows stay individually
 pickable so large families can be split; "Place the whole family" takes them all.
+
+## 26 Oct 2026 — Ways to pay: expandable cards, the scholarship request a quieter line
+
+On `/account/finish/[registrationId]` the three option cards sat on top and the chosen route's details
+(how often, the schedule, bank or card, the authorization, the button) were one panel at the bottom,
+so choosing a card jumped the page (Lawrence: "weird"). Now the payment plan and pay-in-full are
+expandable cards, one open at a time, each holding its own details under its header (an opened card
+scrolls gently into view; the first draw does not). The preselected card is unchanged (the plan where
+one is offered, else pay in full); amounts, wording, bank-first with the thank-you line, the
+returned-payment-fee disclosure and the plan consent are unchanged. "Request help with the fee"
+became a quieter line under both cards linking to the same scholarship page. The header matches the
+other account pages: title left, the Back to dashboard pill right.
+
