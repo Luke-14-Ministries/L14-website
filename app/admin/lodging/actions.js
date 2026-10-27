@@ -223,11 +223,12 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
   if (id) {
     // A rename gets the same one-name-per-building check as a new room
     // (18 Oct review: renaming skipped it).
-    const { data: cur } = await supabase
+    const { data: cur, error: curError } = await supabase
       .from('lodgings')
       .select('event_id, parent_id')
       .eq('id', id)
       .maybeSingle();
+    if (curError) return { ok: false, error: `That place could not be read: ${curError.message}` };
     if (cur && row.name) {
       let dup = supabase
         .from('lodgings')
@@ -238,7 +239,9 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
         .neq('id', id)
         .limit(1);
       dup = cur.parent_id ? dup.eq('parent_id', cur.parent_id) : dup.is('parent_id', null);
-      const { data: dupRows } = await dup;
+      const { data: dupRows, error: dupError } = await dup;
+      // A failed check must not read as "no duplicate" and save the name anyway.
+      if (dupError) return { ok: false, error: `The names already used could not be checked: ${dupError.message}` };
       if (dupRows && dupRows.length > 0) {
         return { ok: false, error: `There is already a place called "${row.name}" here.` };
       }

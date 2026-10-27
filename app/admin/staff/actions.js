@@ -187,10 +187,12 @@ export async function applyPreset(profileId, key) {
   if (!p) return { ok: false, error: 'Unknown preset.' };
 
   const supabase = await createClient();
-  const { data: current } = await supabase
+  const { data: current, error: currentError } = await supabase
     .from('staff_grants')
     .select('area, level')
     .eq('profile_id', profileId);
+  // Read as "no grants", a failure would apply the preset without their Giving tick.
+  if (currentError) return { ok: false, error: `Their current access could not be read: ${currentError.message}` };
   const cur = {};
   for (const g of current ?? []) cur[g.area] = g.level;
 

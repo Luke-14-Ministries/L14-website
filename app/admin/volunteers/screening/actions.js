@@ -176,10 +176,11 @@ export async function rebuildBatchCsv(batch) {
   if (error) return { ok: false, error: error.message };
   if (!rows?.length) return { ok: false, error: 'That batch has no invitations left on it.' };
 
-  const { data: people } = await supabase
+  const { data: people, error: peopleError } = await supabase
     .from('people')
     .select('id, first_name, phone, households!people_household_id_fkey ( phone )')
     .in('id', rows.map((r) => r.person_id));
+  if (peopleError) return { ok: false, error: `The people on the batch could not be read: ${peopleError.message}` };
   const byId = new Map((people ?? []).map((p) => [p.id, p]));
   return { ok: true, csv: buildCheckrCsv(rows, byId), filename: batchFilename(batch, rows.length) };
 }
@@ -369,12 +370,15 @@ export async function importCheckrResults(csvText, { dryRun = true } = {}) {
   }
 
   const supabase = await createClient();
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('person_clearances')
     .select('person_id, invited_email');
-  const { data: people } = await supabase
+  if (existingError) return { ok: false, error: `The invitations on file could not be read: ${existingError.message}` };
+  const { data: people, error: peopleError } = await supabase
     .from('people')
     .select('id, first_name, last_name');
+  // Read as empty, either failure would report every row as unmatched.
+  if (peopleError) return { ok: false, error: `The people could not be read: ${peopleError.message}` };
 
   // An address may have been invited for MORE than one person -- a couple on
   // one household email. byEmail therefore holds a set, and a row whose

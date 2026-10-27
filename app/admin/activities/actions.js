@@ -177,11 +177,12 @@ export async function updateActivity(activityId, input) {
   // the event capacity refuses it: the number would be false the moment it
   // saved, and the list of names is the thing that is true.
   if (row.capacity != null) {
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from('activity_signups')
       .select('id', { count: 'exact', head: true })
       .eq('activity_id', activityId)
       .neq('status', 'cancelled');
+    if (countError) return { ok: false, error: `The signups could not be counted: ${countError.message}` };
     if ((count ?? 0) > row.capacity) {
       return {
         ok: false,
@@ -471,10 +472,12 @@ export async function deleteActivity(activityId) {
   if (!activityId) return { ok: false, error: 'Which activity?' };
 
   const supabase = await createClient();
-  const { count } = await supabase
+  const { count, error: countError } = await supabase
     .from('activity_signups')
     .select('id', { count: 'exact', head: true })
     .eq('activity_id', activityId);
+  // A failed count must not read as "nobody signed up" -- the delete cascades.
+  if (countError) return { ok: false, error: `The signups could not be counted: ${countError.message}` };
 
   if ((count ?? 0) > 0) {
     return {
@@ -623,11 +626,12 @@ export async function deleteSlot(slotId) {
   // Refused while anyone is on it. Deleting would either orphan them onto the
   // activity with no time (which the 0052 guard forbids) or take their signup
   // with it -- and a family whose booking vanished is told by nothing.
-  const { count } = await supabase
+  const { count, error: countError } = await supabase
     .from('activity_signups')
     .select('id', { count: 'exact', head: true })
     .eq('slot_id', slotId)
     .neq('status', 'cancelled');
+  if (countError) return { ok: false, error: `The bookings could not be counted: ${countError.message}` };
 
   if ((count ?? 0) > 0) {
     return {

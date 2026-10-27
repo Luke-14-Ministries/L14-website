@@ -128,11 +128,15 @@ export async function grantScholarship({ registrationId, participantId, amount, 
     reviewed_at: new Date().toISOString(),
   };
 
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('scholarships')
     .select('id')
     .eq('registration_participant_id', participantId)
     .maybeSingle();
+  // Read as "none", a failure would add a second decision record.
+  if (existingError) {
+    return { ok: false, error: `The award saved, but the decision record could not be read: ${existingError.message}` };
+  }
 
   const { error: auditError } = existing
     ? await supabase.from('scholarships').update(decision).eq('id', existing.id)
@@ -175,11 +179,12 @@ export async function declineScholarship({ registrationId, participantId, note }
 
   const supabase = await createClient();
 
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('scholarships')
     .select('id')
     .eq('registration_participant_id', participantId)
     .maybeSingle();
+  if (existingError) return { ok: false, error: `The request could not be read: ${existingError.message}` };
   if (!existing) {
     return { ok: false, error: 'There is no request here to decline.' };
   }

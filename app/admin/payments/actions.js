@@ -40,13 +40,15 @@ export async function recordManualPayment({ registrationId, amountCents, method,
   let payerEmail = null;
   let payerName = null;
   try {
-    const { data: reg } = await supabase
+    const { data: reg, error: regError } = await supabase
       .from('registrations')
       .select(
         'households!registrations_household_id_fkey(display_name, email, primary_contact:people!households_primary_contact_person_id_fkey(first_name, last_name, email))'
       )
       .eq('id', registrationId)
       .maybeSingle();
+    // Still best effort (above), but a failed read is logged, not silent.
+    if (regError) console.error('recordPayment payer:', regError.message);
     const hh = reg?.households ?? null;
     const pc = hh?.primary_contact ?? null;
     payerEmail = pc?.email ?? hh?.email ?? null;

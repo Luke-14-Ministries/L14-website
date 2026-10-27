@@ -167,7 +167,7 @@ export async function setParticipantStatus(
     // What has really been paid, for ANY staff member (0111). The balances
     // view runs with the caller's own rights, so a reviewer without Payments
     // read saw $0 paid on every family and was told to confirm twice.
-    const [{ data: reg }, { data: bal }, { data: paidReal }] = await Promise.all([
+    const [{ data: reg, error: regError }, { data: bal, error: balError }, { data: paidReal, error: paidError }] = await Promise.all([
       supabaseCheck
         .from('registrations')
         .select('id, deposit_waived_at, events ( deposit_cents ), registration_participants ( id, person_id, status )')
@@ -180,6 +180,9 @@ export async function setParticipantStatus(
         .maybeSingle(),
       supabaseCheck.rpc('registration_paid_cents', { p_registration_id: registrationId }),
     ]);
+    // A failed read must not read as "$0 paid" or "no deposit due".
+    const checkError = regError ?? balError ?? paidError;
+    if (checkError) return { ok: false, error: `The deposit could not be checked: ${checkError.message}` };
 
     const paid = Number(paidReal ?? bal?.paid_cents ?? 0);
     // The view's balance counts only the payments the caller may see; put the
@@ -233,13 +236,15 @@ export async function setParticipantStatus(
   // where a failed status change would be a place still held.
   try {
     const supabase2 = await createClient();
-    const { data: who } = await supabase2
+    const { data: who, error: whoError } = await supabase2
       .from('registration_participants')
       .select('person_id')
       .eq('id', participantId)
       .maybeSingle();
+    if (whoError) console.error('multi-week discount recalc:', whoError.message);
     if (who?.person_id) {
-      await supabase2.rpc('recalc_multi_week_discount', { p_person_id: who.person_id });
+      const { error: recalcError } = await supabase2.rpc('recalc_multi_week_discount', { p_person_id: who.person_id });
+      if (recalcError) console.error('multi-week discount recalc:', recalcError.message);
     }
   } catch (e) {
     console.error('multi-week discount recalc:', e?.message);
@@ -251,17 +256,26 @@ export async function setParticipantStatus(
   // submitted, it is lifted (18 Oct review).
   if (status !== 'submitted') {
     const supabase3 = await createClient();
-    const { count } = await supabase3
+    const { count, error: countError } = await supabase3
       .from('registration_participants')
       .select('id', { count: 'exact', head: true })
       .eq('registration_id', registrationId)
       .eq('status', 'submitted');
+    // The status has already saved; say so, and that the hold may still be on.
+    if (countError) {
+      revalidateAll(registrationId);
+      return { ok: false, error: `The status was saved, but whether the hold can be lifted could not be checked: ${countError.message}` };
+    }
     if ((count ?? 0) === 0) {
-      await supabase3
+      const { error: liftError } = await supabase3
         .from('registrations')
         .update({ hold_since: null, hold_reason: null, hold_by: null })
         .eq('id', registrationId)
         .not('hold_since', 'is', null);
+      if (liftError) {
+        revalidateAll(registrationId);
+        return { ok: false, error: `The status was saved, but the hold could not be lifted: ${liftError.message}` };
+      }
     }
   }
 
@@ -340,22 +354,25 @@ export async function updatePerson(registrationId, personId, fields, options = {
   const touchingIdentity = identityKeys.some((k) => k in patch);
 
   if (touchingIdentity && !options.confirmIdentityChange) {
-    const { data: before } = await supabase
+    const { data: before, error: beforeError } = await supabase
       .from('people')
       .select('first_name, last_name, date_of_birth')
       .eq('id', personId)
       .maybeSingle();
+    if (beforeError) return { ok: false, error: `Their current details could not be read: ${beforeError.message}` };
 
     const changed = identityKeys.filter(
       (k) => k in patch && (patch[k] ?? '') !== (before?.[k] ?? '')
     );
 
     if (changed.length > 0) {
-      const { count } = await supabase
+      const { count, error: countError } = await supabase
         .from('registration_participants')
         .select('id', { count: 'exact', head: true })
         .eq('person_id', personId)
         .neq('status', 'cancelled');
+      // A failed count must not skip the confirmation.
+      if (countError) return { ok: false, error: `Their registrations could not be counted: ${countError.message}` };
 
       if ((count ?? 0) > 0) {
         return {
@@ -440,12 +457,13 @@ export async function setPersonConsent(registrationId, personId, kind, granted) 
 
   // Don't stack identical rows: if the current answer already says this,
   // there is nothing to record.
-  const { data: current } = await supabase
+  const { data: current, error: currentError } = await supabase
     .from('person_current_consents')
     .select('granted')
     .eq('person_id', personId)
     .eq('kind', kind)
     .maybeSingle();
+  if (currentError) return { ok: false, error: `The current answer could not be read: ${currentError.message}` };
   if (current?.granted === granted) return { ok: true };
 
   const { error } = await supabase.from('person_consents').insert({
@@ -692,11 +710,15 @@ export async function setAdjustments(registrationId, participantId, input) {
   if (error) return { ok: false, error: error.message };
 
   // Audit trail in the scholarships table (one row per participant).
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('scholarships')
     .select('id, status')
     .eq('registration_participant_id', participantId)
     .maybeSingle();
+  // Read as "none", a failure would add a second grant record.
+  if (existingError) {
+    return { ok: false, error: `The amounts saved, but the grant record could not be read: ${existingError.message}` };
+  }
 
   // Two bugs lived in the three lines this replaces.
   //
@@ -1068,10 +1090,11 @@ export async function refundPayment(registrationId, input) {
     .maybeSingle();
   if (payError || !payment) return { ok: false, error: 'That payment could not be found.' };
 
-  const { data: priorRefunds } = await supabase
+  const { data: priorRefunds, error: priorError } = await supabase
     .from('payment_refunds')
     .select('amount_cents, fee_cover_cents, status')
     .eq('payment_id', paymentId);
+  if (priorError) return { ok: false, error: `Earlier refunds on this payment could not be read: ${priorError.message}` };
   const alreadyRefunded = (priorRefunds ?? [])
     .filter((r) => r.status === 'pending' || r.status === 'succeeded')
     .reduce((s, r) => s + (r.amount_cents ?? 0), 0);
@@ -1164,7 +1187,8 @@ export async function refundPayment(registrationId, input) {
     );
   } catch (e) {
     console.error('refundPayment stripe:', e?.type, e?.code, e?.message);
-    await supabase.from('payment_refunds').update({ status: 'canceled' }).eq('id', reserved.id);
+    const { error: releaseError } = await supabase.from('payment_refunds').update({ status: 'canceled' }).eq('id', reserved.id);
+    if (releaseError) console.error('refundPayment release:', releaseError.message, { row: reserved.id });
     return {
       ok: false,
       error: 'Stripe did not accept the refund, so nothing was sent and nothing was recorded. Check the payment in Stripe, then try again.',
@@ -1183,8 +1207,9 @@ export async function refundPayment(registrationId, input) {
     // The refund webhook got there first and recorded its own row for this
     // refund. Keep that one, give it the registrar's words and the split
     // between refund and fee, and release the reservation -- one row, not two.
-    await supabase.from('payment_refunds').update({ status: 'canceled' }).eq('id', reserved.id);
-    await supabase
+    const { error: releaseError } = await supabase.from('payment_refunds').update({ status: 'canceled' }).eq('id', reserved.id);
+    if (releaseError) console.error('refundPayment release:', releaseError.message, { row: reserved.id });
+    const { error: wordsError } = await supabase
       .from('payment_refunds')
       .update({
         amount_cents: amount,
@@ -1194,6 +1219,7 @@ export async function refundPayment(registrationId, input) {
         refunded_by: row.refunded_by,
       })
       .eq('stripe_refund_id', refund.id);
+    if (wordsError) console.error('refundPayment webhook row:', wordsError.message, { refund: refund.id });
   } else if (fillError) {
     // The money has left; the reservation still counts it (pending), so the
     // balance is right, but the Stripe reference is missing. Loud, not lost.

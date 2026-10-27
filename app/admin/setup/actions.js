@@ -109,11 +109,12 @@ export async function updateEventDetails(
   // Refuse to set a capacity BELOW the people already registered. The number
   // would be immediately false, and the roster is the thing that is true.
   if (cap != null) {
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from('registration_participants')
       .select('id, registrations!inner ( event_id )', { count: 'exact', head: true })
       .eq('registrations.event_id', eventId)
       .neq('status', 'cancelled');
+    if (countError) return { ok: false, error: `The people registered could not be counted: ${countError.message}` };
     if ((count ?? 0) > cap) {
       return {
         ok: false,
@@ -214,7 +215,7 @@ export async function updateEventDetails(
       return { ok: false, error: 'The dates and capacity saved, but the price is not a number.' };
     }
     const cents = Math.round(n * 100);
-    const { data: opt } = await supabase
+    const { data: opt, error: optError } = await supabase
       .from('event_options')
       .select('id')
       .eq('event_id', eventId)
@@ -226,6 +227,9 @@ export async function updateEventDetails(
       .order('sort_order')
       .limit(1)
       .maybeSingle();
+    if (optError) {
+      return { ok: false, error: `The dates and capacity saved, but the price could not be read: ${optError.message}` };
+    }
     if (!opt) {
       return {
         ok: false,

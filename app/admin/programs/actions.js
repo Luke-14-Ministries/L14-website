@@ -150,17 +150,21 @@ export async function grantProgramLeader({ email, programId, eventId }) {
   // backfilled the existing rows. Belt and braces, the same rule is applied
   // here for any household the link has not reached: the login's household
   // memberships -> that household's primary contact person.
-  const { data: mePeople } = await supabase
+  //
+  // A failed read here must not read as "not registered".
+  const { data: mePeople, error: mePeopleError } = await supabase
     .from('people')
     .select('id')
     .eq('profile_id', profile.id);
+  if (mePeopleError) return { ok: false, error: `Their person record could not be read: ${mePeopleError.message}` };
   let myPersonIds = (mePeople ?? []).map((r) => r.id);
   if (myPersonIds.length === 0) {
-    const { data: mine } = await supabase
+    const { data: mine, error: mineError } = await supabase
       .from('household_members')
       .select('role, households ( primary_contact_person_id )')
       .eq('profile_id', profile.id)
       .eq('role', 'owner');
+    if (mineError) return { ok: false, error: `Their household could not be read: ${mineError.message}` };
     myPersonIds = (mine ?? [])
       .map((m) => m.households?.primary_contact_person_id)
       .filter(Boolean);
@@ -168,12 +172,13 @@ export async function grantProgramLeader({ email, programId, eventId }) {
 
   let myRoles = [];
   if (myPersonIds.length) {
-    const { data: parts } = await supabase
+    const { data: parts, error: partsError } = await supabase
       .from('registration_participants')
       .select('camp_role, status, registrations!inner ( event_id )')
       .in('person_id', myPersonIds)
       .eq('registrations.event_id', eventId)
       .neq('status', 'cancelled');
+    if (partsError) return { ok: false, error: `Their registrations could not be read: ${partsError.message}` };
     myRoles = (parts ?? []).map((r) => r.camp_role);
   }
 
