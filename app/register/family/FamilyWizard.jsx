@@ -163,9 +163,12 @@ function CaregiverPicker({ who, choices, value, onChange, phone, onPhone, idPref
           {choices.length === 0
             ? 'Add the caregiver in “Who’s coming” (role: Caregiver) and they will appear here. '
             : 'Choose them here if they are coming with this registration. '}
-          If the caregiver is registering separately or later, save this registration as it is.
-          Once they are registered, come back and link them as {who}&rsquo;s caregiver from your
-          dashboard, under <strong>Manage household</strong>.
+          Only someone in your own household can be linked. If they are and are registering later,
+          save this registration as it is, then add them and link them as {who}&rsquo;s caregiver
+          from your dashboard, under <strong>Manage household</strong>. If the caregiver is from
+          outside your household (a support worker, or a friend registering on their own account),
+          put their name and phone under <strong>Anything else?</strong> at the end so staff know
+          who to reach.
         </p>
       )}
     </div>

@@ -626,7 +626,7 @@ export async function submitFamilyRegistration(payload) {
       notes.push('the caregiver links could not all be saved');
     }
     if (notes.length > 0) {
-      caregiverNotice = `Your registration was saved, but ${notes.join('; ')}. You can link caregivers from your dashboard, under Manage household.`;
+      caregiverNotice = `Your registration was saved, but ${notes.join('; ')}. You can link caregivers in your household from your dashboard, under Manage household; for a caregiver from outside your household, tell staff their name and phone.`;
     }
     revalidatePath('/account/household');
   }

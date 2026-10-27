@@ -443,11 +443,13 @@ export default function SupportDetailsFields({
               {caregiverSlot ?? (
                 <p className="mt-2 text-sm text-neutral-600">
                   Make sure they are registered for the event as well, so they have a place and a
-                  meal. Once they are, link them as {name}&rsquo;s caregiver on{' '}
+                  meal. If they are in your household, link them as {name}&rsquo;s caregiver on{' '}
                   <Link href="/account/household/" className="text-brand underline">
                     Manage household
                   </Link>{' '}
-                  — that tells staff who to reach for {name} during camp.
+                  — that tells staff who to reach for {name} during camp. A caregiver from outside
+                  your household (a support worker, or a friend on their own account) cannot be
+                  linked there: tell staff their name and phone, so they know who to reach.
                 </p>
               )}
             </YesNo>
