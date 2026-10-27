@@ -39,6 +39,7 @@ import { submitFamilyRegistration } from './actions';
 import { formatDueDate, agreementText, formatDueDateShort, todayInMorristown } from '@/lib/events';
 import SupportDetailsFields from '@/components/SupportDetailsFields';
 import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
+import { hasPhone } from '@/lib/caregivers';
 
 const emptyMember = {
   personId: null,
@@ -74,7 +75,102 @@ const emptyMember = {
   // re-ordering rows never detaches it. Prefilled from person_support by the
   // page for anyone already saved in the household.
   support: emptySupport(null),
+  // The person's own phone, when the household already has it -- shown so a
+  // family choosing them as a caregiver is not asked for it again.
+  phone: '',
+  // "Who is the caregiver?" (26 Oct 2026): memberKey() of another person on
+  // this form, or '' for "not on this registration". The server links them
+  // in person_caregivers after the save. caregiverPhone is asked only when
+  // the chosen caregiver has no phone on file (lib/caregivers.js: a linked
+  // caregiver must be reachable).
+  caregiverKey: '',
+  caregiverPhone: '',
 };
+
+// A person's identity on this form that survives removing or re-ordering
+// rows: their saved id, or -- for someone new -- their name. The server
+// resolves the same key against the saved registration (actions.js).
+function memberKey(m) {
+  if (m.personId) return `id:${m.personId}`;
+  return `name:${(m.firstName || '').trim().toLowerCase()}|${(m.lastName || '').trim().toLowerCase()}`;
+}
+
+// Under 18 on the event's first day, as far as the date of birth says. A
+// caregiver is an adult; someone with no date of birth yet is still offered.
+function isMinor(dob, onDay) {
+  if (!dob) return false;
+  const [y, m, d] = dob.split('-').map(Number);
+  const [ty, tm, td] = (onDay || todayInMorristown()).split('-').map(Number);
+  let age = ty - y;
+  if (tm < m || (tm === m && td < d)) age -= 1;
+  return age < 18;
+}
+
+// "Who is the caregiver?" -- shown under "Will a caregiver be attending?" on
+// yes (Lawrence, 26 Oct 2026: "caregiver (if attending) should be able to be
+// linked here in registration... indicate to save and come back after they
+// are registered"). Module level, never inside the wizard (CLAUDE.md).
+function CaregiverPicker({ who, choices, value, onChange, phone, onPhone, idPrefix }) {
+  const chosen = choices.find((c) => c.key === value) ?? null;
+  const pickId = `${idPrefix}caregiver-who`;
+  const phoneId = `${idPrefix}caregiver-phone`;
+  return (
+    <div className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 p-3 text-sm">
+      <label htmlFor={pickId} className="block font-semibold mb-1.5">
+        Who is {who}&rsquo;s caregiver?
+      </label>
+      <select
+        id={pickId}
+        value={chosen ? chosen.key : ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 sm:max-w-md"
+      >
+        <option value="">Not on this registration</option>
+        {choices.map((c) => (
+          <option key={c.key} value={c.key}>
+            {c.label}
+          </option>
+        ))}
+      </select>
+      {chosen && chosen.phone && (
+        <p className="mt-2 text-neutral-600">
+          We&rsquo;ll link {chosen.first} as {who}&rsquo;s caregiver, so staff know who to reach
+          during camp ({chosen.phone}).
+        </p>
+      )}
+      {chosen && !chosen.phone && (
+        <div className="mt-2">
+          <label htmlFor={phoneId} className="block font-semibold mb-1">
+            {chosen.first}&rsquo;s mobile phone
+          </label>
+          <input
+            id={phoneId}
+            type="tel"
+            value={phone}
+            onChange={(e) => onPhone(e.target.value)}
+            onBlur={() => onPhone(formatPhone(phone))}
+            className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 sm:max-w-xs"
+          />
+          <p className={`mt-1 text-xs ${hasPhone(phone) ? 'text-neutral-500' : 'text-amber-800'}`}>
+            A linked caregiver needs a phone number so staff can reach them during camp. Without one
+            we&rsquo;ll save the registration and you can link {chosen.first} later on Manage
+            household.
+          </p>
+        </div>
+      )}
+      {!chosen && (
+        <p className="mt-2 text-neutral-700">
+          {choices.length === 0
+            ? 'Add the caregiver in “Who’s coming” above (role: Caregiver) and they will appear here. '
+            : 'Choose them above if they are coming with this registration. '}
+          If the caregiver is registering separately or later, save this registration as it is.
+          Once they are registered, come back and link them as {who}&rsquo;s caregiver from your
+          dashboard, under <strong>Manage household</strong>.
+        </p>
+      )}
+    </div>
+  );
+}
 
 // Shown once, when a family turns a permission OFF. Written to persuade
 // honestly rather than to nag: it says what the cost actually is, and it says
@@ -863,6 +959,11 @@ export default function FamilyWizard({
             {result.supportError}
           </p>
         )}
+        {result.caregiverNotice && (
+          <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900">
+            {result.caregiverNotice}
+          </p>
+        )}
         {result.signatureError && (
           <p className="mt-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-left text-sm text-red-800">
             {result.signatureError}
@@ -1261,9 +1362,11 @@ export default function FamilyWizard({
                     placeholder={m.firstName || 'Leave blank to use their first name'}
                   />
                 </div>
-                <div>
+                {/* Two columns wide (26 Oct 2026): "Camper with disability" was
+                    cut off in a one-column box with room beside it. */}
+                <div className="sm:col-span-2">
                   <label className={label}>Role</label>
-                  <select className={input} value={m.role} onChange={setM(i, 'role')}>
+                  <select className={`${input} sm:max-w-md`} value={m.role} onChange={setM(i, 'role')}>
                     <option value="" disabled>
                       Choose a role…
                     </option>
@@ -1502,6 +1605,35 @@ export default function FamilyWizard({
                       showAll={open}
                       onShowAll={() => setSupport(i)((p) => ({ ...p, showAll: true }))}
                       idPrefix={`p${i}-`}
+                      caregiverSlot={
+                        <CaregiverPicker
+                          who={who}
+                          // Everyone else named on the form who is not a child.
+                          choices={members
+                            .filter(
+                              (o, j) =>
+                                j !== i &&
+                                o.firstName.trim() &&
+                                o.lastName.trim() &&
+                                !isMinor(o.dob, week?.startsOn)
+                            )
+                            .map((o) => ({
+                              key: memberKey(o),
+                              first: (o.preferredName || '').trim() || o.firstName.trim(),
+                              label: `${o.firstName.trim()} ${o.lastName.trim()}${o.role ? ` — ${o.role}` : ''}`,
+                              phone: (o.phone || '').trim(),
+                            }))}
+                          value={m.caregiverKey}
+                          onChange={(v) =>
+                            setMembers(members.map((x, j) => (j === i ? { ...x, caregiverKey: v } : x)))
+                          }
+                          phone={m.caregiverPhone}
+                          onPhone={(v) =>
+                            setMembers(members.map((x, j) => (j === i ? { ...x, caregiverPhone: v } : x)))
+                          }
+                          idPrefix={`p${i}-`}
+                        />
+                      }
                     />
                   </div>
                 </div>

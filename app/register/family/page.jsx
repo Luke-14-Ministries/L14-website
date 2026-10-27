@@ -345,7 +345,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
     // instead of making a family retype the same children each year (24 Aug).
     const { data: allPeople } = await supabase
       .from('people')
-      .select('id, first_name, last_name, preferred_name, date_of_birth, gender')
+      .select('id, first_name, last_name, preferred_name, date_of_birth, gender, phone')
       .eq('household_id', householdId)
       .order('created_at');
     householdPeople = (allPeople ?? []).map((p) => ({
@@ -355,6 +355,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
       lastName: p.last_name ?? '',
       dob: p.date_of_birth ?? '',
       sex: p.gender ?? '',
+      phone: p.phone ?? '',
       tshirt: carried.get(p.id)?.tshirt ?? '',
       firstTime: (() => {
         const v = carried.get(p.id)?.firstTime;
@@ -379,6 +380,29 @@ export default async function FamilyRegisterPage({ searchParams }) {
     }
     for (const h of householdPeople) {
       h.support = emptySupport(supportById.get(h.personId) ?? null);
+    }
+
+    // Caregiver links already on file (person_caregivers, 0012 -- Manage
+    // Household writes them), so "Who is the caregiver?" opens on the person
+    // already linked, and each person's phone, so choosing a caregiver the
+    // household can already reach asks for nothing more (26 Oct 2026).
+    const phoneById = new Map((allPeople ?? []).map((p) => [p.id, p.phone ?? '']));
+    const { data: careLinks, error: careLinksError } = householdIds.length
+      ? await supabase
+          .from('person_caregivers')
+          .select('person_id, caregiver_person_id, position')
+          .in('person_id', householdIds)
+          .order('position')
+      : { data: [], error: null };
+    if (careLinksError) throw new Error(`Caregiver links: ${careLinksError.message}`);
+    const firstCarer = new Map();
+    for (const l of careLinks ?? []) {
+      if (!firstCarer.has(l.person_id)) firstCarer.set(l.person_id, l.caregiver_person_id);
+    }
+    for (const x of [...members, ...householdPeople]) {
+      if (!x.personId) continue;
+      x.phone = phoneById.get(x.personId) ?? '';
+      if (firstCarer.has(x.personId)) x.caregiverKey = `id:${firstCarer.get(x.personId)}`;
     }
 
     askHeardAbout = !household?.how_did_you_hear;

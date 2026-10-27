@@ -1,6 +1,6 @@
 'use server';
 
-import { dobProblem } from '@/lib/format';
+import { dobProblem, formatPhone } from '@/lib/format';
 // Server action for the family registration wizard.
 //
 // The whole write now happens in ONE atomic Postgres function,
@@ -18,6 +18,14 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sendEmail, registrationConfirmationEmail } from '@/lib/email';
 import { balanceDueOn, registrationOpen, OPEN_EVENT_COLUMNS } from '@/lib/events';
 import { requiresPaymentChoice } from '@/lib/plans';
+import { hasPhone, caregiverLinkProblem } from '@/lib/caregivers';
+
+// The wizard's key for a person on the form (memberKey in FamilyWizard.jsx):
+// their saved id, or for someone new their name. Resolved against the saved
+// registration once everyone exists.
+const keyOfId = (id) => `id:${id}`;
+const keyOfName = (first, last) =>
+  `name:${(first || '').trim().toLowerCase()}|${(last || '').trim().toLowerCase()}`;
 
 // Wizard's human-readable roles -> the camp_role enum in 0001_core_schema.sql.
 const ROLE_MAP = {
@@ -96,6 +104,11 @@ export async function submitFamilyRegistration(payload) {
       // The answers as given, for the check below: supportPatch turns an
       // unanswered yes/no into false, which would pass it (18 Oct review).
       rawSupport: m.support && typeof m.support === 'object' ? m.support : null,
+      // "Who is the caregiver?" (26 Oct 2026): the form key of another person
+      // on this registration, linked below once both are saved. Never sent to
+      // the RPC; never required.
+      caregiverKey: typeof m.caregiverKey === 'string' ? m.caregiverKey.slice(0, 200) : '',
+      caregiverPhone: typeof m.caregiverPhone === 'string' ? m.caregiverPhone.trim().slice(0, 40) : '',
     }));
   if (mapped.length === 0) {
     return {
@@ -544,6 +557,80 @@ export async function submitFamilyRegistration(payload) {
       'Your registration was saved, but the support details could not all be recorded. Please open each person from your dashboard and check them.';
   }
 
+  // CAREGIVER LINKS (Lawrence, 26 Oct 2026): "caregiver (if attending) should
+  // be able to be linked here in registration". For each person whose family
+  // answered yes to "Will a caregiver be attending?" and chose someone on
+  // this registration, add a person_caregivers link (0012) -- the same table
+  // Manage Household writes. Both people must be on THIS registration, which
+  // the RPC has just saved under the caller's household (and the table's
+  // policy checks the household again). A link already on file is left alone;
+  // a new one needs the caregiver to have a phone (lib/caregivers.js), taken
+  // from the form when the household had none. Never a reason to fail the
+  // submit: anything not linked is said in caregiverNotice, pointing at
+  // Manage Household.
+  let caregiverNotice = null;
+  const wantLinks = mapped.filter((m) => m.rawSupport?.has_caregiver === true && m.caregiverKey);
+  if (data?.registrationId && wantLinks.length > 0) {
+    const notes = [];
+    try {
+      const { data: saved, error: savedError } = await supabase
+        .from('registration_participants')
+        .select('person_id, status, people ( id, first_name, last_name, phone )')
+        .eq('registration_id', data.registrationId);
+      if (savedError) throw new Error(savedError.message);
+      const byKey = new Map();
+      for (const r of saved ?? []) {
+        if (!r.people?.id || r.status === 'cancelled') continue;
+        byKey.set(keyOfId(r.people.id), r.people);
+        byKey.set(keyOfName(r.people.first_name, r.people.last_name), r.people);
+      }
+      for (const m of wantLinks) {
+        const cared = byKey.get(m.personId ? keyOfId(m.personId) : keyOfName(m.firstName, m.lastName));
+        const carer = byKey.get(m.caregiverKey);
+        if (!cared || !carer || cared.id === carer.id) {
+          notes.push(`${m.firstName}'s caregiver could not be matched on this registration`);
+          continue;
+        }
+        const { data: links, error: linksError } = await supabase
+          .from('person_caregivers')
+          .select('caregiver_person_id, position')
+          .eq('person_id', cared.id);
+        if (linksError) throw new Error(linksError.message);
+        if ((links ?? []).some((l) => l.caregiver_person_id === carer.id)) continue;
+        const free = [1, 2].find((n) => !(links ?? []).some((l) => l.position === n));
+        if (!free) {
+          notes.push(`${m.firstName} already has two linked caregivers`);
+          continue;
+        }
+        let phone = carer.phone;
+        if (!hasPhone(phone) && hasPhone(m.caregiverPhone)) {
+          const { error: phoneError } = await supabase
+            .from('people')
+            .update({ phone: formatPhone(m.caregiverPhone) })
+            .eq('id', carer.id);
+          if (phoneError) throw new Error(phoneError.message);
+          phone = m.caregiverPhone;
+        }
+        const bad = caregiverLinkProblem({ name: carer.first_name, phone });
+        if (bad) {
+          notes.push(`${carer.first_name} was not linked as ${m.firstName}'s caregiver — no phone number`);
+          continue;
+        }
+        const { error: linkError } = await supabase
+          .from('person_caregivers')
+          .insert({ person_id: cared.id, caregiver_person_id: carer.id, position: free });
+        if (linkError) throw new Error(linkError.message);
+      }
+    } catch (e) {
+      console.error('caregiver links:', e?.message);
+      notes.push('the caregiver links could not all be saved');
+    }
+    if (notes.length > 0) {
+      caregiverNotice = `Your registration was saved, but ${notes.join('; ')}. You can link caregivers from your dashboard, under Manage household.`;
+    }
+    revalidatePath('/account/household');
+  }
+
   // The early-registration discount (0080) is recomputed too: adding someone
   // to a registration that is already on a plan earns them their share.
   try {
@@ -612,6 +699,7 @@ export async function submitFamilyRegistration(payload) {
     signed,
     signatureError,
     supportError,
+    caregiverNotice,
     depositDue,
     depositCents,
     depositPerPersonCents,
