@@ -3404,3 +3404,19 @@ family will be asked for and can show any family's email, not just the first (on
 body everyone would get). Also: bank transfers "may" take a few days to clear, everywhere a family reads
 it (the stripe-webhook receipt wording takes effect when that function is next deployed).
 
+## 26 Oct 2026 — Provider confirmations are checked in one queue; Activities gets a badge
+
+Lawrence on the Activities page: Accept / Reject on every card, a separate row of volunteer chips and a
+long amber paragraph were "cluttered ... will become klunky when there are many", and the nav showed no
+sign a confirmation was waiting. Now the page opens with **Confirmations to check** for the chosen event:
+every upload awaiting check (campers and volunteers alike), oldest first, with the file and, for
+Registration write, Accept / Reject. The cards are status only: one pill per person (awaiting check links
+to its queue row; accepted / rejected open the file, the reason on hover), volunteers and buddies folded
+into the people list by role, one short provider line with the rest under *How this works*, "told"
+lightened, and the header says what is outstanding ("2 to check · 1 missing · 1 waiver not signed") so a
+folded card still shows it. The Activities nav item carries an amber badge of uploads awaiting check at
+current events, for Registration write (a failed count is logged and shows none). With no event chosen
+the page opens on the first current event with something to check. Pending uploads were surfaced nowhere
+else on purpose: Awaiting Review's *Waiver outstanding* tab is the family's work (missing or rejected);
+checking an upload is staff's.
+
