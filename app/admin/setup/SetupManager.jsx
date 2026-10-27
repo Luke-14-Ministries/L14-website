@@ -91,8 +91,6 @@ function EventRow({ e }) {
   const [multiWeek, setMultiWeek] = useState(String(e.multiWeekPercent ?? 0));
   // 0123: returned bank payment fee, dollars; '0.00' = off.
   const [returnedFee, setReturnedFee] = useState(((e.returnedFeeCents ?? 0) / 100).toFixed(2));
-  const [detailBusy, setDetailBusy] = useState(false);
-  const [detailNotice, setDetailNotice] = useState(null);
   // The weeks of one camp (page.jsx; Lawrence, 27 Oct 2026). A later week
   // carries the both-weeks discount, where it applies; an earlier week's
   // details are the defaults for any later week not yet saved by hand.
@@ -100,36 +98,87 @@ function EventRow({ e }) {
   const followers = (e.laterWeeks ?? []).filter((w) => !w.setByHand).map((w) => w.name);
   const ownSet = (e.laterWeeks ?? []).filter((w) => w.setByHand).map((w) => w.name);
 
-  function saveDetails() {
-    setDetailBusy(true);
-    setDetailNotice(null);
+  // ONE save for the card (Lawrence, 27 Oct 2026: "just one save is still
+  // more sensible"). It saves whatever changed -- the status and registration
+  // window, the event's details, or both -- and says what it did. The two
+  // writes stay separate actions underneath; the status one runs first, so a
+  // details error never hides a status change that did save.
+  const detailsDirty =
+    startsOn !== (e.startsOn ?? '') ||
+    endsOn !== (e.endsOn ?? '') ||
+    capacity !== (e.capacity == null ? '' : String(e.capacity)) ||
+    fee !== (e.feeCents == null ? '' : (e.feeCents / 100).toFixed(2)) ||
+    earlyEndsOn !== (e.earlyEndsOn ?? '') ||
+    early !== (e.earlyCents ? (e.earlyCents / 100).toFixed(2) : '') ||
+    balanceDueOn !== (e.balanceDueOn ?? '') ||
+    family !== (e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '') ||
+    familyFrom !== String(e.familyFromPerson ?? 3) ||
+    (isLaterWeek && multiWeek !== String(e.multiWeekPercent ?? 0)) ||
+    returnedFee !== ((e.returnedFeeCents ?? 0) / 100).toFixed(2);
+
+  function undoAll() {
+    setStatus(savedStatus);
+    setOpens(isoToLocal(e.opensAt));
+    setCloses(isoToLocal(e.closesAt));
+    setStartsOn(e.startsOn ?? '');
+    setEndsOn(e.endsOn ?? '');
+    setCapacity(e.capacity == null ? '' : String(e.capacity));
+    setFee(e.feeCents == null ? '' : (e.feeCents / 100).toFixed(2));
+    setEarlyEndsOn(e.earlyEndsOn ?? '');
+    setEarly(e.earlyCents ? (e.earlyCents / 100).toFixed(2) : '');
+    setBalanceDueOn(e.balanceDueOn ?? '');
+    setFamily(e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '');
+    setFamilyFrom(String(e.familyFromPerson ?? 3));
+    setMultiWeek(String(e.multiWeekPercent ?? 0));
+    setReturnedFee(((e.returnedFeeCents ?? 0) / 100).toFixed(2));
+    setNotice(null);
+  }
+
+  function saveAll() {
+    setBusy(true);
+    setNotice(null);
     start(async () => {
-      const res = await updateEventDetails(e.id, {
-        startsOn,
-        endsOn,
-        capacity,
-        feeDollars: fee,
-        earlyEndsOn,
-        earlyDollars: early,
-        balanceDueOn,
-        familyDollars: family,
-        familyFromPerson: familyFrom,
-        // Only a later week carries the both-weeks discount (0137 note).
-        multiWeekPercent: isLaterWeek ? multiWeek : undefined,
-        returnedFeeDollars: returnedFee,
-      });
-      setDetailBusy(false);
-      setDetailNotice(
-        res.ok
-          ? {
-              ok: true,
-              message: `Saved. The public pages and the registration form use this now.${
-                res.copiedTo?.length ? ` Copied to ${res.copiedTo.join(' and ')}.` : ''
-              }${res.notCopied ? ` ${res.notCopied}` : ''}`,
-            }
-          : { ok: false, message: res.error }
+      const said = [];
+      let failed = null;
+      if (dirty) {
+        const res = await updateEventRegistration(e.id, {
+          status,
+          opensAt: localToIso(opens),
+          closesAt: localToIso(closes),
+        });
+        if (res.ok) said.push('Status saved — the public site shows it now.');
+        else failed = res.error;
+      }
+      if (!failed && detailsDirty) {
+        const res = await updateEventDetails(e.id, {
+          startsOn,
+          endsOn,
+          capacity,
+          feeDollars: fee,
+          earlyEndsOn,
+          earlyDollars: early,
+          balanceDueOn,
+          familyDollars: family,
+          familyFromPerson: familyFrom,
+          // Only a later week carries the both-weeks discount (0137 note).
+          multiWeekPercent: isLaterWeek ? multiWeek : undefined,
+          returnedFeeDollars: returnedFee,
+        });
+        if (res.ok) {
+          said.push(
+            `Event details saved.${res.copiedTo?.length ? ` Copied to ${res.copiedTo.join(' and ')}.` : ''}${
+              res.notCopied ? ` ${res.notCopied}` : ''
+            }`
+          );
+        } else failed = res.error;
+      }
+      setBusy(false);
+      setNotice(
+        failed
+          ? { ok: false, message: said.length ? `${said.join(' ')} But: ${failed}` : failed }
+          : { ok: true, message: said.join(' ') }
       );
-      if (res.ok) router.refresh();
+      router.refresh();
     });
   }
 
@@ -147,24 +196,6 @@ function EventRow({ e }) {
   });
   const statusHint = EVENT_STATUSES.find(([v]) => v === status)?.[2];
 
-  function save() {
-    setBusy(true);
-    setNotice(null);
-    start(async () => {
-      const res = await updateEventRegistration(e.id, {
-        status,
-        opensAt: localToIso(opens),
-        closesAt: localToIso(closes),
-      });
-      setBusy(false);
-      setNotice(
-        res.ok
-          ? { ok: true, message: 'Saved — the public site reflects this immediately.' }
-          : { ok: false, message: res.error }
-      );
-      router.refresh();
-    });
-  }
 
   return (
     <div className="rounded-lg border border-neutral-200 p-4">
@@ -228,17 +259,6 @@ function EventRow({ e }) {
             className="rounded-sm border border-neutral-300 px-2 py-1"
           />
         </label>
-        <button
-          type="button"
-          onClick={save}
-          disabled={!dirty || busy}
-          className="btn-primary py-1.5! disabled:opacity-40"
-        >
-          {/* "Save status" (27 Oct 2026): this row is the event's status and its
-              registration window; the event's own facts have their own save
-              in the panel below. */}
-          {busy ? 'Saving…' : 'Save status'}
-        </button>
         {(opens || closes) && (
           <button
             type="button"
@@ -257,18 +277,6 @@ function EventRow({ e }) {
       {legacyBoth && status === 'archived' && (
         <p className="mt-1 text-xs text-amber-800">
           Saved before 26 Oct as both visible and archived. Save stores it as Archived (off the public site).
-        </p>
-      )}
-
-      {notice && (
-        <p
-          className={`mt-2 rounded-sm border px-3 py-2 text-sm ${
-            notice.ok
-              ? 'border-green-300 bg-green-50 text-green-800'
-              : 'border-red-300 bg-red-50 text-red-800'
-          }`}
-        >
-          {notice.message}
         </p>
       )}
 
@@ -410,17 +418,6 @@ function EventRow({ e }) {
             ) : null}
           </div>
 
-          {detailNotice && (
-            <p
-              className={`mt-2 rounded-sm border px-3 py-2 text-sm ${
-                detailNotice.ok
-                  ? 'border-green-300 bg-green-50 text-green-800'
-                  : 'border-red-300 bg-red-50 text-red-800'
-              }`}
-            >
-              {detailNotice.message}
-            </p>
-          )}
 
           {/* Week 1's details are the later weeks' defaults (0137). */}
           {(followers.length > 0 || ownSet.length > 0 || (isLaterWeek && !e.setByHand)) && (
@@ -473,39 +470,35 @@ function EventRow({ e }) {
             <ReminderScheduleNote />
           </details>
 
-          <div className="mt-3 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={saveDetails}
-              disabled={detailBusy}
-              className="btn-primary py-1.5! text-sm disabled:opacity-40"
-            >
-              {detailBusy ? 'Saving…' : 'Save event details'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setStartsOn(e.startsOn ?? '');
-                setEndsOn(e.endsOn ?? '');
-                setCapacity(e.capacity == null ? '' : String(e.capacity));
-                setFee(e.feeCents == null ? '' : (e.feeCents / 100).toFixed(2));
-                setEarlyEndsOn(e.earlyEndsOn ?? '');
-                setBalanceDueOn(e.balanceDueOn ?? '');
-                setFamily(e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '');
-                setFamilyFrom(String(e.familyFromPerson ?? 3));
-                setMultiWeek(String(e.multiWeekPercent ?? 0));
-                setReturnedFee(((e.returnedFeeCents ?? 0) / 100).toFixed(2));
-                setEarly(e.earlyCents ? (e.earlyCents / 100).toFixed(2) : '');
-                setDetailNotice(null);
-              }}
-              disabled={detailBusy}
-              className="text-sm text-neutral-600 underline"
-            >
-              Undo my changes
-            </button>
-          </div>
         </div>
       )}
+
+      {notice && (
+        <p
+          className={`mt-3 rounded-sm border px-3 py-2 text-sm ${
+            notice.ok
+              ? 'border-green-300 bg-green-50 text-green-800'
+              : 'border-red-300 bg-red-50 text-red-800'
+          }`}
+        >
+          {notice.message}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={saveAll}
+          disabled={(!dirty && !detailsDirty) || busy}
+          className="btn-primary py-1.5! text-sm disabled:opacity-40"
+        >
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+        {(dirty || detailsDirty) && !busy && (
+          <button type="button" onClick={undoAll} className="text-sm text-neutral-600 underline">
+            Undo my changes
+          </button>
+        )}
+      </div>
     </div>
   );
 }

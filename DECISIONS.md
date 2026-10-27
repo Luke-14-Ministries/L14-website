@@ -3663,3 +3663,11 @@ details monthly, then 2 weeks and 5 days before camp; a plan notice 1 week befor
 event panel says which dates they run from (folded). The event card on Setup lost its paragraphs: four
 aligned columns, labels only, the explanations folded into "How these settings work", and the top button
 reads "Save status" so it is not mistaken for the event-details save.
+
+## 27 Oct 2026 — One Save on each Setup event
+
+Lawrence: "just one save is still more sensible ... unless there is a strong reason". There was not: the
+split (2 Oct) kept the weekly act, opening and closing registration, apart from changing camp's dates, and
+one button that saves only what changed does that as well. Each event card now has a single **Save** (and
+**Undo my changes**) at its foot: it saves the status and registration window if they changed, then the
+event details if they changed, and reports both in one message. The two server actions are unchanged.
