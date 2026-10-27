@@ -403,6 +403,7 @@ export default async function DashboardPage({ searchParams }) {
     }
   }
   const attendingPeople = [...byPerson.values()];
+  const attendingIds = new Set(attendingPeople.map((p) => p.id));
 
   // "Details on file" means exactly one thing: the details form itself was
   // saved for this person, evidenced by the stamp only that form writes.
@@ -835,9 +836,9 @@ export default async function DashboardPage({ searchParams }) {
   //
   // THE SUPPORT CARD MOVES. Unfinished, it is a to-do that has to catch the eye
   // at login, so it sits ABOVE the registrations. Finished, it is a record of
-  // something done, and records belong under the thing they are about. Same
-  // card, two homes, decided by whether there is anything left to do —
-  // a list that never moves teaches people to stop reading it.
+  // something done, and records belong with the thing they are about: since
+  // 27 Oct 2026 that is each person's line in My Household, and the card is
+  // not drawn — a list that never moves teaches people to stop reading it.
   const supportCard = (
     <>
         {/* The support profiles registration promises. One card, one row per
@@ -1054,6 +1055,11 @@ export default async function DashboardPage({ searchParams }) {
           </div>
         )}
 
+        {/* A to-do while anyone's details are owed. Once all are on file the
+            card goes: support details belong to the PERSON (person_support is
+            keyed by person, not event), so each one's "on file" line sits with
+            them in My Household (Lawrence, 27 Oct 2026: "should support
+            details be in manage household?"). */}
         {!allDetailsDone && supportCard}
 
         {/* TWO COLUMNS, NOT FOUR CELLS.
@@ -1847,6 +1853,14 @@ export default async function DashboardPage({ searchParams }) {
                             primary contact
                           </span>
                         )}
+                        {allDetailsDone && attendingIds.has(m.id) && (
+                          <span className="block text-xs text-neutral-500">
+                            Support details on file ✓ ·{' '}
+                            <Link href={`/account/details/${m.id}/`} className="text-brand underline">
+                              Review
+                            </Link>
+                          </span>
+                        )}
                       </span>
                     </li>
                   );
@@ -1910,8 +1924,6 @@ export default async function DashboardPage({ searchParams }) {
           </div>
         </div>
 
-
-        {allDetailsDone && supportCard}
 
       </div>
     </section>

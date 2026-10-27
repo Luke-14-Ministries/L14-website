@@ -3578,3 +3578,11 @@ donor's own settled gifts for one calendar year (newest year by default, other y
 `components/GivingStatementSheet.jsx`, the sheet staff print at `/admin/giving/statements` — one sheet,
 so the two cannot disagree. Scoped by `profile_id`, so a hand-recorded check with no login attached is
 not on it; staff print those. No migration: donors already read their own gifts (`0010`).
+
+## 27 Oct 2026 — Finished support details live with the household
+
+Lawrence: "should support details be in manage household or is this event specific? seems mis-organized"
+(the finished card also sat flush under My Giving). Support details are per person (`person_support` is
+keyed by person), so once every attending person's are on file the separate card is no longer drawn; each
+of them gets "Support details on file ✓ · Review" under their name in My Household. While anything is owed
+the card stays at the top of the dashboard as a to-do, unchanged.
