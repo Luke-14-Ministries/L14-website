@@ -50,11 +50,12 @@ export default async function MyGivingStatementPage({ searchParams }) {
   return (
     <div className="mx-auto max-w-2xl p-8 print:p-0 bg-white text-neutral-900 print:text-[12px]">
       <div className="mb-6 print:hidden">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-2">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
           <h1 className="text-3xl font-bold">My giving statement</h1>
-          <span className="flex flex-wrap items-center gap-3">
-            {inYear.length > 0 && <PrintButton label="Print or save as PDF" />}
+          {/* The way back on the title's line, Print under it (27 Oct 2026). */}
+          <span className="flex flex-col items-end gap-2">
             <BackLink />
+            {inYear.length > 0 && <PrintButton label="Print or save as PDF" />}
           </span>
         </div>
         {years.length > 1 && (

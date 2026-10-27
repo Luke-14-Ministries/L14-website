@@ -79,11 +79,12 @@ export default async function PrintRostersPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl p-8 print:p-0 bg-white print:text-[12px]">
-      <div className="flex items-center justify-between mb-6 print:hidden">
+      <div className="flex items-start justify-between mb-6 print:hidden">
         <h1 className="text-xl font-bold">Rosters — print view</h1>
-        <span className="flex flex-wrap items-center gap-3">
-          <PrintButton />
+        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
+        <span className="flex flex-col items-end gap-2">
           <BackLink href={`/admin/rosters/${fEvent ? `?event=${fEvent}` : ''}`} label="Back to Rosters" />
+          <PrintButton />
         </span>
       </div>
 

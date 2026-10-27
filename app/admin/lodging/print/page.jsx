@@ -180,11 +180,12 @@ export default async function RoomListPrintPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
-      <div className="mb-2 flex items-center justify-between print:hidden">
+      <div className="mb-2 flex items-start justify-between print:hidden">
         <h1 className="text-xl font-bold">Room list</h1>
-        <span className="flex flex-wrap items-center gap-3">
-          <PrintButton />
+        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
+        <span className="flex flex-col items-end gap-2">
           <BackLink href={`/admin/lodging/${selected ? `?event=${selected}` : ''}`} label="Back to Rooms & Cabins" />
+          <PrintButton />
         </span>
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">

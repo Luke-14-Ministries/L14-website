@@ -40,12 +40,13 @@ export default async function MyProgramPrintPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <PrintButton label="Print / Save as PDF" />
+      {/* The way back top right, Print under it, as on every print sheet (27 Oct 2026). */}
+      <div className="mb-2 flex flex-col items-end gap-2 print:hidden">
         <BackLink
           href={`/admin/my-program/?grant=${encodeURIComponent(`${program.programId}:${program.eventId}`)}`}
           label="Back to My Program"
         />
+        <PrintButton label="Print / Save as PDF" />
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">
         To make a PDF, choose “Save as PDF” as the printer in the print dialog.

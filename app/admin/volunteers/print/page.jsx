@@ -95,11 +95,12 @@ export default async function VolunteerPrintPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-4xl bg-white p-8 print:p-0 print:text-[11px]">
-      <div className="mb-2 flex items-center justify-between print:hidden">
+      <div className="mb-2 flex items-start justify-between print:hidden">
         <h1 className="text-xl font-bold">Volunteer List</h1>
-        <span className="flex flex-wrap items-center gap-3">
-          <PrintButton />
+        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
+        <span className="flex flex-col items-end gap-2">
           <BackLink href={`/admin/volunteers/${eventFilter ? `?event=${eventFilter}` : ''}`} label="Back to Volunteers" />
+          <PrintButton />
         </span>
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">
