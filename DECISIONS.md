@@ -3637,3 +3637,12 @@ changed. A provider's error reads as a phrase in our sentence, "(your card was d
 was declined.)." (`declineReason`, in lib/plans.js and `_shared/plans.ts`; the emails change when the plan
 functions are next deployed). On the staff registration page the volunteer role pill is indigo: amber is
 the site's "needs attention" colour, and purple is caregivers'.
+
+## 27 Oct 2026 — The both-weeks discount is one figure per camp; Setup regrouped; horseback waiver accepted
+
+Lawrence: "force the both-weeks discount to be the same so no mismatch is possible". Saving the percentage
+on one week of a camp sets it on every event whose name shares the part before " — " (the pairing
+`recalc_multi_week_discount()` already uses) and re-runs their discounts. Setup's event details now put the
+dates on one line (early registration ends, early discount, balance due) and every discount on the next
+(family discount, from person, both-weeks). Larry, 27 Oct: the horseback waiver text (version 1, `0116`) is
+acceptable; the Staff Questions item is closed.

@@ -306,6 +306,11 @@ function EventRow({ e }) {
             </label>
           </div>
 
+          {/* Grouped by kind (Lawrence, 27 Oct 2026): the dates on one line --
+              early registration and the balance due -- then every discount on
+              the line below. The money settings date from 0096 (16 Oct 2026):
+              Larry's numbers live here so the 2027 figures never wait on a
+              code change. */}
           <div className="mt-3 grid gap-3 sm:grid-cols-4">
             <label className="text-sm">
               <span className="block font-semibold text-neutral-700 mb-0.5">Early registration ends</span>
@@ -325,35 +330,30 @@ function EventRow({ e }) {
                 placeholder="none"
                 className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
+              <span className="mt-1 block text-xs text-neutral-500">
+                For people registered by that day, once the family is on a payment plan or has paid
+                in full. A scholarship request alone does not earn it.
+              </span>
             </label>
-            <p className="text-xs text-neutral-600 sm:col-span-2 self-end">
-              People registered by the last day get this much off each, once the family is on
-              a payment plan or has paid in full. A scholarship request alone does not earn it.
-            </p>
-          </div>
-
-          {/* The money settings (0096, 16 Oct 2026). Larry: the balance is
-              due July 1 for both weeks, published not enforced; the family
-              discount is confirmed and "probably bigger than $50"; the
-              volunteer both-weeks discount is leaning 50%. Each is a number
-              here so the 2027 figures never wait on a code change. */}
-          <div className="mt-3 grid gap-3 sm:grid-cols-4">
-            <label className="text-sm">
+            <label className="text-sm sm:col-span-2">
               <span className="block font-semibold text-neutral-700 mb-0.5">Balance due</span>
               <input
                 type="date"
                 value={balanceDueOn}
                 onChange={(ev) => setBalanceDueOn(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="w-full max-w-xs rounded-sm border border-neutral-300 px-2 py-1"
               />
               {/* Lawrence, 26 Oct 2026: say here what the date switches on. The
                   rule is offersPaymentPlan()/planAvailable() in lib/plans.js. */}
               <span className="mt-1 block text-xs text-neutral-500">
-                Families are offered a payment plan only when this is set and more than{' '}
-                {PLAN_MIN_DAYS} days away. Blank: pay in full, or the deposit now and the rest
-                when staff say.
+                Published to families (dashboard, statements, the confirmation email). They are
+                offered a payment plan only when this is set and more than {PLAN_MIN_DAYS} days away.
+                Blank: pay in full, or the deposit now and the rest when staff say.
               </span>
             </label>
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-4">
             <label className="text-sm">
               <span className="block font-semibold text-neutral-700 mb-0.5">Family discount ($/person)</span>
               <input
@@ -381,13 +381,16 @@ function EventRow({ e }) {
                 onChange={(ev) => setMultiWeek(ev.target.value)}
                 className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
+              {/* One number for the camp (Lawrence, 27 Oct 2026): saving it
+                  here sets every week of the same camp (updateEventDetails). */}
+              <span className="mt-1 block text-xs text-neutral-500">
+                One figure for the whole camp: saving it here sets every week.
+              </span>
             </label>
-            <p className="text-xs text-neutral-600 sm:col-span-4">
-              The due date is published to families (dashboard, statements, the confirmation
-              email); blank means &ldquo;staff will be in touch&rdquo;. The family discount comes off
-              the 3rd (or chosen) and every later fee-paying person on one registration; the
-              both-weeks discount comes off the later week for a volunteer doing both. Saving
-              re-applies both discounts to everyone already registered for this event.
+            <p className="text-xs text-neutral-600 self-end">
+              The family discount comes off the chosen person and every later fee-paying person on
+              one registration; the both-weeks discount comes off the later week for a volunteer
+              doing both. Saving re-applies both to everyone already registered.
             </p>
           </div>
 

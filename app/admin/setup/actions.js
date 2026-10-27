@@ -202,11 +202,40 @@ export async function updateEventDetails(
   // recomputed from stored facts (0070, 0081), not a price copied at sign-up.
   // Never fatal: the settings have saved, and a stale discount is a visible
   // number an administrator can re-run.
-  try {
-    const { error: recalcError } = await supabase.rpc('recalc_event_discounts', { p_event_id: eventId });
-    if (recalcError) console.error('recalc_event_discounts:', recalcError.message);
-  } catch (e) {
-    console.error('recalc_event_discounts:', e?.message);
+  // The both-weeks discount is one figure for the camp (Lawrence, 27 Oct
+  // 2026: "force it to be the same so no mismatch is possible"). The weeks of
+  // a camp are the events whose names share the part before " — " ("Camp
+  // Celebrate 2027 — Week 1" / "— Week 2"), the same pairing
+  // recalc_multi_week_discount() uses, so the percentage saved here is set on
+  // every one of them and their discounts re-run too.
+  const recalcIds = [eventId];
+  const { data: me, error: meError } = await supabase.from('events').select('name').eq('id', eventId).maybeSingle();
+  if (meError) {
+    return { ok: false, error: `The event saved, but its other weeks could not be checked: ${meError.message}` };
+  }
+  const program = String(me?.name ?? '').split(' — ')[0].trim();
+  if (program && String(me?.name ?? '').includes(' — ')) {
+    // LIKE wildcards in a camp's name are matched literally.
+    const like = `${program.replace(/[\\%_]/g, (c) => `\\${c}`)} — %`;
+    const { data: siblings, error: sibError } = await supabase
+      .from('events')
+      .update({ multi_week_discount_percent: pct, updated_at: new Date().toISOString() })
+      .like('name', like)
+      .neq('id', eventId)
+      .neq('multi_week_discount_percent', pct)
+      .select('id');
+    if (sibError) {
+      return { ok: false, error: `The event saved, but the other weeks' both-weeks discount did not: ${sibError.message}` };
+    }
+    for (const sib of siblings ?? []) recalcIds.push(sib.id);
+  }
+  for (const id of recalcIds) {
+    try {
+      const { error: recalcError } = await supabase.rpc('recalc_event_discounts', { p_event_id: id });
+      if (recalcError) console.error('recalc_event_discounts:', recalcError.message);
+    } catch (e) {
+      console.error('recalc_event_discounts:', e?.message);
+    }
   }
 
   if (String(feeDollars ?? '').trim() !== '') {
