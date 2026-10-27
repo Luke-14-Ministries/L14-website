@@ -41,19 +41,22 @@ export default async function MyStatementPage({ params }) {
 
   const supabase = await createClient();
 
-  const { data: memberships } = await supabase
+  const { data: memberships, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id);
+  // Either failure here would otherwise show as a 404 (see below).
+  if (memberError) throw new Error(`Family statement household: ${memberError.message}`);
   const householdIds = (memberships ?? []).map((m) => m.household_id);
   if (householdIds.length === 0) notFound();
 
-  const { data: own } = await supabase
+  const { data: own, error: ownError } = await supabase
     .from('registrations')
     .select('id')
     .eq('id', id)
     .in('household_id', householdIds)
     .maybeSingle();
+  if (ownError) throw new Error(`Family statement: ${ownError.message}`);
   if (!own) notFound();
 
   const [{ data: reg, error: regError }, { data: pays, error: paysError }, { data: bal, error: balError }, { data: fees, error: feesError }] = await Promise.all([

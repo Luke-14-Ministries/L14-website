@@ -14,11 +14,14 @@ export default async function ContactPage() {
   if (!user) redirect('/account/?next=/account/contact/');
 
   const supabase = await createClient();
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('first_name, last_name, phone, sms_opt_in, email_news')
     .eq('id', user.id)
     .maybeSingle();
+  // CLAUDE.md: never swallow a query error -- here it would show empty boxes
+  // as if nothing had ever been saved.
+  if (profileError) throw new Error(`Your account details: ${profileError.message}`);
 
   return (
     <section className="bg-neutral-50 py-12 min-h-[60vh]">

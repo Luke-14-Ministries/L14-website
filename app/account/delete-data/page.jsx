@@ -15,19 +15,22 @@ export default async function DeleteDataPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/account/?next=/account/delete-data/');
   const supabase = await createClient();
-  const { data: member } = await supabase
+  const { data: member, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id)
     .limit(1)
     .maybeSingle();
-  const { data: requests } = member?.household_id
+  if (memberError) throw new Error(`Your household: ${memberError.message}`);
+  const { data: requests, error: requestsError } = member?.household_id
     ? await supabase
         .from('data_deletion_requests')
         .select('id, scope, status, created_at, staff_note')
         .eq('household_id', member.household_id)
         .order('created_at', { ascending: false })
     : { data: [] };
+  // A failed read must not look like "no requests" -- the family would ask again.
+  if (requestsError) throw new Error(`Your deletion requests: ${requestsError.message}`);
   const open = (requests ?? []).some((r) => r.status === 'requested');
 
   return (

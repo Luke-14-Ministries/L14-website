@@ -103,17 +103,21 @@ export default async function ManageHouseholdPage() {
   // per-event details form made families hunt for it.
   const photoUrlByPerson = {};
   if ((people ?? []).length) {
-    const { data: photoRows } = await supabase
+    const { data: photoRows, error: photoError } = await supabase
       .from('person_photos')
       .select('person_id, storage_path')
       .in('person_id', (people ?? []).map((p) => p.id));
+    if (photoError) throw new Error(`Photos could not be read: ${photoError.message}`);
     for (const row of photoRows ?? []) {
       if (!row.storage_path) continue;
-      const { data: signed } = await supabase.storage
+      const { data: signed, error: signError } = await supabase.storage
         .from('person-photos')
         // 15 minutes, not an hour (Script 5, 18 Oct 2026): a child's photo link
         // should not outlive the visit. Each page load signs fresh ones.
         .createSignedUrl(row.storage_path, 900);
+      // Logged, not thrown: one photo link that would not sign should not take
+      // the household page down; that person shows no photo.
+      if (signError) console.error('Household photo link:', signError.message);
       if (signed?.signedUrl) photoUrlByPerson[row.person_id] = signed.signedUrl;
     }
   }

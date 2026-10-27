@@ -24,35 +24,43 @@ export default async function PersonDetailsPage({ params }) {
 
   // A plain select: if this person is not in the caller's household, RLS
   // returns no row and the page 404s rather than leaking that they exist.
-  const { data: person } = await supabase
+  const { data: person, error: personError } = await supabase
     .from('people')
     .select('id, first_name, last_name, preferred_name')
     .eq('id', personId)
     .maybeSingle();
+  // A failed query is an error, not "no such person" (CLAUDE.md).
+  if (personError) throw new Error(`Person: ${personError.message}`);
   if (!person) notFound();
 
-  const { data: support } = await supabase
+  const { data: support, error: supportError } = await supabase
     .from('person_support')
     .select('*')
     .eq('person_id', personId)
     .maybeSingle();
+  // An empty form here would be saved back over the real details.
+  if (supportError) throw new Error(`Support details: ${supportError.message}`);
 
   // The photo bucket is private, so a viewable URL is minted here, for this
   // request, by a client that carries this user's own permissions. A leaked
   // path is not a leaked photograph, and the link expires within the hour.
-  const { data: photoRow } = await supabase
+  const { data: photoRow, error: photoError } = await supabase
     .from('person_photos')
     .select('storage_path')
     .eq('person_id', personId)
     .maybeSingle();
+  if (photoError) throw new Error(`Photo: ${photoError.message}`);
 
   let photoUrl = null;
   if (photoRow?.storage_path) {
-    const { data: signed } = await supabase.storage
+    const { data: signed, error: signError } = await supabase.storage
       .from('person-photos')
       // 15 minutes, not an hour (Script 5, 18 Oct 2026): a child's photo link
       // should not outlive the visit. Each page load signs fresh ones.
       .createSignedUrl(photoRow.storage_path, 900);
+    // Logged, not thrown: a link that would not sign should not take the
+    // whole form down; the page shows no photo.
+    if (signError) console.error('Person photo link:', signError.message);
     photoUrl = signed?.signedUrl ?? null;
   }
 
@@ -61,10 +69,11 @@ export default async function PersonDetailsPage({ params }) {
   // full support profile, everyone else gets the short version they can
   // expand. Read from participants rather than guessed from age — a sibling
   // may have as much need as a camper, and a volunteer may have none.
-  const { data: roleRows } = await supabase
+  const { data: roleRows, error: roleError } = await supabase
     .from('registration_participants')
     .select('camp_role, status')
     .eq('person_id', personId);
+  if (roleError) throw new Error(`Registrations: ${roleError.message}`);
   const liveRoles = (roleRows ?? [])
     .filter((r) => r.status !== 'cancelled')
     .map((r) => r.camp_role);

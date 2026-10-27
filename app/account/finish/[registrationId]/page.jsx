@@ -31,10 +31,11 @@ export default async function FinishPage({ params }) {
   // Scoped to the caller's own household EXPLICITLY -- staff RLS is broad,
   // and a staff member's own "finish registering" page must never open
   // somebody else's family (CLAUDE.md working rules).
-  const { data: memberships } = await supabase
+  const { data: memberships, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id);
+  if (memberError) throw new Error(`Your household: ${memberError.message}`);
   const householdIds = (memberships ?? []).map((m) => m.household_id);
   if (householdIds.length === 0) notFound();
 
@@ -53,7 +54,11 @@ export default async function FinishPage({ params }) {
   if (regError) throw new Error(`Finish registration: ${regError.message}`);
   if (!reg) notFound();
 
-  const [{ data: bal }, { data: route }, { data: payInFull }] = await Promise.all([
+  const [
+    { data: bal, error: balError },
+    { data: route, error: routeError },
+    { data: payInFull, error: payInFullError },
+  ] = await Promise.all([
     supabase
       .from('registration_balances')
       .select('balance_cents, paid_cents, fee_cents, early_discount_cents')
@@ -66,6 +71,10 @@ export default async function FinishPage({ params }) {
       .maybeSingle(),
     supabase.rpc('pay_in_full_amount', { p_registration_id: registrationId }),
   ]);
+  // A failed balance read would show "nothing owed" and hide the ways to pay.
+  if (balError) throw new Error(`Balance: ${balError.message}`);
+  if (routeError) throw new Error(`Payment route: ${routeError.message}`);
+  if (payInFullError) throw new Error(`Pay-in-full amount: ${payInFullError.message}`);
 
   const ev = reg.events ?? {};
   const balance = bal?.balance_cents ?? 0;
@@ -84,10 +93,13 @@ export default async function FinishPage({ params }) {
   // so the preview is exactly what the charger will do.
   let preview = null;
   if (canPlan) {
-    const [{ data: monthly }, { data: semi }] = await Promise.all([
+    const [{ data: monthly, error: monthlyError }, { data: semi, error: semiError }] = await Promise.all([
       supabase.rpc('plan_charge_dates', { p_today: today, p_due: due, p_schedule: 'monthly' }),
       supabase.rpc('plan_charge_dates', { p_today: today, p_due: due, p_schedule: 'semi_monthly' }),
     ]);
+    if (monthlyError || semiError) {
+      throw new Error(`Plan dates: ${(monthlyError || semiError).message}`);
+    }
     const afterDeposit = Math.max(0, full - deposit);
     const build = (dates) => {
       const list = [...(dates ?? [])].map((d) => (typeof d === 'string' ? d : d?.plan_charge_dates)).sort();

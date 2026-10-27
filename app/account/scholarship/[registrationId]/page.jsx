@@ -23,10 +23,11 @@ export default async function ScholarshipPage({ params }) {
 
   // Scoped to the caller's own households explicitly (CLAUDE.md: never rely
   // on RLS alone for "my data" reads) -- 21 Oct 2026.
-  const { data: memberships } = await supabase
+  const { data: memberships, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id);
+  if (memberError) throw new Error(`Your household: ${memberError.message}`);
   const householdIds = (memberships ?? []).map((m) => m.household_id);
   if (householdIds.length === 0) notFound();
 
@@ -50,7 +51,7 @@ export default async function ScholarshipPage({ params }) {
   // it is signed at the moment it starts to apply, by the family it binds,
   // instead of by everyone. Load the current version's text, and whether this
   // household has already signed it for this registration.
-  const [{ data: agreement }, { data: schAgSig }] = await Promise.all([
+  const [{ data: agreement, error: agreementError }, { data: schAgSig, error: schAgSigError }] = await Promise.all([
     supabase
       .from('agreements')
       .select('key, title, body, version')
@@ -66,35 +67,41 @@ export default async function ScholarshipPage({ params }) {
       .eq('agreements.key', 'scholarship_agreement')
       .limit(1),
   ]);
+  // A failed read would offer the agreement for signing again as if unsigned.
+  if (agreementError) throw new Error(`Scholarship agreement: ${agreementError.message}`);
+  if (schAgSigError) throw new Error(`Scholarship agreement signature: ${schAgSigError.message}`);
   const agreementSigned = Boolean(schAgSig?.[0]);
 
   // Who the household says is responsible -- shown as the expected signer on
   // the agreement, the same rule the registration form applies.
   let contactName = '';
   {
-    const { data: hh } = await supabase
+    const { data: hh, error: hhError } = await supabase
       .from('households')
       .select('primary_contact_person_id')
       .eq('id', reg.household_id)
       .maybeSingle();
+    if (hhError) throw new Error(`Household: ${hhError.message}`);
     if (hh?.primary_contact_person_id) {
-      const { data: pc } = await supabase
+      const { data: pc, error: pcError } = await supabase
         .from('people')
         .select('first_name, last_name')
         .eq('id', hh.primary_contact_person_id)
         .maybeSingle();
+      if (pcError) throw new Error(`Primary contact: ${pcError.message}`);
       contactName = `${pc?.first_name ?? ''} ${pc?.last_name ?? ''}`.trim();
     }
   }
 
   const parts = (reg.registration_participants ?? []).filter((p) => p.status !== 'cancelled');
 
-  const { data: schols } = parts.length
+  const { data: schols, error: scholsError } = parts.length
     ? await supabase
         .from('scholarships')
         .select('registration_participant_id, requested_cents, granted_cents, status, family_statement')
         .in('registration_participant_id', parts.map((p) => p.id))
     : { data: [] };
+  if (scholsError) throw new Error(`Scholarship requests: ${scholsError.message}`);
   const byPart = new Map((schols ?? []).map((s) => [s.registration_participant_id, s]));
 
   const rows = parts.map((p) => {

@@ -155,11 +155,15 @@ export default async function DashboardPage({ searchParams }) {
   // are not also staff: staff already have the Staff Area button.
   const leaderships = staff ? [] : await getProgramLeadership();
 
-  const { data: profile } = await supabase
+  // CLAUDE.md: never swallow a query error. Every read on this page throws on
+  // failure unless it says otherwise -- an empty card here reads as "nothing
+  // owed", "nobody registered" or "no payments".
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('first_name, last_name')
     .eq('id', user.id)
     .maybeSingle();
+  if (profileError) throw new Error(`Your account details: ${profileError.message}`);
 
   const greeting =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() ||
@@ -170,10 +174,11 @@ export default async function DashboardPage({ searchParams }) {
   // family's rows, so a bare query here would show a staff member other
   // families' data on their own personal dashboard. Membership keeps the
   // family hat and the staff hat separate.
-  const { data: memberships } = await supabase
+  const { data: memberships, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id);
+  if (memberError) throw new Error(`Your household: ${memberError.message}`);
   const householdIds = (memberships ?? []).map((m) => m.household_id);
 
   // people!people_household_id_fkey — the constraint is named EXPLICITLY, and
@@ -208,17 +213,21 @@ export default async function DashboardPage({ searchParams }) {
   // greeting and would not be fine for anything with consequences.
   const photoUrlByPerson = new Map();
   if (members.length) {
-    const { data: photoRows } = await supabase
+    const { data: photoRows, error: photoError } = await supabase
       .from('person_photos')
       .select('person_id, storage_path')
       .in('person_id', members.map((m) => m.id));
+    if (photoError) throw new Error(`Photos: ${photoError.message}`);
     for (const row of photoRows ?? []) {
       if (!row.storage_path) continue;
-      const { data: signed } = await supabase.storage
+      const { data: signed, error: signError } = await supabase.storage
         .from('person-photos')
         // 15 minutes, not an hour (Script 5, 18 Oct 2026): a child's photo link
         // should not outlive the visit. Each page load signs fresh ones.
         .createSignedUrl(row.storage_path, 900);
+      // Logged, not thrown: a photo link that would not sign should not take
+      // the dashboard down; that person shows no photo.
+      if (signError) console.error('dashboard photo link:', signError.message);
       if (signed?.signedUrl) photoUrlByPerson.set(row.person_id, signed.signedUrl);
     }
   }
@@ -232,7 +241,7 @@ export default async function DashboardPage({ searchParams }) {
 
   // Registrations for this household, newest first, with the event and each
   // participant.
-  const { data: registrations } = householdIds.length
+  const { data: registrations, error: registrationsError } = householdIds.length
     ? await supabase
         .from('registrations')
         .select(
@@ -248,6 +257,7 @@ export default async function DashboardPage({ searchParams }) {
         .in('household_id', householdIds)
         .order('created_at', { ascending: false })
     : { data: [] };
+  if (registrationsError) throw new Error(`Your registrations: ${registrationsError.message}`);
 
   // Ordered by WHEN THE EVENT IS, not when the family happened to register
   // (asked for 25 Aug). Two tiers, because a plain ascending sort by date puts
@@ -389,7 +399,7 @@ export default async function DashboardPage({ searchParams }) {
   const supportMissing = new Map(); // personId -> ['a photo', 'an emergency contact']
   if (attendingPeople.length) {
     const personIds = attendingPeople.map((p) => p.id);
-    const [{ data: supportRows }, { data: photoRows }] = await Promise.all([
+    const [{ data: supportRows, error: supportError }, { data: photoRows, error: photoError }] = await Promise.all([
       supabase
         .from('person_support')
         // Every column: a camper's required answers (lib/support.js) are
@@ -398,6 +408,8 @@ export default async function DashboardPage({ searchParams }) {
         .in('person_id', personIds),
       supabase.from('person_photos').select('person_id').in('person_id', personIds),
     ]);
+    if (supportError) throw new Error(`Support details: ${supportError.message}`);
+    if (photoError) throw new Error(`Photos: ${photoError.message}`);
     const hasPhoto = new Set((photoRows ?? []).map((r) => r.person_id));
     for (const row of supportRows ?? []) {
       if (!row.details_saved_at) {
@@ -440,10 +452,11 @@ export default async function DashboardPage({ searchParams }) {
   let volunteersNeedingApp = [];
   const volAppStatus = new Map();
   if (volunteerParts.length) {
-    const { data: vapps } = await supabase
+    const { data: vapps, error: vappsError } = await supabase
       .from('volunteer_applications')
       .select('registration_participant_id, status')
       .in('registration_participant_id', volunteerParts.map((p) => p.id));
+    if (vappsError) throw new Error(`Volunteer applications: ${vappsError.message}`);
     for (const a of vapps ?? []) volAppStatus.set(a.registration_participant_id, a.status);
     volunteersNeedingApp = volunteerParts.filter(
       (p) => !volAppStatus.has(p.id) || volAppStatus.get(p.id) === 'withdrawn'
@@ -462,7 +475,7 @@ export default async function DashboardPage({ searchParams }) {
 
   // What each registration still owes, computed by the registration_balances
   // view (fees minus discounts, scholarships, coupons and payments already in).
-  const { data: balances } = regIds.length
+  const { data: balances, error: balancesError } = regIds.length
     ? await supabase
         .from('registration_balances')
         .select(
@@ -470,6 +483,7 @@ export default async function DashboardPage({ searchParams }) {
         )
         .in('registration_id', regIds)
     : { data: [] };
+  if (balancesError) throw new Error(`Balances: ${balancesError.message}`);
   const balByReg = new Map((balances ?? []).map((b) => [b.registration_id, b]));
 
   // Fees on these registrations (0123): a returned bank payment, or one staff
@@ -496,19 +510,20 @@ export default async function DashboardPage({ searchParams }) {
   // Every payment on this household's registrations, newest first. Shown as a
   // history under each registration, so "what have we paid and has it
   // cleared?" never needs a phone call.
-  const { data: paymentRows } = regIds.length
+  const { data: paymentRows, error: paymentError } = regIds.length
     ? await supabase
         .from('payments')
         .select('registration_id, amount_cents, fee_cover_cents, method, status, received_on, created_at')
         .in('registration_id', regIds)
         .order('created_at', { ascending: false })
     : { data: [] };
+  if (paymentError) throw new Error(`Payments: ${paymentError.message}`);
 
   // Refunds, shown to the family alongside their payments. A refund they
   // cannot see is a refund they telephone about -- and their balance has
   // already changed to account for it, so hiding the cause would make the
   // number look wrong.
-  const { data: refundRows } = regIds.length
+  const { data: refundRows, error: refundError } = regIds.length
     ? await supabase
         .from('payment_refunds')
         .select('registration_id, amount_cents, fee_cover_cents, status, reason, refunded_on, created_at')
@@ -516,6 +531,7 @@ export default async function DashboardPage({ searchParams }) {
         .in('status', ['pending', 'succeeded'])
         .order('created_at', { ascending: false })
     : { data: [] };
+  if (refundError) throw new Error(`Refunds: ${refundError.message}`);
   const refundsByReg = new Map();
   for (const r of refundRows ?? []) {
     if (!refundsByReg.has(r.registration_id)) refundsByReg.set(r.registration_id, []);
@@ -542,7 +558,7 @@ export default async function DashboardPage({ searchParams }) {
   if (scholarshipError) throw new Error(`Dashboard scholarships: ${scholarshipError.message}`);
   const buddyNameByParticipant = new Map();
   if (myParticipantIds.length) {
-    const { data: buddyRows } = await supabase
+    const { data: buddyRows, error: buddyError } = await supabase
       .from('buddy_assignments')
       .select(
         `camper_participant_id,
@@ -551,6 +567,7 @@ export default async function DashboardPage({ searchParams }) {
       )
       .in('camper_participant_id', myParticipantIds)
       .is('ended_at', null);
+    if (buddyError) throw new Error(`Buddies: ${buddyError.message}`);
     for (const b of buddyRows ?? []) {
       const n = `${b.buddy?.people?.first_name ?? ''} ${b.buddy?.people?.last_name ?? ''}`.trim();
       if (n) buddyNameByParticipant.set(b.camper_participant_id, n);
@@ -595,11 +612,13 @@ export default async function DashboardPage({ searchParams }) {
   // status instead of offering to raise another.
   const cancelByReg = new Map();
   if (regIds.length) {
-    const { data: cancelRows } = await supabase
+    const { data: cancelRows, error: cancelError } = await supabase
       .from('registration_cancellation_requests')
       .select('id, registration_id, participant_ids, reason, requested_at')
       .in('registration_id', regIds)
       .eq('status', 'open');
+    // Read as "none open", a failed read would offer to raise a second request.
+    if (cancelError) throw new Error(`Cancellation requests: ${cancelError.message}`);
     for (const c of cancelRows ?? []) cancelByReg.set(c.registration_id, c);
   }
 
@@ -623,7 +642,7 @@ export default async function DashboardPage({ searchParams }) {
 
   // Payment plans and "has this family finished registering?" (0080). Both
   // scoped by the household's own registration ids, never by RLS alone.
-  const [{ data: routeRows }, { data: planRows }] = regIds.length
+  const [{ data: routeRows, error: routeError }, { data: planRows, error: planError }] = regIds.length
     ? await Promise.all([
         supabase
           .from('registration_payment_routes')
@@ -638,6 +657,8 @@ export default async function DashboardPage({ searchParams }) {
           .in('registration_id', regIds),
       ])
     : [{ data: [] }, { data: [] }];
+  if (routeError) throw new Error(`Payment routes: ${routeError.message}`);
+  if (planError) throw new Error(`Payment plans: ${planError.message}`);
   const routeByReg = new Map((routeRows ?? []).map((x) => [x.registration_id, x.route]));
   const planByReg = new Map(
     (planRows ?? []).map((p) => [
@@ -656,6 +677,8 @@ export default async function DashboardPage({ searchParams }) {
   const fullRows = await Promise.all(
     owingIds.map((id) => supabase.rpc('pay_in_full_amount', { p_registration_id: id }))
   );
+  const fullError = fullRows.find((r) => r.error)?.error;
+  if (fullError) throw new Error(`Pay-in-full amounts: ${fullError.message}`);
   const payInFullByReg = new Map(owingIds.map((id, i) => [id, fullRows[i]?.data ?? null]));
   // Not finished: a camp week with nobody cancelled-out, where the family has
   // not yet chosen pay in full / plan / scholarship.
@@ -667,11 +690,12 @@ export default async function DashboardPage({ searchParams }) {
   // This person's own giving history. The explicit profile filter matters:
   // staff can read ALL gifts under RLS, but "My Giving" must only ever show
   // their own -- even for an administrator wearing their family hat.
-  const { data: giftRows } = await supabase
+  const { data: giftRows, error: giftError } = await supabase
     .from('gifts')
     .select('amount_cents, fund, method, status, received_on, created_at')
     .eq('profile_id', user.id)
     .order('created_at', { ascending: false });
+  if (giftError) throw new Error(`Your giving: ${giftError.message}`);
   const myGifts = giftRows ?? [];
   const givenTotal = myGifts
     .filter((g) => g.status === 'succeeded' || g.status === 'processing')

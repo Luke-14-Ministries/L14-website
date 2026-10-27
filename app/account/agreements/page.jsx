@@ -62,11 +62,13 @@ export default async function AgreementsPage() {
   if (!user) redirect('/account/?next=/account/agreements/');
 
   const supabase = await createClient();
-  const { data: memberRows } = await supabase
+  const { data: memberRows, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id)
     .limit(1);
+  // Without this check a failed lookup reads as "no household, nothing signed".
+  if (memberError) throw new Error(`Your household: ${memberError.message}`);
   const householdId = memberRows?.[0]?.household_id;
 
   let signatures = [];
