@@ -25,7 +25,9 @@ import { dayInMorristown } from '@/lib/events';
 
 const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf' };
 
-export default function WaiverUpload({ participantId, activityId, providerName, existing = null }) {
+// `personName`: whose form this is -- a camper and their parent or buddy can
+// each have a box for the same activity on one page (27 Oct 2026).
+export default function WaiverUpload({ participantId, activityId, providerName, existing = null, personName = null }) {
   const router = useRouter();
   const supabase = createClient();
   const [busy, setBusy] = useState(false);
@@ -137,7 +139,7 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
       ) : (
         <p className="text-amber-900">
           <span className="font-semibold">
-            Once you have completed the form for {providerName || 'the provider'}, upload their confirmation
+            Once {personName ? `${personName}’s` : 'the'} form for {providerName || 'the provider'} is completed, upload their confirmation
           </span>{' '}
           — a screenshot, a photo of the signed page, or the PDF they sent. Staff need this before
           the day; a verbal &ldquo;done&rdquo; is not enough.{' '}

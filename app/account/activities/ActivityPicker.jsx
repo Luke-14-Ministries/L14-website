@@ -209,6 +209,12 @@ function ActivityRow({ person, activity }) {
   const chosenSlot = slots.find((sl) => sl.id === (existing?.slot_id ?? slotId)) ?? null;
   const needsProvider = Boolean(activity.provider_url || activity.provider_name);
   const [ack, setAck] = useState(Boolean(existing?.waiver_acknowledged_at));
+  // True between ticking a provider-run activity and ticking "I understand"
+  // (27 Oct 2026): the tick used to be refused unless the acknowledgement
+  // came first, so the box sprang back and the two read as fighting. Now
+  // either order works -- the activity box stays ticked and the save happens
+  // once both are ticked.
+  const [acking, setAcking] = useState(false);
 
   // THE WAIVER (0116). An activity may carry an agreement of the ministry's
   // own -- horseback riding does -- and the rider is signed for before the
@@ -226,12 +232,11 @@ function ActivityRow({ person, activity }) {
   // saved place, so these are asked for here instead.
   const owed = isOn ? person.outstanding?.[activity.id] ?? null : null;
   const owesOurs = Boolean(owed?.ours);
-  const owesProvider = Boolean(owed?.provider);
 
   const wantStatus = activity.booking_mode === 'interest' ? 'interested' : 'signed_up';
   const full = activity.placesLeft === 0 && !isOn;
 
-  function toggle(next, nextSlot = slotId, signature = null) {
+  function toggle(next, nextSlot = slotId, signature = null, ackNow = ack) {
     setError('');
     // Ticking an activity that runs in sittings does not book anything yet --
     // it opens the times. Saving without one would be refused by the database
@@ -248,9 +253,15 @@ function ActivityRow({ person, activity }) {
       setSigning(true);
       return;
     }
+    // And the outside provider's acknowledgement: the tick waits for it.
+    if (next && needsProvider && !isOn && !ackNow) {
+      setAcking(true);
+      return;
+    }
     if (!next) {
       setChoosing(false);
       setSigning(false);
+      setAcking(false);
       // Unticking something that was never saved has nothing to cancel.
       if (!isOn) return;
     }
@@ -259,7 +270,7 @@ function ActivityRow({ person, activity }) {
         participantId: person.participantId,
         activityId: activity.id,
         status: next ? wantStatus : 'cancelled',
-        acknowledgeWaiver: ack,
+        acknowledgeWaiver: ackNow,
         slotId: next ? nextSlot : null,
         signature,
       });
@@ -268,6 +279,7 @@ function ActivityRow({ person, activity }) {
         return;
       }
       setSigning(false);
+      setAcking(false);
       router.refresh();
     });
   }
@@ -295,7 +307,7 @@ function ActivityRow({ person, activity }) {
         <label className="flex flex-1 min-w-0 items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
-            checked={isOn || choosing || signing}
+            checked={isOn || choosing || signing || acking}
             disabled={pending || full}
             onChange={(e) => toggle(e.target.checked)}
             className="mt-1 shrink-0"
@@ -439,37 +451,39 @@ function ActivityRow({ person, activity }) {
           <input
             type="checkbox"
             checked={ack}
-            onChange={(e) => setAck(e.target.checked)}
+            disabled={pending}
+            onChange={(e) => {
+              const v = e.target.checked;
+              setAck(v);
+              // The activity was ticked first and is waiting on this: save now.
+              if (v && acking) toggle(true, slotId, null, true);
+            }}
             className="mt-0.5"
           />
           <span>
             I understand {activity.provider_name || 'the provider'} has their own form to
             complete, and that the ministry cannot complete it for us. Staff will send us
             what we need.
+            {acking && !ack && (
+              <span className="mt-0.5 block font-semibold text-amber-800">
+                Tick this to save {firstName}&rsquo;s place on {activity.name}.
+              </span>
+            )}
           </span>
         </label>
       )}
 
       {/* The proof, not the promise (14 Oct 2026): once signed up for a
           provider-run activity, the family uploads the provider's own
-          confirmation. Staff see who has one. */}
-      {/* The same amber line as a waiver of our own (0120), above the upload
-          box, while the provider's confirmation is still missing. A REJECTED
-          upload (0124) is outstanding too, but the upload box says why itself. */}
-      {owesProvider && needsProvider && person.waivers?.[activity.id]?.review_status !== 'rejected' && (
-        <p className="mt-2 ml-7 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
-          {activity.name} now needs a waiver for {firstName}
-          <span className="font-normal">
-            {' '}— complete {activity.provider_name || 'the provider'}&rsquo;s form, then upload their
-            confirmation below.
-          </span>
-        </p>
-      )}
+          confirmation. Staff see who has one. One box says what to do -- an
+          amber "now needs a waiver" line above it said the same thing again,
+          and "now" was wrong for a place just taken (27 Oct 2026). */}
       {needsProvider && isOn && (
         <WaiverUpload
           participantId={person.participantId}
           activityId={activity.id}
           providerName={activity.provider_name}
+          personName={firstName}
           existing={person.waivers?.[activity.id] ?? null}
         />
       )}

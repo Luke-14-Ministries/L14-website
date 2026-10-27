@@ -565,6 +565,7 @@ function VolunteerWaivers({ section: s, withIntro }) {
                 participantId={v.participantId}
                 activityId={a.id}
                 providerName={a.provider_name}
+                personName={v.name?.split(' ')[0] || null}
                 existing={v.waivers?.[a.id] ?? null}
               />
             </div>
