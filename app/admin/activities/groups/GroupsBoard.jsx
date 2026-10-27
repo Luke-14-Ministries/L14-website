@@ -44,6 +44,11 @@ function PersonLine({ person, minAge }) {
       {person.waiver === 'needed' && (
         <span className={`${pill} bg-amber-100 text-amber-800`}>Waiver needed</span>
       )}
+      {person.waiver === 'checking' && (
+        <span className={`${pill} bg-amber-50 text-amber-800 ring-1 ring-amber-300`} title="A confirmation is uploaded and waiting for staff to check it">
+          Waiver being checked
+        </span>
+      )}
       {person.waiver === 'on_file' && (
         <span className={`${pill} bg-neutral-100 text-neutral-600`}>Waiver on file</span>
       )}
@@ -319,7 +324,7 @@ export default function GroupsBoard({
     (!family || p.householdId === family) &&
     (!program || p.programId === program) &&
     (!underOnly || p.under || p.ageUnknown) &&
-    (!waiverOnly || p.waiver === 'needed');
+    (!waiverOnly || p.waiver === 'needed' || p.waiver === 'checking');
   const shown = toPlace.filter((u) => u.some((id) => matches(people[id])));
   const filtering = Boolean(needle || family || program || underOnly || waiverOnly);
 

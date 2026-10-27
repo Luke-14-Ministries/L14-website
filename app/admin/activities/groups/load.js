@@ -124,52 +124,62 @@ export async function loadActivityGroups(supabase, activityId) {
     .filter((r) => r.agreements?.delivery === 'internal_document')
     .map((r) => r.agreement_id);
   const hasWaiver = hasProvider || ourAgreementIds.length > 0;
-  const owed = new Set((owedRes.data ?? []).map((o) => o.registration_participant_id));
+  // Our own waiver: signed-up people from the view's 'ours' rows (0120).
+  const owesOurs = new Set(
+    (owedRes.data ?? []).filter((o) => o.kind === 'ours').map((o) => o.registration_participant_id)
+  );
+
+  // The outfitter's confirmation, for EVERYONE going -- signed up or riding
+  // along as a buddy -- by its review (0124). Only an ACCEPTED upload takes the
+  // flag off (Lawrence, 26 Oct 2026): anyone may be placed in a raft whatever
+  // the paperwork, since it can be finished on site, but the flag stays on the
+  // board, the print and the CSV until staff accept the confirmation. Awaiting
+  // check reads as its own state; rejected counts as missing, as in the view.
+  const uploadStatus = new Map();
+  if (hasProvider && goingIds.size > 0) {
+    const { data, error } = await supabase
+      .from('activity_waiver_uploads')
+      .select('registration_participant_id, review_status')
+      .eq('activity_id', activityId)
+      .in('registration_participant_id', [...goingIds]);
+    if (error) fail('waiver uploads', error);
+    for (const u of data ?? []) uploadStatus.set(u.registration_participant_id, u.review_status);
+  }
 
   // A buddy riding with their camper WITHOUT a signup of their own is not on
   // activity_waivers_outstanding -- the view is built from signups. For them
-  // alone the page asks the two facts the view asks (an uploaded outfitter
-  // confirmation; a signature of our waiver on this registration), so the
+  // the page asks whether our waiver is signed on this registration, so the
   // raft list does not show a buddy as "on file" by silence.
-  // A REJECTED upload counts as missing, as it does in the view since 0124.
   const unsignedBuddies = [...buddyIds].filter((id) => !statusById.has(id));
-  const buddyUpload = new Set();
   const buddySigned = new Set();
-  if (hasWaiver && unsignedBuddies.length > 0) {
-    if (hasProvider) {
-      const { data, error } = await supabase
-        .from('activity_waiver_uploads')
-        .select('registration_participant_id')
-        .eq('activity_id', activityId)
-        .neq('review_status', 'rejected')
-        .in('registration_participant_id', unsignedBuddies);
-      if (error) fail('buddy waiver uploads', error);
-      for (const u of data ?? []) buddyUpload.add(u.registration_participant_id);
-    }
-    if (ourAgreementIds.length > 0) {
-      const personIds = unsignedBuddies.map((id) => rowById.get(id)?.people?.id).filter(Boolean);
-      const { data, error } = await supabase
-        .from('agreement_signatures')
-        .select('agreement_id, person_id, registration_id')
-        .in('agreement_id', ourAgreementIds)
-        .in('person_id', personIds);
-      if (error) fail('buddy waiver signatures', error);
-      const sig = new Set((data ?? []).map((s) => `${s.agreement_id}:${s.person_id}:${s.registration_id}`));
-      for (const id of unsignedBuddies) {
-        const r = rowById.get(id);
-        const all = ourAgreementIds.every((a) =>
-          sig.has(`${a}:${r?.people?.id}:${r?.registrations?.id}`)
-        );
-        if (all) buddySigned.add(id);
-      }
+  if (ourAgreementIds.length > 0 && unsignedBuddies.length > 0) {
+    const personIds = unsignedBuddies.map((id) => rowById.get(id)?.people?.id).filter(Boolean);
+    const { data, error } = await supabase
+      .from('agreement_signatures')
+      .select('agreement_id, person_id, registration_id')
+      .in('agreement_id', ourAgreementIds)
+      .in('person_id', personIds);
+    if (error) fail('buddy waiver signatures', error);
+    const sig = new Set((data ?? []).map((s) => `${s.agreement_id}:${s.person_id}:${s.registration_id}`));
+    for (const id of unsignedBuddies) {
+      const r = rowById.get(id);
+      const all = ourAgreementIds.every((a) =>
+        sig.has(`${a}:${r?.people?.id}:${r?.registrations?.id}`)
+      );
+      if (all) buddySigned.add(id);
     }
   }
+  // 'needed' (unsigned, or no accepted confirmation and none waiting),
+  // 'checking' (a confirmation uploaded, not yet checked), 'on_file', or null
+  // when the activity carries no waiver.
   const waiverOf = (id) => {
     if (!hasWaiver) return null;
-    if (statusById.has(id)) return owed.has(id) ? 'needed' : 'on_file';
-    const uploadOk = !hasProvider || buddyUpload.has(id);
-    const signOk = ourAgreementIds.length === 0 || buddySigned.has(id);
-    return uploadOk && signOk ? 'on_file' : 'needed';
+    const oursOk =
+      ourAgreementIds.length === 0 || (statusById.has(id) ? !owesOurs.has(id) : buddySigned.has(id));
+    const upload = hasProvider ? uploadStatus.get(id) ?? 'missing' : 'accepted';
+    if (!oursOk || upload === 'missing' || upload === 'rejected') return 'needed';
+    if (upload === 'pending') return 'checking';
+    return 'on_file';
   };
 
   // ---- People ---------------------------------------------------------------

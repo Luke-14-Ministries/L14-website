@@ -35,6 +35,7 @@ function Person({ id, people, minAge }) {
       {p.ageUnknown && <span className="ml-1 text-xs font-semibold">age unknown — check</span>}
       {p.waiver === 'on_file' && <span className="ml-1 text-xs">· waiver ✓</span>}
       {p.waiver === 'needed' && <span className="ml-1 text-xs font-semibold">· waiver NEEDED</span>}
+      {p.waiver === 'checking' && <span className="ml-1 text-xs font-semibold">· waiver not yet checked</span>}
       {p.ask && <span className="ml-1 text-xs font-semibold">· ask the coordinator</span>}
     </span>
   );

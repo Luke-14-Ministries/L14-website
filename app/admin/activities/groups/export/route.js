@@ -42,7 +42,7 @@ export async function GET(request) {
       p.age ?? '',
       p.under ? 'yes' : '',
       // An activity with no waiver of either kind has nothing to be on file.
-      p.waiver == null ? 'n/a' : p.waiver === 'on_file' ? 'yes' : 'no',
+      p.waiver == null ? 'n/a' : p.waiver === 'on_file' ? 'yes' : p.waiver === 'checking' ? 'uploaded, not yet checked' : 'no',
     ];
   };
 
