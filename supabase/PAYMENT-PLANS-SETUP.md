@@ -56,7 +56,9 @@ also decide whether a family keeps the early discount when a plan fails or is ca
 ## Test script (test mode)
 
 Stripe test card `4242 4242 4242 4242` always succeeds. Card `4000 0000 0000 0341` saves
-fine but every later charge is declined, which is good for testing failures. Stripe's
+fine but every charge on it is declined -- including the deposit, which Checkout charges at
+once, so a plan cannot be *started* with it (found 27 Oct 2026). Start the plan with 4242,
+then switch the plan to 0341 with **Change card or bank account** (a setup page, no charge). Stripe's
 test bank accounts are listed in the Stripe docs under ACH testing.
 
 1. Register a test family for a Camp Celebrate week before the early date. The
@@ -72,8 +74,10 @@ test bank accounts are listed in the Stripe docs under ACH testing.
    On a normal day it lists nothing, because no payment is due yet. To test a real
    charge, set the first installment's `due_on` to today in the Table Editor
    (`payment_installments`), then run the same command without `?dry=1`.
-4. Repeat step 2 with card 0341, bring a payment forward as in step 3, and run the
-   charger. The family gets a "payment problem" email and the plan shows a retry date.
+4. On the plan from step 2, press **Change card or bank account** on the dashboard and save
+   card 0341 (nothing is charged). Bring a payment forward as in step 3 and run the
+   charger. After the FIRST failure staff see an amber *Plan payment failed — retrying*
+   flag (Awaiting review, the Overview, the plan card). The family gets a "payment problem" email and the plan shows a retry date.
    After three failures the plan stops and staff get an alert, subject
    *[Payment plans] Plan stopped — <household> — <event>*, with what was owed, the
    remaining balance, the family's email and phone, and an *Open the registration*
