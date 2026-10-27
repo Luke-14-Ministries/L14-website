@@ -23,8 +23,16 @@
 //                  emergency contact -- hides the rest behind "Tell us more")
 //   onShowAll      called when that button is pressed
 //   idPrefix       keeps radio groups apart when several people share a page
+//   caregiverSlot  what shows under "Will a caregiver be attending?" on yes:
+//                  the wizard passes its "who is the caregiver" picker; the
+//                  dashboard form leaves it out and gets the line pointing at
+//                  Manage Household, where caregivers are linked
+//
+// The questions' wording lives in SUPPORT_QUESTIONS (lib/support.js), shared
+// with the staff page that reads the answers back.
 
-import { ALLERGENS, hasFullerDetail } from '@/lib/support';
+import Link from 'next/link';
+import { ALLERGENS, hasFullerDetail, SUPPORT_QUESTIONS as Q } from '@/lib/support';
 import { formatPhone } from '@/lib/format';
 
 const input = 'w-full rounded-sm border border-neutral-300 px-4 py-2.5';
@@ -86,6 +94,7 @@ export default function SupportDetailsFields({
   showAll = true,
   onShowAll = () => {},
   idPrefix = '',
+  caregiverSlot = null,
 }) {
   const set = (k) => (e) => {
     const v = e.target.value;
@@ -144,16 +153,22 @@ export default function SupportDetailsFields({
   const sleepQuestion = (
     <YesNo
       id={`${idPrefix}sleep`}
-      question={`Does ${name} have trouble sleeping away from home?`}
+      question={Q.night(name)}
       value={f.has_sleep_disturbance}
       onChange={setFlag('has_sleep_disturbance')}
     >
-      <label className={label}>What helps at night?</label>
-      <textarea className={input} rows={2} value={f.sleep_notes} onChange={set('sleep_notes')} />
+      <label className={label}>{Q.nightDetail}</label>
+      <textarea
+        className={input}
+        rows={2}
+        value={f.sleep_notes}
+        onChange={set('sleep_notes')}
+        placeholder={Q.nightExample}
+      />
     </YesNo>
   );
 
-  // "A hard day" ("Every camper has one") and "Will a caregiver be attending?"
+  // "When camp gets hard" and "Will a caregiver be attending?"
   // are about campers, so a non-camper's "Tell us more" does not ask them
   // (row 17). As with the About questions, anyone who already has answers
   // there keeps seeing them.
@@ -362,37 +377,35 @@ export default function SupportDetailsFields({
         <>
           {hardDayOpen && (
             <>
-              <Heading hint="Every camper has one. Knowing what helps in advance means staff can help instead of guess.">
-                A hard day
-              </Heading>
-              <label className={label}>What tends to set {name} off, or make things harder?</label>
+              <Heading hint={Q.hardDayHint}>{Q.hardDayHeading}</Heading>
+              <label className={label}>{Q.triggers(name)}</label>
               <textarea
                 className={input}
                 rows={2}
                 value={f.behaviour_triggers}
                 onChange={set('behaviour_triggers')}
-                placeholder="Loud rooms, changes to the plan, being rushed, hunger…"
+                placeholder={Q.triggersExample}
               />
 
-              <label className={label}>What helps them settle?</label>
+              <label className={label}>{Q.helps(name)}</label>
               <textarea
                 className={input}
                 rows={3}
                 value={f.redirection_strategies}
                 onChange={set('redirection_strategies')}
-                placeholder="A quiet corner, a favourite song, a walk, a five-minute warning before changes"
+                placeholder={Q.helpsExample}
               />
 
               {/* E34. Here rather than on a page of its own: a leader reading
                   "loves trains, hates loud singing" is reading it for the same
                   reason they read the two boxes above. */}
-              <label className={label}>What does {name} enjoy, and what do they avoid?</label>
+              <label className={label}>{Q.likes(name)}</label>
               <textarea
                 className={input}
                 rows={2}
                 value={f.likes_dislikes}
                 onChange={set('likes_dislikes')}
-                placeholder="Loves water and music, avoids crowds and face paint..."
+                placeholder={Q.likesExample}
               />
 
               {isCamper && sleepQuestion}
@@ -403,18 +416,18 @@ export default function SupportDetailsFields({
           {/* E38. Free text, and only for now: the right shape is probably a
               few tick-boxes with a box beside them, and Ellen has been asked
               what the options should be. */}
-          <label className={label}>
-            Anything about who {name} shares a room with, or the room itself?
-          </label>
+          <p className="mb-1 text-sm text-neutral-700">{Q.roomingIntro(name)}</p>
+          <label className={label}>{Q.rooming(name)}</label>
           <textarea
             className={input}
             rows={2}
             value={f.rooming_preferences}
             onChange={set('rooming_preferences')}
-            placeholder="Near a bathroom, ground floor, shares with their brother, needs a quiet end..."
+            placeholder={Q.roomingExample}
           />
           <p className="mt-1 mb-4 text-xs text-neutral-500">
-            Staff do the room assignments and will get as close to this as the buildings allow.
+            Leave it blank if rooming with your family is all {name} needs. Staff make the room
+            assignments and will get as close to this as the buildings allow.
           </p>
 
           {/* "Does X need a one-to-one buddy?" was removed on 31 August 2026:
@@ -423,14 +436,20 @@ export default function SupportDetailsFields({
           {caregiverOpen && (
             <YesNo
               id={`${idPrefix}caregiver`}
-              question={`Will a caregiver be attending with ${name}?`}
+              question={Q.caregiver(name)}
               value={f.has_caregiver}
               onChange={setFlag('has_caregiver')}
             >
-              <p className="mt-2 text-sm text-neutral-600">
-                Make sure they are added to your registration as well, so they have a place and a
-                meal.
-              </p>
+              {caregiverSlot ?? (
+                <p className="mt-2 text-sm text-neutral-600">
+                  Make sure they are registered for the event as well, so they have a place and a
+                  meal. Once they are, link them as {name}&rsquo;s caregiver on{' '}
+                  <Link href="/account/household/" className="text-brand underline">
+                    Manage household
+                  </Link>{' '}
+                  — that tells staff who to reach for {name} during camp.
+                </p>
+              )}
             </YesNo>
           )}
         </>
@@ -443,8 +462,8 @@ export default function SupportDetailsFields({
         <div className="mt-5 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 text-center">
           <p className="text-sm text-neutral-700">
             We&rsquo;ve kept this short because {name} isn&rsquo;t registered as a camper. If
-            there is more we should know — regular medications, seizures, who they would like to
-            room with — it all matters just as much.
+            there is more we should know — regular medications, seizures, help getting around,
+            anything about their room — it all matters just as much.
           </p>
           <button type="button" onClick={onShowAll} className="btn-outline py-1.5! text-sm mt-3">
             Tell us more about {name}

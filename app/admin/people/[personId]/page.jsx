@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { allergyPill, statusPill } from '@/lib/format';
-import { allergySummary, allergenWords } from '@/lib/support';
+import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/support';
 import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
@@ -268,31 +268,32 @@ function FormAnswers({ sensitive, support, name }) {
           </Answer>
         </AnswerGroup>
 
-        <AnswerGroup title="A hard day">
-          <Answer q={`What tends to set ${name} off, or make things harder?`}>
+        {/* The family's own wording (SUPPORT_QUESTIONS, lib/support.js). */}
+        <AnswerGroup title={Q.hardDayHeading}>
+          <Answer q={Q.triggers(name)}>
             <AnswerText value={s.behaviour_triggers} />
           </Answer>
-          <Answer q="What helps them settle?">
+          <Answer q={Q.helps(name)}>
             <AnswerText value={s.redirection_strategies} />
           </Answer>
-          <Answer q={`What does ${name} enjoy, and what do they avoid?`}>
+          <Answer q={Q.likes(name)}>
             <AnswerText value={s.likes_dislikes} />
           </Answer>
-          <Answer q={`Does ${name} have trouble sleeping away from home?`}>
+          <Answer q={Q.night(name)}>
             <AnswerYesNo value={s.has_sleep_disturbance} saved={saved} tone="amber" />
           </Answer>
           {showDetail(s.has_sleep_disturbance, s.sleep_notes) && (
-            <Answer q="What helps at night?">
+            <Answer q={Q.nightDetail}>
               <AnswerText value={s.sleep_notes} />
             </Answer>
           )}
         </AnswerGroup>
 
         <AnswerGroup title="Support at camp">
-          <Answer q={`Anything about who ${name} shares a room with, or the room itself?`}>
+          <Answer q={Q.rooming(name)}>
             <AnswerText value={s.rooming_preferences} />
           </Answer>
-          <Answer q={`Will a caregiver be attending with ${name}?`}>
+          <Answer q={Q.caregiver(name)}>
             <AnswerYesNo value={s.has_caregiver} saved={saved} tone="amber" />
           </Answer>
         </AnswerGroup>
