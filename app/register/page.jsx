@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { programOf, registrationOpen, OPEN_EVENT_COLUMNS, enrollmentOption } from '@/lib/events';
 
@@ -59,9 +60,18 @@ export default async function RegisterPage() {
   return (
     <section className="bg-neutral-50 py-12 min-h-[60vh]">
       <div className="container-site max-w-2xl mx-auto">
-        <h1 className="text-4xl font-bold text-center">Register</h1>
-        <p className="text-center text-neutral-600 mt-3 mb-8">
-                    Choose what you&rsquo;re registering for. One account covers your
+        {/* Signed in, the account pages' header (26 Oct 2026): title left,
+            the Back to dashboard pill right. A visitor keeps the public hero. */}
+        {user ? (
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h1 className="text-3xl font-bold">Register</h1>
+            <BackLink />
+          </div>
+        ) : (
+          <h1 className="text-4xl font-bold text-center">Register</h1>
+        )}
+        <p className={`${user ? 'mt-2' : 'text-center mt-3'} text-neutral-600 mb-8`}>
+          Choose what you&rsquo;re registering for. One account covers your
           whole family, every event, and volunteering. Registering for a group
           home or a church group? Same form: your account is the household, and
           you add everyone you&rsquo;re bringing.
@@ -126,16 +136,8 @@ export default async function RegisterPage() {
           </div>
         )}
 
-        <p className="mt-8 text-center text-sm text-neutral-600">
-          {user ? (
-            <Link
-              href="/account/dashboard/"
-              className="text-brand underline font-semibold"
-            >
-              &larr; Back to my dashboard
-            </Link>
-          ) : (
-            <>
+        {!user && (
+          <p className="mt-8 text-center text-sm text-neutral-600">
               Already have an account?{' '}
               <Link
                 href="/account/?next=%2Fregister%2F"
@@ -144,9 +146,8 @@ export default async function RegisterPage() {
                 Log in
               </Link>{' '}
               &mdash; you&rsquo;ll come straight back here.
-            </>
-          )}
-        </p>
+          </p>
+        )}
       </div>
     </section>
   );

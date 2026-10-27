@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import DetailsForm from './DetailsForm';
@@ -86,18 +86,14 @@ export default async function PersonDetailsPage({ params }) {
   return (
     <section className="bg-neutral-50 py-12">
       <div className="container-site max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold text-center">
-          Support details for {name}
-        </h1>
-        <p className="text-center text-neutral-600 mt-3 mb-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="text-3xl font-bold">Support details for {name}</h1>
+          <BackLink />
+        </div>
+        <p className="text-neutral-600 mt-2 mb-8">
           This is the fuller form we mentioned when you registered. It helps camp staff
           look after {name} well — and it is how a week goes right rather than nearly
           right.
-        </p>
-        <p className="text-center text-sm mb-8">
-          <Link href="/account/dashboard/" className="text-brand underline font-semibold">
-            &larr; Back to my dashboard
-          </Link>
         </p>
 
         <DetailsForm

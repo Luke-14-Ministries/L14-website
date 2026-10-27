@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
@@ -147,19 +147,17 @@ export default async function AgreementsPage() {
     <section className="bg-neutral-50 py-12 print:bg-white print:py-0">
       <div className="container-site max-w-3xl mx-auto">
         <div className="print:hidden">
-          <h1 className="text-4xl font-bold text-center">My Agreements</h1>
-          <p className="text-center text-neutral-600 mt-3">
+          {/* The account pages' header (26 Oct 2026): title left, the Back to
+              dashboard pill right; Print, this page's action, below the intro. */}
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h1 className="text-3xl font-bold">My Agreements</h1>
+            <BackLink />
+          </div>
+          <p className="text-neutral-600 mt-2">
             Everything you have signed, with the exact wording you agreed to.
           </p>
-          {/* Site rule (24 Aug): the top-of-page escape is a TEXT link;
-              buttons are for actions on this page. Print is the action here. */}
-          <p className="text-center text-sm mt-4">
-            <Link href="/account/dashboard/" className="text-brand underline font-semibold">
-              &larr; Back to my dashboard
-            </Link>
-          </p>
           {signatures.length > 0 && (
-            <div className="mt-4 mb-8 flex justify-center">
+            <div className="mt-4 mb-8">
               <PrintButton />
             </div>
           )}
@@ -193,7 +191,7 @@ export default async function AgreementsPage() {
         )}
 
         {!householdId || signatures.length === 0 ? (
-          <p className="text-center text-neutral-600">
+          <p className="mt-6 text-neutral-600">
             You haven&rsquo;t signed anything yet. Agreements are presented as part of
             registration, and your signed copy appears here afterwards.
           </p>

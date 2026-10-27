@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import BackLink from '@/components/BackLink';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
 import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
@@ -113,9 +114,12 @@ export default async function MyStatementPage({ params }) {
 
   return (
     <div className="print-sheet mx-auto max-w-2xl p-8 bg-white print:text-[12px] text-neutral-900">
-      <div className="flex items-center justify-between mb-6 print:hidden">
-        <h1 className="text-xl font-bold">My statement</h1>
-        <PrintButton />
+      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-6 print:hidden">
+        <h1 className="text-3xl font-bold">My statement</h1>
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink />
+        </span>
       </div>
 
       {/* Letterhead */}

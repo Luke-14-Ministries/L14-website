@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { getStripe } from '@/lib/stripe/server';
 import { dollars } from '@/lib/payments';
 
@@ -27,12 +27,17 @@ export default async function PaySuccessPage({ searchParams }) {
 
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
-      <div className="container-site max-w-md mx-auto">
-        <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8 text-center">
-          <div className="text-4xl mb-2">{pending ? '⏳' : '✅'}</div>
-          <h1 className="text-2xl font-bold mb-3">
-            {pending ? 'Payment on its way' : 'Thank you — payment received'}
+      <div className="container-site max-w-2xl mx-auto">
+        {/* The account pages' header (26 Oct 2026): title left, the Back to
+            dashboard pill right -- a full page load, so the dashboard shows
+            this payment. */}
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-6">
+          <h1 className="text-3xl font-bold">
+            {pending ? 'Payment on its way ⏳' : 'Thank you — payment received ✅'}
           </h1>
+          <BackLink hard />
+        </div>
+        <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
           <p className="text-neutral-700">
             {amount != null ? (
               <>
@@ -49,9 +54,6 @@ export default async function PaySuccessPage({ searchParams }) {
             Registration payments for camp and other ministry events cover event costs (food,
             lodging, and activities) and are not tax-deductible.
           </p>
-          <Link href="/account/dashboard/" className="btn-primary py-2! mt-6 inline-block">
-            Back to my dashboard
-          </Link>
         </div>
       </div>
     </section>

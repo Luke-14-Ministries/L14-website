@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff } from '@/lib/staff';
 import SecurityManager from './SecurityManager';
@@ -24,10 +24,10 @@ export default async function SecurityPage({ searchParams }) {
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-lg mx-auto">
-        <div className="mb-6">
-          <Link href="/account/dashboard/" className="text-sm text-brand underline">
-            ← Back to my account
-          </Link>
+        {/* The account pages' back pill (26 Oct 2026); the page's title is
+            SecurityManager's own heading, just below. */}
+        <div className="mb-4 flex justify-end">
+          <BackLink />
         </div>
         <SecurityManager required={required || Boolean(staff)} />
       </div>

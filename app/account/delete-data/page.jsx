@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import DeleteDataForm from './DeleteDataForm';
@@ -35,10 +35,10 @@ export default async function DeleteDataPage() {
 
   return (
     <section className="mx-auto max-w-2xl px-4 py-10">
-      <p className="text-sm">
-        <Link href="/account/dashboard/" className="text-brand underline font-semibold">&larr; Back to my dashboard</Link>
-      </p>
-      <h1 className="mt-4 text-3xl font-bold">Delete my data</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h1 className="text-3xl font-bold">Delete my data</h1>
+        <BackLink />
+      </div>
       <p className="mt-3 text-neutral-700">
         You can ask us to delete your family&rsquo;s medical information, or your whole account. A
         staff member looks at every request and will contact you before anything is removed. Some

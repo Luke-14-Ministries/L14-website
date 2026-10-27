@@ -103,7 +103,10 @@ export default async function VolunteerPage() {
     return (
       <section className="bg-neutral-50 py-12">
         <div className="container-site max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold text-center">Volunteer with Us</h1>
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h1 className="text-3xl font-bold">Volunteer with Us</h1>
+            <BackLink />
+          </div>
           <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6 mt-8">
             <h2 className="text-lg font-bold mb-2">First, register for the week</h2>
             <p className="text-neutral-700 mb-4">
@@ -258,14 +261,9 @@ export default async function VolunteerPage() {
             />
           ))}
         </div>
-        {/* The way out. After submitting, this page shows status chips and
-            View/edit -- and previously nothing else, leaving people stranded
-            (reported from mobile testing). */}
-        <p className="mt-8 text-center text-sm">
-          <Link href="/account/dashboard/" className="text-brand underline font-semibold">
-            &larr; Back to my dashboard
-          </Link>
-        </p>
+        {/* The way out is the header's Back to dashboard pill, and the
+            floating one below once scrolled (reported from mobile testing:
+            after submitting, people were stranded). */}
 
         <BackBar />
       </div>

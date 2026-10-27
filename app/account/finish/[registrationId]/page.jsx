@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { balanceDueOn, formatDueDate, dateISO } from '@/lib/events';
@@ -154,9 +153,6 @@ export default async function FinishPage({ params }) {
               {route.route === 'scholarship' &&
                 'Your scholarship request is with camp staff. They will be in touch.'}
             </p>
-            <Link href="/account/dashboard/" className="btn-primary mt-3 inline-block py-2!">
-              Go to my dashboard
-            </Link>
           </div>
         ) : (
           <FinishChoices

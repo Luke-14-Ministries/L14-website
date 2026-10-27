@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import BackLink from '@/components/BackLink';
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import ScholarshipForm from './ScholarshipForm';
@@ -127,16 +127,14 @@ export default async function ScholarshipPage({ params }) {
   return (
     <section className="bg-neutral-50 py-12">
       <div className="container-site max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold text-center">Help with the fee</h1>
-        <p className="text-center text-neutral-700 mt-3 max-w-xl mx-auto">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="text-3xl font-bold">Help with the fee</h1>
+          <BackLink />
+        </div>
+        <p className="text-neutral-700 mt-2 mb-8">
           Luke 14 raises money so that cost is not the reason someone stays home. If the fee
           for {reg.events?.name ?? 'this event'} is difficult, please ask — it is an ordinary
           part of how camp works, and asking will not affect anyone&rsquo;s place.
-        </p>
-        <p className="text-center text-sm mt-4 mb-8">
-          <Link href="/account/dashboard/" className="text-brand underline font-semibold">
-            &larr; Back to my dashboard
-          </Link>
         </p>
 
         <ScholarshipForm
@@ -148,7 +146,7 @@ export default async function ScholarshipPage({ params }) {
           eventName={reg.events?.name ?? ''}
         />
 
-        <p className="text-center text-sm text-neutral-500 mt-8">
+        <p className="text-sm text-neutral-500 mt-8">
           Questions about paying? Email registration@luke14ministries.net or call the office.
         </p>
 

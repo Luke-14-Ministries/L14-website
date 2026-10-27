@@ -34,19 +34,17 @@ export default async function ManageHouseholdPage() {
   if (!householdId) {
     return (
       <section className="bg-neutral-50 py-12 min-h-[60vh]">
-        <div className="container-site max-w-xl mx-auto text-center">
-          <h1 className="text-3xl font-bold">Manage Household</h1>
-          <p className="mt-4 text-neutral-700">
+        <div className="container-site max-w-3xl mx-auto">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h1 className="text-3xl font-bold">Manage Household</h1>
+            <BackLink />
+          </div>
+          <p className="mt-2 text-neutral-700">
             No household on file yet — one is created the first time you register.
           </p>
           <Link href="/register/" className="btn-primary mt-6 inline-block">
             Register for an Event
           </Link>
-          <p className="mt-4 text-sm">
-            <Link href="/account/dashboard/" className="text-brand underline font-semibold">
-              &larr; Back to my dashboard
-            </Link>
-          </p>
         </div>
       </section>
     );
