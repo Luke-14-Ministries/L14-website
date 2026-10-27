@@ -443,6 +443,107 @@ $$;
 
 
 -- ---------------------------------------------------------------------
+-- "Talked with Larry about the Apostles' Creed" (0129): written only
+-- through mark_creed_discussed() / clear_creed_discussed(), Registration
+-- write, stamped by the database. Its own block, cleaned up after itself.
+-- ---------------------------------------------------------------------
+do $$
+declare
+  uA uuid; uR uuid; uC uuid; hA uuid; regA uuid;
+  evNew uuid; regNew uuid;
+  was_at timestamptz;
+  n bigint;
+begin
+  select v into uA from t where k='uA';   select v into uR from t where k='uR';
+  select v into uC from t where k='uC';   select v into hA from t where k='hA';
+  select v into regA from t where k='regA';
+
+  set local role authenticated;
+
+  -- Registration write marks it; who and when are the database's.
+  perform pg_temp.as_user(uR);
+  select public.mark_creed_discussed(regA, '  Spoke on the phone; happy to serve.  ') into was_at;
+  select count(*) into n from public.registrations
+   where id = regA and creed_discussed_at = was_at and creed_discussed_by = uR
+     and creed_discussed_note = 'Spoke on the phone; happy to serve.';
+  perform pg_temp.expect('Registration write records the Creed conversation, stamped with who and when (0129)', n, 1);
+  perform pg_temp.expect_denied('a Creed note over 500 characters is refused (0129)',
+    format('select public.mark_creed_discussed(%L, %L)', regA, repeat('x', 501)));
+  -- Not even Registration write sets the columns directly.
+  perform pg_temp.expect_denied('staff cannot forge the Creed stamps directly (0129)',
+    format('update public.registrations set creed_discussed_by = %L where id = %L', uC, regA));
+  perform pg_temp.expect_denied('staff cannot clear the Creed record directly (0129)',
+    format('update public.registrations set creed_discussed_at = null, creed_discussed_by = null, creed_discussed_note = null where id = %L', regA));
+  -- Other columns still save around it.
+  update public.registrations set family_notes = 'edited 0129' where id = regA;
+  select count(*) into n from public.registrations
+   where id = regA and family_notes = 'edited 0129' and creed_discussed_by = uR;
+  perform pg_temp.expect('an ordinary staff edit leaves the Creed record alone (0129)', n, 1);
+
+  -- A family cannot mark, clear or forge it (it can read its own row).
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.registrations where id = regA and creed_discussed_at is not null;
+  perform pg_temp.expect('the family''s account reads its own Creed record (0129, accepted)', n, 1);
+  perform pg_temp.expect_denied('a family cannot record the Creed conversation (0129)',
+    format('select public.mark_creed_discussed(%L, ''we did'')', regA));
+  perform pg_temp.expect_denied('a family cannot clear the Creed record (0129)',
+    format('select public.clear_creed_discussed(%L)', regA));
+  perform pg_temp.expect_denied('a family cannot change the Creed record directly (0129)',
+    format('update public.registrations set creed_discussed_note = ''forged'' where id = %L', regA));
+
+  -- Registration READ cannot either.
+  perform pg_temp.as_user(uC);
+  perform pg_temp.expect_denied('Registration READ cannot record the Creed conversation (0129)',
+    format('select public.mark_creed_discussed(%L, ''x'')', regA));
+  perform pg_temp.expect_denied('Registration READ cannot clear the Creed record (0129)',
+    format('select public.clear_creed_discussed(%L)', regA));
+  perform pg_temp.expect_no_effect('Registration READ cannot change the Creed record directly (0129)',
+    format('update public.registrations set creed_discussed_at = null where id = %L', regA));
+  select count(*) into n from public.registrations where id = regA and creed_discussed_by = uR;
+  perform pg_temp.expect('the Creed record survives the refused attempts (0129)', n, 1);
+
+  set local role anon;
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform pg_temp.expect_denied('anon cannot record the Creed conversation (0129)',
+    format('select public.mark_creed_discussed(%L, null)', regA));
+  set local role authenticated;
+
+  -- Marking again re-stamps; a blank note is no note.
+  perform pg_temp.as_user(uR);
+  perform public.mark_creed_discussed(regA, '   ');
+  select count(*) into n from public.registrations
+   where id = regA and creed_discussed_at >= was_at and creed_discussed_by = uR and creed_discussed_note is null;
+  perform pg_temp.expect('marking again re-stamps and a blank note is stored as none (0129)', n, 1);
+
+  -- Registration write clears it.
+  perform public.clear_creed_discussed(regA);
+  select count(*) into n from public.registrations
+   where id = regA and creed_discussed_at is null and creed_discussed_by is null and creed_discussed_note is null;
+  perform pg_temp.expect('Registration write clears the Creed record (0129)', n, 1);
+  perform pg_temp.expect_denied('marking a registration that does not exist is refused (0129)',
+    format('select public.mark_creed_discussed(%L, null)', gen_random_uuid()));
+
+  -- A family's new registration is born without a Creed record.
+  set local role postgres;
+  insert into public.events (id, name, event_type, starts_on, ends_on, published)
+    values (gen_random_uuid(), 'Creed Week 0129', 'camp_week', current_date + 30, current_date + 34, true)
+    returning id into evNew;
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  insert into public.registrations (household_id, event_id, creed_discussed_at, creed_discussed_by, creed_discussed_note)
+    values (hA, evNew, now(), uR, 'forged') returning id into regNew;
+  set local role postgres;
+  select count(*) into n from public.registrations
+   where id = regNew and creed_discussed_at is null and creed_discussed_by is null and creed_discussed_note is null;
+  perform pg_temp.expect('a family''s new registration gets no Creed record (0129)', n, 1);
+  delete from public.registrations where id = regNew;
+  delete from public.events where id = evNew;
+  update public.registrations set family_notes = null where id = regA;
+end;
+$$;
+
+
+-- ---------------------------------------------------------------------
 -- Checks
 -- ---------------------------------------------------------------------
 
