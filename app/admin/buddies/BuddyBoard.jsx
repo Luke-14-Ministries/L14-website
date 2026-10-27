@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { assignBuddy, unassignBuddy, setBuddyPublication, setBuddyRequired } from './actions';
 import { clearancePill } from '@/lib/format';
 import { dayInMorristown } from '@/lib/events';
+import FoldArrow from '@/components/FoldArrow';
 
 // One pill, shared with Volunteers (lib/format.js, 0091): no record is not
 // the same as a failed check, on file is not the same as OK, and the
@@ -502,17 +503,15 @@ export default function BuddyBoard({
             type="button"
             onClick={() => setMarkOpen((o) => !o)}
             aria-expanded={markOpen}
-            className="flex w-full items-center justify-between gap-3 text-left"
+            className="flex w-full items-center gap-2 text-left"
           >
+            <FoldArrow open={markOpen} />
             <span>
               <span className="font-semibold">Marked as not needing a buddy</span>
               <span className="ml-2 text-sm text-neutral-500">
                 {otherCampers.length}{' '}
                 {otherCampers.length === 1 ? 'camper' : 'campers'} — put one back on the board
               </span>
-            </span>
-            <span className="text-sm text-brand underline">
-              {markOpen ? 'Hide' : 'Show'}
             </span>
           </button>
 

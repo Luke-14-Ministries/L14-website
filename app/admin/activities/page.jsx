@@ -493,7 +493,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                       <a href="#to-check" className="text-brand underline">Confirmations to check</a> above.
                     </p>
                     <details className="mt-0.5 text-xs text-neutral-500">
-                      <summary className="cursor-pointer">How this works</summary>
+                      <summary className="fold-summary">How this works</summary>
                       <p className="mt-1">
                         The provider&rsquo;s own waiver is the family&rsquo;s to complete with them; they
                         upload proof here. Each upload is <em>awaiting check</em> until someone with

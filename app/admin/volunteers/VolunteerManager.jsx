@@ -147,7 +147,7 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
       {error && <p className="mt-2 text-red-700">{error}</p>}
       {(clearance?.log ?? []).length > 0 && (
         <details className="mt-3 text-xs text-neutral-600">
-          <summary className="cursor-pointer font-semibold">History ({clearance.log.length} most recent changes)</summary>
+          <summary className="fold-summary font-semibold">History ({clearance.log.length} most recent changes)</summary>
           <ul className="mt-1 space-y-0.5">
             {clearance.log.map((l, i) => (
               <li key={i}>

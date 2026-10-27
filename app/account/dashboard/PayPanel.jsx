@@ -285,7 +285,7 @@ export default function PayPanel({
           obligations, so they live here now (24 Aug) -- shown to the people
           who need them, at the moment they need them, signed by nobody. */}
       <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-brand underline">
+        <summary className="fold-summary text-brand underline">
           Prefer to mail a check?
         </summary>
         <div className="mt-2 rounded-sm border border-neutral-200 bg-white p-3 text-neutral-700">

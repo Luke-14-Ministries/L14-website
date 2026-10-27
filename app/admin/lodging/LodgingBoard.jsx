@@ -7,6 +7,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { assignLodging, unassignLodging, setLodgingPublication } from './actions';
 import { dayInMorristown } from '@/lib/events';
+import FoldArrow from '@/components/FoldArrow';
 
 const KIND_LABEL = {
   cabin: 'Cabin',
@@ -52,15 +53,6 @@ function floorsOf(rooms) {
   }
   if (m.size < 2 || m.has(null)) return null;
   return [...m.entries()].sort((a, b) => a[0] - b[0]);
-}
-
-// The ▶ that turns when a group is open, as on FoldCard.
-function FoldArrow({ open }) {
-  return (
-    <span aria-hidden className={`inline-block text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}>
-      ▶
-    </span>
-  );
 }
 
 const ROLE_SHORT = {

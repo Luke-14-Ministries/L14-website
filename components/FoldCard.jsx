@@ -4,9 +4,11 @@
 // pattern as My Registrations on the dashboard (RegistrationsPanel.jsx): a
 // real button inside the heading, so the heading stays a heading for screen
 // readers and the button says whether the card is open. `badges` stay in the
-// title, so what matters is visible with the card closed.
+// title, so what matters is visible with the card closed. The fold arrow is
+// the site's one marker (FoldArrow), at the left of the title.
 
 import { useId, useState } from 'react';
+import FoldArrow from './FoldArrow';
 
 export default function FoldCard({ title, badges = null, defaultOpen = true, className = '', children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -20,21 +22,11 @@ export default function FoldCard({ title, badges = null, defaultOpen = true, cla
           onClick={() => setOpen(!open)}
           aria-expanded={open}
           aria-controls={bodyId}
-          className="flex w-full flex-wrap items-center justify-between gap-3 text-left"
+          className="flex w-full flex-wrap items-center gap-2 text-left"
         >
-          <span className="flex flex-wrap items-center gap-2">
-            <span>{title}</span>
-            {badges}
-          </span>
-          <span className="flex items-center gap-2 text-sm font-normal text-neutral-500">
-            {open ? 'Hide' : 'Show'}
-            <span
-              aria-hidden
-              className={`inline-block text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
-            >
-              ▶
-            </span>
-          </span>
+          <FoldArrow open={open} />
+          <span>{title}</span>
+          {badges}
         </button>
       </h4>
       <div id={bodyId} hidden={!open} className="mt-3">

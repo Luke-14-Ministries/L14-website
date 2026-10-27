@@ -80,7 +80,7 @@ export default function StaffPlanPanel({
           </p>
           {plan.consented_at && (
             <details className="text-xs text-neutral-500 mt-1">
-              <summary className="cursor-pointer">
+              <summary className="fold-summary">
                 Consent given {new Date(plan.consented_at).toLocaleString('en-US', { timeZone: 'America/New_York' })}
               </summary>
               <p className="mt-1">{plan.consent_text}</p>

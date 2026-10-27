@@ -65,7 +65,7 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
       )}
       {upcoming.length > 0 && (
         <details className="mt-1">
-          <summary className="cursor-pointer text-brand">Full schedule</summary>
+          <summary className="fold-summary text-brand">Full schedule</summary>
           <ul className="mt-1 space-y-0.5">
             {upcoming.map((i) => (
               <li key={i.id}>

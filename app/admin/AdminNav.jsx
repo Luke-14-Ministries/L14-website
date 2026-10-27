@@ -8,6 +8,7 @@
 import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import FoldArrow from '@/components/FoldArrow';
 
 const OPEN_KEY = 'l14_admin_nav_events_open';
 
@@ -196,12 +197,10 @@ export default function AdminNav({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:bg-neutral-200 text-left"
+              className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 hover:bg-neutral-200 text-left"
             >
+              <FoldArrow open={open} />
               <span>{sec.label}</span>
-              <span aria-hidden className={`text-xs transition-transform ${open ? 'rotate-90' : ''}`}>
-                ▶
-              </span>
             </button>
             {open && sec.items.map((n) => <Item key={n.href} n={n} indent />)}
           </div>

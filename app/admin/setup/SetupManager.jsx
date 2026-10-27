@@ -753,8 +753,8 @@ function NewEventPanel({ events }) {
 // staffer opened stays open across router.refresh().
 // ---------------------------------------------------------------------------
 
-const SUMMARY =
-  'flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden';
+// The site's fold arrow on the left (fold-summary in globals.css, 26 Oct 2026).
+const SUMMARY = 'fold-summary flex items-center gap-1';
 
 function groupByYear(events) {
   const byYear = new Map();
@@ -787,9 +787,6 @@ function YearGroup({ year, list, past }) {
             {list.length} {list.length === 1 ? 'event' : 'events'} · {visible} published
             {past ? ' · finished' : ''}
           </span>
-        </span>
-        <span aria-hidden="true" className="text-neutral-400 transition-transform group-open:rotate-180">
-          &#9662;
         </span>
       </summary>
       <div className="space-y-4 border-t border-neutral-200 p-4">

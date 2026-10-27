@@ -20,6 +20,7 @@ import {
   generateSlots,
 } from './actions';
 import { activityDayBounds, formatDayShort } from '@/lib/events';
+import FoldArrow from '@/components/FoldArrow';
 
 // Wall-clock, formatted as people say it. No timezone maths anywhere in this
 // file, by design (0052): these are times AT CAMP, stored as a date and two
@@ -679,12 +680,7 @@ export function ActivityCard({
         className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg px-5 py-4 text-left hover:bg-neutral-50"
       >
         <span className="flex min-w-0 items-center gap-2">
-          <span
-            aria-hidden
-            className={`shrink-0 text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
-          >
-            ▶
-          </span>
+          <FoldArrow open={open} />
           <span className="text-lg font-bold">{name}</span>
           {!active && (
             <span className="shrink-0 rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-semibold text-neutral-600">
@@ -706,7 +702,6 @@ export function ActivityCard({
               </span>
             )}
           </span>
-          <span className="text-xs text-neutral-400">{open ? 'Hide' : 'Show'}</span>
         </span>
       </button>
 
@@ -788,9 +783,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
           aria-expanded={open}
           className="flex w-full flex-wrap items-center gap-2 text-left"
         >
-          <span aria-hidden className={`inline-block text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}>
-            ▶
-          </span>
+          <FoldArrow open={open} />
           Times
           <span className="text-xs font-normal text-neutral-500">
             {slots.length === 0 ? 'none set' : `${slots.length} ${slots.length === 1 ? 'time' : 'times'}`}
@@ -800,7 +793,6 @@ export function SlotEditor({ activity, slots = [], event = null }) {
               {misplaced} not during the event
             </span>
           )}
-          <span className="ml-auto text-xs font-normal text-neutral-500">{open ? 'Hide' : 'Show'}</span>
         </button>
       </h4>
       <p className="mt-0.5 text-xs text-neutral-500">

@@ -18,6 +18,7 @@
 
 import { useId } from 'react';
 import { useVisitChoice } from './visitChoice';
+import FoldArrow from '@/components/FoldArrow';
 
 export default function RegistrationsPanel({
   className = '',
@@ -40,9 +41,10 @@ export default function RegistrationsPanel({
           onClick={() => setOpen(!open)}
           aria-expanded={open}
           aria-controls={bodyId}
-          className="flex w-full flex-wrap items-center justify-between gap-3 text-left"
+          className="flex w-full flex-wrap items-center gap-2 text-left"
         >
           <span className="flex flex-wrap items-center gap-2">
+            <FoldArrow open={open} />
             <span>My Registrations</span>
             {needCount > 0 ? (
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-300">
@@ -53,15 +55,6 @@ export default function RegistrationsPanel({
                 All set
               </span>
             ) : null}
-          </span>
-          <span className="flex items-center gap-2 text-sm font-normal text-neutral-500">
-            {open ? 'Hide' : 'Show'}
-            <span
-              aria-hidden
-              className={`inline-block text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
-            >
-              ▶
-            </span>
           </span>
         </button>
       </h2>

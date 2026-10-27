@@ -3,16 +3,8 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import StaffManager from './StaffManager';
 
-const SUMMARY =
-  'flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden';
-
-function Chevron() {
-  return (
-    <span aria-hidden="true" className="text-neutral-400 transition-transform group-open:rotate-180">
-      &#9662;
-    </span>
-  );
-}
+// The site's fold arrow on the left (fold-summary in globals.css, 26 Oct 2026).
+const SUMMARY = 'fold-summary flex items-center gap-1';
 
 export const metadata = { title: 'Staff & Access — Staff Admin' };
 
@@ -106,7 +98,6 @@ export default async function StaffAccessPage() {
       <details className="group mb-6 rounded-lg bg-white border border-neutral-200 p-4 text-sm">
         <summary className={SUMMARY}>
           <span className="font-bold">How access works</span>
-          <Chevron />
         </summary>
         <p className="text-neutral-600 mt-3">
           <span className="font-semibold">The presets.</span>{' '}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import FoldArrow from '@/components/FoldArrow';
 
 // A card that folds.
 //
@@ -64,15 +65,10 @@ export default function Panel({ title, count = null, children, defaultOpen = tru
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 rounded-lg px-6 py-4 text-left hover:bg-neutral-50"
+        className="flex w-full items-center gap-3 rounded-lg px-6 py-4 text-left hover:bg-neutral-50"
       >
         <span className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className={`text-xs text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
-          >
-            ▶
-          </span>
+          <FoldArrow open={open} />
           <span className="text-lg font-bold">{title}</span>
           {count != null && (
             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-600">
@@ -80,7 +76,6 @@ export default function Panel({ title, count = null, children, defaultOpen = tru
             </span>
           )}
         </span>
-        <span className="text-xs text-neutral-400">{open ? 'Hide' : 'Show'}</span>
       </button>
       {open && <div className="border-t border-neutral-100 px-6 pb-6 pt-4">{children}</div>}
     </div>

@@ -16,6 +16,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { upsertLodging, retireLodging, restoreLodging, copyLodgingsFrom } from './actions';
+import FoldArrow from '@/components/FoldArrow';
 
 // What a top-level place can be, and what a place inside one can be. "Lodge"
 // stays for the rows that carry it from 0043; new named blocks whose rooms are
@@ -348,9 +349,10 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        className="flex w-full items-center gap-2 px-4 py-3 text-left"
         aria-expanded={open}
       >
+        <FoldArrow open={open} />
         <span className="font-semibold">
           Set up rooms
           <span className="ml-2 text-xs font-normal text-neutral-500">
@@ -361,7 +363,6 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
                 } rooms`}
           </span>
         </span>
-        <span className="text-sm text-brand">{open ? 'Hide' : 'Show'}</span>
       </button>
 
       {open && (

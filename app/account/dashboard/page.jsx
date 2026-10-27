@@ -848,7 +848,6 @@ export default async function DashboardPage({ searchParams }) {
             allDone={allDetailsDone}
             count={attendingPeople.length}
           >
-            <h2 className="text-xl font-bold">Support details</h2>
             <p className="mt-1 text-sm text-neutral-600">
               A short form for each person attending — allergies, medications, what helps on
               a hard day, and an emergency contact. Most of it is optional, but please fill

@@ -26,6 +26,7 @@
 // key carries what is outstanding, so a new need opens the card again.
 
 import { useVisitChoice } from './visitChoice';
+import FoldArrow from '@/components/FoldArrow';
 
 export default function RegistrationCard({
   eventName,
@@ -75,12 +76,7 @@ export default function RegistrationCard({
         className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-neutral-50 rounded-sm"
       >
         <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <span
-            aria-hidden
-            className={`shrink-0 text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
-          >
-            ▶
-          </span>
+          <FoldArrow open={open} />
           <span className="font-semibold">{eventName}</span>
           {dateLabel && (
             <span className="shrink-0 text-sm text-neutral-500">{dateLabel}</span>
@@ -113,7 +109,6 @@ export default function RegistrationCard({
           <span>
             {peopleLabel} · Total {totalLabel}
           </span>
-          <span className="text-xs text-neutral-400">{open ? 'Hide' : 'Show'}</span>
         </span>
       </button>
 

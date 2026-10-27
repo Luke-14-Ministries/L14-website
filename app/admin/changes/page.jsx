@@ -110,7 +110,7 @@ export default async function RecentChangesPage() {
           registrar who's here daily. (A hover tooltip would fail on the
           phones/tablets staff actually use.) */}
       <details className="mb-6 text-sm text-neutral-500">
-        <summary className="cursor-pointer text-brand font-semibold select-none">
+        <summary className="fold-summary text-brand font-semibold select-none">
           How reviewing works
         </summary>
         <p className="mt-1 pl-4 border-l-2 border-neutral-200">

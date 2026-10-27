@@ -13,6 +13,7 @@
 // staff editors. Errors still print beside the button in red.
 
 import { useEffect, useState, useTransition } from 'react';
+import FoldArrow from '@/components/FoldArrow';
 import { useRouter } from 'next/navigation';
 import SaveButton from '@/components/SaveButton';
 import PhotoUpload from '@/components/PhotoUpload';
@@ -47,23 +48,6 @@ function Chip({ children }) {
     <span className="rounded-full bg-neutral-100 px-2 text-[11px] font-semibold leading-5 text-neutral-700">
       {children}
     </span>
-  );
-}
-
-function Chevron({ open }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      className={`h-5 w-5 shrink-0 text-neutral-500 transition-transform ${open ? 'rotate-180' : ''}`}
-    >
-      <path
-        fillRule="evenodd"
-        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-        clipRule="evenodd"
-      />
-    </svg>
   );
 }
 
@@ -467,8 +451,9 @@ Anything already saved is untouched.`
                 aria-expanded={open}
                 aria-controls={bodyId}
                 onClick={() => setOpen(m.id, !open)}
-                className="flex w-full items-center gap-3 text-left"
+                className="flex w-full items-start gap-3 text-left"
               >
+                <FoldArrow open={open} className="mt-6" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-xs font-semibold uppercase tracking-wide text-neutral-400">
                     Person
@@ -490,7 +475,6 @@ Anything already saved is untouched.`
                 {missingPhone && (
                   <span className="shrink-0 text-sm font-semibold text-amber-700">Needs: phone</span>
                 )}
-                <Chevron open={open} />
               </button>
             </h2>
 

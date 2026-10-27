@@ -25,6 +25,7 @@
 // both shared with that form.
 
 import { useState } from 'react';
+import FoldArrow from '@/components/FoldArrow';
 import Link from 'next/link';
 import {
   formatPhone,
@@ -570,6 +571,7 @@ function Card({ id, n, title, subtitle, open, onToggle, status, children }) {
             open ? 'pb-2' : 'pb-6 sm:pb-8'
           }`}
         >
+          <FoldArrow open={open} className="mt-2" />
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-white text-sm font-bold">
             {n}
           </span>
@@ -583,20 +585,6 @@ function Card({ id, n, title, subtitle, open, onToggle, status, children }) {
               </span>
             )}
           </span>
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className={`mt-1 h-5 w-5 shrink-0 text-neutral-500 transition-transform ${
-              open ? 'rotate-180' : ''
-            }`}
-          >
-            <path
-              fillRule="evenodd"
-              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z"
-              clipRule="evenodd"
-            />
-          </svg>
         </button>
       </h2>
       <div

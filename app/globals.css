@@ -127,3 +127,31 @@
     box-decoration-break: clone;
   }
 }
+
+/*
+  The fold arrow on a native <details> (26 Oct 2026; components/FoldArrow.jsx
+  is the same arrow for buttons): a ▶ at the LEFT of the summary, turned to
+  point down while open, in place of the browser's own marker. Give the
+  <summary> the class `fold-summary`.
+*/
+@layer components {
+  summary.fold-summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  summary.fold-summary::-webkit-details-marker {
+    display: none;
+  }
+  summary.fold-summary::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 0.5em;
+    font-size: 0.75em;
+    line-height: 1;
+    color: var(--color-neutral-400);
+    transition: transform 150ms;
+  }
+  details[open] > summary.fold-summary::before {
+    transform: rotate(90deg);
+  }
+}

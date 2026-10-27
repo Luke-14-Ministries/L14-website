@@ -16,6 +16,7 @@ import { formatDueDateShort } from '@/lib/events';
 import { returnedFeeDisclosure } from '@/lib/plans';
 import { createCheckout } from '@/app/account/dashboard/pay/actions';
 import { startPaymentPlan } from './actions';
+import FoldArrow from '@/components/FoldArrow';
 
 // Module level, never inside the component (CLAUDE.md: a component defined in
 // another's body remounts on every render).
@@ -43,17 +44,12 @@ function OptionCard({ open, onToggle, title, summary, children }) {
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={bodyId}
-        className="flex w-full items-start justify-between gap-3 p-4 text-left"
+        className="flex w-full items-start gap-2 p-4 text-left"
       >
+        <FoldArrow open={open} className="mt-1.5" />
         <span>
           <span className="font-semibold">{title}</span>
           <span className="block text-sm text-neutral-600 mt-1">{summary}</span>
-        </span>
-        <span
-          aria-hidden
-          className={`mt-1 inline-block text-neutral-400 transition-transform ${open ? 'rotate-90' : ''}`}
-        >
-          ▶
         </span>
       </button>
       <div id={bodyId} hidden={!open} className="space-y-3 border-t border-neutral-200 px-4 pb-4 pt-3">

@@ -7,6 +7,7 @@ import { useState, useTransition } from 'react';
 import { ALLERGEN_LABEL } from '@/lib/support';
 import { useRouter } from 'next/navigation';
 import { markChangesReviewed, holdFromChange } from './actions';
+import FoldArrow from '@/components/FoldArrow';
 
 const SOURCE_LABEL = {
   people: 'Person details',
@@ -241,12 +242,7 @@ export default function ChangesList({ groups }) {
               className="flex items-center gap-2 text-left font-bold hover:text-brand"
               title={collapsed.has(g.householdId) ? 'Show changes' : 'Hide changes'}
             >
-              <span
-                aria-hidden
-                className={`text-xs transition-transform ${collapsed.has(g.householdId) ? '' : 'rotate-90'}`}
-              >
-                ▶
-              </span>
+              <FoldArrow open={!collapsed.has(g.householdId)} />
               {g.household}
               <span className="rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-xs font-semibold">
                 {g.changes.length} unreviewed

@@ -405,7 +405,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                     )}
                     {r.familyNote && (
                       <details className="mt-1 max-w-88">
-                        <summary className="cursor-pointer rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900 marker:text-amber-700">
+                        <summary className="fold-summary rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
                           Note from the family
                         </summary>
                         <p className="mt-1 whitespace-pre-wrap rounded-sm border border-amber-200 bg-amber-50/60 px-2 py-1 text-xs text-amber-900">
