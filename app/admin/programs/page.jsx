@@ -23,7 +23,7 @@ export default async function ProgramsPage({ searchParams }) {
 
   const supabase = await createClient();
 
-  const [{ data: allEvents }, { data: programs }] = await Promise.all([
+  const [{ data: allEvents, error: eventsError }, { data: programs, error: programsError }] = await Promise.all([
     supabase.from('events').select('id, name, event_type, starts_on, ends_on, archived_at').order('starts_on'),
     supabase
       .from('programs')
@@ -31,6 +31,9 @@ export default async function ProgramsPage({ searchParams }) {
       .eq('active', true)
       .order('sort_order'),
   ]);
+  // CLAUDE.md: never turn a query error into an empty list.
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
+  if (programsError) throw new Error(`Programs: ${programsError.message}`);
 
   // Retreats are sorted on arrival, not assigned here (2 Oct 2026; see
   // staffAssigns in lib/events.js).
@@ -52,7 +55,7 @@ export default async function ProgramsPage({ searchParams }) {
   // disambiguation ("which Jacob?") and the view deliberately does not carry
   // it -- a program leader has no business knowing which family somebody
   // belongs to beyond their own program.
-  const { data: participantRows } = selectedId
+  const { data: participantRows, error: participantError } = selectedId
     ? await supabase
         .from('registration_participants')
         .select(
@@ -62,7 +65,8 @@ export default async function ProgramsPage({ searchParams }) {
         )
         .eq('registrations.event_id', selectedId)
         .neq('status', 'cancelled')
-    : { data: [] };
+    : { data: [], error: null };
+  if (participantError) throw new Error(`Roster: ${participantError.message}`);
 
   // The FK hint is not optional. program_leaders has TWO foreign keys to
   // profiles (profile_id, the leader; granted_by, the administrator), so a
@@ -70,7 +74,8 @@ export default async function ProgramsPage({ searchParams }) {
   // with PGRST201. Until 29 Sep 2026 that error was dropped on the floor and
   // every card read "No leader named" while the grants sat in the database --
   // Testing Script 3 §5.3/§5.6, and the "reported twice" mystery in
-  // ProgramBoard. Errors on this page are logged, never swallowed.
+  // ProgramBoard. Errors on this page stop it, never swallowed -- logging
+  // alone still drew "No leader named".
   const { data: leaderRows, error: leaderError } = selectedId
     ? await supabase
         .from('program_leaders')
@@ -80,7 +85,7 @@ export default async function ProgramsPage({ searchParams }) {
         .eq('event_id', selectedId)
         .eq('active', true)
     : { data: [], error: null };
-  if (leaderError) console.error('programs: leaders query failed:', leaderError.message);
+  if (leaderError) throw new Error(`Program leaders: ${leaderError.message}`);
 
   const people = (participantRows ?? [])
     .map((r) => ({

@@ -33,10 +33,12 @@ export default async function AdminActivitiesPage({ searchParams }) {
 
   const supabase = await createClient();
 
-  const { data: events } = await supabase
+  const { data: events, error: eventsError } = await supabase
     .from('events')
     .select('id, name, starts_on, ends_on, volunteer_arrives_on, archived_at')
     .order('starts_on');
+  // CLAUDE.md: never turn a query error into an empty list.
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
 
   // Same archiving convention as the rest of the staff portal: current and
   // upcoming by default, past one click away, nothing hidden in the database.
@@ -47,7 +49,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
   const visibleEvents = (events ?? []).filter(isCurrentEventRow);
   const selected = params?.event || visibleEvents[0]?.id || null;
 
-  const { data: activities } = selected
+  const { data: activities, error: activitiesError } = selected
     ? await supabase
         .from('activities')
         .select(
@@ -61,24 +63,26 @@ export default async function AdminActivitiesPage({ searchParams }) {
         // with the ones families cannot see sitting plainly at the bottom.
         .order('active', { ascending: false })
         .order('sort_order')
-    : { data: [] };
+    : { data: [], error: null };
+  if (activitiesError) throw new Error(`Activities: ${activitiesError.message}`);
 
   const activityIds = (activities ?? []).map((a) => a.id);
 
   // Sittings, and how full each is. Ordered by the guard's own index so the
   // day reads in order.
-  const { data: slotRows } = activityIds.length
+  const { data: slotRows, error: slotError } = activityIds.length
     ? await supabase
         .from('activity_slots')
         .select('id, activity_id, slot_date, start_time, end_time, label, capacity')
         .in('activity_id', activityIds)
         .order('slot_date')
         .order('start_time')
-    : { data: [] };
+    : { data: [], error: null };
+  if (slotError) throw new Error(`Activity times: ${slotError.message}`);
 
   // Staff RLS on activity_signups is is_staff(), so this reads everyone --
   // which is the point of the page.
-  const { data: signups } = activityIds.length
+  const { data: signups, error: signupsError } = activityIds.length
     ? await supabase
         .from('activity_signups')
         .select(
@@ -88,7 +92,8 @@ export default async function AdminActivitiesPage({ searchParams }) {
              registrations ( households ( display_name ) ) )`
         )
         .in('activity_id', activityIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (signupsError) throw new Error(`Activity sign-ups: ${signupsError.message}`);
 
   // The ministry's own waiver on an activity (0116, horseback): which
   // activities carry one, and who has signed it on which registration. Staff

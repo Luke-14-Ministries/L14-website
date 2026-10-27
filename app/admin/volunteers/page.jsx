@@ -25,7 +25,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
 
   const supabase = await createClient();
 
-  const [{ data: regs }, { data: events }] = await Promise.all([
+  const [{ data: regs, error: regsError }, { data: events, error: eventsError }] = await Promise.all([
     supabase
       .from('registrations')
       .select(
@@ -36,6 +36,10 @@ export default async function AdminVolunteersPage({ searchParams }) {
       ),
     supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on', { ascending: false }),
   ]);
+  // CLAUDE.md: never turn a query error into an empty list -- here it would
+  // read as "no volunteers", "no check on file" or "Creed not affirmed".
+  if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
 
   // Flatten to volunteer participants only.
   const vols = [];
@@ -56,7 +60,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
   const partIds = vols.map((v) => v.participantId);
   const personIds = [...new Set(vols.map((v) => v.person?.id).filter(Boolean))];
 
-  const [{ data: apps }, { data: clearances }] = await Promise.all([
+  const [{ data: apps, error: appsError }, { data: clearances, error: clearancesError }] = await Promise.all([
     partIds.length
       ? supabase
           .from('volunteer_applications')
@@ -86,6 +90,8 @@ export default async function AdminVolunteersPage({ searchParams }) {
             .in('person_id', personIds)
       : Promise.resolve({ data: [] }),
   ]);
+  if (appsError) throw new Error(`Volunteer applications: ${appsError.message}`);
+  if (clearancesError) throw new Error(`Background checks: ${clearancesError.message}`);
 
   // Names for the stamps on the record, and the recent log lines, only when
   // the record itself is shown.
@@ -95,7 +101,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
     const stampIds = [
       ...new Set((clearances ?? []).flatMap((c) => [c.verdict_by, c.paperwork_marked_by]).filter(Boolean)),
     ];
-    const [{ data: stampProfiles }, { data: logRows }] = await Promise.all([
+    const [{ data: stampProfiles, error: stampError }, { data: logRows, error: logError }] = await Promise.all([
       stampIds.length
         ? supabase.from('profiles').select('id, first_name, last_name').in('id', stampIds)
         : Promise.resolve({ data: [] }),
@@ -106,10 +112,13 @@ export default async function AdminVolunteersPage({ searchParams }) {
         .order('changed_at', { ascending: false })
         .limit(200),
     ]);
+    if (stampError) throw new Error(`Background check reviewers: ${stampError.message}`);
+    if (logError) throw new Error(`Background check history: ${logError.message}`);
     nameOf = new Map((stampProfiles ?? []).map((p) => [p.id, `${p.first_name} ${p.last_name}`.trim()]));
     const logIds = [...new Set((logRows ?? []).map((l) => l.changed_by).filter(Boolean))].filter((id) => !nameOf.has(id));
     if (logIds.length) {
-      const { data: more } = await supabase.from('profiles').select('id, first_name, last_name').in('id', logIds);
+      const { data: more, error: moreError } = await supabase.from('profiles').select('id, first_name, last_name').in('id', logIds);
+      if (moreError) throw new Error(`Background check reviewers: ${moreError.message}`);
       for (const p of more ?? []) nameOf.set(p.id, `${p.first_name} ${p.last_name}`.trim());
     }
     for (const l of logRows ?? []) {
@@ -125,9 +134,10 @@ export default async function AdminVolunteersPage({ searchParams }) {
   const adultIds = [
     ...new Set((apps ?? []).map((a) => a.accompanying_adult_person_id).filter(Boolean)),
   ];
-  const { data: adultPeople } = adultIds.length
+  const { data: adultPeople, error: adultError } = adultIds.length
     ? await supabase.from('people').select('id, first_name, last_name').in('id', adultIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (adultError) throw new Error(`Accompanying adults: ${adultError.message}`);
   const adultName = new Map(
     (adultPeople ?? []).map((p) => [p.id, `${p.first_name} ${p.last_name}`.trim()])
   );
@@ -142,19 +152,21 @@ export default async function AdminVolunteersPage({ searchParams }) {
   // version-1 signature, and filtering to the active version made their
   // history invisible -- so an untick read as "never affirmed" instead of
   // "affirmation withdrawn". Found by the 14 Oct round (Script 4 §5.3).
-  const { data: creedRows } = await supabase
+  const { data: creedRows, error: creedError } = await supabase
     .from('agreements')
     .select('id')
     .eq('key', 'apostles_creed');
+  if (creedError) throw new Error(`Creed agreement: ${creedError.message}`);
   const creedIds = (creedRows ?? []).map((c) => c.id);
-  const { data: creedSigs } =
+  const { data: creedSigs, error: creedSigsError } =
     creedIds.length && personIds.length
       ? await supabase
           .from('agreement_signatures')
           .select('person_id')
           .in('agreement_id', creedIds)
           .in('person_id', personIds)
-      : { data: [] };
+      : { data: [], error: null };
+  if (creedSigsError) throw new Error(`Creed affirmations: ${creedSigsError.message}`);
   const creedAffirmedBy = new Set((creedSigs ?? []).map((s) => s.person_id));
 
   const appByPart = new Map((apps ?? []).map((a) => [a.registration_participant_id, a]));

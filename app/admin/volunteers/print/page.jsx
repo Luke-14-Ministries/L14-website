@@ -31,7 +31,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
   const supabase = await createClient();
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
 
-  const [{ data: regs }, { data: events }] = await Promise.all([
+  const [{ data: regs, error: regsError }, { data: events, error: eventsError }] = await Promise.all([
     supabase
       .from('registrations')
       .select(
@@ -42,6 +42,10 @@ export default async function VolunteerPrintPage({ searchParams }) {
       ),
     supabase.from('events').select('id, name, starts_on, ends_on').order('starts_on', { ascending: false }),
   ]);
+  // CLAUDE.md: never turn a query error into an empty list -- the printed
+  // sheet would read as "no volunteers" or "no check on file".
+  if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
 
   const vols = [];
   for (const r of regs ?? []) {
@@ -53,7 +57,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
   }
   const partIds = vols.map((v) => v.participantId);
   const personIds = [...new Set(vols.map((v) => v.person?.id).filter(Boolean))];
-  const [{ data: apps }, { data: clearances }] = await Promise.all([
+  const [{ data: apps, error: appsError }, { data: clearances, error: clearancesError }] = await Promise.all([
     partIds.length
       ? supabase
           .from('volunteer_applications')
@@ -65,6 +69,8 @@ export default async function VolunteerPrintPage({ searchParams }) {
       ? supabase.from('clearance_status').select('person_id, on_file, expires_on, is_current, verdict').in('person_id', personIds)
       : Promise.resolve({ data: [] }),
   ]);
+  if (appsError) throw new Error(`Volunteer applications: ${appsError.message}`);
+  if (clearancesError) throw new Error(`Background checks: ${clearancesError.message}`);
   const appByPart = new Map((apps ?? []).map((a) => [a.registration_participant_id, a]));
   const today = todayInMorristown();
   const clearanceByPerson = new Map((clearances ?? []).map((c) => [c.person_id, c]));

@@ -38,10 +38,13 @@ export default async function CheckinPage({ searchParams }) {
   };
 
   const supabase = await createClient();
-  const { data: events } = await supabase
+  const { data: events, error: eventsError } = await supabase
     .from('events')
     .select('id, name, event_type, starts_on, ends_on, archived_at, event_medical_contacts ( name, phone )')
     .order('starts_on');
+  // CLAUDE.md: never turn a query error into an empty list -- at the door it
+  // would read as "nobody registered" or "everyone may be photographed".
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
   // DELIBERATE DEVIATION from the shared EventFilter (kept 16 Oct 2026, when
   // every other staff page moved to it): Check-In is used standing at a door
   // on a phone, so its pills carry the dates ("Week 1" and "Week 2" look the
@@ -65,7 +68,7 @@ export default async function CheckinPage({ searchParams }) {
     // without the sensitive grant, whereas anyone working the door needs to
     // know who not to photograph. Bundling the two would hide it from most of
     // the people who need it.
-    const [{ data: regs }, { data: consents }] = await Promise.all([
+    const [{ data: regs, error: regsError }, { data: consents, error: consentsError }] = await Promise.all([
       supabase
         .from('registrations')
         .select(
@@ -78,10 +81,12 @@ export default async function CheckinPage({ searchParams }) {
         .eq('event_id', eventId),
       supabase.from('person_current_consents').select('person_id, granted').eq('kind', 'media'),
     ]);
+    if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+    if (consentsError) throw new Error(`Photo permissions: ${consentsError.message}`);
 
     // Who is paired with whom. Staff see assignments whether or not they have
     // been published -- publication gates the FAMILY's view, not the door's.
-    const { data: buddyRows } = await supabase
+    const { data: buddyRows, error: buddyError } = await supabase
       .from('buddy_assignments')
       .select(
         `camper_participant_id,
@@ -90,6 +95,7 @@ export default async function CheckinPage({ searchParams }) {
       )
       .eq('event_id', eventId)
       .is('ended_at', null);
+    if (buddyError) throw new Error(`Buddy pairings: ${buddyError.message}`);
 
     const buddyNamesOf = new Map();
     for (const b of buddyRows ?? []) {

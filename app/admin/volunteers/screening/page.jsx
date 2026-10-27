@@ -26,10 +26,14 @@ export default async function ScreeningPage() {
 
   // Events that have not finished. Screening someone for a week that is over
   // spends money to learn nothing.
-  const { data: events } = await supabase
+  const { data: events, error: eventsError } = await supabase
     .from('events')
     .select('id, name, starts_on, ends_on')
     .gte('ends_on', today);
+  // CLAUDE.md: never turn a query error into an empty list -- here it would
+  // read as "no upcoming events" or "no check on file", and someone already
+  // checked could be sent (and paid for) again.
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
   const eventById = new Map((events ?? []).map((e) => [e.id, e]));
   const liveEventIds = [...eventById.keys()];
 
@@ -45,7 +49,7 @@ export default async function ScreeningPage() {
     );
   }
 
-  const { data: regs } = await supabase
+  const { data: regs, error: regsError } = await supabase
     .from('registrations')
     .select(
       `id, event_id,
@@ -54,6 +58,7 @@ export default async function ScreeningPage() {
          people ( id, first_name, last_name, email, phone, date_of_birth ) )`
     )
     .in('event_id', liveEventIds);
+  if (regsError) throw new Error(`Registrations: ${regsError.message}`);
 
   // One entry per PERSON, not per registration. Somebody volunteering at both
   // camp weeks needs one check, not two.
@@ -82,14 +87,15 @@ export default async function ScreeningPage() {
   }
 
   const personIds = [...byPerson.keys()];
-  const { data: clearances } = personIds.length
+  const { data: clearances, error: clearancesError } = personIds.length
     ? await supabase
         .from('person_clearances')
         .select(
           'person_id, background_check_on_file, background_check_date, expires_on, checkr_status, invited_email, order_batch'
         )
         .in('person_id', personIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (clearancesError) throw new Error(`Background checks: ${clearancesError.message}`);
   const clearanceBy = new Map((clearances ?? []).map((c) => [c.person_id, c]));
 
   const isAdult = (dob) => {

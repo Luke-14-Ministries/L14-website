@@ -26,10 +26,13 @@ export default async function BuddiesPage({ searchParams }) {
 
   const supabase = await createClient();
 
-  const { data: allEvents } = await supabase
+  const { data: allEvents, error: eventsError } = await supabase
     .from('events')
     .select('id, name, event_type, starts_on, ends_on, archived_at, buddy_assignments_published_at')
     .order('starts_on');
+  // CLAUDE.md: never turn a query error into an empty list -- on this board it
+  // would read as "nobody to pair" or "no check on file".
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
   // Retreats are sorted on arrival, not assigned here (2 Oct 2026; see
   // staffAssigns in lib/events.js).
   const events = (allEvents ?? []).filter(staffAssigns);
@@ -48,7 +51,7 @@ export default async function BuddiesPage({ searchParams }) {
   const selected = (events ?? []).find((e) => e.id === selectedId) ?? null;
 
   // Everyone on this event's roster, with the support facts pairing depends on.
-  const { data: participants } = selectedId
+  const { data: participants, error: participantsError } = selectedId
     ? await supabase
         .from('registration_participants')
         .select(
@@ -61,17 +64,19 @@ export default async function BuddiesPage({ searchParams }) {
         )
         .eq('registrations.event_id', selectedId)
         .neq('status', 'cancelled')
-    : { data: [] };
+    : { data: [], error: null };
+  if (participantsError) throw new Error(`Roster: ${participantsError.message}`);
 
   const rows = participants ?? [];
 
-  const { data: assignmentRows } = selectedId
+  const { data: assignmentRows, error: assignmentsError } = selectedId
     ? await supabase
         .from('buddy_assignments')
         .select('id, camper_participant_id, buddy_participant_id, note, started_at')
         .eq('event_id', selectedId)
         .is('ended_at', null)
-    : { data: [] };
+    : { data: [], error: null };
+  if (assignmentsError) throw new Error(`Buddy pairings: ${assignmentsError.message}`);
 
   // Clearance state for the volunteers on this roster. Read separately because
   // it is keyed by person, not by participant, and a volunteer who comes two
@@ -86,12 +91,13 @@ export default async function BuddiesPage({ searchParams }) {
   // so a coordinator without it saw every volunteer as "no check on file".
   // (It also went through volunteer_clearances, the compatibility view 0056
   // marked temporary; retired 15 Oct.)
-  const { data: clearanceRows } = volunteerPersonIds.length
+  const { data: clearanceRows, error: clearanceError } = volunteerPersonIds.length
     ? await supabase
         .from('clearance_status')
         .select('person_id, on_file, expires_on, is_current, verdict')
         .in('person_id', volunteerPersonIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (clearanceError) throw new Error(`Background checks: ${clearanceError.message}`);
   const clearanceByPerson = new Map((clearanceRows ?? []).map((c) => [c.person_id, c]));
 
   const shape = (r) => {

@@ -21,10 +21,11 @@ export default async function LodgingPage({ searchParams }) {
 
   const supabase = await createClient();
 
-  const { data: allEvents } = await supabase
+  const { data: allEvents, error: eventsError } = await supabase
     .from('events')
     .select('id, name, event_type, starts_on, ends_on, archived_at, lodging_assignments_published_at')
     .order('starts_on');
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
   // Retreats are sorted on arrival, not assigned here (2 Oct 2026; see
   // staffAssigns in lib/events.js).
   const events = (allEvents ?? []).filter(staffAssigns);
@@ -46,8 +47,9 @@ export default async function LodgingPage({ searchParams }) {
   // active ones, and the set-up panel below the board needs the rest so a
   // room retired by mistake can be brought back (29 Sep 2026).
   //
-  // Query errors are logged, never dropped (the programs-page lesson, 29 Sep):
-  // a failed query here would draw an empty board that looks like "no rooms".
+  // Query errors stop the page, never dropped (the programs-page lesson, 29 Sep;
+  // CLAUDE.md): a failed query here would draw an empty board that looks like
+  // "no rooms". Logging alone still drew it, so they throw.
   const { data: lodgingRows, error: lodgingError } = selectedId
     ? await supabase
         .from('lodgings')
@@ -57,7 +59,7 @@ export default async function LodgingPage({ searchParams }) {
         .eq('event_id', selectedId)
         .order('sort_order')
     : { data: [], error: null };
-  if (lodgingError) console.error('lodging: lodgings query failed:', lodgingError.message);
+  if (lodgingError) throw new Error(`Rooms: ${lodgingError.message}`);
 
   // Everyone on the roster, with the facts a bed assignment turns on:
   // mobility (does this place work for them), gender (sleeping arrangements),
@@ -75,18 +77,14 @@ export default async function LodgingPage({ searchParams }) {
         .eq('registrations.event_id', selectedId)
         .neq('status', 'cancelled')
     : { data: [], error: null };
-  if (participantError) {
-    console.error('lodging: participants query failed:', participantError.message);
-  }
+  if (participantError) throw new Error(`Roster: ${participantError.message}`);
 
   const { data: assignmentRows, error: assignmentError } = selectedId
     ? await supabase
         .from('lodging_assignments')
         .select('id, lodging_id, registration_participant_id, note')
     : { data: [], error: null };
-  if (assignmentError) {
-    console.error('lodging: assignments query failed:', assignmentError.message);
-  }
+  if (assignmentError) throw new Error(`Room assignments: ${assignmentError.message}`);
 
   const allLodgings = (lodgingRows ?? []).map((l) => ({
     id: l.id,

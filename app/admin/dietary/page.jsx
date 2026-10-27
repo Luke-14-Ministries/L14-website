@@ -19,7 +19,7 @@ export default async function DietaryPage({ searchParams }) {
   if (!can(staff, 'sensitive')) redirect('/admin');
 
   const supabase = await createClient();
-  const [{ data: events }, { data: regs }] = await Promise.all([
+  const [{ data: events, error: eventsError }, { data: regs, error: regsError }] = await Promise.all([
     supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on'),
     supabase
       .from('registrations')
@@ -31,6 +31,10 @@ export default async function DietaryPage({ searchParams }) {
              person_support ( dietary_needs, allergens, allergy_other, allergy_detail, has_allergies, allergy_severity ) ) )`
       ),
   ]);
+  // CLAUDE.md: never turn a query error into an empty list -- the kitchen
+  // would read it as "no dietary needs".
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
+  if (regsError) throw new Error(`Dietary needs: ${regsError.message}`);
 
   const byEvent = new Map();
   for (const r of regs ?? []) {

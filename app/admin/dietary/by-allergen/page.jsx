@@ -39,7 +39,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
   if (!can(staff, 'sensitive')) redirect('/admin');
 
   const supabase = await createClient();
-  const [{ data: events }, { data: regs, error }] = await Promise.all([
+  const [{ data: events, error: eventsError }, { data: regs, error }] = await Promise.all([
     supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on'),
     supabase
       .from('registrations')
@@ -51,6 +51,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
              person_support ( has_allergies, allergens, allergy_other, allergy_detail, allergy_severity ) ) )`
       ),
   ]);
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
   if (error) throw new Error(`Allergies by allergen: ${error.message}`);
 
   // The same window the Dietary page uses, so "current" means the same thing.

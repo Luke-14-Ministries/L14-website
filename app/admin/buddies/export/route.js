@@ -23,7 +23,11 @@ export async function GET(request) {
   if (!eventId) return new Response('Which event?', { status: 400 });
 
   const supabase = await createClient();
-  const [{ data: event }, { data: assignments }, { data: participants }] = await Promise.all([
+  const [
+    { data: event, error: eventError },
+    { data: assignments, error: assignmentsError },
+    { data: participants, error: participantsError },
+  ] = await Promise.all([
     supabase.from('events').select('id, name, starts_on').eq('id', eventId).maybeSingle(),
     supabase
       .from('buddy_assignments')
@@ -40,6 +44,10 @@ export async function GET(request) {
       .eq('registrations.event_id', eventId)
       .neq('status', 'cancelled'),
   ]);
+  // CLAUDE.md: never turn a query error into an empty list -- a sheet with
+  // no pairings would read as "nobody is paired".
+  const loadError = eventError || assignmentsError || participantsError;
+  if (loadError) return new Response(`Could not load the pairings: ${loadError.message}`, { status: 500 });
 
   const byId = new Map((participants ?? []).map((p) => [p.id, p]));
   const volunteerPersonIds = (participants ?? [])
@@ -48,12 +56,15 @@ export async function GET(request) {
     .filter(Boolean);
   // clearance_status (0091): on file, current, verdict -- the words the
   // board shows, so the sheet and the screen cannot disagree.
-  const { data: clearances } = volunteerPersonIds.length
+  const { data: clearances, error: clearancesError } = volunteerPersonIds.length
     ? await supabase
         .from('clearance_status')
         .select('person_id, on_file, expires_on, is_current, verdict')
         .in('person_id', volunteerPersonIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (clearancesError) {
+    return new Response(`Could not load background checks: ${clearancesError.message}`, { status: 500 });
+  }
   const clearanceWord = new Map((clearances ?? []).map((c) => [c.person_id, clearancePill(c).text]));
 
   const name = (p) =>
