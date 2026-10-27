@@ -64,7 +64,7 @@ function FailingPlansCard({ plans }) {
         ))}
       </ul>
       <Link href="/admin/review/?show=plan" className="mt-1 inline-block text-xs text-neutral-500 underline">
-        All plan problems
+        All payment plan problems
       </Link>
     </div>
   );

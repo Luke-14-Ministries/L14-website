@@ -321,7 +321,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                       : 'border-neutral-300 text-neutral-700 hover:border-brand'
               }`}
             >
-              Plan problems{planProblemRegs > 0 && ` (${planProblemRegs})`}
+              Payment plan problems{planProblemRegs > 0 && ` (${planProblemRegs})`}
             </Link>
           )}
           <Link
