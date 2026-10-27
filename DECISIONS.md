@@ -3521,3 +3521,31 @@ family's new card says "retrying with the new payment method" (the edge function
 0). Payments read only, current events only, as before; nobody's status changes. The nav's Awaiting
 Review badge is unchanged: it counts people still submitted and not waiting on the family, with
 unread family replies as a separate envelope count — plan problems were never in it.
+
+## 27 Oct 2026 — Emails sent to families: grouped by send, filterable, searchable
+
+Lawrence on Email Families' *Recently sent*: "should be collapsible and filterable; grouped by event,
+date, etc" — then "make it searchable too". One staff send to three families was three near-identical
+lines, and only the latest 30 showed.
+
+**Grouped by send.** Rows with the same subject, sender, kind and event, each within two minutes of
+the next, are one send (`groupEmailsBySend()`, `lib/emailLog.js`): the action sends one household at
+a time with a 600 ms pause, so a send's rows are seconds apart, and measuring the gap between
+neighbours keeps a long list that takes minutes as one send. No send id is stored, so this is a
+reading of the log, not a fact in it; two identical sends within two minutes would merge, which is
+harmless. The site's own plan emails (`sent_by` null) stay one per line — each is one family's news.
+Sends sit under event headings (the registration's event; "No event" otherwise), the most recent
+event first, and each folds open (the site's left ▶, `fold-summary`) to its families' rows.
+
+**Filters in the URL, read on the server** — a plain GET form like Giving's, so a reload or a shared
+link keeps them: search (`q`), event (`sent_event`; current events plus all), kind (`sent_kind`:
+staff / waiver / plan_*), From / To (`sent_from` / `sent_to`, Morristown days). `?event` already
+belongs to the send form, hence the prefix; the send form's choices ride along hidden. Search is one
+box, case-insensitive, over the subject, what it said (`body_text`), the to-address and the family's
+name — ILIKE in one PostgREST `or`, with `%`, `_` and `\` escaped and the value quoted; family names
+are looked up first and their household ids join the `or` (over 100 matching households and the page
+says the name part was left out). A separate family filter would add nothing the search does not.
+Default window: the last 90 days, at most 300 rows, with an exact count ("Showing the last N emails",
+"N emails match '…'"). The card is open by default: it is the record of what was sent, and folded
+sends already keep it short. The registration page's *Emails sent* is unchanged — a household gets
+one email per send, so grouping would change nothing there.

@@ -375,8 +375,9 @@ status change** (`0120`): the review queue's *Waiver outstanding* tab, an amber 
 registration, the family's dashboard card and Activities page (`signActivityWaiver` signs alone).
 **Staff email to families lives at `/admin/email-families`** (Registration write): staff-pressed,
 never automatic, one email per household through `lib/email.js`, each logged to `message_log`.
-Staff see what was sent in **Emails sent** on each registration page and **Recently sent** on Email
-Families (`loadEmailLog()` in `lib/emailLog.js`); since `0132` a send keeps Resend's message id
+Staff see what was sent in **Emails sent** on each registration page (`loadEmailLog()`) and **Emails
+sent to families** on Email Families (`searchEmailLog()`, grouped by send and event with
+`groupEmailsBySend()` / `groupSendsByEvent()`; filters in the URL as `q` and `sent_*` — all in `lib/emailLog.js`); since `0132` a send keeps Resend's message id
 (`provider_message_id`), linked as *delivery*. Since `0134` the plain text as sent is kept too (`body_text`, under
 *What it said* on each line); staff read it, families do not read `message_log`.
 Volunteers arrive a day early (`events.volunteer_arrives_on`).
