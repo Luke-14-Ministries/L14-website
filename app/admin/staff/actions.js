@@ -86,8 +86,17 @@ export async function addStaffMember(email, role) {
     { onConflict: 'profile_id' }
   );
   if (error) return { ok: false, error: error.message };
-  revalidatePath('/admin/staff');
   const name = [person.first_name, person.last_name].filter(Boolean).join(' ') || cleanEmail;
+  // Added with the Administrator box ticked: the same as ticking it on the
+  // list -- every area at write, Giving included (Lawrence, 26 Oct 2026). Until
+  // 27 Oct this path skipped it, and Larry was added as an administrator with
+  // no grants at all.
+  if (role === 'admin') {
+    const all = Object.fromEntries(AREA_KEYS.map((k) => [k, 'write']));
+    const res = await setStaffGrants(person.profile_id, all);
+    if (!res.ok) return { ok: false, error: `${name} was added as an administrator, but the grants did not save: ${res.error}` };
+  }
+  revalidatePath('/admin/staff');
   return { ok: true, name };
 }
 

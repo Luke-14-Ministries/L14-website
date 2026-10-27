@@ -3652,3 +3652,14 @@ synced the percentage across weeks was replaced the same hour.) Setup's event de
 dates on one line (early registration ends, early discount, balance due) and every discount on the next
 (family discount, from person, both-weeks). Larry, 27 Oct: the horseback waiver text (version 1, `0116`) is
 acceptable; the Staff Questions item is closed.
+
+## 27 Oct 2026 — Adding an administrator gives every area; reminder schedule decided; Setup card tidied
+
+Ticking Administrator already gave every area at write (Giving included, 26 Oct) when ticked on the list,
+but **Add to staff** with the box ticked skipped it, so Larry was added with no grants. `addStaffMember` now
+does the same. The reminder-email schedule is decided (Lawrence and Larry): deposit and balance monthly on
+the 15th until paid, then 2 weeks before the balance due date and on it, then weekly once past due; missing
+details monthly, then 2 weeks and 5 days before camp; a plan notice 1 week before each payment. Setup's New
+event panel says which dates they run from (folded). The event card on Setup lost its paragraphs: four
+aligned columns, labels only, the explanations folded into "How these settings work", and the top button
+reads "Save status" so it is not mistaken for the event-details save.

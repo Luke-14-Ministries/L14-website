@@ -207,7 +207,9 @@ function EventRow({ e }) {
           </select>
         </label>
         <label className="text-sm">
-          <span className="block text-neutral-500 mb-0.5">Registration opens</span>
+          <span className="block text-neutral-500 mb-0.5" title="Your local time zone. Blank = no limit on that end.">
+            Registration opens
+          </span>
           <input
             type="datetime-local"
             value={opens}
@@ -216,7 +218,9 @@ function EventRow({ e }) {
           />
         </label>
         <label className="text-sm">
-          <span className="block text-neutral-500 mb-0.5">Registration closes</span>
+          <span className="block text-neutral-500 mb-0.5" title="Your local time zone. Blank = no limit on that end.">
+            Registration closes
+          </span>
           <input
             type="datetime-local"
             value={closes}
@@ -230,7 +234,10 @@ function EventRow({ e }) {
           disabled={!dirty || busy}
           className="btn-primary py-1.5! disabled:opacity-40"
         >
-          {busy ? 'Saving…' : 'Save'}
+          {/* "Save status" (27 Oct 2026): this row is the event's status and its
+              registration window; the event's own facts have their own save
+              in the panel below. */}
+          {busy ? 'Saving…' : 'Save status'}
         </button>
         {(opens || closes) && (
           <button
@@ -252,9 +259,6 @@ function EventRow({ e }) {
           Saved before 26 Oct as both visible and archived. Save stores it as Archived (off the public site).
         </p>
       )}
-      <p className="mt-1 text-xs text-neutral-400">
-        Times are in your local time zone. Blank = no restriction on that end.
-      </p>
 
       {notice && (
         <p
@@ -318,12 +322,12 @@ function EventRow({ e }) {
             </label>
           </div>
 
-          {/* Grouped by kind (Lawrence, 27 Oct 2026): the dates on one line --
-              early registration and the balance due -- then every discount on
-              the line below. The money settings date from 0096 (16 Oct 2026):
-              Larry's numbers live here so the 2027 figures never wait on a
-              code change. */}
-          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+          {/* Tidied 27 Oct 2026 (Lawrence: "too wordy ... fix alignment"):
+              four columns, a label over every box and nothing under them; the
+              explanations are folded into "How these settings work" below.
+              Dates and the early discount on one line, every other discount
+              on the next. */}
+          <div className="mt-3 grid items-end gap-3 sm:grid-cols-4">
             <label className="text-sm">
               <span className="block font-semibold text-neutral-700 mb-0.5">Early registration ends</span>
               <input
@@ -342,30 +346,28 @@ function EventRow({ e }) {
                 placeholder="none"
                 className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
-              <span className="mt-1 block text-xs text-neutral-500">
-                For people registered by that day, once the family is on a payment plan or has paid
-                in full. A scholarship request alone does not earn it.
-              </span>
             </label>
-            <label className="text-sm sm:col-span-2">
+            <label className="text-sm">
               <span className="block font-semibold text-neutral-700 mb-0.5">Balance due</span>
               <input
                 type="date"
                 value={balanceDueOn}
                 onChange={(ev) => setBalanceDueOn(ev.target.value)}
-                className="w-full max-w-xs rounded-sm border border-neutral-300 px-2 py-1"
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
               />
-              {/* Lawrence, 26 Oct 2026: say here what the date switches on. The
-                  rule is offersPaymentPlan()/planAvailable() in lib/plans.js. */}
-              <span className="mt-1 block text-xs text-neutral-500">
-                Published to families (dashboard, statements, the confirmation email). They are
-                offered a payment plan only when this is set and more than {PLAN_MIN_DAYS} days away.
-                Blank: pay in full, or the deposit now and the rest when staff say.
-              </span>
+            </label>
+            <label className="text-sm">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Returned bank payment fee ($)</span>
+              <input
+                inputMode="decimal"
+                value={returnedFee}
+                onChange={(ev) => setReturnedFee(ev.target.value)}
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+              />
             </label>
           </div>
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-4">
+          <div className="mt-3 grid items-end gap-3 sm:grid-cols-4">
             <label className="text-sm">
               <span className="block font-semibold text-neutral-700 mb-0.5">Family discount ($/person)</span>
               <input
@@ -386,7 +388,8 @@ function EventRow({ e }) {
               />
             </label>
             {/* On the later week only (Lawrence, 27 Oct 2026): it comes off the
-                later week's fee, so that is the one figure that counts. */}
+                later week's fee, so that is the one figure that counts. An
+                earlier week shows where it is set, in the same box shape. */}
             {isLaterWeek ? (
               <label className="text-sm">
                 <span className="block font-semibold text-neutral-700 mb-0.5">Both-weeks volunteer discount (%)</span>
@@ -396,57 +399,16 @@ function EventRow({ e }) {
                   onChange={(ev) => setMultiWeek(ev.target.value)}
                   className="w-full rounded-sm border border-neutral-300 px-2 py-1"
                 />
-                <span className="mt-1 block text-xs text-neutral-500">
-                  Off this week&rsquo;s fee for a confirmed volunteer at both weeks.
-                </span>
               </label>
             ) : (e.laterWeeks ?? []).length > 0 ? (
-              <p className="text-xs text-neutral-500 self-end">
-                The both-weeks volunteer discount is set on{' '}
-                {(e.laterWeeks ?? []).map((w) => w.name).join(' and ')}, where it applies.
-              </p>
-            ) : (
-              <span />
-            )}
-            <p className="text-xs text-neutral-600 self-end">
-              The family discount comes off the chosen person and every later fee-paying person on
-              one registration; the both-weeks discount comes off the later week for a volunteer
-              doing both. Saving re-applies both to everyone already registered.
-            </p>
+              <div className="text-sm">
+                <span className="block font-semibold text-neutral-700 mb-0.5">Both-weeks volunteer discount (%)</span>
+                <span className="block rounded-sm border border-dashed border-neutral-300 px-2 py-1 text-neutral-500">
+                  Set on {(e.laterWeeks ?? []).map((w) => w.name.split(' — ').pop()).join(' and ')}
+                </span>
+              </div>
+            ) : null}
           </div>
-
-          {/* 0123 (Lawrence, 22 Oct 2026): when a bank payment is returned,
-              Stripe charges the ministry; this passes a fee on to the family.
-              $0 = off. Families are told before they choose a bank payment,
-              and are charged only the fee they were shown when they agreed. */}
-          <div className="mt-3 grid gap-3 sm:grid-cols-4">
-            <label className="text-sm">
-              <span className="block font-semibold text-neutral-700 mb-0.5">Returned bank payment fee ($)</span>
-              <input
-                inputMode="decimal"
-                value={returnedFee}
-                onChange={(ev) => setReturnedFee(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
-              />
-            </label>
-            <p className="text-xs text-neutral-600 sm:col-span-3 self-end">
-              Added to a family&rsquo;s balance when their bank returns a payment (never for a card
-              decline). $0 is off. Ways to pay and the payment-plan agreement tell families this
-              amount before they choose a bank payment; a change here applies only to families who
-              agree after it — anyone who already agreed keeps the amount they were shown.
-            </p>
-          </div>
-
-          {/* Said plainly, because the alternative behaviour is the one people
-              assume: changing a price here does NOT re-price anyone already
-              registered. Their fee was copied onto their row when they signed
-              up and every balance and statement is built from it. */}
-          <p className="mt-2 text-xs text-neutral-600">
-            A new price applies to <strong>future</strong> registrations. People already
-            registered keep the fee they signed up at — change an individual on their
-            registration if that is what you mean. Capacity cannot be set below the number
-            already registered.
-          </p>
 
           {detailNotice && (
             <p
@@ -461,25 +423,55 @@ function EventRow({ e }) {
           )}
 
           {/* Week 1's details are the later weeks' defaults (0137). */}
-          {followers.length > 0 && (
+          {(followers.length > 0 || ownSet.length > 0 || (isLaterWeek && !e.setByHand)) && (
             <p className="mt-3 text-xs text-neutral-600">
-              Saving also copies the price, places, early registration, balance due, family discount
-              and returned-payment fee to <strong>{followers.join(' and ')}</strong>, which has not
-              been saved by hand.
-              {ownSet.length > 0 && <> {ownSet.join(' and ')} keeps its own settings.</>}
+              {followers.length > 0 && <>Saving also updates {followers.map((n) => n.split(' — ').pop()).join(' and ')}. </>}
+              {ownSet.length > 0 && <>{ownSet.map((n) => n.split(' — ').pop()).join(' and ')} keeps its own settings. </>}
+              {isLaterWeek && !e.setByHand && (
+                <>Following {(e.earlierWeeks ?? []).map((n) => n.split(' — ').pop()).join(' and ')} until saved here.</>
+              )}
             </p>
           )}
-          {followers.length === 0 && ownSet.length > 0 && (
-            <p className="mt-3 text-xs text-neutral-600">
-              {ownSet.join(' and ')} has its own settings, so saving here changes this week only.
-            </p>
-          )}
-          {isLaterWeek && !e.setByHand && (
-            <p className="mt-3 text-xs text-neutral-600">
-              These follow {(e.earlierWeeks ?? []).join(' and ')} until they are saved here; after
-              that, this week keeps its own.
-            </p>
-          )}
+
+          <details className="mt-3 text-xs text-neutral-600">
+            <summary className="fold-summary cursor-pointer font-semibold text-neutral-700">
+              How these settings work
+            </summary>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>
+                <strong>Price</strong> applies to future registrations; people already registered keep
+                the fee they signed up at. <strong>Places</strong> cannot go below the number
+                registered.
+              </li>
+              <li>
+                <strong>Early discount:</strong> off each person registered by the early date, once
+                the family is on a payment plan or has paid in full. A scholarship request alone does
+                not earn it.
+              </li>
+              <li>
+                <strong>Balance due</strong> is shown to families. A payment plan is offered only when
+                it is set and more than {PLAN_MIN_DAYS} days away; blank means pay in full, or the
+                deposit now and the rest when staff say.
+              </li>
+              <li>
+                <strong>Family discount:</strong> off the chosen person and every later fee-paying
+                person on one registration. <strong>Both-weeks:</strong> off the later week for a
+                confirmed volunteer at both, set on the later week. Saving re-applies both to everyone
+                registered.
+              </li>
+              <li>
+                <strong>Returned bank payment fee:</strong> added when a bank returns a payment, never
+                for a card decline; $0 is off. Families see it before choosing a bank payment and keep
+                the amount they agreed to.
+              </li>
+              <li>
+                <strong>Weeks of one camp:</strong> saving an earlier week copies its price, places,
+                early registration, balance due, family discount and returned fee to a later week
+                that has not been saved on its own.
+              </li>
+            </ul>
+            <ReminderScheduleNote />
+          </details>
 
           <div className="mt-3 flex flex-wrap gap-3">
             <button
@@ -519,6 +511,32 @@ function EventRow({ e }) {
 }
 
 // ---------------------------------------------------------------------------
+// The reminder-email schedule (Lawrence, 27 Oct 2026; the draft is
+// 01 Plans and Decisions\Luke14-Automatic-Emails-Draft.pdf). Not sent yet:
+// said here so whoever adds an event knows which of its dates the reminders
+// will run from. Module level, beside the other shared pieces.
+function ReminderScheduleNote() {
+  return (
+    <div className="mt-2 text-xs text-neutral-600">
+      <p className="font-semibold text-neutral-700">Reminder emails run from the event&rsquo;s dates</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-5">
+        <li>
+          <strong>Deposit and balance:</strong> monthly on the 15th until paid, then 2 weeks before the{' '}
+          <em>balance due</em> date and on it, then weekly once it is past due.
+        </li>
+        <li>
+          <strong>Missing details</strong> (support details, applications, waivers, agreements): monthly
+          on the 15th until done, then 2 weeks and 5 days before the <em>first day</em>.
+        </li>
+        <li>
+          <strong>Payment plans:</strong> a notice 1 week before each automatic payment.
+        </li>
+      </ul>
+      <p className="mt-1">Not switched on yet: the schedule is decided, the sending is still to be built.</p>
+    </div>
+  );
+}
+
 // New event (2 Oct 2026). Hoisted to module level like EventRow -- a component
 // defined inside another is remounted on every render (CLAUDE.md).
 //
@@ -747,6 +765,12 @@ function NewEventPanel({ events }) {
             {f.eventType === 'camp_week' && 'Volunteers are set to arrive the day before. '}
             The event starts <strong>unpublished</strong>.
           </p>
+          <details className="mt-3">
+            <summary className="fold-summary cursor-pointer text-xs font-semibold text-neutral-700">
+              Reminder emails — set the first day and the balance due date
+            </summary>
+            <ReminderScheduleNote />
+          </details>
 
           <div className="mt-3 flex flex-wrap gap-3">
             <button
