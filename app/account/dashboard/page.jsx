@@ -318,13 +318,52 @@ export default async function DashboardPage({ searchParams }) {
   // Waivers still owed on activity places already held (0120): one line per
   // person per activity, read from the one view that answers it, scoped to
   // this household explicitly (staff RLS on the view is every family).
-  const { data: owedRows, error: owedError } = householdIds.length
+  const { data: viewRows, error: owedError } = householdIds.length
     ? await supabase
         .from('activity_waivers_outstanding')
         .select('registration_participant_id, registration_id, person_id, activity_id, activity_name, kind, upload_status, review_note')
         .in('household_id', householdIds)
     : { data: [], error: null };
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
+
+  // A volunteer's outfitter confirmation is uploaded "ready in case", with no
+  // signup of their own, so the view (built from signups) never sees it --
+  // and when staff REJECTED one, nothing told the family to upload it again
+  // (26 Oct 2026). Those rows are added here, for this household's active
+  // people, in the same shape the view gives.
+  const activeParts = regs.flatMap((r) =>
+    (r.registration_participants ?? [])
+      .filter((p) => p.status !== 'cancelled')
+      .map((p) => ({ id: p.id, registrationId: r.id, personId: p.people?.id ?? null }))
+  );
+  const partById = new Map(activeParts.map((p) => [p.id, p]));
+  const { data: rejectedRows, error: rejectedError } = activeParts.length
+    ? await supabase
+        .from('activity_waiver_uploads')
+        .select('registration_participant_id, activity_id, review_note, activities ( name, active )')
+        .eq('review_status', 'rejected')
+        .in('registration_participant_id', activeParts.map((p) => p.id))
+    : { data: [], error: null };
+  if (rejectedError) throw new Error(`Rejected confirmations: ${rejectedError.message}`);
+  const inView = new Set((viewRows ?? []).map((o) => `${o.registration_participant_id}:${o.activity_id}:${o.kind}`));
+  const owedRows = [
+    ...(viewRows ?? []),
+    ...(rejectedRows ?? [])
+      .filter((u) => u.activities?.active !== false && !inView.has(`${u.registration_participant_id}:${u.activity_id}:provider`))
+      .map((u) => {
+        const part = partById.get(u.registration_participant_id);
+        return {
+          registration_participant_id: u.registration_participant_id,
+          registration_id: part?.registrationId,
+          person_id: part?.personId,
+          activity_id: u.activity_id,
+          activity_name: u.activities?.name ?? 'An activity',
+          kind: 'provider',
+          upload_status: 'rejected',
+          review_note: u.review_note,
+        };
+      }),
+  ];
   const firstNameByPerson = new Map();
   for (const r of regs) {
     for (const p of r.registration_participants ?? []) {
