@@ -1071,15 +1071,6 @@ export default function FamilyWizard({
 
   return (
     <div className="space-y-6">
-      {/* The escape hatch lives here, inside the wizard, so it vanishes with
-          the form when the success card (which has its own dashboard button)
-          takes over. */}
-      <p className="text-center text-sm">
-        <Link href="/account/dashboard/" className="text-brand underline font-semibold">
-          &larr; Back to my dashboard
-        </Link>
-      </p>
-
       {/* Editing a saved registration: the complete cards start folded, so
           what still needs doing is what shows. */}
       {isUpdate && (

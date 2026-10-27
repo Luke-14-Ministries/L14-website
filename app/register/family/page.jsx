@@ -10,6 +10,7 @@ import {
 import FamilyWizard from './FamilyWizard';
 import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport } from '@/lib/support';
+import BackLink from '@/components/BackLink';
 
 export const metadata = { title: 'Registration — Luke 14 Ministries' };
 
@@ -509,24 +510,25 @@ export default async function FamilyRegisterPage({ searchParams }) {
             wizard serves all of them -- the event itself is chosen (or
             preselected via ?event=) in step 3. The old hardcoded
             "Camp Celebrate 2027" title presumed camp on every neutral entry. */}
-        <h1 className="text-4xl font-bold text-center">Registration</h1>
+        {/* The signed-in header matches the other account pages (Activities,
+            Manage Household): title left, the "Back to dashboard" pill right
+            (Lawrence, 26 Oct 2026). The guest page above stays centred, like
+            the public site. */}
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="text-3xl font-bold">Registration</h1>
+          <BackLink />
+        </div>
         {chosenProgram && weeks.length > 0 && (
-          <p className="text-center text-lg text-brand-dark font-semibold mt-1">
-            {chosenProgram}
-          </p>
+          <p className="text-lg text-brand-dark font-semibold mt-1">{chosenProgram}</p>
         )}
-        <p className="text-center text-neutral-600 mt-3 mb-2">
+        <p className="text-neutral-600 mt-2 mb-6">
           Signed in as {user.email}.{' '}
           {existing?.isUpdate
             ? 'Your saved registration is loaded below — make changes and update.'
             : 'Your answers save to your account.'}
         </p>
-        {/* The back-to-dashboard escape link is rendered INSIDE the wizard,
-            not here -- so it can disappear when the success card (which has
-            its own dashboard button) is showing. Two dashboard links on the
-            confirmation screen read as clutter (flagged 24 Aug). */}
         {weeks.length === 0 ? (
-          <p className="text-center text-neutral-600">
+          <p className="text-neutral-600">
             Registration isn&rsquo;t open just yet. Please check back soon.
           </p>
         ) : (

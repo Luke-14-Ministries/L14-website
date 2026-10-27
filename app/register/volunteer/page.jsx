@@ -3,6 +3,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { yearsSince } from '@/lib/format';
 import VolunteerApplication from './VolunteerApplication';
 import BackBar from '@/components/BackBar';
+import BackLink from '@/components/BackLink';
 
 export const metadata = { title: 'Volunteer — Luke 14 Ministries' };
 
@@ -226,8 +227,11 @@ export default async function VolunteerPage() {
   return (
     <section className="bg-neutral-50 py-12">
       <div className="container-site max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold text-center">Volunteer Application</h1>
-        <p className="text-center text-neutral-600 mt-3 mb-8">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="text-3xl font-bold">Volunteer Application</h1>
+          <BackLink />
+        </div>
+        <p className="text-neutral-600 mt-2 mb-8">
           A few short questions so we can place you well. Our team reviews every application and
           follows up about the background check — that paperwork happens separately, never on
           this site.
