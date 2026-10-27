@@ -474,11 +474,12 @@ export async function activatePlanFromDeposit(
     // bank charge on this plan adds exactly this; 0 or absent = never.
     returned_payment_fee_cents: Math.max(0, parseInt(md.returned_fee_cents ?? '0', 10) || 0),
     note:`Started online (${md.consent_version ?? 'consent'}).`,
-    // A restarted plan starts clean: the old cancellation and the staff
-    // early-discount decision on it belong to the plan that ended.
+    // A restarted plan clears the old cancellation. keeps_early_discount is
+    // left out on purpose (Lawrence, 27 Oct 2026): a staff decision to remove
+    // the discount carries over to the restarted plan until staff change it;
+    // a brand-new plan gets the column's default, true.
     cancelled_at: null,
     cancelled_by: null,
-    keeps_early_discount: true,
   };
   const { data: plan, error } = await admin
     .from('payment_plans')

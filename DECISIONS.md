@@ -3621,3 +3621,10 @@ the schedule, which cleared every flag though the card that failed was still on 
 That needs `payment_plans.payment_method_changed_at` (`0136`), stamped by a trigger whenever
 `stripe_payment_method_id` changes and impossible to set by hand. The family's plan box says the payment was
 spread over the rest but the same card is on file; staff read "plan resumed with the same card or bank account".
+
+## 27 Oct 2026 — A restarted plan keeps the staff early-discount decision
+
+A new plan deposit on a registration whose plan was cancelled restarts that plan (the plans webhook ignored
+it until today). The restart clears the cancellation stamps but leaves `keeps_early_discount` as it was
+(Lawrence: "carry the staff decision over -- default should be to keep as whatever it was before"); a
+brand-new plan gets the column default, true.
