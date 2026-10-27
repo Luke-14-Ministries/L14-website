@@ -8,6 +8,7 @@ import RecordPaymentForm from './RecordPaymentForm';
 import FoldCard from '@/components/FoldCard';
 import ExportBar from './ExportBar';
 import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
+import { isStaleRefund, STALE_REFUND_DAYS } from '@/lib/payments';
 
 export const metadata = { title: 'Event Payments — Staff Admin' };
 
@@ -49,6 +50,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     { data: routes, error: routesError },
     { data: reviews, error: reviewError },
     { data: people, error: peopleError },
+    { data: pendingRefunds, error: pendingRefundsError },
   ] = await Promise.all([
     supabase
       .from('registration_balances')
@@ -67,6 +69,12 @@ export default async function AdminPaymentsPage({ searchParams }) {
     // How many are registered on each family's registration, for the
     // "3 registered" line under the name (Lawrence, 26 Oct 2026).
     supabase.from('registration_participants').select('registration_id').neq('status', 'cancelled'),
+    // Refunds still pending, for the stale-refund strip (lib/payments.js).
+    supabase
+      .from('payment_refunds')
+      .select('id, registration_id, amount_cents, status, created_at')
+      .eq('status', 'pending')
+      .order('created_at'),
   ]);
   // Never an empty table in place of an error (CLAUDE.md).
   if (balancesError) throw new Error(`Balances: ${balancesError.message}`);
@@ -74,6 +82,10 @@ export default async function AdminPaymentsPage({ searchParams }) {
   if (paysError) throw new Error(`Payments: ${paysError.message}`);
   if (reviewError) throw new Error(`Review classes: ${reviewError.message}`);
   if (peopleError) throw new Error(`Participants: ${peopleError.message}`);
+  if (pendingRefundsError) throw new Error(`Pending refunds: ${pendingRefundsError.message}`);
+  // Refunds pending past STALE_REFUND_DAYS, every event: one stuck anywhere
+  // is money the page may be counting wrongly (Lawrence, 26 Oct 2026).
+  const staleRefunds = (pendingRefunds ?? []).filter((r) => isStaleRefund(r));
   const countByReg = new Map();
   for (const x of people ?? []) countByReg.set(x.registration_id, (countByReg.get(x.registration_id) ?? 0) + 1);
   // The 15 payments Recent activity lists, counted by status for its title.
@@ -223,6 +235,33 @@ export default async function AdminPaymentsPage({ searchParams }) {
         What each family owes and has paid for an event (Camp Celebrate, retreats, and the rest). Online payments record themselves; checks
         and cash are entered below. Donations live on the separate Giving page.
       </p>
+
+      {staleRefunds.length > 0 && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">
+            ⚑ {staleRefunds.length} {staleRefunds.length === 1 ? 'refund has' : 'refunds have'} been pending more
+            than {STALE_REFUND_DAYS} days
+          </p>
+          <p className="mt-1">
+            A refund normally clears within a few business days. Until these clear they are not taken off
+            &ldquo;Paid&rdquo;, so check each one in Stripe.
+          </p>
+          <ul className="mt-2 space-y-0.5">
+            {staleRefunds.map((r) => {
+              const reg = regById.get(r.registration_id);
+              return (
+                <li key={r.id}>
+                  <Link href={`/admin/registrations/${r.registration_id}/#payments`} className="font-semibold underline">
+                    {reg?.households?.display_name ?? 'A family'}
+                  </Link>{' '}
+                  · {money(r.amount_cents)} · pending since {dayInMorristown(r.created_at)}
+                  {reg?.events?.name ? ` · ${reg.events.name}` : ''}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* The one event filter every staff page uses (16 Oct 2026): pills for
           current events, a search box for the rest. The scope dropdown below

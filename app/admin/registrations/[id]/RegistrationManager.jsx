@@ -12,7 +12,7 @@ import Link from 'next/link';
 // The same card the Scholarship Requests queue uses. Shared deliberately: a
 // decision has to mean the same thing wherever a registrar makes it.
 import ScholarshipReview from '@/app/admin/scholarships/ScholarshipReview';
-import { registrationHeads, refundSuggestion, REFUND_FULL_UNTIL_DAYS } from '@/lib/payments';
+import { registrationHeads, refundSuggestion, REFUND_FULL_UNTIL_DAYS, isStaleRefund, STALE_REFUND_DAYS } from '@/lib/payments';
 import {
   setParticipantStatus,
   updatePerson,
@@ -1374,9 +1374,19 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                         it here or a Stripe-dashboard refund looks like one of
                         ours. */}
                     {r.note && <span className="block text-xs text-neutral-500">{r.note}</span>}
-                    {r.status !== 'succeeded' && (
+                    {r.status !== 'succeeded' && !isStaleRefund(r) && (
                       <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
                         {r.status}
+                      </span>
+                    )}
+                    {/* Pending past STALE_REFUND_DAYS: something went wrong
+                        (lib/payments.js). Said plainly, with where to look. */}
+                    {isStaleRefund(r) && (
+                      <span
+                        className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-400"
+                        title={`A refund normally clears within a few business days; this one has been pending more than ${STALE_REFUND_DAYS} days. Check it in Stripe.`}
+                      >
+                        ⚑ pending since {dayInMorristown(r.created_at)} — check Stripe
                       </span>
                     )}
                     {/* Proof it reached Stripe, and the way to go and look
@@ -1798,7 +1808,7 @@ function MoneyRow({ label, value, note, strong, cls = '' }) {
 // off "paid" (0053: it must not be, or the ministry could be holding all of
 // a family's money while the page asks for more). So the balance shown is
 // the balance today, and the paragraph says what it becomes.
-function MoneySummary({ balance, livePeople }) {
+function MoneySummary({ balance, livePeople, staleRefunds = 0 }) {
   if (!balance) return null;
   const fee = balance.fee_cents ?? 0;
   const scholarship = balance.scholarship_cents ?? 0;
@@ -1866,6 +1876,16 @@ function MoneySummary({ balance, livePeople }) {
               </strong>
               . The Payments card lists each refund and its status.
             </p>
+            {staleRefunds > 0 && (
+              <p className="mt-2 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
+                <span className="font-semibold">
+                  {staleRefunds === 1 ? 'One of these refunds has' : `${staleRefunds} of these refunds have`} been
+                  pending more than {STALE_REFUND_DAYS} days.
+                </span>{' '}
+                A refund normally clears within a few business days, so this may need checking in
+                Stripe before the figures above are relied on.
+              </p>
+            )}
           </>
         )}
       </div>
@@ -2264,7 +2284,11 @@ export default function RegistrationManager({
                 amber only while money is actually outstanding. The numbers
                 come from the same view the dashboard and Event Payments read,
                 so the three never disagree (24 Aug). */}
-            <MoneySummary balance={balance} livePeople={livePeople} />
+            <MoneySummary
+              balance={balance}
+              livePeople={livePeople}
+              staleRefunds={payments.reduce((n, p) => n + (p.refunds ?? []).filter((r) => isStaleRefund(r)).length, 0)}
+            />
 
             {depositShort && (
               <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
