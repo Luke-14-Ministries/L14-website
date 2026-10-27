@@ -1,7 +1,10 @@
 // A list of emails sent, from message_log (lib/emailLog.js). No hooks, so it
 // renders on the server or inside a client card alike. `showHousehold` for the
 // all-families list on Email Families; `eventOf(registrationId)` names the
-// event on a family's list when they have more than one.
+// event on a family's list when they have more than one. `inSend` draws the
+// rows inside one send's group on Email Families (EmailSends.jsx): the group
+// already says the subject, kind and sender, so each row leads with the
+// family instead.
 
 import Link from 'next/link';
 import { whenInMorristown } from '@/lib/events';
@@ -15,7 +18,19 @@ const STATUS = {
   failed: ['Not sent', 'bg-red-100 text-red-800'],
 };
 
-export default function EmailLog({ emails, showHousehold = false, eventOf = null, empty = 'No emails yet.' }) {
+// The family's name, linked to the registration the email was about.
+function FamilyName({ m }) {
+  const name = m.household ?? 'family';
+  return m.registrationId ? (
+    <Link href={`/admin/registrations/${m.registrationId}/`} className="text-brand underline">
+      {name}
+    </Link>
+  ) : (
+    name
+  );
+}
+
+export default function EmailLog({ emails, showHousehold = false, eventOf = null, inSend = false, empty = 'No emails yet.' }) {
   if (!emails?.length) return <p className="text-sm text-neutral-500">{empty}</p>;
   return (
     <ul className="divide-y divide-neutral-100 text-sm">
@@ -25,29 +40,28 @@ export default function EmailLog({ emails, showHousehold = false, eventOf = null
         return (
           <li key={m.id} className="py-2">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <span className="font-medium">
-                {m.subject || '(no subject)'}
-                <span className="ml-2 text-xs font-normal text-neutral-500">{m.kind}</span>
-              </span>
+              {inSend ? (
+                <span className="font-medium">
+                  <FamilyName m={m} />
+                </span>
+              ) : (
+                <span className="font-medium">
+                  {m.subject || '(no subject)'}
+                  <span className="ml-2 text-xs font-normal text-neutral-500">{m.kind}</span>
+                </span>
+              )}
               <span className={`rounded-sm px-1.5 py-0.5 text-xs font-semibold ${cls}`}>{label}</span>
             </div>
             <div className="mt-0.5 text-xs text-neutral-600">
               {whenInMorristown(m.sentAt)} · to {m.to}
-              {showHousehold && m.householdId && (
+              {showHousehold && !inSend && m.householdId && (
                 <>
                   {' '}
-                  (
-                  {m.registrationId ? (
-                    <Link href={`/admin/registrations/${m.registrationId}/`} className="text-brand underline">
-                      {m.household ?? 'family'}
-                    </Link>
-                  ) : (
-                    m.household ?? 'family'
-                  )}
-                  )
+                  (<FamilyName m={m} />)
                 </>
               )}
-              {eventName ? ` · ${eventName}` : ''} · by {m.by}
+              {eventName ? ` · ${eventName}` : ''}
+              {inSend ? '' : ` · by ${m.by}`}
               {m.providerId && (
                 <>
                   {' '}
