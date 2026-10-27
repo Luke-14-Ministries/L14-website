@@ -3549,3 +3549,15 @@ Default window: the last 90 days, at most 300 rows, with an exact count ("Showin
 "N emails match '…'"). The card is open by default: it is the record of what was sent, and folded
 sends already keep it short. The registration page's *Emails sent* is unchanged — a household gets
 one email per send, so grouping would change nothing there.
+
+## 27 Oct 2026 — The whole family chooses activities; a provider tick works in either order
+
+Lawrence: "for families, all can choose activities... not just the camper themselves... parents and
+siblings can be signed up for rafting, pontoon, etc". The 14 Oct campers-only rule is replaced by
+`CHOOSES_ACTIVITIES` in `lib/activityRoles.js` (camper, parent/guardian, sibling, caregiver) on the
+Activities page and the dashboard's button; volunteers still go where their camper goes and have their own
+waiver block, and support team / childcare are working. Nothing in the database limited signups to campers.
+Also on that page: ticking a provider-run activity before its "I understand" box no longer springs back —
+either order works and the place saves once both are ticked — and the doubled amber "now needs a waiver"
+line above the upload box is gone; the upload box names whose form it is.
+

@@ -23,6 +23,7 @@ import { getProgramLeadership } from '@/lib/programs';
 import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport, supportProblems } from '@/lib/support';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
+import { CHOOSES_ACTIVITIES } from '@/lib/activityRoles';
 
 export const metadata = { title: 'Dashboard' };
 
@@ -1667,19 +1668,20 @@ export default async function DashboardPage({ searchParams }) {
                         {/* Activities live on their own page: a family with
                             three people and eleven activities is more screen
                             than a dashboard card should carry. */}
-                        {/* Campers choose; volunteers upload outside providers'
-                            confirmations (0087). A registration with neither
-                            has nothing there, so the button does not appear. */}
+                        {/* The family chooses (CHOOSES_ACTIVITIES, 27 Oct 2026);
+                            volunteers sign waivers and upload providers'
+                            confirmations. A registration with neither has
+                            nothing there, so the button does not appear. */}
                         {(r.registration_participants ?? []).some(
                           (p) =>
-                            (p.camp_role === 'camper' || p.camp_role === 'volunteer') &&
+                            (CHOOSES_ACTIVITIES.has(p.camp_role) || p.camp_role === 'volunteer') &&
                             p.status !== 'cancelled'
                         ) && (
                           // This registration's event only (Script 6 item 7.1,
                           // 26 Oct): the page links on to all events.
                           <Link
                             href={`/account/activities/?registration=${r.id}`}
-                            title="Choose activities for your campers; volunteers upload outside providers' confirmations here too."
+                            title="Choose activities for your family; volunteers sign waivers and upload outside providers' confirmations here too."
                             className="btn-outline py-2!"
                           >
                             Choose activities

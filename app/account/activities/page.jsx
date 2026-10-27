@@ -7,6 +7,7 @@ import VolunteerWaiver from './VolunteerWaiver';
 import BackBar from '@/components/BackBar';
 import BackLink from '@/components/BackLink';
 import { agreementText, isCurrentEventRow } from '@/lib/events';
+import { CHOOSES_ACTIVITIES } from '@/lib/activityRoles';
 
 export const metadata = { title: 'Activities — Luke 14 Ministries' };
 
@@ -262,12 +263,13 @@ export default async function ActivitiesPage({ searchParams }) {
               : null,
           };
         });
-      // Campers only (Lawrence, 14 Oct 2026). Activities are chosen for the
-      // camper; the buddy goes along with them. A volunteer, parent or
-      // sibling choosing horseback riding for themselves was never the idea,
-      // and the sheets the area leaders carry count places for campers.
+      // The whole family chooses (Lawrence, 27 Oct 2026: "parents and siblings
+      // can be signed up for rafting, pontoon, etc"), replacing campers-only
+      // (14 Oct). Volunteers still do not: they go where their camper goes,
+      // and have their own waiver block below. Staff roles (support team,
+      // childcare) are working, not choosing.
       const people = (r.registration_participants ?? [])
-        .filter((p) => p.status !== 'cancelled' && p.camp_role === 'camper')
+        .filter((p) => p.status !== 'cancelled' && CHOOSES_ACTIVITIES.has(p.camp_role))
         .map((p) => {
           const age = ageAt(p.people?.date_of_birth, r.events?.starts_on);
           return {
@@ -447,7 +449,7 @@ function EventSection({ section: s }) {
       <div className="space-y-6 p-5">
         {hasCampers ? (
           <p className="text-neutral-700">
-            Choose what each camper would like to do — their buddy goes along with them.
+            Choose what each person would like to do — a camper&rsquo;s buddy goes along with them.
             Nothing here is binding — tell us what you&rsquo;d like and camp staff will
             confirm the details closer to the time. You can change your mind whenever you
             like.{' '}
@@ -491,8 +493,8 @@ function EventSection({ section: s }) {
         )}
         {!hasCampers && !hasVolunteers && (
           <EmptyNote>
-            Activities are chosen for campers, and there is no camper on this registration, so
-            there is nothing to choose here.
+            Activities are chosen by campers and their families, and there is nobody on this
+            registration to choose for, so there is nothing to choose here.
           </EmptyNote>
         )}
       </div>
