@@ -22,6 +22,7 @@ import ReplyToStaff from './ReplyToStaff';
 import { getProgramLeadership } from '@/lib/programs';
 import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport, supportProblems } from '@/lib/support';
+import { rejectedOutsideView } from '@/lib/rejectedUploads';
 
 export const metadata = { title: 'Dashboard' };
 
@@ -326,43 +327,13 @@ export default async function DashboardPage({ searchParams }) {
     : { data: [], error: null };
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
 
-  // A volunteer's outfitter confirmation is uploaded "ready in case", with no
-  // signup of their own, so the view (built from signups) never sees it --
-  // and when staff REJECTED one, nothing told the family to upload it again
-  // (26 Oct 2026). Those rows are added here, for this household's active
-  // people, in the same shape the view gives.
-  const activeParts = regs.flatMap((r) =>
-    (r.registration_participants ?? [])
-      .filter((p) => p.status !== 'cancelled')
-      .map((p) => ({ id: p.id, registrationId: r.id, personId: p.people?.id ?? null }))
-  );
-  const partById = new Map(activeParts.map((p) => [p.id, p]));
-  const { data: rejectedRows, error: rejectedError } = activeParts.length
-    ? await supabase
-        .from('activity_waiver_uploads')
-        .select('registration_participant_id, activity_id, review_note, activities ( name, active )')
-        .eq('review_status', 'rejected')
-        .in('registration_participant_id', activeParts.map((p) => p.id))
-    : { data: [], error: null };
-  if (rejectedError) throw new Error(`Rejected confirmations: ${rejectedError.message}`);
-  const inView = new Set((viewRows ?? []).map((o) => `${o.registration_participant_id}:${o.activity_id}:${o.kind}`));
+  // Plus a volunteer's rejected outfitter confirmation: uploaded "ready in
+  // case" with no signup, so the view never sees it, and nothing told the
+  // family to upload it again (26 Oct 2026). Scoped to this household's
+  // registrations.
   const owedRows = [
     ...(viewRows ?? []),
-    ...(rejectedRows ?? [])
-      .filter((u) => u.activities?.active !== false && !inView.has(`${u.registration_participant_id}:${u.activity_id}:provider`))
-      .map((u) => {
-        const part = partById.get(u.registration_participant_id);
-        return {
-          registration_participant_id: u.registration_participant_id,
-          registration_id: part?.registrationId,
-          person_id: part?.personId,
-          activity_id: u.activity_id,
-          activity_name: u.activities?.name ?? 'An activity',
-          kind: 'provider',
-          upload_status: 'rejected',
-          review_note: u.review_note,
-        };
-      }),
+    ...(await rejectedOutsideView(supabase, viewRows, { registrationIds: regs.map((r) => r.id) })),
   ];
   const firstNameByPerson = new Map();
   for (const r of regs) {

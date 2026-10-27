@@ -10,6 +10,7 @@ import { dayInMorristown, balanceDueOn, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { loadEmailLog } from '@/lib/emailLog';
+import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import EmailLog from '@/components/EmailLog';
 import Panel from './Panel';
 
@@ -517,11 +518,17 @@ export default async function RegistrationDetailPage({ params }) {
   // outside provider staff added after the signup. A flag only -- a
   // confirmed place stays confirmed while the paperwork is chased. Read for
   // the household's other registrations too, for their tabs' marker.
-  const { data: familyOwedRows, error: owedError } = await supabase
+  const { data: viewOwedRows, error: owedError } = await supabase
     .from('activity_waivers_outstanding')
-    .select('registration_id, person_id, activity_name, kind, agreement_title, upload_status, review_note')
+    .select('registration_participant_id, registration_id, person_id, activity_id, activity_name, kind, agreement_title, upload_status, review_note')
     .in('registration_id', familyRegIds);
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
+  // Plus a volunteer's or buddy's rejected outfitter confirmation, which the
+  // view (built from signups) cannot see (26 Oct 2026).
+  const familyOwedRows = [
+    ...(viewOwedRows ?? []),
+    ...(await rejectedOutsideView(supabase, viewOwedRows, { registrationIds: familyRegIds })),
+  ];
   const owedRows = (familyOwedRows ?? []).filter((o) => o.registration_id === id);
   const personName = new Map(
     (reg.registration_participants ?? []).map((p) => [

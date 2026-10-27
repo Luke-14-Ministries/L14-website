@@ -5,6 +5,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { REVIEW_CLASS, REVIEW_FLAG, planStoppedAt } from '@/lib/plans';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
+import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { statusPill } from '@/lib/format';
 import { dayInMorristown, isCurrentEventRow } from '@/lib/events';
 
@@ -78,7 +79,7 @@ export default async function ReviewQueuePage({ searchParams }) {
     { data: parts, error: partsError },
     { data: reviews, error: reviewsError },
     { data: balances, error: balancesError },
-    { data: owed, error: owedError },
+    { data: viewOwed, error: owedError },
     { data: stoppedPlans, error: stoppedError },
     { data: creedRows, error: creedError },
   ] =
@@ -99,7 +100,7 @@ export default async function ReviewQueuePage({ searchParams }) {
         : Promise.resolve({ data: [] }),
       supabase
         .from('activity_waivers_outstanding')
-        .select('registration_id, person_id, activity_name, kind, upload_status'),
+        .select('registration_participant_id, registration_id, person_id, activity_id, activity_name, kind, upload_status'),
       seesMoney
         ? supabase
             .from('payment_plans')
@@ -116,6 +117,9 @@ export default async function ReviewQueuePage({ searchParams }) {
   if (reviewsError) throw new Error(`Review classes: ${reviewsError.message}`);
   if (balancesError) throw new Error(`Balances: ${balancesError.message}`);
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
+  // Plus a volunteer's or buddy's rejected outfitter confirmation, which the
+  // view (built from signups) cannot see (Lawrence, 26 Oct 2026).
+  const owed = [...(viewOwed ?? []), ...(await rejectedOutsideView(supabase, viewOwed))];
   if (stoppedError) throw new Error(`Stopped payment plans: ${stoppedError.message}`);
   if (creedError) throw new Error(`Creed status: ${creedError.message}`);
   const creedByReg = creedByRegistration(creedRows);
