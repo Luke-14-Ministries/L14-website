@@ -3346,3 +3346,32 @@ once it had its own table. Also: the event status dropdown on Setup is colour-co
 published green, archived grey), and giving statements print the tax year large at the top ("2026 Tax
 Year" for a whole calendar year; the year and exact dates otherwise, so a partial statement never
 passes for a year-end one).
+
+### 26 Oct 2026 — Support questions for every camper; families room together; link a caregiver on the registration
+
+Lawrence, on the registration wizard: the support wording *"seems to have an autistic/camper with
+sensory needs in mind... camper population needs are much broader than that... want the language to be
+inclusive"*; *"rooming default is for families to be together"* (not said); the Role select truncated
+*"Camper with disabili…"*; *"caregiver (if attending) should be able to be linked here in
+registration... indicate to save and come back after they are registered"*.
+**Wording, labels only — no column renamed.** One source, `SUPPORT_QUESTIONS` in `lib/support.js`,
+used by `SupportDetailsFields` (wizard and dashboard form) and the staff person page, so staff read the
+question the family answered. *A hard day* → *When camp gets hard*, with examples spanning getting
+around, pain and tiredness, communication, personal care, night-time help and the senses, for adults
+as much as children; the sleep question now asks about help at night as well (the flag is still
+`has_sleep_disturbance`; the change log calls it *Help at night / sleep*). **Rooming** says families
+stay together unless the family says otherwise (the Rooms page already groups by household, "keep
+families together") and asks only for what is different or needed about the room.
+**Caregiver link.** No schema change: `person_caregivers` (0012, positions 1–2, both ends in the
+family's household by policy) is what Manage Household already writes. On *Will a caregiver be
+attending? — Yes* the wizard asks *Who is {name}'s caregiver?* from the other people named on the
+form who are not under 18 at the event's start (no date of birth yet still offered), keyed by saved
+id or, for someone new, by name (`memberKey`; the server resolves the same key against the saved
+registration). A caregiver with no phone on file gets a phone box, because a linked caregiver must be
+reachable (`lib/caregivers.js`); the phone is written to the caregiver's `people.phone` only when they
+have none. The link is made after the save under the family's own permissions, only for people on
+that registration, never replacing a link on file (a free position or nothing). It is never required
+and never fails the submit — anything not linked comes back as an amber `caregiverNotice` pointing at
+Manage household. *Not on this registration* says to save and, once the caregiver is registered, link
+them from the dashboard under Manage household; the dashboard form's caregiver question says the same,
+with the link. The Role select spans two columns.
