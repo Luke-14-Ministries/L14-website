@@ -68,7 +68,7 @@ async function unitFromDb(supabase, activityId, eventId, participantId) {
     .filter((p) => live.has(p.camper_participant_id) && live.has(p.buddy_participant_id))
     .map((p) => ({ camperId: p.camper_participant_id, buddyId: p.buddy_participant_id }));
   const units = buildUnits((signups.data ?? []).map((s) => s.registration_participant_id), pairs);
-  return { unit: unitOf(participantId, units) };
+  return { unit: unitOf(participantId, units), units };
 }
 
 async function readGroup(supabase, groupId) {
@@ -163,21 +163,30 @@ export async function deleteGroup({ groupId }) {
 // who are in another group of the same activity (one row per person per
 // activity -- the upsert changes their group).
 export async function placeUnit({ groupId, participantId }) {
+  return placeUnits({ groupId, participantIds: [participantId] });
+}
+
+// Place several people at once -- a whole family (Lawrence, 26 Oct 2026: "as
+// with housing"). Each id brings its whole unit (a camper's buddy travels
+// with them), recomputed here from the database, never trusted from the page.
+export async function placeUnits({ groupId, participantIds }) {
   const denied = await requireWrite();
   if (denied) return { ok: false, error: denied };
-  if (!groupId || !participantId) return { ok: false, error: 'Pick both a person and a group.' };
+  const ids = [...new Set((participantIds ?? []).filter(Boolean))];
+  if (!groupId || ids.length === 0) return { ok: false, error: 'Pick both a person and a group.' };
 
   const supabase = await createClient();
   const { group, error: gError } = await readGroup(supabase, groupId);
   if (gError) return { ok: false, error: gError };
 
-  const { unit, error: uError } = await unitFromDb(
+  const { units, error: uError } = await unitFromDb(
     supabase,
     group.activity_id,
     group.activities?.event_id,
-    participantId
+    ids[0]
   );
   if (uError) return { ok: false, error: uError };
+  const unit = [...new Set(ids.flatMap((id) => unitOf(id, units)))];
 
   const { data, error } = await supabase
     .from('activity_group_members')

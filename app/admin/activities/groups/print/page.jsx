@@ -152,13 +152,19 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
         </div>
       )}
 
-      {/* The outfitter needs names, and nothing else. */}
+      {/* The outfitter needs names, and nothing else -- except who still owes
+          a waiver: "(W)" after the name until the confirmation is ACCEPTED
+          (missing, rejected or not yet checked; Lawrence, 26 Oct 2026), so the
+          outfitter can sort the paperwork on the day. */}
       {groups.length > 0 && (
         <div className="break-before-page">
           <h2 className="mb-1 border-b-2 border-neutral-800 pb-1 text-lg font-bold">
             Outfitter list — {activity.name}
             {event ? `, ${event.name}` : ''}
           </h2>
+          {groups.some((g) => blocksFor(g).flat().some((id) => people[id]?.waiver && people[id].waiver !== 'on_file')) && (
+            <p className="mt-1 text-sm">(W) = waiver still needed</p>
+          )}
           <div className="mt-3 grid gap-x-8 gap-y-4 sm:grid-cols-2 print:grid-cols-2">
             {groups.map((g) => (
               <div key={g.id} className="break-inside-avoid">
@@ -167,7 +173,10 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
                   {blocksFor(g)
                     .flat()
                     .map((id) => (
-                      <li key={id}>{people[id]?.name}</li>
+                      <li key={id}>
+                        {people[id]?.name}
+                        {people[id]?.waiver && people[id].waiver !== 'on_file' ? ' (W)' : ''}
+                      </li>
                     ))}
                 </ol>
               </div>

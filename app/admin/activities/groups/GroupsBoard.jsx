@@ -12,7 +12,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { createGroup, updateGroup, deleteGroup, placeUnit, unplaceUnit } from './actions';
+import { createGroup, updateGroup, deleteGroup, placeUnits, unplaceUnit } from './actions';
 import { GROUP_ROLE_LABEL, underAgeWords } from '@/lib/activityGroups';
 
 const pill = 'rounded-full px-2 py-0.5 text-xs font-semibold';
@@ -355,7 +355,22 @@ export default function GroupsBoard({
     });
   }
 
-  const pick = (unit) => setInHand((cur) => (cur && cur[0] === unit[0] ? null : unit));
+  const pick = (unit) => setInHand((cur) => (cur && cur[0] === unit[0] && cur.length === unit.length ? null : unit));
+
+  // A whole family in one move, as on Rooms & Cabins (Lawrence, 26 Oct 2026):
+  // everyone in the household still to place, each with their unit -- a
+  // camper's buddy comes along. Keyed by household id.
+  const familyUnits = new Map();
+  for (const u of toPlace) {
+    const hh = u.map((id) => people[id]).find((p) => p && !p.isBuddy)?.householdId;
+    if (!hh) continue;
+    if (!familyUnits.has(hh)) familyUnits.set(hh, []);
+    familyUnits.get(hh).push(u);
+  }
+  const pickFamily = (householdId) => {
+    const ids = [...new Set((familyUnits.get(householdId) ?? []).flat())];
+    setInHand((cur) => (cur && cur.length === ids.length && ids.every((id) => cur.includes(id)) ? null : ids));
+  };
 
   return (
     <div>
@@ -495,12 +510,28 @@ export default function GroupsBoard({
                   </ul>
                 </div>
               )}
-              {singlesByFamily.map(([household, list]) => (
+              {singlesByFamily.map(([household, list]) => {
+                const hhId = people[list[0][0]]?.householdId;
+                const familyIds = hhId ? [...new Set((familyUnits.get(hhId) ?? []).flat())] : [];
+                return (
                 <div key={household} className="mt-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-neutral-400">
-                    {household}
-                    {list.length > 1 && ` · ${list.length} people`}
-                  </p>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="text-xs font-bold uppercase tracking-wide text-neutral-400">
+                      {household}
+                      {list.length > 1 && ` · ${list.length} people`}
+                    </p>
+                    {canPlace && familyIds.length > 1 && (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => pickFamily(hhId)}
+                        className="text-xs font-semibold text-brand underline"
+                        title="Everyone in this family still to place, each camper with their buddy"
+                      >
+                        Place the whole family ({familyIds.length})
+                      </button>
+                    )}
+                  </div>
                   <ul className="mt-1 space-y-1">
                     {list.map((u) => (
                       <li key={u[0]}>
@@ -516,7 +547,8 @@ export default function GroupsBoard({
                     ))}
                   </ul>
                 </div>
-              ))}
+                );
+              })}
             </>
           )}
         </section>
@@ -554,7 +586,7 @@ export default function GroupsBoard({
                   canPlace={canPlace}
                   pending={pending}
                   onPlace={(groupId) =>
-                    run(() => placeUnit({ groupId, participantId: inHand[0] }))
+                    run(() => placeUnits({ groupId, participantIds: inHand }))
                   }
                   onMove={pick}
                   onRemove={(participantId) =>
