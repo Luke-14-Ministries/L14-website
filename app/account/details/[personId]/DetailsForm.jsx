@@ -174,12 +174,17 @@ export default function DetailsForm({
               : 'Most of this is optional — fill in whatever applies. The emergency contact is the one we ask of everyone.'}
           </p>
           <div className="flex items-center gap-4">
-            <Link
-              href={backHref}
-              className="text-neutral-500 font-semibold hover:text-neutral-700 hover:underline"
-            >
-              {saved ? 'Back to dashboard' : 'Cancel'}
-            </Link>
+            {/* Cancel only while there is something unsaved to leave behind:
+                once saved, the page's Back to dashboard pill is the way back
+                and a second link here said it twice (Lawrence, 27 Oct 2026). */}
+            {!saved && (
+              <Link
+                href={backHref}
+                className="text-neutral-500 font-semibold hover:text-neutral-700 hover:underline"
+              >
+                Cancel
+              </Link>
+            )}
             {/* The button carries the state -- Save -> Saving... -> Saved,
                 flipping back to Save when anything changes. */}
             <SaveButton

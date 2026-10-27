@@ -568,7 +568,20 @@ export default async function AdminLayout({ children }) {
               route back to their own account was the site nav's "My Account".
               Both are one click from here now. Sign-out is a POST form, not a
               link — see app/auth/signout/route.js for why. */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* The account buttons on their own row, the search on its own row
+              beneath (Lawrence, 27 Oct 2026: the search box read as one strip
+              with My Dashboard and Log Out). */}
+          <div className="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <Link href="/account/dashboard/" className="btn-outline py-1.5! text-sm">
+                My Dashboard
+              </Link>
+              <form action="/auth/signout/" method="post">
+                <button type="submit" className="btn-outline py-1.5! text-sm">
+                  Log Out
+                </button>
+              </form>
+            </div>
             {/* Find a person or family from any staff page (14 Oct 2026).
                 A plain GET form: no script between typing and results. */}
             {staff && can(staff, 'read:registration') && (
@@ -585,14 +598,6 @@ export default async function AdminLayout({ children }) {
                 </button>
               </form>
             )}
-            <Link href="/account/dashboard/" className="btn-outline py-1.5! text-sm">
-              My Dashboard
-            </Link>
-            <form action="/auth/signout/" method="post">
-              <button type="submit" className="btn-outline py-1.5! text-sm">
-                Log Out
-              </button>
-            </form>
           </div>
         </div>
 
