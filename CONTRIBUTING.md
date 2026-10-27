@@ -147,6 +147,21 @@ the `@theme` block of `app/globals.css` so they stay consistent everywhere.
 Create `app/<route>/page.jsx` exporting a default React component. The folder name is
 the URL. Add the link to the navigation in `components/` so people can find it.
 
+Two look-and-feel rules hold on every page (26 Oct 2026, `DECISIONS.md`):
+
+- **Header.** A signed-in page (`/account/*`, `/register/*` when signed in) puts its title on
+  the left (`text-3xl font-bold`) and the shared `BackLink` pill on the right of the same row
+  (`flex flex-wrap items-baseline justify-between gap-3`), with the intro left-aligned below.
+  A staff page (`/admin/*`) uses a `text-xl font-bold` title, and a sub-page puts its
+  `BackLink` ("Back to Activities") on the right of that row. No centred headings and no
+  plain "← Back" text links. Public pages keep their centred hero.
+- **Folding.** Anything that folds shows `components/FoldArrow.jsx` — a ▶ at the LEFT of
+  the title, turned down when open — inside the heading's button (`aria-expanded`). A native
+  `<details>` gets `className="fold-summary"` on its `<summary>` for the same arrow. No
+  arrows, chevrons or "Show / Hide" words at the right edge; `FoldCard` and the
+  registration page's `Panel` already follow it.
+
+
 ### Adding an image
 
 Put it in `public/images/` and reference it as `/images/<name>`. Resize and compress

@@ -3474,3 +3474,29 @@ succeeded refund. `0133` counts `refunded` payments in the gross in all three pl
 fully refunded payment as "received, refunded". One live registration was affected (test data). Also: the
 Money card's amber balance shows just the amount — "Owed" beside "Balance today" said it twice.
 
+## 26 Oct 2026 — One header, one fold marker, everywhere
+
+Lawrence, after a run of pages that each did it their own way: "be consistent EVERYWHERE!"
+
+**Headers.** Every signed-in page puts its title on the left (`text-3xl font-bold`) and the shared
+`BackLink` pill on the right of the same row, the intro left-aligned below — agreements, delete my
+data, support details, help with the fee, two-factor, the statement, payment received, the Register
+chooser and Volunteer with Us when signed in now match Activities, Manage Household and the wizard.
+A success box keeps one way back (the header pill); the duplicate dashboard buttons went. Staff pages
+use one `text-xl font-bold` title (Accounts, Deletion requests, Setup, Access changes and Background
+screening were `text-2xl`), and a sub-page or print view puts its back pill on the right of that row
+(Rafts, the person page, the statements, the photographer's list, allergies by allergen, My Program's
+print). Public pages keep their centred hero. On `/admin` the site header uses the staff area's wider
+container, so the logo lines up with the staff menu; the account pages keep the site container (their
+content is a narrower centred column, so there is no shared edge to line up).
+
+**Folding.** One marker: `components/FoldArrow.jsx`, a ▶ at the left of the title that turns down when
+open, inside the heading's button; `fold-summary` (globals.css) draws the same on a native `<details>`.
+No right-edge arrows, chevrons or "Show / Hide" words. Changed: FoldCard (Event Payments' cards), the
+registration page's Panel, My Registrations and each registration, Support details, Ways to pay, Manage
+Household, the family wizard's cards, Activities cards and Times, Rooms buildings, floors and Set up
+rooms, the buddy board's marked list, Recent Changes households, the staff menu's Camp week group, and
+every `<details>` (How this works, Prefer to mail a check?, Full schedule, consent text, family notes,
+history, How reviewing works, How access works, Setup's year groups). Row menus (Event Payments,
+Accounts) and drop-downs (the event filter, search pickers) are menus, not folds, and keep their look.
+Rule in CONTRIBUTING.md, *Adding a page*.
