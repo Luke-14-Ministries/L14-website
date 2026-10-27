@@ -954,6 +954,9 @@ export default function FamilyWizard({
       });
       if (res?.ok) {
         setResult(res);
+        // The success card replaces the form; bring the page back to the top,
+        // where it and the "Back to dashboard" pill are.
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         setError(res?.error || 'Something went wrong. Please try again.');
         // The server's checks are copies of the ones above, so a refusal
@@ -1056,15 +1059,10 @@ export default function FamilyWizard({
             any time.
           </p>
         )}
-        {/* A plain anchor, deliberately, NOT a <Link>. The action above
-            revalidates the dashboard so a client navigation would now be
-            correct -- but this is the one click in the whole site where a
-            stale page is guaranteed to look like lost data ("you haven't
-            registered anyone yet", seconds after registering). A full page
-            load cannot be stale. One extra fetch is a fair price. */}
-        <a href="/account/dashboard/" className="btn-primary mt-6 inline-block">
-          Go to My Dashboard
-        </a>
+        {/* No dashboard button here (26 Oct 2026): the page's "Back to
+            dashboard" pill is the one way back, and it is a full page load
+            (BackLink hard) for the reason this button was -- a stale
+            dashboard seconds after registering reads as lost data. */}
       </div>
     );
   }

@@ -516,7 +516,8 @@ export default async function FamilyRegisterPage({ searchParams }) {
             the public site. */}
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h1 className="text-3xl font-bold">Registration</h1>
-          <BackLink />
+          {/* hard: a full load, so the dashboard after a submit is never stale. */}
+          <BackLink hard />
         </div>
         {chosenProgram && weeks.length > 0 && (
           <p className="text-lg text-brand-dark font-semibold mt-1">{chosenProgram}</p>

@@ -14,11 +14,22 @@ import Link from 'next/link';
 export const BACK_PILL =
   'inline-flex items-center rounded-full border border-neutral-300 bg-white px-4 py-1.5 text-sm font-semibold text-brand shadow-xs hover:bg-neutral-50';
 
+// `hard`: a plain anchor, a full page load, for a page whose own save changes
+// what the destination shows -- the registration wizard, where a stale
+// dashboard seconds after registering would read as lost data.
 export default function BackLink({
   href = '/account/dashboard/',
   label = 'Back to dashboard',
   className = '',
+  hard = false,
 }) {
+  if (hard) {
+    return (
+      <a href={href} className={`${BACK_PILL} ${className}`}>
+        ← {label}
+      </a>
+    );
+  }
   return (
     <Link href={href} className={`${BACK_PILL} ${className}`}>
       ← {label}
