@@ -90,6 +90,10 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 - **PostgREST embeds with two foreign keys to one table are refused (PGRST201).** `people ↔
   households` has two paths since `0037`: name the key (`households!people_household_id_fkey`) on
   every such embed, or use separate simple lookups.
+- **A server component never calls a function exported from a `'use client'` file.** Rendering its
+  components is fine; calling a helper (`checkAnchor()`, `slotLabel()`) throws at request time, only
+  on the branch that reaches it, so the build passes (26 Oct: `/admin/activities` crashed once the
+  review queue had a row). Shared helpers live in `lib/` (`lib/activitySlots.js`, `lib/waiverAnchors.js`).
 - **Never define a component inside another component's body** — React remounts it every render
   (it silently emptied the staff table's job-title boxes). Hoist it to module level; pass props.
 - **Adding a column to `person_support` is not finished until `log_family_change()` is
