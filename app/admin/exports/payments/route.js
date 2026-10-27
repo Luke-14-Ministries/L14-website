@@ -42,17 +42,29 @@ export async function GET(request) {
   const paystate = url.searchParams.get('paystate') || '';
   const eventFilter = url.searchParams.get('event') || '';
   const quickbooks = url.searchParams.get('format') === 'quickbooks';
+  // The Event Payments toolbar has one format dropdown (26 Oct 2026);
+  // Balances is its own export, a snapshot with no date range.
+  if (url.searchParams.get('format') === 'balances') {
+    const keep = new URLSearchParams();
+    for (const k of ['event', 'paystate']) {
+      if (url.searchParams.get(k)) keep.set(k, url.searchParams.get(k));
+    }
+    const q = keep.toString();
+    return Response.redirect(new URL(`/admin/exports/balances/${q ? `?${q}` : ''}`, url), 303);
+  }
   const from = url.searchParams.get('from') || '';
   const to = url.searchParams.get('to') || '';
-  if (quickbooks) {
-    const DAY = /^\d{4}-\d{2}-\d{2}$/;
-    if ((from && !DAY.test(from)) || (to && !DAY.test(to))) {
-      return new Response('From and To must be dates (YYYY-MM-DD).', { status: 400 });
-    }
-    if (from && to && from > to) {
-      return new Response('The From date is after the To date.', { status: 400 });
-    }
+  // The received-date range applies to the plain CSV too since 26 Oct 2026
+  // (Lawrence: one date filter for both payment exports). Either end empty
+  // means no limit on that side.
+  const DAY = /^\d{4}-\d{2}-\d{2}$/;
+  if ((from && !DAY.test(from)) || (to && !DAY.test(to))) {
+    return new Response('From and To must be dates (YYYY-MM-DD).', { status: 400 });
   }
+  if (from && to && from > to) {
+    return new Response('The From date is after the To date.', { status: 400 });
+  }
+  const inDateRange = (day) => !from && !to ? true : Boolean(day) && (!from || day >= from) && (!to || day <= to);
 
   const supabase = await createClient();
   const [
@@ -182,6 +194,7 @@ export async function GET(request) {
     if (allowed && !allowed.has(p.registration_id)) continue;
     const r = regById.get(p.registration_id);
     if (!inScope(r?.events)) continue;
+    if (!inDateRange(dayInMorristown(p.received_on ?? p.created_at))) continue;
     rows.push([
       dayInMorristown(p.received_on ?? p.created_at),
       r?.households?.display_name ?? '',
@@ -202,7 +215,9 @@ export async function GET(request) {
   return new Response(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="luke14-event-payments-${todayInMorristown()}.csv"`,
+      'Content-Disposition': `attachment; filename="luke14-event-payments-${
+        from || to ? `${from || 'start'}-to-${to || todayInMorristown()}` : todayInMorristown()
+      }.csv"`,
     },
   });
 }
