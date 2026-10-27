@@ -65,12 +65,14 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
         <span className="font-semibold">
           Payment plan · {SCHEDULE_LABEL[plan.schedule] ?? plan.schedule} ·
         </span>
+        {/* A charge failing while the plan still retries is not "Active" in
+            green inside the red box: it says what is happening. */}
         <span
           className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            STATUS_PILL[plan.status] ?? 'bg-neutral-200 text-neutral-700'
+            failed ? 'bg-red-100 text-red-800' : STATUS_PILL[plan.status] ?? 'bg-neutral-200 text-neutral-700'
           }`}
         >
-          {PLAN_STATUS_LABEL[plan.status] ?? plan.status}
+          {failed && plan.status === 'active' ? 'Payment failed — retrying' : PLAN_STATUS_LABEL[plan.status] ?? plan.status}
         </span>
         {canChange && !confirmCancel && (
           <>
