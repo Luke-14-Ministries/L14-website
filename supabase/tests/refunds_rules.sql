@@ -165,3 +165,28 @@ do $$ declare s text; n int; begin
 end $$;
 rollback;
 \echo ALL 0111 CHECKS PASSED
+
+-- 0133: a fully refunded payment nets to zero in "paid" -- its refunds are not
+-- subtracted twice (a registration read "Paid $-180.00" on 26 Oct 2026).
+begin;
+create temp table _before as
+  select paid_cents, balance_cents from public.registration_balances
+   where registration_id = '50000000-0000-0000-0000-000000000001';
+insert into public.payments (id, registration_id, amount_cents, fee_cover_cents, method, status, received_on)
+values ('70000000-0000-0000-0000-0000000000f3','50000000-0000-0000-0000-000000000001',47000,0,'bank_transfer','succeeded','2026-10-01');
+insert into public.payment_refunds (id, payment_id, registration_id, amount_cents, status, method, stripe_refund_id)
+values ('71000000-0000-0000-0000-0000000000f3','70000000-0000-0000-0000-0000000000f3','50000000-0000-0000-0000-000000000001',47000,'succeeded','stripe','pyr_test_0133');
+do $$ declare s text; b record; a record; c bigint; begin
+  select status into s from public.payments where id='70000000-0000-0000-0000-0000000000f3';
+  if s <> 'refunded' then raise exception 'FAIL 0133a: payment is % after a full refund', s; end if;
+  select * into b from _before;
+  select paid_cents, balance_cents into a from public.registration_balances
+   where registration_id = '50000000-0000-0000-0000-000000000001';
+  if a.paid_cents is distinct from b.paid_cents or a.balance_cents is distinct from b.balance_cents then
+    raise exception 'FAIL 0133b: paid % -> %, balance % -> % after a payment refunded in full',
+      b.paid_cents, a.paid_cents, b.balance_cents, a.balance_cents;
+  end if;
+  raise notice 'PASS 0133 a fully refunded payment nets to zero in paid and balance';
+end $$;
+rollback;
+\echo ALL 0133 CHECKS PASSED

@@ -1827,8 +1827,11 @@ function MoneySummary({ balance, livePeople, staleRefunds = 0 }) {
   const afterPaid = paid - pending;
   const afterBal = bal + pending;
 
+  // An amount owed is just the amount, in amber beside "Balance today" -- the
+  // word "Owed" there said it twice (Lawrence, 26 Oct 2026). A credit keeps
+  // its word, because a bare green figure could be read either way.
   const balanceText =
-    bal < 0 ? `Credit ${money(-bal)}` : bal === 0 ? 'Settled' : `Owed ${money(bal)}`;
+    bal < 0 ? `Credit ${money(-bal)}` : bal === 0 ? 'Settled' : money(bal);
   const balanceCls = bal > 0 ? 'text-amber-700' : 'text-green-700';
 
   return (

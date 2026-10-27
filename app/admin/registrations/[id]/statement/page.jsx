@@ -80,7 +80,11 @@ export default async function FamilyStatementPage({ params }) {
 
   const h = reg.households ?? {};
   const parts = (reg.registration_participants ?? []).filter((p) => p.status !== 'cancelled');
-  const goodPays = (pays ?? []).filter((p) => p.status === 'succeeded' || p.status === 'processing');
+  // A payment refunded in full is still money that came in (0133): it stays
+  // on the statement, marked, and its refunds come off the total.
+  const goodPays = (pays ?? []).filter(
+    (p) => p.status === 'succeeded' || p.status === 'processing' || p.status === 'refunded'
+  );
   const today = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -190,7 +194,7 @@ export default async function FamilyStatementPage({ params }) {
                 <td className="py-1 pr-3">{dayInMorristown(p.received_on ?? p.created_at)}</td>
                 <td className="py-1 pr-3">{METHOD_LABEL[p.method] ?? p.method}</td>
                 <td className="py-1 pr-3">
-                  {p.status === 'processing' ? 'clearing the bank' : 'received'}
+                  {p.status === 'processing' ? 'clearing the bank' : p.status === 'refunded' ? 'received, refunded' : 'received'}
                 </td>
                 <td className="py-1 text-right">{money(p.amount_cents)}</td>
               </tr>

@@ -146,7 +146,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     (s, p) =>
       s +
       (inScope(regById.get(p.registration_id)?.events) &&
-      (p.status === 'succeeded' || p.status === 'processing')
+      (p.status === 'succeeded' || p.status === 'processing' || p.status === 'refunded')
         ? p.fee_cover_cents ?? 0
         : 0),
     0
