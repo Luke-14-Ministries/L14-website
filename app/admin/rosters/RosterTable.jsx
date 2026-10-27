@@ -119,6 +119,9 @@ export default function RosterTable({ events, rows, programs = [] }) {
   const qs = params.toString();
   const csvHref = `/admin/exports/rosters${qs ? `?${qs}` : ''}`;
   const printHref = `/admin/rosters/print${qs ? `?${qs}` : ''}`;
+  // The photographer's list (26 Oct 2026): one event's "no photos" people,
+  // printable, with faces for Sensitive read. Carries the chosen event.
+  const photosHref = `/admin/rosters/photos/${fEvent ? `?event=${fEvent}` : ''}`;
 
   const families = new Set(filtered.map((r) => r.registrationId)).size;
   const eventName = (id) => events.find((e) => e.id === id)?.name ?? '';
@@ -282,6 +285,9 @@ export default function RosterTable({ events, rows, programs = [] }) {
               Share this with whoever is photographing. It means not featuring them as the
               subject of a picture — nobody can promise absence from a wide group shot.
             </p>
+            <a href={photosHref} className="mt-2 inline-block text-sm font-semibold text-brand underline">
+              Photographer&rsquo;s list to print →
+            </a>
           </div>
         </div>
       )}
