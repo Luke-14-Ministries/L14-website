@@ -34,11 +34,15 @@ const localToIso = (v) => (v ? new Date(v).toISOString() : null);
 // (isCurrentEventRow, registrationOpen) -- and an archived event is always
 // stored unpublished. A row saved before this with both set reads as Archived,
 // which is what every staff page already treated it as.
+// Each status has its colour, on the closed dropdown and on its own line in
+// the list (Lawrence, 26 Oct 2026): blue on blue unpublished, green on green
+// published, grey on grey archived.
 const EVENT_STATUSES = [
-  ['unpublished', 'Unpublished', 'Hidden from the public site; staff can still set it up.'],
-  ['published', 'Published', 'On the public site; registration follows the open/close times.'],
-  ['archived', 'Archived', 'Finished: out of every current list and off the public site; its records stay.'],
+  ['unpublished', 'Unpublished', 'Hidden from the public site; staff can still set it up.', 'bg-blue-100 text-blue-800 border-blue-300'],
+  ['published', 'Published', 'On the public site; registration follows the open/close times.', 'bg-green-100 text-green-800 border-green-300'],
+  ['archived', 'Archived', 'Finished: out of every current list and off the public site; its records stay.', 'bg-neutral-200 text-neutral-700 border-neutral-300'],
 ];
+const statusTone = (v) => EVENT_STATUSES.find(([key]) => key === v)?.[3] ?? '';
 const eventStatus = (published, archivedAt) =>
   archivedAt ? 'archived' : published ? 'published' : 'unpublished';
 
@@ -181,10 +185,10 @@ function EventRow({ e }) {
           <select
             value={status}
             onChange={(ev) => setStatus(ev.target.value)}
-            className="rounded-sm border border-neutral-300 px-2 py-1"
+            className={`rounded-sm border px-2 py-1 font-semibold ${statusTone(status)}`}
           >
-            {EVENT_STATUSES.map(([v, label]) => (
-              <option key={v} value={v}>
+            {EVENT_STATUSES.map(([v, label, , tone]) => (
+              <option key={v} value={v} className={tone}>
                 {label}
               </option>
             ))}
