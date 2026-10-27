@@ -3,6 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow } from '@/lib/events';
 import PrintButton from '@/components/PrintButton';
+import BackLink from '@/components/BackLink';
 
 export const metadata = { title: 'Room List — Staff Admin' };
 
@@ -181,7 +182,10 @@ export default async function RoomListPrintPage({ searchParams }) {
     <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
       <div className="mb-2 flex items-center justify-between print:hidden">
         <h1 className="text-xl font-bold">Room list</h1>
-        <PrintButton />
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink href={`/admin/lodging/${selected ? `?event=${selected}` : ''}`} label="Back to Rooms & Cabins" />
+        </span>
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">
         Who is in each room, by building. Names, role, age and household only &mdash; mobility

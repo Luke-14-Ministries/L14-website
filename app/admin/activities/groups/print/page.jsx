@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
+import BackLink from '@/components/BackLink';
 import { GROUP_ROLE_LABEL, groupNoun, underAgeWords } from '@/lib/activityGroups';
 import { loadActivityGroups } from '../load';
 
@@ -107,7 +108,10 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
         <h1 className="text-xl font-bold">
           {activity.name} — {noun.many}
         </h1>
-        <PrintButton />
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink href={`/admin/activities/groups/?activity=${activityId}`} label="Back to the groups" />
+        </span>
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">
         One block per {noun.one}, each camper with their buddy on one line, then the outfitter

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
+import BackLink from '@/components/BackLink';
 
 export const metadata = { title: 'Print Rosters — Staff Admin' };
 
@@ -80,7 +81,10 @@ export default async function PrintRostersPage({ searchParams }) {
     <div className="mx-auto max-w-3xl p-8 print:p-0 bg-white print:text-[12px]">
       <div className="flex items-center justify-between mb-6 print:hidden">
         <h1 className="text-xl font-bold">Rosters — print view</h1>
-        <PrintButton />
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink href={`/admin/rosters/${fEvent ? `?event=${fEvent}` : ''}`} label="Back to Rosters" />
+        </span>
       </div>
 
       {(events ?? []).map((ev) => {

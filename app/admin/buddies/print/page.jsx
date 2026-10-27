@@ -3,6 +3,7 @@ import { allergySummary } from '@/lib/support';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
+import BackLink from '@/components/BackLink';
 import { SearchSelectLinks } from '@/components/SearchSelect';
 import { todayInMorristown } from '@/lib/events';
 
@@ -160,7 +161,10 @@ export default async function BuddyPrintPage({ searchParams }) {
     <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
       <div className="mb-2 flex items-center justify-between print:hidden">
         <h1 className="text-xl font-bold">Buddy Sheets</h1>
-        <PrintButton />
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink href={`/admin/buddies/${eventId ? `?event=${eventId}` : ''}`} label="Back to Buddy Assignments" />
+        </span>
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">
         One page per pairing — the buddy, the camper, the pairing notes from the board, and the

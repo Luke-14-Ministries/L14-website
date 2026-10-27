@@ -4,6 +4,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow } from '@/lib/events';
 import PrintButton from '@/components/PrintButton';
+import BackLink from '@/components/BackLink';
 
 export const metadata = { title: 'Kitchen List — Staff Admin' };
 
@@ -111,7 +112,10 @@ export default async function KitchenListPage({ searchParams }) {
     <div className="mx-auto max-w-2xl p-8 print:p-0 bg-white print:text-[12px]">
       <div className="flex items-center justify-between mb-2 print:hidden">
         <h1 className="text-xl font-bold">Kitchen list — no names</h1>
-        <PrintButton />
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink href={`/admin/dietary/${eventFilter ? `?event=${eventFilter}` : ''}`} label="Back to Dietary" />
+        </span>
       </div>
       <p className="text-sm text-neutral-500 mb-6 print:hidden">
         Dietary needs and allergies tallied per event, with no names attached — safe to post in

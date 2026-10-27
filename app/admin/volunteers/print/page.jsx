@@ -4,6 +4,7 @@ import { todayInMorristown } from '@/lib/events';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
+import BackLink from '@/components/BackLink';
 
 export const metadata = { title: 'Volunteer List — Staff Admin' };
 
@@ -96,7 +97,10 @@ export default async function VolunteerPrintPage({ searchParams }) {
     <div className="mx-auto max-w-4xl bg-white p-8 print:p-0 print:text-[11px]">
       <div className="mb-2 flex items-center justify-between print:hidden">
         <h1 className="text-xl font-bold">Volunteer List</h1>
-        <PrintButton />
+        <span className="flex flex-wrap items-center gap-3">
+          <PrintButton />
+          <BackLink href={`/admin/volunteers/${eventFilter ? `?event=${eventFilter}` : ''}`} label="Back to Volunteers" />
+        </span>
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">
         Who is volunteering at each event, where they would like to serve, and where their
