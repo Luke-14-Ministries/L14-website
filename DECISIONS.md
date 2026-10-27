@@ -3457,3 +3457,20 @@ status is already the one thing a Payments-write session may change (`payment_re
 is the path `refundPayment` already uses; the triggers keep `payments.status` and `money_change_log`
 right. Still pending at Stripe changes nothing and says so.
 
+## 26 Oct 2026 — Checkout broke on Stripe's new API; "paid" double-counted a full refund (0133)
+
+**Checkout:** the Dependabot upgrade to the Stripe library 23.0.0 (21 Oct) changed the pinned API version
+to `2026-09-30.endive`, which removed `payment_method_types` from Checkout Sessions and PaymentIntents —
+every card/bank checkout, plan set-up, plan method change and donation was refused ("The
+`payment_method_types` parameter is no longer supported"); the 21 Oct review missed it. Fixed by sending
+`allowed_payment_method_types` (same meaning: only the method the family chose). The edge functions now
+import `npm:stripe@23.0.0` instead of an unversioned `npm:stripe`, so a redeploy is deterministic; they
+need redeploying with the live keys at go-live (W51) — `charger.ts` had the same parameter.
+
+**Paid:** after the two stuck bank refunds were recorded as succeeded (found succeeded in Stripe via the
+connector — they pre-dated the refund webhook by 20 minutes), the $470 payment became `refunded` and the
+balance read "Paid $-180, Owed $900": the paid sums counted only `succeeded` payments but subtracted every
+succeeded refund. `0133` counts `refunded` payments in the gross in all three places; statements list a
+fully refunded payment as "received, refunded". One live registration was affected (test data). Also: the
+Money card's amber balance shows just the amount — "Owed" beside "Balance today" said it twice.
+

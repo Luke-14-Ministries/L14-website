@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as
 working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0132`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0133`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -320,6 +320,13 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   staff, the family's own registration or a server-side caller; the "both weeks" volunteer
   discount needs volunteer rows staff have **confirmed**. `registration_paid_cents()` is the
   deposit question for any staff member (the balances view runs with the caller's rights).
+- **Paid counts a payment refunded in full** (`0133`): `registration_balances`, `registration_paid_cents()`
+  and `registration_review` sum payments with status `succeeded` / `processing` / **`refunded`** and subtract
+  succeeded refunds. Summing only `succeeded` subtracted a refunded payment's refunds twice ("Paid
+  $-180"). Any new reader of "paid" counts `refunded` payments in the gross.
+- **Stripe SDK 23 pins API `2026-09-30.endive`**, which removed `payment_method_types`: Checkout Sessions
+  and PaymentIntents restrict the method with **`allowed_payment_method_types`**; the edge functions
+  import `npm:stripe@23.0.0` (pinned, so a redeploy cannot pick up a newer API by surprise).
 - **Refunds:** `charge.refunded` → `supabase/functions/stripe-refund-webhook/`; per-family refunds via
   `refundPayment` in `app/admin/registrations/[id]/actions.js`; the over-refund guard and
   pending-refund accounting are `0038`/`0044`/`0053`/`0054`. Since `0107` the row is reserved before
