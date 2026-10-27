@@ -3375,3 +3375,20 @@ and never fails the submit — anything not linked comes back as an amber `careg
 Manage household. *Not on this registration* says to save and, once the caregiver is registered, link
 them from the dashboard under Manage household; the dashboard form's caregiver question says the same,
 with the link. The Role select spans two columns.
+
+## 26 Oct 2026 — A volunteer signs the ministry's activity waiver ahead, like a provider's form
+
+Lawrence, a volunteer on both camp weeks, had "Horseback riding — Lawrence needs a waiver signed" twice on
+his dashboard, and each link opened an Activities page with nowhere to sign it: the rows came from horseback
+signups made before volunteers stopped choosing activities, and the page gave volunteers only outside-provider
+uploads. Now each volunteer's block ("Volunteers and buddies — waivers") also lists every activity on that
+event with one of the ministry's own waivers: signed (who, when) or a button opening the camper's signing box.
+It is "ready in case", like the provider form, and still not a signup. signActivityWaiver lets an active
+volunteer on the caller's household's registration for that activity's event sign without a signup; the
+household check and signer rules are unchanged. The dashboard's lines link to the person's own block
+(#person-<participant> for a camper, #vol-<participant> for a volunteer), name the event when there is more
+than one, and the card says "Waivers still needed". The view (activity_waivers_outstanding) is unchanged; a
+volunteer's legacy signup still makes a row, which signing now clears. The signing box puts a calm neutral
+line before an agreement that opens with the statutory WARNING notice (TCA 44-20-105); the notice itself stays
+verbatim.
+
