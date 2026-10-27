@@ -32,7 +32,8 @@ const TSHIRT_SIZES = [
   'Adult S', 'Adult M', 'Adult L', 'Adult XL', 'Adult 2XL', 'Adult 3XL',
 ];
 
-// The folding card every section of this page uses, StaffPlanPanel included.
+// The folding card every section of this page uses (StaffPlanPanel and the
+// fees and payments are sections of the Money card, which is one).
 import Panel from './Panel';
 import ReviewCard from './ReviewCard';
 import { eventDateRange, dayInMorristown, todayInMorristown } from '@/lib/events';
@@ -801,21 +802,30 @@ const PERSON_ROLE_LABEL = {
   authorized_adult: 'with their permission, affirmed by the signer',
 };
 
+// Open or folded (26 Oct 2026, Lawrence's rule): open while something is
+// missing or unconfirmed -- nothing on file, or a signature the family only
+// reported ('self_reported') that staff have not confirmed -- and folded once
+// everything on file is signed. Which agreements each person still OWES is
+// not read on this page; an activity waiver still owed has its own amber
+// notice at the top.
 function AgreementsCard({ signatures }) {
   if (!signatures || signatures.length === 0) {
     return (
-      <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-        <p className="font-semibold text-amber-900">No signed agreements on file</p>
-        <p className="mt-1 text-sm text-amber-800">
-          Nothing has been signed for this registration. Families sign during registration;
-          a registration created by staff by hand will not have them, and neither will one
-          submitted before agreements were introduced (23 Aug 2026).
-        </p>
-      </div>
+      <Panel title="Signed agreements" count="none on file">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+          <p className="font-semibold text-amber-900">No signed agreements on file</p>
+          <p className="mt-1 text-sm text-amber-800">
+            Nothing has been signed for this registration. Families sign during registration;
+            a registration created by staff by hand will not have them, and neither will one
+            submitted before agreements were introduced (23 Aug 2026).
+          </p>
+        </div>
+      </Panel>
     );
   }
 
   const first = signatures[0];
+  const unconfirmed = signatures.some((sig) => sig.status === 'self_reported');
   return (
     // Folds like the rest of the page (25 Aug). The bar carries the count,
     // because "how many are signed" is the whole question a registrar has
@@ -823,6 +833,7 @@ function AgreementsCard({ signatures }) {
     <Panel
       title="Signed agreements"
       count={`${signatures.length} signed`}
+      defaultOpen={unconfirmed}
     >
       <p className="text-sm text-neutral-600">
         Signed by <strong>{first.signerName}</strong>{' '}
@@ -993,6 +1004,9 @@ function AddPerson({ registrationId, options }) {
 }
 
 // --- edit the household's contact details (#15) ------------------------------
+// A folding card near the foot of the page since 26 Oct 2026 (the family's
+// name is already the page's title). Folded, unless the phone or email the
+// save below asks about is missing -- then open, with the gap on its bar.
 function HouseholdEditor({ registrationId, household }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -1037,12 +1051,18 @@ function HouseholdEditor({ registrationId, household }) {
     });
   }
 
-  if (!editing) {
-    return (
-      <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
+  const missingContact = [!household.phone && 'phone', !household.email && 'email'].filter(Boolean);
+
+  return (
+    <Panel
+      title="Family contact"
+      count={missingContact.length ? `no ${missingContact.join(' or ')}` : null}
+      defaultOpen={missingContact.length > 0}
+    >
+      {!editing ? (
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold">{household.display_name}</h2>
+            <p className="font-bold">{household.display_name}</p>
             <p className="text-sm text-neutral-600">
               {household.email || 'no email'}
               {household.phone ? ` · ${household.phone}` : ''}
@@ -1071,80 +1091,78 @@ function HouseholdEditor({ registrationId, household }) {
             Edit
           </button>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
-      <h2 className="text-lg font-bold mb-3">Edit household</h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="sm:col-span-2">
-          <label className={labelCls}>Household name</label>
-          <input className={inputCls} value={f.display_name} onChange={set('display_name')} />
-        </div>
+      ) : (
         <div>
-          <label className={labelCls}>Email</label>
-          <input className={inputCls} value={f.email} onChange={set('email')} />
+          <h3 className="text-base font-bold mb-3">Edit household</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Household name</label>
+              <input className={inputCls} value={f.display_name} onChange={set('display_name')} />
+            </div>
+            <div>
+              <label className={labelCls}>Email</label>
+              <input className={inputCls} value={f.email} onChange={set('email')} />
+            </div>
+            <div>
+              <label className={labelCls}>Phone</label>
+              <input className={inputCls} value={f.phone} onChange={set('phone')} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Address line 1</label>
+              <input className={inputCls} value={f.address_line1} onChange={set('address_line1')} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Address line 2</label>
+              <input className={inputCls} value={f.address_line2} onChange={set('address_line2')} />
+            </div>
+            <div>
+              <label className={labelCls}>City</label>
+              <input className={inputCls} value={f.city} onChange={set('city')} />
+            </div>
+            <div>
+              <label className={labelCls}>State</label>
+              <input className={inputCls} value={f.state} onChange={set('state')} />
+            </div>
+            <div>
+              <label className={labelCls}>Postal code</label>
+              <input className={inputCls} value={f.postal_code} onChange={set('postal_code')} />
+            </div>
+            <div>
+              <label className={labelCls}>Home church</label>
+              <input className={inputCls} value={f.home_church} onChange={set('home_church')} />
+            </div>
+            <div>
+              {/* Asked once, at the family's first registration, and never again --
+                  so this is the only place a wrong or missing answer can be
+                  corrected. */}
+              <label className={labelCls}>How they heard about us</label>
+              <input
+                className={inputCls}
+                value={f.how_did_you_hear}
+                onChange={set('how_did_you_hear')}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Who from / detail</label>
+              <input
+                className={inputCls}
+                value={f.how_did_you_hear_from}
+                onChange={set('how_did_you_hear_from')}
+              />
+            </div>
+          </div>
+          <ErrorNote>{error}</ErrorNote>
+          <div className="mt-3 flex gap-2">
+            <button onClick={() => save()} disabled={pending} className="btn-primary py-1.5! text-sm">
+              {pending ? 'Saving…' : 'Save changes'}
+            </button>
+            <button onClick={() => setEditing(false)} disabled={pending} className="btn-outline py-1.5! text-sm">
+              Cancel
+            </button>
+          </div>
         </div>
-        <div>
-          <label className={labelCls}>Phone</label>
-          <input className={inputCls} value={f.phone} onChange={set('phone')} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className={labelCls}>Address line 1</label>
-          <input className={inputCls} value={f.address_line1} onChange={set('address_line1')} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className={labelCls}>Address line 2</label>
-          <input className={inputCls} value={f.address_line2} onChange={set('address_line2')} />
-        </div>
-        <div>
-          <label className={labelCls}>City</label>
-          <input className={inputCls} value={f.city} onChange={set('city')} />
-        </div>
-        <div>
-          <label className={labelCls}>State</label>
-          <input className={inputCls} value={f.state} onChange={set('state')} />
-        </div>
-        <div>
-          <label className={labelCls}>Postal code</label>
-          <input className={inputCls} value={f.postal_code} onChange={set('postal_code')} />
-        </div>
-        <div>
-          <label className={labelCls}>Home church</label>
-          <input className={inputCls} value={f.home_church} onChange={set('home_church')} />
-        </div>
-        <div>
-          {/* Asked once, at the family's first registration, and never again --
-              so this is the only place a wrong or missing answer can be
-              corrected. */}
-          <label className={labelCls}>How they heard about us</label>
-          <input
-            className={inputCls}
-            value={f.how_did_you_hear}
-            onChange={set('how_did_you_hear')}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <label className={labelCls}>Who from / detail</label>
-          <input
-            className={inputCls}
-            value={f.how_did_you_hear_from}
-            onChange={set('how_did_you_hear_from')}
-          />
-        </div>
-      </div>
-      <ErrorNote>{error}</ErrorNote>
-      <div className="mt-3 flex gap-2">
-        <button onClick={() => save()} disabled={pending} className="btn-primary py-1.5! text-sm">
-          {pending ? 'Saving…' : 'Save changes'}
-        </button>
-        <button onClick={() => setEditing(false)} disabled={pending} className="btn-outline py-1.5! text-sm">
-          Cancel
-        </button>
-      </div>
-    </div>
+      )}
+    </Panel>
   );
 }
 
@@ -1153,7 +1171,7 @@ function HouseholdEditor({ registrationId, household }) {
 // this is the whole conversation: the family's replies from their dashboard
 // are in it too, oldest first, highlighted blue. A family's reply cannot be
 // removed (their words are the record); a staff note can.
-function FamilyMessages({ registrationId, messages, canWrite = true }) {
+function FamilyMessages({ registrationId, messages, canWrite = true, defaultOpen = true }) {
   const router = useRouter();
   const [body, setBody] = useState('');
   const [pending, setPending] = useState(false);
@@ -1179,7 +1197,12 @@ function FamilyMessages({ registrationId, messages, canWrite = true }) {
   }
 
   return (
-    <Panel title="Notes to and from the family" count={messages.length || null} id="family-messages">
+    <Panel
+      title="Notes to and from the family"
+      count={messages.length || null}
+      id="family-messages"
+      defaultOpen={defaultOpen}
+    >
       <p className="text-sm text-neutral-500 mb-3">
         Shown on the family&rsquo;s dashboard under this registration — e.g. &ldquo;We added a
         $100 scholarship credit to your registration on 8/17.&rdquo; Everything written here is
@@ -1238,20 +1261,26 @@ function FamilyMessages({ registrationId, messages, canWrite = true }) {
 // makes sense -- Event Payments knows balances, not transactions. Partial is
 // the normal case (one child withdraws from three), so the amount box opens
 // pre-filled with everything still refundable and is freely editable down.
+//
+// A section of the Money card since 26 Oct 2026, keeping the id "payments"
+// that /admin/payments links to; the Money card opens itself for it.
 function PaymentsCard({ registrationId, payments, stripeBase = '', event = null, feePeople = 0, depositWaived = false }) {
   const [openFor, setOpenFor] = useState(null);
 
   if (payments.length === 0) {
     return (
-      <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
-        <h2 className="text-lg font-bold mb-1">Payments</h2>
+      <section id="payments" className="scroll-mt-4">
+        <h3 className="text-base font-bold mb-1">Payments</h3>
         <p className="text-sm text-neutral-500">Nothing has been paid on this registration yet.</p>
-      </div>
+      </section>
     );
   }
 
   return (
-    <Panel title="Payments" count={payments.length} id="payments">
+    <section id="payments" className="scroll-mt-4">
+      <h3 className="text-base font-bold mb-1">
+        Payments <span className="text-sm font-normal text-neutral-500">({payments.length})</span>
+      </h3>
       <p className="text-sm text-neutral-500 mb-4">
         Refunds go back against the payment they came from. Card and bank payments are
         refunded through Stripe here; checks and cash are recorded here and paid by the
@@ -1400,7 +1429,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
           </li>
         ))}
       </ul>
-    </Panel>
+    </section>
   );
 }
 
@@ -1616,16 +1645,89 @@ function PeopleLine({ participants }) {
   );
 }
 
+// A week tab's label: "Camp Celebrate 2026 — Week 1" reads "Week 1"; any
+// other name ("Adult Adventure Retreat 2026") comes back whole. The dates sit
+// under it, so two years' Week 1s still differ, and the full name is in the
+// tab's title.
+function tabEventName(name) {
+  const n = String(name ?? 'Event');
+  const m = n.match(/—\s*(Week \d+)\s*$/);
+  return m ? m[1] : n;
+}
+
+// One week tab (26 Oct 2026). Module level, never inside FamilyHeader
+// (CLAUDE.md). The amber dot is page.jsx's staffAttention(): this
+// registration is waiting on staff for something, named in the title and
+// for screen readers. A registration whose people are all cancelled is shown
+// greyed, still a link.
+function WeekTab({ reg, active }) {
+  const parts = reg.participants ?? [];
+  const cancelledOnly = parts.length > 0 && parts.every((p) => p.status === 'cancelled');
+  const attention = reg.attention ?? [];
+  const live = parts.filter((p) => p.status !== 'cancelled');
+  const title = [
+    reg.event?.name ?? 'Event',
+    live.length === 0
+      ? 'nobody active'
+      : live.map((p) => `${p.person?.first_name ?? ''} ${p.person?.last_name ?? ''}`.trim()).join(', '),
+    attention.length > 0 && `waiting on staff: ${attention.join(', ')}`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const cls = `block h-full rounded-md border px-3 py-1.5 text-sm ${
+    active
+      ? 'border-brand bg-brand/10 text-brand-dark'
+      : cancelledOnly
+        ? 'border-neutral-200 bg-neutral-50 text-neutral-400 hover:bg-neutral-100'
+        : 'border-neutral-200 bg-white text-neutral-800 hover:border-brand hover:bg-neutral-50'
+  }`;
+  const body = (
+    <>
+      <span className="flex items-center gap-1.5 font-semibold">
+        {tabEventName(reg.event?.name)}
+        {attention.length > 0 && <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />}
+      </span>
+      {reg.event?.starts_on && (
+        <span className="block text-xs font-normal text-neutral-500">
+          {eventDateRange(reg.event.starts_on, reg.event.ends_on)}
+        </span>
+      )}
+      {cancelledOnly && <span className="block text-xs font-normal">cancelled</span>}
+      {attention.length > 0 && <span className="sr-only"> — waiting on staff: {attention.join(', ')}</span>}
+    </>
+  );
+  return active ? (
+    <span aria-current="page" title={title} className={cls}>
+      {body}
+    </span>
+  ) : (
+    <Link href={`/admin/registrations/${reg.id}/`} title={title} className={cls}>
+      {body}
+    </Link>
+  );
+}
+
 // The page's shape from 15 Oct 2026 (Lawrence): the FAMILY is the thing, the
 // event is where they are going. A registrar opening this page used to see
 // the event name as the title, with the family relegated to the breadcrumb --
 // which reads backwards when a family is registered for two events and the
 // registrar wants to move between them. So: family name on top, the people
-// on this registration as links to their person pages, every event this
-// household is registered for as a link to that registration, and only then
-// this registration's details.
-function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true }) {
-  const others = familyRegistrations.filter((r) => r.id !== registration.id);
+// on this registration as links to their person pages, and every event this
+// household is registered for.
+//
+// Since 26 Oct 2026 those events are tabs, one per registration (Lawrence:
+// still one page per registration -- approving, the deposit, payments, notes
+// and the waitlist all belong to one). This one is the active tab; the
+// others link to their own pages and carry an amber dot while they wait on
+// staff. A family with one registration still gets its one tab, so the page
+// looks the same for everyone. The tabs replace the "<Event> registration
+// details" heading that used to sit under this card.
+function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true, footnote = null }) {
+  // This registration is always a tab, even if the household lookup found
+  // nothing to list.
+  const tabs = familyRegistrations.some((r) => r.id === registration.id)
+    ? familyRegistrations
+    : [{ id: registration.id, event: registration.event, participants: registration.participants, attention: [] }, ...familyRegistrations];
   return (
     <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-xs">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1651,42 +1753,19 @@ function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true })
         <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
           Registered for
         </p>
-        <ul className="mt-1 space-y-1 text-sm">
-          <li className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-semibold">{registration.event?.name ?? 'Event'}</span>
-            {registration.event?.starts_on && (
-              <span className="text-neutral-500">
-                {eventDateRange(registration.event.starts_on, registration.event.ends_on)}
-              </span>
-            )}
-            <span className="rounded-sm bg-brand/10 px-1.5 py-0.5 text-xs font-semibold text-brand-dark">
-              this page
-            </span>
-          </li>
-          {others.map((r) => {
-            const people = (r.participants ?? []).filter((p) => p.status !== 'cancelled');
-            return (
-              <li key={r.id} className="flex flex-wrap items-baseline gap-x-2">
-                <Link href={`/admin/registrations/${r.id}/`} className="font-semibold text-brand-dark hover:underline">
-                  {r.event?.name ?? 'Event'}
-                </Link>
-                {r.event?.starts_on && (
-                  <span className="text-neutral-500">
-                    {eventDateRange(r.event.starts_on, r.event.ends_on)}
-                  </span>
-                )}
-                <span className="text-neutral-500">
-                  · {people.length === 0
-                    ? 'nobody active'
-                    : people.map((p) => `${p.person?.first_name ?? ''} ${p.person?.last_name ?? ''}`.trim()).join(', ')}
-                </span>
+        <nav aria-label="This family's registrations" className="mt-2">
+          <ul className="flex flex-wrap gap-2">
+            {tabs.map((r) => (
+              <li key={r.id}>
+                <WeekTab reg={r} active={r.id === registration.id} />
               </li>
-            );
-          })}
-        </ul>
-        {others.length === 0 && (
+            ))}
+          </ul>
+        </nav>
+        {tabs.length === 1 && (
           <p className="mt-1 text-xs text-neutral-500">This is the family&rsquo;s only registration.</p>
         )}
+        {footnote && <p className="mt-2 text-xs text-neutral-500">{footnote}</p>}
       </div>
     </div>
   );
@@ -1740,7 +1819,7 @@ function MoneySummary({ balance, livePeople }) {
   const balanceCls = bal > 0 ? 'text-amber-700' : 'text-green-700';
 
   return (
-    <div className="mb-6 grid gap-4 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-xs md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2">
       <div className="space-y-1 text-sm">
         <MoneyRow label="Fees" note={`${livePeople} ${livePeople === 1 ? 'person' : 'people'}`} value={money(fee)} />
         {scholarship > 0 && <MoneyRow label="− Scholarships" value={money(scholarship)} cls="text-green-700" />}
@@ -1818,8 +1897,15 @@ export default function RegistrationManager({
   familyMessages = [],
   signatures = [],
   balance = null,
-  // 0123: the Fees panel (server-built, Payments read), shown under the money.
+  // 0123: the Fees panel (server-built, Payments read), a section of Money.
   feesPanel = null,
+  // How it is being paid (StaffPlanPanel, server-built, Payments read): the
+  // last section of Money.
+  planPanel = null,
+  // The amber "Activity waiver outstanding" notice (page.jsx), or null.
+  waiverNotice = null,
+  // From page.jsx for the Money card's rule: { overdue, planTrouble }.
+  moneyAlerts = {},
   payments = [],
   stripeBase = '',
 }) {
@@ -1856,6 +1942,55 @@ export default function RegistrationManager({
     ? parts.reduce((s, p) => s + (p.scholarship_cents ?? 0) + (p.discount_cents ?? 0), 0)
     : 0;
 
+  // --- which cards open by default (Lawrence, 26 Oct 2026) -------------------
+  // "Everything default open when items are outstanding and default folded
+  // when done." Each rule only sets how a card first draws; a link to it
+  // (#review, #people, #person-<id>, #family-messages, #payments, #plan)
+  // still opens it, and staff can open or fold any card by hand.
+  const anySubmitted = parts.some((p) => p.status === 'submitted');
+  const anyWaitlisted = parts.some((p) => p.status === 'waitlisted');
+  const replyUnread = Boolean(familyReply?.unread);
+  // Review: open while anyone is submitted, the family's reply is unread, it
+  // is on hold or waiting on the family, or the review view raises a flag --
+  // all but "deposit waived", which is a decision staff already made (shown
+  // green on the card), not something still to look at.
+  const openFlags = (review?.flags ?? []).filter((f) => f !== 'deposit_waived');
+  const reviewOpen = anySubmitted || replyUnread || Boolean(hold?.since) || Boolean(awaiting?.since) || openFlags.length > 0;
+  // People: open while anyone is submitted or waitlisted, or someone still
+  // on the week shows a gap on their row -- no date of birth, or a request
+  // for help with the fee waiting on a decision.
+  const peopleGaps = parts.some(
+    (p) => p.status !== 'cancelled' && (!p.person?.date_of_birth || awaitingScholarship.has(p.id))
+  );
+  const peopleOpen = anySubmitted || anyWaitlisted || peopleGaps;
+  // Money: open when there is something for staff to do with it -- a
+  // balance still owed after the due date, a short deposit while someone is
+  // still submitted, a payment plan that stopped or has a failed charge
+  // waiting to retry, a refund not yet cleared, or a credit to settle (a
+  // refund, or a decision to keep it). Folded otherwise: paid in full, and
+  // an ordinary balance before its due date, are not work.
+  const bal = balance?.balance_cents ?? 0;
+  const refundPending =
+    (balance?.refund_pending_cents ?? 0) > 0 ||
+    payments.some((p) => (p.refunds ?? []).some((r) => r.status === 'pending'));
+  const moneyOpen =
+    Boolean(moneyAlerts.overdue) ||
+    (depositShort && anySubmitted) ||
+    Boolean(moneyAlerts.planTrouble) ||
+    refundPending ||
+    (Boolean(balance) && bal < 0);
+  // The state on the Money card's bar, so a folded card still answers "do
+  // they owe anything?".
+  const moneyState = !balance
+    ? null
+    : bal > 0
+      ? `Owed ${money(bal)}`
+      : bal < 0
+        ? `Credit ${money(-bal)}`
+        : (balance.paid_cents ?? 0) > 0
+          ? 'Paid in full'
+          : 'Nothing owed';
+
   return (
     <div>
       {/* A breadcrumb rather than a bare back-link (asked for 24 Aug: "a
@@ -1875,42 +2010,39 @@ export default function RegistrationManager({
         </span>
       </nav>
 
-      <FamilyHeader registration={registration} familyRegistrations={familyRegistrations} canSeeMoney={canSeeMoney} />
-
-      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-bold">
-          {registration.event?.name ?? 'Registration'}
-          <span className="ml-2 text-base font-normal text-neutral-500">registration details</span>
-        </h2>
-        {/* Without Payments read the balances view returns no row at all
-            (0114), so this fallback line is what such a staffer sees: the head
-            count, and the fees only when the money came through. */}
-        {!balance && (
-          <span className="text-sm text-neutral-500">
-            {livePeople} {livePeople === 1 ? 'person' : 'people'}
-            {canSeeMoney && moneyKnown && (
+      <FamilyHeader
+        registration={registration}
+        familyRegistrations={familyRegistrations}
+        canSeeMoney={canSeeMoney}
+        footnote={
+          <>
+            {/* Without Payments read the balances view returns no row at all
+                (0114), so this fallback is what such a staffer sees: the head
+                count, and the fees only when the money came through. */}
+            {!balance && (
               <>
-                {' '}· Fees {money(total)}
-                {adjustments > 0 && <> − {money(adjustments)} scholarships/discounts</>}
+                {livePeople} {livePeople === 1 ? 'person' : 'people'}
+                {canSeeMoney && moneyKnown && (
+                  <>
+                    {' '}· Fees {money(total)}
+                    {adjustments > 0 && <> − {money(adjustments)} scholarships/discounts</>}
+                  </>
+                )}
+                {' · '}
               </>
             )}
-          </span>
-        )}
-      </div>
-      <p className="text-sm text-neutral-500 mb-4">
-        Review and update this family&rsquo;s registration for this event. Status changes and
-        edits save immediately.
-      </p>
+            Status changes and edits save immediately.
+          </>
+        }
+      />
 
-      {/* Zero is SETTLED, not neutral — the one balance a registrar is pleased
-          to see (25 Aug). Green for paid up and for a credit; amber only
-          while money is actually outstanding. The numbers come from the same
-          view the dashboard and Event Payments read, so the three never
-          disagree (24 Aug). */}
-      {canSeeMoney && <MoneySummary balance={balance} livePeople={livePeople} />}
-      {canSeeMoney && feesPanel}
+      {/* The order from 26 Oct 2026 (Lawrence): what needs a decision first
+          (Review, then the conversation with the family), then the people,
+          then the money in one card, and the family's contact details and
+          agreements last -- looked up, rarely worked on. */}
+      <div className="space-y-6">
+        {waiverNotice}
 
-      <div className="mb-6">
         <ReviewCard
           registrationId={registration.id}
           participants={parts.map((p) => ({
@@ -1936,31 +2068,10 @@ export default function RegistrationManager({
           depositCents={depositCents}
           canWrite={canWrite}
           canDecide={canDecide}
+          defaultOpen={reviewOpen}
         />
-      </div>
 
-      {/* The conversation sits with the Review card (0126): a family's reply
-          is part of the review, not something to scroll for. */}
-      <div className="mb-6">
-        <FamilyMessages registrationId={registration.id} messages={familyMessages} canWrite={canWrite} />
-      </div>
-
-      {depositShort && (
-        <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
-          <p className="font-bold text-amber-900">
-            Deposit short — {money(depositPaid)} of {money(depositDue)}
-          </p>
-          <p className="mt-1 text-amber-900">
-            {livePeople} {livePeople === 1 ? 'place' : 'places'} at {money(depositEach)} each.{' '}
-            {depositPaid === 0
-              ? 'Nothing has been paid, so nothing is held yet.'
-              : `${money(depositDue - depositPaid)} still to come before every place is held.`}
-          </p>
-        </div>
-      )}
-
-      <div className="space-y-6">
-        {/* A family asking for help with the fee gets the top of the page.
+        {/* A family asking for help with the fee sits with the review.
             It used to be a light-grey line at the bottom reading "$0
             requested" (the amount was never even loaded), which is how the
             most consequential thing on the screen ended up looking like an
@@ -1989,20 +2100,25 @@ export default function RegistrationManager({
           </div>
         )}
 
-        {canWrite && <HouseholdEditor registrationId={registration.id} household={registration.household} />}
-
-        <AgreementsCard signatures={signatures} />
-
-        {canSeeMoney && <PaymentsCard
+        {/* The conversation sits with the Review card (0126): a family's reply
+            is part of the review, not something to scroll for. Open while
+            their reply is unread; folded otherwise, the count on its bar. */}
+        <FamilyMessages
           registrationId={registration.id}
-          payments={payments}
-          stripeBase={stripeBase}
-          event={registration.event}
-          feePeople={livePeople}
-          depositWaived={Boolean(depositWaived)}
-        />}
+          messages={familyMessages}
+          canWrite={canWrite}
+          defaultOpen={replyUnread}
+        />
 
-        <Panel title="People on this week" count={parts.length} id="people" opensFor="person-">
+        {/* What the family wrote when they registered: reading for the
+            review, so open while anyone is still submitted. */}
+        {registration.family_notes && (
+          <Panel title="Notes from the family" defaultOpen={anySubmitted}>
+            <p className="text-sm text-neutral-700 whitespace-pre-wrap">{registration.family_notes}</p>
+          </Panel>
+        )}
+
+        <Panel title="People on this week" count={parts.length} id="people" opensFor="person-" defaultOpen={peopleOpen}>
           <p className="text-sm text-neutral-500 mb-2">
             Change a status to move someone off &ldquo;submitted — pending review.&rdquo;
           </p>
@@ -2105,11 +2221,56 @@ export default function RegistrationManager({
           )}
         </Panel>
 
-        {registration.family_notes && (
-          <Panel title="Notes from the family">
-            <p className="text-sm text-neutral-700 whitespace-pre-wrap">{registration.family_notes}</p>
+        {/* All the money in one card (26 Oct 2026): what is owed and why, the
+            deposit, each payment and its refunds, fees, and how it is being
+            paid. Payments read only, as each part was before. "#payments"
+            (linked from Event Payments) and "#plan" open it and scroll to
+            their section. */}
+        {canSeeMoney && (
+          <Panel title="Money" count={moneyState} id="money" opensFor={['payments', 'plan']} defaultOpen={moneyOpen}>
+            {/* Zero is SETTLED, not neutral — the one balance a registrar is
+                pleased to see (25 Aug). Green for paid up and for a credit;
+                amber only while money is actually outstanding. The numbers
+                come from the same view the dashboard and Event Payments read,
+                so the three never disagree (24 Aug). */}
+            <MoneySummary balance={balance} livePeople={livePeople} />
+
+            {depositShort && (
+              <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
+                <p className="font-bold text-amber-900">
+                  Deposit short — {money(depositPaid)} of {money(depositDue)}
+                </p>
+                <p className="mt-1 text-amber-900">
+                  {livePeople} {livePeople === 1 ? 'place' : 'places'} at {money(depositEach)} each.{' '}
+                  {depositPaid === 0
+                    ? 'Nothing has been paid, so nothing is held yet.'
+                    : `${money(depositDue - depositPaid)} still to come before every place is held.`}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-5 border-t border-neutral-100 pt-5">
+              <PaymentsCard
+                registrationId={registration.id}
+                payments={payments}
+                stripeBase={stripeBase}
+                event={registration.event}
+                feePeople={livePeople}
+                depositWaived={Boolean(depositWaived)}
+              />
+            </div>
+
+            {/* empty:hidden -- FeesPanel draws nothing when there are no fees
+                and this staffer cannot add one, and the rule should go too. */}
+            {feesPanel && <div className="mt-5 border-t border-neutral-100 pt-5 empty:hidden">{feesPanel}</div>}
+
+            {planPanel && <div className="mt-5 border-t border-neutral-100 pt-5">{planPanel}</div>}
           </Panel>
         )}
+
+        {canWrite && <HouseholdEditor registrationId={registration.id} household={registration.household} />}
+
+        <AgreementsCard signatures={signatures} />
       </div>
     </div>
   );

@@ -76,6 +76,9 @@ export default function ReviewCard({
   // card shows the state and offers nothing to press.
   canWrite = true,
   canDecide = true,
+  // Open or folded when the page first draws (26 Oct 2026): the rule is
+  // RegistrationManager's, beside the other cards'.
+  defaultOpen = true,
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -166,7 +169,7 @@ export default function ReviewCard({
       : `${waiting.length} waiting on staff`;
 
   return (
-    <Panel title="Review" count={count} id="review">
+    <Panel title="Review" count={count} id="review" defaultOpen={defaultOpen}>
       {/* The family replied in the app (0126). First in the card, and amber:
           it is waiting on staff to read and answer (Lawrence, 26 Oct 2026). */}
       {familyReply?.unread && (
@@ -179,9 +182,7 @@ export default function ReviewCard({
           ))}
           <p className="mt-1 text-xs text-amber-900">
             Their reply put this registration back in front of staff. The whole conversation is in{' '}
-            <a href="#family-messages" className="underline">
-              Notes to and from the family
-            </a>
+            <PanelLink to="family-messages">Notes to and from the family</PanelLink>
             ; writing back to them there also marks this as read.
           </p>
           {canWrite && (

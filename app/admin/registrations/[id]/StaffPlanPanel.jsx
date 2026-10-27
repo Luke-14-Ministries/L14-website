@@ -9,7 +9,6 @@ import { useState, useTransition } from 'react';
 import { setPlanStatus } from './actions';
 import { ROUTE_LABEL, SCHEDULE_LABEL, PLAN_STATUS_LABEL, planStoppedAt } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
-import Panel from './Panel';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 const INST_LABEL = {
@@ -47,13 +46,15 @@ export default function StaffPlanPanel({
 
   const unfinished = requiresChoice && route === 'none';
 
-  // A titled, folding card like every other card on the page (15 Oct 2026).
-  // It used to be a bare white box with the review pill as its first line
-  // and no way to put it away; the review now has its own card at the top
-  // (ReviewCard.jsx), and this one is only about how the money arrives.
+  // The last section of the Money card (26 Oct 2026), under a heading of its
+  // own and without card chrome of its own: it folds with the rest of the
+  // money. From 15 Oct it was a folding card at the foot of the page; before
+  // that, a bare white box with the review pill as its first line (the
+  // review has its own card now, ReviewCard.jsx). It is only about how the
+  // money arrives. "#plan" still reaches it (the Money card opens for it).
   return (
-    <div id="plan" className="mt-6">
-    <Panel title="How this registration is being paid" count={ROUTE_LABEL[route] ?? null}>
+    <section id="plan" className="scroll-mt-4">
+      <h3 className="mb-1 text-base font-bold">How this registration is being paid</h3>
       <p className={`text-sm mb-3 ${unfinished ? 'font-semibold text-amber-800' : 'text-neutral-600'}`}>
         {ROUTE_LABEL[route] ?? route ?? '—'}
         {unfinished && ' — the family has not chosen pay in full, a payment plan or a scholarship yet.'}
@@ -173,7 +174,6 @@ export default function StaffPlanPanel({
         <p className="text-sm text-neutral-500">A plan was started but its deposit has not been paid.</p>
       )}
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-    </Panel>
-    </div>
+    </section>
   );
 }

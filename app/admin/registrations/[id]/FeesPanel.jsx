@@ -1,8 +1,8 @@
 'use client';
 
 // Fees on this registration (0123): the automatic returned-bank-payment fee
-// and any a staff member added. Shown to Payments read beside the money
-// summary; Waive (reason required) and Add a fee are Payments write. Both go
+// and any a staff member added. Shown to Payments read as a section of the
+// Money card (26 Oct 2026; it was its own card under the money summary); Waive (reason required) and Add a fee are Payments write. Both go
 // through definer functions and are logged in money_change_log; the family
 // sees each fee, and a waived one struck through, on their dashboard and
 // statement. Unwaived fees are part of the balance everywhere
@@ -163,8 +163,8 @@ function AddFeeForm({ registrationId }) {
 export default function FeesPanel({ registrationId, fees = [], canWrite = false, canWaive = false }) {
   if (fees.length === 0 && !canWrite) return null;
   return (
-    <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-6 py-4 shadow-xs text-sm">
-      <p className="font-semibold">Fees</p>
+    <section className="text-sm">
+      <h3 className="text-base font-bold">Fees</h3>
       {fees.length === 0 ? (
         <p className="mt-1 text-neutral-500">No fees on this registration.</p>
       ) : (
@@ -179,6 +179,6 @@ export default function FeesPanel({ registrationId, fees = [], canWrite = false,
         Unwaived fees are part of the balance. A returned bank payment adds the fee the family was
         shown when they chose to pay by bank; a plan&rsquo;s remaining charges collect it.
       </p>
-    </div>
+    </section>
   );
 }

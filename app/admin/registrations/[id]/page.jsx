@@ -6,10 +6,27 @@ import RegistrationManager from './RegistrationManager';
 import StaffPlanPanel from './StaffPlanPanel';
 import FeesPanel from './FeesPanel';
 import { requiresPaymentChoice } from '@/lib/plans';
-import { dayInMorristown } from '@/lib/events';
+import { dayInMorristown, balanceDueOn, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 
 export const metadata = { title: 'Registration — Staff Admin' };
+
+// What a registration is waiting on staff for, as short phrases -- the amber
+// marker on its week tab and the tab's tooltip (26 Oct 2026). The same rule
+// for this registration and the household's others, from facts this page
+// reads for all of them. "Submitted" counts only while the registration is
+// not waiting on the family, as the nav's review badge counts it; deposit
+// short is registration_review's flag, so it is there only for Payments read.
+function staffAttention(r, { waiversOwed = false, depositShort = false } = {}) {
+  const out = [];
+  const people = r.registration_participants ?? [];
+  if (!r.awaiting_family_since && people.some((p) => p.status === 'submitted')) out.push('someone submitted');
+  if (r.family_reply_unread) out.push('unread family reply');
+  if (r.hold_since) out.push('on hold');
+  if (waiversOwed) out.push('activity waiver outstanding');
+  if (depositShort) out.push('deposit short');
+  return out;
+}
 
 // One family's registration, for a registrar to review and manage. Everything
 // read here comes back under row-level security as staff, so a registrar sees
@@ -34,7 +51,7 @@ export default async function RegistrationDetailPage({ params }) {
        households ( id, display_name, email, phone,
                     address_line1, address_line2, city, state, postal_code,
                     home_church, how_did_you_hear, how_did_you_hear_from ),
-       events ( id, name, event_type, starts_on, ends_on, deposit_cents ),
+       events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on ),
        registration_participants (
          id, camp_role, status, confirmed_at,
          status_changed_at, status_changed_by, waitlist_reason,
@@ -91,27 +108,25 @@ export default async function RegistrationDetailPage({ params }) {
     );
   }
 
-  // Every registration this household holds, for the header's "Registered
-  // for" list (15 Oct 2026): a family at two events is one family, and the
-  // registrar moves between the two from here. One row per household per
-  // event (unique in 0001), so this is the complete list.
+  // Every registration this household holds, for the week tabs at the top
+  // (15 Oct 2026; tabs 26 Oct): a family at two events is one family, and
+  // the registrar moves between the two from here. One row per household per
+  // event (unique in 0001), so this is the complete list. The waiting-on
+  // columns feed each tab's amber marker (staffAttention above).
   const { data: familyRegs, error: familyRegsError } = reg.households?.id
     ? await supabase
         .from('registrations')
         .select(
-          `id, events ( id, name, starts_on, ends_on ),
+          `id, awaiting_family_since, family_reply_unread, hold_since,
+           events ( id, name, starts_on, ends_on ),
            registration_participants ( status, people ( id, first_name, last_name ) )`
         )
         .eq('household_id', reg.households.id)
     : { data: [], error: null };
   if (familyRegsError) throw new Error(`Family registrations lookup failed: ${familyRegsError.message}`);
-  const familyRegistrations = (familyRegs ?? [])
-    .map((r) => ({
-      id: r.id,
-      event: r.events ?? null,
-      participants: (r.registration_participants ?? []).map((p) => ({ status: p.status, person: p.people })),
-    }))
-    .sort((a, b) => String(a.event?.starts_on ?? '').localeCompare(String(b.event?.starts_on ?? '')));
+  // This registration is always among them, even if the household lookup
+  // above had nothing to go on.
+  const familyRegIds = [...new Set([id, ...(familyRegs ?? []).map((r) => r.id)])];
 
   // Camp options for this event, so a staff member adding a person can pick the
   // one that sets the fee.
@@ -417,7 +432,7 @@ export default async function RegistrationDetailPage({ params }) {
   const [
     { data: routeRow, error: routeError },
     { data: planRow, error: planError },
-    { data: reviewRow, error: reviewError },
+    { data: reviewRows, error: reviewError },
   ] = await Promise.all([
     supabase.from('registration_payment_routes').select('route').eq('registration_id', id).maybeSingle(),
     supabase
@@ -428,28 +443,32 @@ export default async function RegistrationDetailPage({ params }) {
       )
       .eq('registration_id', id)
       .maybeSingle(),
-    // The review class and flags (0081, Lawrence 30 Sep 2026).
+    // The review class and flags (0081, Lawrence 30 Sep 2026), for this
+    // registration and the household's others (their tabs' deposit-short
+    // marker). No rows at all without Payments read (0103).
     supabase
       .from('registration_review')
-      .select('review_class, flags, confirmed_paid_cents, deposit_expected_cents')
-      .eq('registration_id', id)
-      .maybeSingle(),
+      .select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents')
+      .in('registration_id', familyRegIds),
   ]);
   if (routeError || planError || reviewError) {
     throw new Error(`Payment plan lookup failed: ${(routeError ?? planError ?? reviewError).message}`);
   }
+  const reviewRow = (reviewRows ?? []).find((r) => r.registration_id === id) ?? null;
   const planInstallments = [...(planRow?.payment_installments ?? [])].sort((a, b) =>
     a.due_on.localeCompare(b.due_on)
   );
 
   // Activity waivers still owed on this registration (0120): a waiver or an
   // outside provider staff added after the signup. A flag only -- a
-  // confirmed place stays confirmed while the paperwork is chased.
-  const { data: owedRows, error: owedError } = await supabase
+  // confirmed place stays confirmed while the paperwork is chased. Read for
+  // the household's other registrations too, for their tabs' marker.
+  const { data: familyOwedRows, error: owedError } = await supabase
     .from('activity_waivers_outstanding')
-    .select('person_id, activity_name, kind, agreement_title, upload_status, review_note')
-    .eq('registration_id', id);
+    .select('registration_id, person_id, activity_name, kind, agreement_title, upload_status, review_note')
+    .in('registration_id', familyRegIds);
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
+  const owedRows = (familyOwedRows ?? []).filter((o) => o.registration_id === id);
   const personName = new Map(
     (reg.registration_participants ?? []).map((p) => [
       p.people?.id,
@@ -468,39 +487,68 @@ export default async function RegistrationDetailPage({ params }) {
     }))
     .sort((a, b) => a.text.localeCompare(b.text));
 
+  // The week tabs: one per registration of this household, oldest event
+  // first, each with what it is waiting on staff for.
+  const owedRegIds = new Set((familyOwedRows ?? []).map((o) => o.registration_id));
+  const shortRegIds = new Set(
+    (reviewRows ?? []).filter((r) => (r.flags ?? []).includes('deposit_short')).map((r) => r.registration_id)
+  );
+  const familyRegistrations = (familyRegs ?? [])
+    .map((r) => ({
+      id: r.id,
+      event: r.events ?? null,
+      participants: (r.registration_participants ?? []).map((p) => ({ status: p.status, person: p.people })),
+      attention: staffAttention(r, { waiversOwed: owedRegIds.has(r.id), depositShort: shortRegIds.has(r.id) }),
+    }))
+    .sort((a, b) => String(a.event?.starts_on ?? '').localeCompare(String(b.event?.starts_on ?? '')));
+
+  // Two money facts the Money card's open-or-folded rule needs that only the
+  // server has: a balance still owed after the due date (today on the
+  // ministry's calendar, worked out here so the browser's clock cannot draw
+  // the card differently from the server's render), and a payment plan in
+  // trouble (stopped after three failed tries, or an installment that failed
+  // and is waiting to retry).
+  const dueOn = balanceDueOn(reg.events);
+  const moneyAlerts = {
+    overdue: Boolean(dueOn) && dueOn < todayInMorristown() && (balanceRow?.balance_cents ?? 0) > 0,
+    planTrouble:
+      planRow?.status === 'failed' ||
+      (['active', 'paused'].includes(planRow?.status) && planInstallments.some((i) => i.status === 'failed')),
+  };
+
   return (
-    <>
-    {owed.length > 0 && (
-      <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        <p className="font-semibold">Activity waiver outstanding</p>
-        <ul className="mt-1 space-y-0.5">
-          {owed.map((o) => (
-            <li key={o.key}>⚑ {o.text}</li>
-          ))}
-        </ul>
-        <p className="mt-1 text-xs">
-          The family sees this on their dashboard and Activities page. Their place is not affected.
-          {can(staff, 'write:registration') && reg.events?.id && (
-            <>
-              {' '}
-              <Link
-                href={`/admin/email-families/?event=${reg.events.id}&outstanding=1`}
-                className="font-semibold underline"
-              >
-                Email the families with a waiver outstanding →
-              </Link>
-            </>
-          )}
-        </p>
-      </div>
-    )}
     <RegistrationManager
       registration={registration}
+      // Shown under the week tabs, above the Review card.
+      waiverNotice={owed.length > 0 ? (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">Activity waiver outstanding</p>
+          <ul className="mt-1 space-y-0.5">
+            {owed.map((o) => (
+              <li key={o.key}>⚑ {o.text}</li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs">
+            The family sees this on their dashboard and Activities page. Their place is not affected.
+            {can(staff, 'write:registration') && reg.events?.id && (
+              <>
+                {' '}
+                <Link
+                  href={`/admin/email-families/?event=${reg.events.id}&outstanding=1`}
+                  className="font-semibold underline"
+                >
+                  Email the families with a waiver outstanding →
+                </Link>
+              </>
+            )}
+          </p>
+        </div>
+      ) : null}
       canSeeMoney={can(staff, 'read:payments')}
       canWrite={can(staff, 'write:registration')}
       canDecide={can(staff, 'decide:scholarships')}
       familyRegistrations={familyRegistrations}
-      review={reviewRow ?? null}
+      review={reviewRow}
       awaiting={{ since: reg.awaiting_family_since ?? null, reason: reg.awaiting_family_reason ?? null }}
       familyReply={familyReply}
       hold={hold}
@@ -524,16 +572,21 @@ export default async function RegistrationDetailPage({ params }) {
       payments={payments}
       stripeBase={stripeBase}
       scholarshipRequests={scholarshipRequests}
+      moneyAlerts={moneyAlerts}
+      // How it is being paid, drawn as the last section of the Money card.
+      planPanel={
+        can(staff, 'read:payments') ? (
+          <StaffPlanPanel
+            registrationId={id}
+            route={routeRow?.route ?? null}
+            plan={planRow ?? null}
+            installments={planInstallments}
+            earlyDiscountCents={balanceRow?.early_discount_cents ?? 0}
+            familyDiscountCents={balanceRow?.family_discount_cents ?? 0}
+            requiresChoice={requiresPaymentChoice(reg.events)}
+          />
+        ) : null
+      }
     />
-    {can(staff, 'read:payments') && <StaffPlanPanel
-      registrationId={id}
-      route={routeRow?.route ?? null}
-      plan={planRow ?? null}
-      installments={planInstallments}
-      earlyDiscountCents={balanceRow?.early_discount_cents ?? 0}
-      familyDiscountCents={balanceRow?.family_discount_cents ?? 0}
-      requiresChoice={requiresPaymentChoice(reg.events)}
-    />}
-    </>
   );
 }
