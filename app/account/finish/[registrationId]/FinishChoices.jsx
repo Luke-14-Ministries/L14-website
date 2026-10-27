@@ -259,7 +259,7 @@ export default function FinishChoices({
           open={route === 'plan'}
           onToggle={() => toggle('plan')}
           title="Set up a payment plan"
-          summary={`Pay the ${dollars(depositCents)} deposit now, and the rest is charged automatically to the card or bank account you save, ending on the due date.`}
+          summary={`Pay ${depositDue ? `the ${dollars(depositCents)} deposit` : `a first ${dollars(depositCents)}`} now, and the rest is charged automatically to the card or bank account you save, ending on the due date.`}
         >
           {plan && (
             <>
@@ -270,7 +270,7 @@ export default function FinishChoices({
               </div>
               <div className="text-sm">
                 <p>
-                  Today: <strong>{dollars(depositCents)}</strong> deposit
+                  Today: <strong>{dollars(depositCents)}</strong> {depositDue ? 'deposit' : 'first payment'}
                 </p>
                 <p>
                   Then{' '}
@@ -312,7 +312,7 @@ export default function FinishChoices({
             disabled={pending || !agreed}
             className="btn-primary py-2! disabled:opacity-50"
           >
-            {pending ? 'Opening secure checkout…' : `Pay ${dollars(depositCents)} deposit and start plan`}
+            {pending ? 'Opening secure checkout…' : `Pay ${dollars(depositCents)} ${depositDue ? 'deposit' : 'now'} and start plan`}
           </button>
         </OptionCard>
       )}

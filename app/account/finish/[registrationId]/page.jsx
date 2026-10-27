@@ -196,7 +196,7 @@ export default async function FinishPage({ params, searchParams }) {
           <div className="mb-6 rounded-sm border border-green-300 bg-green-50 px-4 py-3 text-green-900">
             <p className="font-semibold">You&rsquo;re all set.</p>
             <p className="mt-1 text-sm">
-              {route.route === 'plan' && 'Your payment plan is in place. Its schedule is on your dashboard.'}
+              {route.route === 'plan' && 'Your payment plan is in place. Its schedule, and the button to change the card or bank account it charges, are on your dashboard.'}
               {route.route === 'paid_in_full' && 'Your balance is paid in full. Thank you!'}
               {route.route === 'nothing_owed' && 'There is nothing to pay on this registration.'}
               {route.route === 'scholarship' &&
