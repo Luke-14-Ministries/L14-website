@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { balanceDueOn, formatDueDate, dateISO } from '@/lib/events';
+import { balanceDueOn, formatDueDate, formatDueDateShort, dateISO } from '@/lib/events';
 import { dollars, registrationDepositCents } from '@/lib/payments';
 import { planAvailable, planConsentText } from '@/lib/plans';
 import FinishChoices from './FinishChoices';
@@ -162,10 +162,21 @@ export default async function FinishPage({ params, searchParams }) {
             </>
           )}
         </p>
-        {/* The statement beside the money it explains (Lawrence, 27 Oct 2026). */}
-        <p className="mb-6 text-sm text-neutral-700">
-          Balance <strong>{dollars(balance)}</strong>
-          {clearing > 0 && <> · {dollars(clearing)} clearing the bank ⏳</>} ·{' '}
+        {/* The dashboard card's pills, the same words and colours (Lawrence,
+            27 Oct 2026: "should also feature the deposit due amber pill"),
+            and the statement beside the money it explains. */}
+        <p className="mb-6 flex flex-wrap items-center gap-2 text-sm text-neutral-700">
+          {balance > 0 && (
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+              {dollars(balance)} balance{due ? ` · due ${formatDueDateShort(due)}` : ''}
+            </span>
+          )}
+          {depositDue && (
+            <span className="rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-semibold text-white">
+              {dollars(deposit)} deposit due now
+            </span>
+          )}
+          {clearing > 0 && <span>{dollars(clearing)} clearing the bank ⏳</span>}
           <Link href={`/account/statement/${reg.id}`} className="font-semibold text-brand underline">
             See the statement
           </Link>

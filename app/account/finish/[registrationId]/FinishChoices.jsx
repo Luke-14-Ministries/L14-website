@@ -182,13 +182,13 @@ export default function FinishChoices({
   // the part card offers it and leads with it.
   depositDue = false,
   // False once the family has a route (a plan in place, a scholarship asked
-  // for): only one-off payments are offered then, and no card opens itself.
+  // for): only one-off payments are offered then.
   routesOpen = true,
 }) {
   const showPlan = canPlan && routesOpen;
-  const [route, setRoute] = useState(
-    !routesOpen ? null : showPlan ? 'plan' : depositDue ? 'part' : 'full'
-  );
+  // Every card starts closed (Lawrence, 27 Oct 2026): the three titles are
+  // the choice, read side by side; opening one shows its details.
+  const [route, setRoute] = useState(null);
   // The part card: the deposit alone, or the family's own amount.
   const [partKind, setPartKind] = useState(depositDue ? 'deposit' : 'custom');
   const [customAmount, setCustomAmount] = useState(''); // dollars, as typed
