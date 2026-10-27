@@ -3445,3 +3445,15 @@ returned-payment-fee disclosure and the plan consent are unchanged. "Request hel
 became a quieter line under both cards linking to the same scholarship page. The header matches the
 other account pages: title left, the Back to dashboard pill right.
 
+## 26 Oct 2026 — Re-check a stuck refund with Stripe, from the site
+
+Two bank refunds sat "pending" for two months because Stripe's later word never reached the refund
+webhook, and nobody can see inside Stripe from here. A refund flagged stale (pending more than 10 days)
+now has **Re-check with Stripe** on the registration's Payments and on Event Payments' strip (Payments
+write). The server asks Stripe for that one refund (the key stays in `lib/stripe/server.js`), checks it
+belongs to the same payment, and records the status only. No new database function: a pending refund's
+status is already the one thing a Payments-write session may change (`payment_refunds_update`;
+`payment_refunds_guard` keeps the amount and Stripe reference fixed and a settled status final), which
+is the path `refundPayment` already uses; the triggers keep `payments.status` and `money_change_log`
+right. Still pending at Stripe changes nothing and says so.
+

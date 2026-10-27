@@ -326,6 +326,9 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   Stripe is called (the guard locks the payment), each form sends a one-time `request_key`, and the
   webhook fills the reserved row (`metadata.refund_row_id`). A payment's status never moves back to
   processing once received, refunded or failed.
+  A refund pending more than 10 days is flagged (`isStaleRefund()`, `lib/payments.js`) with
+  **Re-check with Stripe** (`app/admin/payments/refundRecheckAction.js`, Payments write): it asks Stripe for
+  that refund and records the status only, through the existing pending-only update path.
 - **Agreements are signed per person:** one `agreement_signatures` row per person per agreement,
   `signer_role` = `self` | `parent_guardian` | `legal_guardian` | `authorized_adult` (the last needs
   the signer's explicit affirmation). Written by `app/register/family/actions.js`, not the RPC;
