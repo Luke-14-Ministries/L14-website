@@ -39,7 +39,7 @@ export default async function MyProgramPrintPage({ searchParams }) {
   const dates = [program.startsOn, program.endsOn].filter(Boolean).join(' – ');
 
   return (
-    <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
+    <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
       {/* The way back top right, Print under it, as on every print sheet (27 Oct 2026). */}
       <div className="mb-2 flex flex-col items-end gap-2 print:hidden">
         <BackLink

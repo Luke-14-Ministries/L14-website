@@ -103,7 +103,7 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
     .sort((a, b) => familyOf(a).localeCompare(familyOf(b)));
 
   return (
-    <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
+    <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
       <div className="mb-2 flex items-start justify-between print:hidden">
         <h1 className="text-xl font-bold">
           {activity.name} — {noun.many}

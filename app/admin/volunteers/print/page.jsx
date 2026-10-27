@@ -94,7 +94,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
     .filter((g) => g.rows.length > 0);
 
   return (
-    <div className="mx-auto max-w-4xl bg-white p-8 print:p-0 print:text-[11px]">
+    <div className="mx-auto max-w-4xl bg-white p-8 print-sheet print:text-[11px]">
       <div className="mb-2 flex items-start justify-between print:hidden">
         <h1 className="text-xl font-bold">Volunteer List</h1>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}

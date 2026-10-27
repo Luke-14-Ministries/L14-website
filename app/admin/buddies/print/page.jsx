@@ -158,7 +158,7 @@ export default async function BuddyPrintPage({ searchParams }) {
   };
 
   return (
-    <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">
+    <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
       <div className="mb-2 flex items-start justify-between print:hidden">
         <h1 className="text-xl font-bold">Buddy Sheets</h1>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}
@@ -280,8 +280,8 @@ export default async function BuddyPrintPage({ searchParams }) {
           })}
 
           <p className="mt-6 border-t border-neutral-300 pt-2 text-xs text-neutral-500">
-            Questions about anything here go to the coordinator or the camp nurse, not the family
-            directly. This sheet is for you alone: keep it with you, and hand it back at the end of
+            Questions or concerns about anything here can go to the family, or to the coordinator
+            or the camp nurse. This sheet is for you alone: keep it with you, and hand it back at the end of
             camp. Printed {todayInMorristown()} · Luke 14 Ministries.
           </p>
         </div>

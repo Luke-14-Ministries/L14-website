@@ -109,7 +109,7 @@ export default async function KitchenListPage({ searchParams }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl p-8 print:p-0 bg-white print:text-[12px]">
+    <div className="mx-auto max-w-2xl p-8 print-sheet bg-white print:text-[12px]">
       <div className="flex items-start justify-between mb-2 print:hidden">
         <h1 className="text-xl font-bold">Kitchen list — no names</h1>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}

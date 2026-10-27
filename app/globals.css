@@ -114,7 +114,9 @@
   donor's letter). The browser draws those in the page margin, so a sheet's
   named page has none; the margin moves inside as padding, repeated on every
   printed page a long statement runs onto (box-decoration-break: clone).
-  Used by the giving statements and the family statements (staff and family).
+  Used by every print sheet since 27 Oct 2026 (statements, rosters, buddy,
+  activity, room, kitchen and volunteer sheets, agreements): give the page's
+  outer container the class `print-sheet`.
 */
 @page sheet {
   margin: 0;

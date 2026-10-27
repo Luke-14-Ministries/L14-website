@@ -91,7 +91,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-8 print:p-0 bg-white print:text-[12px]">
+    <div className="mx-auto max-w-3xl p-8 print-sheet bg-white print:text-[12px]">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-2 print:hidden">
         <h1 className="text-xl font-bold">Allergies by allergen — with names</h1>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}

@@ -156,7 +156,8 @@ Two look-and-feel rules hold on every page (26 Oct 2026, `DECISIONS.md`):
   `BackLink` ("Back to Activities") on the right of that row. No centred headings and no
   plain "← Back" text links. Public pages keep their centred hero. A print sheet stacks its
   actions on the right: the `BackLink` pill on the title's line and the Print button under it
-  (`flex flex-col items-end gap-2`, the row `items-start`; 27 Oct 2026).
+  (`flex flex-col items-end gap-2`, the row `items-start`; 27 Oct 2026), and its outer container carries
+  `print-sheet`, so the printout has no browser header or footer (no URL, title or date).
 - **Folding.** Anything that folds shows `components/FoldArrow.jsx` — a ▶ at the LEFT of
   the title, turned down when open — inside the heading's button (`aria-expanded`). A native
   `<details>` gets `className="fold-summary"` on its `<summary>` for the same arrow. No
