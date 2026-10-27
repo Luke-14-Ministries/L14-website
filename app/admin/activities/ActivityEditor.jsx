@@ -685,6 +685,9 @@ export function ActivityCard({
   interested = 0,
   capacity = null,
   over = false,
+  // What is still outstanding on this activity's waivers, shown in the header
+  // so a folded card says it too ("2 to check · 1 missing", 26 Oct 2026).
+  summary = null,
   children,
 }) {
   const [open, setOpen] = useState(false);
@@ -712,7 +715,8 @@ export function ActivityCard({
             </span>
           )}
         </span>
-        <span className="flex items-center gap-3 text-sm text-neutral-600">
+        <span className="flex flex-wrap items-center gap-3 text-sm text-neutral-600">
+          {summary && <span className="text-xs font-semibold text-amber-800">{summary}</span>}
           <span>{modeLabel}</span>
           <span className={over ? 'font-semibold text-amber-700' : 'font-semibold'}>
             {capacity != null ? `${signedUp} of ${capacity}` : total}

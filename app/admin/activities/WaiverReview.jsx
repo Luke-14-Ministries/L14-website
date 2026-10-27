@@ -1,12 +1,23 @@
 'use client';
 
-// One outside-provider waiver confirmation, as staff see it (0124, 26 Oct
-// 2026): a pill saying where it stands -- awaiting check, accepted, or
-// rejected with the reason -- which opens the file, and for staff with
-// Registration write the Accept / Reject buttons. A rejection needs a reason;
-// the family reads it on their Activities page and dashboard, the row is
-// outstanding again (activity_waivers_outstanding), and their next upload
-// goes back to "awaiting check" by itself (the guard trigger in 0124).
+// Outside-provider waiver confirmations, as staff see them (0124, 26 Oct
+// 2026). Since Lawrence's "cluttered ... will become klunky when there are
+// many" (26 Oct), the deciding happens in ONE place -- the "Confirmations to
+// check" queue at the top of the Activities page -- and the activity cards
+// only say where each person stands. Three pieces, shared by both:
+//
+//   WaiverStatusPill  the card's one pill per person: awaiting check (links
+//                     to that upload's row in the queue), accepted, rejected
+//                     (the reason on hover), or no confirmation. Accepted and
+//                     rejected open the file.
+//   WaiverFileLink    "Open file" for a queue row (a ten-minute signed URL
+//                     minted by the page; the bucket is private).
+//   ReviewActions     Accept / Reject for staff with Registration write. A
+//                     rejection needs a reason; the family reads it on their
+//                     Activities page and dashboard, the row is outstanding
+//                     again (activity_waivers_outstanding), and their next
+//                     upload goes back to "awaiting check" by itself (the
+//                     guard trigger in 0124).
 
 import { useId, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -16,14 +27,77 @@ import { waiverReviewPill } from '@/lib/format';
 // Lawrence's examples (26 Oct): wrong file, unreadable, low resolution.
 const QUICK_REASONS = ['Wrong file', "Can't read it", 'Picture too small', 'Not signed'];
 
-export default function WaiverReview({ upload, canReview = false, label = null }) {
+// The queue row an awaiting pill links to.
+export const checkAnchor = (uploadId) => `check-${uploadId}`;
+
+function reviewedLine(upload) {
+  return upload.reviewedAt
+    ? ` — ${upload.status} ${upload.reviewedAt}${upload.reviewerName ? ` by ${upload.reviewerName}` : ''}`
+    : '';
+}
+
+export function WaiverStatusPill({ upload }) {
+  if (!upload) {
+    return (
+      <span
+        title="No provider confirmation uploaded yet"
+        className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800"
+      >
+        no confirmation
+      </span>
+    );
+  }
+  const pill = waiverReviewPill(upload);
+  if (pill.key === 'pending') {
+    return (
+      <a
+        href={`#${checkAnchor(upload.id)}`}
+        title={`Uploaded ${upload.uploadedAt} — check it in Confirmations to check, at the top of the page`}
+        className={`rounded-full px-2 py-0.5 text-xs font-semibold underline ${pill.cls}`}
+      >
+        awaiting check
+      </a>
+    );
+  }
+  return (
+    <a
+      href={upload.url ?? '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`${pill.key === 'rejected' ? `Rejected: ${upload.note || 'no reason given'}. ` : ''}Uploaded ${
+        upload.uploadedAt
+      }${reviewedLine(upload)} — opens the file`}
+      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${pill.cls}`}
+    >
+      {pill.key === 'rejected' ? 'rejected' : pill.text}
+    </a>
+  );
+}
+
+export function WaiverFileLink({ upload }) {
+  if (!upload.url) return <span className="text-xs text-neutral-400">file unavailable</span>;
+  return (
+    <a
+      href={upload.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-sm font-semibold text-brand underline"
+      title={`Uploaded ${upload.uploadedAt} — opens the file`}
+    >
+      Open file ↗
+    </a>
+  );
+}
+
+export default function ReviewActions({ upload, canReview = false }) {
   const router = useRouter();
   const reasonId = useId();
   const [pending, start] = useTransition();
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
-  const pill = waiverReviewPill(upload);
+
+  if (!canReview) return null;
 
   function run(status, note = null) {
     setError('');
@@ -39,38 +113,24 @@ export default function WaiverReview({ upload, canReview = false, label = null }
     });
   }
 
-  const reviewedLine = upload.reviewedAt
-    ? ` — ${upload.status} ${upload.reviewedAt}${upload.reviewerName ? ` by ${upload.reviewerName}` : ''}`
-    : '';
-
   return (
-    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-      {label && <span className="font-medium">{label}</span>}
-      <a
-        href={upload.url ?? '#'}
-        target="_blank"
-        rel="noopener noreferrer"
-        title={`Provider confirmation uploaded ${upload.uploadedAt}${reviewedLine} — opens the file`}
-        className={`rounded-full px-2 py-0.5 text-xs font-semibold underline ${pill.cls}`}
-      >
-        {pill.text}
-      </a>
-      {canReview && upload.status !== 'accepted' && (
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+      {upload.status !== 'accepted' && (
         <button
           type="button"
           onClick={() => run('accepted')}
           disabled={pending}
-          className="text-xs text-brand underline"
+          className="btn-outline py-0.5! px-2! text-xs"
         >
-          Accept
+          {pending && !rejecting ? 'Saving…' : 'Accept'}
         </button>
       )}
-      {canReview && upload.status !== 'rejected' && !rejecting && (
+      {upload.status !== 'rejected' && !rejecting && (
         <button
           type="button"
           onClick={() => setRejecting(true)}
           disabled={pending}
-          className="text-xs text-brand underline"
+          className="text-xs text-red-800 underline"
         >
           Reject…
         </button>
