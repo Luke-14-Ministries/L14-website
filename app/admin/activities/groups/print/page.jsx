@@ -93,7 +93,13 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
       .map((u) => u.filter((id) => here.has(id)))
       .filter((inside) => inside.length > 0);
   };
-  const unplacedUnits = units.filter((u) => u.some((id) => !people[id]?.groupId));
+  // By family, as on the board: each unit under its camper's family (the
+  // first member who is not a buddy), so a family's people print together.
+  const familyOf = (u) =>
+    (u.map((id) => people[id]).find((p) => p && !p.isBuddy) ?? people[u[0]])?.household ?? '';
+  const unplacedUnits = units
+    .filter((u) => u.some((id) => !people[id]?.groupId))
+    .sort((a, b) => familyOf(a).localeCompare(familyOf(b)));
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px]">

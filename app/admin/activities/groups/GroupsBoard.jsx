@@ -81,7 +81,7 @@ function PersonLine({ person, minAge }) {
   );
 }
 
-function UnitButton({ unit, people, minAge, selected, disabled, onPick }) {
+function UnitButton({ unit, people, minAge, familyId = null, selected, disabled, onPick }) {
   return (
     <button
       type="button"
@@ -94,13 +94,17 @@ function UnitButton({ unit, people, minAge, selected, disabled, onPick }) {
     >
       {unit.length > 1 && (
         <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-400">
-          Together · {unit.length}
+          {unit.some((id) => people[id]?.isBuddy) ? 'Camper and buddy' : 'Together'} · {unit.length}
         </span>
       )}
       <span className="block space-y-1">
         {unit.map((id) => (
           <span key={id} className="block">
             <PersonLine person={people[id]} minAge={minAge} />
+            {/* A buddy from another household, under their camper's family. */}
+            {familyId && people[id]?.isBuddy && people[id]?.householdId && people[id].householdId !== familyId && (
+              <span className="text-xs text-neutral-500">{people[id].household}</span>
+            )}
           </span>
         ))}
       </span>
@@ -328,16 +332,25 @@ export default function GroupsBoard({
   const shown = toPlace.filter((u) => u.some((id) => matches(people[id])));
   const filtering = Boolean(needle || family || program || underOnly || waiverOnly);
 
-  // Campers with their buddies first; everyone else grouped by family.
-  const pairedUnits = shown.filter((u) => u.length > 1 || u.some((id) => people[id]?.isBuddy));
-  const singles = shown.filter((u) => !pairedUnits.includes(u));
+  // Everything grouped by family (Lawrence, 26 Oct 2026). A unit belongs to
+  // the family of its camper -- the first member who is not a buddy -- so a
+  // camper and their paired buddy sit on one row under the camper's family,
+  // even when the buddy is from another household (they go in the raft
+  // together; rooming is different). A buddy is never listed again under
+  // their own family. Each row stays pickable on its own, so a large family
+  // can be split across rafts; "Place the whole family" takes them all.
+  const unitFamily = (u) => {
+    const lead = u.map((id) => people[id]).find((p) => p && !p.isBuddy) ?? people[u[0]];
+    return { id: lead?.householdId ?? null, name: lead?.household || 'No household name' };
+  };
   const familyMap = new Map();
-  for (const u of singles) {
-    const key = people[u[0]]?.household || 'No household name';
-    if (!familyMap.has(key)) familyMap.set(key, []);
-    familyMap.get(key).push(u);
+  for (const u of shown) {
+    const f = unitFamily(u);
+    const key = f.id ?? `name:${f.name}`;
+    if (!familyMap.has(key)) familyMap.set(key, { householdId: f.id, name: f.name, units: [] });
+    familyMap.get(key).units.push(u);
   }
-  const singlesByFamily = [...familyMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const unitsByFamily = [...familyMap.values()].sort((a, b) => a.name.localeCompare(b.name));
 
   const inHandNames = inHand
     ? inHand.map((id) => people[id]?.name.split(' ')[0]).join(' + ')
@@ -356,13 +369,16 @@ export default function GroupsBoard({
   }
 
   const pick = (unit) => setInHand((cur) => (cur && cur[0] === unit[0] && cur.length === unit.length ? null : unit));
+  // A row is highlighted while everyone on it is in hand (one unit, or the
+  // whole family).
+  const isSelected = (u) => Boolean(inHand && u.every((id) => inHand.includes(id)));
 
   // A whole family in one move, as on Rooms & Cabins (Lawrence, 26 Oct 2026):
   // everyone in the household still to place, each with their unit -- a
   // camper's buddy comes along. Keyed by household id.
   const familyUnits = new Map();
   for (const u of toPlace) {
-    const hh = u.map((id) => people[id]).find((p) => p && !p.isBuddy)?.householdId;
+    const hh = unitFamily(u).id;
     if (!hh) continue;
     if (!familyUnits.has(hh)) familyUnits.set(hh, []);
     familyUnits.get(hh).push(u);
@@ -489,64 +505,44 @@ export default function GroupsBoard({
             <p className="mt-2 text-sm text-neutral-500">Nobody to place matches the filters.</p>
           ) : (
             <>
-              {pairedUnits.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-neutral-400">
-                    Campers with their buddies
-                  </p>
-                  <ul className="mt-1 space-y-1">
-                    {pairedUnits.map((u) => (
-                      <li key={u[0]}>
-                        <UnitButton
-                          unit={u}
-                          people={people}
-                          minAge={activity.minAge}
-                          selected={Boolean(inHand && inHand[0] === u[0])}
-                          disabled={pending || !canPlace}
-                          onPick={() => pick(u)}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {singlesByFamily.map(([household, list]) => {
-                const hhId = people[list[0][0]]?.householdId;
-                const familyIds = hhId ? [...new Set((familyUnits.get(hhId) ?? []).flat())] : [];
+              {unitsByFamily.map((fam) => {
+                const familyIds = fam.householdId ? [...new Set((familyUnits.get(fam.householdId) ?? []).flat())] : [];
+                const count = new Set(fam.units.flat()).size;
                 return (
-                <div key={household} className="mt-3">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-xs font-bold uppercase tracking-wide text-neutral-400">
-                      {household}
-                      {list.length > 1 && ` · ${list.length} people`}
-                    </p>
-                    {canPlace && familyIds.length > 1 && (
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => pickFamily(hhId)}
-                        className="text-xs font-semibold text-brand underline"
-                        title="Everyone in this family still to place, each camper with their buddy"
-                      >
-                        Place the whole family ({familyIds.length})
-                      </button>
-                    )}
+                  <div key={fam.householdId ?? fam.name} className="mt-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <p className="text-xs font-bold uppercase tracking-wide text-neutral-400">
+                        {fam.name}
+                        {count > 1 && ` · ${count} people`}
+                      </p>
+                      {canPlace && familyIds.length > 1 && fam.units.length > 1 && (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => pickFamily(fam.householdId)}
+                          className="text-xs font-semibold text-brand underline"
+                          title="Everyone in this family still to place, each camper with their buddy"
+                        >
+                          Place the whole family ({familyIds.length})
+                        </button>
+                      )}
+                    </div>
+                    <ul className="mt-1 space-y-1">
+                      {fam.units.map((u) => (
+                        <li key={u[0]}>
+                          <UnitButton
+                            unit={u}
+                            people={people}
+                            minAge={activity.minAge}
+                            familyId={fam.householdId}
+                            selected={isSelected(u)}
+                            disabled={pending || !canPlace}
+                            onPick={() => pick(u)}
+                          />
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="mt-1 space-y-1">
-                    {list.map((u) => (
-                      <li key={u[0]}>
-                        <UnitButton
-                          unit={u}
-                          people={people}
-                          minAge={activity.minAge}
-                          selected={Boolean(inHand && inHand[0] === u[0])}
-                          disabled={pending || !canPlace}
-                          onPick={() => pick(u)}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
                 );
               })}
             </>
