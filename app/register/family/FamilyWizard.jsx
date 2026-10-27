@@ -161,8 +161,8 @@ function CaregiverPicker({ who, choices, value, onChange, phone, onPhone, idPref
       {!chosen && (
         <p className="mt-2 text-neutral-700">
           {choices.length === 0
-            ? 'Add the caregiver in “Who’s coming” above (role: Caregiver) and they will appear here. '
-            : 'Choose them above if they are coming with this registration. '}
+            ? 'Add the caregiver in “Who’s coming” (role: Caregiver) and they will appear here. '
+            : 'Choose them here if they are coming with this registration. '}
           If the caregiver is registering separately or later, save this registration as it is.
           Once they are registered, come back and link them as {who}&rsquo;s caregiver from your
           dashboard, under <strong>Manage household</strong>.
@@ -366,7 +366,7 @@ function familyNeeds({ family }) {
     return [
       {
         chip: 'an email address that looks right',
-        message: `That email address doesn't look right — "${family.email}". Please check it in "Your family or group" above; it is where your confirmation goes.`,
+        message: `That email address doesn't look right — "${family.email}". Please check it in "Your family or group"; it is where your confirmation goes.`,
       },
     ];
   }
@@ -384,7 +384,7 @@ function peopleNeeds({ members }) {
   if (badDob.length > 0) {
     out.push({
       chip: `a real date of birth for ${whoList(badDob.map((x) => x.m.firstName.trim() || shownName(x.m, x.i)))}`,
-      message: `${shownName(badDob[0].m, badDob[0].i)}: ${badDob[0].bad} In “Who's coming” above.`,
+      message: `${shownName(badDob[0].m, badDob[0].i)}: ${badDob[0].bad} In “Who's coming”.`,
     });
   }
   // HARD requirement: role. DOB and sex below are soft confirms, but a
@@ -395,7 +395,7 @@ function peopleNeeds({ members }) {
   if (missingRole.length > 0) {
     out.push({
       chip: `a role for ${whoList(missingRole.map((m) => m.firstName.trim()))}`,
-      message: `Please choose a role for: ${fullNames(missingRole)} — in “Who's coming” above.`,
+      message: `Please choose a role for: ${fullNames(missingRole)} — in “Who's coming”.`,
     });
   }
   // Soft requirement: date of birth. It is one of the ways family members
@@ -435,7 +435,10 @@ function supportNeeds({ members }) {
   return [
     {
       chip: `support details for ${whoList(lacking.map((x) => x.m.firstName.trim()))}`,
-      message: `Support details for ${first.m.firstName.trim()}: ${first.problems.join('; ')} — in “Support and medical details” above.`,
+      message: `Support details for ${first.m.firstName.trim()}: ${first.problems.join('; ')} — in “Support and medical details”.`,
+      // Which person's block the error box's button opens.
+      personIndex: members.indexOf(first.m),
+      personName: (first.m.preferredName || '').trim() || first.m.firstName.trim(),
     },
   ];
 }
@@ -450,7 +453,7 @@ function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, 
   if (unchecked.length > 0) {
     out.push({
       chip: `${unchecked.length} ${unchecked.length === 1 ? 'agreement' : 'agreements'} ticked`,
-      message: `Please read and agree to: ${unchecked.map((a) => a.title).join(', ')} — in the “Agreements” card below.`,
+      message: `Please read and agree to: ${unchecked.map((a) => a.title).join(', ')} — in the “Agreements” card.`,
     });
   }
   if (!signerName.trim()) {
@@ -465,14 +468,14 @@ function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, 
       chip: `how you are signing for ${whoList(undecided.map((m) => m.firstName.trim()))}`,
       message: `Please say how you are signing for ${undecided
         .map((m) => m.firstName.trim())
-        .join(', ')} — in the “Agreements” card below.`,
+        .join(', ')} — in the “Agreements” card.`,
     });
   }
   if (facts.needsAffirmation && !affirmOthers) {
     out.push({
       chip: 'the permission confirmation',
       message:
-        'Please confirm that the other adults you are signing for have given you permission — in the “Agreements” card below.',
+        'Please confirm that the other adults you are signing for have given you permission — in the “Agreements” card.',
     });
   }
   // The signature must name the accountable adult filling in this form --
@@ -495,6 +498,15 @@ function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, 
 // Every card's list, in card order. `notStarted` marks a card with nothing
 // to fill in yet, which reads better than "Complete" over an empty card.
 const CARD_KEYS = ['session', 'family', 'people', 'support', 'notes', 'agreements'];
+// Each card's title, for the error box's "Go to ..." button.
+const CARD_TITLE = {
+  session: 'What you’re registering for',
+  family: 'Your family or group',
+  people: 'Who’s coming',
+  support: 'Support and medical details',
+  notes: 'Anything else?',
+  agreements: 'Agreements',
+};
 function cardNeeds(s) {
   const facts = signingFacts(s);
   const named = s.members.filter(isNamed);
@@ -743,6 +755,24 @@ export default function FamilyWizard({
   // Open every card that needs something and take the family to the first
   // one (or to `focusKey`, the card a refusal is about). Focus goes to the
   // card's header button, so a keyboard or screen-reader user lands there too.
+  // The card (and, for support details, the person) a refusal is about.
+  const [errorAt, setErrorAt] = useState(null);
+  // The error box's button: open that card -- or that person's support
+  // details -- and scroll to it, wherever the box happens to sit.
+  function goToError() {
+    if (!errorAt) return;
+    if (errorAt.card === 'support' && errorAt.personIndex != null && errorAt.personIndex >= 0) {
+      setOpenCards((o) => ({ ...o, support: true }));
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`support-person-${errorAt.personIndex}`);
+        if (!el) return;
+        el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        el.focus({ preventScroll: true });
+      });
+      return;
+    }
+    showNeeding(errorAt.card);
+  }
   function showNeeding(focusKey = needing[0]) {
     setOpenCards((o) => {
       const next = { ...o };
@@ -881,6 +911,7 @@ export default function FamilyWizard({
       const hard = needs[k].find((x) => !x.confirm);
       if (hard) {
         setError(hard.message);
+        setErrorAt({ card: k, personIndex: hard.personIndex ?? null, personName: hard.personName ?? '' });
         showNeeding(k);
         return;
       }
@@ -894,6 +925,7 @@ export default function FamilyWizard({
       }
     }
     setError('');
+    setErrorAt(null);
     setBusy(true);
     try {
       const res = await submitFamilyRegistration({
@@ -1585,7 +1617,12 @@ export default function FamilyWizard({
               // on file, and for anyone who asked.
               const open = camper || sup.showAll === true || hasFullerDetail(sup);
               return (
-                <div key={i} className="rounded-sm border border-neutral-200 p-4">
+                <div
+                  key={i}
+                  id={`support-person-${i}`}
+                  tabIndex={-1}
+                  className="scroll-mt-4 rounded-sm border border-neutral-200 p-4"
+                >
                   <h3 className="font-bold">
                     {`${m.firstName} ${m.lastName}`.trim()}
                     <span className="ml-2 text-sm font-normal text-neutral-500">
@@ -1832,6 +1869,13 @@ export default function FamilyWizard({
             className="mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
           >
             {error}
+            {errorAt && (
+              <button type="button" onClick={goToError} className="ml-2 font-semibold underline">
+                {errorAt.card === 'support' && errorAt.personName
+                  ? `Open ${errorAt.personName}’s support and medical details`
+                  : `Go to “${CARD_TITLE[errorAt.card] ?? 'that section'}”`}
+              </button>
+            )}
           </p>
         )}
         <div className="flex flex-wrap items-center justify-between gap-3">
