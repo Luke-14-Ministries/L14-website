@@ -544,7 +544,7 @@ function cardStatus(items, { notStarted = false, optional = false, filled = fals
   return { tone: 'done', text: 'Complete ✓' };
 }
 
-// The dashboard's pill colours (PayPanel, SupportDetailsCard).
+// The dashboard's pill colours (SupportDetailsCard).
 const CHIP_TONE = {
   done: 'bg-green-100 text-green-800',
   need: 'bg-amber-100 text-amber-800',
@@ -1002,7 +1002,7 @@ export default function FamilyWizard({
             <p className="font-semibold">
               {/* The family's own figure, from the save. "$50" was a literal
                   here until 14 Oct 2026, so a family of five read "$50" and
-                  then "Pay deposit — $250.00" on the dashboard. */}
+                  then "$250.00 deposit due now" on the dashboard. */}
               {isUpdate ? 'Still outstanding: the ' : 'Next step: the '}
               {result.depositCents ? `$${Math.round(result.depositCents / 100)} ` : ''}
               deposit.
@@ -1010,8 +1010,8 @@ export default function FamilyWizard({
             <p className="mt-1 text-sm">
               Your registration is saved, and camp staff approve it once the deposit
               ({`$${Math.round((result.depositPerPersonCents ?? 5000) / 100)}`} a person) arrives — unless you are requesting a full scholarship, in
-              which case use &ldquo;Request help with the fee&rdquo; on your dashboard and
-              staff will be in touch. You can pay the deposit from your dashboard in
+              which case choose &ldquo;Ways to pay&rdquo; on your dashboard and request one, and
+              staff will be in touch. You can pay the deposit from &ldquo;Ways to pay&rdquo; in
               about a minute; the rest can be paid in one go, in parts, or with a
               payment plan.{' '}
               {result.balanceDue ? (
@@ -1926,7 +1926,7 @@ export default function FamilyWizard({
         Cost shouldn&rsquo;t decide this. You can submit without paying: a{' '}
         {week?.depositCents ? `$${Math.round(week.depositCents / 100)}` : '$50'} deposit
         per person is needed for approval, unless you request a full
-        scholarship &mdash; use &ldquo;Request help with the fee&rdquo; on your
+        scholarship &mdash; choose &ldquo;Ways to pay&rdquo; on your
         dashboard after submitting. Asking does not affect anyone&rsquo;s place.
         {anyVolunteer && week?.volunteerArrivesOn
           ? ` Volunteers arrive ${formatDueDateShort(week.volunteerArrivesOn)}, a day before campers, for orientation.`

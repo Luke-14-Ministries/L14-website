@@ -3561,3 +3561,20 @@ Also on that page: ticking a provider-run activity before its "I understand" box
 either order works and the place saves once both are ticked — and the doubled amber "now needs a waiver"
 line above the upload box is gone; the upload box names whose form it is.
 
+
+## 27 Oct 2026 — One way in to paying; the donor's own giving statement
+
+Lawrence: the dashboard's Pay deposit / Payment plan / Request help buttons were "redundant with the next
+page". Each registration now has one **Ways to pay** button (plus Statement); everything the old
+dashboard pay panel did moved to `/account/finish/[id]`: a "Pay the deposit only / Pay part of the
+balance" card (deposit or any amount), the optional cover-the-card-fee box on one-off payments, the
+check-mailing details, a clearing line and a link to the statement. After a route is chosen (a plan in
+place, a scholarship asked for) the page still takes one-off payments. Both checkouts cancel back to Ways
+to pay. `PayPanel.jsx` is gone. "Needs: deposit" is no longer shown beside the "$… deposit due now" pill
+(it still opens the card and counts).
+
+The dashboard's "Download Giving Statement" placeholder is live: `/account/giving-statement/` prints the
+donor's own settled gifts for one calendar year (newest year by default, other years linked), through
+`components/GivingStatementSheet.jsx`, the sheet staff print at `/admin/giving/statements` — one sheet,
+so the two cannot disagree. Scoped by `profile_id`, so a hand-recorded check with no login attached is
+not on it; staff print those. No migration: donors already read their own gifts (`0010`).

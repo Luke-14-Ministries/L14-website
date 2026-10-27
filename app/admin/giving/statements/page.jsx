@@ -4,18 +4,9 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
 import { dayInMorristown } from '@/lib/events';
+import GivingStatementSheet, { statementTitle } from '@/components/GivingStatementSheet';
 
 export const metadata = { title: 'Giving Statements — Staff Admin' };
-
-const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-
-const METHOD_LABEL = {
-  card: 'Card',
-  bank_transfer: 'Bank transfer',
-  check: 'Check',
-  cash: 'Cash',
-  other: 'Other',
-};
 
 // Year-end donor statements: one per donor, each on its own printed page, with
 // the 501(c)(3) acknowledgment language. Print the whole run in January, or
@@ -35,22 +26,8 @@ export default async function GivingStatementsPage({ searchParams }) {
   const to = typeof params?.to === 'string' && params.to ? params.to : `${year}-12-31`;
   const donorFilter = typeof params?.donor === 'string' ? params.donor.toLowerCase() : '';
 
-  // The tax year, printed large at the top of every statement (Lawrence,
-  // 26 Oct 2026): "2026 Tax Year" when the range is one whole calendar year;
-  // otherwise the year (or years) with the exact dates beneath, so a partial
-  // statement never passes for a year-end one.
-  const fromYear = from.slice(0, 4);
-  const toYear = to.slice(0, 4);
-  const wholeYear = fromYear === toYear && from.slice(5) === '01-01' && to.slice(5) === '12-31';
-  const longDay = (d) =>
-    new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
-      timeZone: 'UTC',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  const yearTitle = wholeYear ? `${fromYear} Tax Year` : fromYear === toYear ? fromYear : `${fromYear}–${toYear}`;
-  const rangeLine = `${longDay(from)} – ${longDay(to)}`;
+  // The tax year, large at the top of every statement (statementTitle).
+  const { yearTitle, rangeLine } = statementTitle(from, to);
 
   const supabase = await createClient();
   const { data: gifts, error: giftsError } = await supabase
@@ -121,72 +98,15 @@ export default async function GivingStatementsPage({ searchParams }) {
       )}
 
       {donorList.map((d, di) => (
-        <div key={di} className="print-sheet mb-10 break-after-page">
-          {/* Letterhead */}
-          <div className="border-b-2 border-neutral-800 pb-3 mb-5 flex flex-wrap items-end justify-between gap-3">
-            <img
-              src="/images/Luke_14_Ministries_Logo__285_x_2_in_29.png"
-              alt="Luke 14 Ministries"
-              className="h-16 w-auto"
-            />
-            <p className="text-sm text-neutral-600 text-right">
-              2348 W Andrew Johnson Hwy, #140 · Morristown, TN 37814
-              <br />
-              giving@luke14ministries.net
-            </p>
-          </div>
-
-          {/* The tax year, large, before anything else on the page. */}
-          <div className="mb-5 text-center">
-            <p className="text-3xl font-bold tracking-tight print:text-[26px]">{yearTitle}</p>
-            <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-neutral-600 print:text-[12px]">
-              Giving statement
-            </p>
-            <p className="text-sm text-neutral-600 print:text-[12px]">Gifts received {rangeLine}</p>
-          </div>
-
-          <div className="mb-4 text-sm">
-            <p className="font-bold">{d.name}</p>
-            {d.email && <p className="text-neutral-600">{d.email}</p>}
-          </div>
-
-          <table className="w-full text-sm border-collapse mb-3">
-            <thead>
-              <tr className="text-left border-b border-neutral-400">
-                <th className="py-1 pr-3">Date</th>
-                <th className="py-1 pr-3">Designated to</th>
-                <th className="py-1 pr-3">Method</th>
-                <th className="py-1 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.gifts.map((g, i) => (
-                <tr key={i} className="border-b border-neutral-200">
-                  <td className="py-1 pr-3">{giftDate(g)}</td>
-                  <td className="py-1 pr-3">{g.fund}</td>
-                  <td className="py-1 pr-3">{METHOD_LABEL[g.method] ?? g.method}</td>
-                  <td className="py-1 text-right">{money(g.amount_cents)}</td>
-                </tr>
-              ))}
-              <tr>
-                <td colSpan={3} className="py-2 font-bold">
-                  Total
-                </td>
-                <td className="py-2 text-right font-bold">{money(d.total)}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <p className="text-sm text-neutral-700 mb-2">
-            Thank you for your generosity. Your support helps families affected by disability
-            find community and connection.
-          </p>
-          <p className="text-xs text-neutral-500">
-            Luke 14 Ministries is a registered 501(c)(3) tax-exempt organization (EIN
-            82-2389397). No goods or services were provided in exchange for these
-            contributions. Please retain this statement for your tax records.
-          </p>
-        </div>
+        <GivingStatementSheet
+          key={di}
+          yearTitle={yearTitle}
+          rangeLine={rangeLine}
+          name={d.name}
+          email={d.email}
+          gifts={d.gifts.map((g) => ({ ...g, date: giftDate(g) }))}
+          total={d.total}
+        />
       ))}
     </div>
   );

@@ -59,7 +59,7 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
 
   let base;
   if (kind === 'deposit') {
-    // PER PERSON, the same figure the dashboard banner and PayPanel show.
+    // PER PERSON, the same figure the dashboard banner and Ways to pay show.
     //
     // Found 29 Sep 2026 (Testing Script 3 §12.2): the 31 Aug per-person
     // correction reached every display of the deposit but not this action,
@@ -161,10 +161,11 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
       ],
       customer_email: user.email,
       success_url: `${origin}/account/pay/success/?session_id={CHECKOUT_SESSION_ID}`,
-      // ?pay=cancelled lets the dashboard say what happened. Stripe's own
+      // ?pay=cancelled lets Ways to pay say what happened (it is where every
+      // payment starts since 27 Oct 2026). Stripe's own
       // failure path buried people in back-history during testing (24 Aug);
       // landing home with a plain notice is the fix.
-      cancel_url: `${origin}/account/dashboard/?pay=cancelled`,
+      cancel_url: `${origin}/account/finish/${registrationId}/?pay=cancelled`,
       metadata,
       payment_intent_data: { metadata },
     });

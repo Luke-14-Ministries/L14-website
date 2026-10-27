@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff } from '@/lib/staff';
-import PayPanel from './PayPanel';
 import RegistrationCard from './RegistrationCard';
 import RegistrationsPanel from './RegistrationsPanel';
 import CancelRequest from './CancelRequest';
@@ -15,7 +14,7 @@ import {
   fullScholarshipRequested,
 } from '@/lib/payments';
 import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from '@/lib/events';
-import { requiresPaymentChoice, offersPaymentPlan, feeLabel, planHasProblem } from '@/lib/plans';
+import { requiresPaymentChoice, feeLabel, planHasProblem } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
 import FeedbackBox from './FeedbackBox';
 import ReplyToStaff from './ReplyToStaff';
@@ -1009,8 +1008,11 @@ export default async function DashboardPage({ searchParams }) {
         {volunteersNeedingApp.length > 0 && (
           <div className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-5 flex flex-wrap items-center justify-between gap-3">
             <div>
+              {/* One name for one form (Lawrence, 27 Oct 2026): the banner,
+                  its button and the line under the volunteer's name all say
+                  "the volunteer application". */}
               <p className="font-semibold text-amber-900">
-                Additional volunteer details needed for{' '}
+                Volunteer application needed for{' '}
                 {volunteersNeedingApp
                   .map((p) => `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim())
                   .join(', ')}
@@ -1172,7 +1174,13 @@ export default async function DashboardPage({ searchParams }) {
                       })()}
                       totalLabel={total == null ? '—' : dollars(total)}
                       status={status}
-                      needs={needs}
+                      // A need the pill already says is not said twice
+                      // (Lawrence, 27 Oct 2026: "Needs: deposit" beside "$100
+                      // deposit due now"). It still counts: it opens the card
+                      // and the "need something" tally reads the full list.
+                      needs={needs.filter(
+                        (n) => !(n === 'deposit' && depositDue) && !(n === 'choose how to pay' && notFinished)
+                      )}
                       allSet={allSet}
                       stateKey={`l14.dashboard.registration:${r.id}:${needs.join('|')}`}
                       defaultOpen={defaultOpen}
@@ -1298,7 +1306,9 @@ export default async function DashboardPage({ searchParams }) {
                                   Volunteer application:{' '}
                                   {VOL_APP_LABEL[volAppStatus.get(p.id)] ?? 'not started'} ·{' '}
                                   <Link href="/register/volunteer" className="text-brand underline font-semibold">
-                                    {volAppStatus.has(p.id) ? 'View or edit the application' : 'Start the application'}
+                                    {volAppStatus.has(p.id) && volAppStatus.get(p.id) !== 'withdrawn'
+                                      ? 'View or edit the volunteer application'
+                                      : 'Complete the volunteer application'}
                                   </Link>
                                 </p>
                               )}
@@ -1582,8 +1592,8 @@ export default async function DashboardPage({ searchParams }) {
                                 : '.'}
                             </p>
                             <p className="mt-1">
-                              Requesting a full scholarship instead? Use &ldquo;Request help with
-                              the fee&rdquo; and staff will be in touch &mdash; no deposit needed.
+                              Requesting a full scholarship instead? It&rsquo;s under &ldquo;Ways to
+                              pay&rdquo; below, and staff will be in touch &mdash; no deposit needed.
                             </p>
                             <p className="mt-1">
                               The deposit is your family&rsquo;s commitment to come — and it lets
@@ -1603,51 +1613,52 @@ export default async function DashboardPage({ searchParams }) {
                       })()}
 
                       {/* Two rows, not one wrapping row, because these are two
-                          different errands and the wrap point was deciding the
-                          grouping for us (flagged 26 Aug). Money first: what a
-                          family owes, how to ask for help with it, and the
-                          statement that shows the arithmetic. Then the
-                          registration itself: who is coming, what they will do,
-                          what has been signed. Explicit rows keep the pairs
-                          together at any width. */}
+                          different errands (flagged 26 Aug). Money first, then
+                          the registration itself: who is coming, what they will
+                          do, what has been signed.
+                          One way in to paying (Lawrence, 27 Oct 2026: the
+                          dashboard's Pay deposit / Payment plan / Request help
+                          buttons were "redundant with the next page"). Every
+                          way to pay -- the deposit, any amount, in full, a
+                          plan, a scholarship request -- is on Ways to pay,
+                          which also links the statement. */}
                       <div className="mt-4 flex flex-wrap items-center gap-3">
-                        <PayPanel
-                          registrationId={r.id}
-                          balanceCents={balanceByReg.get(r.id)}
-                          depositCents={registrationDepositCents({
-                            perPersonCents: r.events?.deposit_cents,
-                            participants: r.registration_participants,
-                            balanceCents: balanceByReg.get(r.id),
-                          })}
-                          pendingCents={pendingByReg.get(r.id)}
-                          paidCents={balByReg.get(r.id)?.paid_cents}
-                          payInFullCents={payInFullByReg.get(r.id) ?? undefined}
-                          returnedFeeCents={r.events?.returned_payment_fee_cents ?? 0}
-                        />
-                        {/* Offered plainly beside Pay rather than hidden behind
-                            "having trouble?" — the ministry raises money for
-                            this, and a link people have to hunt for is one most
-                            families will not click. */}
-                        {/* Payment plans stay on offer (0080) now that choosing one is
-                            no longer required to finish registering (30 Sep 2026). */}
-                        {offersPaymentPlan(r.events) &&
-                          !planByReg.get(r.id) &&
-                          (balanceByReg.get(r.id) ?? 0) > 0 && (
-                            <Link
-                              href={`/account/finish/${r.id}/`}
-                              title="Pay in full, or spread the balance with automatic payments."
-                              className="btn-outline py-2!"
-                            >
-                              Payment plan
-                            </Link>
-                          )}
-                        <Link
-                          href={`/account/scholarship/${r.id}`}
-                          title="Ask for help with the fee. It will not affect anyone's place."
-                          className="btn-outline py-2!"
-                        >
-                          Request help with the fee
-                        </Link>
+                        {(() => {
+                          const owing = balanceByReg.get(r.id) ?? 0;
+                          const clearingNow = pendingByReg.get(r.id) ?? 0;
+                          // Two different truths, two different badges: money
+                          // still clearing the bank is NOT the same as paid.
+                          if (owing <= 0) {
+                            return clearingNow > 0 ? (
+                              <span
+                                className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-sm font-semibold"
+                                title="A bank transfer may take a few days to clear. Nothing more to do."
+                              >
+                                Paid — {dollars(clearingNow)} clearing the bank ⏳
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 px-3 py-1 text-sm font-semibold">
+                                Paid in full ✓
+                              </span>
+                            );
+                          }
+                          return (
+                            <>
+                              <Link
+                                href={`/account/finish/${r.id}/`}
+                                title="Pay the deposit, any amount or in full, set up a payment plan, or request help with the fee."
+                                className="btn-primary py-2!"
+                              >
+                                Ways to pay
+                              </Link>
+                              {clearingNow > 0 && (
+                                <span className="text-sm text-amber-700">
+                                  {dollars(clearingNow)} clearing the bank ⏳
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                         <Link
                           href={`/account/statement/${r.id}`}
                           title="A printable statement: fees, scholarships, payments, and balance."
@@ -1772,7 +1783,13 @@ export default async function DashboardPage({ searchParams }) {
                 Make a New Gift
               </Link>
               <SoonButton>Manage Recurring Gift</SoonButton>
-              <SoonButton>Download Giving Statement</SoonButton>
+              {/* The donor's own statement (27 Oct 2026), the same sheet staff
+                  print; shown once a gift has settled. */}
+              {myGifts.some((g) => g.status === 'succeeded') && (
+                <Link href="/account/giving-statement/" className="btn-outline py-2!">
+                  Giving statement
+                </Link>
+              )}
             </div>
           </div>
 

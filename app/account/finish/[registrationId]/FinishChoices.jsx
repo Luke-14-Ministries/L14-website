@@ -8,10 +8,15 @@
 // plan and pay-in-full are expandable cards, one open at a time, each with
 // its own details inside it; the scholarship request is a quieter line
 // underneath ("de-emphasize scholarship request to bottom").
+//
+// Since 27 Oct 2026 this is the ONE place a family pays (Lawrence: the
+// dashboard's own pay buttons were "redundant with the next page"). The old
+// dashboard pay panel's choices live here now: the deposit alone or any
+// amount (the "part" card), and covering the card fee.
 
 import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { dollars } from '@/lib/payments';
+import { coverFeeCents, dollars } from '@/lib/payments';
 import { formatDueDateShort } from '@/lib/events';
 import { returnedFeeDisclosure } from '@/lib/plans';
 import { createCheckout } from '@/app/account/dashboard/pay/actions';
@@ -66,7 +71,10 @@ function OptionCard({ open, onToggle, title, summary, children }) {
 // choice carrying its reason; the card is a quieter text link beneath it,
 // still one tap away and never hidden. Choosing the card shows it as chosen
 // with a way back to the bank. Nothing here changes an amount.
-function PayWith({ method, setMethod, returnedFeeCents }) {
+// `setCoverFee` (with `coverFee` and `baseCents`) adds the optional "cover the
+// processing fee" box under a card choice -- for a one-off payment only; a
+// plan's charges are worked out on the day and carry no fee on top.
+function PayWith({ method, setMethod, returnedFeeCents, coverFee, setCoverFee, baseCents = 0 }) {
   const bank = method === 'bank';
   return (
     <>
@@ -116,8 +124,30 @@ function PayWith({ method, setMethod, returnedFeeCents }) {
       {/* 0123: the returned-payment fee is disclosed BEFORE a family chooses
           a bank payment, and only when the event has one. The amount shown is
           the one the checkout carries and the only one that can be charged. */}
-      {returnedFeeDisclosure(returnedFeeCents) && (
-        <p className="text-xs text-neutral-500">{returnedFeeDisclosure(returnedFeeCents)}</p>
+      {/* Offered for a card only (24 Aug): choosing the bank already is the
+          saving, and a second ask on top of the better choice read as
+          nickel-and-diming. */}
+      {!bank && setCoverFee && (
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={coverFee}
+            onChange={(e) => setCoverFee(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            Add {dollars(baseCents > 0 ? coverFeeCents(baseCents, 'card') : 0)} to cover the processing
+            fee, so the full amount reaches the ministry.{' '}
+            <span className="text-neutral-500">(optional)</span>
+          </span>
+        </label>
+      )}
+      {bank && (
+        <p className="text-xs text-neutral-500">
+          Bank payments may take a few days to clear, so yours will show as &ldquo;clearing&rdquo;
+          until it settles.
+          {returnedFeeDisclosure(returnedFeeCents) && <> {returnedFeeDisclosure(returnedFeeCents)}</>}
+        </p>
       )}
     </>
   );
@@ -148,8 +178,21 @@ export default function FinishChoices({
   planPending,
   // The event's returned-bank-payment fee (0123); 0 = none, and nothing is said.
   returnedFeeCents = 0,
+  // The deposit is what is being asked for now (nothing paid or clearing):
+  // the part card offers it and leads with it.
+  depositDue = false,
+  // False once the family has a route (a plan in place, a scholarship asked
+  // for): only one-off payments are offered then, and no card opens itself.
+  routesOpen = true,
 }) {
-  const [route, setRoute] = useState(canPlan ? 'plan' : 'full');
+  const showPlan = canPlan && routesOpen;
+  const [route, setRoute] = useState(
+    !routesOpen ? null : showPlan ? 'plan' : depositDue ? 'part' : 'full'
+  );
+  // The part card: the deposit alone, or the family's own amount.
+  const [partKind, setPartKind] = useState(depositDue ? 'deposit' : 'custom');
+  const [customAmount, setCustomAmount] = useState(''); // dollars, as typed
+  const [coverFee, setCoverFee] = useState(false);
   const [schedule, setSchedule] = useState('monthly');
   // Bank first and the default, as everywhere else on the site: its fee is a
   // fraction of a card's (the line under the pills says so, 22 Oct 2026).
@@ -160,6 +203,10 @@ export default function FinishChoices({
 
   const plan = preview?.[schedule];
   const early = earlySavingCents > 0;
+  const customCents = Math.round((parseFloat(customAmount) || 0) * 100);
+  const partBase = partKind === 'deposit' ? depositCents : customCents;
+  // What the card fee adds to a one-off payment, when the family ticks it.
+  const feeOn = (base) => (method === 'card' && coverFee && base > 0 ? coverFeeCents(base, 'card') : 0);
 
   // One card open at a time; pressing the open one's header closes it.
   function toggle(next) {
@@ -170,9 +217,18 @@ export default function FinishChoices({
   function go() {
     setError('');
     start(async () => {
+      const cover = method === 'card' && coverFee;
       const res =
         route === 'full'
-          ? await createCheckout({ registrationId, kind: 'balance', method, coverFee: false })
+          ? await createCheckout({ registrationId, kind: 'balance', method, coverFee: cover })
+          : route === 'part'
+          ? await createCheckout({
+              registrationId,
+              kind: partKind,
+              method,
+              coverFee: cover,
+              customCents: partKind === 'custom' ? customCents : undefined,
+            })
           : await startPaymentPlan({ registrationId, schedule, method, agreed });
       if (!res.ok) {
         setError(res.error);
@@ -198,7 +254,7 @@ export default function FinishChoices({
         </p>
       )}
 
-      {canPlan && (
+      {showPlan && (
         <OptionCard
           open={route === 'plan'}
           onToggle={() => toggle('plan')}
@@ -270,7 +326,14 @@ export default function FinishChoices({
             : 'One payment, and you are done.'
         }
       >
-        <PayWith method={method} setMethod={setMethod} returnedFeeCents={returnedFeeCents} />
+        <PayWith
+          method={method}
+          setMethod={setMethod}
+          returnedFeeCents={returnedFeeCents}
+          coverFee={coverFee}
+          setCoverFee={setCoverFee}
+          baseCents={payInFullCents}
+        />
         {error && <p className="text-sm text-red-700">{error}</p>}
         <button
           type="button"
@@ -278,20 +341,79 @@ export default function FinishChoices({
           disabled={pending}
           className="btn-primary py-2! disabled:opacity-50"
         >
-          {pending ? 'Opening secure checkout…' : `Pay ${dollars(payInFullCents)}`}
+          {pending ? 'Opening secure checkout…' : `Pay ${dollars(payInFullCents + feeOn(payInFullCents))}`}
+        </button>
+      </OptionCard>
+      <OptionCard
+        open={route === 'part'}
+        onToggle={() => toggle('part')}
+        title={depositDue ? `Pay the deposit only — ${dollars(depositCents)}` : 'Pay part of the balance'}
+        summary={
+          depositDue
+            ? 'Staff approve the registration once the deposit arrives. The rest can be paid later, in one go or in parts.'
+            : `Any amount up to ${dollars(balanceCents)}. The rest stays on your balance.`
+        }
+      >
+        {depositDue && (
+          <div className="flex gap-2">
+            <Pill value="deposit" cur={partKind} set={setPartKind}>
+              Deposit — {dollars(depositCents)}
+            </Pill>
+            <Pill value="custom" cur={partKind} set={setPartKind}>
+              Another amount…
+            </Pill>
+          </div>
+        )}
+        {partKind === 'custom' && (
+          <div>
+            <label className="text-xs font-semibold text-neutral-500" htmlFor="part-amount">
+              Amount
+            </label>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="text-neutral-500">$</span>
+              <input
+                id="part-amount"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={customAmount}
+                onChange={(e) => setCustomAmount(e.target.value)}
+                className="w-32 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
+              />
+              <span className="text-xs text-neutral-500">at least $1.00, up to {dollars(balanceCents)}</span>
+            </div>
+          </div>
+        )}
+        <PayWith
+          method={method}
+          setMethod={setMethod}
+          returnedFeeCents={returnedFeeCents}
+          coverFee={coverFee}
+          setCoverFee={setCoverFee}
+          baseCents={partBase}
+        />
+        {error && <p className="text-sm text-red-700">{error}</p>}
+        <button
+          type="button"
+          onClick={go}
+          disabled={pending || (partKind === 'custom' && customCents < 100)}
+          className="btn-primary py-2! disabled:opacity-50"
+        >
+          {pending ? 'Opening secure checkout…' : `Pay ${dollars(partBase + feeOn(partBase))}`}
         </button>
       </OptionCard>
 
       {/* The quieter way (26 Oct 2026): still one click to the request page. */}
-      <p className="pt-2 text-sm text-neutral-600">
-        Need help with the fee?{' '}
-        <Link href={`/account/scholarship/${registrationId}/`} className="font-semibold text-brand underline">
-          Request a scholarship
-        </Link>{' '}
-        — it will not affect anyone&rsquo;s place, and staff will be in touch.
-      </p>
+      {routesOpen && (
+        <p className="pt-2 text-sm text-neutral-600">
+          Need help with the fee?{' '}
+          <Link href={`/account/scholarship/${registrationId}/`} className="font-semibold text-brand underline">
+            Request a scholarship
+          </Link>{' '}
+          — it will not affect anyone&rsquo;s place, and staff will be in touch.
+        </p>
+      )}
 
-      {!canPlan && balanceCents > 0 && (
+      {routesOpen && !canPlan && balanceCents > 0 && (
         <p className="text-xs text-neutral-500">
           A payment plan needs at least a week before the balance is due, so it isn&rsquo;t offered
           for this registration.
