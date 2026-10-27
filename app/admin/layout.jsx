@@ -157,11 +157,14 @@ export default async function AdminLayout({ children }) {
   // Staff change their password once a year (Lawrence, 18 Oct 2026). The date
   // is stamped when a password is set (0104); the clock started that day.
   if (staff) {
-    const { data: pw } = await supabase
+    const { data: pw, error: pwError } = await supabase
       .from('profiles')
       .select('password_changed_at')
       .eq('id', staff.userId)
       .maybeSingle();
+    // Logged, not thrown: a throw in the layout would take down every admin
+    // page. The check runs again on the next page load.
+    if (pwError) console.error('annual password check:', pwError.message);
     if (passwordIsStale(pw?.password_changed_at)) {
       redirect('/account/reset-password/?reason=annual');
     }
@@ -175,13 +178,15 @@ export default async function AdminLayout({ children }) {
   const viewerId = staff?.userId ?? user?.id ?? null;
   const viewerEmail = staff?.email ?? user?.email ?? '';
 
-  const { data: profile } = viewerId
+  const { data: profile, error: profileError } = viewerId
     ? await supabase
         .from('profiles')
         .select('first_name, last_name')
         .eq('id', viewerId)
         .maybeSingle()
     : { data: null };
+  // The header falls back to the email below; not worth every admin page.
+  if (profileError) console.error('admin header name:', profileError.message);
   const fullName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() ||
     viewerEmail;
@@ -235,18 +240,21 @@ export default async function AdminLayout({ children }) {
   if (staff && can(staff, 'admin')) {
     // Accounts created in the last 7 days -- the same amber treatment as the
     // review queues, so a burst of new signups is visible from any admin page.
-    const { data: n } = await supabase.rpc('admin_recent_account_count', { p_days: 7 });
+    const { data: n, error: nError } = await supabase.rpc('admin_recent_account_count', { p_days: 7 });
+    // Nav badges are logged, never thrown: a throw in the layout would take
+    // down every admin page. A failed count shows no badge.
+    if (nError) console.error('accounts badge:', nError.message);
     recentAccounts = n ?? 0;
   }
   if (staff && can(staff, 'read:registration')) {
     const paymentsSince = sinceISO(7);
     const [
-      { count: changesCount },
-      { count: volCount },
-      { count: payCount },
-      { count: cancelCount },
-      { count: scholCount },
-      { count: reviewCount },
+      { count: changesCount, error: changesError },
+      { count: volCount, error: volError },
+      { count: payCount, error: payError },
+      { count: cancelCount, error: cancelError },
+      { count: scholCount, error: scholError },
+      { count: reviewCount, error: reviewError },
       { data: repliedRows, error: repliedError },
     ] = await Promise.all([
         supabase
@@ -315,6 +323,13 @@ export default async function AdminLayout({ children }) {
           .eq('family_reply_unread', true)
           .is('awaiting_family_since', null),
       ]);
+    // A failed count is logged and shows no badge (null counts as 0).
+    if (changesError) console.error('changes badge:', changesError.message);
+    if (volError) console.error('volunteers badge:', volError.message);
+    if (payError) console.error('payments badge:', payError.message);
+    if (cancelError) console.error('cancellations badge:', cancelError.message);
+    if (scholError) console.error('scholarships badge:', scholError.message);
+    if (reviewError) console.error('review badge:', reviewError.message);
     if (repliedError) console.error('review badge (family replies):', repliedError.message);
     unreviewedChanges = changesCount ?? 0;
     volunteersAwaiting = volCount ?? 0;
@@ -325,12 +340,13 @@ export default async function AdminLayout({ children }) {
     // number is the same whoever is looking (Lawrence, 15 Oct 2026).
     {
       const today = new Date().toISOString().slice(0, 10);
-      const { data: volRows } = await supabase
+      const { data: volRows, error: volRowsError } = await supabase
         .from('registration_participants')
         .select('person_id, people ( date_of_birth ), registrations!inner ( events!inner ( ends_on ) )')
         .eq('camp_role', 'volunteer')
         .neq('status', 'cancelled')
         .gte('registrations.events.ends_on', today);
+      if (volRowsError) console.error('background-check badge:', volRowsError.message);
       // Adults only: Checkr does not screen under-18s (Lawrence, 15 Oct 2026).
       const volIds = [
         ...new Set(
@@ -340,24 +356,31 @@ export default async function AdminLayout({ children }) {
         ),
       ];
       if (volIds.length) {
-        const { data: statusRows } = await supabase
+        const { data: statusRows, error: statusError } = await supabase
           .from('clearance_status')
           .select('person_id, on_file, is_current, verdict')
           .in('person_id', volIds);
-        const ok = new Set(
-          (statusRows ?? []).filter((c) => c.on_file && c.is_current && c.verdict === 'ok').map((c) => c.person_id)
-        );
-        volunteersMissingCheck = volIds.filter((id) => !ok.has(id)).length;
+        // No badge rather than a wrong one: an empty read would count every
+        // volunteer as missing a check.
+        if (statusError) {
+          console.error('background-check badge:', statusError.message);
+        } else {
+          const ok = new Set(
+            (statusRows ?? []).filter((c) => c.on_file && c.is_current && c.verdict === 'ok').map((c) => c.person_id)
+          );
+          volunteersMissingCheck = volIds.filter((id) => !ok.has(id)).length;
+        }
       }
     }
     recentPayments = payCount ?? 0;
     openCancellations = cancelCount ?? 0;
     {
       // Deletion requests waiting on staff (0081).
-      const { count: delCount } = await supabase
+      const { count: delCount, error: delError } = await supabase
         .from('data_deletion_requests')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'requested');
+      if (delError) console.error('deletion requests badge:', delError.message);
       openDeletions = delCount ?? 0;
     }
     openScholarships = scholCount ?? 0;
@@ -388,7 +411,7 @@ export default async function AdminLayout({ children }) {
     // Done as two lookups and a filter in JS rather than one clever query: "is
     // not false, INCLUDING where the row is absent" is not a thing PostgREST
     // expresses well, and this runs over one camp, not a population.
-    const [{ data: liveParts }, { data: paired }] = await Promise.all([
+    const [{ data: liveParts, error: livePartsError }, { data: paired, error: pairedError }] = await Promise.all([
       supabase
         .from('registration_participants')
         .select(
@@ -408,21 +431,28 @@ export default async function AdminLayout({ children }) {
     ]);
 
     const personIds = [...new Set((liveParts ?? []).map((p) => p.person_id).filter(Boolean))];
-    const { data: supportRows } = personIds.length
+    const { data: supportRows, error: supportError } = personIds.length
       ? await supabase
           .from('person_support')
           .select('person_id, buddy_required')
           .in('person_id', personIds)
       : { data: [] };
-    // Only an explicit false excuses somebody. Absent row, or null, still counts.
-    const excused = new Set(
-      (supportRows ?? []).filter((r) => r.buddy_required === false).map((r) => r.person_id)
-    );
+    // No badge rather than a wrong one: a failed read of the pairs or the
+    // excusals would count campers who are paired or excused.
+    const buddyError = livePartsError ?? pairedError ?? supportError;
+    if (buddyError) {
+      console.error('buddy badge:', buddyError.message);
+    } else {
+      // Only an explicit false excuses somebody. Absent row, or null, still counts.
+      const excused = new Set(
+        (supportRows ?? []).filter((r) => r.buddy_required === false).map((r) => r.person_id)
+      );
 
-    const hasBuddy = new Set((paired ?? []).map((b) => b.camper_participant_id));
-    campersWithoutBuddy = (liveParts ?? []).filter(
-      (p) => !excused.has(p.person_id) && !hasBuddy.has(p.id)
-    ).length;
+      const hasBuddy = new Set((paired ?? []).map((b) => b.camper_participant_id));
+      campersWithoutBuddy = (liveParts ?? []).filter(
+        (p) => !excused.has(p.person_id) && !hasBuddy.has(p.id)
+      ).length;
+    }
   }
 
   // People on a roster for an event that has not finished, with no program
@@ -432,7 +462,7 @@ export default async function AdminLayout({ children }) {
   let unplacedPeople = 0;
   if (staff && can(staff, 'read:programs')) {
     const today = new Date().toISOString().slice(0, 10);
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('registration_participants')
       .select('id, registrations!inner ( events!inner ( ends_on, event_type ) )', {
         count: 'exact',
@@ -443,6 +473,7 @@ export default async function AdminLayout({ children }) {
       .gte('registrations.events.ends_on', today)
       // Camps only: other events have no programs to place people in (2-3 Oct 2026).
       .in('registrations.events.event_type', STAFF_ASSIGNED_TYPES);
+    if (error) console.error('programs badge:', error.message);
     unplacedPeople = count ?? 0;
   }
 

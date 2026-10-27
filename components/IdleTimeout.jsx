@@ -153,12 +153,14 @@ export default function IdleTimeout() {
         setWarning(false);
         return;
       }
-      const { data: staffRow } = await supabase
+      const { data: staffRow, error: staffError } = await supabase
         .from('staff')
         .select('role, active')
         .eq('profile_id', session.user.id)
         .maybeSingle();
       if (!active) return;
+      // A failed read falls to the family limit, the shorter one -- logged.
+      if (staffError) console.error('idle timeout (staff row):', staffError.message);
       const isStaff = Boolean(staffRow && staffRow.active);
       const limit = isStaff ? STAFF_IDLE : FAMILY_IDLE;
       userIdRef.current = session.user.id;
