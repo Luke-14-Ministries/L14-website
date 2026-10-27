@@ -270,3 +270,35 @@ do $$ begin
   raise notice 'PASS 14 a double waiver undoes to the original scholarships';
 end $$;
 \echo ALL DEPOSIT WAIVER CHECKS PASSED
+\echo == 15 a family stops their own plan (0135)
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000ff',true) \g /dev/null
+do $$ begin
+  perform public.family_cancel_payment_plan('50000000-0000-0000-0000-000000000001');
+  raise exception 'FAIL 15: a stranger cancelled the family''s plan';
+exception when insufficient_privilege then raise notice 'PASS 15 a stranger is refused';
+end $$;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',true) \g /dev/null
+do $$
+declare r record; n int;
+begin
+  perform public.family_cancel_payment_plan('50000000-0000-0000-0000-000000000001');
+  select status, cancelled_at, cancelled_by, keeps_early_discount into r
+    from public.payment_plans where id = '80000000-0000-0000-0000-000000000001';
+  if r.status <> 'cancelled' or r.cancelled_at is null
+     or r.cancelled_by <> '00000000-0000-0000-0000-00000000000a' or not r.keeps_early_discount then
+    raise exception 'FAIL 15: plan after the family cancelled: %', row_to_json(r);
+  end if;
+  select count(*) into n from public.payment_installments
+   where payment_plan_id = '80000000-0000-0000-0000-000000000001' and status in ('scheduled', 'failed');
+  if n <> 0 then raise exception 'FAIL 15: % charges still scheduled', n; end if;
+  raise notice 'PASS 15 the family''s plan and its charges are cancelled, stamped, discount untouched';
+  begin
+    perform public.family_cancel_payment_plan('50000000-0000-0000-0000-000000000001');
+    raise exception 'FAIL 15: a cancelled plan was cancelled again';
+  exception when invalid_parameter_value then raise notice 'PASS 15 an ended plan is refused';
+  end;
+end $$;
+rollback;
+\echo ALL FAMILY PLAN CANCEL CHECKS PASSED

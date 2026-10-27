@@ -368,7 +368,11 @@ export default async function RegistrationDetailPage({ params }) {
       ...p,
       refunds,
       refundedCents: refunded,
-      refundableCents: Math.max(0, (p.amount_cents ?? 0) - refunded),
+      // Only money that arrived can go back: a failed or still-clearing
+      // payment offers no Refund (27 Oct 2026, a declined plan charge did).
+      refundableCents: ['succeeded', 'refunded'].includes(p.status)
+        ? Math.max(0, (p.amount_cents ?? 0) - refunded)
+        : 0,
       isStripe: Boolean(p.stripe_payment_intent_id),
     };
   });
@@ -494,6 +498,7 @@ export default async function RegistrationDetailPage({ params }) {
       .from('payment_plans')
       .select(
         `id, schedule, status, payment_method_label, keeps_early_discount, consent_text, consented_at, updated_at,
+         cancelled_at, cancelled_by,
          payment_installments ( id, due_on, amount_cents, status, attempts, last_error, next_attempt_on, last_attempt_at )`
       )
       .eq('registration_id', id)
@@ -513,6 +518,18 @@ export default async function RegistrationDetailPage({ params }) {
   const planInstallments = [...(planRow?.payment_installments ?? [])].sort((a, b) =>
     a.due_on.localeCompare(b.due_on)
   );
+  // Who stopped a cancelled plan: the family themselves (0135) or staff.
+  let planCancelledByFamily = false;
+  if (planRow?.cancelled_by && reg.households?.id) {
+    const { data: member, error: memberError } = await supabase
+      .from('household_members')
+      .select('profile_id')
+      .eq('household_id', reg.households.id)
+      .eq('profile_id', planRow.cancelled_by)
+      .maybeSingle();
+    if (memberError) throw new Error(`Plan cancellation lookup failed: ${memberError.message}`);
+    planCancelledByFamily = Boolean(member);
+  }
 
   // Activity waivers still owed on this registration (0120): a waiver or an
   // outside provider staff added after the signup. A flag only -- a
@@ -656,6 +673,7 @@ export default async function RegistrationDetailPage({ params }) {
             registrationId={id}
             route={routeRow?.route ?? null}
             plan={planRow ?? null}
+            cancelledByFamily={planCancelledByFamily}
             installments={planInstallments}
             earlyDiscountCents={balanceRow?.early_discount_cents ?? 0}
             familyDiscountCents={balanceRow?.family_discount_cents ?? 0}

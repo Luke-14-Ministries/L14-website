@@ -3595,3 +3595,19 @@ balance (`MONEY_NEEDS`, the same Needs as the pills) — and an outline otherwis
 payment. Paid in full keeps the green badge. A plan running as it should (active, no problem) replaces the
 amber balance pill with a calm "Payment plan · $890.00 left · next Nov 1"; a plan with a problem keeps the
 amber balance and its Needs chip.
+
+## 27 Oct 2026 — A family can cancel their own payment plan (0135)
+
+Lawrence: "there should be a way to cancel the payment plan". `family_cancel_payment_plan(registration)`
+(definer; the caller must belong to the household, checked in the function) does what the staff cancel
+does: the plan becomes cancelled with `cancelled_at` / `cancelled_by`, its scheduled and failed charges are
+cancelled, nothing is refunded, and what is owed stays on the balance. It is refused while a charge is still
+clearing the bank. The early-discount decision is left to staff, as for any cancelled plan; the staff plan
+panel now says "Cancelled <date> by the family" and prompts that decision. On the family dashboard the plan
+box shows its status as a pill (green Active, red Payment problem) with "· Cancel payment plan" beside it and
+an inline confirm. Paying off the balance needs no cancel: the charger closes a plan with nothing owed on its
+next charge date, and a plan charge that settles the balance closes it at once.
+
+Also from the 17.11 run: a failed payment shows a red pill and no Refund button (only money that arrived
+can be refunded, and `refundPayment` refuses otherwise); a charge set aside when staff resume a plan reads
+"Failed — … · moved into the later payments", not "Cancelled".

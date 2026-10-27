@@ -2,16 +2,26 @@
 
 // A family's payment plan on their dashboard: what is saved, what comes next,
 // and a way to change the card or bank account. Changing it opens Stripe's
-// own page -- no card details are ever typed into our site.
+// own page -- no card details are ever typed into our site. Since 27 Oct
+// 2026 the family can also cancel it (0135), from a link beside its status.
 
 import { useState, useTransition } from 'react';
 import { dollars } from '@/lib/payments';
 import { formatDueDateShort } from '@/lib/events';
 import { SCHEDULE_LABEL, PLAN_STATUS_LABEL, planHasProblem } from '@/lib/plans';
-import { updatePlanPaymentMethod } from '@/app/account/finish/[registrationId]/actions';
+import { updatePlanPaymentMethod, cancelPaymentPlan } from '@/app/account/finish/[registrationId]/actions';
+
+// The status as a pill (Lawrence, 27 Oct 2026: "active should be highlighted
+// in green"). Stopped is red, as the box around it is.
+const STATUS_PILL = {
+  active: 'bg-green-100 text-green-800',
+  failed: 'bg-red-100 text-red-800',
+  completed: 'bg-green-100 text-green-800',
+};
 
 export default function PlanPanel({ registrationId, plan, installments, balanceCents }) {
   const [changing, setChanging] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [method, setMethod] = useState('bank');
   const [error, setError] = useState('');
   const [pending, start] = useTransition();
@@ -35,16 +45,70 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
     });
   }
 
+  function cancelPlan() {
+    setError('');
+    start(async () => {
+      const res = await cancelPaymentPlan({ registrationId });
+      if (!res.ok) return setError(res.error);
+      // The dashboard's pills and buttons all read the plan; reload them.
+      window.location.reload();
+    });
+  }
+
   return (
     <div
       className={`mt-4 rounded-sm border px-4 py-3 text-sm ${
         failed ? 'border-red-300 bg-red-50 text-red-900' : 'border-neutral-200 bg-neutral-50'
       }`}
     >
-      <p className="font-semibold">
-        Payment plan · {SCHEDULE_LABEL[plan.schedule] ?? plan.schedule} ·{' '}
-        {PLAN_STATUS_LABEL[plan.status] ?? plan.status}
+      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+        <span className="font-semibold">
+          Payment plan · {SCHEDULE_LABEL[plan.schedule] ?? plan.schedule} ·
+        </span>
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+            STATUS_PILL[plan.status] ?? 'bg-neutral-200 text-neutral-700'
+          }`}
+        >
+          {PLAN_STATUS_LABEL[plan.status] ?? plan.status}
+        </span>
+        {canChange && !confirmCancel && (
+          <>
+            <span aria-hidden>·</span>
+            <button
+              type="button"
+              onClick={() => setConfirmCancel(true)}
+              className="text-neutral-600 underline hover:text-neutral-800"
+            >
+              Cancel payment plan
+            </button>
+          </>
+        )}
       </p>
+      {confirmCancel && (
+        <div className="mt-2 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
+          <p className="font-semibold">Stop this payment plan?</p>
+          <p className="mt-1">
+            No more automatic payments will be taken. Nothing already paid is refunded, and what is
+            still owed{balanceCents > 0 ? ` (${dollars(balanceCents)})` : ''} stays on your balance,
+            to pay by the due date from &ldquo;Ways to pay&rdquo;. If the plan earned an
+            early-registration discount, camp staff will let you know whether it stays.
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <button type="button" onClick={cancelPlan} disabled={pending} className="btn-outline py-1.5!">
+              {pending ? 'Cancelling…' : 'Yes, cancel the plan'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmCancel(false)}
+              disabled={pending}
+              className="text-sm underline"
+            >
+              Keep the plan
+            </button>
+          </div>
+        </div>
+      )}
       {plan.payment_method_label && <p className="mt-1">Paying with {plan.payment_method_label}.</p>}
       {failed && (
         <p className="mt-1">

@@ -1308,7 +1308,9 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                       ? 'bg-neutral-200 text-neutral-600'
                       : p.status === 'succeeded'
                         ? 'bg-green-100 text-green-800'
-                        : 'bg-amber-100 text-amber-800'
+                        : p.status === 'failed'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-amber-100 text-amber-800'
                   }`}
                 >
                   {p.status}

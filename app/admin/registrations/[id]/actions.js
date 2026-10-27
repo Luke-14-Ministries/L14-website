@@ -1089,6 +1089,15 @@ export async function refundPayment(registrationId, input) {
     .eq('registration_id', registrationId)
     .maybeSingle();
   if (payError || !payment) return { ok: false, error: 'That payment could not be found.' };
+  if (!['succeeded', 'refunded'].includes(payment.status)) {
+    return {
+      ok: false,
+      error:
+        payment.status === 'processing'
+          ? 'This payment is still clearing the bank. It can be refunded once it has arrived.'
+          : 'This payment never arrived, so there is nothing to refund.',
+    };
+  }
 
   const { data: priorRefunds, error: priorError } = await supabase
     .from('payment_refunds')

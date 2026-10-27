@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as
 working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0134`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0135`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -276,7 +276,9 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
 - **Payment plans** (`0080`): created only by `stripe-plans-webhook`; families read, never write; the
   daily `charge-payment-plans` function shares logic with the webhook via
   `supabase/functions/_shared/`. Families cannot edit money columns on `registration_participants`.
-  **Not live until `supabase/PAYMENT-PLANS-SETUP.md` is done.** Plans and pay-in-full are offered at
+  **Not live until `supabase/PAYMENT-PLANS-SETUP.md` is done.** A family can cancel their own plan from the
+  dashboard (`family_cancel_payment_plan()`, `0135`: household check in the function, refused while a
+  charge is clearing; staff then decide the early discount). Plans and pay-in-full are offered at
   `/account/finish/[registrationId]` ("Ways to pay"; `registration_payment_routes` view; bank first,
   with one line that it costs the camp less than a card and a thank-you for choosing it). **Every plan email** — the family's
   receipt, payment problem and plan-stopped notices, and the staff alerts — goes through

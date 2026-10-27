@@ -10,6 +10,7 @@
 // need riding along as metadata.
 
 import { headers } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
 import { registrationDepositCents } from '@/lib/payments';
@@ -214,4 +215,35 @@ export async function updatePlanPaymentMethod({ registrationId, method }) {
   } catch (e) {
     return { ok: false, error: e?.message || 'Could not open the secure page. Please try again.' };
   }
+}
+
+// A family stops their own plan (0135; Lawrence, 27 Oct 2026). The database
+// does it in one place -- family_cancel_payment_plan() checks the caller
+// belongs to the household, cancels the plan and its scheduled charges, and
+// stamps who and when -- so this only calls it and passes its words on. What
+// is still owed stays on the balance; staff decide the early discount as for
+// any cancelled plan.
+export async function cancelPaymentPlan({ registrationId } = {}) {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: 'Please log in and try again.' };
+  if (!registrationId) return { ok: false, error: 'Which registration is this about?' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('family_cancel_payment_plan', { p_registration_id: registrationId });
+  if (error) {
+    console.error('cancelPaymentPlan:', error.message);
+    // The function's own words are written for the family ("This payment
+    // plan has already ended.", "…still clearing the bank…").
+    return {
+      ok: false,
+      error:
+        error.code === '42501' || error.code === '22023'
+          ? error.message
+          : 'The payment plan could not be cancelled. Please try again.',
+    };
+  }
+  revalidatePath('/account/dashboard');
+  revalidatePath(`/account/finish/${registrationId}`);
+  revalidatePath(`/admin/registrations/${registrationId}`);
+  return { ok: true };
 }
