@@ -3500,3 +3500,24 @@ every `<details>` (How this works, Prefer to mail a check?, Full schedule, conse
 history, How reviewing works, How access works, Setup's year groups). Row menus (Event Payments,
 Accounts) and drop-downs (the event filter, search pickers) are menus, not folds, and keep their look.
 Rule in CONTRIBUTING.md, *Adding a page*.
+
+## 27 Oct 2026 — A plan is flagged after its first failed payment, not only when it stops
+
+Lawrence, on Testing Script 17.11: "should flag after ONE failure I think (not 3; additional flag for
+plan stopped after 3rd attempt)". Until now staff saw nothing until the third try failed and the plan
+stopped. **The earlier flag:** a plan still running — active, or paused by staff — with an installment
+whose charge failed, one helper, `planFailingSince()` in `lib/plans.js` (the oldest outstanding
+failure's time, its try count, whether the plan is paused; a stopped plan is never "failing", it is
+`planStoppedAt()`'s). Amber, because the charger is still trying and the work drains when it succeeds
+or staff act; the stopped plan stays red, because it is wrong until someone calls the family.
+Awaiting review's *Plan stopped* tab is renamed **Plan problems** and lists both (same `?show=plan`,
+so links keep working; red when any plan stopped, amber when only failing ones): "⚑ Plan payment failed
+<date> — retrying (try N of 3)" and "⚑ Payment plan stopped <date>". One tab rather than two because it
+is one job — the same families, the same plan card, the same three buttons — and a second tab would
+split it. The Overview gains an amber card beside the red one that names the families, each linked to
+its registration's `#plan`; the plan card an amber line above the schedule. A paused plan with a
+failed charge says "plan paused — no retry until staff resume it", and a stopped plan restarted by the
+family's new card says "retrying with the new payment method" (the edge functions reset its count to
+0). Payments read only, current events only, as before; nobody's status changes. The nav's Awaiting
+Review badge is unchanged: it counts people still submitted and not waiting on the family, with
+unread family replies as a separate envelope count — plan problems were never in it.

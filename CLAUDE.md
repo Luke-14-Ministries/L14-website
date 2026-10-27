@@ -142,6 +142,7 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 | May they decide a scholarship, a hand-set discount or a deposit waiver? | `can(staff, 'decide:scholarships')` / `can_decide_scholarships()` — Payments **and** Registration write (`0102`) |
 | Which activity waivers are outstanding? (our waiver unsigned, or the provider's confirmation not uploaded or rejected by staff, on an active signup) | the `activity_waivers_outstanding` view (`0120`, restated `0124` with `upload_status`/`review_note`; security invoker — families their own rows, staff all); never re-derive it on a page |
 | When did a stopped payment plan stop? | `planStoppedAt()` in `lib/plans.js` (the third failed try; the plan's `updated_at` as fallback) |
+| Is a running plan's payment failing? (active or paused, a failed charge still to retry) | `planFailingSince()` in `lib/plans.js` (when, try count, paused); words via `planFailingNext()` |
 
 ---
 
@@ -281,9 +282,12 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   receipt, payment problem and plan-stopped notices, and the staff alerts — goes through
   `sendEmail()` in `_shared/plans.ts` and is logged to `message_log` (`plan_*` keys, `0121`); a log
   failure never stops a charge being recorded. Staff alerts name the household in the subject and
-  carry the money, the family's email and phone and a link to the registration. **A stopped plan**
-  (`failed`, after three tries) is a flag, not a status change: Awaiting review's *Plan stopped*
-  tab, a red Overview card, a red line on the plan card — Payments read (`payment_plans_select`,
+  carry the money, the family's email and phone and a link to the registration. **A plan in
+  trouble is a flag, not a status change**, raised after the FIRST failed payment (Lawrence,
+  27 Oct): a plan still running (active or paused) with a failed charge waiting to retry
+  (`planFailingSince()`) is amber; a stopped plan (`failed`, after three tries, `planStoppedAt()`)
+  is red. Both show on Awaiting review's *Plan problems* tab, as Overview cards (amber, naming
+  the families; red) and as a line on the plan card — Payments read (`payment_plans_select`,
   `0101`).
 - **A person's money lives in `participant_money`** (`0114`, one row per participant:
   `fee_cents`, `scholarship_cents`, `discount_cents`, `discount_reason`, `early_discount_cents`,

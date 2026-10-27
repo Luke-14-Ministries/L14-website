@@ -76,12 +76,12 @@ test bank accounts are listed in the Stripe docs under ACH testing.
    (`payment_installments`), then run the same command without `?dry=1`.
 4. On the plan from step 2, press **Change card or bank account** on the dashboard and save
    card 0341 (nothing is charged). Bring a payment forward as in step 3 and run the
-   charger. After the FIRST failure staff see an amber *Plan payment failed — retrying*
-   flag (Awaiting review, the Overview, the plan card). The family gets a "payment problem" email and the plan shows a retry date.
-   After three failures the plan stops and staff get an alert, subject
+   charger. The family gets a "payment problem" email and the plan shows a retry date;
+   staff with Payments read see it at once, in amber, under Awaiting review → *Plan
+   problems*, on the Overview and on the plan card. After three failures the plan stops and staff get an alert, subject
    *[Payment plans] Plan stopped — <household> — <event>*, with what was owed, the
    remaining balance, the family's email and phone, and an *Open the registration*
-   button; the registration appears under Awaiting review → *Plan stopped* (and as a red
+   button; the registration's flag on Awaiting review → *Plan problems* turns red (and a red
    card on the Overview) for staff with Payments read. **Change card or bank
    account** on the dashboard starts it again. Every one of these emails, family and
    staff, is a row in `message_log` (template keys `plan_*`; migration `0121` grants the
