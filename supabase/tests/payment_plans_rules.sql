@@ -302,3 +302,18 @@ begin
 end $$;
 rollback;
 \echo ALL FAMILY PLAN CANCEL CHECKS PASSED
+\echo == 16 the plan's payment-method change is stamped by the database (0136)
+begin;
+do $$
+declare t1 timestamptz; t2 timestamptz;
+begin
+  update public.payment_plans set stripe_payment_method_id = 'pm_test_new' where id = '80000000-0000-0000-0000-000000000001';
+  select payment_method_changed_at into t1 from public.payment_plans where id = '80000000-0000-0000-0000-000000000001';
+  if t1 is null then raise exception 'FAIL 16: a new payment method was not stamped'; end if;
+  update public.payment_plans set payment_method_changed_at = '2020-01-01', note = 'x' where id = '80000000-0000-0000-0000-000000000001';
+  select payment_method_changed_at into t2 from public.payment_plans where id = '80000000-0000-0000-0000-000000000001';
+  if t2 is distinct from t1 then raise exception 'FAIL 16: the stamp was set by hand (% -> %)', t1, t2; end if;
+  raise notice 'PASS 16 a method change is stamped, and the stamp cannot be set by hand';
+end $$;
+rollback;
+\echo ALL PLAN METHOD STAMP CHECKS PASSED

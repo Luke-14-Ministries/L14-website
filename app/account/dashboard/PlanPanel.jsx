@@ -8,7 +8,7 @@
 import { useState, useTransition } from 'react';
 import { dollars } from '@/lib/payments';
 import { formatDueDateShort } from '@/lib/events';
-import { SCHEDULE_LABEL, PLAN_STATUS_LABEL, planHasProblem } from '@/lib/plans';
+import { SCHEDULE_LABEL, PLAN_STATUS_LABEL, planHasProblem, planFailingSince, setAsideAfterFailing } from '@/lib/plans';
 import { updatePlanPaymentMethod, cancelPaymentPlan } from '@/app/account/finish/[registrationId]/actions';
 
 // The status as a pill (Lawrence, 27 Oct 2026: "active should be highlighted
@@ -30,6 +30,11 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
   const next = upcoming[0];
   // The same answer as the dashboard's "Needs:" chip (lib/plans.js).
   const failed = planHasProblem({ ...plan, payment_installments: installments });
+  // A failure set aside when staff resumed the plan (27 Oct 2026): nothing
+  // retries it, and the card that failed is still the one on file.
+  const setAside = planFailingSince({ ...plan, payment_installments: installments })?.setAside
+    ? (installments ?? []).filter(setAsideAfterFailing).pop()
+    : null;
   // The real amount is worked out on the day from the balance, so the
   // estimate shown is the balance shared across what is left.
   const left = upcoming.filter((i) => i.status !== 'processing').length;
@@ -118,7 +123,9 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
           {next?.last_error ? ` (${next.last_error})` : ''}.{' '}
           {plan.status === 'failed'
             ? 'The plan is paused and camp staff will be in touch. Saving a new card or bank account starts it again.'
-            : next?.next_attempt_on
+            : setAside
+              ? `The payment on ${formatDueDateShort(setAside.due_on)}${setAside.last_error ? ` (${setAside.last_error})` : ''} has been spread over the payments still to come, but the same card or bank account is still on file — please change it below so the next payment goes through.`
+              : next?.next_attempt_on
               ? `We'll try again on ${formatDueDateShort(next.next_attempt_on)}.`
               : ''}
         </p>

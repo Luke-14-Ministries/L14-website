@@ -14,6 +14,7 @@ import {
   planStoppedAt,
   planFailingSince,
   planFailingNext,
+  setAsideAfterFailing,
 } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 
@@ -27,10 +28,6 @@ const INST_LABEL = {
   cancelled: 'Cancelled',
   sent: 'Sent',
 };
-
-// A cancelled charge that had been tried and failed: resuming a plan sets its
-// failed charges aside and rebuilds the schedule from today.
-const replacedAfterFailing = (i) => i.status === 'cancelled' && (i.attempts ?? 0) > 0 && Boolean(i.last_error);
 
 export default function StaffPlanPanel({
   registrationId,
@@ -135,12 +132,12 @@ export default function StaffPlanPanel({
                   <td className="py-1 text-right">
                     {['scheduled', 'failed'].includes(i.status) ? `≈ ${money(i.amount_cents)}` : money(i.amount_cents)}
                   </td>
-                  <td className={`py-1 pl-6 ${i.status === 'failed' || replacedAfterFailing(i) ? 'text-red-700' : ''}`}>
+                  <td className={`py-1 pl-6 ${i.status === 'failed' || setAsideAfterFailing(i) ? 'text-red-700' : ''}`}>
                     {/* A charge that failed and was then set aside when staff
                         resumed the plan is not "Cancelled" (Lawrence, 27 Oct
                         2026): it failed, and what it would have taken is
                         spread over the payments still to come. */}
-                    {replacedAfterFailing(i)
+                    {setAsideAfterFailing(i)
                       ? `Failed${i.last_error ? ` — ${i.last_error}` : ''} · moved into the later payments`
                       : INST_LABEL[i.status] ?? i.status}
                     {i.status === 'failed' && i.last_error ? ` — ${i.last_error}` : ''}

@@ -98,7 +98,7 @@ export default async function AdminOverview({ searchParams }) {
     seesStoppedPlans
       ? supabase
           .from('payment_plans')
-          .select('registration_id, status, payment_installments ( status, attempts, last_attempt_at )')
+          .select('registration_id, status, payment_method_changed_at, payment_installments ( status, attempts, last_error, last_attempt_at )')
           .in('status', ['failed', 'active', 'paused'])
       : Promise.resolve({ data: [], error: null }),
   ]);

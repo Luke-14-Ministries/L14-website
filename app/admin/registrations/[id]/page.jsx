@@ -498,7 +498,7 @@ export default async function RegistrationDetailPage({ params }) {
       .from('payment_plans')
       .select(
         `id, schedule, status, payment_method_label, keeps_early_discount, consent_text, consented_at, updated_at,
-         cancelled_at, cancelled_by,
+         cancelled_at, cancelled_by, payment_method_changed_at,
          payment_installments ( id, due_on, amount_cents, status, attempts, last_error, next_attempt_on, last_attempt_at )`
       )
       .eq('registration_id', id)

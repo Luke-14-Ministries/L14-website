@@ -692,8 +692,8 @@ export default async function DashboardPage({ searchParams }) {
         supabase
           .from('payment_plans')
           .select(
-            `id, registration_id, schedule, status, payment_method_label,
-             payment_installments ( id, due_on, amount_cents, status, last_error, next_attempt_on )`
+            `id, registration_id, schedule, status, payment_method_label, payment_method_changed_at,
+             payment_installments ( id, due_on, amount_cents, status, attempts, last_error, next_attempt_on, last_attempt_at )`
           )
           .in('registration_id', regIds),
       ])

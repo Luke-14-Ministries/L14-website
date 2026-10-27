@@ -109,7 +109,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       seesMoney
         ? supabase
             .from('payment_plans')
-            .select('registration_id, status, updated_at, payment_installments ( status, attempts, last_attempt_at )')
+            .select('registration_id, status, updated_at, payment_method_changed_at, payment_installments ( status, attempts, last_error, last_attempt_at )')
             .in('status', ['failed', 'active', 'paused'])
         : Promise.resolve({ data: [], error: null }),
       // The Creed flag without money (0130): every reviewer sees it.

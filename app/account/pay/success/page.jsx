@@ -31,11 +31,13 @@ export default async function PaySuccessPage({ searchParams }) {
         {/* The account pages' header (26 Oct 2026): title left, the Back to
             dashboard pill right -- a full page load, so the dashboard shows
             this payment. */}
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-6">
-          <h1 className="text-3xl font-bold">
+        {/* No wrap: a title this long pushed the pill onto a line of its own
+            (27 Oct 2026); the title wraps in its own column instead. */}
+        <div className="flex items-start justify-between gap-3 mb-6">
+          <h1 className="min-w-0 text-3xl font-bold">
             {pending ? 'Payment on its way ⏳' : 'Thank you — payment received ✅'}
           </h1>
-          <BackLink hard />
+          <BackLink hard className="shrink-0" />
         </div>
         <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
           <p className="text-neutral-700">

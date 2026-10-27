@@ -3611,3 +3611,13 @@ next charge date, and a plan charge that settles the balance closes it at once.
 Also from the 17.11 run: a failed payment shows a red pill and no Refund button (only money that arrived
 can be refunded, and `refundPayment` refuses otherwise); a charge set aside when staff resume a plan reads
 "Failed — … · moved into the later payments", not "Cancelled".
+
+## 27 Oct 2026 — A plan failure stays flagged until it is fixed (0136)
+
+Lawrence: "keep the flag until fixed". Resuming a plan sets its failed charges aside (cancelled) and rebuilds
+the schedule, which cleared every flag though the card that failed was still on file. Now a set-aside failure
+(`setAsideAfterFailing`: cancelled, tried, with an error) on a running plan counts in `planFailingSince` /
+`planHasProblem` until a later plan charge succeeds or the family saves a new card or bank account after it.
+That needs `payment_plans.payment_method_changed_at` (`0136`), stamped by a trigger whenever
+`stripe_payment_method_id` changes and impossible to set by hand. The family's plan box says the payment was
+spread over the rest but the same card is on file; staff read "plan resumed with the same card or bank account".
