@@ -88,7 +88,7 @@ export default async function FamilyStatementPage({ params }) {
   });
 
   return (
-    <div className="mx-auto max-w-2xl p-8 print:p-0 bg-white print:text-[12px] text-neutral-900">
+    <div className="print-sheet mx-auto max-w-2xl p-8 bg-white print:text-[12px] text-neutral-900">
       <div className="flex items-center justify-between mb-6 print:hidden">
         <h1 className="text-xl font-bold">Family statement — print view</h1>
         <PrintButton />

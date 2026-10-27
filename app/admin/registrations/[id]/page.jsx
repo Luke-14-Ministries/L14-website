@@ -79,11 +79,12 @@ export default async function RegistrationDetailPage({ params }) {
   // Who put it on hold (0098), by name -- the family never sees this part.
   let holdBy = null;
   if (reg.hold_by) {
-    const { data: hb } = await supabase
+    const { data: hb, error: hbError } = await supabase
       .from('profiles')
       .select('first_name, last_name')
       .eq('id', reg.hold_by)
       .maybeSingle();
+    if (hbError) throw new Error(`On hold by: ${hbError.message}`);
     holdBy = hb ? `${hb.first_name ?? ''} ${hb.last_name ?? ''}`.trim() || null : null;
   }
   const hold = reg.hold_since
@@ -129,12 +130,16 @@ export default async function RegistrationDetailPage({ params }) {
   const familyRegIds = [...new Set([id, ...(familyRegs ?? []).map((r) => r.id)])];
 
   // Camp options for this event, so a staff member adding a person can pick the
-  // one that sets the fee.
-  const { data: options } = await supabase
-    .from('event_options')
-    .select('id, name, participant_role, fee_cents')
-    .eq('event_id', reg.events?.id)
-    .order('sort_order');
+  // one that sets the fee. Without an event there is nothing to ask for (and
+  // an undefined id would come back as a uuid error).
+  const { data: options, error: optionsError } = reg.events?.id
+    ? await supabase
+        .from('event_options')
+        .select('id, name, participant_role, fee_cents')
+        .eq('event_id', reg.events.id)
+        .order('sort_order')
+    : { data: [], error: null };
+  if (optionsError) throw new Error(`Event options: ${optionsError.message}`);
 
   // Scholarships on this registration, in two piles.
   //
@@ -155,19 +160,21 @@ export default async function RegistrationDetailPage({ params }) {
   let adjustmentRecords = [];
   let scholarshipRequests = [];
   if (partIds.length) {
-    const { data: schols } = await supabase
+    const { data: schols, error: scholsError } = await supabase
       .from('scholarships')
       .select(
         'registration_participant_id, requested_cents, granted_cents, status, family_statement, staff_note, reviewed_by, reviewed_at, created_at, updated_at'
       )
       .in('registration_participant_id', partIds);
+    if (scholsError) throw new Error(`Scholarships: ${scholsError.message}`);
     const reviewerIds = [...new Set((schols ?? []).map((s) => s.reviewed_by).filter(Boolean))];
     let names = new Map();
     if (reviewerIds.length) {
-      const { data: profs } = await supabase
+      const { data: profs, error: profsError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
         .in('id', reviewerIds);
+      if (profsError) throw new Error(`Scholarship reviewers: ${profsError.message}`);
       names = new Map((profs ?? []).map((p) => [p.id, `${p.first_name} ${p.last_name}`.trim()]));
     }
     const partById = new Map((reg.registration_participants ?? []).map((p) => [p.id, p]));
@@ -234,10 +241,11 @@ export default async function RegistrationDetailPage({ params }) {
   const authorIds = [...new Set((msgs ?? []).map((m) => m.created_by).filter(Boolean))];
   let authorNames = new Map();
   if (authorIds.length) {
-    const { data: authors } = await supabase
+    const { data: authors, error: authorsError } = await supabase
       .from('profiles')
       .select('id, first_name, last_name')
       .in('id', authorIds);
+    if (authorsError) throw new Error(`Note authors: ${authorsError.message}`);
     authorNames = new Map((authors ?? []).map((a) => [a.id, `${a.first_name} ${a.last_name}`.trim()]));
   }
   const familyMessages = (msgs ?? []).map((m) => ({
@@ -275,17 +283,21 @@ export default async function RegistrationDetailPage({ params }) {
 
   // The header number a registrar actually wants when opening a family:
   // what is still owed. Full payment history stays on Event Payments.
-  const { data: balanceRow } = await supabase
+  // Without Payments read this is no row and no error (CLAUDE.md, Money), so
+  // balanceRow stays null and the screen shows "—"; only a real error throws.
+  const { data: balanceRow, error: balanceError } = await supabase
     .from('registration_balances')
     .select('fee_cents, discount_cents, scholarship_cents, coupon_cents, paid_cents, balance_cents, refund_pending_cents, early_discount_cents, family_discount_cents, fees_cents')
     .eq('registration_id', id)
     .maybeSingle();
+  if (balanceError) throw new Error(`Balance: ${balanceError.message}`);
 
   // Payments on this registration, with any refunds already issued against
   // each. Refunds are per-PAYMENT (you refund a transaction, not a balance),
   // so the two have to arrive together or the UI cannot say how much of a
   // given payment is still refundable.
-  const [{ data: paymentRows }, { data: refundRows }] = await Promise.all([
+  // Row-level security leaves both empty for staff without Payments read.
+  const [{ data: paymentRows, error: paymentsError }, { data: refundRows, error: refundsError }] = await Promise.all([
     supabase
       .from('payments')
       .select('id, amount_cents, fee_cover_cents, method, status, received_on, created_at, note, stripe_payment_intent_id, payer_email, payer_name')
@@ -299,6 +311,8 @@ export default async function RegistrationDetailPage({ params }) {
       .eq('registration_id', id)
       .order('created_at', { ascending: false }),
   ]);
+  if (paymentsError) throw new Error(`Payments: ${paymentsError.message}`);
+  if (refundsError) throw new Error(`Refunds: ${refundsError.message}`);
   const refundsByPayment = new Map();
   for (const rf of refundRows ?? []) {
     if (!refundsByPayment.has(rf.payment_id)) refundsByPayment.set(rf.payment_id, []);
@@ -327,19 +341,21 @@ export default async function RegistrationDetailPage({ params }) {
     ? 'https://dashboard.stripe.com'
     : 'https://dashboard.stripe.com/test';
 
-  const [{ data: consentRows }, { data: sigRows }] = await Promise.all([
+  const [{ data: consentRows, error: consentsError }, { data: sigRows, error: sigsError }] = await Promise.all([
     peopleIds.length
       ? supabase
           .from('person_current_consents')
           .select('person_id, kind, granted, recorded_at, recorded_as')
           .in('person_id', peopleIds)
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
     supabase
       .from('agreement_signatures')
       .select('id, signed_at, signer_name, signer_role, status, person_id, agreements ( key, title, version ), people ( first_name, last_name )')
       .eq('registration_id', id)
       .order('signed_at', { ascending: true }),
   ]);
+  if (consentsError) throw new Error(`Consents: ${consentsError.message}`);
+  if (sigsError) throw new Error(`Agreement signatures: ${sigsError.message}`);
 
   const consentOf = new Map();
   for (const c of consentRows ?? []) consentOf.set(`${c.person_id}:${c.kind}`, c);

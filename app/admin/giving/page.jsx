@@ -3,6 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import RecordGiftForm from './RecordGiftForm';
 import { dayInMorristown } from '@/lib/events';
+import GivingExportBar from './GivingExportBar';
 
 export const metadata = { title: 'Giving — Staff Admin' };
 
@@ -69,15 +70,6 @@ export default async function AdminGivingPage({ searchParams }) {
         : earliest
           ? `all time, since ${earliest}`
           : 'all time';
-  const csvParams = new URLSearchParams();
-  if (fFrom) csvParams.set('from', fFrom);
-  if (fTo) csvParams.set('to', fTo);
-  if (fFund) csvParams.set('fund', fFund);
-  if (fMethod) csvParams.set('method', fMethod);
-  const csvQs = csvParams.toString();
-  const csvHref = `/admin/exports/giving${csvQs ? `?${csvQs}` : ''}`;
-  // QuickBooks Online shape (item 14): succeeded gifts, the fund as the account.
-  const qbHref = `/admin/exports/giving?${csvQs ? `${csvQs}&` : ''}format=quickbooks`;
   const good = all.filter((g) => g.status === 'succeeded' || g.status === 'processing');
   const total = good.reduce((s, g) => s + (g.amount_cents ?? 0), 0);
   const byFund = new Map();
@@ -85,21 +77,10 @@ export default async function AdminGivingPage({ searchParams }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">Giving</h2>
-        <span className="flex flex-wrap gap-2">
-          <a href={csvHref} className="btn-outline py-2! text-sm">
-            Download CSV
-          </a>
-          <a
-            href={qbHref}
-            className="btn-outline py-2! text-sm"
-            title="Date, Name, Memo, Account, Amount — gifts that arrived, in this filter. Account names are placeholders until the treasurer confirms them."
-          >
-            QuickBooks CSV
-          </a>
-        </span>
-      </div>
+      <h2 className="text-xl font-bold mb-2">Giving</h2>
+      {/* Exports: report, then format (GivingExportBar.jsx); both follow the
+          filter form below. */}
+      <GivingExportBar from={fFrom} to={fTo} fund={fFund} method={fMethod} />
       <p className="text-sm text-neutral-500 mb-6">
         Donations — tax-deductible, and kept fully separate from camp payments (which are not).
         Access to this page is its own permission. Online gifts record themselves; mailed checks
@@ -139,12 +120,6 @@ export default async function AdminGivingPage({ searchParams }) {
         {(fFrom || fTo || fFund || fMethod) && (
           <a href="/admin/giving" className="text-sm text-neutral-500 underline">Clear</a>
         )}
-        <a
-          href={`/admin/giving/statements${csvQs ? `?${csvQs}` : ''}`}
-          className="btn-outline py-1.5! text-sm ml-auto"
-        >
-          Year-end statements
-        </a>
       </form>
 
       <p className="text-sm text-neutral-600 mb-2">

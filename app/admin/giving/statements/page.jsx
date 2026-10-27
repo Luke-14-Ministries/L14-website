@@ -102,7 +102,7 @@ export default async function GivingStatementsPage({ searchParams }) {
       )}
 
       {donorList.map((d, di) => (
-        <div key={di} className="mb-10 break-after-page">
+        <div key={di} className="print-sheet mb-10 break-after-page">
           {/* Letterhead */}
           <div className="border-b-2 border-neutral-800 pb-3 mb-5 flex flex-wrap items-end justify-between gap-3">
             <img

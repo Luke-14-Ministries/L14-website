@@ -107,3 +107,23 @@
 @utility prose-site {
   @apply space-y-4 leading-relaxed text-lg;
 }
+
+/*
+  Printed statements without the browser's own header and footer (Lawrence,
+  26 Oct 2026: no "Giving Statements — Staff Admin", URL or page number on a
+  donor's letter). The browser draws those in the page margin, so a sheet's
+  named page has none; the margin moves inside as padding, repeated on every
+  printed page a long statement runs onto (box-decoration-break: clone).
+  Used by the giving statements and the family statements (staff and family).
+*/
+@page sheet {
+  margin: 0;
+}
+@media print {
+  .print-sheet {
+    page: sheet;
+    padding: 14mm 16mm;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+}
