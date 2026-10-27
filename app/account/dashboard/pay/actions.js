@@ -31,21 +31,31 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
   const supabase = await createClient();
 
   // What is owed, scoped to this family by RLS on the underlying tables.
-  const { data: bal } = await supabase
+  const { data: bal, error: balError } = await supabase
     .from('registration_balances')
     .select('balance_cents, event_id')
     .eq('registration_id', registrationId)
     .maybeSingle();
+  // Each read below is checked before money is worked out: a failed read must
+  // never price a payment as if the row were missing.
+  if (balError) {
+    console.error('startCheckout balance:', balError.message);
+    return { ok: false, error: 'We could not load what is owed. Please try again.' };
+  }
   if (!bal) return { ok: false, error: 'We could not find that registration.' };
 
   const balance = bal.balance_cents ?? 0;
   if (balance <= 0) return { ok: false, error: 'This registration is already paid in full.' };
 
-  const { data: ev } = await supabase
+  const { data: ev, error: evError } = await supabase
     .from('events')
     .select('name, deposit_cents, returned_payment_fee_cents')
     .eq('id', bal.event_id)
     .maybeSingle();
+  if (evError) {
+    console.error('startCheckout event:', evError.message);
+    return { ok: false, error: 'We could not load the camp details. Please try again.' };
+  }
 
   let base;
   if (kind === 'deposit') {
@@ -56,10 +66,14 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
     // so the panel said "$150 — $50 for each of the 3 people" and Stripe
     // Checkout opened at $50. A family paying "the deposit" would have been
     // $100 short with nothing on screen to say so. Same helper, same rows.
-    const { data: parts } = await supabase
+    const { data: parts, error: partsError } = await supabase
       .from('registration_participants')
       .select('id, person_id, status')
       .eq('registration_id', registrationId);
+    if (partsError) {
+      console.error('startCheckout participants:', partsError.message);
+      return { ok: false, error: 'We could not load who is registered. Please try again.' };
+    }
     const deposit = registrationDepositCents({
       perPersonCents: ev?.deposit_cents,
       participants: parts,

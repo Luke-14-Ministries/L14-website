@@ -68,7 +68,8 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
         .from('waiver-confirmations')
         .upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
       if (upErr) throw new Error(upErr.message);
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData, error: userErr } = await supabase.auth.getUser();
+      if (userErr) throw new Error(userErr.message);
       const row = {
         activity_id: activityId,
         registration_participant_id: participantId,

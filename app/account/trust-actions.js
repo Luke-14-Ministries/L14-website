@@ -59,15 +59,19 @@ export async function trustedBrowserCheck(legacyTokens = []) {
 
   const supabase = await createClient();
   for (const c of candidates) {
-    const { data: ok } = await supabase.rpc('mark_session_trusted', { p_token: c.token });
+    const { data: ok, error: trustError } = await supabase.rpc('mark_session_trusted', { p_token: c.token });
+    // Logged, then treated as "not remembered": the form asks for the code,
+    // which fails closed. Throwing here would stop the login altogether.
+    if (trustError) console.error('trustedBrowserCheck:', trustError.message);
     if (ok !== true) continue;
     if (c.legacy) {
       const hash = createHash('sha256').update(c.token).digest('hex');
-      const { data: device } = await supabase
+      const { data: device, error: deviceError } = await supabase
         .from('mfa_trusted_devices')
         .select('expires_at')
         .eq('token_hash', hash)
         .maybeSingle();
+      if (deviceError) console.error('trustedBrowserCheck device:', deviceError.message);
       if (device?.expires_at) jar.set(NAME, c.token, cookieOptions(new Date(device.expires_at)));
     }
     return true;

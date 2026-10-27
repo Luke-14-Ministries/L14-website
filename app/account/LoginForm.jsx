@@ -138,12 +138,15 @@ export default function LoginForm() {
     let email = mfa?.email;
     let labels = mfa?.labels;
     if (!email || !labels) {
-      const [{ data: userData }, { data: labelRows }] = await Promise.all([
+      const [{ data: userData }, { data: labelRows, error: labelError }] = await Promise.all([
         withTimeout(supabase.auth.getUser(), 6000, { data: {} }),
         withTimeout(supabase.from('mfa_factor_labels').select('factor_id, label'), 6000, {
           data: [],
         }),
       ]);
+      // Logged only: the nicknames are a help, and the code step falls back to
+      // the enrolment names, as it does on a timeout.
+      if (labelError) console.error('Device names:', labelError.message);
       email = userData?.user?.email || '';
       const byId = new Map((labelRows ?? []).map((l) => [l.factor_id, l.label]));
       labels = verified.map((f) => ({
@@ -337,9 +340,11 @@ export default function LoginForm() {
         } = await supabase.auth.getUser();
         // Staff remember for 7 days; the database would stop honouring a staff
         // device after 7 anyway, so the cookie should not promise 30.
-        const { data: staffRow } = user
+        const { data: staffRow, error: staffError } = user
           ? await supabase.from('staff').select('active').eq('profile_id', user.id).maybeSingle()
           : { data: null };
+        // Not guessed as "not staff" (30 days): skip remembering instead.
+        if (staffError) throw new Error(`Staff lookup: ${staffError.message}`);
         const days = staffRow?.active ? TRUST_DAYS_STAFF : TRUST_DAYS;
         const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
         if (user) {
@@ -358,8 +363,9 @@ export default function LoginForm() {
             writeTrustStore(store);
           }
         }
-      } catch {
-        /* trust is a convenience; the login itself has already succeeded */
+      } catch (err) {
+        // Trust is a convenience; the login itself has already succeeded.
+        console.error('Remember this browser:', err?.message);
       }
     }
 

@@ -31,13 +31,15 @@ export async function savePersonSupport(personId, fields) {
   // A camper's required answers are checked here as well as in the browser
   // (18 Oct review: this save had no server-side check).
   const supabase = await createClient();
-  const { data: camperRows } = await supabase
+  const { data: camperRows, error: camperError } = await supabase
     .from('registration_participants')
     .select('id')
     .eq('person_id', personId)
     .eq('camp_role', 'camper')
     .neq('status', 'cancelled')
     .limit(1);
+  // Read as "not a camper", a failed lookup would skip the camper's checks.
+  if (camperError) return { ok: false, error: `Could not save: ${camperError.message}` };
   const problems = supportProblems(fields ?? {}, { isCamper: Boolean(camperRows?.length) });
   if (problems.length > 0) {
     return { ok: false, error: `Please fill in: ${problems.join('; ')}.` };

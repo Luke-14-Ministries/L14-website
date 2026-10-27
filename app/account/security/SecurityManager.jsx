@@ -82,9 +82,12 @@ export default function SecurityManager({ required }) {
     }
     const verified = (data?.totp ?? []).filter((f) => f.status === 'verified');
     // Attach our editable nickname, falling back to GoTrue's friendly_name.
-    const { data: labels } = await supabase
+    const { data: labels, error: labelError } = await supabase
       .from('mfa_factor_labels')
       .select('factor_id, label');
+    // The devices still list (under their default names); the message says
+    // the nicknames did not load rather than quietly dropping them.
+    if (labelError) setError(`Device names could not be loaded: ${labelError.message}`);
     const byId = new Map((labels ?? []).map((l) => [l.factor_id, l.label]));
     setFactors(
       verified.map((f) => ({
@@ -93,10 +96,12 @@ export default function SecurityManager({ required }) {
       }))
     );
     // Browsers remembered via "skip the code for 30 days" (RLS: own rows only).
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from('mfa_trusted_devices')
       .select('id', { count: 'exact', head: true })
       .gt('expires_at', new Date().toISOString());
+    // Not read as "none remembered" without saying so.
+    if (countError) setError(`Remembered browsers could not be loaded: ${countError.message}`);
     setTrustedCount(count ?? 0);
     setLoading(false);
   }, [supabase]);
@@ -213,7 +218,12 @@ export default function SecurityManager({ required }) {
 
     // Clear any half-finished enrollment first, or Supabase refuses a second
     // TOTP factor while an unverified one lingers.
-    const { data: list } = await supabase.auth.mfa.listFactors();
+    const { data: list, error: listError } = await supabase.auth.mfa.listFactors();
+    if (listError) {
+      setBusy(false);
+      setError(friendly(listError.message));
+      return;
+    }
     for (const f of list?.all ?? []) {
       if (f.factor_type === 'totp' && f.status === 'unverified') {
         await supabase.auth.mfa.unenroll({ factorId: f.id });
@@ -271,13 +281,16 @@ export default function SecurityManager({ required }) {
       return;
     }
     // Save the nickname now that the factor is real.
-    await supabase
+    const { error: labelError } = await supabase
       .from('mfa_factor_labels')
       .upsert({ factor_id: enrolling.factorId, label: enrolling.name }, { onConflict: 'factor_id' });
     setBusy(false);
     setEnrolling(null);
     setCode('');
     await loadFactors();
+    // The device is on either way; say the name did not stick rather than
+    // quietly showing the default.
+    if (labelError) setError(`The device was added, but its name could not be saved: ${labelError.message}`);
     router.refresh(); // verifying steps the session up to AAL2
   }
 

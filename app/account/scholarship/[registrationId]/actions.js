@@ -44,7 +44,9 @@ export async function requestScholarship(registrationId, participantId, input) {
   // rewritten. The signer is the logged-in account holder, named from their
   // profile so the record carries a person, not a checkbox.
   if (input?.agreementKey === 'scholarship_agreement') {
-    const { data: agreementRow } = await supabase
+    // Every read here is checked: a failed one must not skip the signature
+    // (or the primary-contact check) and carry on as if none were needed.
+    const { data: agreementRow, error: agreementError } = await supabase
       .from('agreements')
       .select('id')
       .eq('key', 'scholarship_agreement')
@@ -52,19 +54,22 @@ export async function requestScholarship(registrationId, participantId, input) {
       .order('version', { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (agreementError) return { ok: false, error: `Could not save your request: ${agreementError.message}` };
 
-    const { data: regRow } = await supabase
+    const { data: regRow, error: regError } = await supabase
       .from('registrations')
       .select('household_id')
       .eq('id', registrationId)
       .maybeSingle();
+    if (regError) return { ok: false, error: `Could not save your request: ${regError.message}` };
 
     if (agreementRow && regRow) {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('first_name, last_name')
         .eq('id', user.id)
         .maybeSingle();
+      if (profileError) return { ok: false, error: `Could not save your request: ${profileError.message}` };
       // The name the person actually TYPED, when they typed one. Falling
       // straight to the profile made every scholarship signature read as
       // whoever was logged in, which is not the same claim -- and testing
@@ -81,13 +86,14 @@ export async function requestScholarship(registrationId, participantId, input) {
         [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() ||
         user.email;
 
-      const { data: contactPerson } = regRow.household_id
+      const { data: contactPerson, error: contactError } = regRow.household_id
         ? await supabase
             .from('households')
             .select('people!households_primary_contact_person_id_fkey ( first_name, last_name )')
             .eq('id', regRow.household_id)
             .maybeSingle()
         : { data: null };
+      if (contactError) return { ok: false, error: `Could not save your request: ${contactError.message}` };
       const contactFull = contactPerson?.people
         ? `${contactPerson.people.first_name ?? ''} ${contactPerson.people.last_name ?? ''}`
         : '';
@@ -99,15 +105,16 @@ export async function requestScholarship(registrationId, participantId, input) {
         };
       }
 
-      const { data: existingSig } = await supabase
+      const { data: existingSig, error: existingSigError } = await supabase
         .from('agreement_signatures')
         .select('id')
         .eq('agreement_id', agreementRow.id)
         .eq('registration_id', registrationId)
         .limit(1);
+      if (existingSigError) return { ok: false, error: `Could not save your request: ${existingSigError.message}` };
 
       if (!existingSig?.length) {
-        await supabase.from('agreement_signatures').insert({
+        const { error: sigError } = await supabase.from('agreement_signatures').insert({
           agreement_id: agreementRow.id,
           household_id: regRow.household_id,
           registration_id: registrationId,
@@ -115,6 +122,7 @@ export async function requestScholarship(registrationId, participantId, input) {
           signer_name: signerName,
           signer_role: 'account_holder',
         });
+        if (sigError) return { ok: false, error: `Could not sign the agreement: ${sigError.message}` };
       }
     }
   }
@@ -122,11 +130,13 @@ export async function requestScholarship(registrationId, participantId, input) {
   // One request per participant. An existing one is updated rather than
   // duplicated; RLS refuses the update if staff have already granted against
   // it, which surfaces as the message below rather than a silent no-op.
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('scholarships')
     .select('id, status, granted_cents')
     .eq('registration_participant_id', participantId)
     .maybeSingle();
+  // Read as "no request yet", a failed lookup would insert a duplicate.
+  if (existingError) return { ok: false, error: `Could not save your request: ${existingError.message}` };
 
   if (existing) {
     if ((existing.granted_cents ?? 0) > 0) {

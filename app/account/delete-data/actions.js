@@ -17,24 +17,33 @@ export async function requestDataDeletion({ scope, note }) {
   }
 
   const supabase = await createClient();
-  const { data: member } = await supabase
+  const { data: member, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', user.id)
     .limit(1)
     .maybeSingle();
+  // A failed lookup is not "no family record" -- say it failed.
+  if (memberError) {
+    console.error('requestDataDeletion:', memberError.message);
+    return { ok: false, error: 'Your request could not be saved. Please try again, or email registration@luke14ministries.net.' };
+  }
   if (!member?.household_id) {
     return { ok: false, error: 'There is no family record on this account yet, so there is nothing to delete.' };
   }
 
   // One open request at a time.
-  const { data: open } = await supabase
+  const { data: open, error: openError } = await supabase
     .from('data_deletion_requests')
     .select('id')
     .eq('household_id', member.household_id)
     .eq('status', 'requested')
     .limit(1)
     .maybeSingle();
+  if (openError) {
+    console.error('requestDataDeletion:', openError.message);
+    return { ok: false, error: 'Your request could not be saved. Please try again, or email registration@luke14ministries.net.' };
+  }
   if (open) return { ok: false, error: 'You already have a request open. Staff will be in touch.' };
 
   const { error } = await supabase.from('data_deletion_requests').insert({

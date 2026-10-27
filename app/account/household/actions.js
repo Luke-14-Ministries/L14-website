@@ -89,12 +89,13 @@ export async function updateHouseholdInfo(householdId, form) {
   if ('primary_contact_person_id' in form) {
     const chosen = clean(form.primary_contact_person_id);
     if (chosen) {
-      const { data: inHousehold } = await supabase
+      const { data: inHousehold, error: inHouseholdError } = await supabase
         .from('people')
         .select('id')
         .eq('id', chosen)
         .eq('household_id', householdId)
         .maybeSingle();
+      if (inHouseholdError) return { ok: false, error: inHouseholdError.message };
       if (!inHousehold) return { ok: false, error: 'That person is not in this household.' };
     }
     patch.primary_contact_person_id = chosen;
@@ -275,11 +276,14 @@ export async function removeHouseholdPerson(personId) {
   // The primary contact is pointed at by the household row. Deleting them
   // would silently blank that pointer (ON DELETE SET NULL), leaving a
   // household nobody is responsible for -- so ask for a new contact first.
-  const { data: asContact } = await supabase
+  // Each guard's read is checked: a failed one must stop the delete, not wave
+  // it through as "no reason to keep them".
+  const { data: asContact, error: asContactError } = await supabase
     .from('households')
     .select('id')
     .eq('primary_contact_person_id', personId)
     .maybeSingle();
+  if (asContactError) return { ok: false, error: asContactError.message };
   if (asContact) {
     return {
       ok: false,
@@ -298,20 +302,22 @@ export async function removeHouseholdPerson(personId) {
   // other, which is exactly the state you cannot explain later. Matched by
   // name because a household-level signature records the signer's name rather
   // than a person id.
-  const { data: person } = await supabase
+  const { data: person, error: personError } = await supabase
     .from('people')
     .select('first_name, last_name, household_id')
     .eq('id', personId)
     .maybeSingle();
+  if (personError) return { ok: false, error: personError.message };
 
   if (person) {
     const fullName = `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim();
     if (fullName) {
-      const { data: sigs } = await supabase
+      const { data: sigs, error: sigsError } = await supabase
         .from('agreement_signatures')
         .select('signed_at, signer_name')
         .eq('household_id', person.household_id)
         .ilike('signer_name', fullName);
+      if (sigsError) return { ok: false, error: sigsError.message };
       if ((sigs ?? []).length > 0) {
         return {
           ok: false,

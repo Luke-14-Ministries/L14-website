@@ -29,14 +29,16 @@ async function originFromRequest() {
 }
 
 // The registration, only if it belongs to the caller's own household.
+// { reg, error }: a failed read is reported, never passed off as "not found".
 async function ownRegistration(supabase, userId, registrationId) {
-  const { data: memberships } = await supabase
+  const { data: memberships, error: memberError } = await supabase
     .from('household_members')
     .select('household_id')
     .eq('profile_id', userId);
+  if (memberError) return { reg: null, error: memberError.message };
   const ids = (memberships ?? []).map((m) => m.household_id);
-  if (!ids.length || !registrationId) return null;
-  const { data } = await supabase
+  if (!ids.length || !registrationId) return { reg: null, error: null };
+  const { data, error } = await supabase
     .from('registrations')
     .select(
       `id, events ( id, name, event_type, starts_on, deposit_cents, balance_due_on, returned_payment_fee_cents ),
@@ -45,7 +47,7 @@ async function ownRegistration(supabase, userId, registrationId) {
     .eq('id', registrationId)
     .in('household_id', ids)
     .maybeSingle();
-  return data;
+  return { reg: data, error: error?.message ?? null };
 }
 
 export async function startPaymentPlan({ registrationId, schedule, method, agreed }) {
@@ -58,18 +60,34 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
   if (!agreed) return { ok: false, error: 'Please tick the box to agree to the automatic payments.' };
 
   const supabase = await createClient();
-  const reg = await ownRegistration(supabase, user.id, registrationId);
+  const { reg, error: regError } = await ownRegistration(supabase, user.id, registrationId);
+  if (regError) {
+    console.error('startPaymentPlan registration:', regError);
+    return { ok: false, error: 'We could not load that registration. Please try again.' };
+  }
   if (!reg) return { ok: false, error: 'We could not find that registration.' };
   const ev = reg.events ?? {};
   if (!planAvailable(ev)) {
     return { ok: false, error: 'A payment plan is not available for this registration.' };
   }
 
-  const [{ data: bal }, { data: existing }, { data: full }] = await Promise.all([
+  const [
+    { data: bal, error: balError },
+    { data: existing, error: existingError },
+    { data: full, error: fullError },
+  ] = await Promise.all([
     supabase.from('registration_balances').select('balance_cents').eq('registration_id', reg.id).maybeSingle(),
     supabase.from('payment_plans').select('id, status').eq('registration_id', reg.id).maybeSingle(),
     supabase.rpc('pay_in_full_amount', { p_registration_id: reg.id }),
   ]);
+  // A failed balance read would say "already paid"; a failed plan read could
+  // start a second plan. Neither may be guessed.
+  if (balError || existingError) {
+    console.error('startPaymentPlan:', (balError || existingError).message);
+    return { ok: false, error: 'We could not load the balance. Please try again.' };
+  }
+  // As in createCheckout: logged, and the deposit is capped at the balance instead.
+  if (fullError) console.error('pay_in_full_amount:', fullError.message);
   const balance = bal?.balance_cents ?? 0;
   if (balance <= 0) return { ok: false, error: 'This registration is already paid in full.' };
   if (existing && ['active', 'paused', 'failed', 'completed'].includes(existing.status)) {
@@ -160,13 +178,21 @@ export async function updatePlanPaymentMethod({ registrationId, method }) {
   if (method !== 'card' && method !== 'bank') return { ok: false, error: 'Please choose a payment method.' };
 
   const supabase = await createClient();
-  const reg = await ownRegistration(supabase, user.id, registrationId);
+  const { reg, error: regError } = await ownRegistration(supabase, user.id, registrationId);
+  if (regError) {
+    console.error('updatePlanPaymentMethod registration:', regError);
+    return { ok: false, error: 'We could not load that registration. Please try again.' };
+  }
   if (!reg) return { ok: false, error: 'We could not find that registration.' };
-  const { data: plan } = await supabase
+  const { data: plan, error: planError } = await supabase
     .from('payment_plans')
     .select('id, status, stripe_customer_id')
     .eq('registration_id', reg.id)
     .maybeSingle();
+  if (planError) {
+    console.error('updatePlanPaymentMethod plan:', planError.message);
+    return { ok: false, error: 'We could not load the payment plan. Please try again.' };
+  }
   if (!plan?.stripe_customer_id || !['active', 'paused', 'failed'].includes(plan.status)) {
     return { ok: false, error: 'There is no payment plan to update on this registration.' };
   }

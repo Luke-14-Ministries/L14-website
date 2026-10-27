@@ -29,12 +29,16 @@ export async function requestCancellation({ registrationId, participantIds, reas
 
   // One open request at a time. A family clicking twice should not produce two
   // queue items staff have to reconcile against each other.
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('registration_cancellation_requests')
     .select('id')
     .eq('registration_id', registrationId)
     .eq('status', 'open')
     .maybeSingle();
+  if (existingError) {
+    console.error('requestCancellation:', existingError.message);
+    return { ok: false, error: 'That request could not be sent. Please try again.' };
+  }
   if (existing) {
     return {
       ok: false,
