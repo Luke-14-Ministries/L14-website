@@ -3274,3 +3274,25 @@ The Review card now opens with the decided people — waitlisted in amber with r
 whom; confirmed as a plain line — each name linking to (and unfolding) their row, its count pill
 summarises them, and the class hint reads *Decided* (or *Decided — the deposit is still owed*).
 Rows from before 0128 have no stamp and say "no reason recorded".
+
+## 2026-10-26 — The registration page: week tabs, one Money card, cards open only while there is work
+
+Lawrence: the staff registration page had ballooned. **Still one page per registration** — approving,
+the deposit, payments, notes and the waitlist all belong to one registration — but the header's
+"Registered for" list is now a row of **week tabs**, one per registration of the household ("Week 1",
+"Week 2" from *Camp Celebrate … — Week n*; any other event by its full name; dates under it, full
+name and people in the tab's title). A tab carries an **amber dot while that registration waits on
+staff** — someone submitted (not while waiting on the family, as the nav badge counts it), an unread
+family reply, on hold, an activity waiver outstanding, or `registration_review`'s deposit-short flag
+(Payments read only) — read in `page.jsx` for every registration of the household, errors thrown.
+A single registration still gets its one tab; a registration whose people are all cancelled is greyed.
+The tabs replace the "*Event* registration details" heading. **Order**: header and tabs; the waiver
+notice; Review; scholarship requests; notes to and from the family (and the family's registration
+notes); People on this week; **Money** — one folding card holding the balance summary, the
+deposit-short notice, Payments, Fees and *How this registration is being paid*, its bar saying
+*Owed $x* / *Credit $x* / *Paid in full* / *Nothing owed*; Family contact (now a folding card);
+Signed agreements. `#payments` and `#plan` stay sections with those ids, and the Money card opens
+itself for them (`Panel`'s `opensFor` takes a list). **Open or folded on arrival** follows Lawrence's
+rule, "default open when items are outstanding, folded when done" — each card's rule is written
+beside it in `RegistrationManager.jsx`; Review ignores the *deposit waived* flag (a decision already
+made). Nothing is remembered between visits, as before; a link still opens a folded card.
