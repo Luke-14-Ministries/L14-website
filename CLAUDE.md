@@ -35,7 +35,7 @@ is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as
 working checklist is `DO-THIS-NEXT.md`; open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0133`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0134`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -373,7 +373,8 @@ registration, the family's dashboard card and Activities page (`signActivityWaiv
 never automatic, one email per household through `lib/email.js`, each logged to `message_log`.
 Staff see what was sent in **Emails sent** on each registration page and **Recently sent** on Email
 Families (`loadEmailLog()` in `lib/emailLog.js`); since `0132` a send keeps Resend's message id
-(`provider_message_id`), linked as *delivery*.
+(`provider_message_id`), linked as *delivery*. Since `0134` the plain text as sent is kept too (`body_text`, under
+*What it said* on each line); staff read it, families do not read `message_log`.
 Volunteers arrive a day early (`events.volunteer_arrives_on`).
 Data-deletion requests: `/account/delete-data` → `/admin/deletion-requests`; nothing is deleted
 automatically.

@@ -169,6 +169,17 @@ export async function sendEmail(
       status: sent.ok ? 'sent' : 'failed',
       error: sent.error ? sent.error.slice(0, 1000) : null,
       provider_message_id: sent.id,
+      // What it said (0134): the body as plain text, tags stripped -- the
+      // shell around it is the same for every email.
+      body_text: `${m.title}\n\n${m.body}`
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+        .slice(0, 20000),
     });
     if (logErr) console.error(`[plans] message_log insert failed (${m.templateKey}): ${logErr.message}`);
   } catch (e) {

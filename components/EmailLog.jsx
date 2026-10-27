@@ -65,6 +65,15 @@ export default function EmailLog({ emails, showHousehold = false, eventOf = null
               )}
             </div>
             {m.error && <p className="mt-0.5 text-xs text-red-700">{m.error}</p>}
+            {/* What it said (0134), folded: the same left ▶ as every fold. */}
+            {m.body ? (
+              <details className="mt-1">
+                <summary className="fold-summary cursor-pointer text-xs font-semibold text-brand">What it said</summary>
+                <pre className="mt-1 whitespace-pre-wrap rounded-sm border border-neutral-200 bg-neutral-50 p-3 font-sans text-sm text-neutral-800">
+                  {m.body}
+                </pre>
+              </details>
+            ) : null}
           </li>
         );
       })}

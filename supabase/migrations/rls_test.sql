@@ -1487,6 +1487,12 @@ begin
                                  'With an id', 'sent', null, '  re_123abc  ') into logId;
   select count(*) into n from public.message_log where id = logId and provider_message_id = 're_123abc';
   perform pg_temp.expect('log_family_email keeps the mail provider''s message id (0132)', n, 1);
+  select public.log_family_email(hA, regA, 'a@example.test', 'family_update',
+                                 'With the words', 'sent', null, null, '  Hello,
+
+The horses need a waiver.  ') into logId;
+  select count(*) into n from public.message_log where id = logId and body_text like 'Hello,%waiver.';
+  perform pg_temp.expect('log_family_email keeps the text as sent (0134)', n, 1);
   perform pg_temp.expect_denied('log_family_email refuses another template (0120)',
     format('select public.log_family_email(%L, null, ''a@example.test'', ''welcome'', ''Hi'', ''sent'')', hA));
   perform pg_temp.expect_denied('log_family_email refuses a registration that is not the household''s (0120)',

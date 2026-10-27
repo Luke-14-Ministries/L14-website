@@ -230,6 +230,8 @@ export async function sendFamilyEmail({
       p_status: status,
       p_error: sent.ok ? null : sent.error ?? 'Not sent.',
       p_provider_message_id: sent.ok ? sent.id ?? null : null,
+      // What it said, as plain text (0134), so "what did we tell them?" has an answer.
+      p_body_text: mail.text ?? null,
     });
     if (logError) console.error('log_family_email:', logError.message);
     results.push({
