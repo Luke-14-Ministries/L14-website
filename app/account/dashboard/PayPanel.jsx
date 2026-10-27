@@ -87,7 +87,7 @@ export default function PayPanel({
     return clearing > 0 ? (
       <span
         className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-sm font-semibold"
-        title="A bank transfer takes a few days to clear. Nothing more to do."
+        title="A bank transfer may take a few days to clear. Nothing more to do."
       >
         Paid — {dollars(clearing)} clearing the bank ⏳
       </span>
@@ -228,7 +228,7 @@ export default function PayPanel({
 
       {method === 'bank' && (
         <p className="text-xs text-neutral-500 mb-3">
-          Bank transfers take a few days to clear, so your payment will show as
+          Bank transfers may take a few days to clear, so your payment will show as
           &ldquo;clearing&rdquo; until it settles.
           {returnedFeeDisclosure(returnedFeeCents) && <> {returnedFeeDisclosure(returnedFeeCents)}</>}
         </p>

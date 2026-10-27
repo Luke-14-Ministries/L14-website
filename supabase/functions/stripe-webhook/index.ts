@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
       <tr><td style="padding:4px 12px 4px 0;color:#555">Method</td><td style="padding:4px 0;text-align:right">${method === 'bank_transfer' ? 'Bank transfer' : 'Card'}</td></tr>
       <tr><td style="padding:4px 12px 4px 0;color:#555">Date</td><td style="padding:4px 0;text-align:right">${gToday}</td></tr>
     </table>
-    ${received ? '' : `<p style="color:#8a6d1a;background:#fdf6e3;border:1px solid #f0e0b0;border-radius:6px;padding:10px 14px">Bank transfers take a few days to clear. A final receipt follows once it settles; nothing more is needed from you.</p>`}
+    ${received ? '' : `<p style="color:#8a6d1a;background:#fdf6e3;border:1px solid #f0e0b0;border-radius:6px;padding:10px 14px">Bank transfers may take a few days to clear. A final receipt follows once it settles; nothing more is needed from you.</p>`}
     <p style="font-size:13px;color:#555">Your generosity helps families affected by disability find community and connection. Thank you.</p>
     <p style="font-size:12px;color:#888">Luke 14 Ministries is a registered 501(c)(3) tax-exempt organization (EIN 82-2389397). Your donation is tax-deductible to the extent allowed by law, and no goods or services were provided in exchange for this contribution. Please keep this receipt for your records. Questions? <a href="mailto:giving@luke14ministries.net" style="color:#14606a">giving@luke14ministries.net</a> · (423) 748-4954.</p>
   </div>
@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
               : '';
           const bankNote = received
             ? ''
-            : `<p style="color:#8a6d1a;background:#fdf6e3;border:1px solid #f0e0b0;border-radius:6px;padding:10px 14px">Your bank transfer is on its way. It takes a few days to clear, and will show as &ldquo;clearing the bank&rdquo; on your dashboard until it settles. Nothing more is needed from you.</p>`;
+            : `<p style="color:#8a6d1a;background:#fdf6e3;border:1px solid #f0e0b0;border-radius:6px;padding:10px 14px">Your bank transfer is on its way. It may take a few days to clear, and will show as &ldquo;clearing the bank&rdquo; on your dashboard until it settles. Nothing more is needed from you.</p>`;
           const html = `
 <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#222">
   <div style="background:#14606a;color:#fff;padding:18px 24px;border-radius:8px 8px 0 0">

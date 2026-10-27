@@ -42,7 +42,7 @@ export default async function PaySuccessPage({ searchParams }) {
               <>Your payment has been started. </>
             )}
             {pending
-              ? 'Bank transfers take a few days to clear; it will show as “pending” on your dashboard until it settles, and you don’t need to do anything else.'
+              ? 'Bank transfers may take a few days to clear; it will show as “pending” on your dashboard until it settles, and you don’t need to do anything else.'
               : 'It will appear on your dashboard, and a receipt is on its way.'}
           </p>
           <p className="mt-4 text-xs text-neutral-400">

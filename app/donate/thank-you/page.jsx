@@ -40,7 +40,7 @@ export default async function DonateThankYouPage({ searchParams }) {
               <>Your gift {pending ? 'is on its way' : 'has been received'}.</>
             )}{' '}
             {pending
-              ? 'Bank transfers take a few days to clear — nothing more is needed from you.'
+              ? 'Bank transfers may take a few days to clear — nothing more is needed from you.'
               : 'A receipt for your records is on its way to your email.'}
           </p>
           <p className="mt-4 text-neutral-700">
