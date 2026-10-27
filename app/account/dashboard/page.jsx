@@ -321,7 +321,7 @@ export default async function DashboardPage({ searchParams }) {
   const { data: owedRows, error: owedError } = householdIds.length
     ? await supabase
         .from('activity_waivers_outstanding')
-        .select('registration_id, person_id, activity_id, activity_name, kind, upload_status, review_note')
+        .select('registration_participant_id, registration_id, person_id, activity_id, activity_name, kind, upload_status, review_note')
         .in('household_id', householdIds)
     : { data: [], error: null };
   if (owedError) throw new Error(`Outstanding waivers: ${owedError.message}`);
@@ -331,10 +331,30 @@ export default async function DashboardPage({ searchParams }) {
       if (p.people?.id) firstNameByPerson.set(p.people.id, p.people.first_name ?? '');
     }
   }
+  // Where each line lands on the Activities page (26 Oct 2026: a volunteer's
+  // horseback line opened a page with nowhere to sign it): a camper's own
+  // picker, a volunteer's block, or the event's card for anyone else.
+  // With more than one event on the list, each line names its event -- two
+  // identical "Horseback riding" lines were one per camp week.
+  const roleByParticipant = new Map();
+  const eventNameByReg = new Map();
+  for (const r of regs) {
+    eventNameByReg.set(r.id, r.events?.name ?? '');
+    for (const p of r.registration_participants ?? []) roleByParticipant.set(p.id, p.camp_role);
+  }
+  const owedEvents = new Set((owedRows ?? []).map((o) => o.registration_id));
+  const owedAnchor = (o) => {
+    const role = roleByParticipant.get(o.registration_participant_id);
+    if (role === 'camper') return `person-${o.registration_participant_id}`;
+    if (role === 'volunteer') return `vol-${o.registration_participant_id}`;
+    return `reg-${o.registration_id}`;
+  };
   const waiversOwed = (owedRows ?? [])
     .map((o) => ({
       key: `${o.registration_id}:${o.person_id}:${o.activity_id}:${o.kind}`,
       registrationId: o.registration_id,
+      anchor: owedAnchor(o),
+      eventName: owedEvents.size > 1 ? eventNameByReg.get(o.registration_id) || null : null,
       text:
         o.kind === 'ours'
           ? `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'} needs a waiver signed`
@@ -343,7 +363,7 @@ export default async function DashboardPage({ searchParams }) {
               `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'}: camp staff couldn't accept the confirmation (${o.review_note || 'no reason given'}) — please upload it again`
             : `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'}: upload the outfitter's confirmation`,
     }))
-    .sort((a, b) => a.text.localeCompare(b.text));
+    .sort((a, b) => String(a.eventName ?? '').localeCompare(String(b.eventName ?? '')) || a.text.localeCompare(b.text));
 
   // Support-profile status per person. Registration ends by promising a fuller
   // form for each attendee; this is how the family finds it, and how they can
@@ -1004,18 +1024,18 @@ export default async function DashboardPage({ searchParams }) {
         {waiversOwed.length > 0 && (
           <div className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-5">
             <p className="font-semibold text-amber-900">
-              {waiversOwed.length === 1 ? 'A waiver is needed' : 'Waivers are needed'} for activities
-              you have signed up for
+              {waiversOwed.length === 1 ? 'A waiver still needed' : 'Waivers still needed'}
             </p>
             <ul className="mt-2 space-y-1 text-sm">
               {waiversOwed.map((w) => (
                 <li key={w.key}>
                   <Link
-                    href={`/account/activities/?registration=${w.registrationId}#reg-${w.registrationId}`}
+                    href={`/account/activities/?registration=${w.registrationId}#${w.anchor}`}
                     className="font-semibold text-amber-900 underline"
                   >
                     {w.text}
                   </Link>
+                  {w.eventName && <span className="text-amber-800"> · {w.eventName}</span>}
                 </li>
               ))}
             </ul>
