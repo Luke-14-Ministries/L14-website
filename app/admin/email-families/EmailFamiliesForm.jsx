@@ -64,7 +64,7 @@ export default function EmailFamiliesForm({
     ? familyEmailParts({
         message,
         items: sample.items,
-        activitiesUrl: outstanding && origin ? `${origin}/account/activities/#reg-${sample.registrationId}` : null,
+        activitiesUrl: outstanding && origin ? `${origin}/account/activities/?registration=${sample.registrationId}#reg-${sample.registrationId}` : null,
       }).text
     : '';
 

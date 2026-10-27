@@ -216,7 +216,7 @@ export async function sendFamilyEmail({
       continue;
     }
     if (results.some((r) => r.status !== 'skipped')) await pause(PAUSE_MS);
-    const activitiesUrl = outstandingOnly && origin ? `${origin}/account/activities/#reg-${h.registrationId}` : null;
+    const activitiesUrl = outstandingOnly && origin ? `${origin}/account/activities/?registration=${h.registrationId}#reg-${h.registrationId}` : null;
     const mail = familyUpdateEmail({ origin, subject: subj, message: body, items: h.items, activitiesUrl });
     // Fire-and-tolerate (lib/email.js): a failure is a result, not a throw.
     const sent = await sendEmail({ to: h.email, subject: mail.subject, html: mail.html, text: mail.text });
