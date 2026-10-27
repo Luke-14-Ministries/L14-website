@@ -143,7 +143,7 @@ export default async function PhotographerListPage({ searchParams }) {
   const photoUrlOf = await signedPhotoUrls(supabase, seesPhotos, declined.map((r) => r.personId));
 
   return (
-    <div className="print-sheet mx-auto max-w-3xl bg-white p-8 print:p-0 print:text-[12px] text-neutral-900">
+    <div className="print-sheet mx-auto max-w-3xl bg-white p-8 print:text-[12px] text-neutral-900">
       <div className="mb-2 flex items-center justify-between print:hidden">
         <h1 className="text-xl font-bold">Photographer&rsquo;s list</h1>
         <PrintButton />
