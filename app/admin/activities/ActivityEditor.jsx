@@ -25,30 +25,7 @@ import { activityDayBounds, formatDayShort } from '@/lib/events';
 // file, by design (0052): these are times AT CAMP, stored as a date and two
 // times of day, and the moment anything converts them a boarding time is an
 // hour out at the dock.
-const fmtDay = (iso) => {
-  if (!iso) return '';
-  const [y, m, d] = String(iso).split('-').map(Number);
-  if (!y) return iso;
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
-export const fmtTime = (t) => {
-  if (!t) return '';
-  const [h, min] = String(t).split(':').map(Number);
-  if (Number.isNaN(h)) return t;
-  const ampm = h >= 12 ? 'pm' : 'am';
-  const hh = h % 12 === 0 ? 12 : h % 12;
-  return min ? `${hh}:${String(min).padStart(2, '0')}${ampm}` : `${hh}${ampm}`;
-};
-
-export const slotLabel = (s) =>
-  `${fmtDay(s.slot_date)} ${fmtTime(s.start_time)}–${fmtTime(s.end_time)}${
-    s.label ? ` · ${s.label}` : ''
-  }`;
+import { fmtDay, fmtTime, slotLabel } from '@/lib/activitySlots';
 
 const input = 'w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm';
 const label = 'block text-xs font-semibold text-neutral-700 mb-0.5';

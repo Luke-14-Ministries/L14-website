@@ -23,12 +23,12 @@ import { useId, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { reviewWaiverUpload } from './actions';
 import { waiverReviewPill } from '@/lib/format';
+// The queue row an awaiting pill links to.
+import { checkAnchor } from '@/lib/waiverAnchors';
 
 // Lawrence's examples (26 Oct): wrong file, unreadable, low resolution.
 const QUICK_REASONS = ['Wrong file', "Can't read it", 'Picture too small', 'Not signed'];
 
-// The queue row an awaiting pill links to.
-export const checkAnchor = (uploadId) => `check-${uploadId}`;
 
 function reviewedLine(upload) {
   return upload.reviewedAt

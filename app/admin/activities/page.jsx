@@ -2,9 +2,11 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow, dayInMorristown } from '@/lib/events';
-import { ActivityEditor, AddActivity, ActivityCard, SlotEditor, slotLabel } from './ActivityEditor';
+import { ActivityEditor, AddActivity, ActivityCard, SlotEditor } from './ActivityEditor';
+import { slotLabel } from '@/lib/activitySlots';
 import EventFilter from '@/components/EventFilter';
-import ReviewActions, { WaiverStatusPill, WaiverFileLink, checkAnchor } from './WaiverReview';
+import ReviewActions, { WaiverStatusPill, WaiverFileLink } from './WaiverReview';
+import { checkAnchor } from '@/lib/waiverAnchors';
 
 export const metadata = { title: 'Activities — Staff Admin' };
 
