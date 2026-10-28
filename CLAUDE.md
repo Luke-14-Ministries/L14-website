@@ -32,7 +32,7 @@ Two constraints shape every decision:
 
 **Phase 3: built, in staff testing** on the preview site, Stripe in test mode. **Testing Script 6**
 is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as the record). The
-working checklist is `DO-THIS-NEXT.md` (rewritten 28 Oct); going live is `Luke14-Go-Live-Runbook.md`, beside it; open policy questions are in `Luke14-Staff-Questions.md` §1.
+working checklist is `DO-THIS-NEXT.md` (rewritten 28 Oct; its *Go live* section is the go-live checklist, steps A1–C11); open policy questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
 **`0142`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
@@ -63,7 +63,7 @@ browser again.
 `disabled` placeholders. The public newsletter page links out to a Google Form (whether to replace it
 with an on-site sign-up is a design question). Reminder-email wording waits on staff.
 
-**Next, in order (go-live, Phase 4 — the steps are the Go-Live Runbook, A1–C11):**
+**Next, in order (go-live, Phase 4 — the steps are DO-THIS-NEXT *Go live*, A1–C11):**
 
 1. **Purge ALL test data** from production. Everything after depends on it.
 2. **Live Stripe keys**, and **all three** live-mode webhooks — `stripe-webhook`,
@@ -451,7 +451,7 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
   WordPress** (older documents are wrong).
 - **The registrar is Squarespace until launch day**, when the domain transfers to Cloudflare
   Registrar in the same DNS session that points it at Vercel. Until then nobody edits the registrant
-  contact at Squarespace (60-day transfer lock). Steps: the Go-Live Runbook, stage C.
+  contact at Squarespace (60-day transfer lock). Steps: DO-THIS-NEXT *Go live*, stage C.
 - **Mail is Microsoft 365** — MX `luke14ministries-net.mail.protection.outlook.com`, plus an `MS=`
   verification token.
 - **SPF is `v=spf1 include:spf.protection.outlook.com ~all`** — a *soft* fail (`~all`, seen 28 Oct 2026; it was `-all` on 7 Aug). Adding a sender means
@@ -517,7 +517,7 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   never add `admin@` as a verified email on a personal GitHub account.
 - **Do not point the domain.** `luke14ministries.net` serves the ministry's **Squarespace** site;
   pointing it retires that site — a board decision, Phase 4, and on that day the registration moves
-  to Cloudflare in the same session (the Go-Live Runbook, stage C).
+  to Cloudflare in the same session (DO-THIS-NEXT *Go live*, stage C).
 - **Record decisions in `DECISIONS.md`** — one short entry per real choice, written when it is made,
   newest at the bottom. Dated narrative goes there, not here.
 - **Check this file's numbers before trusting them, and fix any that are wrong in the same
@@ -574,8 +574,8 @@ SharePoint library *Luke 14 Ministries Team Site — Website* (Markdown in each 
   16 October build list (`01`).
 - `Luke14-Testing-Script-6.md` — the current test script; `Luke14-Testing-Script-5.md` is the
   record (`01`).
-- `DO-THIS-NEXT.md` — the working checklist (`02 Accounts and Setup`).
-- `Luke14-Go-Live-Runbook.md` — going live in three sittings, every key, record and webhook (`02`).
+- `DO-THIS-NEXT.md` — the working checklist, including going live in three sittings with every key,
+  DNS record and webhook to move (`02 Accounts and Setup`).
 - `Luke14-Account-Register.xlsx` — every account, owner and second admin; no passwords, ever (`02`).
 - `Luke14-Web-Admin-Handbook.md` — procedures, for the second admin (root).
 
