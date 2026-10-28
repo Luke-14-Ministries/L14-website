@@ -30,25 +30,11 @@ export default function HostASpeakerPage() {
             connect.
           </p>
           <p>
-            In addition to ministry-focused talks, our founder{' '}
-            <strong>Julia Erman</strong> shares her powerful keynote,{' '}
-            <strong>&ldquo;Your Story Matters,&rdquo;</strong> a heartfelt
-            message that helps audiences see how God uses every part of our
-            story&mdash;including seasons of suffering&mdash;to reveal purpose,
-            healing, and calling.
-          </p>
-          <p>
             Use the form below to reach out and invite one of our speakers to
             share encouragement, inspiration, and practical tools for making
             the Church a place where <em>everyone belongs</em>.
           </p>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={asset('/images/tempImage2Ytu2q.jpg')}
-          alt="Luke 14 Ministries speaker"
-          className="mt-10 rounded-lg shadow-sm w-full"
-        />
       </section>
 
       <section className="bg-brand-dark text-white py-16">
@@ -103,41 +89,6 @@ export default function HostASpeakerPage() {
                     what the Bible says about serving those affected by
                     disability.
                   </em>
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-xl font-bold mb-3">
-                Julia Erman &mdash; Keynote Speaker
-              </h3>
-              <div className="prose-site">
-                <p className="font-bold">Your Story Matters</p>
-                <p>
-                  Helping you see suffering as an opportunity to lean into your
-                  unique calling.
-                </p>
-                <p>
-                  Every woman carries a story. Some are filled with triumph and
-                  joy; others hold pain, loss, or quiet perseverance. No matter
-                  what your story looks like, it matters&mdash;and when you
-                  share it, it can bring healing, connection, and hope.
-                </p>
-                <p className="font-bold">About Julia</p>
-                <p>
-                  Julia Erman is a bestselling author, disability advocate, and
-                  dynamic keynote speaker. As a special needs mom, cancer
-                  survivor, and faith leader, Julia speaks with authenticity
-                  and deep compassion.
-                </p>
-                <p>
-                  Through her keynote,{' '}
-                  <strong>&ldquo;Your Story Matters,&rdquo;</strong> Julia
-                  inspires women of faith to embrace their journey, recognize
-                  the value in their experiences, and find courage to share
-                  their stories. Blending heartfelt storytelling with biblical
-                  truth and practical encouragement, Julia reminds every woman
-                  that she is not alone&mdash;and that her story has purpose.
                 </p>
               </div>
             </div>
