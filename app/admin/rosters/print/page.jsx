@@ -3,6 +3,8 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
+import StatusMark from '@/components/StatusMark';
+import { STATUS_LABEL } from '@/lib/format';
 
 export const metadata = { title: 'Print Rosters — Staff Admin' };
 
@@ -126,7 +128,17 @@ export default async function PrintRostersPage({ searchParams }) {
                     </td>
                     <td className="py-1 pr-3">{r.role}</td>
                     <td className="py-1 pr-3">{r.tshirt}</td>
-                    <td className="py-1 pr-3">{r.status}</td>
+                    {/* The shared words, capitalised, and a tick for the one
+                        state that means "coming" (Lawrence, 28 Oct 2026:
+                        glanceable status cells). The others stay words --
+                        submitted, waitlisted and draft are not a yes or a no. */}
+                    <td className="py-1 pr-3">
+                      {r.status === 'confirmed' ? (
+                        <StatusMark state="yes" label={STATUS_LABEL.confirmed} />
+                      ) : (
+                        STATUS_LABEL[r.status] ?? r.status
+                      )}
+                    </td>
                     <td className="py-1 pr-3">{r.household}</td>
                     <td className="py-1">{r.phone}</td>
                   </tr>
