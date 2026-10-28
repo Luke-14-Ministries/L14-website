@@ -454,7 +454,7 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
   contact at Squarespace (60-day transfer lock). Steps: DO-THIS-NEXT W51.
 - **Mail is Microsoft 365** — MX `luke14ministries-net.mail.protection.outlook.com`, plus an `MS=`
   verification token.
-- **SPF is `v=spf1 include:spf.protection.outlook.com -all`** — a *hard* fail. Adding a sender means
+- **SPF is `v=spf1 include:spf.protection.outlook.com ~all`** — a *soft* fail (`~all`, seen 28 Oct 2026; it was `-all` on 7 Aug). Adding a sender means
   editing this exact line; an error silently breaks every staff email. Change it carefully, with
   someone watching, and never as the last task of a session.
 - **DMARC exists but does nothing**: `v=DMARC1; p=none`, no `rua=` reporting address.

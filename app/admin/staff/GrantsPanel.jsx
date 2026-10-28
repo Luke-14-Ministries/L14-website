@@ -105,8 +105,8 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
               <td className="py-1.5 pr-3 font-medium whitespace-nowrap">
                 {label}
                 {PRESET_LEAVES.has(key) && (
-                  <span className="ml-1 text-xs font-normal text-neutral-500" title="Never set by a preset">
-                    (by hand)
+                  <span className="ml-1 text-xs font-normal text-neutral-500" title="Presets never set or remove this area: tick it for each person (Administrator gets it automatically)">
+                    (not in presets)
                   </span>
                 )}
               </td>
