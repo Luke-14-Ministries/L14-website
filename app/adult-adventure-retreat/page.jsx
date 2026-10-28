@@ -2,15 +2,19 @@ import { asset } from '@/lib/site';
 
 export const metadata = { title: 'Adult Adventure Retreat' };
 
-// The 2026 retreat registers on CampSite, through the ministry's existing
-// site (Ellen, 14 Oct 2026): this platform's first retreat is the next one.
-// The links below therefore go to the page that holds the CampSite links,
-// not to the registration wizard here. When registration for a retreat
-// opens on this site, point them at
+// The 2026 retreat registers on CampSite (Ellen, 14 Oct 2026): this
+// platform's first retreat is the next one. The buttons go straight to
+// CampSite, with the two links and labels the old Squarespace page used
+// (Lawrence, 28 Oct 2026). They used to point at that old page, which
+// disappears once luke14ministries.net points at this site. When
+// registration for a retreat opens here, replace both with one button to
 //   /register/family/?program=Adult%20Adventure%20Retreat%20<year>
-// again (the chooser then skips the question the visitor has already
-// answered by being on this page).
-const CURRENT_REGISTRATION = 'https://luke14ministries.net/adultadventureretreat';
+// (the chooser then skips the question the visitor has already answered
+// by being on this page), and drop RegisterButtons' second link.
+const CURRENT_REGISTRATION = {
+  returning: 'https://celebrate.campmanagement.com/p/campers/login_m.php',
+  new: 'https://celebrate.campmanagement.com/p/request_for_info_m.php?action=enroll',
+};
 
 // The hero borrows the BANNER'S PALETTE rather than reproducing the banner at
 // full bleed. Three reasons:
@@ -38,6 +42,31 @@ function Fact({ label, children }) {
   );
 }
 
+// CampSite asks returning campers to sign in and new campers to enrol, so
+// there are two doors, worded as the old site worded them.
+function RegisterButtons({ className }) {
+  return (
+    <>
+      <a
+        href={CURRENT_REGISTRATION.returning}
+        target="_blank"
+        rel="noopener"
+        className={className}
+      >
+        Returning Campers Register Here!
+      </a>
+      <a
+        href={CURRENT_REGISTRATION.new}
+        target="_blank"
+        rel="noopener"
+        className={className}
+      >
+        New Campers Register Here!
+      </a>
+    </>
+  );
+}
+
 export default function AdultAdventureRetreatPage() {
   return (
     <>
@@ -55,7 +84,7 @@ export default function AdultAdventureRetreatPage() {
                 Adult Adventure Retreat
               </h1>
               <p className="mt-4 text-xl text-white/90">
-                A retreat tailored for independent young adults affected by disability
+                A retreat tailored for independent adults with disabilities
                 &mdash; adventure, worship and community in the mountains near Gatlinburg.
               </p>
 
@@ -79,11 +108,9 @@ export default function AdultAdventureRetreatPage() {
               </dl>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
-                <a href={CURRENT_REGISTRATION} className="btn-gold px-8!">
-                  Register for the 2026 Retreat
-                </a>
+                <RegisterButtons className="btn-gold px-8!" />
                 <span className="text-white/80">
-                  Registration for 2026 is on our main site, where it has always been.
+                  Registration for 2026 is on CampSite, where it has always been.
                 </span>
               </div>
             </div>
@@ -128,10 +155,8 @@ export default function AdultAdventureRetreatPage() {
               whenever suits.
             </p>
           </div>
-          <div className="mt-8">
-            <a href={CURRENT_REGISTRATION} className="btn-primary px-8!">
-              Register for the 2026 Retreat
-            </a>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <RegisterButtons className="btn-primary px-8!" />
           </div>
         </div>
       </section>
