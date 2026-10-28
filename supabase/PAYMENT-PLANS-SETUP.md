@@ -53,6 +53,27 @@ also decide whether a family keeps the early discount when a plan fails or is ca
    registration"**: set **Early registration ends** and **Early discount** ($50).
 7. **Try it** with the test script below.
 
+## The three live-mode webhook endpoints (gathered 28 Oct 2026)
+
+Stripe → **Live mode** → Developers → Webhooks → **Add endpoint**, three times. Test-mode endpoints
+do not carry over (none exist in live mode as of 28 Oct). Each takes **exactly** these events, read
+from the functions' code and matching the three test-mode endpoints, which were checked against the
+code the same day. Set each endpoint's **API version to `2023-10-16`**, the version the test
+endpoints use and the functions were written against: a newer version changes the shape of what
+Stripe sends.
+
+| Endpoint URL (`https://nnbcxqxwkivadzognpno.supabase.co/functions/v1/…`) | Events | Its signing secret goes in |
+|---|---|---|
+| `stripe-webhook` (payments and donations) | `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` | `STRIPE_WEBHOOK_SECRET` |
+| `stripe-refund-webhook` (refunds) | `charge.refunded`, `charge.refund.updated`, `refund.created`, `refund.updated`, `refund.failed` | `STRIPE_REFUND_WEBHOOK_SECRET` |
+| `stripe-plans-webhook` (payment plans) | `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `payment_intent.succeeded`, `payment_intent.payment_failed` | `STRIPE_PLANS_WEBHOOK_SECRET` |
+
+The checkout events go to **both** `stripe-webhook` and `stripe-plans-webhook` on purpose: each
+function ignores the sessions that are not its own (by the session's `metadata.kind`). An event left
+off an endpoint fails silently — the money moves in Stripe and the site never hears of it — so tick
+them against this table, then send one test event per endpoint from Stripe's dashboard and look for
+a 200 in its log.
+
 ## Test script (test mode)
 
 Stripe test card `4242 4242 4242 4242` always succeeds. Card `4000 0000 0000 0341` saves
