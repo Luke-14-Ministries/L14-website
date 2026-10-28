@@ -1260,7 +1260,8 @@ function FamilyMessages({ registrationId, messages, unreadIds = [], canWrite = t
                     onClick={markRead}
                     className="font-semibold text-amber-900 underline"
                   >
-                    Mark as read
+                    {/* One stamp covers every unread reply (0126). */}
+                    {unreadIds.length > 1 ? `Mark all ${unreadIds.length} as read` : 'Mark as read'}
                   </button>
                 )}
               </p>
@@ -1731,6 +1732,11 @@ function WeekTab({ reg, active }) {
       <span className="flex items-center gap-1.5 font-semibold">
         {tabEventName(reg.event?.name)}
         {attention.length > 0 && <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />}
+        {/* An unread reply on this week (28 Oct 2026): the conversation is per
+            registration, so the envelope says which tab it is on. */}
+        {attention.includes('unread family reply') && (
+          <span aria-hidden className="text-xs text-amber-700">✉</span>
+        )}
       </span>
       {reg.event?.starts_on && (
         <span className="block text-xs font-normal text-neutral-500">
