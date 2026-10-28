@@ -45,7 +45,8 @@ also decide whether a family keeps the early discount when a plan fails or is ca
    - `STAFF_ALERT_TO` *(optional)*: where failed-plan alerts go. The default is
      `registration@luke14ministries.net`.
 5. **Supabase → Integrations → Cron → Create job**, to run the charger once a day:
-   - Schedule: `45 10 * * *` (10:45 UTC, which is 6:45am Eastern in summer and 5:45am
+   - Schedule: `45 9 * * *` as created 28 Oct 2026 (job `charge-payment-plans-daily`; 9:45 UTC, before the
+     13:00 UTC reminders). The original suggestion was `45 10 * * *` (10:45 UTC, which is 6:45am Eastern in summer and 5:45am
      in winter).
    - Type: Supabase Edge Function, `charge-payment-plans`, method POST.
    - Header: `x-cron-secret` = the `CRON_SECRET` value.
