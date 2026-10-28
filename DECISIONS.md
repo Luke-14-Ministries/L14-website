@@ -3750,3 +3750,15 @@ Lawrence: yes/no and short-status cells on staff print sheets and spreadsheet-st
 ## 28 Oct 2026 — Go-live in three stages; the functions read SITE_URL
 
 Lawrence: go-live is three sittings, not one evening (DO-THIS-NEXT W51). **A**, ready ahead and invisible (Vercel server key and cron secret, Stripe live setup with the three live endpoints idle and their secrets in the vault, the Supabase Cron job, the new domain added to Auth redirects and Turnstile, the Cloudflare copy of the zone checked against the live records). **B**, the money switch after the purge and audit (live Stripe key and the three live signing secrets, the four functions redeployed, small real payments by staff at the preview address). **C**, the address (nameservers, Site URL and `SITE_URL`, the four preview switches). B before C is put to the board as a staff question, since the rule was test keys until launch. To keep C a settings change, `_shared/plans.ts` `SITE` now reads the `SITE_URL` function secret (preview address while unset), and `stripe-webhook`'s receipt link uses it.
+
+## 28 Oct 2026 — A Redeploy of the live commit always builds; the skip rule is a script
+
+Lawrence set `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` in Vercel and pressed Redeploy four times;
+every one was cancelled. The docs-only skip compares against the last successful deployment, and a
+Redeploy changes no files, so it looked like "nothing changed". A changed environment variable only
+reaches the site through a deployment, so go-live steps B1 and C8 would have failed the same way. The
+rule now builds whenever the commit being deployed is the one already live, and otherwise keeps the
+29 Sep and 15 Oct behaviour (skip a Markdown-only change; build if the live commit is not in the
+clone). A one-line version was refused: Vercel caps `ignoreCommand` at 256 characters. It lives in
+`scripts/vercel-ignore.sh`, with comments, and `vercel.json` runs it. To apply a changed variable,
+Redeploy the deployment marked **Current** (a Redeploy of a cancelled docs-only one is still skipped).
