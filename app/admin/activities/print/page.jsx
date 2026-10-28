@@ -320,7 +320,7 @@ export default async function ActivityPrintPage({ searchParams }) {
         <div className="mb-6">
           <SearchSelectLinks
             label="Print"
-            printPrefix="Printed for"
+            printPrefix={false}
             noun={['activity', 'activities']}
             placeholder="Type an activity's name"
             pinned={[

@@ -49,7 +49,9 @@ export default function SearchSelect({
   placeholder = 'Type to search',
   label,
   // Words before the chosen option's name on the printed line, e.g.
-  // "Sheets for". Defaults to the label.
+  // "Sheets for". Defaults to the label. printPrefix={false}: no printed
+  // line -- for a sheet whose own heading already names the person
+  // (Lawrence, 28 Oct 2026: "Printed for: …" over a buddy sheet was redundant).
   printPrefix,
   // [singular, plural] for the count beside the label: "12 buddies".
   noun = ['option', 'options'],
@@ -210,7 +212,7 @@ export default function SearchSelect({
         </ul>
       </div>
       {/* On paper the box is gone; one small line says which sheet this is. */}
-      {selected && !selectedIsPinned && (
+      {selected && !selectedIsPinned && printPrefix !== false && (
         <p className="hidden text-xs text-neutral-500 print:block">
           {(printPrefix ?? label) ? `${printPrefix ?? label}: ` : ''}
           {selected.label}

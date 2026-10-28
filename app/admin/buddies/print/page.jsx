@@ -176,7 +176,7 @@ export default async function BuddyPrintPage({ searchParams }) {
         <div className="mb-6">
           <SearchSelectLinks
             label="Print"
-            printPrefix="Printed for"
+            printPrefix={false}
             noun={['buddy', 'buddies']}
             placeholder="Type a buddy's or a camper's name"
             pinned={[{ value: '', label: 'Every buddy', href: `/admin/buddies/print/?event=${eventId}` }]}
