@@ -28,11 +28,19 @@ Two constraints shape every decision:
 
 ---
 
-## Where things stand — 18 October 2026
+## Where things stand — 28 October 2026
 
-**Phase 3: built, in staff testing** on the preview site, Stripe in test mode. **Testing Script 6**
-is the current script (SharePoint, `01 Plans and Decisions`; Script 5 is kept as the record). The
-working checklist is `DO-THIS-NEXT.md` (rewritten 28 Oct; its *Go live* section is the go-live checklist, steps A1–C11); open policy questions are in `Luke14-Staff-Questions.md` §1.
+**Phase 3: built, in staff testing** on the preview site, the site still on Stripe's test keys.
+**Go-live Stage A is done (28 Oct):** the Vercel server key and cron secret, Stripe live mode prepared
+and idle (three live endpoints, ACH on, branding, customer emails set), the Supabase Cron job, the new
+domain in the Auth redirect list and Turnstile, the Cloudflare copy of the zone checked, the password
+rules, the Microsoft DKIM records in the copy. **Next: G2 (purge all test data), G3 (the security
+audit), G4 (the board's yes), then Stage B and Stage C.** **Testing Script 6** is the current script
+(SharePoint, `01 Plans and Decisions`; Script 5 is kept as the record); its open items are 16.3 (Katie's
+whole family journey on a phone; a question for Larry whether it holds up Stage C) and 13.49b (after
+30 Oct); 17.48 passed on routing, with a reply test in Script 7 after go-live (DO-THIS-NEXT W69). The working checklist is `DO-THIS-NEXT.md` (rewritten
+28 Oct; its *Go live* section is the go-live checklist, steps A1–C11 with the gate G1–G4); open policy
+questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
 **`0142`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
@@ -60,20 +68,30 @@ back at `/auth/callback` with `{{ .ConfirmationURL }}`, links become `?code=` li
 browser again.
 
 **Still open in the code:** the balance-reminder buttons in `app/admin/payments/page.jsx` are
-`disabled` placeholders. The public newsletter page links out to a Google Form (whether to replace it
-with an on-site sign-up is a design question). Reminder-email wording waits on staff.
+`disabled` placeholders (the automatic emails, `0138`, do the reminding; the buttons were never wired).
+The public Newsletter page and the Wheels for Kenya sign-up still link out to Google Forms, and Host a
+Speaker to an Airtable form; the Pray page's form is the site's own since `0141`. Of the automatic
+emails, draft items 5.4 (before camp) and 5.5 (giving statement ready) are not built, and Ellen and
+Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
 
-**Next, in order (go-live, Phase 4 — the steps are DO-THIS-NEXT *Go live*, A1–C11):**
+**Next, in order (go-live, Phase 4 — the steps are DO-THIS-NEXT *Go live*; Stage A is done):**
 
-1. **Purge ALL test data** from production. Everything after depends on it.
-2. **Live Stripe keys**, and **all three** live-mode webhooks — `stripe-webhook`,
-   `stripe-refund-webhook` and `stripe-plans-webhook` (with `STRIPE_PLANS_WEBHOOK_SECRET` and
-   `CRON_SECRET` set; the plans endpoint refuses everything until then). Test endpoints do not
-   carry over; a missed refund webhook fails silently (migration `0054`). Stripe payouts are
-   automatic, daily, no minimum balance (W44, 20 Oct).
-3. ~~Vercel Pro~~ — done, 20 Oct 2026 (see *Hosting*).
-4. Domain pointed and transferred to Cloudflare in one session; the four preview switches reversed
-   together; **archive the 2026 Retreat on Setup.** Board approval gates all of it.
+1. **G1 — Script 6 finished**, or each open item (16.3, 13.49b) accepted as open by Lawrence.
+2. **G2 — Purge ALL test data** from production, bot staff and test logins included, leaving the real
+   staff and the Gibson family (a board member helping test). Everything after depends on it.
+3. **G3 — The security audit** after the purge (the RLS harness, the advisor, `0101`'s mapping, every
+   server action's grant, `npm audit`).
+4. **G4 — The board's yes** for B and C, recorded in `DECISIONS.md`.
+5. **Stage B — the money switch** (staff only, at the preview address): `STRIPE_SECRET_KEY` live in
+   Vercel **Production only** (B1); the live key, the **three** live signing secrets and a new
+   `CRON_SECRET` in Supabase (B2); redeploy the four Stripe functions (B3); small real payments,
+   a refund, a check and a plan by staff (B4). The three live endpoints already exist (A2); a missed
+   refund webhook fails silently (migration `0054`). Stripe payouts are automatic, daily, no minimum
+   balance (W44, 20 Oct).
+6. **Stage C — the address**, one DNS session with a second person watching: nameservers to
+   Cloudflare (C5), the transfer to Cloudflare Registrar (C7), Site URL and `SITE_URL` and
+   `REMINDERS_MODE=live` (C8), the four preview switches reversed together and **the 2026 Retreat
+   archived on Setup** (C9), a phone check (C10), the records (C11). Then Microsoft DKIM signing on.
 
 ---
 
@@ -105,6 +123,9 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
   on localhost as things stand. For a bot round, Lawrence switches Supabase's captcha off
   (Authentication → Attack Protection) and back on afterwards, and resets two-factor on the staff
   bots, which re-enrol on first login (Script 4 and Script 5 rounds). Bots never solve the widget.
+  **Switch it back on the same day.** After the 22 Oct round it was left off until 28 Oct, so
+  sign-up, sign-in and reset ran six days without the bot check; the Turnstile widget on the page
+  shows nothing is wrong, because Supabase is the only place the answer is checked.
 - **A `SECURITY DEFINER` view must filter its own rows.** `program_roster`, `clearance_status` and
   `registration_review` are definer on purpose; each carries its own `where`. `0098` recreated
   `registration_review` without one and any family could read every registration's flags (fixed in
@@ -443,12 +464,20 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
   **All four are reversed together in Phase 4, at launch, and only with board approval.** One early
   publishes a mock-up; one forgotten fails silently for months. Treat them as one checklist item.
 
-### What is in DNS *(verified 7 August 2026)*
+### What is in DNS *(verified 28 October 2026)*
 
 `luke14ministries.net`:
 
-- **Nameservers** `ns01`–`ns04.squarespacedns.com`; the public site is **Squarespace, not
-  WordPress** (older documents are wrong).
+- **Nameservers: eight** — four NSONE and four Squarespace (`ns01`–`ns04.squarespacedns.com`); C5
+  deletes all eight and sets Cloudflare's two (`christina` and `jakub.ns.cloudflare.com`). The public
+  site is **Squarespace, not WordPress** (older documents are wrong). **DNSSEC is off** (no DS record),
+  so nothing blocks the nameserver change.
+- **The Cloudflare copy of the zone exists** (A5, 28 Oct): the zone is added on the Free plan, pending,
+  every record DNS only, checked record for record against the live zone. It also holds two records the
+  live zone does not: Microsoft 365's DKIM CNAMEs `selector1._domainkey` and `selector2._domainkey`
+  (A7); signing is switched on only after C6.
+- **Microsoft 365 also has `autodiscover`, `lyncdiscover` and `sip` CNAMEs** (Outlook and Teams
+  sign-in); keep them.
 - **The registrar is Squarespace until launch day**, when the domain transfers to Cloudflare
   Registrar in the same DNS session that points it at Vercel. Until then nobody edits the registrant
   contact at Squarespace (60-day transfer lock). Steps: DO-THIS-NEXT *Go live*, stage C.
@@ -474,9 +503,12 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   go-live, and only in Vercel's environment settings.
 - **The Supabase `service_role` / secret key bypasses row-level security entirely.** It never
   goes in the browser, in this repository, in SharePoint, or in a chat transcript. Server-side
-  only, from an environment variable, and only where genuinely required. **The site uses it in one
-  place**: `lib/supabase/admin.js`, for the automatic emails (a daily job has no signed-in person);
-  `server-only` fails the build if it is ever imported into browser code. Nothing else may use it.
+  only, from an environment variable, and only where genuinely required. **The site uses it through one
+  client**: `lib/supabase/admin.js`, for the automatic emails (a daily job has no signed-in person) and
+  the prayer list's sign-up, confirm and unsubscribe (`0141`; they work through a secret token no
+  signed-in or anonymous role may read); `server-only` fails the build if it is ever imported into
+  browser code. Nothing else may use it. The key in Vercel is a dedicated Supabase secret key made for
+  Vercel on 28 Oct (A1), Production only.
 - **Row-level security is enforced at the database level**, not in application code. Every table
   holding family data gets RLS policies. A query that works because the app "wouldn't ask for
   that row" is not secured.
@@ -548,8 +580,10 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
 - **Phases 1–2** — the core (schema with RLS, sign-up, wizard, Stripe test mode) and the full staff
   admin. **Complete.**
 - **Phase 3 — now.** Review by real people on the preview URL. Test keys, no real families.
-- **Phase 4 — launch.** Vercel Pro, live Stripe keys, domain pointed, all four preview switches
-  reversed together. Board approval gates it.
+- **Phase 4 — launch, in three sittings** (DO-THIS-NEXT *Go live*). Stage A (ready ahead) done
+  28 Oct; the gate G1–G4; Stage B live Stripe keys with staff-only real payments at the preview
+  address; Stage C the domain pointed and transferred, all four preview switches reversed together.
+  Board approval gates B and C. (Vercel Pro: done 20 Oct.)
 
 ---
 

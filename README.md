@@ -37,7 +37,9 @@ workflow, project layout, and the security rules.
 ## How it deploys
 
 **Vercel** watches `main` and rebuilds on every push that touches the site — a push that changes
-only Markdown documents is skipped, by the `ignoreCommand` in `vercel.json`. Nothing is uploaded by
+only Markdown documents is skipped, by `scripts/vercel-ignore.sh` (run by the `ignoreCommand` in
+`vercel.json`; a Redeploy of the commit already live always builds, which is how a changed
+environment variable reaches the site). Nothing is uploaded by
 hand, and there is no deploy workflow in this repository to maintain — Vercel's GitHub integration
 does the watching.
 
@@ -58,7 +60,8 @@ registration wizard with tracked edits, card and bank payments with receipts, pa
 `supabase/PAYMENT-PLANS-SETUP.md`), scholarships, discounts and refunds, the volunteer application with background checks by Checkr
 file export, giving with year-end statements, and the staff admin — rosters, check-in, dietary and
 medical lists, rooms, buddies, activities, programs, Event Payments, Giving, and Staff & Access,
-where each staff member holds read or write grants on ten areas. Migrations run through `0115`
+where each staff member holds read or write grants on eleven areas (Prayer list since `0141`); the
+automatic reminder emails (`0138`) and the prayer email list. Migrations run through `0142`
 (`supabase/migrations/`); the row-level security harness runs with
 `bash supabase/tests/run_rls_local.sh` and must end `ALL CHECKS PASSED`.
 
@@ -66,11 +69,14 @@ where each staff member holds read or write grants on ten areas. Migrations run 
 18 August 2026 — registration included; it holds while at least 80% of the account's volume is
 gifts, so giving stays on the same account (`DECISIONS.md`, 2026-08-18). Test keys only until launch.
 
-**Before launch (Phase 4, board approval required):** purge all test data, a security audit, live
-Stripe keys with **both** live webhooks, Vercel Pro, the domain pointed, and all four preview
-switches reversed together — `components/PreviewBanner.jsx`, `public/robots.txt`, the
-`robots: { index: false }` block in `app/layout.jsx`, and the "(Preview Build)" title suffix.
-Missing one fails silently.
+**Before launch (Phase 4, in three sittings; board approval required for the last two):** Stage A
+(done 28 Oct 2026: server keys, Stripe live mode prepared with its **three** live webhook endpoints,
+the Cloudflare copy of the domain); then purge all test data and a security audit; Stage B, live
+Stripe keys with staff-only real payments at the preview address; Stage C, the domain pointed and
+transferred to Cloudflare, and all four preview switches reversed together —
+`components/PreviewBanner.jsx`, `public/robots.txt`, the `robots: { index: false }` block in
+`app/layout.jsx`, and the "(Preview Build)" title suffix. Missing one fails silently. Vercel is on
+Pro since 20 Oct 2026. The steps are DO-THIS-NEXT *Go live*.
 
 **Where to read more:** `CLAUDE.md` (the standing brief — what is true now and what not to break),
 `DECISIONS.md` (why), `CONTRIBUTING.md` (how to work), `supabase/PAYMENT-PLANS-SETUP.md`. The
@@ -80,8 +86,9 @@ ministry's SharePoint library.
 ## Content notes
 
 - Some Squarespace video embeds and galleries could not be captured — placeholders are used.
-- Pray, Newsletter and Kenya sign-ups still link to the existing Google Forms; Hazelnut and speaker
-  bookings to the existing Airtable forms.
+- Newsletter and Wheels for Kenya sign-ups still link to the existing Google Forms, and speaker
+  bookings to the existing Airtable form. The Pray page's sign-up is the site's own prayer email list
+  (28 Oct 2026). The Hazelnut Movement is no longer part of Luke 14 and is gone from the site.
 
 ## Project documentation
 

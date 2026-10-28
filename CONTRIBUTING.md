@@ -18,7 +18,9 @@ A **Next.js** application, hosted on **Vercel**. Deployment is automatic: Vercel
 watches the `main` branch, every push triggers a build, and a successful build is live
 within a minute or two. Nothing is ever uploaded by hand. One exception, since 5 September
 2026: a push that changes only Markdown documents (`CLAUDE.md`, this file, `DECISIONS.md`) is
-skipped, because nothing in the site changed — `vercel.json` carries the rule. Vercel keeps
+skipped, because nothing in the site changed — `scripts/vercel-ignore.sh` carries the rule, and
+`vercel.json` runs it. A Redeploy of the commit that is already live always builds (28 Oct 2026),
+because that is how a changed environment variable reaches the site. Vercel keeps
 every build's output for a while so it can roll back, and a documentation edit does not need one.
 
 The preview serves at <https://luke14-ministries.vercel.app>. The ministry's own
@@ -191,15 +193,16 @@ credential visible to the entire internet, and rotating it does not un-publish i
 git keeps history forever.
 
 **No camper data in this repository.** No names, no medical information, no
-background-check paperwork. When registration is built, the application will store a
-yes/no "background check on file" flag and a date; the documents themselves stay in the
-ministry's restricted-access folder.
+background-check paperwork. The application stores only a "background check on file" flag,
+dates, the ministry's one-word verdict and Checkr's identifiers (`CLAUDE.md`, *Security rules*);
+the documents themselves stay in the ministry's restricted-access folder.
 
-**Development uses Stripe test keys only.** Live keys appear at launch, under the
-ministry's own account, and never on a developer's machine.
+**Development uses Stripe test keys only.** Live keys appear at go-live Stage B, under the
+ministry's own account, in Vercel's Production environment and Supabase's function secrets only,
+and never on a developer's machine.
 
-**Two-factor authentication on every account this project touches** — GitHub, and later
-Vercel, Supabase, Stripe and Microsoft 365.
+**Two-factor authentication on every account this project touches** — GitHub, Vercel,
+Supabase, Stripe, Cloudflare, Resend and Microsoft 365.
 
 ---
 
