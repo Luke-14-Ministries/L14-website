@@ -3725,3 +3725,20 @@ every video page. (7) **The Hazelnut Movement is no longer part of Luke 14** —
 ministry. Its page, images, home card, nav and footer links, donation fund and the donate page's three
 Hazelnut lines are gone, its address redirects home, and Julia Erman's leadership entry went with it, as
 on the old site. The staff gift form keeps the fund name for gifts already recorded under it.
+
+## 28 Oct 2026 — Julia Erman and the Hazelnut fund removed; a Luke 14 Party Meals fund; the brochure edited
+
+Lawrence approved, following the Hazelnut Movement's removal earlier the same day. (1) **Julia Erman is
+not part of Luke 14**: Host a Speaker loses "our founder Julia Erman" and her keynote, her speaker section
+and her photo; Darlene, Larry and the ministry team remain. (2) **One fund list**, `lib/funds.js`, read by
+the Donate form, its server-side whitelist and the staff Record a gift form — three copies had drifted
+(the staff form still offered Hazelnut, which the entry above kept on purpose; Lawrence now wants it off
+everywhere). Gifts already recorded keep their fund: the Giving filter, statements and exports read the
+stored rows. (3) **Luke 14 Party Meals** is a fund, replacing the old Squarespace store's "$10 Luke 14
+Party Meal Donation"; Donate says $10 a volunteer is suggested, never required. `stripe-webhook` records
+whatever fund the checkout carries, so no edge function changed. (4) **The brochure**
+(`public/resources/luke-14-ministries-brochure.pdf`) was edited, not rebuilt: its fonts (Public Sans,
+Canva Sans) are not on this machine and the PDF holds only subsets, so an HTML rebuild would have reset
+every panel in another font. `docs/brochure-source/rebuild_brochure.py` (pypdf) drops the cover's Hazelnut
+line and the inside Hazelnut panel, filling that panel with a photo already on the site; no new words. A
+redesign belongs in Canva.
