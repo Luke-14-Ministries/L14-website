@@ -58,7 +58,7 @@ export default async function DonatePage() {
               <p>
                 If you prefer to make your donation via mail, please use{' '}
                 <a
-                  href="https://luke14ministries.net/s/Contribution-and-Pledge-PDF-b48z.pdf"
+                  href="/resources/contribution-and-pledge-form.pdf"
                   target="_blank"
                   rel="noopener"
                   className="text-brand underline"

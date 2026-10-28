@@ -3,6 +3,11 @@ import { asset } from '@/lib/site';
 
 export const metadata = { title: 'Resources' };
 
+// The PDFs are served from public/resources/ (copied from the old Squarespace
+// site, 28 Oct 2026). They were linked at luke14ministries.net/s/..., which
+// stops existing the day the domain points at this site; next.config.mjs
+// redirects those old addresses here. To replace a guide, overwrite the file
+// under the same name and every link keeps working.
 const resources = [
   {
     title: 'Camp Celebrate Family Guide',
@@ -11,7 +16,7 @@ const resources = [
     image:
       asset('/images/70b14bdc-5032-402f-a334-d0a64ef15914.jpg'),
     linkText: 'Download the Family Guide',
-    href: 'https://luke14ministries.net/s/Welcome-to-Camp-Celebrate-Families-Guide.pdf',
+    href: '/resources/camp-celebrate-family-guide.pdf',
   },
   {
     title: 'Camp Celebrate Volunteer Guide',
@@ -20,7 +25,7 @@ const resources = [
     image:
       asset('/images/PXL_20240722_172319434.jpg'),
     linkText: 'Download the Volunteer Guide',
-    href: 'https://luke14ministries.net/s/_Welcome-to-Camp-Celebrate-Volunteer-Guide.pdf',
+    href: '/resources/camp-celebrate-volunteer-guide.pdf',
   },
   {
     title: 'Camp Celebrate Family Fundraising Guide',
@@ -29,7 +34,7 @@ const resources = [
     image:
       asset('/images/DSC_0850__281_29.jpg'),
     linkText: 'Download the Fundraising Guide',
-    href: 'https://luke14ministries.net/s/Camp-Celebrate-Fundraising-Guide-1-z7te.pdf',
+    href: '/resources/camp-celebrate-fundraising-guide.pdf',
   },
   {
     title: 'Camp Celebrate Volunteer Fundraising Guide',
@@ -38,7 +43,7 @@ const resources = [
     image:
       asset('/images/DSC04574.jpg'),
     linkText: 'Click Here',
-    href: 'https://luke14ministries.net/s/VolunteerFundraisingGuideCampCelebrate.pdf',
+    href: '/resources/camp-celebrate-volunteer-fundraising-guide.pdf',
   },
   {
     title: 'Luke 14 Ministries Brochure',
@@ -46,7 +51,7 @@ const resources = [
     image:
       asset('/images/Luke_14_Ministries_Brochure.jpg'),
     linkText: 'Click here to download the brochure',
-    href: 'https://luke14ministries.net/s/Luke-14-Ministries-Brochure-8.pdf',
+    href: '/resources/luke-14-ministries-brochure.pdf',
   },
   {
     title: 'Camp Celebrate Brochure',
@@ -54,7 +59,7 @@ const resources = [
     image:
       asset('/images/Camp_Celebrate_Brochure.jpg'),
     linkText: 'Download the brochure',
-    href: 'https://luke14ministries.net/s/Camp-Celebrate-Brochure-Resource.pdf',
+    href: '/resources/camp-celebrate-brochure.pdf',
   },
   {
     title: 'Wheels For Kenya Brochure',
@@ -62,7 +67,7 @@ const resources = [
     image:
       asset('/images/Wheels_For_Kenya_Brochure.jpg'),
     linkText: 'Download the brochure',
-    href: 'https://luke14ministries.net/s/Wheels-For-Kenya-Brochure-Resource.pdf',
+    href: '/resources/wheels-for-kenya-brochure.pdf',
   },
 ];
 
