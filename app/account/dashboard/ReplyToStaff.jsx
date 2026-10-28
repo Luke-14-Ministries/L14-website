@@ -11,9 +11,8 @@
 //                    in touch." Shown until camp staff have read it (Mark as
 //                    read, or writing back); the reply stays in the thread
 //                    below as "You wrote".
-//   neither          nothing, or (when there is already a conversation) a
-//                    quiet "Write to camp staff…" that opens the same box:
-//                    a family may write at any time.
+//   neither          a quiet "Write to camp staff…" that opens the same box:
+//                    a family may write at any time (offerWrite).
 //
 // One way to answer, in the app (Lawrence): no "or email registration@" line.
 
@@ -91,8 +90,9 @@ export default function ReplyToStaff({
   // staff have read the reply, the "will be in touch" box has done its job.
   repliedAt = null,
   replyUnread = false,
-  // Offer "Write to camp staff…" when nothing is asked: only where there is
-  // already a conversation, so a quiet registration stays quiet.
+  // Offer "Write to camp staff…" when nothing is asked. Since 28 Oct 2026 on
+  // every current registration, so a family can start the conversation
+  // (until then only where one already existed).
   offerWrite = false,
 }) {
   // Set by this visit's send. Beats the server's props while the refresh is

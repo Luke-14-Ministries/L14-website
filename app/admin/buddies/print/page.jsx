@@ -76,10 +76,7 @@ export default async function BuddyPrintPage({ searchParams }) {
           .from('registration_participants')
           .select(
             `id, camp_role, status, program_id,
-             people ( id, first_name, last_name, preferred_name, date_of_birth,
-               person_support ( communication, mobility, personal_care, behaviour_triggers,
-                 redirection_strategies, has_allergies, allergens, allergy_other, allergy_detail, allergy_severity,
-                 has_seizures, seizure_detail, has_rescue_medication, rescue_medication_detail ) ),
+             people ( id, first_name, last_name, preferred_name, date_of_birth ),
              registrations!inner ( event_id, households ( display_name, phone ) )`
           )
           .eq('registrations.event_id', eventId)
@@ -105,6 +102,15 @@ export default async function BuddyPrintPage({ searchParams }) {
       : { data: [], error: null };
   if (lodgingError) throw new Error(`Buddy sheets — rooms: ${lodgingError.message}`);
   const roomOf = new Map((lodgingRows ?? []).map((r) => [r.registration_participant_id, r.lodgings?.name]));
+
+  // The support details come through buddy_sheet_support() (0140): Buddies
+  // read is enough, where reading person_support directly needed Sensitive
+  // read and printed "No support details on file" for everyone else.
+  const { data: supportRows, error: supportError } = camperIds.length
+    ? await supabase.rpc('buddy_sheet_support', { p_participant_ids: [...new Set(camperIds)] })
+    : { data: [], error: null };
+  if (supportError) throw new Error(`Buddy sheets — support details: ${supportError.message}`);
+  const supportByCamper = new Map((supportRows ?? []).map((s) => [s.participant_id, s]));
 
   // Group by buddy: one sheet per volunteer, every camper they are paired with.
   const byBuddy = new Map();
@@ -152,9 +158,10 @@ export default async function BuddyPrintPage({ searchParams }) {
     hint: `with ${listNames(campers.filter(Boolean)) || 'a camper'}`,
   }));
 
+  // Null when the family never saved the support form.
   const supportOf = (p) => {
-    const s = p?.people?.person_support;
-    return Array.isArray(s) ? s[0] ?? null : s ?? null;
+    const s = supportByCamper.get(p?.id);
+    return s?.details_saved ? s : null;
   };
 
   return (

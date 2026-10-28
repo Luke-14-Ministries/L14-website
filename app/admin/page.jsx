@@ -225,7 +225,8 @@ export default async function AdminOverview({ searchParams }) {
       household: regById.get(plan.registration_id)?.household ?? 'Household',
       next: planFailingNext(failing),
     }));
-  const extraCards = (plansStopped > 0 ? 1 : 0) + (plansFailing.length > 0 ? 1 : 0);
+  const extraCards =
+    (plansStopped > 0 ? 1 : 0) + (plansFailing.length > 0 ? 1 : 0) + (replies.length > 0 ? 1 : 0);
 
   return (
     <div>
@@ -233,7 +234,13 @@ export default async function AdminOverview({ searchParams }) {
 
       <div
         className={`grid grid-cols-1 gap-4 mb-8 ${
-          extraCards === 2 ? 'sm:grid-cols-2 lg:grid-cols-5' : extraCards === 1 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'
+          extraCards >= 3
+            ? 'sm:grid-cols-3 lg:grid-cols-6'
+            : extraCards === 2
+              ? 'sm:grid-cols-2 lg:grid-cols-5'
+              : extraCards === 1
+                ? 'sm:grid-cols-2 lg:grid-cols-4'
+                : 'sm:grid-cols-3'
         }`}
       >
         <Stat
@@ -259,6 +266,22 @@ export default async function AdminOverview({ searchParams }) {
           tone={totalPending > 0 ? 'amber' : undefined}
           href="/admin/review/"
         />
+        {/* Unread family replies: one card with the envelope and a count, like
+            the others (Lawrence, 28 Oct 2026: the box was still too much). One
+            reply opens that registration; more open Awaiting review's tab. */}
+        {replies.length > 0 && (
+          <Stat
+            label={replies.length === 1 ? 'Family wrote back' : 'Families wrote back'}
+            sub={replies.length === 1 ? replies[0].family : 'unread replies'}
+            value={<><span aria-hidden className="mr-1 text-2xl">✉</span>{replies.length}</>}
+            tone="amber"
+            href={
+              replies.length === 1
+                ? `/admin/registrations/${replies[0].id}/#family-messages`
+                : '/admin/review/?show=replied'
+            }
+          />
+        )}
         {seesStoppedPlans && plansStopped > 0 && (
           <Stat
             label="Payment plans stopped"
@@ -270,27 +293,6 @@ export default async function AdminOverview({ searchParams }) {
         )}
         {seesStoppedPlans && plansFailing.length > 0 && <FailingPlansCard plans={plansFailing} />}
       </div>
-
-      {/* The same slim box as Awaiting review's (Lawrence, 28 Oct 2026: the full
-          card with its paragraph and the reply's first lines was too big). */}
-      {replies.length > 0 && (
-        <div className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
-          <p className="font-semibold text-amber-900">
-            <span aria-hidden>✉</span>{' '}
-            {replies.length === 1 ? 'A family wrote back' : `${replies.length} families wrote back`}
-          </p>
-          <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
-            {replies.map((r) => (
-              <li key={r.id}>
-                <Link href={`/admin/registrations/${r.id}/#review`} className="font-semibold text-brand underline">
-                  {r.family}
-                </Link>
-                <span className="text-neutral-500"> · {r.event}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       {/* The work queue: families with someone still pending review.
           Given an id (25 Aug) because other pages point at it in words --

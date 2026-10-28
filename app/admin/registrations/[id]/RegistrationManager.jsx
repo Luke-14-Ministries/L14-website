@@ -22,6 +22,7 @@ import {
   setAdjustments,
   addFamilyMessage,
   deleteFamilyMessage,
+  markFamilyReplyRead,
   setParticipantEnrollment,
   setPersonConsent,
   refundPayment,
@@ -1172,9 +1173,11 @@ function HouseholdEditor({ registrationId, household }) {
 // Short notes TO the family — shown on their dashboard the moment they're
 // saved. Kept separate from the staff-internal registration notes. Since 0126
 // this is the whole conversation: the family's replies from their dashboard
-// are in it too, oldest first, highlighted blue. A family's reply cannot be
-// removed (their words are the record); a staff note can.
-function FamilyMessages({ registrationId, messages, canWrite = true, defaultOpen = true }) {
+// are in it too, oldest first, in amber (kept once read: it tells the two
+// voices apart). A family's reply cannot be removed (their words are the
+// record); a staff note can. Unread replies say "New"; Mark as read sits on
+// the latest, and writing back marks them read too (28 Oct 2026).
+function FamilyMessages({ registrationId, messages, unreadIds = [], canWrite = true, defaultOpen = true }) {
   const router = useRouter();
   const [body, setBody] = useState('');
   const [pending, setPending] = useState(false);
@@ -1192,6 +1195,15 @@ function FamilyMessages({ registrationId, messages, canWrite = true, defaultOpen
       router.refresh();
     }
   }
+  async function markRead() {
+    setPending(true);
+    setError('');
+    const res = await markFamilyReplyRead(registrationId);
+    setPending(false);
+    if (!res?.ok) setError(res?.error || 'Could not mark as read.');
+    else router.refresh();
+  }
+  const lastUnread = unreadIds.at(-1);
   async function remove(id) {
     if (!confirm('Remove this note? The family will no longer see it.')) return;
     const res = await deleteFamilyMessage(registrationId, id);
@@ -1219,11 +1231,17 @@ function FamilyMessages({ registrationId, messages, canWrite = true, defaultOpen
             <li
               key={m.id}
               className={`rounded-sm border px-3 py-2 text-sm ${
-                m.fromFamily ? 'border-amber-300 bg-amber-50' : 'border-neutral-200 bg-neutral-50'
+                m.fromFamily
+                  ? unreadIds.includes(m.id)
+                    ? 'border-amber-500 bg-amber-50 ring-1 ring-amber-400'
+                    : 'border-amber-300 bg-amber-50'
+                  : 'border-neutral-200 bg-neutral-50'
               }`}
             >
               {m.fromFamily && (
-                <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-amber-800">Family replied</p>
+                <p className="mb-0.5 text-xs font-bold uppercase tracking-wide text-amber-800">
+                  {unreadIds.includes(m.id) ? '✉ New from the family' : 'From the family'}
+                </p>
               )}
               <p className="text-neutral-800 whitespace-pre-wrap">{m.body}</p>
               <p className="mt-1 flex items-center justify-between text-xs text-neutral-500">
@@ -1233,6 +1251,16 @@ function FamilyMessages({ registrationId, messages, canWrite = true, defaultOpen
                 {canWrite && !m.fromFamily && (
                   <button onClick={() => remove(m.id)} className="text-red-700 underline">
                     Remove
+                  </button>
+                )}
+                {canWrite && m.id === lastUnread && (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={markRead}
+                    className="font-semibold text-amber-900 underline"
+                  >
+                    Mark as read
                   </button>
                 )}
               </p>
@@ -2169,6 +2197,7 @@ export default function RegistrationManager({
         <FamilyMessages
           registrationId={registration.id}
           messages={familyMessages}
+          unreadIds={replyUnread ? (familyReply?.messages ?? []).map((m) => m.id) : []}
           canWrite={canWrite}
           defaultOpen={replyUnread}
         />

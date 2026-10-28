@@ -2,6 +2,7 @@ import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 import VideoEmbed from '@/components/VideoEmbed';
 import { asset } from '@/lib/site';
+import { getCampFacts, campHeadline } from '@/lib/campFacts';
 
 export const metadata = { title: 'Camp Celebrate' };
 
@@ -40,7 +41,10 @@ const features = [
   },
 ];
 
-export default function CampCelebratePage() {
+// The headline follows Setup (getCampFacts, 28 Oct 2026), like Camper and
+// Volunteer Information.
+export default async function CampCelebratePage() {
+  const camp = await getCampFacts();
   return (
     <>
       <PageHero
@@ -53,7 +57,7 @@ export default function CampCelebratePage() {
       <section className="bg-brand-light py-14">
         <div className="container-site text-center max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold">
-            Camp Celebrate 2027 registration is now OPEN!
+            {campHeadline(camp)}
           </h2>
           <p className="mt-4 text-lg">
             Coming as a family, or coming to serve? Pick your door — each page

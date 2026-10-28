@@ -54,7 +54,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Panel, { PanelLink } from './Panel';
-import { reviewRegistration, markFamilyReplyRead } from './actions';
+import { reviewRegistration } from './actions';
 import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
 import { whenInMorristown } from '@/lib/events';
 
@@ -123,18 +123,6 @@ export default function ReviewCard({
   const flags = (review?.flags ?? []).filter((f) => f !== 'creed_not_affirmed');
   const onFamily = Boolean(awaiting?.since);
 
-  function markRead() {
-    setError('');
-    start(async () => {
-      const res = await markFamilyReplyRead(registrationId);
-      if (!res.ok) {
-        setError(res.error);
-        return;
-      }
-      router.refresh();
-    });
-  }
-
   function run(action, extra = {}) {
     setError('');
     start(async () => {
@@ -196,32 +184,14 @@ export default function ReviewCard({
 
   return (
     <Panel title="Review" count={count} id="review" defaultOpen={defaultOpen}>
-      {/* The family replied in the app (0126). First in the card, and amber:
-          it is waiting on staff to read and answer (Lawrence, 26 Oct 2026). */}
+      {/* The family replied in the app (0126). One line since 28 Oct 2026
+          (Lawrence: four notices for one reply was too many): the reply, and
+          Mark as read, are in the conversation below. */}
       {familyReply?.unread && (
-        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
-          <p className="font-bold text-amber-900"><span aria-hidden>✉</span> Family replied {when(familyReply.at)}</p>
-          {(familyReply.messages ?? []).map((m) => (
-            <p key={m.id} className="mt-1 whitespace-pre-wrap text-amber-900">
-              &ldquo;{m.body}&rdquo; <span className="text-xs text-amber-800">· {m.at}</span>
-            </p>
-          ))}
-          <p className="mt-1 text-xs text-amber-900">
-            Their reply put this registration back in front of staff. The whole conversation is in{' '}
-            <PanelLink to="family-messages">Notes to and from the family</PanelLink>
-            ; writing back to them there also marks this as read.
-          </p>
-          {canWrite && (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={markRead}
-              className="btn-outline py-1.5! mt-2 text-sm"
-            >
-              Mark as read
-            </button>
-          )}
-        </div>
+        <p className="mb-3 text-sm text-amber-900">
+          <span aria-hidden>✉</span> <strong>Family replied {when(familyReply.at)}</strong> — read
+          and answer in <PanelLink to="family-messages">Notes to and from the family</PanelLink>.
+        </p>
       )}
       {waitlisted.length > 0 && (
         <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">

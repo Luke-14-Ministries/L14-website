@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 import { asset } from '@/lib/site';
-import { getCampFacts, dayRange } from '@/lib/campFacts';
+import { getCampFacts, campHeadline, dayRange } from '@/lib/campFacts';
 import { formatDueDate } from '@/lib/events';
 import { dollars } from '@/lib/payments';
 
@@ -39,11 +39,7 @@ export default async function VolunteerInformationPage() {
 
       <section className="container-site py-14 max-w-3xl mx-auto text-center">
         <h2 className="text-3xl font-bold">
-          {camp
-            ? camp.open
-              ? `${camp.program} registration is now OPEN!`
-              : `${camp.program} — registration opens soon`
-            : 'Camp Celebrate'}
+          {campHeadline(camp)}
         </h2>
         <div className="prose-site mt-6">
           <p>

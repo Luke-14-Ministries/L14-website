@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { asset } from '@/lib/site';
+import { getCampFacts } from '@/lib/campFacts';
 
 const programs = [
   {
@@ -62,7 +63,10 @@ function ImageCard({ title, href, image, tall }) {
   );
 }
 
-export default function HomePage() {
+// The camp button names the next camp from Setup (getCampFacts, 28 Oct
+// 2026), so it never advertises a summer that has passed.
+export default async function HomePage() {
+  const camp = await getCampFacts();
   return (
     <>
       <section
@@ -81,7 +85,7 @@ export default function HomePage() {
           </h1>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link href="/camp-celebrate" className="btn-primary">
-              Camp Celebrate 2027
+              {camp?.program ?? 'Camp Celebrate'}
             </Link>
             <Link href="/donate" className="btn-gold">
               Donate

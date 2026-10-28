@@ -1,4 +1,5 @@
--- Checks for migration 0138 (the automatic emails' tables). Run after
+-- Checks for migration 0138 (the automatic emails' tables), and the print
+-- sheets' definer functions 0139 and 0140. Run after
 -- supabase_stubs.sql, every migration, and payment_plans_seed.sql:
 --   L14_DB=l14_rem bash supabase/tests/run_rls_local.sh supabase/tests/payment_plans_seed.sql
 --   psql ... -d l14_rem -f supabase/tests/reminders_rules.sql
@@ -108,6 +109,40 @@ begin
   select count(*) into n from public.activity_safety_flags(array['20000000-0000-0000-0000-000000000001'::uuid]);
   if n <> 0 then raise exception 'FAIL 5: a stranger read % flag rows', n; end if;
   raise notice 'PASS 5 a stranger reads no flags';
+end $$;
+rollback;
+
+\echo == 6 buddy_sheet_support (0140): Buddies read, paired campers only, never a family
+insert into public.buddy_assignments (event_id, buddy_participant_id, camper_participant_id)
+values ((select event_id from public.registrations where id = '50000000-0000-0000-0000-000000000001'),
+        '60000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000001');
+update public.person_support set communication = 'Uses a few signs' where person_id = '20000000-0000-0000-0000-000000000001';
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare r record; n int;
+begin
+  select * into r from public.buddy_sheet_support(array['60000000-0000-0000-0000-000000000001'::uuid]);
+  if r.participant_id is null or not r.details_saved or r.communication <> 'Uses a few signs'
+     or r.allergy_detail <> 'hives and swelling' then
+    raise exception 'FAIL 6: support read %', row_to_json(r);
+  end if;
+  select count(*) into n from public.buddy_sheet_support(array['60000000-0000-0000-0000-000000000002'::uuid]);
+  if n <> 0 then raise exception 'FAIL 6: an unpaired person (the buddy) returned % rows', n; end if;
+  raise notice 'PASS 6 Buddies read gets a paired camper''s sheet details, and only theirs';
+end $$;
+rollback;
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000ff',true) \g /dev/null
+do $$
+declare n int;
+begin
+  select count(*) into n from public.buddy_sheet_support(array['60000000-0000-0000-0000-000000000001'::uuid]);
+  if n <> 0 then raise exception 'FAIL 6: a stranger read % support rows', n; end if;
+  raise notice 'PASS 6 a stranger reads no buddy-sheet details';
 end $$;
 rollback;
 

@@ -1377,7 +1377,10 @@ export default async function DashboardPage({ searchParams }) {
                         awaitingReason={r.awaiting_family_reason ?? null}
                         repliedAt={r.family_replied_at ?? null}
                         replyUnread={Boolean(r.family_reply_unread)}
-                        offerWrite={(msgsByReg.get(r.id) ?? []).length > 0}
+                        // Every current registration (Lawrence, 28 Oct 2026, Script 6
+                        // 17.22: with no conversation yet there was no way to start
+                        // one). A past event's card stays quiet.
+                        offerWrite={!isPast(r)}
                       />
 
                       {/* Staff put the registration on hold to re-check a
