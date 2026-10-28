@@ -1368,8 +1368,10 @@ export default async function DashboardPage({ searchParams }) {
                           (0089, 15 Oct 2026). Amber, because it is the family's
                           move; since 0126 the family answers right here, which
                           clears it and puts the registration back in front of
-                          staff, and the box turns calm ("Your reply was
-                          sent…"). Always rendered, so its thank-you line
+                          staff, and the box turns calm. Since 28 Oct 2026 the
+                          same card carries the whole thread (staff notes and
+                          the family's replies), folded when there is nothing
+                          new to read. Always rendered, so its "Sent" line
                           survives the refresh after a send. */}
                       <ReplyToStaff
                         registrationId={r.id}
@@ -1381,6 +1383,11 @@ export default async function DashboardPage({ searchParams }) {
                         // 17.22: with no conversation yet there was no way to start
                         // one). A past event's card stays quiet.
                         offerWrite={!isPast(r)}
+                        messages={(msgsByReg.get(r.id) ?? []).map((m) => ({
+                          body: m.body,
+                          at: dayInMorristown(m.created_at),
+                          fromFamily: m.author_kind === 'family',
+                        }))}
                       />
 
                       {/* Staff put the registration on hold to re-check a
@@ -1399,34 +1406,6 @@ export default async function DashboardPage({ searchParams }) {
                             </a>
                             .
                           </p>
-                        </div>
-                      )}
-
-                      {/* Notes FROM camp staff — e.g. "We added a $100
-                          scholarship credit to your registration on 8/17." —
-                          and, since 0126, the family's own replies, oldest
-                          first, so the two sides read one thread. */}
-                      {(msgsByReg.get(r.id) ?? []).length > 0 && (
-                        <div className="mt-3 rounded-sm border border-brand/30 bg-brand-light/50 p-3">
-                          <p className="text-sm font-semibold text-brand-dark mb-1">
-                            Notes from camp staff
-                          </p>
-                          <ul className="space-y-1 text-sm text-neutral-700">
-                            {(msgsByReg.get(r.id) ?? []).map((m, i) => (
-                              <li
-                                key={i}
-                                className={m.author_kind === 'family' ? 'border-l-2 border-brand/40 pl-2' : ''}
-                              >
-                                {m.author_kind === 'family' && (
-                                  <span className="font-semibold text-neutral-800">You wrote: </span>
-                                )}
-                                <span className="whitespace-pre-wrap">{m.body}</span>{' '}
-                                <span className="text-xs text-neutral-500">
-                                  · {dayInMorristown(m.created_at)}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
                         </div>
                       )}
 
