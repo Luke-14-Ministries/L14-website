@@ -1,5 +1,6 @@
 import PageHero from '@/components/PageHero';
-import { asset } from '@/lib/site';
+import { asset, site } from '@/lib/site';
+import PrayerSignup from './PrayerSignup';
 
 export const metadata = { title: 'Pray' };
 
@@ -22,17 +23,28 @@ export default function PrayPage() {
           <p>
             Once you&rsquo;ve added us to your prayer list, you can follow us
             on social media to learn about our current needs, and sign up for
-            our prayer team below!
+            our prayer list below!
           </p>
         </div>
-        <a
-          href="https://docs.google.com/forms/d/e/1FAIpQLScqxcUlvDJkws9tDfSTEXqSstscSm_kzovkWCHUX1KFHa6DGg/viewform"
-          target="_blank"
-          rel="noopener"
-          className="btn-primary mt-10 inline-block text-lg"
-        >
-          Join Our Prayer Team
-        </a>
+        {/* The prayer list (0141, Lawrence 28 Oct 2026), in place of the
+            Google Form: a sign-up here, the prayer team's emails to the list,
+            and an unsubscribe link in every one. Requests go to the team's
+            address, not through the site. */}
+        <div className="mx-auto mt-10 max-w-md rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
+          <h2 className="mb-1 text-2xl font-bold">Join the prayer list</h2>
+          <p className="mb-5 text-neutral-600">
+            Prayer emails from our prayer team, now and then. Leave any time with the link at the
+            bottom of each one.
+          </p>
+          <PrayerSignup />
+        </div>
+        <p className="mt-8 text-lg">
+          Have a prayer request? Send it to{' '}
+          <a href={`mailto:${site.emails.pray}`} className="font-semibold text-brand underline">
+            {site.emails.pray}
+          </a>
+          , and our prayer team will pray with you.
+        </p>
       </section>
     </>
   );

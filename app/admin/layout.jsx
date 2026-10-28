@@ -66,6 +66,9 @@ const NAV = [
   // The newsletter list (14 Oct 2026): who has news & updates on, who joined
   // or left lately, and a CSV. Sending stays in Resend for now.
   { href: '/admin/newsletter', label: 'Newsletter', need: 'read:registration', ready: true },
+  // The prayer list (0141, 28 Oct 2026): who is on it, and the prayer team's
+  // emails to it.
+  { href: '/admin/prayer', label: 'Prayer List', need: 'read:prayer', ready: true },
   { href: '/admin/setup', label: 'Setup & Manage Events', need: 'write:setup', ready: true },
   // Accounts subsumes the old Two-Factor Resets page: the same reset lives in
   // each row's menu, without typing an email address. /admin/security still
@@ -92,7 +95,7 @@ const SECTIONS = [
   },
   { key: 'requests', label: 'Requests', hrefs: ['/admin/cancellations', '/admin/deletion-requests'] },
   { key: 'money', label: 'Money', hrefs: ['/admin/payments', '/admin/scholarships', '/admin/giving'] },
-  { key: 'admin', label: 'Admin', hrefs: ['/admin/newsletter', '/admin/setup', '/admin/accounts', '/admin/staff'] },
+  { key: 'admin', label: 'Admin', hrefs: ['/admin/newsletter', '/admin/prayer', '/admin/setup', '/admin/accounts', '/admin/staff'] },
 ];
 const TOP = ['/admin', '/admin/review'];
 
