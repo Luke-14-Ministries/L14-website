@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 import { asset } from '@/lib/site';
 
@@ -112,14 +113,9 @@ export default function Luke14PartyPage() {
           ))}
         </div>
         <div className="text-center mt-10">
-          <a
-            href="https://luke14ministries.net/party-memories"
-            target="_blank"
-            rel="noopener"
-            className="btn-primary"
-          >
+          <Link href="/party-memories/" className="btn-primary">
             See More Party Memories
-          </a>
+          </Link>
         </div>
       </section>
     </>
