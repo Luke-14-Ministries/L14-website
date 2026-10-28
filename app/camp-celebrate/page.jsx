@@ -1,8 +1,17 @@
 import Link from 'next/link';
 import PageHero from '@/components/PageHero';
+import VideoEmbed from '@/components/VideoEmbed';
 import { asset } from '@/lib/site';
 
 export const metadata = { title: 'Camp Celebrate' };
+
+// The latest summer's videos, as the old site shows them; the same pair heads
+// Camp Memories (app/camp-memories/page.jsx). After each camp, put the new
+// year's here and add it at the top there.
+const highlights = [
+  { week: 'Week 1', youtube: 'uU4mb2_N4YA' },
+  { week: 'Week 2', youtube: '93X7D2tUgiA' },
+];
 
 const features = [
   {
@@ -134,8 +143,19 @@ export default function CampCelebratePage() {
             </div>
           ))}
         </div>
+        <div className="mt-14 text-center">
+          <h2 className="text-3xl font-bold mb-8">Camp Celebrate 2026 Highlights</h2>
+          <div className="grid gap-8 sm:grid-cols-2">
+            {highlights.map(({ week, youtube }) => (
+              <div key={week}>
+                <h3 className="text-2xl font-bold mb-4">{week}</h3>
+                <VideoEmbed youtube={youtube} title={`Camp Celebrate 2026 ${week} highlights`} />
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="text-center mt-10">
-          <Link href="/camp-memories" className="btn-outline">
+          <Link href="/camp-memories/" className="btn-outline">
             Camp Memories
           </Link>
         </div>

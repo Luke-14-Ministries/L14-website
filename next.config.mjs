@@ -4,7 +4,7 @@
 //
 // The content security policy is REPORT-ONLY for now: browsers log what it
 // would block (DevTools console) and block nothing. It lists what the site
-// really loads -- Turnstile, the YouTube embeds on Camp Memories, Supabase
+// really loads -- Turnstile, the YouTube and Vimeo embeds, Supabase
 // (API, realtime, signed photo links), Vercel Analytics (same-origin
 // /_vercel/*). Stripe Checkout is a full-page redirect, so it needs no entry.
 // Enforce it (rename the header to Content-Security-Policy) once a round of
@@ -19,7 +19,9 @@ const CSP = [
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${SUPABASE}`,
   `connect-src 'self' ${SUPABASE} wss://nnbcxqxwkivadzognpno.supabase.co`,
-  'frame-src https://challenges.cloudflare.com https://www.youtube.com',
+  // YouTube for every video page; Vimeo for the one 2014 video on Camp
+  // Memories (28 Oct 2026). components/VideoEmbed.jsx builds both players.
+  'frame-src https://challenges.cloudflare.com https://www.youtube.com https://player.vimeo.com',
   "form-action 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",

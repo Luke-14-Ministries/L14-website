@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import PageHero from '@/components/PageHero';
+import VideoEmbed from '@/components/VideoEmbed';
 import { asset } from '@/lib/site';
 
 export const metadata = { title: 'Wheels For Kenya' };
@@ -122,8 +123,15 @@ export default function WheelsForKenyaPage() {
             Friends&rsquo; Wheels for the World program. This program takes old
             wheelchairs that have been outgrown or discarded by their original
             users and refurbishes them before distributing them throughout the
-            world!
+            world! Watch this short video to see the process each chair goes
+            through, from the garage where it is stored to its final recipient!
           </p>
+        </div>
+        {/* Joni and Friends' own video, as on the old site. */}
+        <div className="my-8">
+          <VideoEmbed youtube="ROm-SuQDSsc" title="Wheels for the World: a chair's journey" />
+        </div>
+        <div className="prose-site">
           <p>
             In addition to distributing wheelchairs, we are also happy to
             arrange the collection of outgrown or unused wheelchairs! If you
