@@ -16,16 +16,12 @@ import { createClient } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
 import { coverFeeCents } from '@/lib/payments';
 import { verifyTurnstile } from '@/lib/turnstile';
+import { DONATION_FUNDS } from '@/lib/funds';
 
-// NOT exported: a 'use server' file may only export async functions -- any
-// other export crashes the page at runtime. The form keeps its own copy of
-// this list; this one is the server-side validation whitelist.
-const FUNDS = [
-  'General Operating Fund',
-  'Camp Celebrate',
-  'Luke 14 Party',
-  'Wheels for Kenya',
-];
+// The server-side whitelist is the same list the form shows (lib/funds.js).
+// Imported, not exported from here: a 'use server' file may only export async
+// functions -- any other export crashes the page at runtime.
+const FUNDS = DONATION_FUNDS;
 
 // The largest gift taken online (security audit L2, 18 Oct 2026). Above it,
 // card testers get an easy probe and Stripe answers with its own raw error;

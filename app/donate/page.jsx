@@ -53,6 +53,11 @@ export default async function DonatePage() {
                 heart.
               </p>
               <p>
+                Volunteering at the Luke 14 Party? Our Luke 14 Party Meals
+                fund helps feed the volunteers who serve at the Party &mdash;
+                $10 a volunteer is suggested, never required.
+              </p>
+              <p>
                 If you prefer to make your donation via mail, please use{' '}
                 <a
                   href="/resources/contribution-and-pledge-form.pdf"

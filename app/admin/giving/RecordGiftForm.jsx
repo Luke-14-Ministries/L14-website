@@ -7,14 +7,11 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { recordManualGift } from './actions';
+import { DONATION_FUNDS } from '@/lib/funds';
 
-const FUNDS = [
-  'General Operating Fund',
-  'Camp Celebrate',
-  'Luke 14 Party',
-  'The Hazelnut Movement',
-  'Wheels for Kenya',
-];
+// The same funds as the Donate page (lib/funds.js). A gift recorded under a
+// fund since taken off the list keeps it; this form only offers current ones.
+const FUNDS = DONATION_FUNDS;
 
 const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm';
 const labelCls = 'block text-xs font-semibold text-neutral-500 mb-1 whitespace-nowrap';

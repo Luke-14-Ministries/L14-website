@@ -59,7 +59,8 @@ const OLD_PAGES = [
   ['/camp-celebrate-registration', '/camp-celebrate/'],
   ['/support-us', '/donate/'],
   ['/support-us-2', '/donate/'],
-  // The shop (Party t-shirts, meal donations) is not carried over.
+  // The shop is not carried over: its Party t-shirts are gone, and its $10
+  // Party Meal Donation is the Luke 14 Party Meals fund on Donate (lib/funds.js).
   // `:path*` matches zero segments too, so this also catches /store itself.
   ['/store/:path*', '/donate/'],
   // Spun out to another ministry; no longer part of Luke 14 (28 Oct 2026).

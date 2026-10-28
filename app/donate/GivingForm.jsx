@@ -9,14 +9,10 @@ import Link from 'next/link';
 import { createDonationCheckout } from './actions';
 import { coverFeeCents, dollars } from '@/lib/payments';
 import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
+import { DONATION_FUNDS } from '@/lib/funds';
 
 const presets = [25, 50, 100, 250, 500];
-const funds = [
-  'General Operating Fund',
-  'Camp Celebrate',
-  'Luke 14 Party',
-  'Wheels for Kenya',
-];
+const funds = DONATION_FUNDS;
 
 export default function GivingForm({ signedInEmail }) {
   const [amount, setAmount] = useState(50);
