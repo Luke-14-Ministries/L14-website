@@ -64,6 +64,8 @@ const OLD_PAGES = [
   ['/store/:path*', '/donate/'],
   // Spun out to another ministry; no longer part of Luke 14 (28 Oct 2026).
   ['/the-hazelnut-movement', '/'],
+  // Squarespace's own name for the home page.
+  ['/home', '/'],
 ];
 
 // The old site's PDF links (/s/<name>.pdf) -> the copies in public/resources/.

@@ -150,9 +150,7 @@ export default function AdultAdventureRetreatPage() {
               is there to make the adventure bigger, not smaller.
             </p>
             <p>
-              Registering takes a few minutes and holds your place; the medical and
-              support details form can be filled in afterwards from your dashboard,
-              whenever suits.
+              Registering takes a few minutes and holds your place.
             </p>
           </div>
           <div className="mt-8 flex flex-wrap gap-4">
