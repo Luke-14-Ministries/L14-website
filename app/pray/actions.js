@@ -15,7 +15,7 @@ import { verifyTurnstile } from '@/lib/turnstile';
 import { site } from '@/lib/site';
 import { PRAYER_FROM, PRAYER_REPLY_TO, PRAYER_MAX, prayerConfirmEmail } from '@/lib/prayer';
 
-const NOT_ON = `The prayer list sign-up is not switched on yet. Please write to ${site.emails.pray} and the prayer team will add you.`;
+const NOT_ON = `The prayer email list sign-up is not switched on yet. Please write to ${site.emails.pray} and the prayer team will add you.`;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // One confirmation email per address per ten minutes, so the form cannot be
 // used to fill someone's inbox.

@@ -12,14 +12,14 @@ import { confirmPrayerList, unsubscribePrayerList } from './actions';
 const ACTIONS = {
   confirm: {
     run: confirmPrayerList,
-    button: 'Yes, add me to the prayer list',
-    done: (email) => `You are on the prayer list${email ? ` as ${email}` : ''}. Thank you for praying with us.`,
+    button: 'Yes, add me to the prayer email list',
+    done: (email) => `You are on the prayer email list${email ? ` as ${email}` : ''}. Thank you for praying with us.`,
   },
   unsubscribe: {
     run: unsubscribePrayerList,
     button: 'Unsubscribe me',
     done: (email) =>
-      `${email ?? 'This address'} is off the prayer list. No more prayer emails will be sent to it. You can sign up again on the Pray page at any time.`,
+      `${email ?? 'This address'} is off the prayer email list. No more prayer emails will be sent to it. You can sign up again on the Pray page at any time.`,
   },
 };
 

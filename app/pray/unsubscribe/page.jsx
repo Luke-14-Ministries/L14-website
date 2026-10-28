@@ -9,7 +9,7 @@ export default async function PrayerUnsubscribePage({ searchParams }) {
   const token = typeof params?.t === 'string' ? params.t : '';
   return (
     <section className="container-site mx-auto max-w-xl py-16 text-center">
-      <h1 className="text-3xl font-bold">Leave the prayer list</h1>
+      <h1 className="text-3xl font-bold">Leave the prayer email list</h1>
       {token ? (
         <>
           <p className="mt-4 mb-8 text-lg">Press the button and no more prayer emails will be sent to you.</p>

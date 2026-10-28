@@ -8,7 +8,7 @@ export default async function PrayerConfirmPage({ searchParams }) {
   const token = typeof params?.t === 'string' ? params.t : '';
   return (
     <section className="container-site mx-auto max-w-xl py-16 text-center">
-      <h1 className="text-3xl font-bold">Join the prayer list</h1>
+      <h1 className="text-3xl font-bold">Join the prayer email list</h1>
       <p className="mt-4 mb-8 text-lg">Press the button to confirm, and the prayer emails will start coming to you.</p>
       <TokenAction kind="confirm" token={token} />
     </section>

@@ -77,7 +77,7 @@ export default function PrayerSignup() {
       </div>
       <Turnstile onToken={setCaptchaToken} resetKey={captchaBump} action="prayer" />
       <button type="submit" className="btn-primary" disabled={busy}>
-        {busy ? 'Signing up…' : 'Join the prayer list'}
+        {busy ? 'Signing up…' : 'Join the prayer email list'}
       </button>
       {error && (
         <p role="alert" className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 font-semibold text-red-800">
