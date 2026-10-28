@@ -458,7 +458,7 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
   editing this exact line; an error silently breaks every staff email. Change it carefully, with
   someone watching, and never as the last task of a session.
 - **DMARC exists but does nothing**: `v=DMARC1; p=none`, no `rua=` reporting address.
-- **No Mailchimp or other bulk sender is authorised on this domain.**
+- **Mailchimp is DKIM-authenticated on this domain** (`k2._domainkey`, `k3._domainkey` → `dkim2/dkim3.mcsv.net`, found by Cloudflare's scan on 28 Oct 2026; the 7 August check missed them). SPF does not list it and does not need to. The DNS copy and the records to keep are in DO-THIS-NEXT, *Reference*.
 
 ---
 
