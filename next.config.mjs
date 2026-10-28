@@ -39,6 +39,43 @@ const SECURITY_HEADERS = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000' },
 ];
 
+// Addresses from the old Squarespace site (Lawrence, 28 Oct 2026). Once
+// luke14ministries.net points here, links people have saved, printed or
+// shared must still land somewhere sensible; every other old page has a
+// route of the same name here. Permanent (308): the old pages are not
+// coming back. Sources are written without a trailing slash; with
+// trailingSlash: true Next first adds the slash (/general-2 -> /general-2/),
+// then this list applies, so an old link takes two permanent hops (checked
+// with `next start`, 28 Oct). Destinations end in a slash so there is no
+// third. The /s/*.pdf sources are files, which Next leaves slashless: one hop.
+const OLD_PAGES = [
+  ['/adultadventureretreat', '/adult-adventure-retreat/'],
+  ['/young-adults-adventure', '/adult-adventure-retreat/'],
+  ['/general-2', '/volunteer-information/'],
+  ['/about-1', '/mission/'],
+  ['/programs-1', '/camp-celebrate/'],
+  ['/camp-celebrate-registration', '/camp-celebrate/'],
+  ['/support-us', '/donate/'],
+  ['/support-us-2', '/donate/'],
+  // The shop (Party t-shirts, meal donations) is not carried over.
+  // `:path*` matches zero segments too, so this also catches /store itself.
+  ['/store/:path*', '/donate/'],
+  // Spun out to another ministry; no longer part of Luke 14 (28 Oct 2026).
+  ['/the-hazelnut-movement', '/'],
+];
+
+// The old site's PDF links (/s/<name>.pdf) -> the copies in public/resources/.
+const OLD_PDFS = [
+  ['Welcome-to-Camp-Celebrate-Families-Guide', 'camp-celebrate-family-guide'],
+  ['_Welcome-to-Camp-Celebrate-Volunteer-Guide', 'camp-celebrate-volunteer-guide'],
+  ['Camp-Celebrate-Fundraising-Guide-1-z7te', 'camp-celebrate-fundraising-guide'],
+  ['VolunteerFundraisingGuideCampCelebrate', 'camp-celebrate-volunteer-fundraising-guide'],
+  ['Luke-14-Ministries-Brochure-8', 'luke-14-ministries-brochure'],
+  ['Camp-Celebrate-Brochure-Resource', 'camp-celebrate-brochure'],
+  ['Wheels-For-Kenya-Brochure-Resource', 'wheels-for-kenya-brochure'],
+  ['Contribution-and-Pledge-PDF-b48z', 'contribution-and-pledge-form'],
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // `trailingSlash` is a URL preference, not a hosting accommodation. It keeps
@@ -47,6 +84,16 @@ const nextConfig = {
   trailingSlash: true,
   async headers() {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+  },
+  async redirects() {
+    return [
+      ...OLD_PAGES.map(([source, destination]) => ({ source, destination, permanent: true })),
+      ...OLD_PDFS.map(([from, to]) => ({
+        source: `/s/${from}.pdf`,
+        destination: `/resources/${to}.pdf`,
+        permanent: true,
+      })),
+    ];
   },
 };
 
