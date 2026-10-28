@@ -5,6 +5,15 @@ import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
 import { GROUP_ROLE_LABEL, groupNoun, underAgeWords } from '@/lib/activityGroups';
 import { loadActivityGroups } from '../load';
+import StatusMark, { StatusLegend } from '@/components/StatusMark';
+
+// The waiver as a mark beside the word (Lawrence, 28 Oct 2026); the three
+// states keep three marks, and the key line at the top says which is which.
+const WAIVER_MARK = {
+  on_file: { state: 'yes', title: 'Waiver on file' },
+  needed: { state: 'no', title: 'Waiver NEEDED' },
+  checking: { state: 'warn', title: 'Waiver uploaded, not yet checked' },
+};
 
 export const metadata = { title: 'Activity Groups — Print — Staff Admin' };
 
@@ -34,9 +43,11 @@ function Person({ id, people, minAge }) {
         </span>
       )}
       {p.ageUnknown && <span className="ml-1 text-xs font-semibold">age unknown — check</span>}
-      {p.waiver === 'on_file' && <span className="ml-1 text-xs">· waiver ✓</span>}
-      {p.waiver === 'needed' && <span className="ml-1 text-xs font-semibold">· waiver NEEDED</span>}
-      {p.waiver === 'checking' && <span className="ml-1 text-xs font-semibold">· waiver not yet checked</span>}
+      {WAIVER_MARK[p.waiver] && (
+        <span className={`ml-1 text-xs ${p.waiver === 'on_file' ? '' : 'font-semibold'}`}>
+          · waiver <StatusMark {...WAIVER_MARK[p.waiver]} />
+        </span>
+      )}
       {p.ask && <span className="ml-1 text-xs font-semibold">· ask the coordinator</span>}
     </span>
   );
@@ -125,6 +136,17 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
         {event ? ` · ${event.name} · ${event.startsOn} – ${event.endsOn}` : ''}
         {minAge != null ? ` · minimum age ${minAge} (check with camp staff for exceptions)` : ''}
       </p>
+
+      {Object.values(people).some((p) => p?.waiver) && (
+        <StatusLegend
+          className="-mt-4 mb-6"
+          items={[
+            ['yes', 'waiver on file'],
+            ['no', 'waiver needed'],
+            ['warn', 'uploaded, not yet checked'],
+          ]}
+        />
+      )}
 
       {groups.length === 0 && (
         <p className="text-sm text-neutral-500">No {noun.many} have been set up yet.</p>
