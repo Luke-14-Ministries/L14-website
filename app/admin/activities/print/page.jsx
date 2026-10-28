@@ -6,6 +6,28 @@ import BackLink from '@/components/BackLink';
 import { SearchSelectLinks } from '@/components/SearchSelect';
 import { dayInMorristown } from '@/lib/events';
 import { waiverReviewPill } from '@/lib/format';
+import { allergenWords } from '@/lib/support';
+
+// The Health & safety column (0139; Lawrence, 28 Oct 2026). Plain flags, and
+// the allergen's name -- never the narrative (what happens, medications,
+// behaviour). "No details on file" when the family never saved the form, so
+// a blank is never mistaken for "nothing to know".
+const SEVERITY_WORD = { mild: 'mild', severe: 'severe', anaphylaxis: 'anaphylaxis' };
+function safetyFlags(f) {
+  if (!f) return ['No details on file'];
+  if (!f.details_saved) return ['No details on file'];
+  const out = [];
+  if (f.has_allergies) {
+    // allergenWords() names the ticked allergens; allergy_detail is not read.
+    const names = allergenWords({ has_allergies: true, allergens: f.allergens ?? [], allergy_other: f.allergy_other }).join(', ');
+    const sev = SEVERITY_WORD[f.allergy_severity] ? ` — ${SEVERITY_WORD[f.allergy_severity]}` : '';
+    out.push(`Allergy${sev}${names ? `: ${names}` : ''}`);
+  }
+  if (f.has_seizures) out.push('Seizures');
+  if (f.has_rescue_medication) out.push('Rescue medication');
+  if (f.buddy_required) out.push('Needs a buddy');
+  return out;
+}
 
 export const metadata = { title: 'Activity Sheets — Staff Admin' };
 
@@ -16,7 +38,7 @@ export const metadata = { title: 'Activity Sheets — Staff Admin' };
 // signed up, for which sitting, with a box to tick them off.
 //
 // WHAT IT DELIBERATELY DOES NOT CARRY. No allergy text, no medications, no
-// behaviour notes — a FLAG, and "ask the coordinator". That is the line 0061
+// behaviour notes — FLAGS and allergen names (0139, 28 Oct 2026). That is the line 0061
 // drew for program leaders and it holds here for the same two reasons: an area
 // leader needs to know there is something to ask about rather than to read a
 // child's medical history, and this sheet is paper. Paper gets left on a table.
@@ -81,13 +103,24 @@ export default async function ActivityPrintPage({ searchParams }) {
         .select(
           `activity_id, slot_id, status,
            registration_participants ( id, camp_role, person_id, registration_id,
-             people ( first_name, last_name, preferred_name,
-               person_support ( has_allergies, has_seizures, has_rescue_medication, buddy_required ) ),
+             people ( first_name, last_name, preferred_name ),
              registrations ( households ( display_name ) ) )`
         )
         .in('activity_id', activityIds)
     : { data: [], error: null };
   if (signupsError) throw new Error(`Activity sheets — sign-ups: ${signupsError.message}`);
+
+  // The flags come through activity_safety_flags() (0139): Activities read is
+  // enough, where reading person_support directly needed Sensitive read and
+  // left everyone else a column of blanks.
+  const flagPersonIds = [
+    ...new Set((signups ?? []).map((g) => g.registration_participants?.person_id).filter(Boolean)),
+  ];
+  const { data: flagRows, error: flagError } = flagPersonIds.length
+    ? await supabase.rpc('activity_safety_flags', { p_person_ids: flagPersonIds })
+    : { data: [], error: null };
+  if (flagError) throw new Error(`Activity sheets — health & safety: ${flagError.message}`);
+  const flagsByPerson = new Map((flagRows ?? []).map((f) => [f.person_id, f]));
 
   // Provider confirmations (0087): on a provider-run activity the sheet says
   // who has one and who has not, so the day starts with the list, not a hunt.
@@ -147,7 +180,6 @@ export default async function ActivityPrintPage({ searchParams }) {
     const rp = g.registration_participants;
     const agreementId = agreementIdByActivity.get(g.activity_id);
     const pe = rp?.people;
-    const s = Array.isArray(pe?.person_support) ? pe.person_support[0] : pe?.person_support;
     const base = `${pe?.first_name ?? ''} ${pe?.last_name ?? ''}`.trim();
     const preferred =
       pe?.preferred_name && pe.preferred_name !== pe.first_name ? pe.preferred_name : null;
@@ -158,9 +190,7 @@ export default async function ActivityPrintPage({ searchParams }) {
       preferred,
       household: rp?.registrations?.households?.display_name ?? '',
       role: rp?.camp_role,
-      ask: Boolean(
-        s?.has_allergies || s?.has_seizures || s?.has_rescue_medication || s?.buddy_required
-      ),
+      flags: safetyFlags(flagsByPerson.get(rp?.person_id)),
       // The provider's confirmation: null where the activity has no outside
       // provider, 'missing' with no upload, else the upload's review.
       provider: providerIds.has(g.activity_id)
@@ -224,7 +254,7 @@ export default async function ActivityPrintPage({ searchParams }) {
             <th className="w-8 py-1">✓</th>
             <th className="py-1 pr-3">Name</th>
             <th className="py-1 pr-3">Family</th>
-            <th className="py-1">Support</th>
+            <th className="py-1">Health &amp; safety</th>
             {waiverColumn && <th className="py-1 pl-3">Waiver</th>}
           </tr>
         </thead>
@@ -242,8 +272,10 @@ export default async function ActivityPrintPage({ searchParams }) {
               </td>
               <td className="py-1.5 pr-3 text-neutral-600">{r.household}</td>
               <td className="py-1.5">
-                {r.ask ? (
-                  <span className="font-semibold">ask the coordinator</span>
+                {r.flags.length ? (
+                  <span className={r.flags[0] === 'No details on file' ? 'text-neutral-500' : 'font-semibold'}>
+                    {r.flags.join(' · ')}
+                  </span>
                 ) : (
                   <span className="text-neutral-400">&mdash;</span>
                 )}
@@ -311,10 +343,9 @@ export default async function ActivityPrintPage({ searchParams }) {
         </span>
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">
-        One register per activity, per sitting. Names and a flag only &mdash; the detail behind
-        &ldquo;ask the coordinator&rdquo; stays on the Medical &amp; Support page, because this
-        sheet is paper and paper gets left on a table. The <strong>Support</strong> column is
-        about the person, not the activity: it reads the same on every sheet they appear on.
+        One register per activity, per sitting. <strong>Health &amp; safety</strong> shows flags and
+        allergen names only &mdash; the detail stays on the Medical &amp; Support page, because this
+        sheet is paper and paper gets left on a table.
       </p>
       {pickerOptions.length > 1 && (
         <div className="mb-6">

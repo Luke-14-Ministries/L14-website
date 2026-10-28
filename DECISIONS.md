@@ -3696,3 +3696,12 @@ Lawrence: one wording, the "Deposit short — $0.00 of $250.00" style. `reviewCl
 page, the Review card and the roster chip; the review tab and the Payments filter read "Deposit short"
 (the part-paid filter "Deposit short — part paid"). The "A family wrote back" boxes on the Overview and
 Awaiting review lose "— read first": the box is the notice.
+
+## 28 Oct 2026 — Activity sheets: a Health & safety column that every activity leader can read (0139)
+
+Script 6 17.21: the Support column printed "ask the coordinator", which said nothing, and read
+person_support directly, so a leader without Sensitive read got blanks that looked like "nothing to know".
+Now `activity_safety_flags()` (definer; Activities read or Sensitive read; only people with a signup)
+gives yes/no facts and allergen names, and the column — renamed **Health & safety** — prints e.g.
+"Allergy — severe: Peanut · Seizures · Needs a buddy", or "No details on file". Never the narrative
+(what happens, medications, behaviour). Lawrence chose to include the allergen's name.

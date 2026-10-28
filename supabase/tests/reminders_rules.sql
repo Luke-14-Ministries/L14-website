@@ -78,4 +78,37 @@ begin
 exception when unique_violation then raise notice 'PASS 4 a reminder is recorded once';
 end $$;
 
+\echo == 5 activity_safety_flags (0139): flags only, for Activities read, never for a family
+insert into public.activities (id, event_id, name) values ('a0000000-0000-0000-0000-000000000001', (select event_id from public.registrations where id = '50000000-0000-0000-0000-000000000001'), 'Swimming');
+insert into public.activity_signups (registration_participant_id, activity_id) values ('60000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001');
+insert into public.person_support (person_id, has_allergies, allergy_severity, allergens, allergy_detail, details_saved_at)
+values ('20000000-0000-0000-0000-000000000001', true, 'severe', array['peanut'], 'hives and swelling', now())
+on conflict (person_id) do update set has_allergies = true, allergy_severity = 'severe', allergens = array['peanut'], allergy_detail = 'hives and swelling', details_saved_at = now();
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare r record;
+begin
+  select * into r from public.activity_safety_flags(array['20000000-0000-0000-0000-000000000001'::uuid, '20000000-0000-0000-0000-000000000002'::uuid]);
+  if r.person_id is null or not r.has_allergies or r.allergy_severity <> 'severe' or r.allergens <> array['peanut'] then
+    raise exception 'FAIL 5: flags read %', row_to_json(r);
+  end if;
+  raise notice 'PASS 5 Activities read gets the flags and allergen names (and only people with a signup)';
+end $$;
+select count(*) as expect_1_signed_up_person from public.activity_safety_flags(array['20000000-0000-0000-0000-000000000001'::uuid, '20000000-0000-0000-0000-000000000002'::uuid]);
+rollback;
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000ff',true) \g /dev/null
+do $$
+declare n int;
+begin
+  select count(*) into n from public.activity_safety_flags(array['20000000-0000-0000-0000-000000000001'::uuid]);
+  if n <> 0 then raise exception 'FAIL 5: a stranger read % flag rows', n; end if;
+  raise notice 'PASS 5 a stranger reads no flags';
+end $$;
+rollback;
+
 \echo ALL REMINDER CHECKS PASSED
