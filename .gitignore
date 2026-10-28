@@ -39,3 +39,8 @@ _to_delete/
 # local file is kept, git just stops watching it. A shared `.claude/settings.json`
 # (no `.local`) would be the place for rules everyone should get.
 .claude/settings.local.json
+
+# Claude Code's own working folders (28 Oct 2026): agent worktrees and the
+# preview launcher. Never part of the site; GitHub Desktop listed them as changes.
+.claude/worktrees/
+.claude/launch.json
