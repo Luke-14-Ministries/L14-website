@@ -30,6 +30,25 @@ function cleanMessage(input) {
   return { subject, body };
 }
 
+// Take someone off the list by hand (28 Oct 2026): for "please take me off"
+// written to pray@ rather than pressed. The same stamp as their own
+// unsubscribe, so they are never emailed again unless they sign up afresh.
+// Service role, because no signed-in role writes the list (0141).
+export async function removeFromPrayerList(id) {
+  const staff = await getStaff();
+  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Changing the prayer list needs Prayer list write.' };
+  const db = createAdminClient();
+  if (!db) return { ok: false, error: 'The site’s server key (SUPABASE_SERVICE_ROLE_KEY) is not set in Vercel, so the list cannot be changed.' };
+  const { error } = await db
+    .from('prayer_list_subscribers')
+    .update({ unsubscribed_at: new Date().toISOString() })
+    .eq('id', String(id ?? ''))
+    .is('unsubscribed_at', null);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/admin/prayer/');
+  return { ok: true };
+}
+
 // A copy to the person writing it, to see how it looks in an inbox. Its
 // unsubscribe link goes to a page that says it is a test.
 export async function sendPrayerTest(input) {

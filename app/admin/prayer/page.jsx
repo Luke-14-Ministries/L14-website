@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { dayInMorristown, whenInMorristown } from '@/lib/events';
 import { site } from '@/lib/site';
 import PrayerComposer from './PrayerComposer';
+import RemoveButton from './RemoveButton';
 
 export const metadata = { title: 'Prayer List — Staff Admin' };
 
@@ -51,7 +52,8 @@ export default async function PrayerListPage() {
       <h2 className="mb-1 text-xl font-bold">Prayer List</h2>
       <p className="mb-6 text-sm text-neutral-500">
         People join on the <Link href="/pray/" className="underline">Pray page</Link> and confirm by email.
-        Prayer requests go to {site.emails.pray}, which also receives replies.
+        Prayer requests go to {site.emails.pray}, which also receives replies (and the odd
+        &ldquo;please take me off&rdquo;: <em>Take off the list</em> below does it).
       </p>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -114,7 +116,8 @@ export default async function PrayerListPage() {
                 <th className="py-1 pr-3 font-semibold">Name</th>
                 <th className="py-1 pr-3 font-semibold">Email</th>
                 <th className="py-1 pr-3 font-semibold">Signed up</th>
-                <th className="py-1 font-semibold">Status</th>
+                <th className="py-1 pr-3 font-semibold">Status</th>
+                {can(staff, 'write:prayer') && <th className="py-1 font-semibold" aria-label="Actions" />}
               </tr>
             </thead>
             <tbody>
@@ -123,13 +126,18 @@ export default async function PrayerListPage() {
                   <td className="py-1.5 pr-3">{p.name || '—'}</td>
                   <td className="py-1.5 pr-3">{p.email}</td>
                   <td className="py-1.5 pr-3 whitespace-nowrap">{dayInMorristown(p.created_at)}</td>
-                  <td className="py-1.5">
+                  <td className="py-1.5 pr-3">
                     {p.unsubscribed_at
                       ? `Unsubscribed ${dayInMorristown(p.unsubscribed_at)}`
                       : p.confirmed_at
                         ? `On the list since ${dayInMorristown(p.confirmed_at)}`
                         : 'Not confirmed yet'}
                   </td>
+                  {can(staff, 'write:prayer') && (
+                    <td className="py-1.5 text-right">
+                      {!p.unsubscribed_at && <RemoveButton id={p.id} email={p.email} />}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
