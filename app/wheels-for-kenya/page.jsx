@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 import { asset } from '@/lib/site';
 
@@ -192,6 +193,11 @@ export default function WheelsForKenyaPage() {
               className="rounded-lg shadow-sm w-full h-64 object-cover"
             />
           ))}
+        </div>
+        <div className="text-center mt-10">
+          <Link href="/kenya-memories/" className="btn-outline">
+            Kenya Memories
+          </Link>
         </div>
       </section>
     </>
