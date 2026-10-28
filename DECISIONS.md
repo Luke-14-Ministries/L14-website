@@ -3742,3 +3742,7 @@ Canva Sans) are not on this machine and the PDF holds only subsets, so an HTML r
 every panel in another font. `docs/brochure-source/rebuild_brochure.py` (pypdf) drops the cover's Hazelnut
 line and the inside Hazelnut panel, filling that panel with a photo already on the site; no new words. A
 redesign belongs in Canva.
+
+## 28 Oct 2026 — Staff sheets and tables use marks, not sentences
+
+Lawrence: yes/no and short-status cells on staff print sheets and spreadsheet-style tables are a tick, a cross or a warning mark (`components/StatusMark.jsx`), with brief words only where the mark alone would lose the meaning, the full words as the tooltip and a key line on each printed sheet. A column meaning a background check is headed "Background check". CSV exports keep the full words, and narrative, money and dates are unchanged. Applied the same day to the volunteer list, activity sheets and groups, My Program and the roster print.

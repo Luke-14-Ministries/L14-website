@@ -141,6 +141,7 @@ with an on-site sign-up is a design question). Reminder-email wording waits on s
 | May this staff member…? | `can(staff, 'read:<area>' \| 'write:<area>')`, vocabulary in `lib/grants.js` |
 | May they decide a scholarship, a hand-set discount or a deposit waiver? | `can(staff, 'decide:scholarships')` / `can_decide_scholarships()` — Payments **and** Registration write (`0102`) |
 | Which activity waivers are outstanding? (our waiver unsigned, or the provider's confirmation not uploaded or rejected by staff, on an active signup) | the `activity_waivers_outstanding` view (`0120`, restated `0124` with `upload_status`/`review_note`; security invoker — families their own rows, staff all); never re-derive it on a page |
+| How is a yes/no or short status shown in a staff table or print sheet? | `StatusMark` (✓ ✗ ⚠ —, brief words only where needed, full words as tooltip) and `StatusLegend` in `components/StatusMark.jsx`; a background check is `clearanceMark()` in `lib/format.js`, and its heading is "Background check", never "Check" (Lawrence, 28 Oct 2026) |
 | When did a stopped payment plan stop? | `planStoppedAt()` in `lib/plans.js` (the third failed try; the plan's `updated_at` as fallback) |
 | Is a running plan's payment failing? (active or paused, a failed charge still to retry) | `planFailingSince()` in `lib/plans.js` (when, try count, paused); words via `planFailingNext()` |
 
