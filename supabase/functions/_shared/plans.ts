@@ -20,7 +20,11 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
 export const MAX_ATTEMPTS = 3;
 export const RETRY_DAYS = 3;
-export const SITE = 'https://luke14-ministries.vercel.app';
+// The site's address for links in emails. From the SITE_URL secret
+// (Supabase -> Edge Functions -> Secrets) since 28 Oct 2026, so the address
+// switch at go-live is a setting, not a code change and a redeploy; the
+// preview address until it is set.
+export const SITE = (Deno.env.get('SITE_URL') ?? 'https://luke14-ministries.vercel.app').replace(/\/$/, '');
 
 // The ministry's calendar day (Morristown), YYYY-MM-DD.
 export function ministryToday(): string {

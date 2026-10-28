@@ -23,7 +23,7 @@ export default function PrayPage() {
           <p>
             Once you&rsquo;ve added us to your prayer list, you can follow us
             on social media to learn about our current needs, and sign up for
-            our prayer list below!
+            our prayer email list below!
           </p>
         </div>
         {/* The prayer list (0141, Lawrence 28 Oct 2026), in place of the
@@ -31,7 +31,7 @@ export default function PrayPage() {
             and an unsubscribe link in every one. Requests go to the team's
             address, not through the site. */}
         <div className="mx-auto mt-10 max-w-md rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
-          <h2 className="mb-1 text-2xl font-bold">Join the prayer list</h2>
+          <h2 className="mb-1 text-2xl font-bold">Join the prayer email list</h2>
           <p className="mb-5 text-neutral-600">
             Prayer emails from our prayer team, now and then. Leave any time with the link at the
             bottom of each one.

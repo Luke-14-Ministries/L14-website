@@ -331,7 +331,7 @@ Deno.serve(async (req) => {
       <tr><td style="padding:4px 12px 4px 0;color:#555">Date</td><td style="padding:4px 0;text-align:right">${today}</td></tr>
     </table>
     ${bankNote}
-    <p style="font-size:13px;color:#555">Your payments and their status can always be found on your <a href="https://luke14-ministries.vercel.app/account/dashboard/" style="color:#14606a">family dashboard</a>.</p>
+    <p style="font-size:13px;color:#555">Your payments and their status can always be found on your <a href="${SITE}/account/dashboard/" style="color:#14606a">family dashboard</a>.</p>
     <p style="font-size:12px;color:#888">Registration payments for camp and other ministry events cover event costs (food, lodging, and activities) and are not tax-deductible. Questions? Email <a href="mailto:registration@luke14ministries.net" style="color:#14606a">registration@luke14ministries.net</a> or call (423) 748-4954.</p>
   </div>
 </div>`;
