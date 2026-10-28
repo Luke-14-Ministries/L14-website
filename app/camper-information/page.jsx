@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 import { asset } from '@/lib/site';
+import { getCampFacts, dayRange } from '@/lib/campFacts';
+import { formatDueDate } from '@/lib/events';
+import { dollars } from '@/lib/payments';
 
 export const metadata = { title: 'Camper Information' };
 
@@ -21,7 +24,10 @@ const whatToBring = [
   'Medication',
 ];
 
-export default function CamperInformationPage() {
+// The dates, price and early offer come from Setup (getCampFacts, 28 Oct
+// 2026), so this page can never again advertise last month's offer.
+export default async function CamperInformationPage() {
+  const camp = await getCampFacts();
   return (
     <>
       <PageHero
@@ -31,13 +37,19 @@ export default function CamperInformationPage() {
 
       <section className="container-site py-14 max-w-3xl mx-auto text-center">
         <h2 className="text-3xl font-bold">
-          Camp Celebrate 2027 early registration is now OPEN!
+          {camp
+            ? camp.open
+              ? `${camp.program} registration is now OPEN!`
+              : `${camp.program} — registration opens soon`
+            : 'Camp Celebrate'}
         </h2>
         <div className="prose-site mt-6">
-          <p>
-            Register in the month of September and get $45 off each camper and
-            volunteer tuition when you sign up for a payment plan.
-          </p>
+          {camp?.early && (
+            <p>
+              Register by <strong>{formatDueDate(camp.early.endsOn)}</strong> and get{' '}
+              {dollars(camp.early.cents)} off each person when you pay in full or set up a payment plan.
+            </p>
+          )}
           <p>
             New to Camp Celebrate and need a registration account? Click here
             to get started and register
@@ -79,13 +91,20 @@ export default function CamperInformationPage() {
                 Carson Springs Baptist Conference Center in Newport, TN
               </a>
             </p>
-            <p>
-              2027 Dates:
-              <br />
-              July 19 - 23 and
-              <br />
-              July 26 - July 30
-            </p>
+            {camp ? (
+              <p>
+                {camp.year} Dates:
+                {camp.weeks.map((w, n) => (
+                  <span key={w.name}>
+                    <br />
+                    {dayRange(w.startsOn, w.endsOn)}
+                    {n < camp.weeks.length - 1 ? ' and' : ''}
+                  </span>
+                ))}
+              </p>
+            ) : (
+              <p>Next year&rsquo;s dates will be posted soon.</p>
+            )}
             <p>
               Campers arrive on Monday afternoon each week and depart before
               lunch on Friday.
@@ -102,7 +121,12 @@ export default function CamperInformationPage() {
 
       <section className="container-site py-14 max-w-3xl mx-auto">
         <h2 className="text-3xl font-bold mb-6">Cost</h2>
-        <p className="text-4xl font-bold text-brand mb-6">$495</p>
+        {camp?.priceCents != null && (
+          <p className="text-4xl font-bold text-brand mb-6">
+            {dollars(camp.priceCents)}
+            {camp.samePrice ? '' : ' and up'}
+          </p>
+        )}
         <div className="prose-site">
           <p>
             The rooms for families are hotel-style rooms with 2 double beds

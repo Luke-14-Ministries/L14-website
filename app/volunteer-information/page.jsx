@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 import { asset } from '@/lib/site';
+import { getCampFacts, dayRange } from '@/lib/campFacts';
+import { formatDueDate } from '@/lib/events';
+import { dollars } from '@/lib/payments';
 
 export const metadata = { title: 'Volunteer (STM) Information' };
 
@@ -23,7 +26,10 @@ const whatToBring = [
   'Towel for showering',
 ];
 
-export default function VolunteerInformationPage() {
+// Dates and price from Setup (getCampFacts, 28 Oct 2026). Volunteers arrive
+// the day before campers (events.volunteer_arrives_on).
+export default async function VolunteerInformationPage() {
+  const camp = await getCampFacts();
   return (
     <>
       <PageHero
@@ -33,7 +39,11 @@ export default function VolunteerInformationPage() {
 
       <section className="container-site py-14 max-w-3xl mx-auto text-center">
         <h2 className="text-3xl font-bold">
-          Camp Celebrate 2027 registration is now OPEN!
+          {camp
+            ? camp.open
+              ? `${camp.program} registration is now OPEN!`
+              : `${camp.program} — registration opens soon`
+            : 'Camp Celebrate'}
         </h2>
         <div className="prose-site mt-6">
           <p>
@@ -73,13 +83,20 @@ export default function VolunteerInformationPage() {
           <h2 className="text-3xl font-bold mb-6">Location, Dates, Schedule</h2>
           <div className="prose-site">
             <p>Carson Springs Baptist Conference Center in Newport, TN</p>
-            <p>
-              2027 Dates:
-              <br />
-              July 18 - 23 and
-              <br />
-              July 25 - July 30
-            </p>
+            {camp ? (
+              <p>
+                {camp.year} Dates:
+                {camp.weeks.map((w, n) => (
+                  <span key={w.name}>
+                    <br />
+                    {dayRange(w.volunteerArrivesOn ?? w.startsOn, w.endsOn)}
+                    {n < camp.weeks.length - 1 ? ' and' : ''}
+                  </span>
+                ))}
+              </p>
+            ) : (
+              <p>Next year&rsquo;s dates will be posted soon.</p>
+            )}
             <p>
               Each week volunteers arrive at camp on Sunday morning and depart
               by 3:00 PM on Friday. Specific arrival times are to be
@@ -97,7 +114,12 @@ export default function VolunteerInformationPage() {
           className="rounded-lg shadow-sm w-full mb-8"
         />
         <h2 className="text-3xl font-bold mb-6">Cost</h2>
-        <p className="text-4xl font-bold text-brand mb-6">$495 a week</p>
+        {camp?.priceCents != null && (
+          <p className="text-4xl font-bold text-brand mb-6">
+            {dollars(camp.priceCents)}
+            {camp.samePrice ? '' : ' and up'} a week
+          </p>
+        )}
         <div className="prose-site">
           <p>
             Assistance is available for the second week if a volunteer wishes
