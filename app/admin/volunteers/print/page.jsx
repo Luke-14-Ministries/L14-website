@@ -20,7 +20,8 @@ export const metadata = { title: 'Volunteer List — Staff Admin' };
 // yet" and "No background check on file" wrapped to four lines). Every state
 // keeps its own mark or word; the full words are the tooltip.
 const APP_MARK = {
-  applied: { state: 'yes', label: 'Submitted', title: 'Application submitted — awaiting review' },
+  // Waiting on staff is a warning, not a tick (Lawrence, 28 Oct 2026).
+  applied: { state: 'warn', label: 'Submitted — waiting on review', title: 'Application submitted — waiting on review' },
   approved: { state: 'yes', label: 'Approved', title: 'Application approved' },
   declined: { state: 'no', label: 'Declined', title: 'Application declined' },
   withdrawn: { state: 'na', label: 'Withdrawn', title: 'Application withdrawn' },
@@ -128,7 +129,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
           items={[
             ['yes', 'yes'],
             ['no', 'no / none'],
-            ...(maySeeChecks ? [['warn', 'background check needs follow-up']] : []),
+            ['warn', maySeeChecks ? 'waiting on review, or background check needs follow-up' : 'waiting on review'],
             ['na', 'not answered or not applicable'],
           ]}
         />
