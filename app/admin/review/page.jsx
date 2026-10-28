@@ -503,10 +503,14 @@ export default async function ReviewQueuePage({ searchParams }) {
                           <ul className="space-y-0.5">
                             {r.familyReplied && (
                               <li>
-                                <span className="inline-block whitespace-nowrap rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-400">
+                                {/* Straight to the conversation (Lawrence, 28 Oct 2026). */}
+                                <Link
+                                  href={`/admin/registrations/${r.id}/#family-messages`}
+                                  className="inline-block whitespace-nowrap rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-400 hover:bg-amber-200"
+                                >
                                   ✉ Family replied
                                   {r.familyRepliedAt ? ` ${dayInMorristown(r.familyRepliedAt)}` : ''}
-                                </span>
+                                </Link>
                               </li>
                             )}
                             {r.planStopped && (
