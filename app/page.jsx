@@ -15,12 +15,6 @@ const programs = [
       asset('/images/DSC_4801.jpg'),
   },
   {
-    title: 'The Hazelnut Movement',
-    href: '/the-hazelnut-movement',
-    image:
-      asset('/images/tempImageocqVEH.jpg'),
-  },
-  {
     title: 'Wheels for Kenya',
     href: '/wheels-for-kenya',
     image:
@@ -98,7 +92,9 @@ export default function HomePage() {
 
       <section className="container-site py-14">
         <h2 className="text-3xl font-bold text-center mb-8">Our Programs</h2>
-        <div className="grid gap-6 sm:grid-cols-2">
+        {/* Three across since The Hazelnut Movement left (28 Oct 2026); two
+            across left the third card alone on a row. */}
+        <div className="grid gap-6 sm:grid-cols-3">
           {programs.map((p) => (
             <ImageCard key={p.href} {...p} tall />
           ))}

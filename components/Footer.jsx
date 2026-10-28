@@ -35,7 +35,6 @@ export default function Footer() {
             <li><Link href="/camp-celebrate" className="hover:underline">Camp Celebrate</Link></li>
             <li><Link href="/luke-14-party" className="hover:underline">Luke 14 Party</Link></li>
             <li><Link href="/wheels-for-kenya" className="hover:underline">Wheels for Kenya</Link></li>
-            <li><Link href="/the-hazelnut-movement" className="hover:underline">The Hazelnut Movement</Link></li>
             <li><Link href="/adult-adventure-retreat" className="hover:underline">Adult Adventure Retreat</Link></li>
           </ul>
         </div>

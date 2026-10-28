@@ -30,15 +30,6 @@ const leaders = [
     ],
   },
   {
-    name: 'Julia Erman',
-    role: 'Founder & Director of The Hazelnut Movement',
-    image:
-      asset('/images/IMG_0710.jpg'),
-    bio: [
-      'Julia is a woman of many roles: a loving wife, devoted mother, speaker, and an inspiration to all who hear her story. Her passion for working with children, combined with her personal journey as a special-needs parent, has propelled her to become a key advocate in the world of special-needs education. As of July 2024, Julia is also a driving force behind The Hazelnut Movement, one of the four core programs of Luke 14 Ministries.',
-    ],
-  },
-  {
     name: 'Nick Decosimo',
     role: 'Board Member',
     image:

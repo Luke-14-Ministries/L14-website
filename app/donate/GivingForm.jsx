@@ -15,7 +15,6 @@ const funds = [
   'General Operating Fund',
   'Camp Celebrate',
   'Luke 14 Party',
-  'The Hazelnut Movement',
   'Wheels for Kenya',
 ];
 

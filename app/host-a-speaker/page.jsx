@@ -109,8 +109,7 @@ export default function HostASpeakerPage() {
 
             <div>
               <h3 className="text-xl font-bold mb-3">
-                Julia Erman &mdash; Keynote Speaker &amp; Founder of The
-                Hazelnut Movement
+                Julia Erman &mdash; Keynote Speaker
               </h3>
               <div className="prose-site">
                 <p className="font-bold">Your Story Matters</p>
@@ -129,10 +128,7 @@ export default function HostASpeakerPage() {
                   Julia Erman is a bestselling author, disability advocate, and
                   dynamic keynote speaker. As a special needs mom, cancer
                   survivor, and faith leader, Julia speaks with authenticity
-                  and deep compassion. She is the founder of{' '}
-                  <strong>The Hazelnut Movement</strong>, a program of Luke 14
-                  Ministries devoted to changing the way the world sees people
-                  impacted by disability.
+                  and deep compassion.
                 </p>
                 <p>
                   Through her keynote,{' '}

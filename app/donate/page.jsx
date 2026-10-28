@@ -8,9 +8,6 @@ export const metadata = { title: 'Donate' };
 const impacts = [
   'Providing practical resources and ongoing support for families',
   'Hosting inclusive events and celebrations where everyone is welcomed',
-  'Running school assemblies in both public and private schools through The Hazelnut Movement Program',
-  'Gifting books to educators across the United States through The Hazelnut Movement',
-  'Hosting Sunday school classes where we teach kids about disability and help them create superhero capes that remind them every person has a unique gift to share',
   'Training churches to become places of genuine belonging',
   'Equipping volunteers to serve individuals and families affected by disability—both locally and around the world',
 ];
@@ -52,7 +49,7 @@ export default async function DonatePage() {
               <p>
                 Join us in making a difference! Contribute to our General
                 Operating Fund or support a specific program like Camp
-                Celebrate, Luke 14 Party or The Hazelnut Movement close to your
+                Celebrate, Luke 14 Party or Wheels for Kenya close to your
                 heart.
               </p>
               <p>
