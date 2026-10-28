@@ -34,6 +34,15 @@
 // does NOT overwrite `reason` or `note` on a row that already exists: those
 // hold a registrar's own words, which are worth more than Stripe's enum.
 //
+// THE FAMILY'S EMAIL (28 Oct 2026, W66): when a refund on an event payment
+// reaches 'succeeded', the person who paid is emailed from the site, logged
+// to message_log like every other family email, so staff see it under
+// Emails sent. Stripe's own refund email is switched off (Lawrence: every
+// family email from one place). Sent only on the move INTO succeeded, by
+// whichever delivery actually made that move (the updates below are
+// conditional), so Stripe's several events for one refund send one email.
+// A failed email never fails the webhook: the money is already recorded.
+//
 // GRANTS: service_role bypasses RLS but NOT table GRANTs. payment_refunds had
 // none until migration 0054, so every delivery was refused at the table while
 // this function dutifully returned 200 -- silent from both ends. If a future
@@ -42,6 +51,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@23.0.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { SITE, dollars, esc, planContext, sendEmail } from '../_shared/plans.ts';
 
 function fail(where: string, message: string, status: number) {
   console.error(`[stripe-refund-webhook] ${where}: ${message}`);
@@ -67,6 +77,34 @@ function mapStatus(s: string | null | undefined): string {
       return 'pending';
     default:
       return 'pending';
+  }
+}
+
+// The family's refund email (W66). r.amount is what went back, including any
+// processing fee they had covered.
+async function emailRefund(
+  admin: ReturnType<typeof createClient>,
+  payment: { registration_id: string | null; payer_email: string | null },
+  amountCents: number
+) {
+  try {
+    const ctx = payment.registration_id ? await planContext(admin, payment.registration_id) : null;
+    const eventName = ctx?.eventName || 'your registration';
+    const hello = ctx && ctx.household !== 'A family' ? `<p>Hello ${esc(ctx.household)},</p>` : '';
+    await sendEmail(admin, {
+      to: payment.payer_email ?? ctx?.email ?? null,
+      subject: `Refund: ${dollars(amountCents)} — ${ctx?.eventName ?? 'Luke 14 Ministries'}`,
+      title: 'Your refund is on its way',
+      body: `${hello}
+        <p>A refund of <strong>${dollars(amountCents)}</strong> for ${esc(eventName)} has been sent back to the card or bank account you paid with.</p>
+        <p>Card refunds usually show on your statement within 5–10 business days; bank refunds within a few business days.</p>
+        <p>Your payments and balance are on your <a href="${SITE}/account/dashboard/" style="color:#14606a">family dashboard</a>.</p>`,
+      templateKey: 'refund_receipt',
+      householdId: ctx?.householdId ?? null,
+      registrationId: payment.registration_id,
+    });
+  } catch (e) {
+    console.error(`[stripe-refund-webhook] refund email error: ${String((e as Error)?.message ?? e)}`);
   }
 }
 
@@ -137,7 +175,7 @@ Deno.serve(async (req) => {
 
       const { data: payment } = await admin
         .from('payments')
-        .select('id, registration_id, amount_cents, fee_cover_cents, status')
+        .select('id, registration_id, amount_cents, fee_cover_cents, status, payer_email')
         .eq('stripe_payment_intent_id', intentId)
         .maybeSingle();
 
@@ -175,6 +213,7 @@ Deno.serve(async (req) => {
 
       const status = mapStatus(r.status);
 
+      let becameSucceeded = false;
       let { data: existing } = await admin
         .from('payment_refunds')
         .select('id, status')
@@ -194,12 +233,25 @@ Deno.serve(async (req) => {
           .eq('payment_id', payment.id)
           .maybeSingle();
         if (reserved && !reserved.stripe_refund_id) {
-          const { error } = await admin
+          const { data: filled, error } = await admin
             .from('payment_refunds')
             .update({ stripe_refund_id: r.id, status })
-            .eq('id', reserved.id);
+            .eq('id', reserved.id)
+            .is('stripe_refund_id', null)
+            .select('id');
           if (error) return fail('refund-fill', error.message, 500);
-          existing = { id: reserved.id, status };
+          if (filled?.length) {
+            existing = { id: reserved.id, status };
+            if (status === 'succeeded' && reserved.status !== 'succeeded') becameSucceeded = true;
+          } else {
+            // Another delivery filled it first: carry on as an existing row.
+            const { data: again } = await admin
+              .from('payment_refunds')
+              .select('id, status')
+              .eq('stripe_refund_id', r.id)
+              .maybeSingle();
+            existing = again ?? null;
+          }
         }
       }
 
@@ -207,14 +259,20 @@ Deno.serve(async (req) => {
         // Only the things Stripe is authoritative about. `reason` and `note`
         // are left alone: a registrar's sentence beats Stripe's enum.
         if (existing.status !== status) {
-          const { error } = await admin
+          // Conditional, so of two deliveries racing only one makes the move.
+          const { data: moved, error } = await admin
             .from('payment_refunds')
             .update({ status, updated_at: new Date().toISOString() })
-            .eq('id', existing.id);
+            .eq('id', existing.id)
+            .neq('status', status)
+            .select('id');
           if (error) return fail('refund-update', error.message, 500);
-          console.log(
-            `[stripe-refund-webhook] refund ${r.id}: ${existing.status} -> ${status}`
-          );
+          if (moved?.length) {
+            console.log(
+              `[stripe-refund-webhook] refund ${r.id}: ${existing.status} -> ${status}`
+            );
+            if (status === 'succeeded') becameSucceeded = true;
+          }
         }
       } else {
         // Issued in the Stripe dashboard. Stripe's amount can include the
@@ -268,7 +326,10 @@ Deno.serve(async (req) => {
         console.log(
           `[stripe-refund-webhook] recorded ${status} refund of ${r.amount} cents (${r.id})`
         );
+        if (status === 'succeeded') becameSucceeded = true;
       }
+
+      if (becameSucceeded) await emailRefund(admin, payment, r.amount);
 
       // Keep the payment row honest about whether the ministry still holds
       // this money. Recomputed from the refunds actually on file rather than

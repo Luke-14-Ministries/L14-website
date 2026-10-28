@@ -79,14 +79,14 @@ const NAV = [
 
 // The sidebar in sections (Lawrence, 14 Oct 2026, reviewing the hierarchy):
 // the two queues at the top, then People, the camp-week tools (the one
-// collapsible group), requests, money, and the admin pages. Scholarship
+// collapsible group), requests, money, communication and the admin pages. Scholarship
 // requests sit under Event Payments because a scholarship decision is a money
 // decision. An item that appears in no section (a leader's My Program) is
 // shown on its own after the top two. Order inside a section is this list's.
 const SECTIONS = [
   // Search is the box in the header, not a sidebar item (Lawrence, 15 Oct
   // 2026); /admin/search is only where a search lands.
-  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/changes', '/admin/email-families'] },
+  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/changes'] },
   {
     key: 'camp',
     label: 'Camp Week',
@@ -95,7 +95,11 @@ const SECTIONS = [
   },
   { key: 'requests', label: 'Requests', hrefs: ['/admin/cancellations', '/admin/deletion-requests'] },
   { key: 'money', label: 'Money', hrefs: ['/admin/payments', '/admin/scholarships', '/admin/giving'] },
-  { key: 'admin', label: 'Admin', hrefs: ['/admin/newsletter', '/admin/prayer', '/admin/setup', '/admin/accounts', '/admin/staff'] },
+  // Everything that writes to people outside (Lawrence, 28 Oct 2026): the
+  // emails to registered families, the newsletter list, the prayer list. A
+  // prayer-team login with only the Prayer list grant sees this one section.
+  { key: 'communication', label: 'Communication', hrefs: ['/admin/email-families', '/admin/newsletter', '/admin/prayer'] },
+  { key: 'admin', label: 'Admin', hrefs: ['/admin/setup', '/admin/accounts', '/admin/staff'] },
 ];
 const TOP = ['/admin', '/admin/review'];
 

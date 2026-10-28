@@ -338,7 +338,7 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
 - **Stripe SDK 23 pins API `2026-09-30.endive`**, which removed `payment_method_types`: Checkout Sessions
   and PaymentIntents restrict the method with **`allowed_payment_method_types`**; the edge functions
   import `npm:stripe@23.0.0` (pinned, so a redeploy cannot pick up a newer API by surprise).
-- **Refunds:** `charge.refunded` → `supabase/functions/stripe-refund-webhook/`; per-family refunds via
+- **Refunds:** `charge.refunded` → `supabase/functions/stripe-refund-webhook/` (which also emails the payer when a refund reaches *succeeded*, `refund_receipt`, W66); per-family refunds via
   `refundPayment` in `app/admin/registrations/[id]/actions.js`; the over-refund guard and
   pending-refund accounting are `0038`/`0044`/`0053`/`0054`. Since `0107` the row is reserved before
   Stripe is called (the guard locks the payment), each form sends a one-time `request_key`, and the

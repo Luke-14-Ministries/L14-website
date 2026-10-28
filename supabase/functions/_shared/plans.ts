@@ -116,7 +116,10 @@ export type PlanTemplate =
   | 'plan_deposit_failed_staff'
   // A pay-in-full (or deposit, or part) bank payment that came back, with a
   // returned-payment fee added (0123). Sent by stripe-webhook.
-  | 'bank_payment_returned_family';
+  | 'bank_payment_returned_family'
+  // A refund on an event payment reached 'succeeded' (W66, 28 Oct 2026).
+  // Sent by stripe-refund-webhook.
+  | 'refund_receipt';
 
 export type Sent = { ok: boolean; id: string | null; error: string | null };
 

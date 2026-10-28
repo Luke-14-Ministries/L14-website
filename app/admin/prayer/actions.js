@@ -12,7 +12,7 @@ import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail, sendEmailBatch } from '@/lib/email';
-import { PRAYER_FROM, PRAYER_REPLY_TO, PRAYER_MAX, prayerListEmail } from '@/lib/prayer';
+import { PRAYER_FROM, PRAYER_REPLY_TO, PRAYER_MAX, prayerListEmail, prayerBodyIsEmpty } from '@/lib/prayer';
 
 async function siteOrigin() {
   if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/$/, '');
@@ -26,7 +26,7 @@ function cleanMessage(input) {
   const subject = String(input?.subject ?? '').trim().slice(0, PRAYER_MAX.subject);
   const body = String(input?.body ?? '').trim().slice(0, PRAYER_MAX.body);
   if (!subject) return { error: 'Please give the email a subject.' };
-  if (!body) return { error: 'Please write the prayer email.' };
+  if (prayerBodyIsEmpty(body)) return { error: 'Please write the prayer email.' };
   return { subject, body };
 }
 

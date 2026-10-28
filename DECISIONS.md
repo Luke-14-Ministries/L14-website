@@ -3762,3 +3762,24 @@ rule now builds whenever the commit being deployed is the one already live, and 
 clone). A one-line version was refused: Vercel caps `ignoreCommand` at 256 characters. It lives in
 `scripts/vercel-ignore.sh`, with comments, and `vercel.json` runs it. To apply a changed variable,
 Redeploy the deployment marked **Current** (a Redeploy of a cancelled docs-only one is still skipped).
+
+## 28 Oct 2026 — The site sends the refund email; the prayer list's page and email tidied; a Communication section
+
+**Refunds (W66).** Lawrence: every family email from one place. When a refund on an event payment
+reaches *succeeded*, `stripe-refund-webhook` emails the person who paid (template `refund_receipt`,
+logged to `message_log`, shown as *Refund sent* under Emails sent), and Stripe's own *Refunds*
+customer email is off. One email per refund: the status writes are conditional, and only the delivery
+that actually moves a row into *succeeded* sends. Stripe's ACH mandate and microdeposit emails stay
+Stripe's (they are the required bank-debit notices). Gift refunds are not emailed; they are rare and
+staff write personally. Stripe's support email (replies to Stripe's emails) stays
+`larry@luke14ministries.net` (Lawrence).
+
+**Prayer list.** The message box starts with the team's sign-off ("In Christ, / L14 Prayer Team"),
+ordinary text the writer can change or delete; a message that is only the sign-off cannot be sent. The
+email no longer repeats its subject as a heading (`emailShell`'s title is now optional). *Who is on it*
+folds shut by default, sorts and searches (DataTable), and hides people who unsubscribed or were taken
+off behind a tick box: their row is kept on purpose, as the record that they must not be emailed.
+
+**Communication section.** Email Families, Newsletter and Prayer List move into one sidebar section,
+*Communication*, between Money and Admin. A prayer-team login holding only the Prayer list grant sees
+the Overview and this section with one item.

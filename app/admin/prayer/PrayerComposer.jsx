@@ -2,11 +2,15 @@
 
 // Write and send the prayer email (0141). The preview is the typed text laid
 // out as the email lays it out (a blank line starts a paragraph); Send to me
-// first shows it in a real inbox.
+// first shows it in a real inbox. The box starts with the prayer team's
+// sign-off below two empty lines, ready to write above (28 Oct 2026).
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { sendPrayerEmail, sendPrayerTest } from './actions';
+import { PRAYER_SIGNATURE, prayerBodyIsEmpty } from '@/lib/prayer';
+
+const START = `\n\n${PRAYER_SIGNATURE}`;
 
 const FIELD = 'w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm';
 
@@ -14,7 +18,7 @@ export default function PrayerComposer({ count }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
+  const [body, setBody] = useState(START);
   const [note, setNote] = useState(null);
 
   function test() {
@@ -40,12 +44,12 @@ export default function PrayerComposer({ count }) {
       if (res.logError) parts.push(res.logError);
       setNote({ tone: res.failed || res.logError ? 'err' : 'ok', text: parts.join(' ') });
       setSubject('');
-      setBody('');
+      setBody(START);
       router.refresh();
     });
   }
 
-  const ready = subject.trim() && body.trim();
+  const ready = subject.trim() && !prayerBodyIsEmpty(body);
   return (
     <div className="space-y-3">
       <div>
@@ -68,14 +72,16 @@ export default function PrayerComposer({ count }) {
           placeholder="Leave a blank line between paragraphs. Web addresses become links."
         />
         <p className="mt-1 text-xs text-neutral-500">
-          Every copy ends with an Unsubscribe link and the prayer-request address. Replies go to the
-          prayer team&rsquo;s address.
+          Write above the sign-off; change it or delete it as you like. Every copy ends with an
+          Unsubscribe link and the prayer-request address. Replies go to the prayer team&rsquo;s address.
         </p>
       </div>
       {ready && (
         <details className="rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">
           <summary className="cursor-pointer font-semibold">Preview</summary>
-          <p className="mt-2 font-bold">{subject}</p>
+          <p className="mt-2 text-neutral-500">
+            Subject: <span className="font-semibold text-neutral-800">{subject}</span>
+          </p>
           {body
             .trim()
             .split(/\n{2,}/)

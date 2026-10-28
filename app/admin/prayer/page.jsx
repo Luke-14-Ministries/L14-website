@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { dayInMorristown, whenInMorristown } from '@/lib/events';
 import { site } from '@/lib/site';
 import PrayerComposer from './PrayerComposer';
-import RemoveButton from './RemoveButton';
+import PrayerPeopleTable from './PrayerPeopleTable';
 
 export const metadata = { title: 'Prayer List — Staff Admin' };
 
@@ -105,45 +105,23 @@ export default async function PrayerListPage() {
         )}
       </div>
 
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
-        <h3 className="mb-3 font-bold">Who is on it</h3>
-        {(people ?? []).length === 0 ? (
-          <p className="text-sm text-neutral-500">Nobody has signed up yet.</p>
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="text-neutral-500">
-              <tr>
-                <th className="py-1 pr-3 font-semibold">Name</th>
-                <th className="py-1 pr-3 font-semibold">Email</th>
-                <th className="py-1 pr-3 font-semibold">Signed up</th>
-                <th className="py-1 pr-3 font-semibold">Status</th>
-                {can(staff, 'write:prayer') && <th className="py-1 font-semibold" aria-label="Actions" />}
-              </tr>
-            </thead>
-            <tbody>
-              {[...onList, ...pending, ...left].map((p) => (
-                <tr key={p.id} className="border-t border-neutral-100">
-                  <td className="py-1.5 pr-3">{p.name || '—'}</td>
-                  <td className="py-1.5 pr-3">{p.email}</td>
-                  <td className="py-1.5 pr-3 whitespace-nowrap">{dayInMorristown(p.created_at)}</td>
-                  <td className="py-1.5 pr-3">
-                    {p.unsubscribed_at
-                      ? `Unsubscribed ${dayInMorristown(p.unsubscribed_at)}`
-                      : p.confirmed_at
-                        ? `On the list since ${dayInMorristown(p.confirmed_at)}`
-                        : 'Not confirmed yet'}
-                  </td>
-                  {can(staff, 'write:prayer') && (
-                    <td className="py-1.5 text-right">
-                      {!p.unsubscribed_at && <RemoveButton id={p.id} email={p.email} />}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <PrayerPeopleTable
+        canWrite={can(staff, 'write:prayer')}
+        people={[...onList, ...pending, ...left].map((p) => ({
+          id: p.id,
+          name: p.name,
+          email: p.email,
+          signedUp: dayInMorristown(p.created_at),
+          signedUpAt: p.created_at,
+          unsubscribed: Boolean(p.unsubscribed_at),
+          statusOrder: p.unsubscribed_at ? 2 : p.confirmed_at ? 0 : 1,
+          status: p.unsubscribed_at
+            ? `Unsubscribed ${dayInMorristown(p.unsubscribed_at)}`
+            : p.confirmed_at
+              ? `On the list since ${dayInMorristown(p.confirmed_at)}`
+              : 'Not confirmed yet',
+        }))}
+      />
     </div>
   );
 }
