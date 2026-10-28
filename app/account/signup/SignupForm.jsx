@@ -173,9 +173,9 @@ export default function SignupForm() {
       <label className="block font-semibold mb-1.5 mt-4" htmlFor="su-password">
         Password
       </label>
-      <input id="su-password" type="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={set('password')} className="w-full rounded-sm border border-neutral-300 px-4 py-2.5" />
+      <input id="su-password" type="password" autoComplete="new-password" required minLength={10} value={form.password} onChange={set('password')} className="w-full rounded-sm border border-neutral-300 px-4 py-2.5" />
       <p className="mt-1.5 text-sm text-neutral-500">
-        At least 8 characters.
+        At least 10 characters.
       </p>
 
       <Turnstile

@@ -51,7 +51,7 @@ export default function ResetPasswordForm() {
       <p className="text-sm text-neutral-500 mb-5">
         {annual
           ? 'Staff passwords are changed once a year. Choose a new one to carry on — at least 10 characters, and not one you use anywhere else.'
-          : <>You&rsquo;re signed in from the link in your email. Choose a new password and you&rsquo;re done.</>}
+          : <>You&rsquo;re signed in from the link in your email. Choose a new password (at least 10 characters) and you&rsquo;re done.</>}
       </p>
 
       {error && (
@@ -71,7 +71,7 @@ export default function ResetPasswordForm() {
         type="password"
         autoComplete="new-password"
         required
-        minLength={8}
+        minLength={10}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
@@ -84,7 +84,7 @@ export default function ResetPasswordForm() {
         type="password"
         autoComplete="new-password"
         required
-        minLength={8}
+        minLength={10}
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
         className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-6"
