@@ -3705,3 +3705,23 @@ Now `activity_safety_flags()` (definer; Activities read or Sensitive read; only 
 gives yes/no facts and allergen names, and the column — renamed **Health & safety** — prints e.g.
 "Allergy — severe: Peanut · Seizures · Needs a buddy", or "No details on file". Never the narrative
 (what happens, medications, behaviour). Lawrence chose to include the allergen's name.
+
+## 28 Oct 2026 — Old-site content carried over before the domain moves; The Hazelnut Movement removed
+
+Lawrence approved, ahead of luke14ministries.net pointing here: nothing on this site may depend on the
+old Squarespace pages. (1) The 2026 Adult Adventure Retreat stays on CampSite; its buttons go straight
+there — "Returning Campers Register Here!" (sign-in) and "New Campers Register Here!" (enrol), the old
+page's links and labels — and the retreat is for "independent adults with disabilities", the old site's
+words. (2) The eight PDFs linked at `/s/<name>.pdf` were copied, each checked to be a real PDF, into
+`public/resources/` under plain names. (3) `next.config.mjs` redirects (permanent) the old addresses with
+no route of the same name here, and the eight PDF addresses; with `trailingSlash` an old page link takes
+two hops (Next adds the slash first), checked with `next start`. (4) Party Memories and (5) Kenya
+Memories are pages here now, linked from the Party and Wheels for Kenya pages; the old Kenya page's
+2017 and 2018 "photos" are template placeholders over YouTube players, so its three years are videos.
+(6) The videos the old site had and this one lacked are embedded (2026 highlights on Camp Celebrate and
+Camp Memories, 2025's two weeks, the Wheels for the World process video); 2014 is on Vimeo, so the
+report-only policy's `frame-src` lists `player.vimeo.com`. One shared `VideoEmbed` / `VideoYears` serves
+every video page. (7) **The Hazelnut Movement is no longer part of Luke 14** — spun out to another
+ministry. Its page, images, home card, nav and footer links, donation fund and the donate page's three
+Hazelnut lines are gone, its address redirects home, and Julia Erman's leadership entry went with it, as
+on the old site. The staff gift form keeps the fund name for gifts already recorded under it.
