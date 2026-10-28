@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
-import { clearancePill, isMinor } from '@/lib/format';
+import { clearanceMark, isMinor } from '@/lib/format';
 import { todayInMorristown } from '@/lib/events';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
+import StatusMark, { StatusLegend } from '@/components/StatusMark';
 
 export const metadata = { title: 'Volunteer List — Staff Admin' };
 
@@ -15,12 +16,24 @@ export const metadata = { title: 'Volunteer List — Staff Admin' };
 // No faith statements, no skills text, no medical anything: this is a list
 // for the volunteer coordinator's clipboard, not an application file.
 
-const STATUS = {
-  applied: 'Awaiting review',
-  approved: 'Approved',
-  declined: 'Declined',
-  withdrawn: 'Withdrawn',
+// Each column a mark, not a sentence (Lawrence, 28 Oct 2026: "No application
+// yet" and "No background check on file" wrapped to four lines). Every state
+// keeps its own mark or word; the full words are the tooltip.
+const APP_MARK = {
+  applied: { state: 'yes', label: 'Submitted', title: 'Application submitted — awaiting review' },
+  approved: { state: 'yes', label: 'Approved', title: 'Application approved' },
+  declined: { state: 'no', label: 'Declined', title: 'Application declined' },
+  withdrawn: { state: 'na', label: 'Withdrawn', title: 'Application withdrawn' },
 };
+const NO_APP = { state: 'no', label: 'None', title: 'No application yet' };
+
+// first_time_volunteering can be unanswered (null): that is "—", never "no".
+function newMark(a) {
+  if (!a || a.first_time_volunteering == null) return { state: 'na', title: 'Not answered' };
+  return a.first_time_volunteering
+    ? { state: 'yes', title: 'First time volunteering' }
+    : { state: 'na', label: 'returning', title: 'Has volunteered before' };
+}
 
 export default async function VolunteerPrintPage({ searchParams }) {
   const params = await searchParams;
@@ -78,9 +91,10 @@ export default async function VolunteerPrintPage({ searchParams }) {
   // The same words as the Volunteers page (VolunteerManager): under 18 is
   // "not screened", not a missing check; no row is "No background check on
   // file" (Script 5: this list never set `minor` and said "none on file").
-  const checkWord = (person) => {
+  // Compact since 28 Oct 2026 (clearanceMark): the pill's sentence is the tooltip.
+  const checkMark = (person) => {
     const c = clearanceByPerson.get(person?.id) ?? null;
-    return clearancePill(isMinor(person?.date_of_birth) ? { ...(c ?? {}), minor: true } : c, today).text;
+    return clearanceMark(isMinor(person?.date_of_birth) ? { ...(c ?? {}), minor: true } : c, today);
   };
 
   const groups = (events ?? [])
@@ -108,6 +122,17 @@ export default async function VolunteerPrintPage({ searchParams }) {
         application stands. The household&rsquo;s contact details; nothing from the application
         text and nothing medical.
       </p>
+      {groups.length > 0 && (
+        <StatusLegend
+          className="mb-4"
+          items={[
+            ['yes', 'yes'],
+            ['no', 'no / none'],
+            ...(maySeeChecks ? [['warn', 'background check needs follow-up']] : []),
+            ['na', 'not answered or not applicable'],
+          ]}
+        />
+      )}
       {groups.length === 0 && <p className="text-sm text-neutral-500">No volunteers to list.</p>}
       {groups.map((g) => (
         <div key={g.event.id} className="mb-8 break-after-page last:break-after-auto">
@@ -126,7 +151,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
                 <th className="py-1 pr-2">New?</th>
                 <th className="py-1 pr-2">Application</th>
                 <th className="py-1 pr-2">Creed</th>
-                {maySeeChecks && <th className="py-1 pr-2">Check</th>}
+                {maySeeChecks && <th className="py-1 pr-2">Background check</th>}
               </tr>
             </thead>
             <tbody>
@@ -145,10 +170,25 @@ export default async function VolunteerPrintPage({ searchParams }) {
                       </div>
                     </td>
                     <td className="py-1 pr-2">{a?.preferred_areas ?? '—'}</td>
-                    <td className="py-1 pr-2">{a ? (a.first_time_volunteering ? 'yes' : 'no') : '—'}</td>
-                    <td className="py-1 pr-2">{a ? STATUS[a.status] ?? a.status : 'No application yet'}</td>
-                    <td className="py-1 pr-2">{a ? (a.creed_affirmed ? 'affirmed' : 'NOT affirmed') : '—'}</td>
-                    {maySeeChecks && <td className="py-1 pr-2">{checkWord(v.person)}</td>}
+                    <td className="py-1 pr-2"><StatusMark {...newMark(a)} /></td>
+                    <td className="py-1 pr-2">
+                      <StatusMark {...(a ? APP_MARK[a.status] ?? { state: 'na', label: a.status } : NO_APP)} />
+                    </td>
+                    <td className="py-1 pr-2">
+                      {a ? (
+                        <StatusMark
+                          state={a.creed_affirmed ? 'yes' : 'no'}
+                          title={a.creed_affirmed ? 'Affirmed the Apostles’ Creed' : 'Did NOT affirm the Apostles’ Creed'}
+                        />
+                      ) : (
+                        <StatusMark state="na" title="No application" />
+                      )}
+                    </td>
+                    {maySeeChecks && (
+                      <td className="py-1 pr-2">
+                        <StatusMark {...checkMark(v.person)} />
+                      </td>
+                    )}
                   </tr>
                 );
               })}
