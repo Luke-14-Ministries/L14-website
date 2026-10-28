@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { isCurrentEventRow, whenInMorristown } from '@/lib/events';
+import { isCurrentEventRow } from '@/lib/events';
 import EventJump from './EventJump';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -191,7 +191,7 @@ export default async function AdminOverview({ searchParams }) {
 
   // Families who wrote back in the app and nobody has read it (0126). First on
   // the page (Lawrence, 26 Oct 2026): a reply sat unseen among the sign-ups.
-  // Each shows the start of the family's latest message.
+  // Names and events only since 28 Oct; the message is on the registration.
   let replies = [];
   if (can(staff, 'read:registration')) {
     const { data: replyRegs, error: replyError } = await supabase
@@ -200,24 +200,10 @@ export default async function AdminOverview({ searchParams }) {
       .eq('family_reply_unread', true)
       .order('family_replied_at', { ascending: true });
     if (replyError) throw new Error(`Family replies: ${replyError.message}`);
-    const ids = (replyRegs ?? []).map((r) => r.id);
-    const { data: msgs, error: msgError } = ids.length
-      ? await supabase
-          .from('registration_family_messages')
-          .select('registration_id, body, created_at')
-          .in('registration_id', ids)
-          .eq('author_kind', 'family')
-          .order('created_at', { ascending: false })
-      : { data: [], error: null };
-    if (msgError) throw new Error(`Family replies: ${msgError.message}`);
-    const latest = new Map();
-    for (const m of msgs ?? []) if (!latest.has(m.registration_id)) latest.set(m.registration_id, m.body);
     replies = (replyRegs ?? []).map((r) => ({
       id: r.id,
       family: r.households?.display_name ?? 'Household',
       event: r.events?.name ?? '',
-      at: r.family_replied_at,
-      body: latest.get(r.id) ?? '',
     }));
   }
 
@@ -285,29 +271,21 @@ export default async function AdminOverview({ searchParams }) {
         {seesStoppedPlans && plansFailing.length > 0 && <FailingPlansCard plans={plansFailing} />}
       </div>
 
+      {/* The same slim box as Awaiting review's (Lawrence, 28 Oct 2026: the full
+          card with its paragraph and the reply's first lines was too big). */}
       {replies.length > 0 && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 shadow-xs p-6 mb-8">
-          <h3 className="font-bold mb-1">
-            <span aria-hidden>✉</span> {replies.length === 1 ? 'A family wrote back' : `${replies.length} families wrote back`}
-          </h3>
-          <p className="text-sm text-neutral-600 mb-3">
-            Replies in the app that nobody has read yet, oldest first. Open one to read it; writing
-            back, or <em>Mark as read</em>, clears it.
+        <div className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
+          <p className="font-semibold text-amber-900">
+            <span aria-hidden>✉</span>{' '}
+            {replies.length === 1 ? 'A family wrote back' : `${replies.length} families wrote back`} — read first:
           </p>
-          <ul className="divide-y divide-amber-100">
+          <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
             {replies.map((r) => (
-              <li key={r.id} className="py-2">
+              <li key={r.id}>
                 <Link href={`/admin/registrations/${r.id}/#review`} className="font-semibold text-brand underline">
                   {r.family}
                 </Link>
-                <span className="text-sm text-neutral-500">
-                  {' '}· {r.event} · {whenInMorristown(r.at)}
-                </span>
-                {r.body && (
-                  <span className="block text-sm text-neutral-700">
-                    &ldquo;{r.body.length > 160 ? `${r.body.slice(0, 160)}…` : r.body}&rdquo;
-                  </span>
-                )}
+                <span className="text-neutral-500"> · {r.event}</span>
               </li>
             ))}
           </ul>
