@@ -8,6 +8,7 @@ import { shortEventName, dayInMorristown } from '@/lib/events';
 import { useMemo, useState } from 'react';
 import EventFilter from '@/components/EventFilter';
 import { STATUS_LABEL, statusPill } from '@/lib/format';
+import { depositShortWords } from '@/lib/plans';
 
 const ROLE_LABEL = {
   camper: 'Camper',
@@ -399,8 +400,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                         className="mt-1 inline-block rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900"
                         title={`Deposit is $${((r.depositDue ?? 0) / 100).toFixed(2)} for this family; $${((r.depositPaid ?? 0) / 100).toFixed(2)} received.`}
                       >
-                        deposit short — ${((r.depositPaid ?? 0) / 100).toFixed(0)} of $
-                        {((r.depositDue ?? 0) / 100).toFixed(0)}
+                        {depositShortWords(r.depositPaid, r.depositDue)}
                       </div>
                     )}
                     {r.familyNote && (

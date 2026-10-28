@@ -5,7 +5,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { allergyPill, statusPill } from '@/lib/format';
 import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/support';
-import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
+import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 
@@ -481,7 +481,7 @@ export default async function PersonPage({ params }) {
     { data: consents, error: consentsError },
   ] = await Promise.all([
       regIds.length
-        ? supabase.from('registration_review').select('registration_id, review_class, flags').in('registration_id', regIds)
+        ? supabase.from('registration_review').select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents').in('registration_id', regIds)
         : Promise.resolve({ data: [] }),
       supabase
         .from('agreement_signatures')
@@ -813,7 +813,7 @@ export default async function PersonPage({ params }) {
                             title={cls.hint}
                             className={`rounded-sm px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
                           >
-                            {cls.label}
+                            {reviewClassLabel(rv)}
                           </span>
                         ) : (
                           <span className="text-neutral-500">—</span>

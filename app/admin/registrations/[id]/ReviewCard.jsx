@@ -55,7 +55,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Panel, { PanelLink } from './Panel';
 import { reviewRegistration, markFamilyReplyRead } from './actions';
-import { REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
+import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
 import { whenInMorristown } from '@/lib/events';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -257,7 +257,7 @@ export default function ReviewCard({
       )}
       {cls && (
         <p className="text-sm mb-3">
-          <span className={`inline-block rounded-sm px-2 py-0.5 font-semibold ${cls.cls}`}>{cls.label}</span>{' '}
+          <span className={`inline-block rounded-sm px-2 py-0.5 font-semibold ${cls.cls}`}>{reviewClassLabel(review)}</span>{' '}
           <span className="text-neutral-600">
             {hint}
             {review.deposit_expected_cents > 0 && (

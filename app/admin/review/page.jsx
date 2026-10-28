@@ -3,7 +3,7 @@ import EventFilter from '@/components/EventFilter';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { REVIEW_CLASS, REVIEW_FLAG, planStoppedAt, planFailingSince, planFailingNext, PLAN_MAX_TRIES } from '@/lib/plans';
+import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel, planStoppedAt, planFailingSince, planFailingNext, PLAN_MAX_TRIES } from '@/lib/plans';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { statusPill } from '@/lib/format';
@@ -276,7 +276,7 @@ export default async function ReviewQueuePage({ searchParams }) {
               show === 'nodeposit' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
             }`}
           >
-            No deposit yet
+            Deposit short
           </Link>
           <Link
             href={`/admin/review/?show=family${eventFilter ? `&event=${eventFilter}` : ''}`}
@@ -355,7 +355,7 @@ export default async function ReviewQueuePage({ searchParams }) {
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
           <p className="font-semibold text-amber-900">
             <span aria-hidden>✉</span>{' '}
-            {unreadReplies.length === 1 ? 'A family wrote back' : `${unreadReplies.length} families wrote back`} — read first:
+            {unreadReplies.length === 1 ? 'A family wrote back' : `${unreadReplies.length} families wrote back`}
           </p>
           <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
             {unreadReplies.map((r) => (
@@ -484,7 +484,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                             title={cls.hint}
                             className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
                           >
-                            {cls.label}
+                            {reviewClassLabel(r.review)}
                           </span>
                         ) : (
                           <span className="text-neutral-400">—</span>

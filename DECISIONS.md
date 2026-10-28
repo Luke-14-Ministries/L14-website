@@ -3688,3 +3688,11 @@ split (2 Oct) kept the weekly act, opening and closing registration, apart from 
 one button that saves only what changed does that as well. Each event card now has a single **Save** (and
 **Undo my changes**) at its foot: it saves the status and registration window if they changed, then the
 event details if they changed, and reports both in one message. The two server actions are unchanged.
+
+## 28 Oct 2026 — One deposit wording; quieter reply notices
+
+Lawrence: one wording, the "Deposit short — $0.00 of $250.00" style. `reviewClassLabel()` and
+`depositShortWords()` in `lib/plans.js` give it to the Awaiting review pill, the Payments page, a person's
+page, the Review card and the roster chip; the review tab and the Payments filter read "Deposit short"
+(the part-paid filter "Deposit short — part paid"). The "A family wrote back" boxes on the Overview and
+Awaiting review lose "— read first": the box is the notice.

@@ -277,7 +277,7 @@ export default async function AdminOverview({ searchParams }) {
         <div className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
           <p className="font-semibold text-amber-900">
             <span aria-hidden>✉</span>{' '}
-            {replies.length === 1 ? 'A family wrote back' : `${replies.length} families wrote back`} — read first:
+            {replies.length === 1 ? 'A family wrote back' : `${replies.length} families wrote back`}
           </p>
           <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
             {replies.map((r) => (

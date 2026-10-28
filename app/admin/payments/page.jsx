@@ -7,7 +7,7 @@ import EventFilter from '@/components/EventFilter';
 import RecordPaymentForm from './RecordPaymentForm';
 import FoldCard from '@/components/FoldCard';
 import ExportBar from './ExportBar';
-import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG } from '@/lib/plans';
+import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
 import { isStaleRefund, STALE_REFUND_DAYS } from '@/lib/payments';
 import RecheckRefund from './RecheckRefund';
 
@@ -66,7 +66,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     // How each registration is being paid (0080).
     supabase.from('registration_payment_routes').select('registration_id, route, plan_status, plan_schedule'),
     // The three review classes and the flags (0081, Lawrence 30 Sep 2026).
-    supabase.from('registration_review').select('registration_id, review_class, flags'),
+    supabase.from('registration_review').select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents'),
     // How many are registered on each family's registration, for the
     // "3 registered" line under the name (Lawrence, 26 Oct 2026).
     supabase.from('registration_participants').select('registration_id').neq('status', 'cancelled'),
@@ -207,8 +207,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
     ['scholarship', 'Scholarship/discount'],
     ['deposit_paid', 'To review: deposit received'],
     ['full_scholarship', 'To contact: full scholarship'],
-    ['neither', 'No full deposit yet'],
-    ['flagged', 'Deposit short'],
+    ['neither', 'Deposit short'],
+    ['flagged', 'Deposit short — part paid'],
     ['credit', 'Credit to settle'],
   ];
   // One helper builds every filter-carrying URL (pills, CSVs) so the active
@@ -553,7 +553,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                               title={c.hint}
                               className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-0.5 text-xs font-semibold ${c.cls}`}
                             >
-                              {c.label}
+                              {reviewClassLabel(rv)}
                             </span>
                           )}
                           {credit > 0 && (
