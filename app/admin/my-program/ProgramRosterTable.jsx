@@ -7,6 +7,7 @@
 // always carry the whole list.
 
 import DataTable from '@/components/DataTable';
+import StatusMark from '@/components/StatusMark';
 
 const pill = 'rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900';
 const none = <span className="text-neutral-400">—</span>;
@@ -37,7 +38,8 @@ const COLUMNS = [
       r.buddy ? (
         r.buddy
       ) : r.buddyRequired ? (
-        <span className="text-amber-800">buddy needed — not paired yet</span>
+        // The print sheet's mark (Lawrence, 28 Oct 2026): short in a narrow column.
+        <StatusMark state="warn" label="Not paired" title="Buddy needed — not paired yet" />
       ) : (
         none
       ),

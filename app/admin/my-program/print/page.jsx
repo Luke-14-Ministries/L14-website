@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import BackLink from '@/components/BackLink';
 import PrintButton from '@/components/PrintButton';
-import { getProgramRoster, getProgramLeaders, programRosterRows, askAboutWords, buddyWords } from '@/lib/programs';
+import { getProgramRoster, getProgramLeaders, programRosterRows, askAboutWords } from '@/lib/programs';
 import { todayInMorristown } from '@/lib/events';
 import { programForCaller } from '../access';
 import FlagsNote from '../FlagsNote';
+import StatusMark, { StatusLegend } from '@/components/StatusMark';
 
 export const metadata = { title: 'My Program — print — Luke 14 Ministries' };
 
@@ -69,6 +70,9 @@ export default async function MyProgramPrintPage({ searchParams }) {
       </div>
 
       <FlagsNote needAsking={needAsking} className="mt-3 text-sm" />
+      {rows.some((r) => !r.buddy && r.buddyRequired) && (
+        <StatusLegend className="mt-1" items={[['warn', 'buddy needed — not paired yet']]} />
+      )}
 
       {rows.length === 0 ? (
         <p className="mt-4 text-sm text-neutral-500">
@@ -96,7 +100,18 @@ export default async function MyProgramPrintPage({ searchParams }) {
                 </td>
                 <td className="py-1 pr-3">{r.age ?? '—'}</td>
                 <td className="py-1 pr-3">{r.roleLabel}</td>
-                <td className="py-1 pr-3">{buddyWords(r) || '—'}</td>
+                {/* A mark, not "buddy needed — not paired yet" wrapping
+                    in a narrow cell (Lawrence, 28 Oct 2026); the CSV keeps
+                    buddyWords(). */}
+                <td className="py-1 pr-3">
+                  {r.buddy || (
+                    <StatusMark
+                      {...(r.buddyRequired
+                        ? { state: 'warn', label: 'Not paired', title: 'Buddy needed — not paired yet' }
+                        : { state: 'na', title: 'No buddy' })}
+                    />
+                  )}
+                </td>
                 <td className="py-1">{askAboutWords(r).join(', ') || '—'}</td>
               </tr>
             ))}
