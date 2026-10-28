@@ -5,8 +5,28 @@ import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
 import { SearchSelectLinks } from '@/components/SearchSelect';
 import { dayInMorristown } from '@/lib/events';
-import { waiverReviewPill } from '@/lib/format';
 import { allergenWords } from '@/lib/support';
+import StatusMark, { StatusLegend } from '@/components/StatusMark';
+
+// The Waiver column as marks (Lawrence, 28 Oct 2026: glanceable cells). The
+// provider's confirmation (0124) keeps all four of its states apart: missing
+// and rejected are both ✗, and the label says which.
+function providerMark(provider) {
+  if (provider === 'missing') {
+    return { state: 'no', label: 'No provider form', title: 'No provider confirmation uploaded' };
+  }
+  if (provider.status === 'accepted') {
+    return { state: 'yes', label: 'Provider form', title: 'Provider confirmation accepted' };
+  }
+  if (provider.status === 'rejected') {
+    return {
+      state: 'no',
+      label: 'Provider form rejected',
+      title: `Provider confirmation rejected — ${provider.note || 'no reason given'}`,
+    };
+  }
+  return { state: 'warn', label: 'Provider form unchecked', title: 'Provider confirmation uploaded, awaiting check' };
+}
 
 // The Health & safety column (0139; Lawrence, 28 Oct 2026). Plain flags, and
 // the allergen's name -- never the narrative (what happens, medications,
@@ -283,21 +303,22 @@ export default async function ActivityPrintPage({ searchParams }) {
               {waiverColumn && (
                 <td className="py-1.5 pl-3">
                   {r.signed !== null && (
-                    r.signed ? (
-                      <span className="block text-xs">signed {r.signed}</span>
-                    ) : (
-                      <span className="block text-xs font-semibold">NOT signed</span>
-                    )
-                  )}
-                  {r.provider === 'missing' && (
-                    <span className="block text-xs font-semibold">NO provider confirmation</span>
-                  )}
-                  {r.provider && r.provider !== 'missing' && (
-                    <span
-                      className={`block text-xs ${r.provider.status === 'accepted' ? '' : 'font-semibold'}`}
-                    >
-                      provider form: {waiverReviewPill(r.provider).text}
+                    <span className="block text-xs">
+                      <StatusMark
+                        state={r.signed ? 'yes' : 'no'}
+                        label={r.signed ? `Signed ${r.signed}` : 'Not signed'}
+                        title={r.signed ? `Waiver signed on the site ${r.signed}` : 'Waiver NOT signed'}
+                      />
                     </span>
+                  )}
+                  {r.provider && (
+                    <span className="block text-xs">
+                      <StatusMark {...providerMark(r.provider)} />
+                    </span>
+                  )}
+                  {/* The staff reason is words to read, so it stays in full. */}
+                  {r.provider?.status === 'rejected' && r.provider.note && (
+                    <span className="block text-xs text-neutral-600">{r.provider.note}</span>
                   )}
                 </td>
               )}
@@ -366,6 +387,17 @@ export default async function ActivityPrintPage({ searchParams }) {
       <p className="mb-6 text-sm font-semibold">
         {event ? `${event.name} · ${event.starts_on} – ${event.ends_on}` : 'No event selected'}
       </p>
+
+      {shown.some((a) => agreementIdByActivity.has(a.id) || providerIds.has(a.id)) && (
+        <StatusLegend
+          className="mb-4"
+          items={[
+            ['yes', 'signed / accepted'],
+            ['no', 'not signed, missing or rejected'],
+            ['warn', 'uploaded, not yet checked'],
+          ]}
+        />
+      )}
 
       {(activities ?? []).length === 0 && (
         <p className="text-sm text-neutral-500">No activities are open for this event.</p>
