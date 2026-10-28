@@ -295,7 +295,7 @@ export default function BuddyBoard({
           <a
             href={`/admin/buddies/export?event=${eventId}`}
             className="btn-outline py-2! text-sm"
-            title="Every pairing for this event as a CSV: camper, buddy, household, check status."
+            title="Every pairing for this event as a CSV: camper, buddy, household, background check status."
           >
             Download CSV
           </a>

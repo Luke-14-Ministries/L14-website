@@ -53,7 +53,7 @@ const VERDICT_OPTIONS = [
 ];
 const LOG_FIELD = {
   background_check_on_file: 'paperwork on file',
-  background_check_date: 'check date',
+  background_check_date: 'background check date',
   expires_on: 'expires',
   verdict: 'verdict',
   verdict_note: 'verdict note',
@@ -96,7 +96,7 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
           Paperwork on file (in the restricted SharePoint folder)
         </label>
         <label className="block">
-          <span className="block text-xs font-semibold text-neutral-500 mb-0.5">Check date (required when on file)</span>
+          <span className="block text-xs font-semibold text-neutral-500 mb-0.5">Background check date (required when on file)</span>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-sm border border-neutral-300 px-2 py-1" />
         </label>
         <span className="text-xs text-neutral-500">

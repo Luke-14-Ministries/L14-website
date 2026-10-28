@@ -98,7 +98,7 @@ export async function GET(request) {
       c?.registrations?.households?.display_name ?? '',
       name(v),
       v?.registrations?.households?.display_name ?? '',
-      v ? clearanceWord.get(v.people?.id) ?? 'no check on file' : '',
+      v ? clearanceWord.get(v.people?.id) ?? clearancePill(null).text : '',
       dayInMorristown(a.started_at),
       a.note ?? '',
     ]);
