@@ -451,8 +451,8 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
   `/about/` into `/about` across every link). Anything calling this site a "static export" is out of
   date.
 - **GitHub Pages is retired — do not revive it.** Hosting is Vercel only, through its GitHub
-  integration. The repository is `https://github.com/luke-14-ministries/website.git` (formerly
-  `luke-14-ministries.github.io`; GitHub redirects). The `Production` environment under Settings →
+  integration. The repository is `https://github.com/Luke-14-Ministries/L14-website.git` (formerly `website`,
+  and before that `luke-14-ministries.github.io`; GitHub redirects). The `Production` environment under Settings →
   Environments is **Vercel's** — leave it alone. **`build.yml` is not a deploy workflow**; if it
   ever grows a step that uploads, publishes or deploys, something has gone wrong.
 - **`NEXT_PUBLIC_BASE_PATH` must stay unset on Vercel.** Setting it breaks every link and image and
