@@ -28,17 +28,17 @@ Two constraints shape every decision:
 
 ---
 
-## Where things stand — 28 October 2026
+## Where things stand — 29 October 2026
 
 **Phase 3: built, in staff testing** on the preview site, the site still on Stripe's test keys.
 **Go-live Stage A is done (28 Oct):** the Vercel server key and cron secret, Stripe live mode prepared
 and idle (three live endpoints, ACH on, branding, customer emails set), the Supabase Cron job, the new
 domain in the Auth redirect list and Turnstile, the Cloudflare copy of the zone checked, the password
-rules, the Microsoft DKIM records in the copy. **Next: G2 (purge all test data), G3 (the security
-audit), G4 (the board's yes), then Stage B and Stage C.** **Testing Script 6** is the current script
-(SharePoint, `01 Plans and Decisions`; Script 5 is kept as the record); its open items are 16.3 (Katie's
-whole family journey on a phone; a question for Larry whether it holds up Stage C) and 13.49b (after
-30 Oct); 17.48 passed on routing, with a reply test in Script 7 after go-live (DO-THIS-NEXT W69). The working checklist is `DO-THIS-NEXT.md` (rewritten
+rules, the Microsoft DKIM records in the copy. **G1, G2 and G4 are done (29 Oct):** Script 6 closed, the test data purged (only the Gibson family,
+the Sherrill household and six real logins remain), and Larry's yes for B and C. **Next: G3 (the
+security audit), then Stage B and Stage C.** **Testing Script 7** (SharePoint, `01 Plans and
+Decisions`) holds the checks for after go-live; 16.3 (a family's whole journey on a phone, real card,
+refunded) is now step C1. The working checklist is `DO-THIS-NEXT.md` (rewritten
 28 Oct; its *Go live* section is the go-live checklist, steps A1–C11 with the gate G1–G4); open policy
 questions are in `Luke14-Staff-Questions.md` §1.
 
@@ -76,12 +76,12 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
 
 **Next, in order (go-live, Phase 4 — the steps are DO-THIS-NEXT *Go live*; Stage A is done):**
 
-1. **G1 — Script 6 finished**, or each open item (16.3, 13.49b) accepted as open by Lawrence.
-2. **G2 — Purge ALL test data** from production, bot staff and test logins included, leaving the real
-   staff and the Gibson family (a board member helping test). Everything after depends on it.
+1. ~~G1 — Script 6 finished~~ — closed 29 Oct.
+2. ~~G2 — Purge ALL test data~~ — done 29 Oct (`DECISIONS.md`; the copy taken first is the schema
+   `purge_backup_20261029`, dropped once go-live settles).
 3. **G3 — The security audit** after the purge (the RLS harness, the advisor, `0101`'s mapping, every
    server action's grant, `npm audit`).
-4. **G4 — The board's yes** for B and C, recorded in `DECISIONS.md`.
+4. ~~G4 — The board's yes~~ — Larry, 29 Oct.
 5. **Stage B — the money switch** (staff only, at the preview address): `STRIPE_SECRET_KEY` live in
    Vercel **Production only** (B1); the live key, the **three** live signing secrets and a new
    `CRON_SECRET` in Supabase (B2); redeploy the four Stripe functions (B3); small real payments,
