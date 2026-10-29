@@ -5,8 +5,8 @@
 // FORMAT. Both reports follow the filter form below (dates; the gift list
 // also fund and method):
 //   Gifts received, CSV        every gift in the filter, one row each
-//   Gifts received, QuickBooks Date, Name, Memo, Account, Amount -- gifts that
-//                              arrived, the fund as the account
+//   Gifts received, QuickBooks Date, Name, Memo, Account, Class, Amount --
+//                              gifts that arrived; 40000, the fund as the class
 //   Donor statements, PDF      the print view, one letter per donor, for the
 //                              filter's dates (this year when none are set);
 //                              print it, or save it as a PDF from the print
@@ -68,7 +68,7 @@ export default function GivingExportBar({ from = '', to = '', fund = '', method 
         {statements
           ? 'One letter per donor for the dates in the filter below (this year when none are set). Print it, or choose “Save as PDF” in the print dialog.'
           : format === 'quickbooks'
-            ? 'Gifts that arrived, in the filter below — Date, Name, Memo, Account, Amount; account names are placeholders until the treasurer confirms them.'
+            ? 'Gifts that arrived, in the filter below — Date, Name, Memo, Account (40000 Individual Contributions), Class (the fund; none for General), Amount.'
             : 'Every gift in the filter below, one row each.'}
       </p>
     </div>

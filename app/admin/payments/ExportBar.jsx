@@ -43,7 +43,7 @@ export default function ExportBar({ eventFilter = '', paystate = '', defaultFrom
   const scope = balances
     ? 'Events shown below, as of today.'
     : quickbooks
-      ? 'Every event, received between the dates — Date, Name, Memo, Account, Amount; covered fees as their own line, refunds negative.'
+      ? 'Every event, received between the dates — Date, Name, Memo, Account (44000), Class (the event), Amount; covered fees as their own line, refunds negative.'
       : 'Events shown below, received between the dates.';
 
   return (

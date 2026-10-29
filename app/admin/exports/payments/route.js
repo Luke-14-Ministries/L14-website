@@ -4,7 +4,7 @@
 //
 // ?format=quickbooks (build plan item 14; the call of 16 Oct 2026, 3:30 pm):
 // money received, in the column order QuickBooks Online takes -- Date, Name,
-// Memo, Account, Amount -- one row per payment that actually moved money
+// Memo, Account, Class, Amount -- one row per payment that actually moved money
 // (succeeded, or since refunded: the refund is its own row), a second row for
 // a processing fee the payer covered (booked with its transaction, as
 // agreed), and negative rows for refunds. Since 26 Oct 2026 (Script 6, 13.40)
@@ -13,13 +13,14 @@
 // date. It ignores the page's event scope and payment-state pill: the
 // treasurer books a month of money, not one event's families.
 // Gross per payment, as the treasurer books it; Stripe's own fee is not in
-// this system and comes from Stripe's payout report. The account names are
-// placeholders until the treasurer confirms the chart of accounts -- they are
-// the one thing here that is a guess, and QuickBooks maps them on import.
+// this system and comes from Stripe's payout report. Account and class are
+// the ministry's own (Larry, 29 Oct 2026; lib/quickbooks.js): registration
+// money is 44000 Purchase of Goods or Services, and the class is the event.
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { csvCell } from '@/lib/csv';
+import { QB_REGISTRATION_ACCOUNT, eventClass } from '@/lib/quickbooks';
 import { dayInMorristown, todayInMorristown, inPaymentsScope } from '@/lib/events';
 
 // A payment's note as the treasurer should read it: in dollars. The Stripe
@@ -145,10 +146,11 @@ export async function GET(request) {
       const date = mdy(day);
       const name = r?.households?.display_name ?? '';
       const ev = r?.events?.name ?? 'Event';
+      const cls = eventClass(r?.events);
       const memo = [ev, p.method, p.stripe_payment_intent_id, noteInDollars(p.note)].filter(Boolean).join(' — ');
-      const lines = [[date, name, memo, 'Camp registration fees', ((p.amount_cents ?? 0) / 100).toFixed(2)]];
+      const lines = [[date, name, memo, QB_REGISTRATION_ACCOUNT, cls, ((p.amount_cents ?? 0) / 100).toFixed(2)]];
       if ((p.fee_cover_cents ?? 0) > 0) {
-        lines.push([date, name, `${ev} — processing fee covered by the payer`, 'Processing fees covered', ((p.fee_cover_cents ?? 0) / 100).toFixed(2)]);
+        lines.push([date, name, `${ev} — processing fee covered by the payer`, QB_REGISTRATION_ACCOUNT, cls, ((p.fee_cover_cents ?? 0) / 100).toFixed(2)]);
       }
       groups.push({ day, at: p.created_at ?? '', lines });
     }
@@ -160,15 +162,16 @@ export async function GET(request) {
       const date = mdy(day);
       const name = r?.households?.display_name ?? '';
       const ev = r?.events?.name ?? 'Event';
+      const cls = eventClass(r?.events);
       const memo = ['Refund', ev, f.method, f.stripe_refund_id, f.reason, f.note].filter(Boolean).join(' — ');
-      const lines = [[date, name, memo, 'Camp registration fees', (-(f.amount_cents ?? 0) / 100).toFixed(2)]];
+      const lines = [[date, name, memo, QB_REGISTRATION_ACCOUNT, cls, (-(f.amount_cents ?? 0) / 100).toFixed(2)]];
       if ((f.fee_cover_cents ?? 0) > 0) {
-        lines.push([date, name, `Refund — ${ev} — processing fee returned`, 'Processing fees covered', (-(f.fee_cover_cents ?? 0) / 100).toFixed(2)]);
+        lines.push([date, name, `Refund — ${ev} — processing fee returned`, QB_REGISTRATION_ACCOUNT, cls, (-(f.fee_cover_cents ?? 0) / 100).toFixed(2)]);
       }
       groups.push({ day, at: f.created_at ?? '', lines });
     }
     groups.sort((a, b) => a.day.localeCompare(b.day) || String(a.at).localeCompare(String(b.at)));
-    const qb = [['Date', 'Name', 'Memo', 'Account', 'Amount'], ...groups.flatMap((g) => g.lines)];
+    const qb = [['Date', 'Name', 'Memo', 'Account', 'Class', 'Amount'], ...groups.flatMap((g) => g.lines)];
     const today = todayInMorristown();
     const range = from || to ? `${from || 'start'}-to-${to || today}` : `all-time-${today}`;
     const csvQb = '\ufeff' + qb.map((row) => row.map(esc).join(',')).join('\r\n');

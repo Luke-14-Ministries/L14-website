@@ -3830,3 +3830,20 @@ Found by Larry's Claude session re-checking the 14 October plan review, and conf
   card says what is still owed and points at Ways to pay.
 - **Ways to pay after the due date** says "was due on …, so it is due now", not "due by" a day
   that has passed.
+
+## 29 Oct 2026 — Larry's answers: no store, no meal fund, Stripe at the Party, QuickBooks accounts
+
+- **No store page** (T-shirts or anything else) and **no meal donation**. *Luke 14 Party Meals* is
+  off Donate's fund list and its paragraph is gone; gifts already recorded to it keep their fund.
+- **Party payments will probably go through Stripe** (Tap to Pay in Stripe's Dashboard app, a QR
+  Payment Link as the backup), once live keys are in at Stage B. Nothing to build; Square is retired
+  at the ministry's pace.
+- **16.3 (a family's whole journey on a phone) holds up Stage C only**, not the purge or Stage B.
+- **QuickBooks: every payment has an account and a class.** The class is the event. The accounts
+  are 40000 Individual Contributions, 41000 Corporate Grants, 42000 Foundation Grants and 44000
+  Purchase of Goods or Services (`lib/quickbooks.js`). The Event Payments QuickBooks CSV books
+  registration money, a covered fee and refunds to 44000, class = the event's name. Lawrence: the
+  export infers the class from the event, with no separate Setup setting. The Giving QuickBooks CSV
+  books gifts to 40000, class = the fund's program (none for the General Operating Fund). Both files
+  gain a Class column: Date, Name, Memo, Account, Class, Amount. Grants (41000, 42000) do not come
+  through the site; they are booked by hand.
