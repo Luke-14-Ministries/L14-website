@@ -3897,3 +3897,27 @@ image optimiser with SVGs and through `use cache`, and a Server Actions denial o
 moving to **Next 16.4.2** (15 Oct; 16.4.3 was under two weeks old). The two dev-only highs (zod and
 brace-expansion, pulled in by ESLint, never shipped) are patched in the lockfile. `npm audit` shows 0.
 Lint and the production build pass locally.
+
+## 29 Oct 2026 — Stage B walkthrough: the deposit on Setup, a lower price reaches the registered
+
+From Lawrence's first real registration on the TEST retreat during Stage B.
+
+- **The deposit can be changed on Setup** (Edit event details, beside the family discount). Until now
+  it was set only when the event was created. It is read live, so a change applies to everyone
+  registered; never more than the price; copied to a later week like the other settings.
+- **A lower price reaches the people already registered; a higher one does not** (Lawrence: "if
+  payment/cost gets adjusted DOWN families who have registered will see the new amounts; if it gets
+  adjusted UP they will not (by default)"). `0145`, `lower_registered_fees()`, called by Setup after
+  saving a price. A person whose scholarship plus hand-set discount is more than the new price is left
+  alone and counted (staff adjust first: a decision is never erased silently). The discount rules
+  re-run. A family that has paid more than the new total holds a credit; Save names how many, and the
+  refund is a staff act on the registration page. A plan's later charges follow the balance, so they
+  shrink by themselves. Tested in `supabase/tests/lower_price_rules.sql`.
+- **The wizard:** the two "Anything else?" boxes are named apart (card 4's is *Anything else about
+  {name}?*, per person; card 5 is *Anything else about this registration?*); the date of birth, sex and
+  nametag boxes stay in one row when the nametag label wraps; the photo line after submitting is
+  reworded (it helps staff coordinate at registration and camp, and is required for approval) and
+  "details" no longer runs into "for".
+- **One way in on Register:** the event card has one *Register* button. The old second link,
+  *Volunteer*, led to the volunteer application, which comes after registering as a volunteer, and
+  read like a separate registration.

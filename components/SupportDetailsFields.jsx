@@ -518,7 +518,12 @@ export default function SupportDetailsFields({
         placeholder="Mother, brother, support worker…"
       />
 
-      <Heading hint="Anything that doesn't fit neatly above.">Anything else?</Heading>
+      {/* Named for the person (29 Oct 2026): the wizard's own card 5 is
+          "Anything else about this registration?", and two bare "Anything
+          else?" boxes one after the other read as the same question. */}
+      <Heading hint={`About ${name}'s support or care, if it doesn't fit neatly above.`}>
+        Anything else about {name}?
+      </Heading>
       <textarea className={input} rows={3} value={f.other_concerns} onChange={set('other_concerns')} />
     </div>
   );

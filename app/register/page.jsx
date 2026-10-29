@@ -113,21 +113,25 @@ export default async function RegisterPage() {
                       registration.
                     </p>
                   )}
-                  <div className="mt-4 flex flex-wrap items-center gap-4">
+                  {/* One way in (29 Oct 2026, Lawrence): a volunteer
+                      registers through the same form, choosing the role
+                      Volunteer; the old second "Volunteer" link looked like
+                      a separate registration but led to the application,
+                      which comes after. */}
+                  <div className="mt-4">
                     <Link
                       href={`/register/family/?program=${encodeURIComponent(p.key)}`}
                       className="btn-primary py-2!"
                     >
-                      Register your family or group
+                      Register
                     </Link>
-                    <p className="text-sm text-neutral-600">
-                      Want to serve instead?{' '}
-                      <Link
-                        href="/register/volunteer/"
-                        className="text-brand underline font-semibold"
-                      >
-                        Volunteer
-                      </Link>
+                    <p className="mt-3 text-sm text-neutral-600">
+                      Families, groups and volunteers all start here. Volunteering? Choose the
+                      role <strong>Volunteer</strong>; the short{' '}
+                      <Link href="/register/volunteer/" className="text-brand underline font-semibold">
+                        volunteer application
+                      </Link>{' '}
+                      comes after.
                     </p>
                   </div>
                 </div>

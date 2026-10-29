@@ -42,7 +42,7 @@ refunded) is now step C1. The working checklist is `DO-THIS-NEXT.md` (rewritten
 questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0144`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0145`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -326,7 +326,9 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   through the embed `participant_money ( … )` on any participants select; the row is visible to the
   family it belongs to and to Payments read, and **null means "not yours to see", never zero**.
   Nobody signed in writes it: the fee is filled by a definer trigger from the event option (and
-  re-copied when the option changes); staff decisions go through
+  re-copied when the option changes); **a price lowered on Setup reaches everyone already
+  registered, a raise reaches nobody** (`lower_registered_fees()`, `0145`, Setup write; a person
+  whose scholarship plus discount exceeds the new price is skipped and counted); staff decisions go through
   `set_participant_adjustments(participant, scholarship, discount, reason)` (Payments **and**
   Registration write; capped at the fee; the reason is written verbatim, so pass the current one
   back when only the scholarship changes); the discount rules and `waive_deposit()` run as owner.

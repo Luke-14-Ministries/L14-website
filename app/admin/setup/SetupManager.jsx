@@ -91,6 +91,8 @@ function EventRow({ e }) {
   const [multiWeek, setMultiWeek] = useState(String(e.multiWeekPercent ?? 0));
   // 0123: returned bank payment fee, dollars; '0.00' = off.
   const [returnedFee, setReturnedFee] = useState(((e.returnedFeeCents ?? 0) / 100).toFixed(2));
+  // The deposit per person (29 Oct 2026; until then only on New event).
+  const [deposit, setDeposit] = useState(((e.depositCents ?? 0) / 100).toFixed(2));
   // The weeks of one camp (page.jsx; Lawrence, 27 Oct 2026). A later week
   // carries the both-weeks discount, where it applies; an earlier week's
   // details are the defaults for any later week not yet saved by hand.
@@ -114,7 +116,8 @@ function EventRow({ e }) {
     family !== (e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '') ||
     familyFrom !== String(e.familyFromPerson ?? 3) ||
     (isLaterWeek && multiWeek !== String(e.multiWeekPercent ?? 0)) ||
-    returnedFee !== ((e.returnedFeeCents ?? 0) / 100).toFixed(2);
+    returnedFee !== ((e.returnedFeeCents ?? 0) / 100).toFixed(2) ||
+    deposit !== ((e.depositCents ?? 0) / 100).toFixed(2);
 
   function undoAll() {
     setStatus(savedStatus);
@@ -131,6 +134,7 @@ function EventRow({ e }) {
     setFamilyFrom(String(e.familyFromPerson ?? 3));
     setMultiWeek(String(e.multiWeekPercent ?? 0));
     setReturnedFee(((e.returnedFeeCents ?? 0) / 100).toFixed(2));
+    setDeposit(((e.depositCents ?? 0) / 100).toFixed(2));
     setNotice(null);
   }
 
@@ -163,6 +167,7 @@ function EventRow({ e }) {
           // Only a later week carries the both-weeks discount (0137 note).
           multiWeekPercent: isLaterWeek ? multiWeek : undefined,
           returnedFeeDollars: returnedFee,
+          depositDollars: deposit,
         });
         if (res.ok) {
           said.push(
@@ -377,6 +382,15 @@ function EventRow({ e }) {
 
           <div className="mt-3 grid items-end gap-3 sm:grid-cols-4">
             <label className="text-sm">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Deposit ($/person)</span>
+              <input
+                inputMode="decimal"
+                value={deposit}
+                onChange={(ev) => setDeposit(ev.target.value)}
+                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+              />
+            </label>
+            <label className="text-sm">
               <span className="block font-semibold text-neutral-700 mb-0.5">Family discount ($/person)</span>
               <input
                 inputMode="decimal"
@@ -436,9 +450,16 @@ function EventRow({ e }) {
             </summary>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
-                <strong>Price</strong> applies to future registrations; people already registered keep
-                the fee they signed up at. <strong>Places</strong> cannot go below the number
-                registered.
+                <strong>Price:</strong> a <em>lower</em> price applies to everyone already registered
+                too (unless their scholarship and discount add up to more than it; a family that has
+                paid more than the new total is due a refund, and Save says so). A <em>higher</em>{' '}
+                price applies to new registrations only. <strong>Places</strong> cannot go below the
+                number registered.
+              </li>
+              <li>
+                <strong>Deposit</strong> is per fee-paying person, never more than the price, and is
+                what staff look for before approving. A change applies to everyone registered; $0 is
+                no deposit.
               </li>
               <li>
                 <strong>Early discount:</strong> off each person registered by the early date, once
@@ -463,7 +484,7 @@ function EventRow({ e }) {
               </li>
               <li>
                 <strong>Weeks of one camp:</strong> saving an earlier week copies its price, places,
-                early registration, balance due, family discount and returned fee to a later week
+                early registration, balance due, deposit, family discount and returned fee to a later week
                 that has not been saved on its own.
               </li>
             </ul>

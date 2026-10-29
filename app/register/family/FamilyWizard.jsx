@@ -168,7 +168,7 @@ function CaregiverPicker({ who, choices, value, onChange, phone, onPhone, idPref
           save this registration as it is, then add them and link them as {who}&rsquo;s caregiver
           from your dashboard, under <strong>Manage household</strong>. If the caregiver is from
           outside your household (a support worker, or a friend registering on their own account),
-          put their name and phone under <strong>Anything else?</strong> at the end so staff know
+          put their name and phone under <strong>Anything else about this registration?</strong> at the end so staff know
           who to reach.
         </p>
       )}
@@ -508,7 +508,7 @@ const CARD_TITLE = {
   family: 'Your family or group',
   people: 'Who’s coming',
   support: 'Support and medical details',
-  notes: 'Anything else?',
+  notes: 'Anything else about this registration?',
   agreements: 'Agreements',
 };
 function cardNeeds(s) {
@@ -1033,8 +1033,11 @@ export default function FamilyWizard({
         {/* Since 16 Oct 2026 the details are saved WITH the registration; the
             one thing still asked for afterwards is a photo of each person. */}
         <p className="mt-3 text-neutral-700">
-          <strong>Also before camp:</strong> a photo of each person attending — staff
-          use it to greet them by name at check-in. Open <em>Review support details</em>
+          {/* Reworded 29 Oct 2026 (Lawrence). The {' '} keeps "details" and
+              "for" apart: JSX drops the line break after a closing tag. */}
+          <strong>Also before camp:</strong> a photo of each person attending. It&rsquo;s a big
+          help to staff in coordinating details at registration and during camp, and it is
+          required for your registration to be approved. Open <em>Review support details</em>{' '}
           for each person on your dashboard to add one, and to change anything you told us
           today.
         </p>
@@ -1343,7 +1346,10 @@ export default function FamilyWizard({
                   <input className={input} value={m.lastName} onChange={setM(i, 'lastName')} />
                 </div>
               </div>
-              <div className="grid sm:grid-cols-3 gap-4">
+              {/* items-end (29 Oct 2026, Lawrence): when the nametag label
+                  wraps to two lines, all three boxes drop together and stay
+                  in one row. */}
+              <div className="grid sm:grid-cols-3 sm:items-end gap-4">
                 <div>
                   <label className={label}>Date of birth</label>
                   <input type="date" className={input} value={m.dob} onChange={setM(i, 'dob')} min="1900-01-01" max={todayInMorristown()} />
@@ -1667,8 +1673,8 @@ export default function FamilyWizard({
         open={openCards.notes}
         onToggle={toggleCard('notes')}
         status={statusOf('notes')}
-        title="Anything else?"
-        subtitle="Optional — anything that doesn't fit neatly above."
+        title="Anything else about this registration?"
+        subtitle="Optional — for camp staff, about the registration as a whole (a note about one person goes with their details above)."
       >
         <textarea
           className={input}

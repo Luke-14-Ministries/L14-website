@@ -73,10 +73,12 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
 //
 // The FEE is not on the event: it lives on the published event_option, which
 // is what registration_participants copies and what every balance is built
-// from. Changing it here changes what the NEXT registration is charged and
-// leaves every existing participant's fee exactly where it was -- which is
-// the honest behaviour. Re-pricing someone who has already registered is a
-// per-person decision with a paper trail, and that is the adjustments editor.
+// from. A RAISE changes what the NEXT registration is charged and leaves every
+// existing participant's fee where it was: they keep what they signed up at.
+// A CUT reaches everyone already registered too (Lawrence, 29 Oct 2026,
+// lower_registered_fees(), 0145), except anyone whose scholarship and
+// hand-set discount add up to more than the new price -- staff adjust those
+// first. Any other re-pricing is the adjustments editor, per person.
 export async function updateEventDetails(
   eventId,
   {
@@ -85,6 +87,8 @@ export async function updateEventDetails(
     balanceDueOn, familyDollars, familyFromPerson, multiWeekPercent,
     // 0123: the returned bank payment fee.
     returnedFeeDollars,
+    // The deposit per person (29 Oct 2026; until then set only at creation).
+    depositDollars,
   }
 ) {
   const staff = await getStaff();
@@ -184,6 +188,23 @@ export async function updateEventDetails(
   }
   const returnedFeeCents = Math.round(feeN * 100);
 
+  // The deposit per person (Lawrence, 29 Oct 2026: it could be set only when
+  // the event was created). It is read live -- "deposit received" is always
+  // the event's current figure -- so a change applies to everyone registered.
+  // Blank is not zero: say 0 for no deposit. Never more than the price.
+  if (String(depositDollars ?? '').trim() === '') {
+    return { ok: false, error: 'Give the deposit per person in dollars — 0 for none.' };
+  }
+  const depN = Number.parseFloat(String(depositDollars).replace(/[$,\s]/g, ''));
+  if (Number.isNaN(depN) || depN < 0) {
+    return { ok: false, error: 'The deposit has to be a dollar amount, or 0.' };
+  }
+  const depositCents = Math.round(depN * 100);
+  const priceN = String(feeDollars ?? '').trim() === '' ? null : Number.parseFloat(String(feeDollars).replace(/[$,\s]/g, ''));
+  if (priceN != null && !Number.isNaN(priceN) && depositCents > Math.round(priceN * 100)) {
+    return { ok: false, error: 'The deposit cannot be more than the price.' };
+  }
+
   // The settings a later week takes from this one (0137). Dates are each
   // week's own; the both-weeks discount is the later week's.
   const shared = {
@@ -194,6 +215,7 @@ export async function updateEventDetails(
     family_discount_cents: familyCents,
     family_discount_from_person: fromPerson,
     returned_payment_fee_cents: returnedFeeCents,
+    deposit_cents: depositCents,
   };
   const { error } = await supabase
     .from('events')
@@ -223,6 +245,7 @@ export async function updateEventDetails(
   }
 
   let priceCents = null;
+  const priceNotes = [];
   if (String(feeDollars ?? '').trim() !== '') {
     const n = Number.parseFloat(String(feeDollars).replace(/[$,\s]/g, ''));
     if (Number.isNaN(n) || n < 0) {
@@ -258,6 +281,9 @@ export async function updateEventDetails(
     if (feeError) {
       return { ok: false, error: `The dates saved, but the price did not: ${feeError.message}` };
     }
+    const cut = await lowerRegisteredFees(supabase, opt.id);
+    if (cut.error) return { ok: false, error: `The price saved, but ${cut.error}` };
+    priceNotes.push(...cut.notes);
   }
 
   // Week 1's details are the later weeks' defaults (Lawrence, 27 Oct 2026):
@@ -306,13 +332,19 @@ export async function updateEventDetails(
       if (copyError) return { ok: false, error: `This week saved, but ${w.name} did not: ${copyError.message}` };
       if (priceCents != null) {
         // The enrollment option only, as above: never the volunteer row.
-        const { error: priceError } = await supabase
+        const { data: theirOpts, error: priceError } = await supabase
           .from('event_options')
           .update({ fee_cents: priceCents, updated_at: new Date().toISOString() })
           .eq('event_id', w.id)
           .eq('published', true)
-          .is('participant_role', null);
+          .is('participant_role', null)
+          .select('id');
         if (priceError) return { ok: false, error: `This week saved, but ${w.name}'s price did not: ${priceError.message}` };
+        for (const o of theirOpts ?? []) {
+          const cut = await lowerRegisteredFees(supabase, o.id);
+          if (cut.error) return { ok: false, error: `${w.name}'s price saved, but ${cut.error}` };
+          priceNotes.push(...cut.notes.map((n) => `${w.name}: ${n}`));
+        }
       }
       try {
         const { error: recalcError } = await supabase.rpc('recalc_event_discounts', { p_event_id: w.id });
@@ -328,7 +360,32 @@ export async function updateEventDetails(
   revalidatePath('/register');
   revalidatePath('/register/family');
   revalidatePath('/account/dashboard');
-  return { ok: true, copiedTo, notCopied: kept.join(' ') || null };
+  return { ok: true, copiedTo, notCopied: [...kept, ...priceNotes].join(' ') || null };
+}
+
+// A price cut reaches the people already registered (0145); a raise reaches
+// nobody, and the function changes nothing then. What it did comes back as
+// sentences for the Setup notice: who came down, who was left alone because
+// of a scholarship or discount, and who now holds a credit to refund.
+async function lowerRegisteredFees(supabase, optionId) {
+  const { data, error } = await supabase.rpc('lower_registered_fees', { p_option_id: optionId });
+  if (error) return { error: `the people already registered were not re-priced: ${error.message}`, notes: [] };
+  const notes = [];
+  const n = (k) => Number(data?.[k] ?? 0);
+  if (n('lowered') > 0) {
+    notes.push(`The lower price now applies to ${n('lowered')} ${n('lowered') === 1 ? 'person' : 'people'} already registered.`);
+  }
+  if (n('skipped') > 0) {
+    notes.push(
+      `${n('skipped')} kept the old price: their scholarship and discount add up to more than the new one. Adjust them on the registration, then save the price again.`
+    );
+  }
+  if (n('overpaid') > 0) {
+    notes.push(
+      `${n('overpaid')} ${n('overpaid') === 1 ? 'registration has' : 'registrations have'} now paid more than ${n('overpaid') === 1 ? 'it owes' : 'they owe'}: refund the difference from the registration page.`
+    );
+  }
+  return { notes };
 }
 
 // Create an event (2 Oct 2026). Until now every event was a migration, so a
