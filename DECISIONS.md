@@ -3856,3 +3856,27 @@ product carries its income account, so the account follows from it. Both QuickBo
 row per receipt line, in that field order, with a Receipt number grouping a payment's lines. A covered
 fee is the second line of the same receipt, and a refund is a Refund Receipt. Gifts take the fund as
 Product/Service. The Account column stays, as a check that the product is mapped to 44000 or 40000.
+
+## 29 Oct 2026 — G2: the test data purged from production
+
+Lawrence's go, 29 Oct. First a full copy of every public table, plus `auth.users`, `auth.identities`
+and the storage file list, into the private schema `purge_backup_20261029` (the site's API does not
+expose it; drop it once go-live is settled). Supabase Pro's daily backup is the second copy. A
+dry run in a rolled-back block came first, then the real run, as one SQL block in the G2 order.
+
+- **Deleted:** 17 households (every one except Gibson and Sherrill) with their 37 people and 24
+  registrations, 12 payments, 5 refunds, 9 logged emails and 113 signatures. Also Sherrill's
+  registration (the household stays), 19 logins (bots, test addresses, the personal-address staff
+  logins, Katie's four personal ones) with 7 staff rows and 64 grants, both test gifts, the prayer
+  list's 2 test sign-ups and 3 test sends, the stray Week 1 Salon time, the empty Week 2
+  medical-contact row, and Lawrence's Giving write. The 15 test files in Storage went through the
+  Storage API, using a one-off edge function `purge-storage-once`, now a stub that does nothing, to be
+  deleted in the dashboard.
+- **Kept:** the Gibson family and its Week 1 registration (with one photo), the Sherrill household,
+  and the logins of Lawrence, Ellen, Katie, Larry, Gibson and Sherrill. The money change log, staff
+  access log and background-check review log stay. Where a deleted bot was the actor, the actor is
+  now blank.
+- **Found on the way: `0144`.** The payment-plan guard returned NEW for the owner, which on a delete
+  is null, so it silently cancelled the cascade from a deleted registration. The 27 Oct test plan
+  survived as an orphan with 20 scheduled charges. The guard now returns `coalesce(new, old)`, and the
+  orphan is deleted. A check of every foreign key found no other orphan.

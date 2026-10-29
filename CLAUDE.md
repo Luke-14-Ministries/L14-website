@@ -43,7 +43,7 @@ whole family journey on a phone; a question for Larry whether it holds up Stage 
 questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0143`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0144`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -140,6 +140,10 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
   pg-safeupdate, which refuses either without a `WHERE` (`where true` is enough). `admin_create_event()`
   emptied its scratch maps that way and creating an event never worked from Setup until `0122`; the
   local harness runs through psql, where the extension is not loaded, so it cannot catch this.
+- **A BEFORE DELETE trigger must return `old`, never `new`.** On a delete NEW is null, and a BEFORE trigger
+  that returns null silently skips the row, cascades included, leaving a child whose foreign key "reads
+  valid" but points at nothing. `guard_payment_plan_writes()` did this until `0144` (found in the G2 purge:
+  a deleted registration's plan survived). Write the owner's early exit as `return coalesce(new, old)`.
 - **A function rewritten in place must check the rewrite took.** Python on Windows writes CRLF, and a
   multi-line `replace()` on `pg_get_functiondef()` then silently matches nothing; `0102` caught it with
   a post-check. Prefer restating a function in full.

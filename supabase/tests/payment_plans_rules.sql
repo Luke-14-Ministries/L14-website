@@ -338,3 +338,18 @@ begin
 end $$;
 rollback;
 \echo ALL PLAN METHOD STAMP CHECKS PASSED
+\echo == 0144 deleting a registration as the owner takes its plan with it
+do $$
+declare v_reg uuid := '50000000-0000-0000-0000-000000000001';
+begin
+  delete from public.payment_installments where payment_plan_id in (select id from public.payment_plans where registration_id = v_reg);
+  delete from public.payments where registration_id = v_reg;
+  delete from public.registration_fees where registration_id = v_reg;
+  delete from public.registrations where id = v_reg;
+  if exists (select 1 from public.payment_plans where registration_id = v_reg) then
+    raise exception 'FAIL 0144: the plan survived its registration';
+  end if;
+  raise notice 'PASS 0144 the plan went with its registration';
+  raise exception 'rollback-only' using errcode = 'P0002';
+exception when sqlstate 'P0002' then null;
+end $$;
