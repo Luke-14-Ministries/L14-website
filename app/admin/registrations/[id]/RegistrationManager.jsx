@@ -12,7 +12,7 @@ import Link from 'next/link';
 // The same card the Scholarship Requests queue uses. Shared deliberately: a
 // decision has to mean the same thing wherever a registrar makes it.
 import ScholarshipReview from '@/app/admin/scholarships/ScholarshipReview';
-import { registrationHeads, refundSuggestion, REFUND_FULL_UNTIL_DAYS, isStaleRefund, STALE_REFUND_DAYS } from '@/lib/payments';
+import { registrationHeads, refundSuggestion, REFUND_FULL_UNTIL_DAYS, isStaleRefund, STALE_REFUND_DAYS, CLEARING_PILL } from '@/lib/payments';
 import {
   setParticipantStatus,
   updatePerson,
@@ -1341,7 +1341,9 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                         ? 'bg-green-100 text-green-800'
                         : p.status === 'failed'
                           ? 'bg-red-100 text-red-800'
-                          : 'bg-amber-100 text-amber-800'
+                          : p.status === 'processing'
+                            ? CLEARING_PILL
+                            : 'bg-amber-100 text-amber-800'
                   }`}
                 >
                   {p.status}

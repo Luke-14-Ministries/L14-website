@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { balanceDueOn, formatDueDate, formatDueDateShort, dateISO } from '@/lib/events';
-import { dollars, registrationDepositCents } from '@/lib/payments';
+import { dollars, registrationDepositCents, CLEARING_PILL } from '@/lib/payments';
 import { planAvailable, planConsentText } from '@/lib/plans';
 import FinishChoices from './FinishChoices';
 import Link from 'next/link';
@@ -182,7 +182,11 @@ export default async function FinishPage({ params, searchParams }) {
               {dollars(deposit)} deposit due now
             </span>
           )}
-          {clearing > 0 && <span>{dollars(clearing)} clearing the bank ⏳</span>}
+          {clearing > 0 && (
+            <span className={`rounded-full ${CLEARING_PILL} px-2.5 py-0.5 text-xs font-semibold`}>
+              {dollars(clearing)} clearing the bank
+            </span>
+          )}
           <Link href={`/account/statement/${reg.id}`} className="font-semibold text-brand underline">
             See the statement
           </Link>

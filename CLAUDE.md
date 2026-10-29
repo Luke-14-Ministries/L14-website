@@ -42,7 +42,7 @@ refunded) is now step C1. The working checklist is `DO-THIS-NEXT.md` (rewritten
 questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0145`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0146`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -368,7 +368,7 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
 - **Stripe SDK 23 pins API `2026-09-30.endive`**, which removed `payment_method_types`: Checkout Sessions
   and PaymentIntents restrict the method with **`allowed_payment_method_types`**; the edge functions
   import `npm:stripe@23.0.0` (pinned, so a redeploy cannot pick up a newer API by surprise).
-- **Refunds:** `charge.refunded` → `supabase/functions/stripe-refund-webhook/` (which also emails the payer when a refund reaches *succeeded*, `refund_receipt`, W66); per-family refunds via
+- **Refunds:** `charge.refunded` → `supabase/functions/stripe-refund-webhook/` (which also emails the payer once a refund is *succeeded*, `refund_receipt`, W66 — claimed by stamping `payment_refunds.receipt_emailed_at`, `0146`, because a card refund is already succeeded when the staff screen records it); per-family refunds via
   `refundPayment` in `app/admin/registrations/[id]/actions.js`; the over-refund guard and
   pending-refund accounting are `0038`/`0044`/`0053`/`0054`. Since `0107` the row is reserved before
   Stripe is called (the guard locks the payment), each form sends a one-time `request_key`, and the

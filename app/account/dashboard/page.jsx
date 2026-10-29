@@ -12,6 +12,7 @@ import {
   participantMoney,
   dollars,
   fullScholarshipRequested,
+  CLEARING_PILL,
 } from '@/lib/payments';
 import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from '@/lib/events';
 import { requiresPaymentChoice, feeLabel, planHasProblem } from '@/lib/plans';
@@ -732,7 +733,7 @@ export default async function DashboardPage({ searchParams }) {
   };
   const PAY_STATUS = {
     pending: ['Started', 'bg-neutral-100 text-neutral-600'],
-    processing: ['Clearing the bank', 'bg-amber-100 text-amber-800'],
+    processing: ['Clearing the bank', CLEARING_PILL],
     succeeded: ['Received', 'bg-green-100 text-green-800'],
     failed: ['Failed — not received', 'bg-red-100 text-red-800'],
     refunded: ['Refunded', 'bg-neutral-200 text-neutral-600'],
@@ -1664,10 +1665,10 @@ export default async function DashboardPage({ searchParams }) {
                           if (owing <= 0) {
                             return clearingNow > 0 ? (
                               <span
-                                className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-sm font-semibold"
+                                className={`inline-flex items-center rounded-full ${CLEARING_PILL} px-3 py-1 text-sm font-semibold`}
                                 title="A bank transfer may take a few days to clear. Nothing more to do."
                               >
-                                Paid — {dollars(clearingNow)} clearing the bank ⏳
+                                Paid — {dollars(clearingNow)} clearing the bank
                               </span>
                             ) : (
                               <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 px-3 py-1 text-sm font-semibold">
@@ -1685,8 +1686,11 @@ export default async function DashboardPage({ searchParams }) {
                                 Ways to pay
                               </Link>
                               {clearingNow > 0 && (
-                                <span className="text-sm text-amber-700">
-                                  {dollars(clearingNow)} clearing the bank ⏳
+                                <span
+                                  className={`rounded-full ${CLEARING_PILL} px-2.5 py-0.5 text-xs font-semibold`}
+                                  title="A bank transfer may take a few days to clear. Nothing more to do."
+                                >
+                                  {dollars(clearingNow)} clearing the bank
                                 </span>
                               )}
                             </>

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import RecordGiftForm from './RecordGiftForm';
 import { dayInMorristown } from '@/lib/events';
 import GivingExportBar from './GivingExportBar';
+import { CLEARING_PILL } from '@/lib/payments';
 
 export const metadata = { title: 'Giving — Staff Admin' };
 
@@ -18,7 +19,7 @@ const METHOD_LABEL = {
 };
 const STATUS_CLS = {
   pending: 'bg-neutral-100 text-neutral-600',
-  processing: 'bg-amber-100 text-amber-800',
+  processing: CLEARING_PILL,
   succeeded: 'bg-green-100 text-green-800',
   failed: 'bg-red-100 text-red-800',
   refunded: 'bg-neutral-200 text-neutral-600',

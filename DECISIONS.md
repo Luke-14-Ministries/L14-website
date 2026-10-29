@@ -3921,3 +3921,18 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
 - **One way in on Register:** the event card has one *Register* button. The old second link,
   *Volunteer*, led to the volunteer application, which comes after registering as a volunteer, and
   read like a separate registration.
+
+## 29 Oct 2026 — Stage B tests: the refund email, and "clearing the bank" is not amber
+
+- **The refund email never went for a card refund** (found on the first live refund). The webhook
+  emailed only on the move into *succeeded*, but a card refund succeeds at once and the staff screen
+  records it as succeeded itself, so the webhook had nothing to move. `0146` adds
+  `payment_refunds.receipt_emailed_at`; the webhook now claims the email by stamping it where it is
+  null, whoever recorded the success, so it goes once however many events Stripe sends.
+  `stripe-refund-webhook` v27.
+- **Money clearing the bank is one calm blue pill everywhere** (`CLEARING_PILL`, `lib/payments.js`):
+  the family dashboard's payment rows and its summary beside Ways to pay, the Paid badge, Ways to pay,
+  and the staff registration, payments and giving pages. Amber means "needs something" (Lawrence); a
+  bank transfer on its way needs nothing.
+- **The Gibson registration from 14 Oct** (Week 1, two people, nothing paid) is removed; the household
+  and login stay, and the family will register again on the live site.

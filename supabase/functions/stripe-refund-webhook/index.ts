@@ -38,9 +38,12 @@
 // reaches 'succeeded', the person who paid is emailed from the site, logged
 // to message_log like every other family email, so staff see it under
 // Emails sent. Stripe's own refund email is switched off (Lawrence: every
-// family email from one place). Sent only on the move INTO succeeded, by
-// whichever delivery actually made that move (the updates below are
-// conditional), so Stripe's several events for one refund send one email.
+// family email from one place). Since 0146 (29 Oct 2026) the email is
+// CLAIMED by stamping receipt_emailed_at where it is still null: only the
+// delivery whose stamp took sends, so Stripe's several events for one refund
+// send one email. It used to be sent on the move INTO succeeded, which the
+// staff screen makes itself for a card refund (it succeeds at once), so the
+// commonest refund never emailed anyone (Stage B, first live refund).
 // A failed email never fails the webhook: the money is already recorded.
 //
 // GRANTS: service_role bypasses RLS but NOT table GRANTs. payment_refunds had
@@ -213,7 +216,6 @@ Deno.serve(async (req) => {
 
       const status = mapStatus(r.status);
 
-      let becameSucceeded = false;
       let { data: existing } = await admin
         .from('payment_refunds')
         .select('id, status')
@@ -242,7 +244,6 @@ Deno.serve(async (req) => {
           if (error) return fail('refund-fill', error.message, 500);
           if (filled?.length) {
             existing = { id: reserved.id, status };
-            if (status === 'succeeded' && reserved.status !== 'succeeded') becameSucceeded = true;
           } else {
             // Another delivery filled it first: carry on as an existing row.
             const { data: again } = await admin
@@ -271,7 +272,6 @@ Deno.serve(async (req) => {
             console.log(
               `[stripe-refund-webhook] refund ${r.id}: ${existing.status} -> ${status}`
             );
-            if (status === 'succeeded') becameSucceeded = true;
           }
         }
       } else {
@@ -326,10 +326,25 @@ Deno.serve(async (req) => {
         console.log(
           `[stripe-refund-webhook] recorded ${status} refund of ${r.amount} cents (${r.id})`
         );
-        if (status === 'succeeded') becameSucceeded = true;
       }
 
-      if (becameSucceeded) await emailRefund(admin, payment, r.amount);
+      // The family's email, claimed once (0146): whoever recorded the
+      // success -- the staff screen or this webhook -- the first delivery to
+      // stamp the row sends it.
+      if (status === 'succeeded') {
+        const { data: claimed, error: claimError } = await admin
+          .from('payment_refunds')
+          .update({ receipt_emailed_at: new Date().toISOString() })
+          .eq('stripe_refund_id', r.id)
+          .eq('status', 'succeeded')
+          .is('receipt_emailed_at', null)
+          .select('id');
+        if (claimError) {
+          console.error(`[stripe-refund-webhook] refund email claim failed for ${r.id}: ${claimError.message}`);
+        } else if (claimed?.length) {
+          await emailRefund(admin, payment, r.amount);
+        }
+      }
 
       // Keep the payment row honest about whether the ministry still holds
       // this money. Recomputed from the refunds actually on file rather than
