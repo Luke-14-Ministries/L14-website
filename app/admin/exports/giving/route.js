@@ -4,7 +4,7 @@
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { csvCell } from '@/lib/csv';
-import { QB_GIFT_ACCOUNT, giftClass } from '@/lib/quickbooks';
+import { QB_GIFT_ACCOUNT, QB_HEADER, giftProduct, receiptRows } from '@/lib/quickbooks';
 import { dayInMorristown, todayInMorristown } from '@/lib/events';
 
 // Quoting and spreadsheet-formula safety: lib/csv.js.
@@ -22,11 +22,9 @@ export async function GET(request) {
   const fTo = url.searchParams.get('to') || '';
   const fFund = url.searchParams.get('fund') || '';
   const fMethod = url.searchParams.get('method') || '';
-  // Build plan item 14: Date, Name, Memo, Account, Class, Amount for
-  // QuickBooks Online; gifts that actually arrived (succeeded) only. Account
-  // and class are the ministry's (Larry, 29 Oct 2026; lib/quickbooks.js): a
-  // gift is 40000 Individual Contributions, its class the program its fund
-  // names (none for the General Operating Fund).
+  // Build plan item 14, reshaped 29 Oct 2026 to QuickBooks' Sales Receipt
+  // (lib/quickbooks.js): gifts that actually arrived (succeeded) only, the
+  // fund as Product/Service and Class, 40000 Individual Contributions.
   const quickbooks = url.searchParams.get('format') === 'quickbooks';
 
   const supabase = await createClient();
@@ -48,21 +46,25 @@ export async function GET(request) {
   );
 
   if (quickbooks) {
-    const mdy = (iso) => {
-      const [y, m, d] = dayInMorristown(iso).split('-');
-      return y && m && d ? `${m}/${d}/${y}` : '';
-    };
-    const qb = [['Date', 'Name', 'Memo', 'Account', 'Class', 'Amount']];
+    // One Sales Receipt per gift that arrived, in QuickBooks' own field
+    // order (lib/quickbooks.js); the fund is the Product/Service and Class.
+    const qb = [QB_HEADER];
+    let n = 0;
     for (const g of filtered) {
       if (g.status !== 'succeeded') continue;
-      qb.push([
-        mdy(giftDate(g)),
-        g.donor_name ?? '',
-        [g.fund, g.method, g.email, g.note].filter(Boolean).join(' — '),
-        QB_GIFT_ACCOUNT,
-        giftClass(g.fund),
-        ((g.amount_cents ?? 0) / 100).toFixed(2),
-      ]);
+      n += 1;
+      qb.push(
+        ...receiptRows({
+          receipt: String(n),
+          day: giftDate(g),
+          donor: g.donor_name,
+          email: g.email,
+          method: g.method,
+          product: giftProduct(g.fund),
+          account: QB_GIFT_ACCOUNT,
+          lines: [{ description: ['Donation', g.note].filter(Boolean).join(' — '), cents: g.amount_cents }],
+        })
+      );
     }
     const csvQb = '\ufeff' + qb.map((r) => r.map(esc).join(',')).join('\r\n');
     return new Response(csvQb, {

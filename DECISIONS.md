@@ -3847,3 +3847,12 @@ Found by Larry's Claude session re-checking the 14 October plan review, and conf
   books gifts to 40000, class = the fund's program (none for the General Operating Fund). Both files
   gain a Class column: Date, Name, Memo, Account, Class, Amount. Grants (41000, 42000) do not come
   through the site; they are booked by hand.
+
+**Later the same day: the QuickBooks files take the Sales Receipt's shape.** Lawrence's screenshot
+shows how a payment is entered: a QuickBooks **Sales Receipt** (Donor, Email, Sales Receipt Date,
+Payment method, Reference no., Deposit To 12000 Undeposited Funds, then lines of Product/Service,
+Description, Qty, Rate, Amount, Class), where **Product/Service is the event**. In QuickBooks a
+product carries its income account, so the account follows from it. Both QuickBooks CSVs are now one
+row per receipt line, in that field order, with a Receipt number grouping a payment's lines. A covered
+fee is the second line of the same receipt, and a refund is a Refund Receipt. Gifts take the fund as
+Product/Service. The Account column stays, as a check that the product is mapped to 44000 or 40000.
