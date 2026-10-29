@@ -34,9 +34,8 @@ Two constraints shape every decision:
 **Go-live Stage A is done (28 Oct):** the Vercel server key and cron secret, Stripe live mode prepared
 and idle (three live endpoints, ACH on, branding, customer emails set), the Supabase Cron job, the new
 domain in the Auth redirect list and Turnstile, the Cloudflare copy of the zone checked, the password
-rules, the Microsoft DKIM records in the copy. **G1, G2 and G4 are done (29 Oct):** Script 6 closed, the test data purged (only the Gibson family,
-the Sherrill household and six real logins remain), and Larry's yes for B and C. **Next: G3 (the
-security audit), then Stage B and Stage C.** **Testing Script 7** (SharePoint, `01 Plans and
+rules, the Microsoft DKIM records in the copy. **The gate G1–G4 is done (29 Oct):** Script 6 closed, the test data purged (only the Gibson family,
+the Sherrill household and six real logins remain), and Larry's yes for B and C. **Next: Stage B, then Stage C.** **Testing Script 7** (SharePoint, `01 Plans and
 Decisions`) holds the checks for after go-live; 16.3 (a family's whole journey on a phone, real card,
 refunded) is now step C1. The working checklist is `DO-THIS-NEXT.md` (rewritten
 28 Oct; its *Go live* section is the go-live checklist, steps A1–C11 with the gate G1–G4); open policy
@@ -79,7 +78,7 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
 1. ~~G1 — Script 6 finished~~ — closed 29 Oct.
 2. ~~G2 — Purge ALL test data~~ — done 29 Oct (`DECISIONS.md`; the copy taken first is the schema
    `purge_backup_20261029`, dropped once go-live settles).
-3. **G3 — The security audit** after the purge (the RLS harness, the advisor, `0101`'s mapping, every
+3. ~~G3 — The security audit~~ — done 29 Oct (Next 16.4.2 for a critical advisory; `DECISIONS.md`). After the purge (the RLS harness, the advisor, `0101`'s mapping, every
    server action's grant, `npm audit`).
 4. ~~G4 — The board's yes~~ — Larry, 29 Oct.
 5. **Stage B — the money switch** (staff only, at the preview address): `STRIPE_SECRET_KEY` live in
