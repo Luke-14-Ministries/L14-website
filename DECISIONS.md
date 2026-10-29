@@ -3880,3 +3880,20 @@ dry run in a rolled-back block came first, then the real run, as one SQL block i
   is null, so it silently cancelled the cascade from a deleted registration. The 27 Oct test plan
   survived as an orphan with 20 scheduled charges. The guard now returns `coalesce(new, old)`, and the
   orphan is deleted. A check of every foreign key found no other orphan.
+
+## 29 Oct 2026 — G3: the security audit after the purge
+
+Run the same night as the purge. The RLS harness and the five rule suites pass on fresh databases.
+The advisor shows only accepted items: the three definer views, `mfa_trusted_sessions` without a
+policy, and definer functions open to signed-in or anonymous callers. The two that matter for
+anonymous callers (`staff_lookup_by_email`, `set_check_in`) check `is_admin()` and Registration write
+inside. The rest are trigger functions or the access helpers the policies need. Every table has RLS,
+every definer function pins `search_path`, and no policy uses the old role functions. All 117 server
+actions check a grant or the signed-in user, or are public by design. The service-role client is
+reached only by the automatic emails and the prayer list, each staff use behind its grant.
+
+**`npm audit` found a critical Next.js advisory** (16.0.0–16.4.0: remote code execution through the
+image optimiser with SVGs and through `use cache`, and a Server Actions denial of service). Fixed by
+moving to **Next 16.4.2** (15 Oct; 16.4.3 was under two weeks old). The two dev-only highs (zod and
+brace-expansion, pulled in by ESLint, never shipped) are patched in the lockfile. `npm audit` shows 0.
+Lint and the production build pass locally.

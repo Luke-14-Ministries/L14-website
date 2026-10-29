@@ -514,7 +514,8 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   only, from an environment variable, and only where genuinely required. **The site uses it through one
   client**: `lib/supabase/admin.js`, for the automatic emails (a daily job has no signed-in person) and
   the prayer list's sign-up, confirm and unsubscribe (`0141`; they work through a secret token no
-  signed-in or anonymous role may read); `server-only` fails the build if it is ever imported into
+  signed-in or anonymous role may read; the staff pages that reach it, the prayer send and removal and
+  Email Families' 7-day preview, check Prayer list write or Registration write first); `server-only` fails the build if it is ever imported into
   browser code. Nothing else may use it. The key in Vercel is a dedicated Supabase secret key made for
   Vercel on 28 Oct (A1), Production only.
 - **Row-level security is enforced at the database level**, not in application code. Every table
