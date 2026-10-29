@@ -3783,3 +3783,22 @@ off behind a tick box: their row is kept on purpose, as the record that they mus
 **Communication section.** Email Families, Newsletter and Prayer List move into one sidebar section,
 *Communication*, between Money and Admin. A prayer-team login holding only the Prayer list grant sees
 the Overview and this section with one item.
+
+## 28 Oct 2026 — New event starts from last season's camp or retreat (W70)
+
+Lawrence: creating an event should offer three drafts — Camp (one or two weeks), Adult Adventure, Other
+(blank) — the first two "with the settings from the previous season". *New event* on Setup now shows
+those three choices, plus "or copy one particular event" for anything else. A camp draft starts from
+the newest camp's weeks (events whose names share the part before " — ", the grouping Setup's
+copy-to-later-weeks rule uses; names with "test" are never a template); one week takes Week 1 and
+drops " — Week n" from the name, two weeks take Week 1 and Week 2 (or Week 1 twice, a week apart, if
+last season had one). The retreat draft starts from the newest retreat. Every draft is next year's
+name, the same weekdays 52 weeks on, editable before creating, and created unpublished.
+
+`admin_create_event()` already copied the description, agreements, activities, waivers and rooms, but
+not the money settings, so a copied event opened with no early-registration date, no discounts and no
+balance due. `createEvent` now copies the registration window, early registration and its discount,
+the family and both-weeks discounts, the balance due date and the returned-payment fee from the source,
+every date moved by the same number of days as the event; a failure there is reported, never silent.
+`details_set_by_hand_at` stays empty, so a Week 2 made this way still takes Week 1's details when Week 1
+is saved (`0137`). No migration: the events policy already lets Setup write make that update.

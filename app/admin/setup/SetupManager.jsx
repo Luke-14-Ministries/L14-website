@@ -525,7 +525,7 @@ function ReminderScheduleNote() {
           <strong>Payment plans:</strong> a notice 1 week before each automatic payment.
         </li>
       </ul>
-      <p className="mt-1">Not switched on yet: the schedule is decided, the sending is still to be built.</p>
+      <p className="mt-1">These go out by themselves each morning (in test mode, to staff addresses only, until the site goes live).</p>
     </div>
   );
 }
@@ -534,8 +534,9 @@ function ReminderScheduleNote() {
 // defined inside another is remounted on every render (CLAUDE.md).
 //
 // Copying is the normal path: next year's Week 1 is this year's Week 1 with
-// new dates. Choosing a source pre-fills everything from it, with the name's
-// year bumped and the dates moved 52 weeks on (same weekdays), all editable.
+// new dates. A draft pre-fills everything from its source, with the name's
+// year bumped and the dates moved 52 weeks on (same weekdays), all editable;
+// createEvent then copies the source's money settings, dates moved to match.
 // ---------------------------------------------------------------------------
 
 const CAMP_GETS =
@@ -566,65 +567,196 @@ const BLANK = {
   location: '',
 };
 
+// Drafts from last season (Lawrence, 28 Oct 2026, W70): New event offers
+// Camp Celebrate (one or two weeks), the Adult Adventure Retreat, or a blank
+// event. The first two start from the newest event of that kind -- a camp's
+// weeks are the events whose names share the part before " — ", as Setup's
+// copy-to-later-weeks rule groups them -- moved 52 weeks on. Events with
+// "test" in the name (a go-live test event) are never a template.
+const programOf = (name) => String(name ?? '').split(' — ')[0].trim();
+const notTest = (e) => !/\btest\b/i.test(e.name ?? '');
+
+function lastCampWeeks(events) {
+  const camps = events.filter((e) => e.eventType === 'camp_week' && e.startsOn && notTest(e));
+  if (!camps.length) return [];
+  const newest = camps.reduce((a, b) => (b.startsOn > a.startsOn ? b : a));
+  const program = programOf(newest.name);
+  return camps
+    .filter((e) => programOf(e.name) === program)
+    .sort((a, b) => a.startsOn.localeCompare(b.startsOn));
+}
+
+function lastRetreat(events) {
+  const retreats = events.filter((e) => e.eventType === 'retreat' && e.startsOn && notTest(e));
+  return retreats.length ? retreats.reduce((a, b) => (b.startsOn > a.startsOn ? b : a)) : null;
+}
+
+// One editable draft from a source event: next year's name, the same
+// weekdays 52 weeks on (plus `extraDays` for a second week made from a first).
+function draftFrom(src, { name, extraDays = 0 } = {}) {
+  return {
+    copyFrom: src.id,
+    eventType: src.eventType === 'retreat' ? 'retreat' : 'camp_week',
+    name: name ?? bumpYear(src.name),
+    startsOn: addDays(src.startsOn, 364 + extraDays),
+    endsOn: addDays(src.endsOn, 364 + extraDays),
+    fee: dollars(src.feeCents),
+    deposit: dollars(src.depositCents),
+    capacity: src.capacity == null ? '' : String(src.capacity),
+    location: src.location ?? '',
+  };
+}
+
+function campDrafts(events, weeks) {
+  const last = lastCampWeeks(events);
+  if (!last.length) return null;
+  const program = bumpYear(programOf(last[0].name));
+  if (weeks === 1) return [draftFrom(last[0], { name: program })];
+  const second = last[1]
+    ? draftFrom(last[1])
+    : draftFrom(last[0], { name: `${program} — Week 2`, extraDays: 7 });
+  const first = last[1] ? draftFrom(last[0]) : draftFrom(last[0], { name: `${program} — Week 1` });
+  return [first, second];
+}
+
+const CHOICES = [
+  ['camp', 'Camp Celebrate', 'From last season’s camp: one week or two.'],
+  ['retreat', 'Adult Adventure Retreat', 'From last season’s retreat.'],
+  ['other', 'Other', 'A blank event.'],
+];
+
+const FIELD = 'w-full rounded-sm border border-neutral-300 px-2 py-1';
+
+// One draft's boxes. Module level, never inside NewEventPanel (CLAUDE.md).
+function DraftFields({ draft, onChange }) {
+  const set = (k) => (ev) => onChange({ ...draft, [k]: ev.target.value });
+  return (
+    <div className="grid gap-3 sm:grid-cols-4">
+      <label className="text-sm sm:col-span-2">
+        <span className="block font-semibold text-neutral-700 mb-0.5">Name</span>
+        <input value={draft.name} onChange={set('name')} placeholder="Camp Celebrate 2028 — Week 1" className={FIELD} />
+      </label>
+      <label className="text-sm">
+        <span className="block font-semibold text-neutral-700 mb-0.5">First day</span>
+        <input type="date" value={draft.startsOn} onChange={set('startsOn')} className={FIELD} />
+      </label>
+      <label className="text-sm">
+        <span className="block font-semibold text-neutral-700 mb-0.5">Last day</span>
+        <input type="date" value={draft.endsOn} onChange={set('endsOn')} className={FIELD} />
+      </label>
+      <label className="text-sm">
+        <span className="block font-semibold text-neutral-700 mb-0.5">Price ($/person)</span>
+        <input inputMode="decimal" value={draft.fee} onChange={set('fee')} className={FIELD} />
+      </label>
+      <label className="text-sm">
+        <span className="block font-semibold text-neutral-700 mb-0.5">Deposit ($/person)</span>
+        <input inputMode="decimal" value={draft.deposit} onChange={set('deposit')} className={FIELD} />
+      </label>
+      <label className="text-sm">
+        <span className="block font-semibold text-neutral-700 mb-0.5">Places</span>
+        <input inputMode="numeric" value={draft.capacity} onChange={set('capacity')} placeholder="no limit" className={FIELD} />
+      </label>
+      <label className="text-sm">
+        <span className="block font-semibold text-neutral-700 mb-0.5">Location</span>
+        <input value={draft.location} onChange={set('location')} placeholder="optional" className={FIELD} />
+      </label>
+    </div>
+  );
+}
+
 function NewEventPanel({ events }) {
   const router = useRouter();
   const [, start] = useTransition();
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState(BLANK);
+  const [kind, setKind] = useState('');
+  const [weeks, setWeeks] = useState(2);
+  const [drafts, setDrafts] = useState([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
-  const set = (k) => (ev) => setF((cur) => ({ ...cur, [k]: ev.target.value }));
 
-  function chooseSource(id) {
-    const src = events.find((e) => e.id === id);
-    if (!src) {
-      setF((cur) => ({ ...cur, copyFrom: '' }));
-      return;
-    }
-    setF({
-      copyFrom: id,
-      eventType: src.eventType === 'retreat' ? 'retreat' : 'camp_week',
-      name: bumpYear(src.name),
-      startsOn: addDays(src.startsOn, 364),
-      endsOn: addDays(src.endsOn, 364),
-      fee: dollars(src.feeCents),
-      deposit: dollars(src.depositCents),
-      capacity: src.capacity == null ? '' : String(src.capacity),
-      location: src.location ?? '',
-    });
+  function reset() {
+    setOpen(false);
+    setKind('');
+    setWeeks(2);
+    setDrafts([]);
   }
+
+  function choose(k, w = weeks) {
+    setKind(k);
+    setNotice(null);
+    if (k === 'camp') {
+      setWeeks(w);
+      setDrafts(campDrafts(events, w) ?? [{ ...BLANK, eventType: 'camp_week' }]);
+    } else if (k === 'retreat') {
+      const src = lastRetreat(events);
+      setDrafts([src ? draftFrom(src) : { ...BLANK, eventType: 'retreat' }]);
+    } else if (k === 'other') {
+      setDrafts([{ ...BLANK }]);
+    }
+  }
+
+  // "Or copy one particular event": the 2 Oct path, kept for anything the
+  // three drafts do not cover.
+  function copyOne(id) {
+    const src = events.find((e) => e.id === id);
+    if (!src) return;
+    setKind('copy');
+    setNotice(null);
+    setDrafts([draftFrom(src)]);
+  }
+
+  const updateDraft = (i) => (d) => setDrafts((cur) => cur.map((x, j) => (j === i ? d : x)));
 
   function submit() {
     setBusy(true);
     setNotice(null);
     start(async () => {
-      const res = await createEvent({
-        name: f.name,
-        eventType: f.eventType,
-        startsOn: f.startsOn,
-        endsOn: f.endsOn,
-        feeDollars: f.fee,
-        depositDollars: f.deposit,
-        capacity: f.capacity,
-        location: f.location,
-        copyFrom: f.copyFrom,
-      });
-      setBusy(false);
-      if (res.ok) {
-        setNotice({
-          ok: true,
-          message: `Created “${f.name.trim()}”. It is unpublished: check its details below, then set its Event status to Published when registration should open.`,
+      const made = [];
+      for (const d of drafts) {
+        const res = await createEvent({
+          name: d.name,
+          eventType: d.eventType,
+          startsOn: d.startsOn,
+          endsOn: d.endsOn,
+          feeDollars: d.fee,
+          depositDollars: d.deposit,
+          capacity: d.capacity,
+          location: d.location,
+          copyFrom: d.copyFrom,
         });
-        setF(BLANK);
-        setOpen(false);
-        router.refresh();
-      } else {
-        setNotice({ ok: false, message: res.error });
+        if (!res.ok) {
+          setBusy(false);
+          setNotice({
+            ok: false,
+            message: made.length
+              ? `Created “${made.join('” and “')}”, but not “${d.name.trim()}”: ${res.error}`
+              : res.error,
+          });
+          if (made.length) router.refresh();
+          return;
+        }
+        made.push(d.name.trim());
+        if (res.warning) {
+          setNotice({ ok: false, message: res.warning });
+        }
       }
+      setBusy(false);
+      setNotice((cur) =>
+        cur && !cur.ok
+          ? cur
+          : {
+              ok: true,
+              message: `Created “${made.join('” and “')}”. ${made.length > 1 ? 'They are' : 'It is'} unpublished: check the details below, then set the Event status to Published when registration should open.`,
+            }
+      );
+      reset();
+      router.refresh();
     });
   }
 
-  const src = events.find((e) => e.id === f.copyFrom);
+  const sources = drafts.map((d) => events.find((e) => e.id === d.copyFrom)).filter(Boolean);
+  const isCamp = drafts.some((d) => d.eventType === 'camp_week');
+  const noTemplate = (kind === 'camp' || kind === 'retreat') && !sources.length;
 
   return (
     <div className="mb-6">
@@ -636,24 +768,55 @@ function NewEventPanel({ events }) {
         <div className="rounded-lg border border-brand/40 bg-brand-light/30 p-4">
           <p className="font-semibold mb-3">New event</p>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">
-              <span className="block font-semibold text-neutral-700 mb-0.5">Start from</span>
-              <select
-                value={f.copyFrom}
-                onChange={(ev) => chooseSource(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+          <div className="grid gap-2 sm:grid-cols-3">
+            {CHOICES.map(([k, label, hint]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => choose(k)}
+                aria-pressed={kind === k}
+                className={`rounded-md border px-3 py-2 text-left text-sm ${
+                  kind === k ? 'border-brand bg-white ring-2 ring-brand/40' : 'border-neutral-300 bg-white hover:border-brand'
+                }`}
               >
-                <option value="">A blank event</option>
-                {events.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    Copy of {e.name}
-                  </option>
+                <span className="block font-semibold">{label}</span>
+                <span className="block text-xs text-neutral-600">{hint}</span>
+              </button>
+            ))}
+          </div>
+          <label className="mt-2 block text-xs text-neutral-600">
+            Or copy one particular event:{' '}
+            <select
+              value={kind === 'copy' ? drafts[0]?.copyFrom ?? '' : ''}
+              onChange={(ev) => copyOne(ev.target.value)}
+              className="rounded-sm border border-neutral-300 px-2 py-0.5"
+            >
+              <option value="">choose…</option>
+              {events.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {kind === 'camp' && (
+            <fieldset className="mt-3 text-sm">
+              <legend className="font-semibold text-neutral-700">How many weeks?</legend>
+              <div className="flex gap-4 py-1">
+                {[1, 2].map((w) => (
+                  <label key={w} className="inline-flex items-center gap-1.5">
+                    <input type="radio" name="new-event-weeks" checked={weeks === w} onChange={() => choose('camp', w)} />
+                    {w === 1 ? 'One week' : 'Two weeks'}
+                  </label>
                 ))}
-              </select>
-            </label>
-            <fieldset className="text-sm">
-              <legend className="block font-semibold text-neutral-700 mb-0.5">Type</legend>
+              </div>
+            </fieldset>
+          )}
+
+          {kind === 'other' && (
+            <fieldset className="mt-3 text-sm">
+              <legend className="font-semibold text-neutral-700">Type</legend>
               <div className="flex gap-4 py-1">
                 {[
                   ['camp_week', 'Camp'],
@@ -664,121 +827,75 @@ function NewEventPanel({ events }) {
                       type="radio"
                       name="new-event-type"
                       value={v}
-                      checked={f.eventType === v}
-                      onChange={set('eventType')}
+                      checked={drafts[0]?.eventType === v}
+                      onChange={() => setDrafts((cur) => cur.map((d) => ({ ...d, eventType: v })))}
                     />
                     {label}
                   </label>
                 ))}
               </div>
+              <p className="mt-1 text-xs text-neutral-600">
+                {drafts[0]?.eventType === 'retreat' ? RETREAT_GETS : CAMP_GETS}
+              </p>
             </fieldset>
-          </div>
-          <p className="mt-1 text-xs text-neutral-600">
-            {f.eventType === 'retreat' ? RETREAT_GETS : CAMP_GETS}
-          </p>
+          )}
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-4">
-            <label className="text-sm sm:col-span-2">
-              <span className="block font-semibold text-neutral-700 mb-0.5">Name</span>
-              <input
-                value={f.name}
-                onChange={set('name')}
-                placeholder="Camp Celebrate 2028 — Week 1"
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="block font-semibold text-neutral-700 mb-0.5">First day</span>
-              <input
-                type="date"
-                value={f.startsOn}
-                onChange={set('startsOn')}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="block font-semibold text-neutral-700 mb-0.5">Last day</span>
-              <input
-                type="date"
-                value={f.endsOn}
-                onChange={set('endsOn')}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="block font-semibold text-neutral-700 mb-0.5">Price ($/person)</span>
-              <input
-                inputMode="decimal"
-                value={f.fee}
-                onChange={set('fee')}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="block font-semibold text-neutral-700 mb-0.5">Deposit ($/person)</span>
-              <input
-                inputMode="decimal"
-                value={f.deposit}
-                onChange={set('deposit')}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="block font-semibold text-neutral-700 mb-0.5">Places</span>
-              <input
-                inputMode="numeric"
-                value={f.capacity}
-                onChange={set('capacity')}
-                placeholder="no limit"
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="block font-semibold text-neutral-700 mb-0.5">Location</span>
-              <input
-                value={f.location}
-                onChange={set('location')}
-                placeholder="optional"
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
-              />
-            </label>
-          </div>
+          {drafts.length > 0 && (
+            <div className="mt-3 space-y-4">
+              {drafts.map((d, i) => (
+                <div key={i}>
+                  {drafts.length > 1 && <p className="mb-1 text-sm font-semibold text-neutral-700">Week {i + 1}</p>}
+                  <DraftFields draft={d} onChange={updateDraft(i)} />
+                </div>
+              ))}
+            </div>
+          )}
 
-          <p className="mt-3 text-xs text-neutral-600">
-            {src ? (
-              <>
-                Copies from {src.name}: its description, agreements, activities and their waivers
-                {f.eventType === 'camp_week' ? ', and its rooms and cabins (empty, no one assigned)' : ''},
-                with dates moved to match. People, assignments and program leaders are not copied.
-              </>
-            ) : (
-              <>A blank event gets the standard agreements and nothing else; add activities
-                {f.eventType === 'camp_week' ? ' and rooms (Rooms & Cabins can copy them from another event)' : ''} afterwards.</>
-            )}{' '}
-            {f.eventType === 'camp_week' && 'Volunteers are set to arrive the day before. '}
-            The event starts <strong>unpublished</strong>.
-          </p>
-          <details className="mt-3">
-            <summary className="fold-summary cursor-pointer text-xs font-semibold text-neutral-700">
-              Reminder emails — set the first day and the balance due date
-            </summary>
-            <ReminderScheduleNote />
-          </details>
+          {drafts.length > 0 && (
+            <p className="mt-3 text-xs text-neutral-600">
+              {noTemplate ? (
+                <>There is no earlier event of this kind to start from, so this is a blank event of that type. </>
+              ) : sources.length ? (
+                <>
+                  Drafted from {[...new Set(sources.map((s) => s.name))].join(' and ')}: dates moved to the same
+                  weekdays a year on, and its description, agreements, activities and their waivers
+                  {isCamp ? ', rooms and cabins (empty, no one assigned)' : ''}, and money settings (registration
+                  window, early registration and its discount, family and both-weeks discounts, balance due,
+                  returned-payment fee) copied, every date moved to match. People, assignments and program leaders
+                  are not copied. Check each box before creating.{' '}
+                </>
+              ) : (
+                <>
+                  A blank event gets the standard agreements and nothing else; add activities
+                  {isCamp ? ' and rooms (Rooms & Cabins can copy them from another event)' : ''} afterwards.{' '}
+                </>
+              )}
+              {isCamp && 'Volunteers are set to arrive the day before. '}
+              {drafts.length > 1 ? 'Both start' : 'It starts'} <strong>unpublished</strong>.
+            </p>
+          )}
+          {drafts.length > 0 && (
+            <details className="mt-3">
+              <summary className="fold-summary cursor-pointer text-xs font-semibold text-neutral-700">
+                Reminder emails — set the first day and the balance due date
+              </summary>
+              <ReminderScheduleNote />
+            </details>
+          )}
 
           <div className="mt-3 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={submit}
-              disabled={busy}
+              disabled={busy || !drafts.length}
               className="btn-primary py-1.5! text-sm disabled:opacity-40"
             >
-              {busy ? 'Creating…' : 'Create event'}
+              {busy ? 'Creating…' : drafts.length > 1 ? `Create ${drafts.length} events` : 'Create event'}
             </button>
             <button
               type="button"
               onClick={() => {
-                setOpen(false);
-                setF(BLANK);
+                reset();
                 setNotice(null);
               }}
               disabled={busy}

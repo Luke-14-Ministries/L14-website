@@ -404,7 +404,56 @@ export async function createEvent({
     return { ok: false, error: `Could not create the event: ${error.message}` };
   }
 
+  // The source's money settings come too (W70, 28 Oct 2026): admin_create_event
+  // copies the description, agreements, activities and rooms, but not the
+  // registration window, early registration, discounts, balance due or the
+  // returned-payment fee, so a copied week opened with none of them. Every date
+  // moves by the same number of days as the event itself. Setup write is what
+  // the events policy asks, so this is an ordinary update as the staff member.
+  // details_set_by_hand_at stays empty: a later week made here still takes
+  // Week 1's details when Week 1 is saved (0137).
+  let warning = null;
+  if (copyFrom) {
+    const { data: src, error: srcError } = await supabase
+      .from('events')
+      .select(
+        'starts_on, registration_opens_at, registration_closes_at, early_registration_ends_on, early_registration_discount_cents, balance_due_on, family_discount_cents, family_discount_from_person, multi_week_discount_percent, returned_payment_fee_cents'
+      )
+      .eq('id', copyFrom)
+      .maybeSingle();
+    if (srcError || !src) {
+      warning = `Created “${cleanName}”, but its money settings could not be read from the source (${srcError?.message ?? 'not found'}): set them on its card below.`;
+    } else {
+      const shift = Math.round((Date.parse(`${startsOn}T00:00:00Z`) - Date.parse(`${src.starts_on}T00:00:00Z`)) / 86400000);
+      const moveDate = (iso) => {
+        if (!iso) return null;
+        const t = new Date(`${iso}T00:00:00Z`);
+        t.setUTCDate(t.getUTCDate() + shift);
+        return t.toISOString().slice(0, 10);
+      };
+      const moveMoment = (ts) => (ts ? new Date(Date.parse(ts) + shift * 86400000).toISOString() : null);
+      const { error: copyError } = await supabase
+        .from('events')
+        .update({
+          registration_opens_at: moveMoment(src.registration_opens_at),
+          registration_closes_at: moveMoment(src.registration_closes_at),
+          early_registration_ends_on: moveDate(src.early_registration_ends_on),
+          early_registration_discount_cents: src.early_registration_discount_cents,
+          balance_due_on: moveDate(src.balance_due_on),
+          family_discount_cents: src.family_discount_cents,
+          family_discount_from_person: src.family_discount_from_person,
+          multi_week_discount_percent: src.multi_week_discount_percent,
+          returned_payment_fee_cents: src.returned_payment_fee_cents,
+        })
+        .eq('id', id);
+      if (copyError) {
+        console.error('createEvent settings copy:', copyError.message);
+        warning = `Created “${cleanName}”, but its money settings were not copied (${copyError.message}): set them on its card below.`;
+      }
+    }
+  }
+
   revalidatePath('/admin/setup');
   revalidatePath('/admin', 'layout');
-  return { ok: true, id };
+  return { ok: true, id, warning };
 }
