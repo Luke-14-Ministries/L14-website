@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import ContactManager from './ContactManager';
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
 export const metadata = { title: 'My Contact Info & Preferences — Luke 14 Ministries' };
 
@@ -26,7 +26,7 @@ export default async function ContactPage() {
   return (
     <section className="bg-neutral-50 py-12 min-h-[60vh]">
       <div className="container-site max-w-2xl mx-auto">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-2">
+        <div className={`${TITLE_ROW} mb-2`}>
           <h1 className="text-3xl font-bold">My Contact Info &amp; Preferences</h1>
           <BackLink />
         </div>

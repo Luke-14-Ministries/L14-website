@@ -1,4 +1,4 @@
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import DeleteDataForm from './DeleteDataForm';
@@ -35,7 +35,7 @@ export default async function DeleteDataPage() {
 
   return (
     <section className="mx-auto max-w-2xl px-4 py-10">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <div className={TITLE_ROW}>
         <h1 className="text-3xl font-bold">Delete my data</h1>
         <BackLink />
       </div>

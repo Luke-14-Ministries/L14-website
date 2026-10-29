@@ -1,4 +1,4 @@
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
@@ -149,7 +149,7 @@ export default async function AgreementsPage() {
         <div className="print:hidden">
           {/* The account pages' header (26 Oct 2026): title left, the Back to
               dashboard pill right; Print, this page's action, below the intro. */}
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div className={TITLE_ROW}>
             <h1 className="text-3xl font-bold">My Agreements</h1>
             <BackLink />
           </div>

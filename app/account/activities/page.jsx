@@ -5,7 +5,7 @@ import ActivityPicker from './ActivityPicker';
 import WaiverUpload from './WaiverUpload';
 import VolunteerWaiver from './VolunteerWaiver';
 import BackBar from '@/components/BackBar';
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { agreementText, isCurrentEventRow } from '@/lib/events';
 import { CHOOSES_ACTIVITIES } from '@/lib/activityRoles';
 
@@ -365,7 +365,7 @@ export default async function ActivitiesPage({ searchParams }) {
   return (
     <section className="bg-neutral-50 py-12 min-h-[60vh]">
       <div className="container-site max-w-3xl mx-auto">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-2">
+        <div className={`${TITLE_ROW} mb-2`}>
           <h1 className="text-3xl font-bold">Activities</h1>
           <BackLink />
         </div>

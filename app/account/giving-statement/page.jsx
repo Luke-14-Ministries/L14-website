@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import PrintButton from '@/components/PrintButton';
 import GivingStatementSheet, { statementTitle } from '@/components/GivingStatementSheet';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
@@ -50,7 +50,7 @@ export default async function MyGivingStatementPage({ searchParams }) {
   return (
     <div className="mx-auto max-w-2xl p-8 print:p-0 bg-white text-neutral-900 print:text-[12px]">
       <div className="mb-6 print:hidden">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
+        <div className={`${TITLE_ROW} mb-2`}>
           <h1 className="text-3xl font-bold">My giving statement</h1>
           {/* The way back on the title's line, Print under it (27 Oct 2026). */}
           <span className="flex flex-col items-end gap-2">

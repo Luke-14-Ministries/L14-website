@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import HouseholdManager from './HouseholdManager';
 import BackBar from '@/components/BackBar';
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
 export const metadata = { title: 'Manage Household — Luke 14 Ministries' };
 
@@ -35,7 +35,7 @@ export default async function ManageHouseholdPage() {
     return (
       <section className="bg-neutral-50 py-12 min-h-[60vh]">
         <div className="container-site max-w-3xl mx-auto">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div className={TITLE_ROW}>
             <h1 className="text-3xl font-bold">Manage Household</h1>
             <BackLink />
           </div>
@@ -129,7 +129,7 @@ export default async function ManageHouseholdPage() {
   return (
     <section className="bg-neutral-50 py-12 min-h-[60vh]">
       <div className="container-site max-w-3xl mx-auto">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-2">
+        <div className={`${TITLE_ROW} mb-2`}>
           <h1 className="text-3xl font-bold">Manage Household</h1>
           <BackLink />
         </div>

@@ -5,7 +5,7 @@ import { dollars, registrationDepositCents } from '@/lib/payments';
 import { planAvailable, planConsentText } from '@/lib/plans';
 import FinishChoices from './FinishChoices';
 import Link from 'next/link';
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
 export const metadata = { title: 'Finish Registering — Luke 14 Ministries' };
 
@@ -149,7 +149,7 @@ export default async function FinishPage({ params, searchParams }) {
             approve it (Lawrence). This page is simply the ways to pay. The
             header matches the other account pages: title left, the Back to
             dashboard pill right (26 Oct 2026). */}
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
+        <div className={`${TITLE_ROW} mb-1`}>
           <h1 className="text-3xl font-bold">Ways to pay</h1>
           <BackLink />
         </div>

@@ -1,4 +1,4 @@
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import DetailsForm from './DetailsForm';
@@ -86,7 +86,7 @@ export default async function PersonDetailsPage({ params }) {
   return (
     <section className="bg-neutral-50 py-12">
       <div className="container-site max-w-3xl mx-auto">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <div className={TITLE_ROW}>
           <h1 className="text-3xl font-bold">Support details for {name}</h1>
           <BackLink />
         </div>
