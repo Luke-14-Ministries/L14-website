@@ -156,11 +156,17 @@ export default async function FinishPage({ params, searchParams }) {
         <p className="text-neutral-600 mb-2">
           {ev.name}. Pay the deposit or any amount, pay in full, set up a payment plan, or request
           help with the fee.
-          {due && (
+          {/* Once the date has passed, "due by" a day gone reads wrong
+              (29 Oct 2026); the dashboard says "balance past due". */}
+          {due && due < today && balance > 0 ? (
+            <>
+              {' '}The balance was due on <strong>{formatDueDate(due)}</strong>, so it is due now.
+            </>
+          ) : due && due >= today ? (
             <>
               {' '}The balance is due by <strong>{formatDueDate(due)}</strong>.
             </>
-          )}
+          ) : null}
         </p>
         {/* The dashboard card's pills, the same words and colours (Lawrence,
             27 Oct 2026: "should also feature the deposit due amber pill"),

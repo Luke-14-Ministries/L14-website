@@ -3802,3 +3802,31 @@ the family and both-weeks discounts, the balance due date and the returned-payme
 every date moved by the same number of days as the event; a failure there is reported, never silent.
 `details_set_by_hand_at` stays empty, so a Week 2 made this way still takes Week 1's details when Week 1
 is saved (`0137`). No migration: the events policy already lets Setup write make that update.
+
+## 29 Oct 2026 — The board's yes to going live in three sittings (G4)
+
+Larry, answering the Staff Questions with his own Claude session: going live in three stages is "an
+acceptable plan". Stage B, live Stripe keys with real money taken by staff only at the preview
+address, may come a few days before Stage C, when the domain moves and families are told. Lawrence:
+Larry's yes counts as the board's for B and C. The rule "test keys until launch" now means "until
+Stage B". Larry also approved the rebuilt brochure (The Hazelnut Movement removed). Its QR code encodes
+the bare `https://luke14ministries.net/`, so Stage C's phone check scans a printed copy.
+
+## 29 Oct 2026 — Payment plans: a late Resume schedules a charge; notice before every rebuilt charge
+
+Found by Larry's Claude session re-checking the 14 October plan review, and confirmed in the code.
+
+- **Resume after the last charge date scheduled nothing** (`plan_charge_dates()` returns no date
+  within three days of the due date), so the plan read Active and never charged. `0143` restates
+  `build_plan_installments()` with `p_min_lead_days`. Resume passes the notice lead plus a day, and
+  when no date is left and money is owed, it schedules one charge for the whole balance then.
+  Stripe's webhook passes nothing, so a new plan's schedule is unchanged.
+- **The "your next payment" email goes 10 days ahead for a bank account**, a week for a card
+  (`planNoticeDays()`). A plan's amount follows the balance, and US rules for automatic bank debits
+  expect about 10 days' notice of a changed amount. This is a cautious reading, not legal advice;
+  David can confirm. The rebuilt schedule's lead is chosen so this email always goes out first.
+- **A finished plan reads "Completed", not "Paid in full".** Someone added to the registration
+  after the last charge leaves money owed, and the charger skips completed plans. The family's plan
+  card says what is still owed and points at Ways to pay.
+- **Ways to pay after the due date** says "was due on …, so it is due now", not "due by" a day
+  that has passed.

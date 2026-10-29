@@ -43,7 +43,7 @@ whole family journey on a phone; a question for Larry whether it holds up Stage 
 questions are in `Luke14-Staff-Questions.md` §1.
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0142`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0143`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -298,6 +298,10 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
 - **Payment plans** (`0080`): created only by `stripe-plans-webhook`; families read, never write; the
   daily `charge-payment-plans` function shares logic with the webhook via
   `supabase/functions/_shared/`. Families cannot edit money columns on `registration_participants`.
+  **Resume rebuilds the schedule with a lead** (`build_plan_installments(plan, today, p_min_lead_days)`,
+  `0143`): no charge sooner than the plan notice plus a day (8 days card, 11 bank), and past the last
+  charge date the whole balance is one charge then — before `0143` a late Resume scheduled nothing.
+  A finished plan reads *Completed*, never "Paid in full": money added since shows on the plan card.
   **Not live until `supabase/PAYMENT-PLANS-SETUP.md` is done.** A family can cancel their own plan from the
   dashboard (`family_cancel_payment_plan()`, `0135`: household check in the function, refused while a
   charge is clearing; staff then decide the early discount). Plans and pay-in-full are offered at
@@ -404,7 +408,7 @@ Vercel; `server-only`). The rules are the dashboard's own (`lib/familyNeeds.js`:
 `supportState`; `lib/payments.js`; `lib/plans.js`) and the dates are `lib/reminders/schedule.js`
 (decided 27 Oct: deposit and balance monthly on the 15th, then 2 weeks before the balance due date and
 on it, then weekly past due; missing details monthly, then 2 weeks and 5 days before camp; a plan
-notice 1 week before each payment; confirmations and off-the-waitlist the next morning; not-submitted
+notice 1 week before each payment, 10 days for a bank account (`planNoticeDays()`, 29 Oct); confirmations and off-the-waitlist the next morning; not-submitted
 at 3/10/17/24 days; a staff summary on Mondays). Wording: `lib/reminders/templates.js`. One email per
 family per day; `reminder_sends` records each thing said once (kind, item_key); a staff **Pause
 reminders** (`reminder_pauses`, `set_reminder_pause()`, Registration write) stops the nagging kinds.
@@ -583,7 +587,7 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
 - **Phase 4 — launch, in three sittings** (DO-THIS-NEXT *Go live*). Stage A (ready ahead) done
   28 Oct; the gate G1–G4; Stage B live Stripe keys with staff-only real payments at the preview
   address; Stage C the domain pointed and transferred, all four preview switches reversed together.
-  Board approval gates B and C. (Vercel Pro: done 20 Oct.)
+  Board approval for B and C: given by Larry, 29 Oct 2026 (`DECISIONS.md`). (Vercel Pro: done 20 Oct.)
 
 ---
 

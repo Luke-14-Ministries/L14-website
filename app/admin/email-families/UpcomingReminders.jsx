@@ -9,7 +9,7 @@ import FoldCard from '@/components/FoldCard';
 import { formatDueDateShort } from '@/lib/events';
 
 const KIND = {
-  plan_upcoming: 'payment coming in a week',
+  plan_upcoming: 'plan payment coming (a week ahead; 10 days for a bank account)',
   plan_finished: 'plan paid in full',
   card_expiring: 'plan card expiring',
   deposit: 'deposit reminder',

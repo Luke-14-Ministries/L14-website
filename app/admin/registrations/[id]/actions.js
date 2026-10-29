@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { getStripe } from '@/lib/stripe/server';
 import { registrationDepositCents } from '@/lib/payments';
+import { planNoticeDays } from '@/lib/plans';
 
 const STATUSES = ['draft', 'submitted', 'waitlisted', 'confirmed', 'cancelled'];
 const CAMP_ROLES = [
@@ -1286,7 +1287,7 @@ export async function setPlanStatus(registrationId, { action, keepsEarlyDiscount
 
   const { data: plan, error: readError } = await supabase
     .from('payment_plans')
-    .select('id, status')
+    .select('id, status, payment_method_kind')
     .eq('registration_id', registrationId)
     .maybeSingle();
   if (readError) return { ok: false, error: readError.message };
@@ -1333,7 +1334,9 @@ export async function setPlanStatus(registrationId, { action, keepsEarlyDiscount
   if (action === 'resume') {
     // Charges that fell due while it was stopped are not all taken at once:
     // the schedule is rebuilt from today, spreading what is owed over the
-    // dates that are left. Failed charges get a fresh set of tries.
+    // dates that are left. Failed charges get a fresh set of tries. No charge
+    // lands before the family's "next payment" email can go out, and past the
+    // last date the whole balance is one charge then (0143).
     const { error: failError } = await supabase
       .from('payment_installments')
       .update({ status: 'cancelled' })
@@ -1343,6 +1346,7 @@ export async function setPlanStatus(registrationId, { action, keepsEarlyDiscount
     const { error: buildError } = await supabase.rpc('build_plan_installments', {
       p_plan_id: plan.id,
       p_today: today,
+      p_min_lead_days: planNoticeDays(plan.payment_method_kind) + 1,
     });
     if (buildError) return { ok: false, error: `Resumed, but the schedule was not rebuilt: ${buildError.message}` };
   }

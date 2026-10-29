@@ -74,6 +74,27 @@ insert into public.payments (registration_id, amount_cents, method, status) valu
 select public.build_plan_installments('80000000-0000-0000-0000-000000000001','2026-11-01') as n;
 select due_on, amount_cents from public.payment_installments where payment_plan_id='80000000-0000-0000-0000-000000000001' order by due_on;
 select final_due_on from public.payment_plans where id='80000000-0000-0000-0000-000000000001';
+\echo == 9b resume after the due date (0143): one charge for the whole balance, after the notice lead
+do $$
+declare v_n int; v_bal bigint; v_rows int; v_on date; v_amt int;
+begin
+  select greatest(0, balance_cents) into v_bal from public.registration_balances where registration_id='50000000-0000-0000-0000-000000000001';
+  v_n := public.build_plan_installments('80000000-0000-0000-0000-000000000001','2027-08-01', 11);
+  select count(*), min(due_on), min(amount_cents) into v_rows, v_on, v_amt
+    from public.payment_installments where payment_plan_id='80000000-0000-0000-0000-000000000001' and status='scheduled';
+  if v_n <> 1 or v_rows <> 1 or v_on <> date '2027-08-12' or v_amt <> v_bal then
+    raise exception 'FAIL 9b: got % rows (n=%), on %, % cents; expected 1 on 2027-08-12 for %', v_rows, v_n, v_on, v_amt, v_bal;
+  end if;
+  raise notice 'PASS 9b a late resume schedules one charge on today + 11 for the balance';
+  -- the lead also trims early dates from a normal rebuild
+  v_n := public.build_plan_installments('80000000-0000-0000-0000-000000000001','2026-11-01', 400);
+  if exists (select 1 from public.payment_installments where payment_plan_id='80000000-0000-0000-0000-000000000001'
+              and status='scheduled' and due_on < date '2026-11-01' + 400) then
+    raise exception 'FAIL 9b: a charge was scheduled inside the lead';
+  end if;
+  raise notice 'PASS 9b no charge inside the lead (% left)', v_n;
+  perform public.build_plan_installments('80000000-0000-0000-0000-000000000001','2026-11-01');
+end $$;
 \echo == 10 family permissions
 begin; set local role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',true) \g /dev/null
 select route as family_sees_own_route from public.registration_payment_routes;
