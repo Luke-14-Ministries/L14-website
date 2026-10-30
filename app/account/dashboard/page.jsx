@@ -783,16 +783,26 @@ export default async function DashboardPage({ searchParams }) {
     if ((bal?.balance_cents ?? 0) > 0 && dueOn && dueOn < todayISO) needs.push('balance past due');
     if (r.awaiting_family_since) needs.push('staff asked a question');
     if (!isPast(r)) {
+      // Named for what is actually missing (Lawrence, 29 Oct 2026: a
+      // volunteer read "support details" when only the photo was left). A
+      // person missing only the photo is listed under "a photo of"; anyone
+      // else -- form never saved, or more than the photo missing -- under
+      // "support details for".
       const seen = new Set();
       const supportNames = [];
+      const photoNames = [];
       for (const p of live) {
         const id = p.people?.id;
         if (!id || seen.has(id)) continue;
         seen.add(id);
         if ((supportStatus.get(id) ?? 'empty') !== 'complete') {
-          supportNames.push(p.people?.first_name || 'someone');
+          const missing = supportMissing.get(id) ?? [];
+          const name = p.people?.first_name || 'someone';
+          if (missing.length === 1 && missing[0] === 'a photo') photoNames.push(name);
+          else supportNames.push(name);
         }
       }
+      if (photoNames.length) needs.push(`a photo of ${nameList(photoNames)}`);
       if (supportNames.length) needs.push(`support details for ${nameList(supportNames)}`);
       for (const o of (owedRows ?? []).filter((x) => x.registration_id === r.id)) {
         const who = firstNameByPerson.get(o.person_id) || 'someone';
@@ -1194,7 +1204,7 @@ export default async function DashboardPage({ searchParams }) {
                           : []),
                       ]
                     : clearing > 0
-                      ? [{ text: 'Clearing the bank', tone: 'neutral' }]
+                      ? [{ text: 'Clearing the bank', tone: 'clearing' }]
                       : bal
                         ? [{ text: 'Paid in full', tone: 'green' }]
                         : null;

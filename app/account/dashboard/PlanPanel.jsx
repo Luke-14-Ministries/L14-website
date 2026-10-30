@@ -148,13 +148,22 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
           since the last payment). Pay it from &ldquo;Ways to pay&rdquo; below.
         </p>
       )}
-      {next && plan.status === 'active' && !failed && (
+      {/* Paid off another way (a check, a scholarship) while the plan runs:
+          no charge will be taken. The daily charger closes the plan on its
+          next date, once any bank payment has cleared (29 Oct 2026: it read
+          "about $0.00 on Nov 23"). */}
+      {next && plan.status === 'active' && !failed && (balanceCents ?? 0) <= 0 && (
+        <p className="mt-1 text-green-800">
+          Nothing is left to pay, so no more payments will be taken. The plan closes by itself.
+        </p>
+      )}
+      {next && plan.status === 'active' && !failed && (balanceCents ?? 0) > 0 && (
         <p className="mt-1">
           Next payment: about <strong>{dollars(each)}</strong> on {formatDueDateShort(next.due_on)}
           {left > 1 ? `, then ${left - 1} more` : ''}.
         </p>
       )}
-      {upcoming.length > 0 && (
+      {upcoming.length > 0 && (balanceCents ?? 0) > 0 && (
         <details className="mt-1">
           <summary className="fold-summary text-brand">Full schedule</summary>
           <ul className="mt-1 space-y-0.5">

@@ -27,6 +27,7 @@
 
 import { useVisitChoice } from './visitChoice';
 import FoldArrow from '@/components/FoldArrow';
+import { CLEARING_PILL } from '@/lib/payments';
 
 export default function RegistrationCard({
   eventName,
@@ -63,7 +64,9 @@ export default function RegistrationCard({
         ? 'bg-amber-500 text-white'
         : tone === 'green'
           ? 'bg-green-100 text-green-800'
-          : 'bg-neutral-100 text-neutral-600';
+          : tone === 'clearing'
+            ? CLEARING_PILL
+            : 'bg-neutral-100 text-neutral-600';
 
   return (
     <div className="rounded-sm border border-neutral-200">
