@@ -57,6 +57,7 @@ import Panel, { PanelLink } from './Panel';
 import { reviewRegistration } from './actions';
 import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
 import { whenInMorristown } from '@/lib/events';
+import { CLEARING_PILL } from '@/lib/payments';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 const when = (iso) =>
@@ -93,6 +94,11 @@ export default function ReviewCard({
   eventId = null,
   depositWaived = null,
   depositCents = 0,
+  // Bank payments on their way (processing). The deposit counts only money
+  // that has ARRIVED, so a family whose deposit is clearing still reads as
+  // short; saying so beside it keeps staff from chasing them (Lawrence,
+  // 29 Oct 2026).
+  clearingCents = 0,
   // Registration write / scholarship decision (0101, 0102). Without them the
   // card shows the state and offers nothing to press.
   canWrite = true,
@@ -235,6 +241,15 @@ export default function ReviewCard({
                 {' '}· received {money(review.confirmed_paid_cents)} of a {money(review.deposit_expected_cents)} deposit
               </>
             )}
+            {clearingCents > 0 && (
+              <>
+                {' '}·{' '}
+                <span className={`rounded-full ${CLEARING_PILL} px-2 py-0.5 text-xs font-semibold`}>
+                  {money(clearingCents)} clearing the bank
+                </span>{' '}
+                (counts once it arrives)
+              </>
+            )}
           </span>
         </p>
       )}
@@ -344,6 +359,11 @@ export default function ReviewCard({
             return (
               <li key={f} className="font-semibold text-amber-800">
                 ⚑ {REVIEW_FLAG[f] ?? f}
+                {f === 'deposit_short' && clearingCents > 0 && (
+                  <span className="ml-2 font-normal text-neutral-600">
+                    — {money(clearingCents)} is clearing the bank; nothing to chase yet.
+                  </span>
+                )}
               </li>
             );
           })}

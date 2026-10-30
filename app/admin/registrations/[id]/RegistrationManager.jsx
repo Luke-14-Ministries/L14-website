@@ -7,7 +7,7 @@
 // staff member can actually do -- this file only decides how it looks.
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 // The same card the Scholarship Requests queue uses. Shared deliberately: a
 // decision has to mean the same thing wherever a registrar makes it.
@@ -400,7 +400,13 @@ function ParticipantRow({
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [adjusting, setAdjusting] = useState(false);
+  // ?adjust=1 opens the scholarship / discount editor: Event Payments links
+  // each family's Scholarship / discount amount here (Lawrence, 29 Oct 2026),
+  // since the decision is made per person, on the registration.
+  const searchParams = useSearchParams();
+  const [adjusting, setAdjusting] = useState(
+    () => canDecide && participant.status !== 'cancelled' && searchParams?.get('adjust') === '1'
+  );
   const [enrolling, setEnrolling] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
@@ -2165,6 +2171,9 @@ export default function RegistrationManager({
           eventId={eventId}
           depositWaived={depositWaived}
           depositCents={depositCents}
+          clearingCents={payments
+            .filter((pay) => pay.status === 'processing')
+            .reduce((s, pay) => s + (pay.amount_cents ?? 0), 0)}
           canWrite={canWrite}
           canDecide={canDecide}
           defaultOpen={reviewOpen}

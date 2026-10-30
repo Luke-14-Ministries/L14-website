@@ -494,8 +494,18 @@ export default async function AdminPaymentsPage({ searchParams }) {
                       <span className="block text-xs text-amber-800">incl. {money(b.fees_cents)} fees</span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-right whitespace-nowrap text-green-700">
-                    {assist > 0 ? `−${money(assist)}` : '—'}
+                  {/* A link to where it is decided: the registration, with the
+                      scholarship / discount editor open (Lawrence, 29 Oct 2026).
+                      Deciding stays there -- it is per person and needs
+                      Payments and Registration write (0102). */}
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    <Link
+                      href={`/admin/registrations/${b.registration_id}/?adjust=1#people`}
+                      className={`${assist > 0 ? 'text-green-700' : 'text-neutral-400'} hover:underline`}
+                      title="Open this registration's scholarship / discount editor"
+                    >
+                      {assist > 0 ? `−${money(assist)}` : '—'}
+                    </Link>
                   </td>
                   <td className="px-4 py-2 text-right">{money(b.paid_cents)}</td>
                   {/* A credit reads as one unit, worded as the Review column

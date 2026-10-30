@@ -3936,3 +3936,9 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
   bank transfer on its way needs nothing.
 - **The Gibson registration from 14 Oct** (Week 1, two people, nothing paid) is removed; the household
   and login stay, and the family will register again on the live site.
+- **Event Payments links each family's Scholarship / discount amount** to the registration with the
+  editor open (`?adjust=1#people`). Deciding stays on the registration: it is per person and needs
+  Payments and Registration write (`0102`); Event Payments is the reconciliation page.
+- **The Review card names money clearing the bank** beside "received $x of a $y deposit" and on the
+  *deposit short* flag. The deposit counts only money that has arrived, so a family whose bank deposit
+  is on its way read as short with nothing said.
