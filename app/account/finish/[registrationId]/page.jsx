@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { balanceDueOn, formatDueDate, formatDueDateShort, dateISO } from '@/lib/events';
 import { dollars, registrationDepositCents, CLEARING_PILL } from '@/lib/payments';
-import { planAvailable, planConsentText } from '@/lib/plans';
+import { planAvailable, planConsentText, planHasProblem } from '@/lib/plans';
 import FinishChoices from './FinishChoices';
 import Link from 'next/link';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
@@ -91,6 +91,26 @@ export default async function FinishPage({ params, searchParams }) {
     .filter((p) => p.status === 'processing')
     .reduce((sum, p) => sum + (p.amount_cents ?? 0), 0);
 
+  // A plan running as it should is the balance handled: the same calm grey
+  // pill as the dashboard card ("Payment plan · $x left · next <date>"), not
+  // the amber balance, which sat beside "You're all set" and contradicted it
+  // (1 Nov 2026). A plan with a problem keeps the amber balance.
+  const { data: plan, error: planError } = await supabase
+    .from('payment_plans')
+    .select('status, payment_installments ( due_on, amount_cents, status, attempts, last_error, next_attempt_on, last_attempt_at )')
+    .eq('registration_id', registrationId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (planError) throw new Error(`Payment plan: ${planError.message}`);
+  const planOk = (bal?.balance_cents ?? 0) > 0 && plan && !planHasProblem(plan);
+  const nextCharge = planOk
+    ? [...(plan.payment_installments ?? [])]
+        .sort((a, b) => String(a.due_on).localeCompare(String(b.due_on)))
+        .find((i) => ['scheduled', 'processing'].includes(i.status))
+    : null;
+
   const ev = reg.events ?? {};
   const balance = bal?.balance_cents ?? 0;
   const full = Math.min(balance, payInFull ?? balance);
@@ -172,7 +192,13 @@ export default async function FinishPage({ params, searchParams }) {
             27 Oct 2026: "should also feature the deposit due amber pill"),
             and the statement beside the money it explains. */}
         <p className="mb-6 flex flex-wrap items-center gap-2 text-sm text-neutral-700">
-          {balance > 0 && (
+          {planOk && (
+            <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-600">
+              Payment plan · {dollars(balance)} left
+              {nextCharge ? ` · next ${formatDueDateShort(nextCharge.due_on)}` : ''}
+            </span>
+          )}
+          {balance > 0 && !planOk && (
             <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
               {dollars(balance)} balance{due ? ` · due ${formatDueDateShort(due)}` : ''}
             </span>
