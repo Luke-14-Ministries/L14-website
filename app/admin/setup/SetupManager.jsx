@@ -42,6 +42,11 @@ const EVENT_STATUSES = [
   ['published', 'Published', 'On the public site; registration follows the open/close times.', 'bg-green-100 text-green-800 border-green-300'],
   ['archived', 'Archived', 'Finished: out of every current list and off the public site; its records stay.', 'bg-neutral-200 text-neutral-700 border-neutral-300'],
 ];
+const STATUS_SAVED = {
+  unpublished: 'Unpublished — hidden from the public site; staff can keep setting it up.',
+  published: 'Published — on the public site now; registration follows the open/close times.',
+  archived: 'Archived — off the public site and out of every current list; its records stay.',
+};
 const statusTone = (v) => EVENT_STATUSES.find(([key]) => key === v)?.[3] ?? '';
 const eventStatus = (published, archivedAt) =>
   archivedAt ? 'archived' : published ? 'published' : 'unpublished';
@@ -150,7 +155,9 @@ function EventRow({ e }) {
           opensAt: localToIso(opens),
           closesAt: localToIso(closes),
         });
-        if (res.ok) said.push('Status saved — the public site shows it now.');
+        // Say what the saved status DOES (Lawrence, 1 Nov 2026: "the public
+        // site shows it now" read wrong for an event just archived).
+        if (res.ok) said.push(STATUS_SAVED[status] ?? 'Saved.');
         else failed = res.error;
       }
       if (!failed && detailsDirty) {
