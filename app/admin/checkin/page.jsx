@@ -4,6 +4,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { staffAssigns, isCurrentEventRow } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
+import { dollars } from '@/lib/payments';
 import CheckinList from './CheckinList';
 import MedicalContact from './MedicalContact';
 
@@ -107,6 +108,21 @@ export default async function CheckinPage({ searchParams }) {
       buddyNamesOf.get(b.camper_participant_id).push(n);
     }
 
+    // What each family still owes, for the "Pay on your phone" QR (1 Nov
+    // 2026). Money is Payments read: for anyone else registration_balances
+    // returns no rows, and an absent balance is "not yours to see", never
+    // "nothing owed" -- so it is not asked at all, and the row shows no
+    // amount (the page-wide QR still works for them).
+    const owedOf = new Map();
+    if (can(staff, 'read:payments') && (regs ?? []).length > 0) {
+      const { data: bals, error: balsError } = await supabase
+        .from('registration_balances')
+        .select('registration_id, balance_cents')
+        .in('registration_id', regs.map((r) => r.id));
+      if (balsError) throw new Error(`Balances: ${balsError.message}`);
+      for (const b of bals ?? []) owedOf.set(b.registration_id, b.balance_cents);
+    }
+
     const noPhotoIds = new Set(
       (consents ?? []).filter((c) => c.granted === false).map((c) => c.person_id)
     );
@@ -163,6 +179,8 @@ export default async function CheckinPage({ searchParams }) {
           sortName: `${p.people?.last_name ?? ''} ${p.people?.first_name ?? ''}`,
           role: p.camp_role,
           household: r.households?.display_name ?? '',
+          registrationId: r.id,
+          owed: owedOf.get(r.id) > 0 ? dollars(owedOf.get(r.id)) : null,
           checkedInAt: p.checked_in_at,
           flags,
           noPhoto: p.people?.id ? noPhotoIds.has(p.people.id) : false,
@@ -177,7 +195,8 @@ export default async function CheckinPage({ searchParams }) {
       <h2 className="text-xl font-bold mb-1">Check-In</h2>
       <p className="text-sm text-neutral-500 mb-4">
         Mark arrivals as people come through the door. Works on a phone. Red flags are the
-        at-a-glance alerts; full detail lives on the Medical &amp; Support page.
+        at-a-glance alerts; full detail lives on the Medical &amp; Support page. A family paying at
+        the door pays on their own phone: show them the QR code.
       </p>
 
       {eventsList.length > 1 && (

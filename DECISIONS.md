@@ -3942,3 +3942,18 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
 - **The Review card names money clearing the bank** beside "received $x of a $y deposit" and on the
   *deposit short* flag. The deposit counts only money that has arrived, so a family whose bank deposit
   is on its way read as short with nothing said.
+
+## 1 November 2026 — Paying at the door
+
+- **A family paying at check-in pays on their own phone**, from a QR code on the Check-In page
+  (Lawrence, 1 Nov). The money lands on their registration through the site's own checkout, the
+  receipt comes from the site, and no card touches a staff phone. Stripe's Tap to Pay in the Stripe
+  Dashboard app stays the fallback (a family with no phone or login); a payment taken there reaches
+  the bank but not the registration, so staff record it by hand (Event Payments, *Other*).
+- **Two QR codes:** one at the top of the list for any family (their dashboard; no money grant needed),
+  and an amber *family owes $x · QR* on each person, for staff with Payments read only, that opens that
+  registration's *Ways to pay*. The link is built from the page's own address, so the preview's code
+  opens the preview.
+- **Dependency added: `qrcode-generator` 2.0.4** (MIT, no dependencies of its own, pinned exactly),
+  with Lawrence's yes. The code is drawn in the browser as SVG (`components/QrCode.jsx`); the link
+  never goes to an outside QR service.

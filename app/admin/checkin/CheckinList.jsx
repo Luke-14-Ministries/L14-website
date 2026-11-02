@@ -8,6 +8,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toggleCheckIn } from './actions';
+import QrCode from '@/components/QrCode';
 
 const ROLE_LABEL = {
   camper: 'Camper',
@@ -25,6 +26,8 @@ export default function CheckinList({ rows }) {
   const [pendingId, setPendingId] = useState(null);
   const [, start] = useTransition();
   const [error, setError] = useState('');
+  // The "Pay on your phone" QR being shown, if any: { path, title, caption }.
+  const [qr, setQr] = useState(null);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -62,6 +65,24 @@ export default function CheckinList({ rows }) {
         <span className="text-sm font-semibold text-neutral-600">
           {arrived} / {rows.length} arrived
         </span>
+        {/* Paying at the door goes through the family's OWN phone and login
+            (1 Nov 2026): the money lands on their registration by itself and
+            no card touches a staff phone. This one works for any family and
+            needs no money grant -- their dashboard shows what is left. */}
+        <button
+          type="button"
+          onClick={() =>
+            setQr({
+              path: '/account/dashboard/',
+              title: 'Pay on your phone',
+              caption:
+                'Point your phone’s camera here and sign in. Your page shows what is left to pay; “Ways to pay” takes a card or a bank account.',
+            })
+          }
+          className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-700 hover:border-brand"
+        >
+          Pay on your phone (QR)
+        </button>
       </div>
 
       {error && (
@@ -105,6 +126,26 @@ export default function CheckinList({ rows }) {
                 {/* The gray line is the household -- worth saying, because in
                     testing it read as a mystery second name. */}
                 <span title="Household">{r.household}</span>
+                {/* Only for staff with Payments read (the page asks nothing
+                    otherwise). The amount is the FAMILY's balance, shown on
+                    each of its people -- hence "family owes". */}
+                {r.owed && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setQr({
+                        path: `/account/finish/${r.registrationId}/`,
+                        title: `${r.household}: ${r.owed} left to pay`,
+                        caption:
+                          'Point your phone’s camera here and sign in. It opens this registration’s “Ways to pay”, and the payment goes onto it by itself.',
+                      })
+                    }
+                    title="What this family still owes. Tap for a QR code that opens their own payment page."
+                    className="ml-2 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-xs font-semibold hover:bg-amber-200"
+                  >
+                    family owes {r.owed} · QR
+                  </button>
+                )}
                 {r.flags.length > 0 && (
                   <span className="ml-2">
                     {r.flags.map((f) => (
@@ -175,6 +216,39 @@ export default function CheckinList({ rows }) {
           <li className="px-4 py-6 text-center text-neutral-500">No matches.</li>
         )}
       </ul>
+
+      {qr && <QrOverlay qr={qr} onClose={() => setQr(null)} />}
+    </div>
+  );
+}
+
+// Full-screen so the code is big enough to scan from a phone held at arm's
+// length. The link is built from THIS site's address, so the preview's QR
+// opens the preview and the live site's opens the live site.
+function QrOverlay({ qr, onClose }) {
+  const url = `${window.location.origin}${qr.path}`;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={qr.title}
+    >
+      <div
+        className="w-full max-w-sm rounded-lg bg-white p-5 text-center shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-bold mb-3">{qr.title}</h3>
+        <div className="flex justify-center">
+          <QrCode value={url} size={260} label={`QR code: ${qr.title}`} />
+        </div>
+        <p className="mt-3 text-sm text-neutral-600">{qr.caption}</p>
+        <p className="mt-1 text-xs text-neutral-400 break-all">{url}</p>
+        <button type="button" onClick={onClose} className="btn-primary mt-4 w-full">
+          Done
+        </button>
+      </div>
     </div>
   );
 }
