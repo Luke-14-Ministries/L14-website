@@ -1180,6 +1180,14 @@ export default async function DashboardPage({ searchParams }) {
                   const nextCharge = planOk
                     ? runningPlan.payment_installments.find((i) => ['scheduled', 'processing'].includes(i.status))
                     : null;
+                  // Money on its way is its own fact, so it rides BESIDE a plan
+                  // or a balance rather than being hidden by them (1 Nov 2026:
+                  // a plan's deposit still clearing showed only the grey plan
+                  // pill). Blue means "on its way, nothing to do"; the plan
+                  // pill stays grey -- arranged, nothing to do -- and the two
+                  // are different facts.
+                  const clearingPill =
+                    clearing > 0 ? [{ text: `${dollars(clearing)} clearing the bank`, tone: 'clearing' }] : [];
                   const status = notFinished
                     ? [{ text: 'Not finished — choose how to pay', tone: 'ask' }]
                     : planOk
@@ -1190,6 +1198,7 @@ export default async function DashboardPage({ searchParams }) {
                           }`,
                           tone: 'neutral',
                         },
+                        ...clearingPill,
                       ]
                     : owes
                     ? [
@@ -1202,9 +1211,10 @@ export default async function DashboardPage({ searchParams }) {
                         ...(depositDue
                           ? [{ text: `${dollars(depositCents)} deposit due now`, tone: 'ask' }]
                           : []),
+                        ...clearingPill,
                       ]
                     : clearing > 0
-                      ? [{ text: 'Clearing the bank', tone: 'clearing' }]
+                      ? clearingPill
                       : bal
                         ? [{ text: 'Paid in full', tone: 'green' }]
                         : null;

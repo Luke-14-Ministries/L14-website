@@ -3957,3 +3957,7 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
 - **Dependency added: `qrcode-generator` 2.0.4** (MIT, no dependencies of its own, pinned exactly),
   with Lawrence's yes. The code is drawn in the browser as SVG (`components/QrCode.jsx`); the link
   never goes to an outside QR service.
+- **The plan pill stays grey; money clearing the bank rides beside it in blue** (Lawrence asked,
+  1 Nov). Grey is "arranged, nothing to do", blue is "on its way, nothing to do": different facts, so
+  a plan whose deposit is still clearing shows both, and so does an amber balance. The pill names the
+  amount ("$1.00 clearing the bank") wherever it appears on the card header.
