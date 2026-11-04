@@ -106,6 +106,11 @@ export default function ReviewCard({
   // Open or folded when the page first draws (26 Oct 2026): the rule is
   // RegistrationManager's, beside the other cards'.
   defaultOpen = true,
+  // The family's scholarship requests still waiting (the same card the
+  // Scholarship Requests page uses), shown here as step 1 above the approval
+  // (Lawrence, 4 Nov 2026: the request sat in a separate section below,
+  // with its own heading and its own "approve"). Null when none is waiting.
+  scholarshipSlot = null,
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -189,7 +194,7 @@ export default function ReviewCard({
       : `${waiting.length} waiting on staff`;
 
   return (
-    <Panel title="Review" count={count} id="review" defaultOpen={defaultOpen}>
+    <Panel title="Review" count={count} id="review" defaultOpen={defaultOpen} opensFor="scholarship-requests">
       {/* The family replied in the app (0126). One line since 28 Oct 2026
           (Lawrence: four notices for one reply was too many): the reply, and
           Mark as read, are in the conversation below. */}
@@ -231,7 +236,10 @@ export default function ReviewCard({
           ))}
         </p>
       )}
-      {cls && (
+      {/* With a scholarship request waiting, step 1 below says it; the class
+          line ("Full scholarship requested · received $0.00 of a $50.00
+          deposit") would say it twice. */}
+      {cls && !scholarshipSlot && (
         <p className="text-sm mb-3">
           <span className={`inline-block rounded-sm px-2 py-0.5 font-semibold ${cls.cls}`}>{reviewClassLabel(review)}</span>{' '}
           <span className="text-neutral-600">
@@ -553,9 +561,21 @@ export default function ReviewCard({
       {/* Who is still undecided (26 Oct 2026), as plainly as who is
           waitlisted or confirmed above: each person a link to their row,
           with their role, directly above the buttons that decide them. */}
+      {scholarshipSlot && (
+        <div id="scholarship-requests" className="mb-4 scroll-mt-4">
+          <p className="mb-2 text-sm font-bold text-neutral-800">
+            1 · The scholarship request{' '}
+            <span className="font-normal text-neutral-600">
+              — decide this first: a full scholarship means no deposit is needed.
+            </span>
+          </p>
+          {scholarshipSlot}
+        </div>
+      )}
       {waiting.length > 0 && (
         <div className="mb-3 rounded-lg border border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-950">
           <p className="font-bold">
+            {scholarshipSlot && '2 · '}
             {canWrite ? 'Waiting on your decision' : 'Waiting on a decision'}
             {onFamily && <span className="font-normal"> — the family has been asked for more first</span>}
           </p>

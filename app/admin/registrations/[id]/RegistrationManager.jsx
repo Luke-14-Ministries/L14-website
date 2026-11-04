@@ -2089,7 +2089,9 @@ export default function RegistrationManager({
   const openFlags = (review?.flags ?? []).filter((f) => !INFO_FLAGS.includes(f));
   const creedPending = (creed?.pending.length ?? 0) > 0;
   const reviewOpen =
-    anySubmitted || replyUnread || Boolean(hold?.since) || Boolean(awaiting?.since) || openFlags.length > 0 || creedPending;
+    anySubmitted || replyUnread || Boolean(hold?.since) || Boolean(awaiting?.since) || openFlags.length > 0 || creedPending ||
+    // A scholarship request waiting is decided inside the Review card now.
+    scholarshipRequests.length > 0;
   // People: open while anyone is submitted or waitlisted, or someone still
   // on the week shows a gap on their row -- no date of birth, or a request
   // for help with the fee waiting on a decision.
@@ -2206,6 +2208,15 @@ export default function RegistrationManager({
           review={review}
           awaiting={awaiting}
           familyReply={familyReply}
+          scholarshipSlot={
+            scholarshipRequests.length > 0 ? (
+              <div className="space-y-4">
+                {scholarshipRequests.map((row) => (
+                  <ScholarshipReview key={row.participantId} row={row} />
+                ))}
+              </div>
+            ) : null
+          }
           hold={hold}
           creed={creed}
           eventId={eventId}
@@ -2229,24 +2240,8 @@ export default function RegistrationManager({
             Amber, because it is work outstanding that drains when somebody
             acts — the same rule the cancellation queue and Recent Changes
             follow. */}
-        {scholarshipRequests.length > 0 && (
-          <div id="scholarship-requests" className="scroll-mt-4">
-            <h2 className="text-lg font-bold mb-1">
-              {scholarshipRequests.length === 1
-                ? 'This family has asked for help with the fee'
-                : `This family has asked for help with the fee (${scholarshipRequests.length} people)`}
-            </h2>
-            <p className="text-sm text-neutral-600 mb-3">
-              Nothing is decided until you decide it. Approving takes the amount straight off
-              their balance; declining records why, so whoever answers the phone knows.
-            </p>
-            <div className="space-y-4">
-              {scholarshipRequests.map((row) => (
-                <ScholarshipReview key={row.participantId} row={row} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* The scholarship request is step 1 inside the Review card since
+            4 Nov 2026 (scholarshipSlot), not a section of its own. */}
 
         {/* The conversation sits with the Review card (0126): a family's reply
             is part of the review, not something to scroll for. Open while
