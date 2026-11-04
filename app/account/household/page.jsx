@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import HouseholdManager from './HouseholdManager';
+import SetUpHousehold from './SetUpHousehold';
 import BackBar from '@/components/BackBar';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
@@ -31,7 +32,15 @@ export default async function ManageHouseholdPage() {
   if (memberError) throw new Error(`Your household could not be read: ${memberError.message}`);
   const householdId = memberRows?.[0]?.household_id;
 
+  // No household yet: set one up here, without registering first (0149;
+  // Lawrence, 4 Nov 2026). The names start from the account's own profile.
   if (!householdId) {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profileError) throw new Error(`Your account could not be read: ${profileError.message}`);
     return (
       <section className="bg-neutral-50 py-12 min-h-[60vh]">
         <div className="container-site max-w-3xl mx-auto">
@@ -40,11 +49,13 @@ export default async function ManageHouseholdPage() {
             <BackLink />
           </div>
           <p className="mt-2 text-neutral-700">
-            No household on file yet — one is created the first time you register.
+            No household on file yet. Set it up now, or{' '}
+            <Link href="/register/" className="text-brand underline">
+              register for an event
+            </Link>{' '}
+            and it is set up as you go.
           </p>
-          <Link href="/register/" className="btn-primary mt-6 inline-block">
-            Register for an Event
-          </Link>
+          <SetUpHousehold firstName={profile?.first_name ?? ''} lastName={profile?.last_name ?? ''} />
         </div>
       </section>
     );

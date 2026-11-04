@@ -390,3 +390,30 @@ export async function setCaregivers(personId, caregiver1Id, caregiver2Id) {
   revalidatePath('/account/household');
   return { ok: true };
 }
+
+// A new account sets up its household before registering (0149; Lawrence,
+// 4 Nov 2026). create_my_household() makes the household, the caller as its
+// owner and its primary contact, and refuses a second one. The registration
+// wizard later finds it and fills in the rest.
+export async function createMyHousehold(form) {
+  const first = clean(form?.firstName);
+  const last = clean(form?.lastName);
+  if (!first || !last) return { ok: false, error: 'Give your first and last name.' };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('create_my_household', {
+    p_first_name: first,
+    p_last_name: last,
+    p_phone: clean(form?.phone),
+  });
+  if (error) {
+    return {
+      ok: false,
+      error: error.message?.includes('already have a household')
+        ? 'You already have a household. Reload the page to manage it.'
+        : 'Your household could not be set up. Please try again.',
+    };
+  }
+  revalidatePath('/account/household');
+  revalidatePath('/account/dashboard');
+  return { ok: true };
+}
