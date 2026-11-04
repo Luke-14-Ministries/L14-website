@@ -126,6 +126,67 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
     drawFramed(ctx, framing.bitmap, PREVIEW, zoom, fx, fy);
   }, [framing, zoom, fx, fy]);
 
+  // A computer's webcam (Lawrence, 4 Nov 2026). Phones keep "Take a photo"
+  // (the camera app, through the file input); a computer gets a live preview
+  // here and the frame it takes goes into the same framing step as a file.
+  // The stream is stopped the moment it is not needed.
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const [webcam, setWebcam] = useState(false);
+  function stopWebcam() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setWebcam(false);
+  }
+  useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), []);
+  async function startWebcam() {
+    setError('');
+    setNote('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('This browser cannot use a camera here. Choose a file instead.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setWebcam(true);
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+      });
+    } catch (err) {
+      setError(
+        err?.name === 'NotAllowedError'
+          ? 'The camera was not allowed. Allow it in your browser’s address bar, or choose a file instead.'
+          : 'No camera could be opened. Choose a file instead.'
+      );
+    }
+  }
+  async function snapWebcam() {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) return;
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth;
+    c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    try {
+      const bitmap = await createImageBitmap(c);
+      stopWebcam();
+      setSizeNote(pixelNote(bitmap.width, bitmap.height, 'photo') ?? '');
+      setZoom(1);
+      setFx(0.5);
+      setFy(0.5);
+      setFraming({ bitmap });
+    } catch {
+      setError('The photo could not be taken. Please try again, or choose a file.');
+    }
+  }
+
   async function onPick(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -315,7 +376,7 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
               onChange={onPick}
             />
           </label>
-          {isTouchDevice && (
+          {isTouchDevice ? (
             <label className="btn-outline py-1.5! text-sm cursor-pointer inline-block">
               Take a photo
               <input
@@ -327,8 +388,34 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
                 onChange={onPick}
               />
             </label>
+          ) : (
+            !webcam && (
+              <button type="button" onClick={startWebcam} disabled={busy} className="btn-outline py-1.5! text-sm">
+                Use webcam
+              </button>
+            )
           )}
         </div>
+        {webcam && (
+          <div className="mt-3 max-w-sm rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+            {/* Mirrored, as a selfie view is; the photo taken is not. */}
+            <video
+              ref={videoRef}
+              muted
+              playsInline
+              className="w-full rounded-sm bg-black"
+              style={{ transform: 'scaleX(-1)' }}
+            />
+            <div className="mt-2 flex gap-2">
+              <button type="button" onClick={snapWebcam} className="btn-primary py-1.5! text-sm">
+                Take photo
+              </button>
+              <button type="button" onClick={stopWebcam} className="text-sm text-neutral-600 underline">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
         <p className="mt-2 text-xs text-neutral-500 max-w-sm">
           A clear photo of {personName || 'this person'}&rsquo;s face helps staff greet them by
           name at check-in. You&rsquo;ll get to frame it after choosing, and it is resized on

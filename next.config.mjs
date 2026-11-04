@@ -88,7 +88,16 @@ const nextConfig = {
   // every existing link in this site is written. It stays.
   trailingSlash: true,
   async headers() {
-    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+    // The camera, on the two pages with a photo upload only (Lawrence, 4 Nov
+    // 2026: a webcam for families on a computer). Everywhere else it stays
+    // off. A later match with the same header wins, so these override the
+    // site-wide line for these paths; the browser still asks the person.
+    const CAMERA_OK = { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()' };
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      { source: '/account/details/:path*', headers: [CAMERA_OK] },
+      { source: '/account/household/:path*', headers: [CAMERA_OK] },
+    ];
   },
   async redirects() {
     return [
