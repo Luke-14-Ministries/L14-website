@@ -199,8 +199,11 @@ export default async function AdminVolunteersPage({ searchParams }) {
     };
   });
 
-  // Group by event, newest first; events without volunteers are omitted.
-  const groups = (events ?? [])
+  // Group by event; events without volunteers are omitted.
+  // Soonest first (Lawrence, 4 Nov 2026: with Week 2 listed above Week 1, a
+  // Week 2 application was approved by mistake for Week 1's).
+  const groups = [...(events ?? [])]
+    .sort((a, b) => String(a.starts_on ?? '').localeCompare(String(b.starts_on ?? '')))
     .map((ev) => ({ event: ev, rows: rows.filter((r) => r.eventId === ev.id) }))
     .filter((g) => g.rows.length > 0);
   const unassigned = rows.filter((r) => !(events ?? []).some((ev) => ev.id === r.eventId));
