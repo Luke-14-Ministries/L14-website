@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { isCurrentEventRow } from '@/lib/events';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import VolunteerManager from './VolunteerManager';
@@ -208,7 +209,12 @@ export default async function AdminVolunteersPage({ searchParams }) {
   // ?event=<id> narrows to one event (Ellen's "drop-down per event", 14 Oct
   // 2026); the print view carries the same filter.
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
-  const shownGroups = eventFilter ? groups.filter((g) => g.event.id === eventFilter) : groups;
+  // With no event chosen, the current events only (Lawrence, 4 Nov 2026: an
+  // archived or finished event's volunteers stop counting) -- the rule every
+  // staff page uses. An older event is one pick away under "Other events".
+  const shownGroups = eventFilter
+    ? groups.filter((g) => g.event.id === eventFilter)
+    : groups.filter((g) => g.event.id === 'none' || isCurrentEventRow(g.event));
 
   return (
     <div>
@@ -218,7 +224,6 @@ export default async function AdminVolunteersPage({ searchParams }) {
           selected={eventFilter || null}
           basePath="/admin/volunteers"
           allowAll
-          allLabel="All events"
         />
         <a
           href={`/admin/volunteers/print/${eventFilter ? `?event=${eventFilter}` : ''}`}

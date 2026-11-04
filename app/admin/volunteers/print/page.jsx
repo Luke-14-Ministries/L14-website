@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { clearanceMark, isMinor } from '@/lib/format';
-import { todayInMorristown } from '@/lib/events';
+import { todayInMorristown, isCurrentEventRow } from '@/lib/events';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
@@ -55,7 +55,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
          registration_participants ( id, camp_role, status,
            people ( id, first_name, last_name, email, phone, date_of_birth ) )`
       ),
-    supabase.from('events').select('id, name, starts_on, ends_on').order('starts_on', { ascending: false }),
+    supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on', { ascending: false }),
   ]);
   // CLAUDE.md: never turn a query error into an empty list -- the printed
   // sheet would read as "no volunteers" or "no check on file".
@@ -99,7 +99,8 @@ export default async function VolunteerPrintPage({ searchParams }) {
   };
 
   const groups = (events ?? [])
-    .filter((ev) => !eventFilter || ev.id === eventFilter)
+    // No event chosen: the current events, as on the Volunteers page.
+    .filter((ev) => (eventFilter ? ev.id === eventFilter : isCurrentEventRow(ev)))
     .map((ev) => ({
       event: ev,
       rows: vols

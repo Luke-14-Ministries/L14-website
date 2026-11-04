@@ -270,10 +270,13 @@ export default async function AdminLayout({ children }) {
           .is('reviewed_at', null),
         // Applications sitting in "applied" — same treatment as Recent
         // Changes: a number on the nav whenever something needs review.
+        // Not for an archived event (Lawrence, 4 Nov 2026): no badge counts
+        // an event staff have taken off every current list.
         supabase
           .from('volunteer_applications')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'applied'),
+          .select('id, registration_participants!inner ( registrations!inner ( events!inner ( archived_at ) ) )', { count: 'exact', head: true })
+          .eq('status', 'applied')
+          .is('registration_participants.registrations.events.archived_at', null),
         // Payment ACTIVITY, not a review queue (asked for 24 Aug). Nothing
         // here is waiting on a decision; the number answers "has money moved
         // since I last looked?", which is the question the payments page gets
@@ -281,23 +284,26 @@ export default async function AdminLayout({ children }) {
         // numbers on the nav mean the same span of time.
         supabase
           .from('payments')
-          .select('id', { count: 'exact', head: true })
-          .gte('created_at', paymentsSince),
+          .select('id, registrations!inner ( events!inner ( archived_at ) )', { count: 'exact', head: true })
+          .gte('created_at', paymentsSince)
+          .is('registrations.events.archived_at', null),
         // Families waiting to hear back about cancelling. A queue that
         // DRAINS when staff act, so it takes the amber treatment rather
         // than the blue rolling-window one.
         supabase
           .from('registration_cancellation_requests')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'open'),
+          .select('id, registrations!inner ( events!inner ( archived_at ) )', { count: 'exact', head: true })
+          .eq('status', 'open')
+          .is('registrations.events.archived_at', null),
         // Families waiting to hear whether the ministry can help with the
         // fee. Another draining queue, so amber again -- and the one with
         // the least excuse for sitting: a family who has said cost is the
         // problem is deciding whether to come at all.
         supabase
           .from('scholarships')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'requested'),
+          .select('id, registration_participants!inner ( registrations!inner ( events!inner ( archived_at ) ) )', { count: 'exact', head: true })
+          .eq('status', 'requested')
+          .is('registration_participants.registrations.events.archived_at', null),
         // New sign-ups waiting to be confirmed or waitlisted -- the biggest
         // review queue in the ministry, and until now the only one with no
         // number on the nav. It lives on the Overview, which meant the one
@@ -315,9 +321,10 @@ export default async function AdminLayout({ children }) {
         // staff learn to ignore.
         supabase
           .from('registration_participants')
-          .select('id, registrations!inner ( awaiting_family_since )', { count: 'exact', head: true })
+          .select('id, registrations!inner ( awaiting_family_since, events!inner ( archived_at ) )', { count: 'exact', head: true })
           .eq('status', 'submitted')
-          .is('registrations.awaiting_family_since', null),
+          .is('registrations.awaiting_family_since', null)
+          .is('registrations.events.archived_at', null),
         // A family that replied in the app and nobody has read it yet (0126)
         // is waiting on staff too. A reply clears "waiting on the family",
         // so anyone still submitted is already in the count above; what this
@@ -326,9 +333,10 @@ export default async function AdminLayout({ children }) {
         // counted once.
         supabase
           .from('registrations')
-          .select('id, registration_participants ( status )')
+          .select('id, registration_participants ( status ), events!inner ( archived_at )')
           .eq('family_reply_unread', true)
-          .is('awaiting_family_since', null),
+          .is('awaiting_family_since', null)
+          .is('events.archived_at', null),
       ]);
     // A failed count is logged and shows no badge (null counts as 0).
     if (changesError) console.error('changes badge:', changesError.message);
@@ -349,10 +357,11 @@ export default async function AdminLayout({ children }) {
       const today = new Date().toISOString().slice(0, 10);
       const { data: volRows, error: volRowsError } = await supabase
         .from('registration_participants')
-        .select('person_id, people ( date_of_birth ), registrations!inner ( events!inner ( ends_on ) )')
+        .select('person_id, people ( date_of_birth ), registrations!inner ( events!inner ( ends_on, archived_at ) )')
         .eq('camp_role', 'volunteer')
         .neq('status', 'cancelled')
-        .gte('registrations.events.ends_on', today);
+        .gte('registrations.events.ends_on', today)
+        .is('registrations.events.archived_at', null);
       if (volRowsError) console.error('background-check badge:', volRowsError.message);
       // Adults only: Checkr does not screen under-18s (Lawrence, 15 Oct 2026).
       const volIds = [
@@ -422,9 +431,10 @@ export default async function AdminLayout({ children }) {
       supabase
         .from('registration_participants')
         .select(
-          'id, person_id, camp_role, registrations!inner ( events!inner ( ends_on, event_type ) )'
+          'id, person_id, camp_role, registrations!inner ( events!inner ( ends_on, event_type, archived_at ) )'
         )
         .neq('status', 'cancelled')
+        .is('registrations.events.archived_at', null)
         // The same people the board lists (ruling 29 Sep 2026, §17.1):
         // campers and siblings. This badge still excluded only volunteers,
         // so every parent, guardian and caregiver counted as "without a
