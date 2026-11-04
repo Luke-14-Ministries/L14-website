@@ -4029,3 +4029,5 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     the camera is allowed on the two photo pages only (`Permissions-Policy` in next.config.mjs);
     phones get a hint for portrait-mode photos.
   - **Password boxes have a show/hide eye** (`components/PasswordInput.jsx`).
+  - **`0150`: "N/A (e.g. staff)" is a program placement** for people in no program for the week; it
+    counts as placed, never gets a leader.
