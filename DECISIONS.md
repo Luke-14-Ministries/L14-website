@@ -3996,4 +3996,8 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     suggestion is "Suggested refund", and its text is one size;
   - Setup's event cards fold, and their status pill takes the dropdown's colours;
   - Email Families became **Email Registrants**: everyone, campers and their families, or volunteers
-    (with childcare and support team), for one event or all current events at once.
+    (with childcare and support team), for one event or all current events at once;
+  - Programs: an empty program card says "No leader named — name one below"; naming a leader is a
+    section of its own, with a person picker searchable by name or email (people registered for the
+    event who sign in themselves, volunteers first), an email box as the fallback, and a Save button.
+    The checks are unchanged: an account, registered for that event, a warning if not a volunteer.
