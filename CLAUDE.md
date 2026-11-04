@@ -28,21 +28,26 @@ Two constraints shape every decision:
 
 ---
 
-## Where things stand — 29 October 2026
+## Where things stand — 4 November 2026
 
-**Phase 3: built, in staff testing** on the preview site, the site still on Stripe's test keys.
-**Go-live Stage A is done (28 Oct):** the Vercel server key and cron secret, Stripe live mode prepared
-and idle (three live endpoints, ACH on, branding, customer emails set), the Supabase Cron job, the new
-domain in the Auth redirect list and Turnstile, the Cloudflare copy of the zone checked, the password
-rules, the Microsoft DKIM records in the copy. **The gate G1–G4 is done (29 Oct):** Script 6 closed, the test data purged (only the Gibson family,
-the Sherrill household and six real logins remain), and Larry's yes for B and C. **Next: Stage B, then Stage C.** **Testing Script 7** (SharePoint, `01 Plans and
-Decisions`) holds the checks for after go-live; 16.3 (a family's whole journey on a phone, real card,
-refunded) is now step C1. The working checklist is `DO-THIS-NEXT.md` (rewritten
-28 Oct; its *Go live* section is the go-live checklist, steps A1–C11 with the gate G1–G4); open policy
-questions are in `Luke14-Staff-Questions.md` §1.
+**Phase 3 done; Stage B done (29 Oct – 4 Nov):** the preview site takes real money on Stripe's live
+keys, and every real-money test passed (DO-THIS-NEXT B4). Stage A and the gate G1–G4 were done
+28–29 Oct. **`REMINDERS_MODE=live`** since 4 Nov, ahead of Stage C, and `0148` made the automatic
+emails able to run at all. **Next: Stage C, the address**, held only by DO-THIS-NEXT **H1–H3**
+(Larry and Ellen check next summer's camp on Setup; the alpha testers register for real; one whole
+registration on a phone). **Testing Script 7** (SharePoint, `01 Plans and Decisions`) holds the
+checks for after go-live. The working checklist is `DO-THIS-NEXT.md` (its *Go live* section, A1–C11);
+open policy questions are in `Luke14-Staff-Questions.md` §1.
+
+**Archived means gone from every current list (Lawrence, 4 Nov 2026).** An archived event is out of
+every staff list's default, every badge and queue, and every family nag; records (statements, a
+person's page, Event Payments' *All events*, exports) keep it. New list, badge or reminder code
+follows the same rule (`isCurrentEventRow`, or `archived_at is null` where history is wanted). A real
+past event stays on a family's dashboard, folded; Setup can clear an archived test event from family
+dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0146`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0148`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
