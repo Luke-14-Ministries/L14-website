@@ -1302,7 +1302,7 @@ function FamilyMessages({ registrationId, messages, unreadIds = [], canWrite = t
 //
 // A section of the Money card since 26 Oct 2026, keeping the id "payments"
 // that /admin/payments links to; the Money card opens itself for it.
-function PaymentsCard({ registrationId, payments, stripeBase = '', event = null, feePeople = 0, depositWaived = false, canWritePayments = false }) {
+function PaymentsCard({ registrationId, payments, stripeBase = '', event = null, feePeople = 0, depositWaived = false, canWritePayments = false, creditCents = 0 }) {
   const [openFor, setOpenFor] = useState(null);
 
   if (payments.length === 0) {
@@ -1477,6 +1477,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                 event={event}
                 feePeople={feePeople}
                 depositWaived={depositWaived}
+                creditCents={creditCents}
                 onDone={() => setOpenFor(null)}
               />
             )}
@@ -1487,7 +1488,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
   );
 }
 
-function RefundForm({ registrationId, payment, event = null, feePeople = 0, depositWaived = false, onDone }) {
+function RefundForm({ registrationId, payment, event = null, feePeople = 0, depositWaived = false, creditCents = 0, onDone }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
@@ -1503,10 +1504,15 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
     refundableCents: payment.refundableCents,
     today: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date()),
   });
-  // Dollars as typed, opening on the rule's suggestion when there is one and
-  // on everything still refundable otherwise.
+  // A registration in credit (paid more than owed: a scholarship or discount
+  // after paying) is settled by refunding the credit, not by the
+  // cancellation suggestion, which would offer $0.00 once the deposit is
+  // kept (B4 test, 4 Nov 2026). Capped at what this payment has left.
+  const settle = creditCents > 0 ? Math.min(creditCents, payment.refundableCents) : 0;
+  // Dollars as typed, opening on the credit when there is one, then on the
+  // suggestion, then on everything still refundable.
   const [amount, setAmount] = useState(
-    ((rule ? rule.suggested : payment.refundableCents) / 100).toFixed(2)
+    ((settle > 0 ? settle : rule ? rule.suggested : payment.refundableCents) / 100).toFixed(2)
   );
   const [feeCover, setFeeCover] = useState(false);
   const [reason, setReason] = useState('');
@@ -1553,15 +1559,36 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
       <p className="text-sm font-semibold text-amber-900">
         Refund from this {PAY_METHOD_LABEL[payment.method] ?? payment.method} payment
       </p>
-      <p className="mt-0.5 text-xs text-amber-800">
+      <p className="mt-0.5 text-sm text-amber-800">
         {payment.isStripe
           ? 'Pressing Refund sends this to Stripe straight away, and it goes back to the card or bank account it came from. Stripe usually shows it to the family within 5–10 days; the reference appears here as soon as it is accepted.'
           : 'This records a refund the ministry pays by check or cash. Nothing is sent anywhere automatically.'}
       </p>
 
-      {rule && (
-        <div className="mt-3 rounded-sm border border-amber-200 bg-white px-3 py-2 text-xs text-neutral-700">
-          <p className="font-semibold text-neutral-800">The refund rule, worked for this payment</p>
+      {settle > 0 && (
+        <div className="mt-3 rounded-sm border border-amber-200 bg-white px-3 py-2 text-sm text-neutral-700">
+          <p className="font-semibold text-neutral-800">Settling a credit</p>
+          <p className="mt-0.5">
+            This registration has paid <strong>{money(creditCents)}</strong> more than it owes.
+            {settle < creditCents
+              ? ` This payment can return ${money(settle)} of it; refund the rest from another payment.`
+              : ' Refunding that from this payment brings the balance to $0.00.'}
+          </p>
+          {cents !== settle && (
+            <button
+              type="button"
+              onClick={() => setAmount((settle / 100).toFixed(2))}
+              className="mt-1 text-brand underline"
+            >
+              Use {money(settle)}
+            </button>
+          )}
+        </div>
+      )}
+
+      {rule && settle === 0 && (
+        <div className="mt-3 rounded-sm border border-amber-200 bg-white px-3 py-2 text-sm text-neutral-700">
+          <p className="font-semibold text-neutral-800">Suggested refund, worked for this payment</p>
           <p className="mt-0.5">
             The {money(event?.deposit_cents ?? 0)}-a-person deposit is kept
             {feePeople > 0 ? ` (${money((event?.deposit_cents ?? 0) * feePeople)} for ${feePeople} ${feePeople === 1 ? 'person' : 'people'}` : ''}
@@ -1576,8 +1603,8 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
             {rule.half ? <> → half is <strong>{money(rule.suggested)}</strong></> : null}.
           </p>
           <p className="mt-1 text-neutral-500">
-            A suggestion, not a lock — if an earlier refund already kept the deposit, or the
-            board decided otherwise, type the amount that is right and say why below.
+            A suggestion, not a lock — if an earlier refund already kept the deposit, type the
+            amount that is right and say why below.
           </p>
           {cents !== rule.suggested && (
             <button
@@ -1593,7 +1620,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="block">
-          <span className="block text-xs font-semibold text-neutral-600 mb-0.5">Amount</span>
+          <span className="block text-sm font-semibold text-neutral-600 mb-0.5">Amount</span>
           <span className="flex items-center gap-1">
             <span className="text-neutral-500">$</span>
             <input
@@ -1604,7 +1631,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
             />
           </span>
         </label>
-        <span className="text-xs text-neutral-600 pb-1.5">
+        <span className="text-sm text-neutral-600 pb-1.5">
           up to {money(payment.refundableCents)}
         </span>
       </div>
@@ -1619,7 +1646,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
           />
           <span>
             Also return the {money(payment.fee_cover_cents)} they added to cover processing.
-            <span className="block text-xs text-neutral-600">
+            <span className="block text-sm text-neutral-600">
               Stripe keeps its fee on a refund, so this comes out of ministry funds.
             </span>
           </span>
@@ -1627,7 +1654,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
       )}
 
       <label className="mt-3 block">
-        <span className="block text-xs font-semibold text-neutral-600 mb-0.5">
+        <span className="block text-sm font-semibold text-neutral-600 mb-0.5">
           Reason <span className="text-red-700">(required)</span>
           <span className="font-normal"> — recorded, and visible to the family</span>
         </span>
@@ -1666,7 +1693,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
           Cancel
         </button>
         {blockedBecause && !pending && (
-          <span className="text-xs font-semibold text-amber-900">{blockedBecause}</span>
+          <span className="text-sm font-semibold text-amber-900">{blockedBecause}</span>
         )}
       </div>
     </div>
@@ -2385,6 +2412,7 @@ export default function RegistrationManager({
                 feePeople={livePeople}
                 depositWaived={Boolean(depositWaived)}
                 canWritePayments={canWritePayments}
+                creditCents={Math.max(0, -((balance?.balance_cents ?? 0) + (balance?.refund_pending_cents ?? 0)))}
               />
             </div>
 
