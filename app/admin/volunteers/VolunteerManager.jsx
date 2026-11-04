@@ -12,22 +12,22 @@ import { reviewVolunteerApplication, setVolunteerClearance } from './actions';
 import { clearancePill, CLEARANCE_VERDICT_LABEL, isMinor } from '@/lib/format';
 import { dayInMorristown } from '@/lib/events';
 
-// Two pills, named apart on every row (Lawrence, 4 Nov 2026: "Approved" read
-// as the place at camp) -- but since 0152 one decision: approving the
-// application here confirms the place, and confirming a volunteer's place on
-// the registration page approves the application.
-const APP_CHIP = {
-  applied: ['Application: needs your decision', 'bg-amber-100 text-amber-800'],
-  approved: ['Application: approved', 'bg-green-100 text-green-800'],
-  declined: ['Application: declined', 'bg-red-100 text-red-800'],
-  withdrawn: ['Application: withdrawn', 'bg-neutral-200 text-neutral-600'],
-};
-const PLACE_CHIP = {
-  submitted: ['Place: needs approval', 'bg-amber-100 text-amber-800'],
-  confirmed: ['Place: confirmed', 'bg-green-100 text-green-800'],
-  waitlisted: ['Place: waitlisted', 'bg-neutral-200 text-neutral-700'],
-  draft: ['Place: not submitted', 'bg-neutral-100 text-neutral-500'],
-};
+// One pill per volunteer (Lawrence, 4 Nov 2026). Since 0152 the place at
+// camp and the application are one decision, so the two pills that named
+// them apart became one, read from both: approved only when the application
+// is approved AND the place confirmed; anything still to settle is "needs
+// your decision". The pill opens the application, where Approve and Decline
+// are. [label, colours, still to decide]
+function volunteerState(app, placeStatus) {
+  if (placeStatus === 'cancelled') return ['Volunteer: cancelled', 'bg-neutral-200 text-neutral-600', false];
+  if (placeStatus === 'draft') return ['Volunteer: registration not submitted', 'bg-neutral-100 text-neutral-500', false];
+  if (!app) return ['Volunteer: no application yet', 'bg-neutral-100 text-neutral-500', false];
+  if (app.status === 'withdrawn') return ['Volunteer: application withdrawn', 'bg-neutral-200 text-neutral-600', false];
+  if (app.status === 'declined') return ['Volunteer: declined', 'bg-red-100 text-red-800', false];
+  if (app.status === 'approved' && placeStatus === 'confirmed') return ['Volunteer: approved', 'bg-green-100 text-green-800', false];
+  if (placeStatus === 'waitlisted' && app.status === 'approved') return ['Volunteer: waitlisted', 'bg-neutral-200 text-neutral-700', false];
+  return ['Volunteer: needs your decision', 'bg-amber-100 text-amber-800', true];
+}
 
 // Checkr report states, mirrored into volunteer_clearances.checkr_status by the
 // webhook handler once that exists. Nothing writes these today -- the columns
@@ -260,8 +260,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
   const [error, setError] = useState('');
   const { person, household, app, clearance } = row;
   const age = fmtAge(person?.date_of_birth);
-  const chip = app ? APP_CHIP[app.status] : ['Application: not started', 'bg-neutral-100 text-neutral-500'];
-  const place = PLACE_CHIP[row.participantStatus] ?? null;
+  const [stateLabel, stateTone, toDecide] = volunteerState(app, row.participantStatus);
 
   // One decision (0152): approving confirms the place, declining waitlists
   // it. The deposit question the registration page asks comes back the same
@@ -340,28 +339,18 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
           )}
         </div>
         <span className="flex flex-wrap items-center gap-2 text-xs">
-          {place && (
-            <Link
-              href={`/admin/registrations/${row.registrationId}`}
-              title="The place at camp — approved on the registration page"
-              className={`rounded-full px-2.5 py-0.5 font-semibold hover:underline ${place[1]}`}
-            >
-              {place[0]}
-            </Link>
-          )}
-          {/* Both decision pills act (Lawrence, 4 Nov 2026: one was a link,
-              one was not): Place opens the registration; Application opens
-              and closes the application below. It is the only control for
-              that -- a separate "Review application" button beside it said
-              the same thing twice (Lawrence, 4 Nov 2026). */}
+          {/* The one volunteer pill opens and closes the application
+              (Lawrence, 4 Nov 2026: a separate "Review application" button,
+              and a Place pill beside an Application pill, said the same
+              things twice). The registration is the link under the name. */}
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
-            title={open ? 'Close the application' : 'Open the application'}
-            className={`rounded-full px-2.5 py-0.5 font-semibold hover:underline ${chip[1]}`}
+            title={open ? 'Close the application' : 'Open the application — approve or decline here'}
+            className={`rounded-full px-2.5 py-0.5 font-semibold hover:underline ${stateTone}`}
           >
-            {chip[0]} <span aria-hidden>{open ? '▾' : '▸'}</span>
+            {stateLabel} <span aria-hidden>{open ? '▾' : '▸'}</span>
           </button>
           {/* The Creed is asked, not enforced (29 Sep 2026). An application
               without it is a conversation with Larry that has to happen
@@ -410,13 +399,13 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                   application"): the application itself, until someone
                   approves or declines it, and what that rests on. */}
               <span className="mr-1 font-semibold">
-                {app.status === 'applied'
+                {toDecide
                   ? 'Waiting on your decision — read the application below, then:'
                   : app.status === 'approved'
                     ? `Approved${app.reviewed_at ? ` ${new Date(app.reviewed_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}` : ''}. Change it:`
                     : `Declined${app.reviewed_at ? ` ${new Date(app.reviewed_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}` : ''}. Change it:`}
               </span>
-              {app.status !== 'approved' && (
+              {(toDecide || app.status === 'declined' || row.participantStatus === 'waitlisted') && (
                 <button
                   onClick={() => review('approved')}
                   disabled={pending || !cleared}
@@ -437,7 +426,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
               )}
               <span className="w-full text-xs text-neutral-600">
                 Before deciding: {row.creedAffirmed ? 'Creed affirmed' : 'Creed not affirmed — speak with Larry first'} · {pill.text}
-                {!cleared && app.status !== 'approved' && (
+                {!cleared && toDecide && (
                   <strong className="text-red-800"> — approval waits for a background check marked OK to serve (below)</strong>
                 )}
                 . One decision: approving also confirms their place at camp; declining puts the place on the waitlist.
@@ -545,7 +534,8 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
 // review should maybe be a filter"). Each keeps the rows it counts.
 const SHOWS = {
   all: () => true,
-  review: (r) => r.app?.status === 'applied',
+  // The pill's own rule, so the count and the amber pills always agree.
+  review: (r) => volunteerState(r.app, r.participantStatus)[2],
   noapp: (r) => !r.app,
   check: (r) => Boolean(r.person?.id) && !isMinor(r.person?.date_of_birth) && clearancePill(r.clearance).key !== 'ok',
 };
@@ -554,7 +544,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
   const [show, setShow] = useState('all');
   const total = groups.reduce((s, g) => s + g.rows.length, 0);
   const needsReview = groups.reduce(
-    (s, g) => s + g.rows.filter((r) => r.app?.status === 'applied').length,
+    (s, g) => s + g.rows.filter(SHOWS.review).length,
     0
   );
   const noApp = groups.reduce((s, g) => s + g.rows.filter((r) => !r.app).length, 0);
@@ -596,7 +586,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
         {[
           ['all', total, 'registered', ''],
-          ['review', needsReview, needsReview === 1 ? 'application to decide' : 'applications to decide', 'text-amber-700'],
+          ['review', needsReview, needsReview === 1 ? 'volunteer to decide' : 'volunteers to decide', 'text-amber-700'],
           ['noapp', noApp, 'no application yet', 'text-neutral-600'],
           [
             'check',
