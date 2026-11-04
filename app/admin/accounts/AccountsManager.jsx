@@ -20,6 +20,7 @@
 //   because a menu that silently hides items reads as broken.
 
 import { useMemo, useState, useTransition } from 'react';
+import SearchSelect from '@/components/SearchSelect';
 import {
   removeLogins,
   purgeHousehold,
@@ -172,6 +173,14 @@ export default function AccountsManager({
       return next;
     });
   }
+
+  // The household pickers' options: the town as the hint, so "LaPlue" lists
+  // both families with where each lives, and typing a town finds them too.
+  const householdOptions = households.map((h) => ({
+    value: h.id,
+    label: h.display_name ?? 'Household',
+    hint: h.city ?? '',
+  }));
 
   function run(fn, doneMessage) {
     startTransition(async () => {
@@ -523,25 +532,18 @@ export default function AccountsManager({
             you&rsquo;ve confirmed who you&rsquo;re talking to &mdash; by
             phone or in person, not by email alone.
           </p>
-          <label className="block text-sm font-semibold mb-1.5" htmlFor="link-household">
-            Household
-          </label>
-          <select
-            id="link-household"
-            value={confirm.householdId}
-            onChange={(e) =>
-              setConfirm({ ...confirm, householdId: e.target.value, personId: '' })
-            }
-            className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-4 bg-white"
-          >
-            <option value="">Choose a household…</option>
-            {households.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.display_name}
-                {h.city ? ` — ${h.city}` : ''}
-              </option>
-            ))}
-          </select>
+          {/* Searchable (Lawrence, 4 Nov 2026): the list grows with every family. */}
+          <div className="mb-4">
+            <SearchSelect
+              label="Household"
+              options={householdOptions}
+              value={confirm.householdId}
+              onChange={(v) => setConfirm({ ...confirm, householdId: v ?? '', personId: '' })}
+              placeholder="Family name or town…"
+              printPrefix={false}
+              noun={['household', 'households']}
+            />
+          </div>
           {confirm.householdId &&
             (() => {
               // Adults in the chosen household that no login has claimed.
@@ -630,25 +632,17 @@ export default function AccountsManager({
             this one. There is no undo. If both households are registered for the
             same event, cancel one of those registrations first.
           </p>
-          <label className="block text-sm font-semibold mb-1.5" htmlFor="merge-keep">
-            Keep this household
-          </label>
-          <select
-            id="merge-keep"
-            value={confirm.keepId}
-            onChange={(e) => setConfirm({ ...confirm, keepId: e.target.value })}
-            className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-4 bg-white"
-          >
-            <option value="">Choose a household…</option>
-            {households
-              .filter((h) => h.id !== confirm.row.household_id)
-              .map((h) => (
-                <option key={h.id} value={h.id}>
-                  {h.display_name}
-                  {h.city ? ` — ${h.city}` : ''}
-                </option>
-              ))}
-          </select>
+          <div className="mb-4">
+            <SearchSelect
+              label="Keep this household"
+              options={householdOptions.filter((o) => o.value !== confirm.row.household_id)}
+              value={confirm.keepId}
+              onChange={(v) => setConfirm({ ...confirm, keepId: v ?? '' })}
+              placeholder="Family name or town…"
+              printPrefix={false}
+              noun={['household', 'households']}
+            />
+          </div>
           <div className="flex gap-3 justify-end">
             <button type="button" onClick={() => setConfirm(null)} className="btn-outline py-1.5!">
               Cancel
