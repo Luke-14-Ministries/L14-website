@@ -350,15 +350,18 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
             </Link>
           )}
           {/* Both decision pills act (Lawrence, 4 Nov 2026: one was a link,
-              one was not): Place opens the registration, where the place is
-              approved; Application opens the application review below. */}
+              one was not): Place opens the registration; Application opens
+              and closes the application below. It is the only control for
+              that -- a separate "Review application" button beside it said
+              the same thing twice (Lawrence, 4 Nov 2026). */}
           <button
             type="button"
-            onClick={() => setOpen(true)}
-            title="Open this application — reviewed here"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            title={open ? 'Close the application' : 'Open the application'}
             className={`rounded-full px-2.5 py-0.5 font-semibold hover:underline ${chip[1]}`}
           >
-            {chip[0]}
+            {chip[0]} <span aria-hidden>{open ? '▾' : '▸'}</span>
           </button>
           {/* The Creed is asked, not enforced (29 Sep 2026). An application
               without it is a conversation with Larry that has to happen
@@ -394,13 +397,6 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
           <span title={pill.title} className={`rounded-full px-2.5 py-0.5 font-semibold ${pill.cls}`}>
             {pill.text}
           </span>
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            className={`${app?.status === 'applied' && canReview ? 'btn-primary' : 'btn-outline'} py-1! px-3!`}
-          >
-            {open ? 'Close' : app?.status === 'applied' && canReview ? 'Review application' : 'Application'}
-          </button>
         </span>
       </div>
 
