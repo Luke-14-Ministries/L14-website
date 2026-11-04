@@ -189,6 +189,9 @@ export default async function ReviewQueuePage({ searchParams }) {
     .filter((r) => {
       if (r.people.length === 0) return false;
       if (eventFilter && r.event?.id !== eventFilter) return false;
+      // An archived event is out of every tab unless it is picked (Lawrence,
+      // 4 Nov 2026: the archived TEST retreat was still counted here).
+      if (!eventFilter && r.event?.archived_at) return false;
       if (show === 'all') return true;
       if (show === 'family') return Boolean(r.awaitingSince);
       if (show === 'replied') return r.familyReplied;
@@ -237,9 +240,9 @@ export default async function ReviewQueuePage({ searchParams }) {
   const totalPending = rows.reduce((s, r) => s + r.pending.length, 0);
   // How many families are parked with the family, so the "waiting on staff"
   // view can say where the rest went.
-  const onFamily = (regs ?? []).filter((r) => r.awaiting_family_since).length;
+  const onFamily = (regs ?? []).filter((r) => r.awaiting_family_since && !r.events?.archived_at).length;
   // For the Family replied tab's count (0126): unread replies, every event.
-  const repliedRegs = (regs ?? []).filter((r) => r.family_reply_unread).length;
+  const repliedRegs = (regs ?? []).filter((r) => r.family_reply_unread && !r.events?.archived_at).length;
   const totalFlags = rows.reduce((s, r) => s + r.flags.length + (r.creed ? 1 : 0), 0);
   // For the tab's count: registrations at a current event with a waiver owed.
   const waiverRegs = (regs ?? []).filter(
