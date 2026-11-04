@@ -449,6 +449,18 @@ export default async function PersonPage({ params }) {
     .eq('person_id', personId)
     .neq('status', 'cancelled');
   if (partsError) throw new Error(`Registrations: ${partsError.message}`);
+  // Soonest first, then finished events most recent first (4 Nov 2026: Week 2
+  // was listed above Week 1).
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const sortedParts = [...(parts ?? [])].sort((a, b) => {
+    const ea = a.registrations?.events ?? {};
+    const eb = b.registrations?.events ?? {};
+    const pa = (ea.ends_on ?? ea.starts_on ?? '9999') < todayIso;
+    const pb = (eb.ends_on ?? eb.starts_on ?? '9999') < todayIso;
+    if (pa !== pb) return pa ? 1 : -1;
+    const c = String(ea.starts_on ?? '').localeCompare(String(eb.starts_on ?? ''));
+    return pa ? -c : c;
+  });
 
   const participantIds = (parts ?? []).map((p) => p.id);
 
@@ -746,10 +758,10 @@ export default async function PersonPage({ params }) {
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <Section title="At camp" note="Every event this person is registered for.">
-          {(parts ?? []).length === 0 ? (
+          {sortedParts.length === 0 ? (
             <p className="text-neutral-500">Not registered for anything.</p>
           ) : (
-            (parts ?? []).map((p) => {
+            sortedParts.map((p) => {
               const place = placeFor(p.id);
               return (
                 <div key={p.id} className="mb-3 last:mb-0 rounded-sm border border-neutral-200 p-3">

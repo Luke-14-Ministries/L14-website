@@ -281,7 +281,18 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="font-semibold">
-            {person?.first_name} {person?.last_name}
+            {/* The name opens the person's own page -- reviewing one
+                volunteer -- and the family link below opens the whole
+                registration (Lawrence, 4 Nov 2026). */}
+            {person?.id ? (
+              <Link href={`/admin/people/${person.id}/`} className="text-brand-dark hover:underline">
+                {person?.first_name} {person?.last_name}
+              </Link>
+            ) : (
+              <>
+                {person?.first_name} {person?.last_name}
+              </>
+            )}
             {age != null && age < 18 && (
               <span className="ml-2 rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-xs font-semibold">
                 under 18
