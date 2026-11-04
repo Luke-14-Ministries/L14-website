@@ -363,18 +363,39 @@ function sessionNeeds({ week }) {
 }
 
 function familyNeeds({ family }) {
+  const out = [];
+  // The card said "Complete ✓" with no phone or address (Lawrence, 4 Nov
+  // 2026), while every field but Home church reads as required. Who to call
+  // and write to are HARD; the mailing address is a SOFT ask, like date of
+  // birth: staff and the paper newsletter use it, but a family without one
+  // to hand can still register.
+  const missing = [];
+  if (!family.contactFirst?.trim() || !family.contactLast?.trim()) missing.push('the primary contact’s name');
+  if (!family.email?.trim()) missing.push('an email address');
+  if (!family.phone?.trim()) missing.push('a phone number');
+  if (missing.length > 0) {
+    out.push({
+      chip: missing.join(', '),
+      message: `Please add ${missing.join(', ')} in “Your family or group” — it is how camp staff reach you.`,
+    });
+  }
   // A malformed email is worth catching here rather than after a
   // confirmation silently fails to arrive (asked for 25 Aug). Loose on
   // purpose -- see emailLooksValid.
   if (family.email && !emailLooksValid(family.email)) {
-    return [
-      {
-        chip: 'an email address that looks right',
-        message: `That email address doesn't look right — "${family.email}". Please check it in "Your family or group"; it is where your confirmation goes.`,
-      },
-    ];
+    out.push({
+      chip: 'an email address that looks right',
+      message: `That email address doesn't look right — "${family.email}". Please check it in "Your family or group"; it is where your confirmation goes.`,
+    });
   }
-  return [];
+  if (!family.address?.trim() || !family.city?.trim() || !family.state?.trim() || !family.postalCode?.trim()) {
+    out.push({
+      chip: 'a mailing address',
+      confirm:
+        'No full mailing address entered (street, city, state and ZIP).\n\nCamp staff use it for anything sent by post. Save anyway?',
+    });
+  }
+  return out;
 }
 
 function peopleNeeds({ members }) {
