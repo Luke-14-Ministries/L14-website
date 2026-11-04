@@ -520,8 +520,9 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
         >
           <h4 className="font-semibold">Name a program leader</h4>
           <p className="mt-0.5 mb-3 text-sm text-neutral-600">
-            Choose someone registered for {eventName} who signs in with their own login — type part
-            of their name or email. Volunteers are listed first.
+            {byEmail
+              ? `The exact email address they sign in with. They must already have an account and be registered for ${eventName}.`
+              : `Choose someone registered for ${eventName} who signs in with their own login — type part of their name or email. Volunteers are listed first.`}
           </p>
           <div className="flex flex-wrap items-end gap-3">
           {byEmail ? (
@@ -536,7 +537,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="they must already have an account"
-                className="rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm"
+                className="w-80 max-w-full rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm"
               />
             </div>
           ) : (
