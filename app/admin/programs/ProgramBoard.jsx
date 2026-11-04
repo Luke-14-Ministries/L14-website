@@ -105,17 +105,48 @@ export default function ProgramBoard({
     });
   }
 
+  // Every placement can be undone from the message it leaves (Lawrence,
+  // 4 Nov 2026: "should be a way to recover if someone is accidentally put to
+  // NA"). The person also stays reachable under their new pill, where the
+  // dropdown moves them back, but an Undo right there is the obvious way.
+  // `before` is [participantId, programId-or-null] for each person moved.
+  function undoable(text, before) {
+    setMessage({ tone: 'good', text, undo: before });
+  }
+
+  function undo(before) {
+    setMessage(null);
+    startTransition(async () => {
+      for (const [participantId, programId] of before) {
+        const res = await setParticipantProgram({ participantId, programId: programId || null });
+        if (!res.ok) {
+          setMessage({ tone: 'bad', text: res.error });
+          return;
+        }
+      }
+      setMessage({ tone: 'good', text: before.length === 1 ? 'Undone.' : `Undone for ${before.length} people.` });
+    });
+  }
+
   function placeOne(participantId, programId) {
     setMessage(null);
+    const person = people.find((x) => x.participantId === participantId);
+    const before = [[participantId, person?.programId ?? null]];
     startTransition(async () => {
       const res = await setParticipantProgram({ participantId, programId: programId || null });
       if (!res.ok) setMessage({ tone: 'bad', text: res.error });
+      else
+        undoable(
+          `${person?.name ?? 'Person'} ${programId ? `placed in ${programById.get(programId)?.name ?? 'that program'}` : 'taken out of their program'}.`,
+          before
+        );
     });
   }
 
   function placeMany() {
     if (!selected.size) return;
     setMessage(null);
+    const before = [...selected].map((id) => [id, people.find((x) => x.participantId === id)?.programId ?? null]);
     startTransition(async () => {
       const res = await setManyParticipantPrograms({
         participantIds: [...selected],
@@ -130,6 +161,7 @@ export default function ProgramBoard({
         : 'no program';
       // Say what actually happened, including the awkward partial case.
       setMessage({
+        undo: before,
         tone: res.saved === res.requested ? 'good' : 'bad',
         text:
           res.saved === res.requested
@@ -262,6 +294,16 @@ export default function ProgramBoard({
           }`}
         >
           {message.text}
+          {message.undo?.length > 0 && (
+            <button
+              type="button"
+              onClick={() => undo(message.undo)}
+              disabled={pending}
+              className="ml-3 font-semibold underline"
+            >
+              Undo
+            </button>
+          )}
         </p>
       )}
 
