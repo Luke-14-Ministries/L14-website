@@ -16,9 +16,26 @@ import { revalidatePath } from 'next/cache';
 import { supportPatch, supportProblems } from '@/lib/support';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sendEmail, registrationConfirmationEmail } from '@/lib/email';
+import { createAdminClient } from '@/lib/supabase/admin';
+
 import { balanceDueOn, registrationOpen, OPEN_EVENT_COLUMNS } from '@/lib/events';
 import { requiresPaymentChoice } from '@/lib/plans';
 import { hasPhone, caregiverLinkProblem } from '@/lib/caregivers';
+
+// What an HTML email said, as plain text for message_log.body_text.
+const htmlToText = (html) =>
+  String(html ?? '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<(br|\/p|\/div|\/h[1-6]|\/li|\/tr)[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&rsquo;|&#39;/g, '’')
+    .replace(/&ldquo;|&rdquo;|&quot;/g, '"')
+    .replace(/&mdash;/g, '—')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n\n')
+    .trim();
 
 // The wizard's key for a person on the form (memberKey in FamilyWizard.jsx):
 // their saved id, or for someone new their name. Resolved against the saved
@@ -281,7 +298,32 @@ export async function submitFamilyRegistration(payload) {
             ? `${origin}/account/finish/${data.registrationId}/`
             : null,
       });
-      await sendEmail({ to, subject, html });
+      const sent = await sendEmail({ to, subject, html });
+      // Kept in the email log like every other email to a family (Lawrence,
+      // 4 Nov 2026: Darlene's confirmation arrived but Emails sent said
+      // none). A family's own login cannot write message_log (0113), so the
+      // site's server client does, as the automatic emails do. A failure to
+      // log is noted and never undoes the registration.
+      const admin = createAdminClient();
+      if (admin && data?.registrationId) {
+        const { data: reg } = await admin
+          .from('registrations')
+          .select('household_id')
+          .eq('id', data.registrationId)
+          .maybeSingle();
+        const { error: logError } = await admin.from('message_log').insert({
+          to_email: to,
+          household_id: reg?.household_id ?? null,
+          registration_id: data.registrationId,
+          template_key: payload?.isUpdate ? 'registration_updated' : 'registration_confirmation',
+          subject: String(subject).slice(0, 300),
+          status: sent?.ok ? 'sent' : 'failed',
+          error: sent?.ok ? null : String(sent?.error ?? '').slice(0, 1000),
+          provider_message_id: sent?.id ?? null,
+          body_text: htmlToText(html).slice(0, 20000),
+        });
+        if (logError) console.error('registration confirmation log:', logError.message);
+      }
     }
   } catch (e) {
     console.error('registration confirmation email:', e?.message);
