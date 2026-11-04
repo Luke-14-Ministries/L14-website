@@ -137,22 +137,32 @@ export default function RosterTable({ events, rows, programs = [] }) {
   // T-shirt counts for whatever is filtered on screen -- this is the number
   // someone actually needs when placing the order, and deriving it from the
   // CSV in Excel was the alternative.
+  //
+  // One shirt per PERSON, not per week (Lawrence, 4 Nov 2026: "if coming both
+  // weeks don't need two tshirts"). Someone on the list twice counts once,
+  // with the size from whichever of their rows has one (the later sign-up
+  // first, should the two disagree). A row with no person id counts alone.
   const shirtCounts = useMemo(() => {
+    const byPerson = new Map();
+    for (const r of [...filtered].sort((a, b) => String(b.submitted ?? '').localeCompare(String(a.submitted ?? '')))) {
+      const key = r.personId ?? `row:${r.participantId}`;
+      if (!byPerson.has(key) || (!byPerson.get(key) && r.tshirt)) byPerson.set(key, r.tshirt || '');
+    }
     const counts = new Map();
     let missing = 0;
-    for (const r of filtered) {
-      if (!r.tshirt) {
+    for (const size of byPerson.values()) {
+      if (!size) {
         missing += 1;
         continue;
       }
-      counts.set(r.tshirt, (counts.get(r.tshirt) ?? 0) + 1);
+      counts.set(size, (counts.get(size) ?? 0) + 1);
     }
     const ordered = [...counts.entries()].sort((a, b) => {
       const ia = TSHIRT_ORDER.indexOf(a[0]);
       const ib = TSHIRT_ORDER.indexOf(b[0]);
       return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
     });
-    return { ordered, missing, total: filtered.length - missing };
+    return { ordered, missing, total: byPerson.size - missing, people: byPerson.size };
   }, [filtered]);
 
   // People whose family asked us not to feature them. The list photographers
@@ -267,7 +277,8 @@ export default function RosterTable({ events, rows, programs = [] }) {
               </div>
             )}
             <p className="mt-2 text-xs text-neutral-500">
-              {shirtCounts.total} of {filtered.length} recorded
+              {shirtCounts.total} of {shirtCounts.people} {shirtCounts.people === 1 ? 'person' : 'people'} recorded
+              {shirtCounts.people < filtered.length && ' · one shirt each, even at both weeks'}
               {shirtCounts.missing > 0 && ` · ${shirtCounts.missing} not answered`}
             </p>
           </div>
