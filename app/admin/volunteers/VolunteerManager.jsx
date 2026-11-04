@@ -16,7 +16,7 @@ import { dayInMorristown } from '@/lib/events';
 // "Approved" read as the place at camp). The APPLICATION is reviewed here;
 // the PLACE (the registration) is approved on the registration page.
 const APP_CHIP = {
-  applied: ['Application: needs review', 'bg-amber-100 text-amber-800'],
+  applied: ['Application: needs your decision', 'bg-amber-100 text-amber-800'],
   approved: ['Application: approved', 'bg-green-100 text-green-800'],
   declined: ['Application: declined', 'bg-red-100 text-red-800'],
   withdrawn: ['Application: withdrawn', 'bg-neutral-200 text-neutral-600'],
@@ -393,7 +393,17 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
           {/* The decision first, then what it rests on. */}
           {canReview && app && app.status !== 'withdrawn' && (
             <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-3">
-              <span className="mr-1 font-semibold">This application:</span>
+              {/* Say what is waiting (Lawrence, 4 Nov 2026: "what is still
+                  awaiting review? not obvious when I look at her
+                  application"): the application itself, until someone
+                  approves or declines it, and what that rests on. */}
+              <span className="mr-1 font-semibold">
+                {app.status === 'applied'
+                  ? 'Waiting on your decision — read the application below, then:'
+                  : app.status === 'approved'
+                    ? `Approved${app.reviewed_at ? ` ${new Date(app.reviewed_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}` : ''}. Change it:`
+                    : `Declined${app.reviewed_at ? ` ${new Date(app.reviewed_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}` : ''}. Change it:`}
+              </span>
               {app.status !== 'approved' && (
                 <button onClick={() => review('approved')} disabled={pending} className="btn-primary py-1.5! text-sm">
                   Approve
@@ -408,8 +418,9 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                   Decline
                 </button>
               )}
-              <span className="text-xs text-neutral-500">
-                The place at camp is approved separately, under Registration &amp; approval.
+              <span className="w-full text-xs text-neutral-600">
+                Before deciding: {row.creedAffirmed ? 'Creed affirmed' : 'Creed not affirmed — speak with Larry first'} · {pill.text}.
+                {' '}The place at camp is approved separately, under Registration &amp; approval.
               </span>
             </div>
           )}
@@ -565,7 +576,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
         {[
           ['all', total, 'registered', ''],
-          ['review', needsReview, 'awaiting review', 'text-amber-700'],
+          ['review', needsReview, needsReview === 1 ? 'application to decide' : 'applications to decide', 'text-amber-700'],
           ['noapp', noApp, 'no application yet', 'text-neutral-600'],
           [
             'check',

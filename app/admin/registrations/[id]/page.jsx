@@ -486,8 +486,9 @@ export default async function RegistrationDetailPage({ params }) {
   if (eventPartsError) throw new Error(`Event headcount: ${eventPartsError.message}`);
 
   const clearanceOf = new Map((clearRows ?? []).map((c) => [c.person_id, c]));
-  const creedOfPart = new Map(
-    (creedRows ?? []).filter((c) => c.registration_id === id).map((c) => [c.participant_id, c])
+  // Keyed by person: CREED_COLUMNS carries person_id, not participant_id.
+  const creedOfPerson = new Map(
+    (creedRows ?? []).filter((c) => c.registration_id === id).map((c) => [c.person_id, c])
   );
   // Who each signature covers: the person it names, or -- an older
   // household-wide row with no person -- everyone on the registration.
@@ -500,7 +501,7 @@ export default async function RegistrationDetailPage({ params }) {
       const pid = p.people?.id;
       const volunteer = p.camp_role === 'volunteer';
       const age = ageAt(p.people?.date_of_birth, reg.events?.starts_on);
-      const creedRow = creedOfPart.get(p.id);
+      const creedRow = creedOfPerson.get(pid);
       const app = [].concat(p.volunteer_applications ?? [])[0] ?? null;
       const media = consentOf.get(`${pid}:media`);
       return {

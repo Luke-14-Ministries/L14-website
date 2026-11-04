@@ -106,7 +106,7 @@ const CREED_MARK = {
 };
 const APP_MARK = {
   approved: { state: 'yes', label: 'Approved' },
-  applied: { state: 'warn', label: 'Needs review' },
+  applied: { state: 'warn', label: 'Needs your decision' },
   declined: { state: 'no', label: 'Declined' },
   withdrawn: { state: 'na', label: 'Withdrawn' },
   none: { state: 'no', label: 'Not submitted' },
@@ -171,7 +171,7 @@ function Checks({ checks, eventId }) {
                         href={`/admin/volunteers/${eventId ? `?event=${eventId}` : ''}#v-${c.id}`}
                         className="underline"
                       >
-                        <StatusMark {...APP_MARK.applied} label="Needs review →" />
+                        <StatusMark {...APP_MARK.applied} label="Needs your decision →" />
                       </Link>
                     ) : (
                       <StatusMark {...(APP_MARK[c.application] ?? APP_MARK.none)} />
@@ -716,7 +716,7 @@ export default function ReviewCard({
       ) : waiting.length === 0 ? (
         <p className="text-sm text-neutral-600">
           {checks.some((c) => c.application === 'applied')
-            ? 'Every place is decided; a volunteer application still needs review (above). '
+            ? 'Every place is decided; a volunteer application is still waiting on a decision (the Application column above). '
             : 'Nobody on this registration is waiting on review. '}
           Each person&rsquo;s status is in <PeopleLink />.
         </p>
