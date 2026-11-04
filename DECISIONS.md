@@ -4050,3 +4050,17 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     the application where it is decided.
   - **A note is required on every scholarship decision**, an award as well as a refusal, and on the
     hand-set scholarship/discount editor (Lawrence: the why matters as much when money is given).
+  - **`0152`: a volunteer is approved once, and only with a background check** (Lawrence, after
+    Darlene's place read confirmed beside an application still waiting). For a volunteer the place
+    and the application are **one decision**: confirming the place approves the application (a
+    database trigger), approving the application on Volunteers confirms the place (through the
+    registration page's own status change, so the deposit check and discount recalcs run), and
+    declining the application puts the place on the waitlist with a reason the family reads. **No
+    volunteer is approved without a background check on file, current, and marked OK to serve**
+    (under 18 at the start of the event is not screened, so not held); the database refuses it from
+    every button, by name. Anyone already confirmed stays confirmed. A signed-in caller without
+    Registration write can no longer set an application to approved.
+  - **Checkr is the batch file, not the API:** names and emails go to Checkr in a batch from
+    Background screening, Checkr emails each person, the results file is uploaded there. Each
+    volunteer's card shows which of those three steps they are at, then the verdict to record; the
+    placeholder "Send background-check invitation" button is gone.

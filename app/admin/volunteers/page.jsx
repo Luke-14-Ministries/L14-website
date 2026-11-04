@@ -82,7 +82,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
               `person_id, background_check_on_file, background_check_date, expires_on,
                verdict, verdict_note, verdict_by, verdict_at, paperwork_marked_by, paperwork_marked_at,
                provider, checkr_status, checkr_package, adjudication,
-               invitation_sent_at, report_completed_at`
+               invitation_sent_at, report_completed_at, invited_email, order_batch`
             )
             .in('person_id', personIds)
         : supabase

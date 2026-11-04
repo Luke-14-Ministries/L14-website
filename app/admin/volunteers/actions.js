@@ -7,8 +7,9 @@
 import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { setParticipantStatus } from '../registrations/[id]/actions';
 
-export async function reviewVolunteerApplication(participantId, decision) {
+export async function reviewVolunteerApplication(participantId, decision, { override = false } = {}) {
   const staff = await getStaff();
   if (!can(staff, 'write:registration')) return { ok: false, error: 'Not permitted.' };
   if (!['approved', 'declined', 'applied'].includes(decision)) {
@@ -16,16 +17,46 @@ export async function reviewVolunteerApplication(participantId, decision) {
   }
 
   const supabase = await createClient();
+  const { data: part, error: partError } = await supabase
+    .from('registration_participants')
+    .select('id, registration_id, status')
+    .eq('id', participantId)
+    .maybeSingle();
+  if (partError) return { ok: false, error: partError.message };
+  if (!part) return { ok: false, error: 'That volunteer is no longer on the registration.' };
+
+  // One decision (0152, Lawrence 4 Nov 2026). Approving a volunteer whose
+  // place is not yet confirmed confirms it through the registration page's
+  // own status change -- the deposit check, the discount recalcs and the
+  // hold rule -- and the database then approves the application. The
+  // background-check rule is the database's, and its words come back as-is.
+  if (decision === 'approved' && part.status !== 'confirmed') {
+    const res = await setParticipantStatus(part.registration_id, participantId, 'confirmed', { override });
+    if (!res.ok) return res;
+    revalidatePath('/admin/volunteers');
+    return { ok: true };
+  }
+
   const { error } = await supabase
     .from('volunteer_applications')
     .update({ status: decision, reviewed_by: staff.userId, reviewed_at: new Date().toISOString() })
     .eq('registration_participant_id', participantId);
-
   if (error) {
     console.error('reviewVolunteerApplication:', error.message);
-    return { ok: false, error: 'Could not save the decision.' };
+    return { ok: false, error: error.message };
   }
+
+  // Declining takes the place too: onto the waitlist, with a reason the
+  // family reads, so it can be undone by approving later.
+  if (decision === 'declined' && ['confirmed', 'submitted'].includes(part.status)) {
+    const res = await setParticipantStatus(part.registration_id, participantId, 'waitlisted', {
+      reason: 'Volunteer application not approved — the office will be in touch.',
+    });
+    if (!res.ok) return { ok: false, error: `The application is declined, but the place did not move: ${res.error}` };
+  }
+
   revalidatePath('/admin/volunteers');
+  revalidatePath(`/admin/registrations/${part.registration_id}`);
   return { ok: true };
 }
 

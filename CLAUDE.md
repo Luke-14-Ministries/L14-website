@@ -47,7 +47,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0151`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0152`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -248,7 +248,7 @@ Staff idle logout is 60 minutes.
 are stamped by trigger, the check date is required once paperwork is on file, expiry follows from
 `clearance_interval_months()` (**12** — annual Basic Plus), and every change lands in
 `clearance_review_log`. The `clearance_status` definer view gives all staff three facts: on file,
-current, verdict. Adults only — under 18 shows "Under 18 — not screened". Screening reads the
+current, verdict. Adults only — under 18 shows "Under 18 — not screened". **A volunteer is approved only with a check on file, current and marked OK to serve, and the place and the application are one decision** (`0152`: `guard_volunteer_place()`, `guard_volunteer_application()`, `sync_volunteer_application()`). Screening reads the
 household's email and phone where the person has none. The Checkr bulk file's header is their
 "bulk order with SMS" template, verbatim; `0093` lets the invited email stand in for a candidate id.
 

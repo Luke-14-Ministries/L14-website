@@ -12,9 +12,10 @@ import { reviewVolunteerApplication, setVolunteerClearance } from './actions';
 import { clearancePill, CLEARANCE_VERDICT_LABEL, isMinor } from '@/lib/format';
 import { dayInMorristown } from '@/lib/events';
 
-// Two separate decisions, named apart on every row (Lawrence, 4 Nov 2026:
-// "Approved" read as the place at camp). The APPLICATION is reviewed here;
-// the PLACE (the registration) is approved on the registration page.
+// Two pills, named apart on every row (Lawrence, 4 Nov 2026: "Approved" read
+// as the place at camp) -- but since 0152 one decision: approving the
+// application here confirms the place, and confirming a volunteer's place on
+// the registration page approves the application.
 const APP_CHIP = {
   applied: ['Application: needs your decision', 'bg-amber-100 text-amber-800'],
   approved: ['Application: approved', 'bg-green-100 text-green-800'],
@@ -98,6 +99,7 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
 
   return (
     <div className="mt-2 rounded-sm border border-neutral-200 bg-neutral-50 p-3 text-sm">
+      <CheckrPanel clearance={clearance} email={email} />
       <p className="font-semibold text-neutral-700 mb-2">Background check record</p>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex items-center gap-2">
@@ -168,75 +170,68 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
         </details>
       )}
 
-      <CheckrPanel clearance={clearance} email={email} />
     </div>
   );
 }
 
-// PLACEHOLDER. The database columns behind this are live (migration 0029) but
-// nothing writes them yet: no API key has been issued and no webhook handler
-// exists. It is here so the shape of the finished feature -- and the promise
-// that we never touch a Social Security number -- is visible and reviewable
-// before anyone wires it up.
+// Where this person is in Checkr's process (Lawrence, 4 Nov 2026). The
+// ministry's way is the bulk file, not the API: names and emails go to Checkr
+// in a batch from Background screening, Checkr emails each person, they fill
+// in their own details on Checkr's form, and the results file comes back and
+// is uploaded there. This card says which of those steps this person is at;
+// the ministry's verdict is recorded underneath. No Social Security number is
+// ever sent to, or held by, Luke 14.
 function CheckrPanel({ clearance, email }) {
   const status = clearance?.checkr_status ?? 'not_started';
   const [label, tone] = CHECKR_CHIP[status] ?? CHECKR_CHIP.not_started;
-  const started = status !== 'not_started';
+  const sent = Boolean(clearance?.order_batch) || status !== 'not_started';
+  const resultIn = ['clear', 'consider', 'dispute', 'suspended', 'canceled'].includes(status);
 
   return (
-    <div className="mt-3 rounded-sm border border-dashed border-neutral-300 bg-white p-3">
+    <div className="mb-3 rounded-sm border border-neutral-200 bg-white p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-semibold text-neutral-700">
-          Checkr background check{' '}
-          <span className="ml-1 rounded-full bg-neutral-200 px-2 py-0.5 text-[11px] leading-5 font-semibold text-neutral-600">
-            not connected yet
-          </span>
-        </p>
+        <p className="font-semibold text-neutral-700">Checkr</p>
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>{label}</span>
       </div>
-
-      <p className="mt-2 text-xs text-neutral-600">
-        When this is switched on, Checkr is sent an email address and nothing else. Checkr
-        emails the volunteer, the volunteer enters their Social Security number and date of
-        birth into <em>Checkr&rsquo;s</em> form, and the result comes back to us as a
-        pass/fail. Luke 14 never receives, transmits, or stores the number — which is the
-        whole reason to use the API rather than a form of our own.
+      <ol className="mt-2 grid gap-1 text-xs sm:grid-cols-3">
+        <li className={sent ? 'text-green-800' : 'font-semibold text-neutral-800'}>
+          {sent ? '✓' : '1.'} Name and email sent to Checkr in a batch
+        </li>
+        <li className={resultIn ? 'text-green-800' : sent ? 'font-semibold text-neutral-800' : 'text-neutral-500'}>
+          {resultIn ? '✓' : '2.'} Checkr emails them; they fill in their own details
+        </li>
+        <li className={resultIn ? 'font-semibold text-neutral-800' : 'text-neutral-500'}>
+          3. Result uploaded here — then record the verdict below
+        </li>
+      </ol>
+      <p className="mt-2 text-sm">
+        {!sent ? (
+          <>
+            Not sent yet. It goes in the next batch from{' '}
+            <Link href="/admin/volunteers/screening/" className="text-brand underline">
+              Background screening
+            </Link>{' '}
+            — to {email || <strong>no email on file (add one first)</strong>}.
+          </>
+        ) : !resultIn ? (
+          <>
+            Sent{clearance?.order_batch ? ` in the batch of ${dayInMorristown(clearance.order_batch)}` : ''}
+            {clearance?.invited_email ? ` to ${clearance.invited_email}` : ''}. Waiting on Checkr; upload the
+            results file on{' '}
+            <Link href="/admin/volunteers/screening/" className="text-brand underline">
+              Background screening
+            </Link>{' '}
+            when it comes back.
+          </>
+        ) : (
+          <>
+            Result uploaded{clearance?.report_completed_at ? ` ${clearance.report_completed_at.slice(0, 10)}` : ''}:{' '}
+            <strong>{label}</strong>. Record the ministry&rsquo;s verdict below — a volunteer is approved only
+            once it reads OK to serve.
+            {clearance?.adjudication && <> ({ADJUDICATION_LABEL[clearance.adjudication] ?? clearance.adjudication})</>}
+          </>
+        )}
       </p>
-
-      <div className="mt-2 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled
-          title="Not available yet — needs a Checkr account administrator and an API key. See the Staff Questions log, section 8."
-          className="btn-outline py-1! px-3! text-sm opacity-50 cursor-not-allowed"
-        >
-          Send background-check invitation
-        </button>
-        <span className="text-xs text-neutral-500">
-          would go to {email || 'this volunteer’s email — none on file'}
-        </span>
-      </div>
-
-      {started && (
-        <dl className="mt-3 grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
-          <div>
-            <dt className="font-semibold text-neutral-500">Invited</dt>
-            <dd>{dayInMorristown(clearance?.invitation_sent_at) || '—'}</dd>
-          </div>
-          <div>
-            <dt className="font-semibold text-neutral-500">Report completed</dt>
-            <dd>{clearance?.report_completed_at?.slice(0, 10) ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="font-semibold text-neutral-500">Package</dt>
-            <dd>{clearance?.checkr_package ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="font-semibold text-neutral-500">Decision</dt>
-            <dd>{ADJUDICATION_LABEL[clearance?.adjudication] ?? '—'}</dd>
-          </div>
-        </dl>
-      )}
     </div>
   );
 }
@@ -268,10 +263,28 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
   const chip = app ? APP_CHIP[app.status] : ['Application: not started', 'bg-neutral-100 text-neutral-500'];
   const place = PLACE_CHIP[row.participantStatus] ?? null;
 
+  // One decision (0152): approving confirms the place, declining waitlists
+  // it. The deposit question the registration page asks comes back the same
+  // way, as needsOverride.
   async function review(decision) {
+    if (
+      decision === 'declined' &&
+      !window.confirm(
+        `Decline ${person?.first_name ?? 'this volunteer'}'s application?\n\nTheir place at camp goes on the waitlist, and the family sees: "Volunteer application not approved — the office will be in touch."`
+      )
+    )
+      return;
     setPending(true);
     setError('');
-    const res = await reviewVolunteerApplication(row.participantId, decision);
+    let res = await reviewVolunteerApplication(row.participantId, decision);
+    if (res?.needsOverride) {
+      if (window.confirm(`${res.error}\n\nApprove anyway?`)) {
+        res = await reviewVolunteerApplication(row.participantId, decision, { override: true });
+      } else {
+        setPending(false);
+        return;
+      }
+    }
     setPending(false);
     if (!res?.ok) setError(res?.error || 'Could not save.');
     else router.refresh();
@@ -280,6 +293,9 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
   // The same pill every staff member sees on the Buddy board (0091). A
   // volunteer under 18 is not screened, and says so instead of "missing".
   const pill = clearancePill(isMinor(person?.date_of_birth) ? { ...(clearance ?? {}), minor: true } : clearance);
+  // The database's rule (0152): approved only with a background check on
+  // file, current and marked OK to serve -- under 18 is not screened.
+  const cleared = pill.key === 'ok' || pill.key === 'minor';
 
   return (
     <div
@@ -405,7 +421,12 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                     : `Declined${app.reviewed_at ? ` ${new Date(app.reviewed_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}` : ''}. Change it:`}
               </span>
               {app.status !== 'approved' && (
-                <button onClick={() => review('approved')} disabled={pending} className="btn-primary py-1.5! text-sm">
+                <button
+                  onClick={() => review('approved')}
+                  disabled={pending || !cleared}
+                  title={cleared ? undefined : 'Needs a background check on file marked OK to serve — record it below'}
+                  className="btn-primary py-1.5! text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Approve
                 </button>
               )}
@@ -419,8 +440,11 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 </button>
               )}
               <span className="w-full text-xs text-neutral-600">
-                Before deciding: {row.creedAffirmed ? 'Creed affirmed' : 'Creed not affirmed — speak with Larry first'} · {pill.text}.
-                {' '}The place at camp is approved separately, under Registration &amp; approval.
+                Before deciding: {row.creedAffirmed ? 'Creed affirmed' : 'Creed not affirmed — speak with Larry first'} · {pill.text}
+                {!cleared && app.status !== 'approved' && (
+                  <strong className="text-red-800"> — approval waits for a background check marked OK to serve (below)</strong>
+                )}
+                . One decision: approving also confirms their place at camp; declining puts the place on the waitlist.
               </span>
             </div>
           )}

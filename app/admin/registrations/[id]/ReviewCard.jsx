@@ -383,6 +383,23 @@ export default function ReviewCard({
         </p>
       )}
       <Checks checks={checks} eventId={eventId} />
+      {/* One decision for a volunteer, and not without a background check
+          (0152, Lawrence 4 Nov 2026): say so before Approve is pressed. */}
+      {checks.some((c) => c.blocked && c.status === 'submitted') && (
+        <p className="mb-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+          <strong>
+            {checks
+              .filter((c) => c.blocked && c.status === 'submitted')
+              .map((c) => c.name)
+              .join(', ')}
+          </strong>{' '}
+          cannot be approved until a background check is on file marked OK to serve —{' '}
+          <Link href={`/admin/volunteers/${eventId ? `?event=${eventId}` : ''}`} className="font-semibold underline">
+            record it on Volunteers
+          </Link>
+          . Approving a volunteer here also approves their application.
+        </p>
+      )}
       {(flags.length > 0 || creed) && (
         <ul className="mb-3 space-y-1 text-sm">
           {/* The Creed, still waiting on the conversation with Larry: amber,

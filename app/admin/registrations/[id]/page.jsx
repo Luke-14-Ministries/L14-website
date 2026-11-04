@@ -504,13 +504,18 @@ export default async function RegistrationDetailPage({ params }) {
       const creedRow = creedOfPerson.get(pid);
       const app = [].concat(p.volunteer_applications ?? [])[0] ?? null;
       const media = consentOf.get(`${pid}:media`);
+      const clearanceMarkOf = volunteer
+        ? clearanceMark(age != null && age < 18 ? { minor: true } : clearanceOf.get(pid) ?? null)
+        : null;
       return {
         id: p.id,
+        status: p.status,
+        // 0152: a volunteer is approved only with a background check on file
+        // marked OK to serve (under 18 is not screened).
+        blocked: volunteer && !['yes', 'na'].includes(clearanceMarkOf?.state),
         name: `${p.people?.preferred_name || p.people?.first_name || ''} ${p.people?.last_name ?? ''}`.trim() || 'Person',
         volunteer,
-        clearance: volunteer
-          ? clearanceMark(age != null && age < 18 ? { minor: true } : clearanceOf.get(pid) ?? null)
-          : null,
+        clearance: clearanceMarkOf,
         // affirmed | talked (with Larry, still current) | not
         creed: !volunteer
           ? null
