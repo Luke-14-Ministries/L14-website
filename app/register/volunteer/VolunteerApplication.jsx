@@ -37,6 +37,9 @@ export default function VolunteerApplication({
   isMinor,
   eventName,
   existing,
+  // An empty form starts from this person's latest application elsewhere
+  // (the other week, last year) -- never over answers already saved here.
+  prefill = null,
   adults,
   defaultChurch = '',
   creed = null,
@@ -48,22 +51,23 @@ export default function VolunteerApplication({
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
+  const seed = existing ?? prefill;
   const [firstTime, setFirstTime] = useState(
-    existing?.first_time_volunteering == null ? '' : existing.first_time_volunteering ? 'yes' : 'no'
+    seed?.first_time_volunteering == null ? '' : seed.first_time_volunteering ? 'yes' : 'no'
   );
   const [picked, setPicked] = useState(
-    existing?.preferred_areas ? existing.preferred_areas.split(' · ') : []
+    seed?.preferred_areas ? seed.preferred_areas.split(' · ') : []
   );
   // Their saved application answer wins; otherwise start from the household's
   // home church, which the registration wizard already collected.
-  const [church, setChurch] = useState(existing?.church_attendance ?? defaultChurch ?? '');
-  const [faith, setFaith] = useState(existing?.faith_statement ?? '');
-  const [skills, setSkills] = useState(existing?.relevant_skills ?? '');
-  const [experience, setExperience] = useState(existing?.disability_experience ?? '');
+  const [church, setChurch] = useState(seed?.church_attendance ?? defaultChurch ?? '');
+  const [faith, setFaith] = useState(seed?.faith_statement ?? '');
+  const [skills, setSkills] = useState(seed?.relevant_skills ?? '');
+  const [experience, setExperience] = useState(seed?.disability_experience ?? '');
   // Katie, Website Feedback list (22 Oct 2026): a tick beside the experience
   // question. Optional; it does not stand in for the answer above it.
-  const [firstTimeDm, setFirstTimeDm] = useState(existing?.first_time_disability_ministry === true);
-  const [adultId, setAdultId] = useState(existing?.accompanying_adult_person_id ?? '');
+  const [firstTimeDm, setFirstTimeDm] = useState(seed?.first_time_disability_ministry === true);
+  const [adultId, setAdultId] = useState(seed?.accompanying_adult_person_id ?? '');
 
   // The Apostles' Creed affirmation (migration 0062). Starts ticked only if
   // this person has already affirmed THIS version -- a reworded version 2
@@ -172,6 +176,15 @@ export default function VolunteerApplication({
 
       {open && (
         <div className="mt-4 border-t border-neutral-100 pt-4">
+          {prefill && !existing && (
+            <p className="mb-3 rounded-sm border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+              Filled in from your
+              {prefill.registration_participants?.registrations?.events?.name
+                ? ` ${prefill.registration_participants.registrations.events.name}`
+                : ' earlier'}{' '}
+              application. Check it, change anything, and submit — this week is reviewed on its own.
+            </p>
+          )}
           <label className={label}>Where would you like to serve? (pick any — required)</label>
           {/* Katie, 14 Oct 2026: say up front that a preference is a
               preference. Leadership honours them where it can; the camp

@@ -147,6 +147,29 @@ export default async function VolunteerPage() {
   if (appsError) throw new Error(`Volunteer applications: ${appsError.message}`);
   const appByPart = new Map((apps ?? []).map((a) => [a.registration_participant_id, a]));
 
+  // A person's most recent application on ANY of their registrations -- the
+  // other week, or last year -- starts a new one filled in (Lawrence, 4 Nov
+  // 2026: coming both weeks meant typing it all twice). Their own saved
+  // answers on this registration still win; this only fills an empty form.
+  const volPersonIds = [...new Set(volunteers.map((v) => v.participant.people?.id).filter(Boolean))];
+  const { data: earlier, error: earlierError } = volPersonIds.length
+    ? await supabase
+        .from('volunteer_applications')
+        .select(
+          `first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills,
+           disability_experience, first_time_disability_ministry, accompanying_adult_person_id, updated_at,
+           registration_participants!inner ( person_id, registrations ( events ( name ) ) )`
+        )
+        .in('registration_participants.person_id', volPersonIds)
+        .order('updated_at', { ascending: false })
+    : { data: [], error: null };
+  if (earlierError) throw new Error(`Earlier volunteer applications: ${earlierError.message}`);
+  const latestByPerson = new Map();
+  for (const a of earlier ?? []) {
+    const pid = a.registration_participants?.person_id;
+    if (pid && !latestByPerson.has(pid)) latestByPerson.set(pid, a);
+  }
+
   // The family wizard already asked for the home church; hand it to the
   // application as the default so nobody types it twice. Their own earlier
   // answer on a saved application still wins.
@@ -251,6 +274,11 @@ export default async function VolunteerPage() {
               personId={participant.people?.id}
               eventName={`${event?.name ?? 'Event'}${fmtRange(event?.starts_on, event?.ends_on)}`}
               existing={appByPart.get(participant.id) ?? null}
+              prefill={
+                appByPart.get(participant.id)
+                  ? null
+                  : latestByPerson.get(participant.people?.id) ?? null
+              }
               adults={adults}
               defaultChurch={defaultChurch}
               creed={creed}
