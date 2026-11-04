@@ -370,16 +370,22 @@ function EventRow({ e }) {
       )}
       {savedStatus === 'archived' && status === 'archived' && <FamilyDashboardChoice e={e} />}
 
+      {/* A folding section, not a link (Lawrence, 4 Nov 2026), with the
+          site's left-hand arrow. Folding keeps unsaved edits. */}
+      <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50">
       <button
         type="button"
         onClick={() => setEditing((v) => !v)}
-        className="mt-3 text-sm font-semibold text-brand underline"
+        aria-expanded={editing}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-neutral-800"
       >
-        {editing ? 'Close event details' : 'Edit dates, capacity, price and early registration'}
+        <FoldArrow open={editing} />
+        Dates, capacity, price and discounts
+        {!editing && detailsDirty && <span className="font-semibold text-amber-800">· unsaved changes</span>}
       </button>
 
       {editing && (
-        <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+        <div className="border-t border-neutral-200 p-4">
           <div className="grid gap-3 sm:grid-cols-4">
             <label className="text-sm">
               <span className="block font-semibold text-neutral-700 mb-0.5">First day</span>
@@ -578,6 +584,7 @@ function EventRow({ e }) {
 
         </div>
       )}
+      </div>
 
       {notice && (
         <p
