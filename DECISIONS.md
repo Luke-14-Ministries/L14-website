@@ -3961,3 +3961,39 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
   1 Nov). Grey is "arranged, nothing to do", blue is "on its way, nothing to do": different facts, so
   a plan whose deposit is still clearing shows both, and so does an amber balance. The pill names the
   amount ("$1.00 clearing the bank") wherever it appears on the card header.
+
+## 4 November 2026 — Stage B done; archived means gone from every current list
+
+- **Stage B is done (B1–B5).** Every real-money test passed on the TEST retreat: bank (ACH) $1
+  succeeded 4 Nov after four business days, card with fee cover, partial refund, check, payment plan,
+  a QR card payment at the door, and scholarship → $1.00 credit → refund → Settled $0.00. Not holding
+  up Stage C (Lawrence): the QuickBooks export check (Larry's answers) and the first Truist payout.
+  What holds up Stage C is in DO-THIS-NEXT *What holds up Stage C* (H1–H3: next summer's camp checked
+  by Larry and Ellen, the alpha testers registering for real, one registration on a phone).
+- **`REMINDERS_MODE=live` set ahead of Stage C** (Lawrence, 4 Nov), so the alpha testers get their
+  confirmations, reminders and the 10-day bank-plan notice.
+- **`0148`: the server key reads every table.** The automatic-email job had failed on its first
+  lookup every morning since 28 Oct (service_role had been granted only what the Stripe functions
+  write) and had sent nothing. Applied on Lawrence's go; writes stay granted table by table.
+- **A plan paid off another way sends no "payment coming up" email** (it would have said $0.00), and
+  **staff "Cancel plan" on a plan with nothing owed closes it as Completed**, its dates "Not needed",
+  as the charger does. A real cancellation names the staff member; "early discount removed" shows
+  only when it actually is.
+- **Archived means out of every current list and count** (Lawrence: "that's a lot of the point of
+  archiving"): the staff menu badges (Event Payments activity included), the Overview's numbers and
+  review list, Volunteers and its print view, Roster ("All events (not archived)"), its print and CSV,
+  the Scholarship and Cancellation queues, Background screening, My Program, and on the family side
+  the dashboard's nags and the volunteer application. Records keep it: statements, a person's page,
+  Event Payments' *All events*, the payment exports.
+- **Families keep a real event's card for their records** (folded among past events). **`0147`:** an
+  archived test event, or one cancelled before it ran, can be **cleared from family dashboards** on
+  Setup, behind a warning that a real event should stay archived. Nothing is deleted; it can be undone.
+- **Smaller changes the same day:**
+  - event dropdowns add the year when the name lacks it ("TEST retreat · 2026");
+  - the Money card links to the per-person scholarship editor and to the payments below, and shows
+    "Settled $0.00";
+  - the refund form opens on a registration's credit ("Settling a credit"), its cancellation
+    suggestion is "Suggested refund", and its text is one size;
+  - Setup's event cards fold, and their status pill takes the dropdown's colours;
+  - Email Families became **Email Registrants**: everyone, campers and their families, or volunteers
+    (with childcare and support team), for one event or all current events at once.
