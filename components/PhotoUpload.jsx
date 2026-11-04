@@ -419,9 +419,16 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
         {/* A website cannot open the phone's full camera app with its
             modes (Lawrence, 4 Nov 2026), so the way to a portrait-mode photo
             is said here. */}
-        {isTouchDevice && (
+        {isTouchDevice ? (
           <p className="mt-2 text-xs text-neutral-600 max-w-sm">
             For a portrait-mode photo, take it in your Camera app first, then choose it here.
+          </p>
+        ) : (
+          // The phone's selfie route, offered on a computer too (Lawrence,
+          // 4 Nov 2026): often the easiest camera to hand.
+          <p className="mt-2 text-xs text-neutral-600 max-w-sm">
+            Easier on your phone? Sign in there, open this page and choose &ldquo;Take a photo&rdquo;
+            for a selfie.
           </p>
         )}
         <p className="mt-2 text-xs text-neutral-500 max-w-sm">
