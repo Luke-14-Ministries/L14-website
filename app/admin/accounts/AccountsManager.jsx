@@ -82,6 +82,8 @@ export default function AccountsManager({
   accounts,
   households = [],
   unclaimedPeople = [],
+  // { loginId: personId } -- the login's own person record, for the link.
+  personIdByUser = {},
   selfId,
   loadError,
   newSince = null,
@@ -318,7 +320,15 @@ export default function AccountsManager({
                       email in smaller type below. Halves the table width. */}
                   <td className="px-3 py-2.5">
                     <div className="font-medium text-neutral-900">
-                      {name || <span className="text-neutral-400">No name</span>}
+                      {/* The name opens the person's page when the login is
+                          linked to a person (4 Nov 2026). */}
+                      {name && personIdByUser[a.user_id] ? (
+                        <a href={`/admin/people/${personIdByUser[a.user_id]}/`} className="text-brand-dark hover:underline">
+                          {name}
+                        </a>
+                      ) : (
+                        name || <span className="text-neutral-400">No name</span>
+                      )}
                       {isSelf && (
                         <span className="ml-1.5 text-xs rounded-sm bg-neutral-200 px-1.5 py-0.5 align-middle">you</span>
                       )}

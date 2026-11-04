@@ -19,7 +19,12 @@ export default async function AccountsPage() {
   if (!can(staff, 'admin')) redirect('/admin/');
 
   const supabase = await createClient();
-  const [{ data: accounts, error }, { data: households, error: householdsError }, { data: unclaimedPeople, error: unclaimedError }] =
+  const [
+    { data: accounts, error },
+    { data: households, error: householdsError },
+    { data: unclaimedPeople, error: unclaimedError },
+    { data: linkedPeople, error: linkedError },
+  ] =
     await Promise.all([
       supabase.rpc('admin_list_accounts'),
       // For the "Link to household" picker. Staff RLS on households already
@@ -37,6 +42,9 @@ export default async function AccountsPage() {
         .select('id, household_id, first_name, last_name, date_of_birth')
         .is('profile_id', null)
         .order('last_name'),
+      // Each login's own person record, so the name can open the person's
+      // page (Lawrence, 4 Nov 2026).
+      supabase.from('people').select('id, profile_id').not('profile_id', 'is', null),
     ]);
 
   if (error) {
@@ -46,6 +54,8 @@ export default async function AccountsPage() {
   // pickers would read as "no households" and "nobody to claim".
   if (householdsError) throw new Error(`Households: ${householdsError.message}`);
   if (unclaimedError) throw new Error(`Unclaimed people: ${unclaimedError.message}`);
+  if (linkedError) throw new Error(`People linked to logins: ${linkedError.message}`);
+  const personIdByUser = Object.fromEntries((linkedPeople ?? []).map((p) => [p.profile_id, p.id]));
 
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
@@ -67,6 +77,7 @@ export default async function AccountsPage() {
         accounts={accounts ?? []}
         households={households ?? []}
         unclaimedPeople={unclaimedPeople ?? []}
+        personIdByUser={personIdByUser}
         selfId={staff.userId}
         loadError={Boolean(error)}
         // "New this week" for the quick filter, decided here on the server so
