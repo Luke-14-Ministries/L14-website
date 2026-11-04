@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { updateEventRegistration, updateEventDetails, createEvent, setHiddenFromFamilies } from './actions';
 import { EVENT_TYPE_LABELS } from '@/lib/events';
 import { PLAN_MIN_DAYS } from '@/lib/plans';
+import FoldArrow from '@/components/FoldArrow';
 
 const money = (cents) =>
   cents == null ? '—' : `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
@@ -130,6 +131,10 @@ function EventRow({ e }) {
   const [closes, setCloses] = useState(isoToLocal(e.closesAt));
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null); // { ok, message }
+  // Each event card folds (Lawrence, 4 Nov 2026), opening by default unless
+  // archived. Folding only hides it: unsaved changes stay, and the header
+  // says so.
+  const [open, setOpen] = useState(savedStatus !== 'archived');
 
   // The event's own facts, behind a disclosure. Kept apart from the
   // registration window above deliberately: opening and closing registration
@@ -265,8 +270,15 @@ function EventRow({ e }) {
 
   return (
     <div className="rounded-lg border border-neutral-200 p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full flex-wrap items-baseline justify-between gap-2 text-left"
+      >
+        <div className="flex items-baseline gap-2">
+          <FoldArrow open={open} />
+          <div>
           <p className="font-semibold">
             {e.name}{' '}
             <span className="ml-1 rounded-full bg-neutral-100 px-2 py-0.5 align-middle text-xs font-medium text-neutral-600">
@@ -276,13 +288,19 @@ function EventRow({ e }) {
           <p className="text-sm text-neutral-500">
             {fmtDate(e.startsOn)} &ndash; {fmtDate(e.endsOn)} &middot; {money(e.feeCents)}/person
             {e.capacity ? ` · capacity ${e.capacity}` : ''}
+            {!open && (dirty || detailsDirty) && (
+              <span className="ml-2 font-semibold text-amber-800">· unsaved changes</span>
+            )}
           </p>
+          </div>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass}`}>
           {statusLabel}
         </span>
-      </div>
+      </button>
 
+      {open && (
+      <>
       <div className="mt-3 flex flex-wrap items-end gap-4">
         {/* Archived (0099, 16 Oct 2026): "current" is a rule -- until two
             weeks after the event ends -- and this is the one human override:
@@ -582,6 +600,8 @@ function EventRow({ e }) {
           </button>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }
