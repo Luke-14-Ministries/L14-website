@@ -1761,7 +1761,15 @@ export default async function DashboardPage({ searchParams }) {
                             title="Choose activities for your family; volunteers sign waivers and upload outside providers' confirmations here too."
                             className="btn-outline py-2!"
                           >
-                            Choose activities
+                            {/* Volunteers go where their camper goes; on that
+                                page they only sign activity waivers (Lawrence,
+                                4 Nov 2026: "Choose activities" read wrong for a
+                                volunteer-only registration). */}
+                            {(r.registration_participants ?? []).some(
+                              (p) => CHOOSES_ACTIVITIES.has(p.camp_role) && p.status !== 'cancelled'
+                            )
+                              ? 'Choose activities'
+                              : 'Activity waivers'}
                           </Link>
                         )}
                         {/* Agreements are event things, so the primary route
