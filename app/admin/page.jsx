@@ -1,3 +1,4 @@
+import { ADMIN_NAV } from '@/lib/adminNav';
 import Link from 'next/link';
 import { isCurrentEventRow } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
@@ -75,6 +76,13 @@ export default async function AdminOverview({ searchParams }) {
   const showPast = params?.past === '1';
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/');
+  // The Overview is registration numbers (4 Nov 2026). Anyone without
+  // Registration read -- a prayer-team login -- goes to the first page in the
+  // sidebar they can open instead.
+  if (!can(staff, 'read:registration')) {
+    const first = ADMIN_NAV.find((n) => n.href !== '/admin' && can(staff, n.need));
+    redirect(first ? first.href : '/account/dashboard/?noaccess=1');
+  }
 
   const supabase = await createClient();
 
