@@ -1281,13 +1281,13 @@ export default function FamilyWizard({
             {family.heardAbout && (
               <>
                 <label className={label}>
-                  Anyone we should thank, or anything to add? (optional)
+                  Who told you about us? (optional)
                 </label>
                 <input
                   className={input}
                   value={family.heardAboutFrom}
                   onChange={setF('heardAboutFrom')}
-                  placeholder="e.g. the Smiths, or First Baptist"
+                  placeholder="e.g. a friend’s name, or your church"
                 />
               </>
             )}
