@@ -796,8 +796,11 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         </button>
       </h4>
       <p className="mt-0.5 text-xs text-neutral-500">
-        For activities that run in sittings — the 2 o&rsquo;clock trip, chair 3. Times are as
-        they are at camp; nothing is adjusted for where you are sitting.
+        {/* Reworded 4 Nov 2026 (Lawrence: "wording not clear"). */}
+        Add a time when an activity runs in separate sessions, such as a 1 pm and a 3 pm trail
+        ride, each with its own number of places. Families choose one. Times are camp&rsquo;s
+        local time, whatever time zone you are in. No times means one sign-up for the whole
+        activity.
       </p>
       {open && (
       <>
