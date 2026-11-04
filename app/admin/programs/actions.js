@@ -106,6 +106,16 @@ export async function grantProgramLeader({ email, profileId = null, programId, e
   const supabase = await createClient();
   const user = await getCurrentUser();
 
+  // "N/A (e.g. staff)" (0150) is a placement, not a program: nobody leads it.
+  const { data: prog, error: progError } = await supabase
+    .from('programs')
+    .select('not_a_program')
+    .eq('id', programId)
+    .maybeSingle();
+  if (progError) return { ok: false, error: `That program could not be read: ${progError.message}` };
+  if (!prog) return { ok: false, error: 'That program no longer exists.' };
+  if (prog.not_a_program) return { ok: false, error: '“N/A” is not a program, so it has no leader.' };
+
   // Chosen from the list (4 Nov 2026): the login is already known, so no
   // email lookup. Everything below -- registered for this event, the
   // volunteer warning -- is checked the same way for both routes.

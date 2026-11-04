@@ -27,7 +27,7 @@ export default async function ProgramsPage({ searchParams }) {
     supabase.from('events').select('id, name, event_type, starts_on, ends_on, archived_at').order('starts_on'),
     supabase
       .from('programs')
-      .select('id, name, description, sort_order, active')
+      .select('id, name, description, sort_order, active, not_a_program')
       .eq('active', true)
       .order('sort_order'),
   ]);

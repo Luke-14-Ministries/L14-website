@@ -336,10 +336,12 @@ export default function ProgramBoard({
         </table>
       </div>
 
+      {/* "N/A (e.g. staff)" (0150) is a placement, not a program: nobody
+          leads it, so the leader cards and picker leave it out. */}
       <LeaderPanel
         eventId={eventId}
         eventName={eventName}
-        programs={programs}
+        programs={programs.filter((p) => !p.not_a_program)}
         leaders={leaders}
         candidates={leaderCandidates}
         canGrant={canGrant}
