@@ -4031,3 +4031,22 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
   - **Password boxes have a show/hide eye** (`components/PasswordInput.jsx`).
   - **`0150`: "N/A (e.g. staff)" is a program placement** for people in no program for the week; it
     counts as placed, never gets a leader.
+  - **`0151`: merge households, and same-named households carry their head.** Larry and Darlene
+    are married and each could hold a household. Accounts' row menu has *Merge household into…*
+    (administrators; `admin_merge_households()`): every column pointing at the merged household
+    moves to the kept one (found from the catalogue, so later tables are covered), blank contact
+    details are filled from it, and it is deleted. **Refused when both are registered for the same
+    event** — two registrations with their own money cannot be folded without a person deciding,
+    so cancel one first. When two households share a name, each is shown as "LaPlue family
+    (Darlene)", the head being the primary contact (the first adult registered); a trigger keeps it
+    so. A name left unique after a merge keeps its brackets.
+  - **The registration's Review card shows what an approval rests on:** the event's confirmed count
+    against its capacity at the top (amber if approving everyone waiting would pass it), and a
+    *Before you decide* table per person — required agreements signed, photo answer, and for
+    volunteers the background check, the Creed and the application (*Needs review →* to Volunteers).
+    A volunteer application waiting is why a week tab shows its dot, so it now opens the card and
+    the card says so. **The Overview shows the same count** at the top and as a *Places* column.
+  - **Volunteers:** both row pills are clickable — Place goes to the registration, Application opens
+    the application where it is decided.
+  - **A note is required on every scholarship decision**, an award as well as a refusal, and on the
+    hand-set scholarship/discount editor (Lawrence: the why matters as much when money is given).
