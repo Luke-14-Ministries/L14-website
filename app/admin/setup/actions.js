@@ -31,13 +31,15 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
     registration_opens_at: opensAt || null,
     registration_closes_at: closesAt || null,
     archived_at: null,
+    // Only an archived event can be hidden from family dashboards (0147).
+    hidden_from_families_at: null,
   };
   // The archive mark (0099). The date it was first set is kept: re-saving an
   // archived event does not move it.
   if (status === 'archived') {
     const { data: cur, error: curError } = await supabase
       .from('events')
-      .select('archived_at')
+      .select('archived_at, hidden_from_families_at')
       .eq('id', eventId)
       .maybeSingle();
     if (curError) {
@@ -46,6 +48,8 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
     }
     if (!cur) return { ok: false, error: 'That event was not found.' };
     patch.archived_at = cur.archived_at ?? new Date().toISOString();
+    // Re-saving an archived event keeps its family-dashboard choice.
+    patch.hidden_from_families_at = cur.hidden_from_families_at ?? null;
   }
   const { error } = await supabase
     .from('events')
@@ -62,6 +66,35 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
   revalidatePath('/register');
   revalidatePath('/register/family');
   revalidatePath('/admin');
+  revalidatePath('/account/dashboard');
+  return { ok: true };
+}
+
+// Clear an archived event from family dashboards, or show it again (0147;
+// Lawrence, 4 Nov 2026). For a test event or one cancelled before it ran: a
+// real event that took place stays visible, so families keep their records.
+// Hides only -- registrations, payments and refunds stay for staff and
+// exports. The database refuses it for an event that is not archived.
+export async function setHiddenFromFamilies(eventId, hidden) {
+  const staff = await getStaff();
+  if (!can(staff, 'write:setup')) return { ok: false, error: 'Admins only.' };
+  if (!eventId) return { ok: false, error: 'Missing event.' };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('events')
+    .update({ hidden_from_families_at: hidden ? new Date().toISOString() : null })
+    .eq('id', eventId)
+    .not('archived_at', 'is', null)
+    .select('id');
+  if (error) {
+    console.error('setHiddenFromFamilies:', error.message);
+    return { ok: false, error: 'Could not save. Please try again.' };
+  }
+  if (!data?.length) return { ok: false, error: 'Archive the event first (Event status → Archived, then Save).' };
+
+  revalidatePath('/admin/setup');
+  revalidatePath('/account/dashboard');
   return { ok: true };
 }
 

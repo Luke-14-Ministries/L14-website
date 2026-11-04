@@ -7,7 +7,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateEventRegistration, updateEventDetails, createEvent } from './actions';
+import { updateEventRegistration, updateEventDetails, createEvent, setHiddenFromFamilies } from './actions';
 import { EVENT_TYPE_LABELS } from '@/lib/events';
 import { PLAN_MIN_DAYS } from '@/lib/plans';
 
@@ -62,6 +62,60 @@ function statusOf(row) {
   if (row.closesAt && new Date(row.closesAt) < now)
     return [`Closed ${new Date(row.closesAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, 'bg-neutral-200 text-neutral-600'];
   return ['Open now', 'bg-green-100 text-green-800'];
+}
+
+// A second step for an archived event (0147; Lawrence, 4 Nov 2026): clear it
+// from family dashboards. Meant for a test event or one cancelled before it
+// ran -- a real event that took place stays, so families keep their records.
+// Hides only; nothing is deleted. The warning says so before it happens.
+function FamilyDashboardChoice({ e }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [error, setError] = useState('');
+  const hidden = Boolean(e.hiddenFromFamiliesAt);
+
+  function change(hide) {
+    if (
+      hide &&
+      !window.confirm(
+        `Clear "${e.name}" from every family's dashboard?\n\n` +
+          'Use this only for a test event, or one cancelled before it took place. A real event that ' +
+          'happened should just stay archived, so families can look back at their registration and ' +
+          'payments.\n\nNothing is deleted: registrations, payments and refunds stay for staff and in ' +
+          'every export, and this can be undone here.'
+      )
+    )
+      return;
+    setError('');
+    start(async () => {
+      const res = await setHiddenFromFamilies(e.id, hide);
+      if (!res.ok) setError(res.error);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-2 text-xs text-neutral-600">
+      {hidden ? (
+        <>
+          Cleared from family dashboards{' '}
+          {new Date(e.hiddenFromFamiliesAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          .{' '}
+          <button type="button" disabled={pending} onClick={() => change(false)} className="text-brand underline">
+            Show it to families again
+          </button>
+        </>
+      ) : (
+        <>
+          Families still see it on their dashboards, folded among past events.{' '}
+          <button type="button" disabled={pending} onClick={() => change(true)} className="text-brand underline">
+            Clear from family dashboards…
+          </button>
+        </>
+      )}
+      {error && <span className="ml-2 text-red-700">{error}</span>}
+    </div>
+  );
 }
 
 function EventRow({ e }) {
@@ -291,6 +345,7 @@ function EventRow({ e }) {
           Saved before 26 Oct as both visible and archived. Save stores it as Archived (off the public site).
         </p>
       )}
+      {savedStatus === 'archived' && status === 'archived' && <FamilyDashboardChoice e={e} />}
 
       <button
         type="button"
