@@ -781,6 +781,12 @@ export default function FamilyWizard({
   // card's header button, so a keyboard or screen-reader user lands there too.
   // The card (and, for support details, the person) a refusal is about.
   const [errorAt, setErrorAt] = useState(null);
+  // The refusal stays true to the form as it is now (Lawrence, 4 Nov 2026: it
+  // still said "read and agree to" after every box was ticked). A refusal
+  // about a card shows that card's CURRENT first problem, and goes once the
+  // card is fixed; an error from the server shows as it came.
+  const liveHard = errorAt ? (needs[errorAt.card] ?? []).find((x) => !x.confirm) ?? null : null;
+  const shownError = errorAt ? liveHard?.message ?? '' : error;
   // The error box's button: open that card -- or that person's support
   // details -- and scroll to it, wherever the box happens to sit.
   function goToError() {
@@ -1845,7 +1851,19 @@ export default function FamilyWizard({
                   </label>
                 )}
                 <div className="mt-4 sm:max-w-sm">
-                  <label className={label}>Type your full name to sign</label>
+                  {/* Must match exactly (Lawrence, 4 Nov 2026), so the label
+                      says the name to type -- the primary contact's, as given
+                      above -- not a fuller legal name. */}
+                  <label className={label}>
+                    Type your name to sign{' '}
+                    <span className="font-normal text-neutral-500">
+                      (must match the primary contact
+                      {`${family.contactFirst} ${family.contactLast}`.trim()
+                        ? `: ${`${family.contactFirst} ${family.contactLast}`.trim()}`
+                        : ''}
+                      )
+                    </span>
+                  </label>
                   <input
                     className={`${input} font-serif italic text-lg`}
                     value={signerName}
@@ -1882,12 +1900,12 @@ export default function FamilyWizard({
             is where the person is looking when they press the button; the
             standalone copy that used to sit above showed the same sentence
             twice once you scrolled to the bottom. */}
-        {error && (
+        {shownError && (
           <p
             role="alert"
             className="mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
           >
-            {error}
+            {shownError}
             {errorAt && (
               <button type="button" onClick={goToError} className="ml-2 font-semibold underline">
                 {errorAt.card === 'support' && errorAt.personName
@@ -1908,14 +1926,23 @@ export default function FamilyWizard({
               {week ? fmtWeek(week) : 'Choose a session above'} · payment happens on your
               dashboard afterwards
             </p>
+            {/* What each card still needs, said here, each a way to it
+                (Lawrence, 4 Nov 2026: "1 card needs something" meant
+                scrolling up to find out what). */}
             {namedCount > 0 && needing.length > 0 && (
-              <button
-                type="button"
-                className="mt-0.5 text-xs font-semibold text-amber-700 underline"
-                onClick={() => showNeeding()}
-              >
-                {needing.length} {needing.length === 1 ? 'card needs' : 'cards need'} something
-              </button>
+              <ul className="mt-1 space-y-0.5">
+                {needing.map((k) => (
+                  <li key={k}>
+                    <button
+                      type="button"
+                      className="text-left text-xs font-semibold text-amber-700 underline"
+                      onClick={() => showNeeding(k)}
+                    >
+                      {CARD_TITLE[k]}: {needs[k].map((x) => x.chip).join(', ')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
           <div className="flex items-center gap-4">
