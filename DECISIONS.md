@@ -4004,3 +4004,8 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     findable by name or email, with an unregistered person clearly flagged. Choosing one shows why
     they cannot be named yet and Save stays off: the rule of 31 Aug stands (a leader sees campers'
     names, so only someone registered for that camp). A registered non-volunteer gets the warning.
+- **`0149`: a new account can set up its household before registering** (Lawrence: change their name
+  and contact details first). Manage Household offers "Set up your household" (first and last name,
+  optional phone); `create_my_household()` makes the household with the caller as owner and primary
+  contact, one per login, under the same RLS and guards as registration. The wizard then treats them
+  as a returning family.
