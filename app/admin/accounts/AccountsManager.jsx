@@ -26,6 +26,7 @@ import {
   resetMfa,
   resendVerification,
   linkLoginToHousehold,
+  mergeHouseholds,
 } from './actions';
 
 const FILTERS = [
@@ -416,6 +417,13 @@ export default function AccountsManager({
                           Link to household…
                         </MenuItem>
                         <MenuItem
+                          disabled={!a.household_id}
+                          reason={!a.household_id ? 'no household attached' : null}
+                          onClick={() => setConfirm({ kind: 'merge', row: a, keepId: '' })}
+                        >
+                          Merge household into…
+                        </MenuItem>
+                        <MenuItem
                           disabled={isSelf}
                           reason={isSelf ? 'your own account' : null}
                           onClick={() => setConfirm({ kind: 'remove', rows: [a] })}
@@ -600,6 +608,73 @@ export default function AccountsManager({
               className="btn-primary py-1.5!"
             >
               {busy ? 'Linking…' : 'Link login'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Merge households (0151): for one family that ended up with two
+          households -- a married couple who each signed up, say. Everything
+          moves into the household chosen here and this one is deleted. The
+          database refuses when both are registered for the same event. */}
+      {confirm?.kind === 'merge' && (
+        <Modal onClose={() => setConfirm(null)}>
+          <h2 className="text-lg font-bold mb-2">
+            Merge {confirm.row.household_name ?? 'this household'} into another
+          </h2>
+          <p className="text-sm text-neutral-700 mb-3">
+            Its people, logins, registrations, payments and records move into the
+            household you choose, and{' '}
+            <strong>{confirm.row.household_name ?? 'this household'}</strong> is then
+            deleted. Blank contact details on the kept household are filled from
+            this one. There is no undo. If both households are registered for the
+            same event, cancel one of those registrations first.
+          </p>
+          <label className="block text-sm font-semibold mb-1.5" htmlFor="merge-keep">
+            Keep this household
+          </label>
+          <select
+            id="merge-keep"
+            value={confirm.keepId}
+            onChange={(e) => setConfirm({ ...confirm, keepId: e.target.value })}
+            className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-4 bg-white"
+          >
+            <option value="">Choose a household…</option>
+            {households
+              .filter((h) => h.id !== confirm.row.household_id)
+              .map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.display_name}
+                  {h.city ? ` — ${h.city}` : ''}
+                </option>
+              ))}
+          </select>
+          <div className="flex gap-3 justify-end">
+            <button type="button" onClick={() => setConfirm(null)} className="btn-outline py-1.5!">
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={busy || !confirm.keepId}
+              onClick={() =>
+                run(
+                  () => mergeHouseholds(confirm.keepId, confirm.row.household_id),
+                  (r) => {
+                    const kept =
+                      households.find((h) => h.id === confirm.keepId)?.display_name ??
+                      'the chosen household';
+                    const moved = Object.entries(r.moved ?? {})
+                      .map(([table, n]) => `${n} ${table.replace(/^public\./, '').replace(/_/g, ' ')}`)
+                      .join(', ');
+                    return `Merged ${confirm.row.household_name ?? 'the household'} into ${kept}${
+                      moved ? ` — moved ${moved}` : ''
+                    }.`;
+                  }
+                )
+              }
+              className="btn-primary py-1.5!"
+            >
+              {busy ? 'Merging…' : 'Merge'}
             </button>
           </div>
         </Modal>

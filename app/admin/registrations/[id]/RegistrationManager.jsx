@@ -345,6 +345,10 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
 
   function save() {
     setError('');
+    if (!f.note.trim()) {
+      setError('Say briefly why — every scholarship decision keeps a note.');
+      return;
+    }
     start(async () => {
       const res = await setAdjustments(registrationId, participant.id, f);
       if (!res.ok) setError(res.error);
@@ -372,7 +376,7 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
           <input className={inputCls} inputMode="decimal" value={f.discount} onChange={set('discount')} />
         </div>
         <div className="sm:col-span-3">
-          <label className={labelCls}>Note (kept with the scholarship record)</label>
+          <label className={labelCls}>Note — required: why (kept with the scholarship record)</label>
           <input className={inputCls} value={f.note} onChange={set('note')} placeholder="e.g. Board-approved hardship scholarship" />
         </div>
       </div>
@@ -2011,6 +2015,10 @@ export default function RegistrationManager({
   options,
   adjustmentRecords = [],
   scholarshipRequests = [],
+  // The Review card's person-by-person checks and the event's headcount
+  // against capacity (page.jsx, 4 Nov 2026).
+  reviewChecks = [],
+  headcount = null,
   familyMessages = [],
   signatures = [],
   balance = null,
@@ -2091,7 +2099,9 @@ export default function RegistrationManager({
   const reviewOpen =
     anySubmitted || replyUnread || Boolean(hold?.since) || Boolean(awaiting?.since) || openFlags.length > 0 || creedPending ||
     // A scholarship request waiting is decided inside the Review card now.
-    scholarshipRequests.length > 0;
+    scholarshipRequests.length > 0 ||
+    // So is the reason a week tab shows its dot for a volunteer application.
+    reviewChecks.some((c) => c.application === 'applied');
   // People: open while anyone is submitted or waitlisted, or someone still
   // on the week shows a gap on their row -- no date of birth, or a request
   // for help with the fee waiting on a decision.
@@ -2219,6 +2229,8 @@ export default function RegistrationManager({
           }
           hold={hold}
           creed={creed}
+          checks={reviewChecks}
+          headcount={headcount}
           eventId={eventId}
           depositWaived={depositWaived}
           depositCents={depositCents}

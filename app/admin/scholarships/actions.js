@@ -61,6 +61,12 @@ export async function grantScholarship({ registrationId, participantId, amount, 
 
   const cents = toCents(amount);
   if (cents === null) return { ok: false, error: 'Enter an amount, in dollars.' };
+  // A note on every decision, an award as much as a refusal (Lawrence,
+  // 4 Nov 2026): whoever looks at this family's money later needs the why,
+  // and an award is money the ministry gave away.
+  if (!String(note ?? '').trim()) {
+    return { ok: false, error: 'Say briefly why — every scholarship decision keeps a note.' };
+  }
   if (cents <= 0) {
     // A "grant" of nothing is a refusal wearing the wrong word, and it would
     // leave the family reading "granted" beside $0.
@@ -158,7 +164,7 @@ export async function grantScholarship({ registrationId, participantId, amount, 
   return { ok: true };
 }
 
-// Turn the request down. The note is required -- see below.
+// Turn the request down. The note is required, as it is on an award.
 export async function declineScholarship({ registrationId, participantId, note }) {
   const { staff, error: authError } = await requireRegistrar();
   if (authError) return { ok: false, error: authError };

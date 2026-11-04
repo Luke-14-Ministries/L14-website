@@ -62,6 +62,10 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
   }
 
   function approve() {
+    if (!note.trim()) {
+      setError('Say briefly why — every scholarship decision keeps a note.');
+      return;
+    }
     run(() =>
       grantScholarship({
         registrationId: row.registrationId,
@@ -221,7 +225,7 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
                     the decision and printed on the answered card. Typed dates
                     also go stale and can be wrong; the stamp cannot. So the
                     note is for the one thing nothing else captures: WHY. */}
-                Note <span className="font-normal text-neutral-500">— required to decline, optional on an award. Your name and the date are saved automatically, so use this to say <em>why</em>. Staff only; the family does not see it.</span>
+                Note <span className="font-normal text-neutral-500">— required, to award or decline. Your name and the date are saved automatically, so use this to say <em>why</em>. Staff only; the family does not see it.</span>
               </label>
               <input
                 id={`note-${row.participantId}`}

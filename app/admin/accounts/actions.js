@@ -113,6 +113,32 @@ export async function linkLoginToHousehold(userId, householdId, personId = null)
   return { ok: true, role: data };
 }
 
+// Merge one household into another (0151): everything that points at
+// `mergeId` moves to `keepId`, then `mergeId` is deleted. The function checks
+// the administrator and refuses when both are registered for the same event;
+// its message says which event, so it is shown as-is.
+export async function mergeHouseholds(keepId, mergeId) {
+  const staff = await getStaff();
+  if (!can(staff, 'admin')) return { ok: false, error: 'Not permitted.' };
+  if (!keepId || !mergeId || keepId === mergeId) {
+    return { ok: false, error: 'Choose two different households.' };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('admin_merge_households', {
+    p_keep: keepId,
+    p_merge: mergeId,
+  });
+
+  if (error) {
+    console.error('admin_merge_households:', error.message);
+    return { ok: false, error: error.message };
+  }
+  revalidatePath('/admin/accounts');
+  revalidatePath('/admin/people');
+  return { ok: true, moved: data?.moved ?? {} };
+}
+
 // Re-send the confirmation email to an account that never confirmed. Uses the
 // caller's origin for the redirect so it works identically on the preview URL
 // and, later, the real domain. Supabase rate-limits this per address; the

@@ -674,6 +674,9 @@ export async function setAdjustments(registrationId, participantId, input) {
   if (scholarship < 0 || discount < 0) {
     return { ok: false, error: 'Amounts cannot be negative.' };
   }
+  // Every scholarship decision keeps a note (Lawrence, 4 Nov 2026), and a
+  // hand-set amount here is one.
+  if (!note) return { ok: false, error: 'Say briefly why — every scholarship decision keeps a note.' };
 
   const supabase = await createClient();
 

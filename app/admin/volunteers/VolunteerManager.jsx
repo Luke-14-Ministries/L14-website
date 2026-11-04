@@ -333,7 +333,17 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
               {place[0]}
             </Link>
           )}
-          <span className={`rounded-full px-2.5 py-0.5 font-semibold ${chip[1]}`}>{chip[0]}</span>
+          {/* Both decision pills act (Lawrence, 4 Nov 2026: one was a link,
+              one was not): Place opens the registration, where the place is
+              approved; Application opens the application review below. */}
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            title="Open this application — reviewed here"
+            className={`rounded-full px-2.5 py-0.5 font-semibold hover:underline ${chip[1]}`}
+          >
+            {chip[0]}
+          </button>
           {/* The Creed is asked, not enforced (29 Sep 2026). An application
               without it is a conversation with Larry that has to happen
               before approval, so the gap is loud here rather than a wall on

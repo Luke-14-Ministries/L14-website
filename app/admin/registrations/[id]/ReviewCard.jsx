@@ -58,6 +58,7 @@ import { reviewRegistration } from './actions';
 import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
 import { whenInMorristown } from '@/lib/events';
 import { CLEARING_PILL } from '@/lib/payments';
+import StatusMark from '@/components/StatusMark';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 const when = (iso) =>
@@ -68,6 +69,122 @@ const when = (iso) =>
 function changedNote(p) {
   if (!p.changedAt) return p.changedBy ? ` (by ${p.changedBy})` : '';
   return ` (${whenInMorristown(p.changedAt)}${p.changedBy ? `, by ${p.changedBy}` : ''})`;
+}
+
+// The event's count against its capacity, one line at the top of the card
+// (Lawrence, 4 Nov 2026: "total camp count relative to capacity should be
+// somewhere on this page"). Amber once confirmed plus waiting would pass it.
+function Headcount({ h }) {
+  if (!h) return null;
+  const over = h.capacity != null && h.confirmed + h.waiting > h.capacity;
+  return (
+    <p className={`mb-3 text-sm ${over ? 'text-amber-900 font-semibold' : 'text-neutral-600'}`}>
+      <span className="font-semibold">{h.event}:</span> {h.confirmed} confirmed
+      {h.capacity != null ? ` of ${h.capacity} places (${Math.max(0, h.capacity - h.confirmed)} left)` : ' · no capacity set'}
+      {h.waiting > 0 && ` · ${h.waiting} waiting on a decision`}
+      {h.waitlisted > 0 && ` · ${h.waitlisted} waitlisted`}
+      {over && ' — approving everyone waiting would pass capacity'}
+    </p>
+  );
+}
+
+// Each column's mark, from the facts page.jsx gathered.
+function agreementsMark(c) {
+  if (c.agreementsRequired === 0) return { state: 'na', label: 'None required' };
+  if (c.unsigned.length === 0) return { state: 'yes', label: `All ${c.agreementsRequired} signed` };
+  return { state: 'no', label: `Not signed: ${c.unsigned.join(', ')}` };
+}
+const PHOTO_MARK = {
+  yes: { state: 'yes', label: 'Yes' },
+  declined: { state: 'warn', label: 'Declined' },
+  'not asked': { state: 'na', label: 'Not asked' },
+};
+const CREED_MARK = {
+  affirmed: { state: 'yes', label: 'Affirmed' },
+  talked: { state: 'yes', label: 'Talked with Larry' },
+  not: { state: 'warn', label: 'Not affirmed' },
+};
+const APP_MARK = {
+  approved: { state: 'yes', label: 'Approved' },
+  applied: { state: 'warn', label: 'Needs review' },
+  declined: { state: 'no', label: 'Declined' },
+  withdrawn: { state: 'na', label: 'Withdrawn' },
+  none: { state: 'no', label: 'Not submitted' },
+};
+// A background check's mark (clearanceMark) leaves the label off for the two
+// plain states; in this table the words are wanted.
+function clearanceWords(m) {
+  if (!m) return null;
+  if (m.state === 'yes') return { ...m, label: 'On file' };
+  if (m.state === 'no' && !m.label) return { ...m, label: 'None on file' };
+  return m;
+}
+
+// Before you decide: one row per person, the facts an approval rests on
+// (Lawrence, 4 Nov 2026). Volunteers alone have a background check, the Creed
+// and an application; for anyone else those cells are a dash.
+function Checks({ checks, eventId }) {
+  if (!checks?.length) return null;
+  const anyVolunteer = checks.some((c) => c.volunteer);
+  const dash = <StatusMark state="na" title="Volunteers only" />;
+  return (
+    <div className="mb-3 overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="text-xs text-neutral-500">
+          <tr>
+            <th className="py-1 pr-3 font-semibold">Before you decide</th>
+            <th className="py-1 pr-3 font-semibold">Agreements</th>
+            <th className="py-1 pr-3 font-semibold">Photos</th>
+            {anyVolunteer && (
+              <>
+                <th className="py-1 pr-3 font-semibold">Background check</th>
+                <th className="py-1 pr-3 font-semibold">Creed</th>
+                <th className="py-1 font-semibold">Application</th>
+              </>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {checks.map((c) => (
+            <tr key={c.id} className="border-t border-neutral-100 align-top">
+              <td className="py-1.5 pr-3">
+                <PanelLink to={`person-${c.id}`} className="underline">
+                  {c.name}
+                </PanelLink>
+              </td>
+              <td className="py-1.5 pr-3 whitespace-normal">
+                <StatusMark {...agreementsMark(c)} className="whitespace-normal!" />
+              </td>
+              <td className="py-1.5 pr-3">
+                <StatusMark {...PHOTO_MARK[c.photo]} />
+              </td>
+              {anyVolunteer && (
+                <>
+                  <td className="py-1.5 pr-3">{c.volunteer ? <StatusMark {...clearanceWords(c.clearance)} /> : dash}</td>
+                  <td className="py-1.5 pr-3">{c.volunteer ? <StatusMark {...CREED_MARK[c.creed]} /> : dash}</td>
+                  <td className="py-1.5">
+                    {!c.volunteer ? (
+                      dash
+                    ) : c.application === 'applied' ? (
+                      // Reviewed on Volunteers, where the row opens itself.
+                      <Link
+                        href={`/admin/volunteers/${eventId ? `?event=${eventId}` : ''}#v-${c.id}`}
+                        className="underline"
+                      >
+                        <StatusMark {...APP_MARK.applied} label="Needs review →" />
+                      </Link>
+                    ) : (
+                      <StatusMark {...(APP_MARK[c.application] ?? APP_MARK.none)} />
+                    )}
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 // The link to People on this week, which opens it if folded (Panel opensFor).
@@ -111,6 +228,9 @@ export default function ReviewCard({
   // (Lawrence, 4 Nov 2026: the request sat in a separate section below,
   // with its own heading and its own "approve"). Null when none is waiting.
   scholarshipSlot = null,
+  // Person-by-person checks and the event's headcount (page.jsx).
+  checks = [],
+  headcount = null,
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -195,6 +315,7 @@ export default function ReviewCard({
 
   return (
     <Panel title="Review" count={count} id="review" defaultOpen={defaultOpen} opensFor="scholarship-requests">
+      <Headcount h={headcount} />
       {/* The family replied in the app (0126). One line since 28 Oct 2026
           (Lawrence: four notices for one reply was too many): the reply, and
           Mark as read, are in the conversation below. */}
@@ -261,6 +382,7 @@ export default function ReviewCard({
           </span>
         </p>
       )}
+      <Checks checks={checks} eventId={eventId} />
       {(flags.length > 0 || creed) && (
         <ul className="mb-3 space-y-1 text-sm">
           {/* The Creed, still waiting on the conversation with Larry: amber,
@@ -593,8 +715,10 @@ export default function ReviewCard({
         </p>
       ) : waiting.length === 0 ? (
         <p className="text-sm text-neutral-600">
-          Nobody on this registration is waiting on review. Each person&rsquo;s status is in{' '}
-          <PeopleLink />.
+          {checks.some((c) => c.application === 'applied')
+            ? 'Every place is decided; a volunteer application still needs review (above). '
+            : 'Nobody on this registration is waiting on review. '}
+          Each person&rsquo;s status is in <PeopleLink />.
         </p>
       ) : (
         <>

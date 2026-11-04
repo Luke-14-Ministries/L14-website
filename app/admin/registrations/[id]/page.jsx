@@ -10,6 +10,8 @@ import { dayInMorristown, balanceDueOn, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { loadEmailLog } from '@/lib/emailLog';
+import { clearanceMark } from '@/lib/format';
+import { ageAt } from '@/lib/programs';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import EmailLog from '@/components/EmailLog';
 import ReminderPause from './ReminderPause';
@@ -67,12 +69,13 @@ export default async function RegistrationDetailPage({ params }) {
        households ( id, display_name, email, phone,
                     address_line1, address_line2, city, state, postal_code,
                     home_church, how_did_you_hear, how_did_you_hear_from ),
-       events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on ),
+       events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, capacity ),
        registration_participants (
          id, camp_role, status, confirmed_at,
          status_changed_at, status_changed_by, waitlist_reason,
          tshirt_size, first_time_attending,
          participant_money ( fee_cents, scholarship_cents, discount_cents, discount_reason ),
+         volunteer_applications ( status ),
          people ( id, first_name, last_name, preferred_name, date_of_birth,
                   gender, email, phone )
        )`
@@ -444,6 +447,99 @@ export default async function RegistrationDetailPage({ params }) {
     personName: s.people ? `${s.people.first_name} ${s.people.last_name}` : null,
   }));
 
+  // What a reviewer checks before approving, person by person (Lawrence,
+  // 4 Nov 2026: "need to see flags for background check status, creed status,
+  // and ... any other affirmations not ... agreed to -- key to approval
+  // decision"). Volunteers carry three more facts than anyone else: the
+  // background check (adults only, as on Screening), the Creed (creed_status,
+  // 0130) and their application. Everyone carries the event's required
+  // agreements and the photo answer. A cancelled person is not listed.
+  const eventId = reg.events?.id ?? null;
+  const [
+    { data: clearRows, error: clearError },
+    { data: reqRows, error: reqError },
+    { data: eventParts, error: eventPartsError },
+  ] = await Promise.all([
+    peopleIds.length
+      ? supabase.from('clearance_status').select('person_id, on_file, expires_on, is_current, verdict').in('person_id', peopleIds)
+      : Promise.resolve({ data: [], error: null }),
+    // The event's own agreements; an activity's waiver is the Activity
+    // waiver notice's business, not this list's.
+    eventId
+      ? supabase
+          .from('agreement_requirements')
+          .select('agreement_id, agreements ( title, key )')
+          .eq('event_id', eventId)
+          .is('activity_id', null)
+          .eq('is_required', true)
+      : Promise.resolve({ data: [], error: null }),
+    // Everyone at the event, for the count against its capacity.
+    eventId
+      ? supabase
+          .from('registration_participants')
+          .select('status, registrations!inner ( event_id )')
+          .eq('registrations.event_id', eventId)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (clearError) throw new Error(`Background checks: ${clearError.message}`);
+  if (reqError) throw new Error(`Required agreements: ${reqError.message}`);
+  if (eventPartsError) throw new Error(`Event headcount: ${eventPartsError.message}`);
+
+  const clearanceOf = new Map((clearRows ?? []).map((c) => [c.person_id, c]));
+  const creedOfPart = new Map(
+    (creedRows ?? []).filter((c) => c.registration_id === id).map((c) => [c.participant_id, c])
+  );
+  // Who each signature covers: the person it names, or -- an older
+  // household-wide row with no person -- everyone on the registration.
+  const signedFor = new Set(
+    (sigRows ?? []).map((s) => `${s.person_id ?? '*'}:${s.agreements?.key}`)
+  );
+  const reviewChecks = (reg.registration_participants ?? [])
+    .filter((p) => p.status !== 'cancelled')
+    .map((p) => {
+      const pid = p.people?.id;
+      const volunteer = p.camp_role === 'volunteer';
+      const age = ageAt(p.people?.date_of_birth, reg.events?.starts_on);
+      const creedRow = creedOfPart.get(p.id);
+      const app = [].concat(p.volunteer_applications ?? [])[0] ?? null;
+      const media = consentOf.get(`${pid}:media`);
+      return {
+        id: p.id,
+        name: `${p.people?.preferred_name || p.people?.first_name || ''} ${p.people?.last_name ?? ''}`.trim() || 'Person',
+        volunteer,
+        clearance: volunteer
+          ? clearanceMark(age != null && age < 18 ? { minor: true } : clearanceOf.get(pid) ?? null)
+          : null,
+        // affirmed | talked (with Larry, still current) | not
+        creed: !volunteer
+          ? null
+          : creedRow?.creed_affirmed
+            ? 'affirmed'
+            : creedRow?.discussed_current
+              ? 'talked'
+              : 'not',
+        application: volunteer ? app?.status ?? 'none' : null,
+        unsigned: (reqRows ?? [])
+          .filter((r) => !signedFor.has(`${pid}:${r.agreements?.key}`) && !signedFor.has(`*:${r.agreements?.key}`))
+          .map((r) => r.agreements?.title ?? 'Agreement'),
+        agreementsRequired: (reqRows ?? []).length,
+        photo: media == null ? 'not asked' : media.granted ? 'yes' : 'declined',
+      };
+    });
+
+  // The event's count against its capacity (events.capacity; null is no
+  // limit), near the top of the Review card: whether there is room is part
+  // of the decision.
+  const headcount = eventId
+    ? {
+        event: reg.events?.name ?? '',
+        capacity: reg.events?.capacity ?? null,
+        confirmed: (eventParts ?? []).filter((p) => p.status === 'confirmed').length,
+        waiting: (eventParts ?? []).filter((p) => p.status === 'submitted').length,
+        waitlisted: (eventParts ?? []).filter((p) => p.status === 'waitlisted').length,
+      }
+    : null;
+
   // Reshape the PostgREST nesting into the names the client component expects.
   const registration = {
     id: reg.id,
@@ -670,6 +766,8 @@ export default async function RegistrationDetailPage({ params }) {
       familyReply={familyReply}
       hold={hold}
       creed={creed}
+      reviewChecks={reviewChecks}
+      headcount={headcount}
       eventId={reg.events?.id ?? null}
       depositWaived={reg.deposit_waived_at ? { at: reg.deposit_waived_at, reason: reg.deposit_waived_reason ?? null } : null}
       depositCents={reg.events?.deposit_cents ?? 0}
