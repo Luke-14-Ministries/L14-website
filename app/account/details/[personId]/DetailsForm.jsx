@@ -18,14 +18,19 @@ import SupportDetailsFields from '@/components/SupportDetailsFields';
 import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 import { savePersonSupport } from './actions';
 
-function Card({ n, title, subtitle, children }) {
+function Card({ n, title, subtitle, children, flag = null }) {
   return (
-    <section className="rounded-lg border border-neutral-200 shadow-xs bg-white p-6 sm:p-8">
-      <div className="flex items-baseline gap-3 mb-1">
+    <section
+      className={`rounded-lg shadow-xs bg-white p-6 sm:p-8 ${flag ? 'border-2 border-amber-400' : 'border border-neutral-200'}`}
+    >
+      <div className="flex flex-wrap items-baseline gap-3 mb-1">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-white text-sm font-bold">
           {n}
         </span>
         <h2 className="text-xl font-bold">{title}</h2>
+        {flag && (
+          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">{flag}</span>
+        )}
       </div>
       {subtitle && <p className="text-sm text-neutral-600 mb-4 ml-10">{subtitle}</p>}
       <div className={subtitle ? '' : 'mt-4'}>{children}</div>
@@ -126,7 +131,20 @@ export default function DetailsForm({
 
   return (
     <div className="space-y-6">
-      <Card n={1} title={`A photo of ${name}`} subtitle="Required for camp. Any clear photo of their face works, straight from your phone.">
+      {/* Flagged until there is one (Lawrence, 4 Nov 2026: "should flag
+          photo needed more prominently"): amber border and a "Still needed"
+          pill, the dashboard's own words. */}
+      <Card
+        n={1}
+        title={`A photo of ${name}`}
+        flag={hasPhoto ? null : 'Still needed'}
+        subtitle="Required for camp. Any clear photo of their face works, straight from your phone."
+      >
+        {!hasPhoto && (
+          <p className="mb-3 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+            No photo yet — staff need one before they can approve {name}&rsquo;s registration.
+          </p>
+        )}
         {/* CampSite blocks registration until a photo is uploaded. Ours is
             also required (Larry, 24 Aug) but enforced as a strong urging at
             save time rather than a wall. */}
