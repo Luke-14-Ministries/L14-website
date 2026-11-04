@@ -12,7 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { upcomingReminders, reminderMode } from '@/lib/reminders/run';
 import { todayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Email Families — Staff Admin' };
+export const metadata = { title: 'Email Registrants — Staff Admin' };
 
 // A long list is sent one email at a time, with a pause between (actions.js),
 // so the Send can take a minute; the default function time would cut it off.
@@ -45,9 +45,11 @@ export default async function EmailFamiliesPage({ searchParams }) {
   const listed = current.some((e) => e.id === requested)
     ? current
     : [...current, ...(events ?? []).filter((e) => e.id === requested)];
-  const eventId = listed.some((e) => e.id === requested) ? requested : '';
+  // 'current' = every current event at once (4 Nov 2026).
+  const eventId = requested === 'current' && current.length > 1 ? 'current' : listed.some((e) => e.id === requested) ? requested : '';
+  const who = ['families', 'volunteers'].includes(params?.who) ? params.who : '';
 
-  const { data: activities, error: actError } = eventId
+  const { data: activities, error: actError } = eventId && eventId !== 'current'
     ? await supabase
         .from('activities')
         .select('id, name, active, provider_name, provider_url, sort_order')
@@ -84,7 +86,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
   // Choosing another event, activity or "waiver outstanding" changes the URL
   // (ids only) and this page answers again.
   const preview = eventId
-    ? await previewFamilyEmail({ eventId, activityId: activity?.id ?? null, outstandingOnly: outstanding })
+    ? await previewFamilyEmail({ eventId, activityId: activity?.id ?? null, outstandingOnly: outstanding, who })
     : null;
 
   // The emails the site sent families, so a send stays visible after its
@@ -126,11 +128,12 @@ export default async function EmailFamiliesPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Email Families</h2>
+      <h2 className="text-xl font-bold mb-1">Email Registrants</h2>
       <p className="text-sm text-neutral-500 mb-4">
-        Tell the families of an event — or of one activity — about a change. One email per
-        family, to the household&rsquo;s email, sent from registration@ when you press Send and
-        never before. Each send is recorded in the message log.
+        Tell the people registered for an event — everyone, the campers&rsquo; families, or the
+        volunteers, or only those on one activity — about a change. One email per household, to
+        the household&rsquo;s email, sent from registration@ when you press Send and never
+        before. Each send is recorded in the message log.
       </p>
       <EmailFamiliesForm
         events={listed.map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on }))}
@@ -138,6 +141,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
         activities={(activities ?? []).map((a) => ({ id: a.id, name: a.name, active: a.active !== false }))}
         activityId={activity?.id ?? ''}
         outstanding={outstanding}
+        who={who}
         suggestion={suggestion}
         preview={preview}
         origin={origin}
@@ -154,6 +158,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
           event: eventId,
           activity: activity?.id ?? '',
           outstanding: outstanding ? '1' : '',
+          who,
           suggest: params?.suggest === '1' ? '1' : '',
         }}
       />

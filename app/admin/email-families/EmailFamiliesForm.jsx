@@ -16,9 +16,17 @@ const label = 'block text-sm font-semibold text-neutral-700 mb-1';
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
-function urlFor({ eventId, activityId, outstanding }) {
+// Who, by role (actions.js WHO_ROLES).
+const WHO_OPTIONS = [
+  ['', 'Everyone registered'],
+  ['families', 'Campers and their families'],
+  ['volunteers', 'Volunteers, childcare and support team'],
+];
+
+function urlFor({ eventId, activityId, outstanding, who }) {
   const q = new URLSearchParams();
   if (eventId) q.set('event', eventId);
+  if (who) q.set('who', who);
   if (activityId) q.set('activity', activityId);
   if (outstanding) q.set('outstanding', '1');
   const s = q.toString();
@@ -37,6 +45,7 @@ export default function EmailFamiliesForm({
   activities,
   activityId,
   outstanding,
+  who = '',
   suggestion,
   preview,
   origin,
@@ -57,7 +66,7 @@ export default function EmailFamiliesForm({
     setError('');
     setResults(null);
     startChoosing(() => {
-      router.replace(urlFor({ eventId, activityId, outstanding, ...next }), { scroll: false });
+      router.replace(urlFor({ eventId, activityId, outstanding, who, ...next }), { scroll: false });
     });
   }
 
@@ -89,6 +98,7 @@ export default function EmailFamiliesForm({
         eventId,
         activityId: activityId || null,
         outstandingOnly: outstanding,
+        who,
         subject,
         message,
         expectedFamilies: sendable.length,
@@ -107,7 +117,7 @@ export default function EmailFamiliesForm({
 
   return (
     <div className="max-w-3xl space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <label className="text-sm">
           <span className={label}>Event</span>
           <select
@@ -117,6 +127,9 @@ export default function EmailFamiliesForm({
             onChange={(e) => choose({ eventId: e.target.value, activityId: '' })}
           >
             <option value="">Choose an event…</option>
+            {/* Everyone at once (4 Nov 2026): one email per household, however
+                many current events it is registered for. */}
+            {events.length > 1 && <option value="current">All current events</option>}
             {events.map((e) => (
               <option key={e.id} value={e.id}>
                 {eventNameWithYear(e)}
@@ -128,14 +141,29 @@ export default function EmailFamiliesForm({
           <span className={label}>Who</span>
           <select
             className={input}
-            value={activityId}
+            value={who}
             disabled={!eventId || choosing || sending}
+            onChange={(e) => choose({ who: e.target.value })}
+          >
+            {WHO_OPTIONS.map(([v, text]) => (
+              <option key={v} value={v}>
+                {text}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm">
+          <span className={label}>Activity</span>
+          <select
+            className={input}
+            value={activityId}
+            disabled={!eventId || eventId === 'current' || choosing || sending}
             onChange={(e) => choose({ activityId: e.target.value })}
           >
-            <option value="">Every family registered for the event</option>
+            <option value="">{eventId === 'current' ? 'Choose one event for an activity' : 'Any (the whole event)'}</option>
             {activities.map((a) => (
               <option key={a.id} value={a.id}>
-                Families signed up for {a.name}
+                Signed up for {a.name}
                 {a.active ? '' : ' (turned off)'}
               </option>
             ))}

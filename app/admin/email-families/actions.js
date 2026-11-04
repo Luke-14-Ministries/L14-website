@@ -22,12 +22,24 @@ import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { sendEmail, familyUpdateEmail } from '@/lib/email';
+import { isCurrentEventRow } from '@/lib/events';
 
 const SUBJECT_MAX = 150;
 const MESSAGE_MAX = 5000;
 // Resend accepts a couple of requests a second; a pause between sends keeps a
 // sixty-family list from being refused halfway down.
 const PAUSE_MS = 600;
+
+// Who, by role (Lawrence, 4 Nov 2026: volunteers as a group as well as
+// families). A household is in when one of its people holds one of these
+// roles; '' is everyone registered.
+const WHO_ROLES = {
+  families: ['camper', 'parent_guardian', 'sibling', 'caregiver'],
+  volunteers: ['volunteer', 'childcare', 'support_team'],
+};
+// The event choice that means every current event at once -- one email per
+// household however many weeks it is registered for.
+const ALL_CURRENT = 'current';
 
 async function requireWriter() {
   const staff = await getStaff();
@@ -44,16 +56,34 @@ async function requireWriter() {
 // cancelled) is registered for the event and, if an activity is chosen, holds
 // an active place on it (interested or signed up) and, if "only waiver
 // outstanding", has a row in activity_waivers_outstanding.
-async function familyAudience(supabase, { eventId, activityId, outstandingOnly }) {
+async function familyAudience(supabase, { eventId, activityId, outstandingOnly, who = '' }) {
   if (!eventId) return { error: 'Choose an event.' };
+  const roles = WHO_ROLES[who] ?? null;
 
-  const { data: event, error: eventError } = await supabase
-    .from('events')
-    .select('id, name')
-    .eq('id', eventId)
-    .maybeSingle();
-  if (eventError) return { error: `The event could not be read: ${eventError.message}` };
-  if (!event) return { error: 'That event no longer exists.' };
+  // One event, or every current one (isCurrentEventRow: the rule every staff
+  // page uses). An activity belongs to one event, so it needs one event.
+  let event;
+  let eventIds;
+  if (eventId === ALL_CURRENT) {
+    if (activityId) return { error: 'Choose one event to email the people on an activity.' };
+    const { data: evs, error: evsError } = await supabase
+      .from('events')
+      .select('id, name, starts_on, ends_on, archived_at');
+    if (evsError) return { error: `The events could not be read: ${evsError.message}` };
+    eventIds = (evs ?? []).filter((e) => isCurrentEventRow(e)).map((e) => e.id);
+    event = { id: ALL_CURRENT, name: 'all current events' };
+    if (eventIds.length === 0) return { households: [], peopleCount: 0, eventName: event.name, activityName: null };
+  } else {
+    const { data, error: eventError } = await supabase
+      .from('events')
+      .select('id, name')
+      .eq('id', eventId)
+      .maybeSingle();
+    if (eventError) return { error: `The event could not be read: ${eventError.message}` };
+    if (!data) return { error: 'That event no longer exists.' };
+    event = data;
+    eventIds = [data.id];
+  }
 
   let activity = null;
   if (activityId) {
@@ -71,9 +101,10 @@ async function familyAudience(supabase, { eventId, activityId, outstandingOnly }
     .from('registrations')
     .select(
       `id, household_id, households ( id, display_name, email ),
-       registration_participants ( id, status, person_id, people ( first_name, last_name ) )`
+       registration_participants ( id, status, camp_role, person_id, people ( first_name, last_name ) )`
     )
-    .eq('event_id', eventId);
+    .in('event_id', eventIds)
+    .order('created_at');
   if (regError) return { error: `The registrations could not be read: ${regError.message}` };
 
   let onActivity = null;
@@ -92,7 +123,7 @@ async function familyAudience(supabase, { eventId, activityId, outstandingOnly }
     let q = supabase
       .from('activity_waivers_outstanding')
       .select('registration_participant_id, activity_name, kind, agreement_title, upload_status, review_note')
-      .eq('event_id', eventId);
+      .in('event_id', eventIds);
     if (activity) q = q.eq('activity_id', activity.id);
     const { data, error } = await q;
     if (error) return { error: `The outstanding waivers could not be read: ${error.message}` };
@@ -105,12 +136,16 @@ async function familyAudience(supabase, { eventId, activityId, outstandingOnly }
     }
   }
 
-  const households = [];
+  // One entry per HOUSEHOLD: with every current event chosen, a family on
+  // both weeks is one email, not two. Its first registration is the one the
+  // message log files the send under.
+  const byHousehold = new Map();
   const people = new Set();
   for (const r of regs ?? []) {
     const parts = (r.registration_participants ?? []).filter(
       (p) =>
         p.status !== 'cancelled' &&
+        (!roles || roles.includes(p.camp_role)) &&
         (!onActivity || onActivity.has(p.id)) &&
         (!owedByParticipant || owedByParticipant.has(p.id))
     );
@@ -130,27 +165,32 @@ async function familyAudience(supabase, { eventId, activityId, outstandingOnly }
           )
           .sort((a, b) => `${a.activityName} ${a.personName}`.localeCompare(`${b.activityName} ${b.personName}`))
       : [];
-    households.push({
+    const names = parts.map((p) => `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim());
+    const known = byHousehold.get(r.household_id);
+    if (known) {
+      known.people = [...new Set([...known.people, ...names])].sort();
+      known.items = [...known.items, ...items];
+      continue;
+    }
+    byHousehold.set(r.household_id, {
       householdId: r.household_id,
       registrationId: r.id,
       name: r.households?.display_name ?? 'Household',
       email: String(r.households?.email ?? '').trim(),
-      people: parts
-        .map((p) => `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim())
-        .sort(),
+      people: [...new Set(names)].sort(),
       items,
     });
   }
-  households.sort((a, b) => a.name.localeCompare(b.name));
+  const households = [...byHousehold.values()].sort((a, b) => a.name.localeCompare(b.name));
   return { households, peopleCount: people.size, eventName: event.name, activityName: activity?.name ?? null };
 }
 
 // The preview: who, and how many -- never an address.
-export async function previewFamilyEmail({ eventId, activityId = null, outstandingOnly = false }) {
+export async function previewFamilyEmail({ eventId, activityId = null, outstandingOnly = false, who = '' }) {
   const { error: authError } = await requireWriter();
   if (authError) return { ok: false, error: authError };
   const supabase = await createClient();
-  const aud = await familyAudience(supabase, { eventId, activityId, outstandingOnly: Boolean(outstandingOnly) });
+  const aud = await familyAudience(supabase, { eventId, activityId, outstandingOnly: Boolean(outstandingOnly), who });
   if (aud.error) return { ok: false, error: aud.error };
   return {
     ok: true,
@@ -177,6 +217,7 @@ export async function sendFamilyEmail({
   eventId,
   activityId = null,
   outstandingOnly = false,
+  who = '',
   subject,
   message,
   expectedFamilies,
@@ -192,7 +233,7 @@ export async function sendFamilyEmail({
   if (body.length > MESSAGE_MAX) return { ok: false, error: `Keep the message under ${MESSAGE_MAX} characters.` };
 
   const supabase = await createClient();
-  const aud = await familyAudience(supabase, { eventId, activityId, outstandingOnly: Boolean(outstandingOnly) });
+  const aud = await familyAudience(supabase, { eventId, activityId, outstandingOnly: Boolean(outstandingOnly), who });
   if (aud.error) return { ok: false, error: aud.error };
   const sendable = aud.households.filter((h) => h.email);
   if (sendable.length === 0) return { ok: false, error: 'Nobody on this list has an email on file.' };

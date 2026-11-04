@@ -43,7 +43,7 @@ const NAV = [
   { href: '/admin/changes', label: 'Recent Changes', need: 'read:registration', ready: true, group: 'events' },
   // Staff-pressed email to the families of an event or an activity (22 Oct
   // 2026): Registration write, because it speaks to families for the ministry.
-  { href: '/admin/email-families', label: 'Email Families', need: 'write:registration', ready: true, group: 'events' },
+  { href: '/admin/email-families', label: 'Email Registrants', need: 'write:registration', ready: true, group: 'events' },
   { href: '/admin/dietary', label: 'Dietary & Allergies', need: 'sensitive', ready: true, group: 'events' },
   { href: '/admin/medical', label: 'Medical & Support', need: 'sensitive', ready: true, group: 'events' },
   { href: '/admin/volunteers', label: 'Volunteers', need: 'read:registration', ready: true, group: 'events' },
