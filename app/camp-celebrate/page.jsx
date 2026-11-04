@@ -60,8 +60,8 @@ export default async function CampCelebratePage() {
             {campHeadline(camp)}
           </h2>
           <p className="mt-4 text-lg">
-            Coming as a family, or coming to serve? Pick your door — each page
-            has the details, dates, and its own registration button.
+            Coming as a family, or as a volunteer? Choose below for the details,
+            dates and registration.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-4">
             <Link href="/camper-information" className="btn-primary px-8!">
