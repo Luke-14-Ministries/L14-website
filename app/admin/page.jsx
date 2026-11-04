@@ -118,6 +118,10 @@ export default async function AdminOverview({ searchParams }) {
     regById.set(r.id, {
       household: r.households?.display_name ?? 'Household',
       event: r.events?.name ?? 'Unassigned',
+      // The headline numbers and the review list are the CURRENT events only
+      // (Lawrence, 4 Nov 2026: an archived test event was still counted) --
+      // the rule every staff page uses. The By-event table keeps the past.
+      current: r.events ? isCurrentEventRow(r.events) : false,
     });
     if (r.events?.id) eventMeta.set(r.events.name, r.events);
   }
@@ -166,7 +170,7 @@ export default async function AdminOverview({ searchParams }) {
     if (p.status === 'submitted') row.pending += 1;
     if (p.status === 'waitlisted') row.waitlisted += 1;
 
-    if (p.status === 'submitted') {
+    if (p.status === 'submitted' && meta?.current) {
       const cur = needsReview.get(p.registration_id) ?? {
         household: meta?.household ?? 'Household',
         event: ev,
@@ -179,13 +183,16 @@ export default async function AdminOverview({ searchParams }) {
 
   const totalFamilies = new Set(
     participants
-      .filter((p) => p.status !== 'cancelled' && p.status !== 'draft')
+      .filter((p) => p.status !== 'cancelled' && p.status !== 'draft' && regById.get(p.registration_id)?.current)
       .map((p) => p.registration_id)
   ).size;
-  const totalPeople = [...byEvent.values()].reduce((s, r) => s + r.people, 0);
-  const totalConfirmed = [...byEvent.values()].reduce((s, r) => s + r.confirmed, 0);
-  const totalPending = [...byEvent.values()].reduce((s, r) => s + r.pending, 0);
-  const totalWaitlisted = [...byEvent.values()].reduce((s, r) => s + r.waitlisted, 0);
+  const currentRows = [...byEvent.entries()]
+    .filter(([name]) => (eventMeta.has(name) ? isCurrentEventRow(eventMeta.get(name)) : false))
+    .map(([, r]) => r);
+  const totalPeople = currentRows.reduce((s, r) => s + r.people, 0);
+  const totalConfirmed = currentRows.reduce((s, r) => s + r.confirmed, 0);
+  const totalPending = currentRows.reduce((s, r) => s + r.pending, 0);
+  const totalWaitlisted = currentRows.reduce((s, r) => s + r.waitlisted, 0);
 
   const reviewList = [...needsReview.entries()];
 
@@ -196,8 +203,10 @@ export default async function AdminOverview({ searchParams }) {
   if (can(staff, 'read:registration')) {
     const { data: replyRegs, error: replyError } = await supabase
       .from('registrations')
-      .select('id, family_replied_at, households ( display_name ), events ( name )')
+      .select('id, family_replied_at, households ( display_name ), events!inner ( name, archived_at )')
       .eq('family_reply_unread', true)
+      // Not an archived event's, as on the nav badge.
+      .is('events.archived_at', null)
       .order('family_replied_at', { ascending: true });
     if (replyError) throw new Error(`Family replies: ${replyError.message}`);
     replies = (replyRegs ?? []).map((r) => ({
