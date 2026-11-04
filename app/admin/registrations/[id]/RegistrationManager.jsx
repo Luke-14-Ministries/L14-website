@@ -1917,7 +1917,7 @@ function MoneySummary({ balance, livePeople, staleRefunds = 0, canDecide = false
         {bal < 0 && pending === 0 && (
           <p>
             The family has paid <strong>{money(-bal)}</strong> more than the amount due. Settle it
-            with a refund from the <PanelLink to="payments">Payments card</PanelLink>, or leave it as a credit.
+            with a refund on one of the <PanelLink to="payments">payments below</PanelLink>, or leave it as a credit.
           </p>
         )}
         {bal > 0 && pending === 0 && (
@@ -1939,7 +1939,7 @@ function MoneySummary({ balance, livePeople, staleRefunds = 0, canDecide = false
               <strong className={afterBal > 0 ? 'text-amber-700' : 'text-green-700'}>
                 {afterBal < 0 ? `a ${money(-afterBal)} credit` : afterBal === 0 ? 'settled' : `${money(afterBal)} owed`}
               </strong>
-              . The <PanelLink to="payments">Payments card</PanelLink> lists each refund and its status.
+              . Each refund and its status is listed under <PanelLink to="payments">Payments</PanelLink> below.
             </p>
             {staleRefunds > 0 && (
               <p className="mt-2 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
