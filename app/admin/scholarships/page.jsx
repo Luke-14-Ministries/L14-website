@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import ScholarshipReview from './ScholarshipReview';
+import EventFilter from '@/components/EventFilter';
 
 export const metadata = { title: 'Scholarship Requests — Staff Admin' };
 
@@ -55,7 +56,7 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
          registrations!inner (
            id,
            households ( display_name ),
-           events ( name, starts_on, archived_at )
+           events ( id, name, starts_on, archived_at )
          )
        )`
     )
@@ -68,11 +69,23 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
   // empty queue, so it throws.
   if (error) throw new Error(`Scholarship requests: ${error.message}`);
 
-  const all = rows ?? [];
-  // Not an archived event's (Lawrence, 4 Nov 2026), as on the nav badge;
-  // settled decisions keep the whole history.
+  // One event, chosen in the searchable filter (Lawrence, 4 Nov 2026); with
+  // none chosen, every event but the archived ones -- on both tabs, as the
+  // Roster does. An archived event's requests are one pick away.
+  const { data: eventRows, error: eventsError } = await supabase
+    .from('events')
+    .select('id, name, starts_on, ends_on, archived_at')
+    .order('starts_on', { ascending: false });
+  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
+  const eventFilter =
+    typeof params?.event === 'string' && (eventRows ?? []).some((e) => e.id === params.event) ? params.event : '';
+  const inScope = (r) => {
+    const ev = r.registration_participants?.registrations?.events;
+    return eventFilter ? ev?.id === eventFilter : !ev?.archived_at;
+  };
+  const all = (rows ?? []).filter(inScope);
   const open = all.filter(
-    (r) => r.status === 'requested' && !r.registration_participants?.registrations?.events?.archived_at
+    (r) => r.status === 'requested'
   );
   const settled = all.filter((r) => r.status !== 'requested');
   const shown = showSettled ? settled : open;
@@ -138,9 +151,27 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
         statement immediately.
       </p>
 
+      <div className="mb-3 max-w-md">
+        <EventFilter
+          events={(eventRows ?? []).map((e) => ({
+            id: e.id,
+            name: e.name,
+            startsOn: e.starts_on,
+            endsOn: e.ends_on,
+            archivedAt: e.archived_at,
+          }))}
+          selected={eventFilter || null}
+          basePath="/admin/scholarships"
+          extraParams={{ settled: showSettled ? '1' : '' }}
+          mode="search"
+          allowAll
+          allLabel="All events (not archived)"
+        />
+      </div>
+
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Link
-          href="/admin/scholarships"
+          href={`/admin/scholarships${eventFilter ? `?event=${eventFilter}` : ''}`}
           className={`rounded-full px-3 py-1 text-sm font-semibold ${
             !showSettled
               ? 'bg-brand text-white'
@@ -150,7 +181,7 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
           Waiting ({open.length})
         </Link>
         <Link
-          href="/admin/scholarships?settled=1"
+          href={`/admin/scholarships?settled=1${eventFilter ? `&event=${eventFilter}` : ''}`}
           className={`rounded-full px-3 py-1 text-sm font-semibold ${
             showSettled
               ? 'bg-brand text-white'
