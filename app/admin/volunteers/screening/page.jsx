@@ -29,7 +29,9 @@ export default async function ScreeningPage() {
   const { data: events, error: eventsError } = await supabase
     .from('events')
     .select('id, name, starts_on, ends_on')
-    .gte('ends_on', today);
+    .gte('ends_on', today)
+    // Not an archived event (Lawrence, 4 Nov 2026), as on the nav badge.
+    .is('archived_at', null);
   // CLAUDE.md: never turn a query error into an empty list -- here it would
   // read as "no upcoming events" or "no check on file", and someone already
   // checked could be sent (and paid for) again.

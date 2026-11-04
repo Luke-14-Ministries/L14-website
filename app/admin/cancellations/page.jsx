@@ -31,7 +31,7 @@ export default async function CancellationsPage({ searchParams }) {
        handled_at, staff_note,
        registrations (
          id, households ( display_name, phone, email ),
-         events ( name, starts_on ),
+         events ( name, starts_on, archived_at ),
          registration_participants ( id, camp_role, status,
            people ( first_name, last_name ) )
        )`
@@ -42,7 +42,9 @@ export default async function CancellationsPage({ searchParams }) {
   if (error) throw new Error(`Cancellation requests: ${error.message}`);
 
   const all = rows ?? [];
-  const open = all.filter((r) => r.status === 'open');
+  // Not an archived event's (Lawrence, 4 Nov 2026), as on the nav badge;
+  // handled requests keep the whole history.
+  const open = all.filter((r) => r.status === 'open' && !r.registrations?.events?.archived_at);
   const handled = all.filter((r) => r.status !== 'open');
   const shown = showHandled ? handled : open;
 

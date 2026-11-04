@@ -80,7 +80,7 @@ export default async function VolunteerPage() {
         .from('registrations')
         .select(
           `id,
-           events ( id, name, starts_on, ends_on ),
+           events ( id, name, starts_on, ends_on, archived_at ),
            registration_participants ( id, camp_role, status,
              people ( id, first_name, last_name, date_of_birth ) )`
         )
@@ -94,6 +94,8 @@ export default async function VolunteerPage() {
   for (const r of registrations ?? []) {
     for (const p of r.registration_participants ?? []) {
       if (p.camp_role !== 'volunteer' || p.status === 'cancelled') continue;
+      // Not for an archived event (4 Nov 2026): nothing left to apply for.
+      if (r.events?.archived_at) continue;
       volunteers.push({ participant: p, event: r.events });
     }
   }

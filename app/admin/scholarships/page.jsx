@@ -55,7 +55,7 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
          registrations!inner (
            id,
            households ( display_name ),
-           events ( name, starts_on )
+           events ( name, starts_on, archived_at )
          )
        )`
     )
@@ -69,7 +69,11 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
   if (error) throw new Error(`Scholarship requests: ${error.message}`);
 
   const all = rows ?? [];
-  const open = all.filter((r) => r.status === 'requested');
+  // Not an archived event's (Lawrence, 4 Nov 2026), as on the nav badge;
+  // settled decisions keep the whole history.
+  const open = all.filter(
+    (r) => r.status === 'requested' && !r.registration_participants?.registrations?.events?.archived_at
+  );
   const settled = all.filter((r) => r.status !== 'requested');
   const shown = showSettled ? settled : open;
 
