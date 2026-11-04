@@ -52,17 +52,22 @@ const statusTone = (v) => EVENT_STATUSES.find(([key]) => key === v)?.[3] ?? '';
 const eventStatus = (published, archivedAt) =>
   archivedAt ? 'archived' : published ? 'published' : 'unpublished';
 
+// The heading pill takes the status dropdown's colours (Lawrence, 4 Nov
+// 2026): blue unpublished, green published (whether registration is open,
+// not yet open or closed), grey archived. Red only when a published event
+// cannot open at all.
 function statusOf(row) {
   const now = new Date();
-  if (row.status === 'archived') return ['Archived — out of every current list', 'bg-neutral-200 text-neutral-600'];
-  if (row.status !== 'published') return ['Unpublished — not on the public site', 'bg-neutral-200 text-neutral-600'];
+  const tone = (v) => statusTone(v).replace(/\bborder-\S+/g, '').trim();
+  if (row.status === 'archived') return ['Archived — out of every current list', tone('archived')];
+  if (row.status !== 'published') return ['Unpublished — not on the public site', tone('unpublished')];
   if (!row.hasPublishedOption)
     return ['No published price — cannot open', 'bg-red-100 text-red-800'];
   if (row.opensAt && new Date(row.opensAt) > now)
-    return [`Opens ${new Date(row.opensAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, 'bg-amber-100 text-amber-800'];
+    return [`Published · opens ${new Date(row.opensAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, tone('published')];
   if (row.closesAt && new Date(row.closesAt) < now)
-    return [`Closed ${new Date(row.closesAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, 'bg-neutral-200 text-neutral-600'];
-  return ['Open now', 'bg-green-100 text-green-800'];
+    return [`Published · closed ${new Date(row.closesAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, tone('published')];
+  return ['Published · open now', tone('published')];
 }
 
 // A second step for an archived event (0147; Lawrence, 4 Nov 2026): clear it
