@@ -103,8 +103,8 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
           {/* No check date, no expiry: 0108 clears expires_on with the date,
               and a row saved before it may still carry an old one. */}
           {clearance?.background_check_date && clearance?.expires_on
-            ? `Expires ${clearance.expires_on} (12 months from the check date)`
-            : 'Expiry is worked out from the check date: 12 months — checks are annual.'}
+            ? `Expires ${clearance.expires_on} (12 months from the background-check date)`
+            : 'Expiry is worked out from the background-check date: 12 months — background checks are annual.'}
         </span>
       </div>
       <div className="mt-3">
@@ -490,8 +490,9 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Everyone registered with the Volunteer role, with their application and background-check
-        status. The check paperwork itself lives in the restricted SharePoint folder. The record
-        here — ordering, Checkr&rsquo;s import, the check date and the verdict — is an
+        status. The background-check paperwork itself lives in the restricted SharePoint folder. The
+        record here — ordering, the import from Checkr (the background-check company), the
+        background-check date and the verdict — is an
         administrator&rsquo;s to keep; everyone else on staff sees on file, current, and the
         verdict.
       </p>

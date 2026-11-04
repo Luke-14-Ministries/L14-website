@@ -45,7 +45,7 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
   }
   if (!personId) return { ok: false, error: 'Missing person.' };
   const isOn = Boolean(onFile);
-  if (isOn && !date) return { ok: false, error: 'Give the date of the check — the expiry is worked out from it.' };
+  if (isOn && !date) return { ok: false, error: 'Give the date of the background check — the expiry is worked out from it.' };
   const v = verdict ? String(verdict) : null;
   if (v && !VERDICTS.includes(v)) return { ok: false, error: 'Unknown verdict.' };
   if (v && !isOn) return { ok: false, error: 'A verdict needs the paperwork on file first.' };

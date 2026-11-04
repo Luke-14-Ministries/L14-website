@@ -413,7 +413,7 @@ export default function ScreeningBoard({ candidates }) {
                   <strong>{preview.superseded}</strong>{' '}
                   {preview.superseded === 1 ? 'row is' : 'rows are'} an{' '}
                   <strong>older report</strong> for somebody who also has a newer one in this
-                  file. Checkr keeps every report, so a re-check appears twice. Only the most
+                  file. Checkr keeps every report, so a repeat background check appears twice. Only the most
                   recent completed report counts — including when the older one is the kinder
                   of the two.
                 </p>
@@ -421,7 +421,7 @@ export default function ScreeningBoard({ candidates }) {
               {preview.byName > 0 && (
                 <p className="mt-1 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
                   <strong>{preview.byName}</strong> matched on <strong>name</strong>, not on the
-                  address we sent. Checkr&rsquo;s export carries whoever ordered the check in the
+                  address we sent. Checkr&rsquo;s export carries whoever ordered the background check in the
                   email column, so anything ordered by hand can only be matched by name — read
                   those rows before applying.
                 </p>

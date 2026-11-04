@@ -25,7 +25,7 @@ function providerMark(provider) {
       title: `Provider confirmation rejected — ${provider.note || 'no reason given'}`,
     };
   }
-  return { state: 'warn', label: 'Provider form unchecked', title: 'Provider confirmation uploaded, awaiting check' };
+  return { state: 'warn', label: 'Provider form unchecked', title: 'Provider confirmation uploaded, awaiting staff review' };
 }
 
 // The Health & safety column (0139; Lawrence, 28 Oct 2026). Plain flags, and

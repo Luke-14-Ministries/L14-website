@@ -326,7 +326,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
 
       {/* Confirmations to check (26 Oct 2026): the one place staff accept or
           reject a provider confirmation. The cards below only say where each
-          person stands; an "awaiting check" pill there links to its row here. */}
+          person stands; an "awaiting staff review" pill there links to its row here. */}
       {selected && (
         <section id="to-check" className="mb-5 scroll-mt-6 rounded-lg border border-neutral-200 bg-white p-4">
           <h3 className="font-bold">
@@ -496,7 +496,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                       <summary className="fold-summary">How this works</summary>
                       <p className="mt-1">
                         The provider&rsquo;s own waiver is the family&rsquo;s to complete with them; they
-                        upload proof here. Each upload is <em>awaiting check</em> until someone with
+                        upload proof here. Each upload is <em>awaiting staff review</em> until someone with
                         Registration write accepts it, or rejects it with a reason &mdash; the family
                         reads the reason and uploads again. Volunteers and buddies upload too, ready in
                         case their camper goes. &ldquo;told&rdquo; records only that the family ticked

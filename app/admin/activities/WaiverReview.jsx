@@ -55,7 +55,7 @@ export function WaiverStatusPill({ upload }) {
         title={`Uploaded ${upload.uploadedAt} — check it in Confirmations to check, at the top of the page`}
         className={`rounded-full px-2 py-0.5 text-xs font-semibold underline ${pill.cls}`}
       >
-        awaiting check
+        awaiting staff review
       </a>
     );
   }
