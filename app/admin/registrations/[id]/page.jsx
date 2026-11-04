@@ -32,6 +32,15 @@ function staffAttention(r, { waiversOwed = false, depositShort = false, creedPen
   if (waiversOwed) out.push('activity waiver outstanding');
   if (depositShort) out.push('deposit short');
   if (creedPending) out.push('Creed conversation');
+  // Two more decisions waiting on staff (Lawrence, 4 Nov 2026: Week 1 had a
+  // scholarship request and an application to review and no dot).
+  const live = people.filter((p) => p.status !== 'cancelled');
+  if (live.some((p) => [].concat(p.scholarships ?? []).some((x) => x?.status === 'requested'))) {
+    out.push('scholarship request');
+  }
+  if (live.some((p) => [].concat(p.volunteer_applications ?? []).some((x) => x?.status === 'applied'))) {
+    out.push('volunteer application to review');
+  }
   return out;
 }
 
@@ -127,7 +136,8 @@ export default async function RegistrationDetailPage({ params }) {
         .select(
           `id, awaiting_family_since, family_reply_unread, hold_since,
            events ( id, name, starts_on, ends_on ),
-           registration_participants ( status, people ( id, first_name, last_name ) )`
+           registration_participants ( status, people ( id, first_name, last_name ),
+             scholarships ( status ), volunteer_applications ( status ) )`
         )
         .eq('household_id', reg.households.id)
     : { data: [], error: null };
