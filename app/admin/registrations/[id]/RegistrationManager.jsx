@@ -35,7 +35,7 @@ const TSHIRT_SIZES = [
 
 // The folding card every section of this page uses (StaffPlanPanel and the
 // fees and payments are sections of the Money card, which is one).
-import Panel from './Panel';
+import Panel, { PanelLink } from './Panel';
 import ReviewCard from './ReviewCard';
 import { eventDateRange, dayInMorristown, todayInMorristown } from '@/lib/events';
 import RecheckRefund from '../../payments/RecheckRefund';
@@ -1917,7 +1917,7 @@ function MoneySummary({ balance, livePeople, staleRefunds = 0, canDecide = false
         {bal < 0 && pending === 0 && (
           <p>
             The family has paid <strong>{money(-bal)}</strong> more than the amount due. Settle it
-            with a refund from the Payments card, or leave it as a credit.
+            with a refund from the <PanelLink to="payments">Payments card</PanelLink>, or leave it as a credit.
           </p>
         )}
         {bal > 0 && pending === 0 && (
@@ -1939,7 +1939,7 @@ function MoneySummary({ balance, livePeople, staleRefunds = 0, canDecide = false
               <strong className={afterBal > 0 ? 'text-amber-700' : 'text-green-700'}>
                 {afterBal < 0 ? `a ${money(-afterBal)} credit` : afterBal === 0 ? 'settled' : `${money(afterBal)} owed`}
               </strong>
-              . The Payments card lists each refund and its status.
+              . The <PanelLink to="payments">Payments card</PanelLink> lists each refund and its status.
             </p>
             {staleRefunds > 0 && (
               <p className="mt-2 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
