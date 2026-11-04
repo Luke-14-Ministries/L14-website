@@ -12,11 +12,20 @@ import { reviewVolunteerApplication, setVolunteerClearance } from './actions';
 import { clearancePill, CLEARANCE_VERDICT_LABEL, isMinor } from '@/lib/format';
 import { dayInMorristown } from '@/lib/events';
 
+// Two separate decisions, named apart on every row (Lawrence, 4 Nov 2026:
+// "Approved" read as the place at camp). The APPLICATION is reviewed here;
+// the PLACE (the registration) is approved on the registration page.
 const APP_CHIP = {
-  applied: ['Applied — needs review', 'bg-amber-100 text-amber-800'],
-  approved: ['Approved', 'bg-green-100 text-green-800'],
-  declined: ['Declined', 'bg-red-100 text-red-800'],
-  withdrawn: ['Withdrawn', 'bg-neutral-200 text-neutral-600'],
+  applied: ['Application: needs review', 'bg-amber-100 text-amber-800'],
+  approved: ['Application: approved', 'bg-green-100 text-green-800'],
+  declined: ['Application: declined', 'bg-red-100 text-red-800'],
+  withdrawn: ['Application: withdrawn', 'bg-neutral-200 text-neutral-600'],
+};
+const PLACE_CHIP = {
+  submitted: ['Place: needs approval', 'bg-amber-100 text-amber-800'],
+  confirmed: ['Place: confirmed', 'bg-green-100 text-green-800'],
+  waitlisted: ['Place: waitlisted', 'bg-neutral-200 text-neutral-700'],
+  draft: ['Place: not submitted', 'bg-neutral-100 text-neutral-500'],
 };
 
 // Checkr report states, mirrored into volunteer_clearances.checkr_status by the
@@ -256,7 +265,8 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
   const [error, setError] = useState('');
   const { person, household, app, clearance } = row;
   const age = fmtAge(person?.date_of_birth);
-  const chip = app ? APP_CHIP[app.status] : ['No application yet', 'bg-neutral-100 text-neutral-500'];
+  const chip = app ? APP_CHIP[app.status] : ['Application: not started', 'bg-neutral-100 text-neutral-500'];
+  const place = PLACE_CHIP[row.participantStatus] ?? null;
 
   async function review(decision) {
     setPending(true);
@@ -278,36 +288,51 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
         linked ? 'rounded-lg bg-brand-light/50 ring-2 ring-brand px-3' : ''
       }`}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        {/* The person first, large; under it the two places staff go, each
+            saying what it is for (Lawrence, 4 Nov 2026: the family name as
+            the way to approvals was not obvious). */}
         <div className="min-w-0">
-          <p className="font-semibold">
-            {/* The name opens the person's own page -- reviewing one
-                volunteer -- and the family link below opens the whole
-                registration (Lawrence, 4 Nov 2026). */}
-            {person?.id ? (
-              <Link href={`/admin/people/${person.id}/`} className="text-brand-dark hover:underline">
-                {person?.first_name} {person?.last_name}
-              </Link>
-            ) : (
-              <>
-                {person?.first_name} {person?.last_name}
-              </>
-            )}
+          <p className="text-lg font-semibold leading-tight">
+            {person?.first_name} {person?.last_name}
             {age != null && age < 18 && (
-              <span className="ml-2 rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-xs font-semibold">
+              <span className="ml-2 rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-xs font-semibold align-middle">
                 under 18
               </span>
             )}
           </p>
-          <p className="text-xs text-neutral-500">
+          <p className="mt-1 text-sm">
+            {person?.id && (
+              <>
+                <Link href={`/admin/people/${person.id}/`} className="text-brand underline">
+                  Person details
+                </Link>
+                <span className="text-neutral-400"> · </span>
+              </>
+            )}
             <Link href={`/admin/registrations/${row.registrationId}`} className="text-brand underline">
-              {household?.display_name ?? 'Household'}
+              Registration &amp; approval
             </Link>
-            {person?.email && <> · {person.email}</>}
-            {person?.phone && <> · {person.phone}</>}
+            <span className="text-neutral-500"> ({household?.display_name ?? 'Household'})</span>
           </p>
+          {(person?.email || person?.phone) && (
+            <p className="text-xs text-neutral-500">
+              {person?.email}
+              {person?.email && person?.phone && ' · '}
+              {person?.phone}
+            </p>
+          )}
         </div>
         <span className="flex flex-wrap items-center gap-2 text-xs">
+          {place && (
+            <Link
+              href={`/admin/registrations/${row.registrationId}`}
+              title="The place at camp — approved on the registration page"
+              className={`rounded-full px-2.5 py-0.5 font-semibold hover:underline ${place[1]}`}
+            >
+              {place[0]}
+            </Link>
+          )}
           <span className={`rounded-full px-2.5 py-0.5 font-semibold ${chip[1]}`}>{chip[0]}</span>
           {/* The Creed is asked, not enforced (29 Sep 2026). An application
               without it is a conversation with Larry that has to happen
@@ -343,14 +368,41 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
           <span title={pill.title} className={`rounded-full px-2.5 py-0.5 font-semibold ${pill.cls}`}>
             {pill.text}
           </span>
-          <button type="button" onClick={() => setOpen((o) => !o)} className="btn-outline py-1! px-3!">
-            {open ? 'Close' : 'Details'}
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className={`${app?.status === 'applied' && canReview ? 'btn-primary' : 'btn-outline'} py-1! px-3!`}
+          >
+            {open ? 'Close' : app?.status === 'applied' && canReview ? 'Review application' : 'Application'}
           </button>
         </span>
       </div>
 
       {open && (
         <div className="mt-3 rounded-lg border border-neutral-200 bg-white p-4 text-sm">
+          {/* The decision first, then what it rests on. */}
+          {canReview && app && app.status !== 'withdrawn' && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-3">
+              <span className="mr-1 font-semibold">This application:</span>
+              {app.status !== 'approved' && (
+                <button onClick={() => review('approved')} disabled={pending} className="btn-primary py-1.5! text-sm">
+                  Approve
+                </button>
+              )}
+              {app.status !== 'declined' && (
+                <button
+                  onClick={() => review('declined')}
+                  disabled={pending}
+                  className="rounded-sm border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50"
+                >
+                  Decline
+                </button>
+              )}
+              <span className="text-xs text-neutral-500">
+                The place at camp is approved separately, under Registration &amp; approval.
+              </span>
+            </div>
+          )}
           {app ? (
             <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-2 mb-3">
               <div>
@@ -427,24 +479,6 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
             </div>
           )}
 
-          {canReview && app && app.status !== 'withdrawn' && (
-            <div className="flex flex-wrap gap-2">
-              {app.status !== 'approved' && (
-                <button onClick={() => review('approved')} disabled={pending} className="btn-primary py-1.5! text-sm">
-                  Approve
-                </button>
-              )}
-              {app.status !== 'declined' && (
-                <button
-                  onClick={() => review('declined')}
-                  disabled={pending}
-                  className="rounded-sm border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50"
-                >
-                  Decline
-                </button>
-              )}
-            </div>
-          )}
           {error && <p className="mt-2 text-red-700 text-sm">{error}</p>}
 
           {maySeeChecks ? (
