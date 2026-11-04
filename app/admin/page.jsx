@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { isCurrentEventRow } from '@/lib/events';
-import EventJump from './EventJump';
+import EventFilter from '@/components/EventFilter';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -78,6 +78,20 @@ export default async function AdminOverview({ searchParams }) {
 
   const supabase = await createClient();
 
+  // Pills for the current events (Lawrence, 4 Nov 2026: "Week 1 vs Week 2",
+  // pills, no dropdown): ?event= narrows the headline numbers, the review list
+  // and the plan and reply cards to one event; none means every current event.
+  // The By-event table always shows them all, the chosen one highlighted.
+  const { data: eventRows, error: eventRowsError } = await supabase
+    .from('events')
+    .select('id, name, starts_on, ends_on, archived_at')
+    .order('starts_on');
+  if (eventRowsError) throw new Error(`Events: ${eventRowsError.message}`);
+  const currentEvents = (eventRows ?? []).filter((e) => isCurrentEventRow(e));
+  const chosenEvent =
+    typeof params?.event === 'string' && currentEvents.some((e) => e.id === params.event) ? params.event : null;
+  const inScope = (ev) => (ev ? isCurrentEventRow(ev) && (!chosenEvent || ev.id === chosenEvent) : false);
+
   // As staff, row-level security returns the whole ministry, not one household.
   // Stopped payment plans (22 Oct 2026): money, so only for Payments read --
   // the grant payment_plans_select asks (0101) -- and the card links to the
@@ -112,7 +126,7 @@ export default async function AdminOverview({ searchParams }) {
   const participants = parts ?? [];
 
   const regById = new Map();
-  // The event behind each name, for the current/past split and the jump pills.
+  // The event behind each name, for the current/past split and the scope.
   const eventMeta = new Map();
   for (const r of registrations) {
     regById.set(r.id, {
@@ -121,7 +135,7 @@ export default async function AdminOverview({ searchParams }) {
       // The headline numbers and the review list are the CURRENT events only
       // (Lawrence, 4 Nov 2026: an archived test event was still counted) --
       // the rule every staff page uses. The By-event table keeps the past.
-      current: r.events ? isCurrentEventRow(r.events) : false,
+      current: inScope(r.events),
     });
     if (r.events?.id) eventMeta.set(r.events.name, r.events);
   }
@@ -187,7 +201,7 @@ export default async function AdminOverview({ searchParams }) {
       .map((p) => p.registration_id)
   ).size;
   const currentRows = [...byEvent.entries()]
-    .filter(([name]) => (eventMeta.has(name) ? isCurrentEventRow(eventMeta.get(name)) : false))
+    .filter(([name]) => (eventMeta.has(name) ? inScope(eventMeta.get(name)) : false))
     .map(([, r]) => r);
   const totalPeople = currentRows.reduce((s, r) => s + r.people, 0);
   const totalConfirmed = currentRows.reduce((s, r) => s + r.confirmed, 0);
@@ -203,13 +217,13 @@ export default async function AdminOverview({ searchParams }) {
   if (can(staff, 'read:registration')) {
     const { data: replyRegs, error: replyError } = await supabase
       .from('registrations')
-      .select('id, family_replied_at, households ( display_name ), events!inner ( name, archived_at )')
+      .select('id, family_replied_at, households ( display_name ), events!inner ( id, name, starts_on, ends_on, archived_at )')
       .eq('family_reply_unread', true)
       // Not an archived event's, as on the nav badge.
       .is('events.archived_at', null)
       .order('family_replied_at', { ascending: true });
     if (replyError) throw new Error(`Family replies: ${replyError.message}`);
-    replies = (replyRegs ?? []).map((r) => ({
+    replies = (replyRegs ?? []).filter((r) => !chosenEvent || r.events?.id === chosenEvent).map((r) => ({
       id: r.id,
       family: r.households?.display_name ?? 'Household',
       event: r.events?.name ?? '',
@@ -222,7 +236,7 @@ export default async function AdminOverview({ searchParams }) {
   const eventOfReg = new Map(registrations.map((r) => [r.id, r.events]));
   const currentPlans = (planRows ?? []).filter((p) => {
     const ev = eventOfReg.get(p.registration_id);
-    return ev ? isCurrentEventRow(ev) : false;
+    return inScope(ev);
   });
   const plansStopped = currentPlans.filter((p) => p.status === 'failed').length;
   const plansFailing = currentPlans
@@ -240,6 +254,15 @@ export default async function AdminOverview({ searchParams }) {
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Overview</h2>
+
+      {currentEvents.length > 1 && (
+        <EventFilter
+          events={currentEvents.map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on }))}
+          selected={chosenEvent}
+          basePath="/admin"
+          allowAll
+        />
+      )}
 
       <div
         className={`grid grid-cols-1 gap-4 mb-8 ${
@@ -345,8 +368,9 @@ export default async function AdminOverview({ searchParams }) {
           </Link>
         </div>
         {/* Every CURRENT event at once (16 Oct 2026): the table is the point
-            of this page, so the shared filter's pills JUMP to a row rather
-            than hide the others. Past events are one link away. */}
+            of this section, so the event pills at the top of the page (4 Nov
+            2026) highlight a row here rather than hide the others. Past events
+            are one link away. */}
         {(() => {
           const rowsAll = [...byEvent.entries()];
           const isCur = (name) => {
@@ -355,13 +379,8 @@ export default async function AdminOverview({ searchParams }) {
           };
           const shownRows = showPast ? rowsAll : rowsAll.filter(([name]) => isCur(name));
           const pastCount = rowsAll.length - rowsAll.filter(([name]) => isCur(name)).length;
-          const pills = shownRows
-            .map(([name]) => eventMeta.get(name))
-            .filter(Boolean)
-            .map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }));
           return (
             <>
-              {pills.length > 1 && <EventJump events={pills} />}
               {byEvent.size === 0 ? (
                 <p className="text-neutral-500">No sign-ups yet.</p>
               ) : shownRows.length === 0 ? (
@@ -388,7 +407,11 @@ export default async function AdminOverview({ searchParams }) {
               </thead>
               <tbody>
                 {shownRows.map(([ev, r]) => (
-                  <tr key={ev} id={eventMeta.get(ev)?.id ? `event-${eventMeta.get(ev).id}` : undefined} className="border-t border-neutral-100 target:bg-brand-light">
+                  <tr
+                    key={ev}
+                    id={eventMeta.get(ev)?.id ? `event-${eventMeta.get(ev).id}` : undefined}
+                    className={`border-t border-neutral-100 ${chosenEvent && eventMeta.get(ev)?.id === chosenEvent ? 'bg-brand-light' : ''}`}
+                  >
                     <td className="py-2 pr-4 font-medium">{ev}</td>
                     <td className="py-2 pr-4 text-right">{r.families.size}</td>
                     <td className="py-2 pr-4 text-right">{r.people}</td>

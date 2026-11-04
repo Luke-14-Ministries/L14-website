@@ -78,7 +78,14 @@ export default function EventFilter({
   // In search mode there is no pill row at all, so every event goes into the
   // one list -- current ones first, because those are what people want.
   const searchOnly = mode === 'search';
-  const current = searchOnly ? [] : events.filter((e) => isCurrentEvent(e, cutoff, horizon));
+  // Soonest first, whatever order the page passed them in (Lawrence, 4 Nov
+  // 2026: Volunteers lists events newest first, so its pills read Week 2,
+  // Week 1). The same rule as the search list below.
+  const current = searchOnly
+    ? []
+    : events
+        .filter((e) => isCurrentEvent(e, cutoff, horizon))
+        .sort((a, b) => String(a.startsOn ?? '').localeCompare(String(b.startsOn ?? '')));
   const past = searchOnly
     ? [...events].sort((a, b) => {
         // TWO TIERS, and each sorts the opposite way. Corrected 31 Aug 2026:
