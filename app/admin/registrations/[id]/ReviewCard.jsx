@@ -561,21 +561,10 @@ export default function ReviewCard({
       {/* Who is still undecided (26 Oct 2026), as plainly as who is
           waitlisted or confirmed above: each person a link to their row,
           with their role, directly above the buttons that decide them. */}
-      {scholarshipSlot && (
-        <div id="scholarship-requests" className="mb-4 scroll-mt-4">
-          <p className="mb-2 text-sm font-bold text-neutral-800">
-            1 · The scholarship request{' '}
-            <span className="font-normal text-neutral-600">
-              — decide this first: a full scholarship means no deposit is needed.
-            </span>
-          </p>
-          {scholarshipSlot}
-        </div>
-      )}
       {waiting.length > 0 && (
         <div className="mb-3 rounded-lg border border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-950">
           <p className="font-bold">
-            {scholarshipSlot && '2 · '}
+            {scholarshipSlot && '1 · '}
             {canWrite ? 'Waiting on your decision' : 'Waiting on a decision'}
             {onFamily && <span className="font-normal"> — the family has been asked for more first</span>}
           </p>
@@ -709,6 +698,25 @@ export default function ReviewCard({
             </div>
           )}
         </>
+      )}
+      {/* Step 2 since 4 Nov 2026 (Lawrence): approving first applies the
+          discounts that depend on confirmation -- volunteering both weeks --
+          so the award is decided on what is actually left. Approval does not
+          wait on it: a full-scholarship request already counts in place of
+          the deposit. */}
+      {scholarshipSlot && (
+        <div id="scholarship-requests" className="mt-5 scroll-mt-4">
+          <p className="mb-2 text-sm font-bold text-neutral-800">
+            {waiting.length > 0 ? '2 · ' : ''}The scholarship request{' '}
+            {waiting.length > 0 && (
+              <span className="font-normal text-neutral-600">
+                — decide after approving: approval applies any both-weeks discount, so the award is
+                on what is left.
+              </span>
+            )}
+          </p>
+          {scholarshipSlot}
+        </div>
       )}
       {error && (
         <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>

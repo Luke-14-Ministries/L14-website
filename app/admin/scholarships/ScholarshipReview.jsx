@@ -33,9 +33,14 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
   // Pre-filled with what the family asked for, because that is the answer
   // most of the time and retyping it is how a $450 request becomes a $45
   // award. Blank when they named no amount — see the copy below.
-  const [amount, setAmount] = useState(
-    row.requestedCents ? (row.requestedCents / 100).toFixed(2) : ''
-  );
+  // Capped at what can still be awarded (4 Nov 2026): after a both-weeks
+  // discount a $520 request on a $520 fee can only be $260, and offering
+  // $520 just earned a refusal.
+  const [amount, setAmount] = useState(() => {
+    if (!row.requestedCents) return '';
+    const cap = row.feeCents != null ? Math.max(0, row.feeCents - (row.discountCents ?? 0)) : row.requestedCents;
+    return (Math.min(row.requestedCents, cap) / 100).toFixed(2);
+  });
   const [note, setNote] = useState('');
 
   const isOpen = row.status === 'requested';
