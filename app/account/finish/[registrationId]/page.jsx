@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { balanceDueOn, formatDueDate, formatDueDateShort, dateISO } from '@/lib/events';
+import { balanceDueOn, formatDueDate, formatDueDateShort, dateISO, programOf } from '@/lib/events';
 import { dollars, registrationDepositCents, CLEARING_PILL } from '@/lib/payments';
 import { planAvailable, planConsentText, planHasProblem } from '@/lib/plans';
 import FinishChoices from './FinishChoices';
@@ -156,6 +156,48 @@ export default async function FinishPage({ params, searchParams }) {
   }
 
   const done = route?.route && route.route !== 'none';
+
+  // Volunteering both weeks of one camp (Lawrence, 4 Nov 2026): the later
+  // week is discounted (recalc_multi_week_discount, 0070), but only once
+  // staff confirm the person for both, so until then this page said $520
+  // with no hint. A line says so; it goes once the discount is on.
+  const bothWeeksNotes = [];
+  const volunteerPeople = (reg.registration_participants ?? [])
+    .filter((p) => p.camp_role === 'volunteer' && p.status !== 'cancelled')
+    .map((p) => p.person_id);
+  if (volunteerPeople.length > 0 && reg.events?.name) {
+    const { data: theirs, error: theirsError } = await supabase
+      .from('registration_participants')
+      .select(
+        `person_id, status, camp_role,
+         people ( first_name ),
+         participant_money ( discount_reason ),
+         registrations!inner ( events!inner ( id, name, starts_on, archived_at, multi_week_discount_percent ) )`
+      )
+      .in('person_id', volunteerPeople)
+      .eq('camp_role', 'volunteer')
+      .neq('status', 'cancelled');
+    if (theirsError) throw new Error(`Volunteer weeks: ${theirsError.message}`);
+    const program = programOf(reg.events.name);
+    for (const personId of volunteerPeople) {
+      const weeks = (theirs ?? [])
+        .filter((t) => t.person_id === personId)
+        .filter((t) => !t.registrations?.events?.archived_at && programOf(t.registrations?.events?.name) === program)
+        .sort((a, b) => String(a.registrations.events.starts_on).localeCompare(String(b.registrations.events.starts_on)));
+      if (new Set(weeks.map((w) => w.registrations.events.id)).size < 2) continue;
+      const later = weeks[weeks.length - 1];
+      const pct = later.registrations.events.multi_week_discount_percent ?? 0;
+      const applied = String(later.participant_money?.discount_reason ?? '').startsWith('Both weeks');
+      if (pct > 0 && !applied) {
+        bothWeeksNotes.push({
+          personId,
+          name: later.people?.first_name ?? 'you',
+          later: later.registrations.events.name.split(' — ')[1] ?? 'the later week',
+          pct,
+        });
+      }
+    }
+  }
   // The deposit is what is asked for now while nothing is paid or clearing
   // (the dashboard pill's rule, depositDueNow; waived by staff, nothing is
   // asked; a scholarship request is a route, so done).
@@ -217,6 +259,12 @@ export default async function FinishPage({ params, searchParams }) {
             See the statement
           </Link>
         </p>
+
+        {bothWeeksNotes.map((n) => (
+          <p key={n.personId} className="mb-6 rounded-sm border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+            Volunteering both weeks: {n.later} is {n.pct}% off once staff confirm {n.name} for both.
+          </p>
+        ))}
 
         {payCancelled && (
           <div className="mb-6 rounded-sm border border-neutral-300 bg-white px-4 py-3">
