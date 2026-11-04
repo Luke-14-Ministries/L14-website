@@ -1652,7 +1652,7 @@ export default async function DashboardPage({ searchParams }) {
                             <p className="mt-1">
                               The deposit is your family&rsquo;s commitment to come — and it lets
                               the ministry book vendors and reserve locations with real numbers.
-                              The rest of the balance can be paid in one go, in parts or with a
+                              The rest of the balance can be paid in one lump sum, in parts or with a
                               payment plan (no extra fee)
                               {balanceDueOn(r.events) ? (
                                 <>

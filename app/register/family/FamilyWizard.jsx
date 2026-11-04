@@ -25,6 +25,7 @@
 // both shared with that form.
 
 import { useState } from 'react';
+import Confetti from '@/components/Confetti';
 import FoldArrow from '@/components/FoldArrow';
 import Link from 'next/link';
 import {
@@ -1001,11 +1002,24 @@ export default function FamilyWizard({
   if (result) {
     return (
       <div className="rounded-lg border-2 border-brand bg-brand-light p-8 text-center">
+        {/* A little celebration for a new registration (4 Nov 2026); not
+            for an update. */}
+        {!isUpdate && <Confetti />}
         <h2 className="text-2xl font-bold text-brand-dark">
           {isUpdate ? 'Registration updated' : 'Registration submitted'}
         </h2>
         <p className="mt-3 text-lg">
-          Thank you! We saved {result.saved} {result.saved === 1 ? 'person' : 'people'} for{' '}
+          {/* Names, not a count (Lawrence, 4 Nov 2026): "Information for
+              Darlene LaPlue has been saved". A count only if the save kept a
+              different number of people than the form named. */}
+          Thank you! {(() => {
+            const names = members.filter(isNamed).map((m) => `${m.firstName.trim()} ${m.lastName.trim()}`);
+            const list =
+              names.length <= 1 ? names[0] ?? '' : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+            return names.length > 0 && names.length === result.saved
+              ? `Information for ${list} has been saved for `
+              : `Information for ${result.saved} ${result.saved === 1 ? 'person' : 'people'} has been saved for `;
+          })()}
           <strong>{week?.name}</strong>.{' '}
           {isUpdate
             ? 'Camp staff can see what changed and will follow up if anything needs attention.'
@@ -1051,7 +1065,7 @@ export default function FamilyWizard({
               ({`$${Math.round((result.depositPerPersonCents ?? 5000) / 100)}`} a person) arrives — unless you are requesting a full scholarship, in
               which case choose &ldquo;Ways to pay&rdquo; on your dashboard and request one, and
               staff will be in touch. You can pay the deposit from &ldquo;Ways to pay&rdquo; in
-              about a minute; the rest can be paid in one go, in parts, or with a
+              about a minute; the rest can be paid in one lump sum, in parts, or with a
               payment plan, at no extra fee.{' '}
               {result.balanceDue ? (
                 <>

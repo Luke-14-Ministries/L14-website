@@ -350,7 +350,7 @@ export default function FinishChoices({
         title={depositDue ? `Pay the deposit only — ${dollars(depositCents)}` : 'Pay part of the balance'}
         summary={
           depositDue
-            ? 'Staff approve the registration once the deposit arrives. The rest can be paid later, in one go or in parts.'
+            ? 'Staff approve the registration once the deposit arrives. The rest can be paid later, in one lump sum or in parts.'
             : `Any amount up to ${dollars(balanceCents)}. The rest stays on your balance.`
         }
       >
