@@ -147,12 +147,11 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
             </span>
           </div>
           <p className="mt-1 text-xs text-neutral-500">
-            Leave it blank if you&rsquo;d rather not name a number — staff will work it out with
-            you.
+            Leave blank if you are not sure.
           </p>
 
           <label className="block font-semibold mb-1.5 mt-4">
-            Please tell us a little about your situation
+            Your situation
           </label>
           <textarea
             rows={3}
@@ -161,9 +160,8 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
             className="w-full rounded-sm border border-neutral-300 px-3 py-2"
           />
           <p className="mt-1 text-xs text-neutral-500">
-            A sentence is plenty. Staff decide from what is written here, so a request with
-            nothing in it usually cannot be granted — unless you have already spoken with the
-            office. Only the small group of staff who handle scholarships will read it.
+            Staff decide from what you write here. Only the staff who handle scholarships see
+            it.
           </p>
 
           {error && (

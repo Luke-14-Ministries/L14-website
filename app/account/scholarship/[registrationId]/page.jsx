@@ -132,9 +132,9 @@ export default async function ScholarshipPage({ params }) {
           <BackLink />
         </div>
         <p className="text-neutral-700 mt-2 mb-8">
-          Luke 14 raises money so that cost is not the reason someone stays home. If the fee
-          for {reg.events?.name ?? 'this event'} is difficult, please ask — it is an ordinary
-          part of how camp works, and asking will not affect anyone&rsquo;s place.
+          {/* Plainer and less encouraging (Lawrence, 4 Nov 2026). */}
+          Scholarships for {reg.events?.name ?? 'this event'} are limited and decided by staff.
+          Asking does not affect anyone&rsquo;s place.
         </p>
 
         <ScholarshipForm
