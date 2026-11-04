@@ -756,11 +756,23 @@ export default function FamilyWizard({
   // those that still need something.
   const shownCards = CARD_KEYS.filter((k) => k !== 'agreements' || agreements.length > 0);
   const needing = shownCards.filter((k) => needs[k].length > 0);
+  // Support details with nothing required (no camper) and nothing answered
+  // read "Optional", not "Complete ✓" (Lawrence, 4 Nov 2026: complete before
+  // anything is entered). A camper's required boxes still say "Needs: ...".
+  const supportFilled = members.filter(isNamed).some((m) =>
+    Object.entries(m.support ?? {}).some(([key, v]) =>
+      key === 'buddy_required'
+        ? false
+        : Array.isArray(v)
+          ? v.length > 0
+          : typeof v === 'boolean' || String(v ?? '').trim() !== ''
+    )
+  );
   const statusOf = (k) =>
     cardStatus(needs[k], {
       notStarted: notStarted[k],
-      optional: k === 'notes',
-      filled: k === 'notes' && notes.trim() !== '',
+      optional: k === 'notes' || k === 'support',
+      filled: k === 'notes' ? notes.trim() !== '' : k === 'support' ? supportFilled : false,
     });
   const toggleCard = (k) => () => setOpenCards((o) => ({ ...o, [k]: !o[k] }));
   const setAllCards = (on) => setOpenCards(Object.fromEntries(CARD_KEYS.map((k) => [k, on])));
