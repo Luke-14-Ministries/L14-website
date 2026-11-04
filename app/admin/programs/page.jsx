@@ -60,8 +60,8 @@ export default async function ProgramsPage({ searchParams }) {
         .from('registration_participants')
         .select(
           `id, camp_role, status, program_id,
-           people ( id, first_name, last_name, preferred_name, date_of_birth ),
-           registrations!inner ( event_id, households ( display_name ) )`
+           people ( id, first_name, last_name, preferred_name, date_of_birth, profile_id, email ),
+           registrations!inner ( event_id, households ( display_name, email ) )`
         )
         .eq('registrations.event_id', selectedId)
         .neq('status', 'cancelled')
@@ -100,6 +100,34 @@ export default async function ProgramsPage({ searchParams }) {
       programId: r.program_id ?? null,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Who can be named a leader (Lawrence, 4 Nov 2026: find them by name OR
+  // email): people registered for this event who sign in themselves, one
+  // entry per login, volunteers first. The grant re-checks all of it.
+  const ROLE_WORD = { volunteer: 'Volunteer', parent_guardian: 'Parent/Guardian', caregiver: 'Caregiver', support_team: 'Support team', childcare: 'Childcare', camper: 'Camper', sibling: 'Sibling' };
+  const candidateByProfile = new Map();
+  for (const r of participantRows ?? []) {
+    const pid = r.people?.profile_id;
+    if (!pid) continue;
+    const known = candidateByProfile.get(pid);
+    const roles = [...new Set([...(known?.roles ?? []), r.camp_role])];
+    const emails = [...new Set([...(known?.emails ?? []), r.people?.email, r.registrations?.households?.email].filter(Boolean))];
+    candidateByProfile.set(pid, {
+      profileId: pid,
+      name: `${r.people?.first_name ?? ''} ${r.people?.last_name ?? ''}`.trim() || 'Someone',
+      household: r.registrations?.households?.display_name ?? '',
+      roles,
+      emails,
+    });
+  }
+  const leaderCandidates = [...candidateByProfile.values()]
+    .map((c) => ({
+      value: c.profileId,
+      label: c.name,
+      hint: [c.roles.map((x) => ROLE_WORD[x] ?? x).join(', '), c.household, ...c.emails].filter(Boolean).join(' · '),
+      volunteer: c.roles.includes('volunteer'),
+    }))
+    .sort((a, b) => Number(b.volunteer) - Number(a.volunteer) || a.label.localeCompare(b.label));
 
   const leaders = (leaderRows ?? []).map((l) => ({
     id: l.id,
@@ -141,6 +169,7 @@ export default async function ProgramsPage({ searchParams }) {
           programs={programs ?? []}
           people={people}
           leaders={leaders}
+          leaderCandidates={can(staff, 'admin') ? leaderCandidates : []}
           canGrant={can(staff, 'admin')}
           canPlace={can(staff, 'write:programs')}
         />

@@ -11,6 +11,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import SearchSelect from '@/components/SearchSelect';
 import { setParticipantProgram, setManyParticipantPrograms, grantProgramLeader, revokeProgramLeader, setProgramLead } from './actions';
 
 const ROLE_LABEL = {
@@ -41,6 +42,7 @@ export default function ProgramBoard({
   programs,
   people,
   leaders,
+  leaderCandidates = [],
   canGrant,
   // Programs write (0101); without it the board is read-only.
   canPlace = true,
@@ -339,6 +341,7 @@ export default function ProgramBoard({
         eventName={eventName}
         programs={programs}
         leaders={leaders}
+        candidates={leaderCandidates}
         canGrant={canGrant}
       />
     </div>
@@ -347,7 +350,7 @@ export default function ProgramBoard({
 
 // Naming a leader is an ACCESS decision, not a roster edit, so it sits in its
 // own panel with its own explanation rather than as another column above.
-function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
+function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], canGrant }) {
   // Without this the panel never re-reads its own data. grantProgramLeader
   // calls revalidatePath on the SERVER, which marks the route stale — but
   // nothing asks the client to go and fetch it, so the page keeps rendering the
@@ -359,6 +362,10 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
   // leave out precisely because the write really did succeed.
   const router = useRouter();
   const [email, setEmail] = useState('');
+  // The person chosen from the list (searchable by name or email, 4 Nov
+  // 2026); the email box is the fallback for someone not on it.
+  const [profileId, setProfileId] = useState('');
+  const [byEmail, setByEmail] = useState(false);
   const [programId, setProgramId] = useState('');
   const [message, setMessage] = useState(null);
   const [pending, startTransition] = useTransition();
@@ -376,7 +383,12 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
-      const res = await grantProgramLeader({ email, programId, eventId });
+      const res = await grantProgramLeader({
+        email: byEmail ? email : '',
+        profileId: byEmail ? null : profileId || null,
+        programId,
+        eventId,
+      });
       if (!res.ok) setMessage({ tone: 'bad', text: res.error });
       else {
         setMessage({
@@ -386,9 +398,18 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
           }`,
         });
         setEmail('');
+        setProfileId('');
         router.refresh();
       }
     });
+  }
+
+  // "Name one below" on an empty card: choose that program in the form and
+  // bring the form into view.
+  function nameFor(id) {
+    setProgramId(id);
+    setMessage(null);
+    document.getElementById('name-a-leader')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
     function revoke(grantId) {
@@ -432,7 +453,19 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
             <div key={p.id} className="rounded-sm border border-neutral-200 bg-white p-3">
               <div className="font-semibold">{p.name}</div>
               {list.length === 0 ? (
-                <div className="mt-1 text-sm text-neutral-500">No leader named.</div>
+                <div className="mt-1 text-sm text-neutral-500">
+                  No leader named
+                  {canGrant ? (
+                    <>
+                      {' '}—{' '}
+                      <button type="button" onClick={() => nameFor(p.id)} className="text-brand underline">
+                        name one below
+                      </button>
+                    </>
+                  ) : (
+                    '.'
+                  )}
+                </div>
               ) : (
                 <ul className="mt-1 space-y-1 text-sm">
                   {list.map((l) => (
@@ -480,23 +513,47 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
       </div>
 
       {canGrant ? (
-        <form onSubmit={grant} className="mt-4 flex flex-wrap items-end gap-2">
+        <form
+          id="name-a-leader"
+          onSubmit={grant}
+          className="mt-6 rounded-lg border border-neutral-200 bg-neutral-50 p-4 scroll-mt-4"
+        >
+          <h4 className="font-semibold">Name a program leader</h4>
+          <p className="mt-0.5 mb-3 text-sm text-neutral-600">
+            Choose someone registered for {eventName} who signs in with their own login — type part
+            of their name or email. Volunteers are listed first.
+          </p>
+          <div className="flex flex-wrap items-end gap-3">
+          {byEmail ? (
+            <div>
+              <label className="block text-sm font-semibold text-neutral-700 mb-1" htmlFor="leader-email">
+                Their email address
+              </label>
+              <input
+                id="leader-email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="they must already have an account"
+                className="rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm"
+              />
+            </div>
+          ) : (
+            <div className="min-w-72">
+              <SearchSelect
+                label="Person"
+                options={candidates}
+                value={profileId}
+                onChange={(v) => setProfileId(v)}
+                placeholder="Name or email…"
+                printPrefix={false}
+                noun={['person', 'people']}
+              />
+            </div>
+          )}
           <div>
-            <label className="block text-sm font-medium" htmlFor="leader-email">
-              Their email address
-            </label>
-            <input
-              id="leader-email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="they must already have an account"
-              className="rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium" htmlFor="leader-program">
+            <label className="block text-sm font-semibold text-neutral-700 mb-1" htmlFor="leader-program">
               Program
             </label>
             <select
@@ -504,7 +561,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
               required
               value={programId}
               onChange={(e) => setProgramId(e.target.value)}
-              className="rounded-sm border border-neutral-300 px-2 py-1.5 text-sm"
+              className="rounded-sm border border-neutral-300 bg-white px-2 py-1.5 text-sm"
             >
               <option value="">— choose —</option>
               {programs.map((p) => (
@@ -514,8 +571,27 @@ function LeaderPanel({ eventId, eventName, programs, leaders, canGrant }) {
               ))}
             </select>
           </div>
-          <button type="submit" disabled={pending} className="btn-primary px-3 py-1.5 text-sm">
-            {pending ? 'Saving…' : 'Name them'}
+          <button
+            type="submit"
+            disabled={pending || (!byEmail && !profileId)}
+            className="btn-primary px-3 py-1.5 text-sm disabled:opacity-50"
+          >
+            {pending ? 'Saving…' : 'Save'}
+          </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setByEmail((v) => !v);
+              setMessage(null);
+            }}
+            className="mt-2 text-sm text-brand underline"
+          >
+            {byEmail
+              ? 'Choose from the list instead'
+              : candidates.length === 0
+                ? 'Nobody registered for this event signs in yet — use an email address'
+                : 'Not on the list? Use their email address'}
           </button>
         </form>
       ) : (

@@ -93,18 +93,33 @@ export async function setManyParticipantPrograms({ participantIds, programId }) 
 // who granted it, and revoking sets active = false rather than deleting the
 // row. Who could see which children's names, and when, should still be
 // answerable next year.
-export async function grantProgramLeader({ email, programId, eventId }) {
+export async function grantProgramLeader({ email, profileId = null, programId, eventId }) {
   const staff = await getStaff();
   if (!can(staff, 'admin')) {
     return { ok: false, error: 'Only an administrator can name a program leader.' };
   }
   const clean = (email ?? '').trim().toLowerCase();
-  if (!clean || !programId || !eventId) {
-    return { ok: false, error: 'Give an email address, a program and an event.' };
+  if ((!clean && !profileId) || !programId || !eventId) {
+    return { ok: false, error: 'Choose a person (or give an email address) and a program.' };
   }
 
   const supabase = await createClient();
   const user = await getCurrentUser();
+
+  // Chosen from the list (4 Nov 2026): the login is already known, so no
+  // email lookup. Everything below -- registered for this event, the
+  // volunteer warning -- is checked the same way for both routes.
+  let profile = null;
+  if (profileId) {
+    const { data: chosen, error: chosenError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .eq('id', profileId)
+      .maybeSingle();
+    if (chosenError) return { ok: false, error: `That person could not be read: ${chosenError.message}` };
+    if (!chosen) return { ok: false, error: 'That person no longer has an account.' };
+    profile = chosen;
+  }
 
   // The person must already have an account. Deliberately: this grants access
   // to children's names, and "create an account for them" is how a grant ends
@@ -114,17 +129,18 @@ export async function grantProgramLeader({ email, programId, eventId }) {
   // through the same admin-only lookup the Staff page uses (migration 0011).
   // It returns zero rows for anyone who is not an admin, which makes the RPC
   // itself the second lock behind the can(staff,'admin') check above.
-  const { data: found, error: lookupError } = await supabase.rpc('staff_lookup_by_email', {
-    p_email: clean,
-  });
-
-  if (lookupError) {
-    console.error('grantProgramLeader lookup:', lookupError.message);
-    return { ok: false, error: 'Could not look that address up.' };
+  if (!profile) {
+    const { data: found, error: lookupError } = await supabase.rpc('staff_lookup_by_email', {
+      p_email: clean,
+    });
+    if (lookupError) {
+      console.error('grantProgramLeader lookup:', lookupError.message);
+      return { ok: false, error: 'Could not look that address up.' };
+    }
+    profile = found?.[0]
+      ? { id: found[0].profile_id, first_name: found[0].first_name, last_name: found[0].last_name }
+      : null;
   }
-  const profile = found?.[0]
-    ? { id: found[0].profile_id, first_name: found[0].first_name, last_name: found[0].last_name }
-    : null;
   if (!profile) {
     return {
       ok: false,
