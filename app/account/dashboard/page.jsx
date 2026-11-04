@@ -247,7 +247,7 @@ export default async function DashboardPage({ searchParams }) {
           `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
            family_replied_at, family_reply_unread,
            hold_since, hold_reason, deposit_waived_at,
-           events ( id, name, event_type, starts_on, ends_on, deposit_cents, balance_due_on, campus_map_url, returned_payment_fee_cents,
+           events ( id, name, event_type, starts_on, ends_on, archived_at, deposit_cents, balance_due_on, campus_map_url, returned_payment_fee_cents,
                     event_medical_contacts ( name, phone ) ),
            registration_participants ( id, camp_role, status, checked_in_at, waitlist_reason,
              participant_money ( fee_cents, discount_cents, early_discount_cents, family_discount_cents ),
@@ -273,9 +273,13 @@ export default async function DashboardPage({ searchParams }) {
   const todayISO = new Date().toISOString().slice(0, 10);
   const eventEnd = (r) => r.events?.ends_on ?? r.events?.starts_on ?? '';
   const eventStart = (r) => r.events?.starts_on ?? r.events?.ends_on ?? '';
+  // An archived event counts as past too (Lawrence, 4 Nov 2026): staff have
+  // taken it off every current list, so it should stop asking the family for
+  // things. Its card stays, folded among the past ones, money and all.
+  const isArchived = (r) => Boolean(r.events?.archived_at);
   const isPast = (r) => {
     const end = eventEnd(r);
-    return Boolean(end) && end < todayISO;
+    return (Boolean(end) && end < todayISO) || isArchived(r);
   };
 
   const regs = [...(registrations ?? [])].sort((a, b) => {
@@ -384,6 +388,7 @@ export default async function DashboardPage({ searchParams }) {
   // it as a bug (31 Aug). The form was right; this line was wrong.
   const byPerson = new Map();
   for (const r of regs) {
+    if (isArchived(r)) continue;
     for (const p of r.registration_participants ?? []) {
       const id = p.people?.id;
       if (!id || p.status === 'cancelled') continue;
@@ -463,7 +468,9 @@ export default async function DashboardPage({ searchParams }) {
   // Registered volunteers who haven't filed their volunteer application yet —
   // surfaced as a nudge below, because the application is a separate short
   // form at /register/volunteer and is easy to miss.
-  const volunteerParts = regs.flatMap((r) =>
+  // Not for an event that is over or archived: there is nothing left to
+  // apply for.
+  const volunteerParts = regs.filter((r) => !isPast(r)).flatMap((r) =>
     (r.registration_participants ?? []).filter(
       (p) => p.camp_role === 'volunteer' && p.status !== 'cancelled'
     )
@@ -1364,7 +1371,7 @@ export default async function DashboardPage({ searchParams }) {
                               {/* Volunteers keep a permanent path back to their
                                   application — the amber banner only covers the
                                   not-yet-filed case. */}
-                              {p.camp_role === 'volunteer' && p.status !== 'cancelled' && (
+                              {p.camp_role === 'volunteer' && p.status !== 'cancelled' && !isPast(r) && (
                                 <p className="mt-1 text-xs text-neutral-500">
                                   Volunteer application:{' '}
                                   {VOL_APP_LABEL[volAppStatus.get(p.id)] ?? 'not started'} ·{' '}
