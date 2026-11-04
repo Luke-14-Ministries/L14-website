@@ -361,11 +361,10 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
   // router.refresh() is the other half of revalidatePath, and it is easy to
   // leave out precisely because the write really did succeed.
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  // The person chosen from the list (searchable by name or email, 4 Nov
-  // 2026); the email box is the fallback for someone not on it.
+  // The person chosen from the list: every account, searchable by name or
+  // email (4 Nov 2026), flagged when not registered for this event.
   const [profileId, setProfileId] = useState('');
-  const [byEmail, setByEmail] = useState(false);
+  const chosen = candidates.find((c) => c.value === profileId) ?? null;
   const [programId, setProgramId] = useState('');
   const [message, setMessage] = useState(null);
   const [pending, startTransition] = useTransition();
@@ -383,12 +382,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
-      const res = await grantProgramLeader({
-        email: byEmail ? email : '',
-        profileId: byEmail ? null : profileId || null,
-        programId,
-        eventId,
-      });
+      const res = await grantProgramLeader({ profileId: profileId || null, programId, eventId });
       if (!res.ok) setMessage({ tone: 'bad', text: res.error });
       else {
         setMessage({
@@ -397,7 +391,6 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
             res.warning ? ` ${res.warning}` : ''
           }`,
         });
-        setEmail('');
         setProfileId('');
         router.refresh();
       }
@@ -520,28 +513,11 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
         >
           <h4 className="font-semibold">Name a program leader</h4>
           <p className="mt-0.5 mb-3 text-sm text-neutral-600">
-            {byEmail
-              ? `The exact email address they sign in with. They must already have an account and be registered for ${eventName}.`
-              : `Choose someone registered for ${eventName} who signs in with their own login — type part of their name or email. Volunteers are listed first.`}
+            Type part of their name or email. People registered for {eventName} are listed first;
+            a leader must be registered for this event (best as a volunteer) before they can be named.
           </p>
           <div className="flex flex-wrap items-end gap-3">
-          {byEmail ? (
-            <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1" htmlFor="leader-email">
-                Their email address
-              </label>
-              <input
-                id="leader-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="they must already have an account"
-                className="w-80 max-w-full rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm"
-              />
-            </div>
-          ) : (
-            <div className="min-w-72">
+            <div className="min-w-80">
               <SearchSelect
                 label="Person"
                 options={candidates}
@@ -549,10 +525,9 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
                 onChange={(v) => setProfileId(v)}
                 placeholder="Name or email…"
                 printPrefix={false}
-                noun={['person', 'people']}
+                noun={['account', 'accounts']}
               />
             </div>
-          )}
           <div>
             <label className="block text-sm font-semibold text-neutral-700 mb-1" htmlFor="leader-program">
               Program
@@ -574,26 +549,25 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
           </div>
           <button
             type="submit"
-            disabled={pending || (!byEmail && !profileId)}
+            disabled={pending || !chosen || !chosen.registered}
             className="btn-primary px-3 py-1.5 text-sm disabled:opacity-50"
           >
             {pending ? 'Saving…' : 'Save'}
           </button>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setByEmail((v) => !v);
-              setMessage(null);
-            }}
-            className="mt-2 text-sm text-brand underline"
-          >
-            {byEmail
-              ? 'Choose from the list instead'
-              : candidates.length === 0
-                ? 'Nobody registered for this event signs in yet — use an email address'
-                : 'Not on the list? Use their email address'}
-          </button>
+          {chosen && !chosen.registered && (
+            <p className="mt-2 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <strong>{chosen.label} is not registered for {eventName}.</strong> A leader sees the
+              names and support flags of the campers in their program, so they must register for
+              this event (as a volunteer) first. Then name them here.
+            </p>
+          )}
+          {chosen?.registered && !chosen.volunteer && (
+            <p className="mt-2 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              {chosen.label} is registered, but not as a volunteer, so there is no volunteer
+              application (background check, Creed). They can still be named.
+            </p>
+          )}
         </form>
       ) : (
         <p className="mt-3 text-sm text-neutral-500">

@@ -3998,6 +3998,9 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
   - Email Families became **Email Registrants**: everyone, campers and their families, or volunteers
     (with childcare and support team), for one event or all current events at once;
   - Programs: an empty program card says "No leader named — name one below"; naming a leader is a
-    section of its own, with a person picker searchable by name or email (people registered for the
-    event who sign in themselves, volunteers first), an email box as the fallback, and a Save button.
-    The checks are unchanged: an account, registered for that event, a warning if not a volunteer.
+    section of its own, with a person picker over every account, searchable by name or email
+    (registered for the event first, volunteers first among them; everyone else marked "not
+    registered for this event"), and a Save button. Lawrence, the same day: anyone should be
+    findable by name or email, with an unregistered person clearly flagged. Choosing one shows why
+    they cannot be named yet and Save stays off: the rule of 31 Aug stands (a leader sees campers'
+    names, so only someone registered for that camp). A registered non-volunteer gets the warning.

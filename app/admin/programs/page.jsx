@@ -61,7 +61,7 @@ export default async function ProgramsPage({ searchParams }) {
         .select(
           `id, camp_role, status, program_id,
            people ( id, first_name, last_name, preferred_name, date_of_birth, profile_id, email ),
-           registrations!inner ( event_id, households ( display_name, email ) )`
+           registrations!inner ( event_id, household_id, households ( display_name, email ) )`
         )
         .eq('registrations.event_id', selectedId)
         .neq('status', 'cancelled')
@@ -101,33 +101,56 @@ export default async function ProgramsPage({ searchParams }) {
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Who can be named a leader (Lawrence, 4 Nov 2026: find them by name OR
-  // email): people registered for this event who sign in themselves, one
-  // entry per login, volunteers first. The grant re-checks all of it.
+  // Who can be named a leader (Lawrence, 4 Nov 2026): EVERY account, found
+  // by name or email, with the ones registered for this event first and the
+  // rest flagged "not registered" -- the grant still refuses them (a leader
+  // sees campers' names, so only someone coming to this camp). The account
+  // list is admin-only (admin_list_accounts, 0022/0023), as the grant is.
   const ROLE_WORD = { volunteer: 'Volunteer', parent_guardian: 'Parent/Guardian', caregiver: 'Caregiver', support_team: 'Support team', childcare: 'Childcare', camper: 'Camper', sibling: 'Sibling' };
-  const candidateByProfile = new Map();
+  const rolesByProfile = new Map();
   for (const r of participantRows ?? []) {
     const pid = r.people?.profile_id;
     if (!pid) continue;
-    const known = candidateByProfile.get(pid);
-    const roles = [...new Set([...(known?.roles ?? []), r.camp_role])];
-    const emails = [...new Set([...(known?.emails ?? []), r.people?.email, r.registrations?.households?.email].filter(Boolean))];
-    candidateByProfile.set(pid, {
-      profileId: pid,
-      name: `${r.people?.first_name ?? ''} ${r.people?.last_name ?? ''}`.trim() || 'Someone',
-      household: r.registrations?.households?.display_name ?? '',
-      roles,
-      emails,
-    });
+    rolesByProfile.set(pid, [...new Set([...(rolesByProfile.get(pid) ?? []), r.camp_role])]);
   }
-  const leaderCandidates = [...candidateByProfile.values()]
-    .map((c) => ({
-      value: c.profileId,
-      label: c.name,
-      hint: [c.roles.map((x) => ROLE_WORD[x] ?? x).join(', '), c.household, ...c.emails].filter(Boolean).join(' · '),
-      volunteer: c.roles.includes('volunteer'),
-    }))
-    .sort((a, b) => Number(b.volunteer) - Number(a.volunteer) || a.label.localeCompare(b.label));
+  // A login not yet linked to its person record (0074 links household owners)
+  // whose family is registered: the grant checks it through the household,
+  // so it is not blocked here, only not shown a role.
+  const registeredHouseholds = new Set((participantRows ?? []).map((r) => r.registrations?.household_id).filter(Boolean));
+  let leaderCandidates = [];
+  if (can(staff, 'admin') && selectedId) {
+    const { data: accounts, error: accountsError } = await supabase.rpc('admin_list_accounts');
+    if (accountsError) throw new Error(`Accounts: ${accountsError.message}`);
+    leaderCandidates = (accounts ?? [])
+      .map((a) => {
+        const roles = rolesByProfile.get(a.user_id) ?? [];
+        const familyRegistered = roles.length === 0 && registeredHouseholds.has(a.household_id);
+        const name = `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim() || a.email || 'Someone';
+        return {
+          value: a.user_id,
+          label: name,
+          hint: [
+            roles.length
+              ? roles.map((x) => ROLE_WORD[x] ?? x).join(', ')
+              : familyRegistered
+                ? 'family registered for this event'
+                : 'not registered for this event',
+            a.household_name,
+            a.email,
+          ]
+            .filter(Boolean)
+            .join(' · '),
+          registered: roles.length > 0 || familyRegistered,
+          volunteer: roles.includes('volunteer'),
+        };
+      })
+      .sort(
+        (a, b) =>
+          Number(b.registered) - Number(a.registered) ||
+          Number(b.volunteer) - Number(a.volunteer) ||
+          a.label.localeCompare(b.label)
+      );
+  }
 
   const leaders = (leaderRows ?? []).map((l) => ({
     id: l.id,
