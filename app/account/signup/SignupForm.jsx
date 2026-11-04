@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import PasswordInput from '@/components/PasswordInput';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -173,7 +174,7 @@ export default function SignupForm() {
       <label className="block font-semibold mb-1.5 mt-4" htmlFor="su-password">
         Password
       </label>
-      <input id="su-password" type="password" autoComplete="new-password" required minLength={10} value={form.password} onChange={set('password')} className="w-full rounded-sm border border-neutral-300 px-4 py-2.5" />
+      <PasswordInput id="su-password" autoComplete="new-password" required minLength={10} value={form.password} onChange={set('password')} className="w-full rounded-sm border border-neutral-300 px-4 py-2.5" />
       <p className="mt-1.5 text-sm text-neutral-500">
         At least 10 characters.
       </p>

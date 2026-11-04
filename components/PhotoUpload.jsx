@@ -416,6 +416,14 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
             </div>
           </div>
         )}
+        {/* A website cannot open the phone's full camera app with its
+            modes (Lawrence, 4 Nov 2026), so the way to a portrait-mode photo
+            is said here. */}
+        {isTouchDevice && (
+          <p className="mt-2 text-xs text-neutral-600 max-w-sm">
+            For a portrait-mode photo, take it in your Camera app first, then choose it here.
+          </p>
+        )}
         <p className="mt-2 text-xs text-neutral-500 max-w-sm">
           A clear photo of {personName || 'this person'}&rsquo;s face helps staff greet them by
           name at check-in. You&rsquo;ll get to frame it after choosing, and it is resized on

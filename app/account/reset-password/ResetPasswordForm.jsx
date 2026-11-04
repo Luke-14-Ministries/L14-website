@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import PasswordInput from '@/components/PasswordInput';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -66,28 +67,28 @@ export default function ResetPasswordForm() {
       <label className="block font-semibold mb-1.5" htmlFor="rp-password">
         New password
       </label>
-      <input
+      <PasswordInput
         id="rp-password"
-        type="password"
         autoComplete="new-password"
         required
         minLength={10}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5"
+        wrapClassName="mb-4"
       />
       <label className="block font-semibold mb-1.5" htmlFor="rp-confirm">
         Confirm new password
       </label>
-      <input
+      <PasswordInput
         id="rp-confirm"
-        type="password"
         autoComplete="new-password"
         required
         minLength={10}
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
-        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-6"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5"
+        wrapClassName="mb-6"
       />
       <button type="submit" className="btn-primary w-full" disabled={busy}>
         {busy ? 'Saving…' : 'Save New Password'}

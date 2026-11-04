@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import PasswordInput from '@/components/PasswordInput';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { safeNextPath } from '@/lib/site';
@@ -533,15 +534,15 @@ export default function LoginForm() {
       <label className="block font-semibold mb-1.5" htmlFor="login-password">
         Password
       </label>
-      <input
+      <PasswordInput
         id="login-password"
         name="password"
-        type="password"
         autoComplete="current-password"
         required
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
+        className="w-full rounded-sm border border-neutral-300 px-4 py-2.5"
+        wrapClassName="mb-4"
       />
 
       <Turnstile
