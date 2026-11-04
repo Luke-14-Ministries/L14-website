@@ -1875,9 +1875,11 @@ function MoneySummary({ balance, livePeople, staleRefunds = 0, canDecide = false
 
   // An amount owed is just the amount, in amber beside "Balance today" -- the
   // word "Owed" there said it twice (Lawrence, 26 Oct 2026). A credit keeps
-  // its word, because a bare green figure could be read either way.
+  // its word, because a bare green figure could be read either way. Settled
+  // carries its $0.00 too (Lawrence, 4 Nov 2026), so the column of figures
+  // ends on a figure.
   const balanceText =
-    bal < 0 ? `Credit ${money(-bal)}` : bal === 0 ? 'Settled' : money(bal);
+    bal < 0 ? `Credit ${money(-bal)}` : bal === 0 ? `Settled ${money(0)}` : money(bal);
   const balanceCls = bal > 0 ? 'text-amber-700' : 'text-green-700';
 
   return (
