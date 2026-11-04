@@ -92,7 +92,7 @@ export default async function AdminOverview({ searchParams }) {
   // The By-event table always shows them all, the chosen one highlighted.
   const { data: eventRows, error: eventRowsError } = await supabase
     .from('events')
-    .select('id, name, starts_on, ends_on, archived_at')
+    .select('id, name, starts_on, ends_on, archived_at, capacity')
     .order('starts_on');
   if (eventRowsError) throw new Error(`Events: ${eventRowsError.message}`);
   const currentEvents = (eventRows ?? []).filter((e) => isCurrentEventRow(e));
@@ -218,6 +218,28 @@ export default async function AdminOverview({ searchParams }) {
 
   const reviewList = [...needsReview.entries()];
 
+  // Each event's places (events.capacity; null is no limit), by name, as the
+  // rollup is keyed. Shown at the top for the events in scope and as a column
+  // in By event (Lawrence, 4 Nov 2026: "total camp count relative to
+  // capacity ... overview near top").
+  const capacityOf = new Map((eventRows ?? []).map((e) => [e.name, e.capacity ?? null]));
+  const placesLine = currentEvents
+    .filter((e) => !chosenEvent || e.id === chosenEvent)
+    .map((e) => {
+      const r = byEvent.get(e.name) ?? { confirmed: 0, pending: 0 };
+      const over = e.capacity != null && r.confirmed + r.pending > e.capacity;
+      return {
+        id: e.id,
+        name: e.name,
+        over,
+        text:
+          e.capacity != null
+            ? `${r.confirmed} confirmed of ${e.capacity} places (${Math.max(0, e.capacity - r.confirmed)} left)`
+            : `${r.confirmed} confirmed · no capacity set`,
+        waiting: r.pending,
+      };
+    });
+
   // Families who wrote back in the app and nobody has read it (0126). First on
   // the page (Lawrence, 26 Oct 2026): a reply sat unseen among the sign-ups.
   // Names and events only since 28 Oct; the message is on the registration.
@@ -270,6 +292,18 @@ export default async function AdminOverview({ searchParams }) {
           basePath="/admin"
           allowAll
         />
+      )}
+
+      {placesLine.length > 0 && (
+        <ul className="mb-4 space-y-0.5 text-sm text-neutral-700">
+          {placesLine.map((l) => (
+            <li key={l.id} className={l.over ? 'font-semibold text-amber-900' : ''}>
+              <span className="font-semibold">{l.name}:</span> {l.text}
+              {l.waiting > 0 && ` · ${l.waiting} waiting on a decision`}
+              {l.over && ' — approving everyone waiting would pass capacity'}
+            </li>
+          ))}
+        </ul>
       )}
 
       <div
@@ -409,6 +443,7 @@ export default async function AdminOverview({ searchParams }) {
                   <th className="py-2 pr-4 font-semibold text-right">Families</th>
                   <th className="py-2 pr-4 font-semibold text-right">People</th>
                   <th className="py-2 pr-4 font-semibold text-right">Confirmed</th>
+                  <th className="py-2 pr-4 font-semibold text-right">Places</th>
                   <th className="py-2 pr-4 font-semibold text-right">Waitlisted</th>
                   <th className="py-2 font-semibold text-right">Awaiting Review</th>
                 </tr>
@@ -424,6 +459,9 @@ export default async function AdminOverview({ searchParams }) {
                     <td className="py-2 pr-4 text-right">{r.families.size}</td>
                     <td className="py-2 pr-4 text-right">{r.people}</td>
                     <td className="py-2 pr-4 text-right text-green-700 font-semibold">{r.confirmed}</td>
+                    <td className="py-2 pr-4 text-right text-neutral-600">
+                      {capacityOf.get(ev) != null ? capacityOf.get(ev) : <span className="text-neutral-400">no limit</span>}
+                    </td>
                     <td className="py-2 pr-4 text-right text-neutral-600">{r.waitlisted}</td>
                     <td className={`py-2 text-right font-semibold ${r.pending > 0 ? 'text-amber-700' : 'text-neutral-400'}`}>
                       {r.pending}
