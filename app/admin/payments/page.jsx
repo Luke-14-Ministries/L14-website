@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { balanceDueOn, formatDueDateShort, todayInMorristown, dayInMorristown, inPaymentsScope } from '@/lib/events';
+import { balanceDueOn, formatDueDateShort, todayInMorristown, dayInMorristown, inPaymentsScope, eventNameWithYear } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import RecordPaymentForm from './RecordPaymentForm';
 import FoldCard from '@/components/FoldCard';
@@ -156,7 +156,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     const r = regById.get(b.registration_id);
     return {
       id: b.registration_id,
-      label: `${r?.households?.display_name ?? 'Household'} — ${r?.events?.name ?? ''} (balance ${money(b.balance_cents)})`,
+      label: `${r?.households?.display_name ?? 'Household'} — ${eventNameWithYear(r?.events)} (balance ${money(b.balance_cents)})`,
     };
   });
 
@@ -303,7 +303,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
           <optgroup label="Specific event">
             {eventOptions.map((ev) => (
               <option key={ev.id} value={ev.id}>
-                {ev.name}
+                {eventNameWithYear(ev)}
               </option>
             ))}
           </optgroup>

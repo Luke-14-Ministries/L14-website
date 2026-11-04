@@ -99,7 +99,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
   const sentEventOptions = [
     ...current,
     ...(events ?? []).filter((e) => e.id === sentFilters.eventId && !current.some((c) => c.id === e.id)),
-  ].map((e) => ({ id: e.id, name: e.name }));
+  ].map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on }));
 
   // The address the email's Activities link uses, so the preview shows it as
   // the family will see it.

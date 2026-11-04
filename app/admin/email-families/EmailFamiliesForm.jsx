@@ -9,6 +9,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { sendFamilyEmail } from './actions';
 import { familyEmailParts } from '@/lib/familyEmail';
+import { eventNameWithYear } from '@/lib/events';
 
 const input = 'w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm';
 const label = 'block text-sm font-semibold text-neutral-700 mb-1';
@@ -118,7 +119,7 @@ export default function EmailFamiliesForm({
             <option value="">Choose an event…</option>
             {events.map((e) => (
               <option key={e.id} value={e.id}>
-                {e.name}
+                {eventNameWithYear(e)}
               </option>
             ))}
           </select>

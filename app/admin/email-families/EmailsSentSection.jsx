@@ -13,6 +13,7 @@
 import FoldCard from '@/components/FoldCard';
 import EmailSends from '@/components/EmailSends';
 import { KIND_FILTERS, MAX_FAMILY_MATCHES, hasEmailFilters } from '@/lib/emailLog';
+import { eventNameWithYear } from '@/lib/events';
 
 const BASE = '/admin/email-families/';
 const ANCHOR = 'emails-sent';
@@ -93,7 +94,7 @@ export default function EmailsSentSection({ result, byEvent, filters, eventOptio
               <option value="">All events</option>
               {eventOptions.map((e) => (
                 <option key={e.id} value={e.id}>
-                  {e.name}
+                  {eventNameWithYear(e)}
                 </option>
               ))}
             </select>

@@ -544,6 +544,18 @@ export default async function RegistrationDetailPage({ params }) {
     if (memberError) throw new Error(`Plan cancellation lookup failed: ${memberError.message}`);
     planCancelledByFamily = Boolean(member);
   }
+  // And by name when it was staff (Lawrence, 4 Nov 2026): "by staff" alone
+  // leaves the next person to ask around. Null when not recorded.
+  let planCancelledByName = null;
+  if (planRow?.cancelled_by && !planCancelledByFamily) {
+    const { data: who, error: whoError } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', planRow.cancelled_by)
+      .maybeSingle();
+    if (whoError) throw new Error(`Plan cancellation lookup failed: ${whoError.message}`);
+    planCancelledByName = `${who?.first_name ?? ''} ${who?.last_name ?? ''}`.trim() || null;
+  }
 
   // Activity waivers still owed on this registration (0120): a waiver or an
   // outside provider staff added after the signup. A flag only -- a
@@ -689,6 +701,7 @@ export default async function RegistrationDetailPage({ params }) {
             route={routeRow?.route ?? null}
             plan={planRow ?? null}
             cancelledByFamily={planCancelledByFamily}
+            cancelledByName={planCancelledByName}
             installments={planInstallments}
             earlyDiscountCents={balanceRow?.early_discount_cents ?? 0}
             familyDiscountCents={balanceRow?.family_discount_cents ?? 0}

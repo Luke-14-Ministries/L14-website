@@ -35,6 +35,7 @@ export default function StaffPlanPanel({
   route,
   plan,
   cancelledByFamily = false,
+  cancelledByName = null,
   installments,
   earlyDiscountCents,
   familyDiscountCents = 0,
@@ -99,14 +100,25 @@ export default function StaffPlanPanel({
             <span className="font-semibold">{SCHEDULE_LABEL[plan.schedule] ?? plan.schedule}</span> ·{' '}
             {PLAN_STATUS_LABEL[plan.status] ?? plan.status}
             {plan.payment_method_label && ` · ${plan.payment_method_label}`}
-            {!plan.keeps_early_discount && ' · early discount removed by staff'}
+            {/* Only when it is actually off: a registration paid in full
+                keeps the discount whatever this box says (0123's rule), and
+                "removed" beside "Early-registration discount $1.00" above
+                contradicted itself (4 Nov 2026). */}
+            {!plan.keeps_early_discount && !(earlyDiscountCents > 0) && ' · early discount removed by staff'}
           </p>
           {plan.status === 'cancelled' && plan.cancelled_at && (
             <p className="mt-1 text-sm font-semibold text-neutral-700">
-              Cancelled {dayInMorristown(plan.cancelled_at)} by {cancelledByFamily ? 'the family' : 'staff'}.
+              Cancelled {dayInMorristown(plan.cancelled_at)} by{' '}
+              {cancelledByFamily ? 'the family' : cancelledByName ?? 'staff'}.
               {cancelledByFamily && plan.keeps_early_discount
                 ? ' Decide whether they keep the early-registration discount.'
                 : ''}
+            </p>
+          )}
+          {plan.status === 'completed' && (installments ?? []).some((i) => i.status === 'waived') && (
+            <p className="mt-1 text-sm text-neutral-700">
+              Closed {dayInMorristown(plan.updated_at)}: nothing was left to pay, so the dates still to
+              come were not needed.
             </p>
           )}
           {plan.consented_at && (

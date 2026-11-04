@@ -1857,7 +1857,7 @@ function MoneyRow({ label, value, note, strong, cls = '' }) {
 // off "paid" (0053: it must not be, or the ministry could be holding all of
 // a family's money while the page asks for more). So the balance shown is
 // the balance today, and the paragraph says what it becomes.
-function MoneySummary({ balance, livePeople, staleRefunds = 0 }) {
+function MoneySummary({ balance, livePeople, staleRefunds = 0, canDecide = false }) {
   if (!balance) return null;
   const fee = balance.fee_cents ?? 0;
   const scholarship = balance.scholarship_cents ?? 0;
@@ -1899,6 +1899,17 @@ function MoneySummary({ balance, livePeople, staleRefunds = 0 }) {
         <div className="border-t border-neutral-200 pt-1">
           <MoneyRow label="Balance today" value={balanceText} strong cls={balanceCls} />
         </div>
+        {/* Scholarships and discounts are decided per person, under People on
+            this week; this goes straight to those editors (Lawrence, 4 Nov
+            2026), as Event Payments' link does. A full load, not a client
+            link, so ?adjust=1 opens them even from this page. */}
+        {canDecide && (
+          <p className="pt-1 text-xs">
+            <a href="?adjust=1#people" className="text-brand underline">
+              Scholarship or discount for a person
+            </a>
+          </p>
+        )}
       </div>
       <div className="text-sm text-neutral-700">
         {bal < 0 && pending === 0 && (
@@ -2346,6 +2357,7 @@ export default function RegistrationManager({
               balance={balance}
               livePeople={livePeople}
               staleRefunds={payments.reduce((n, p) => n + (p.refunds ?? []).filter((r) => isStaleRefund(r)).length, 0)}
+              canDecide={canDecide}
             />
 
             {depositShort && (

@@ -20,7 +20,7 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { eventWindow } from '@/lib/events';
+import { eventWindow, eventNameWithYear } from '@/lib/events';
 
 // "Current" has two edges, not one.
 //
@@ -171,7 +171,7 @@ export default function EventFilter({
                 : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
             }`}
           >
-            {e.name}
+            {eventNameWithYear(e)}
           </button>
         ))}
 
@@ -207,7 +207,7 @@ export default function EventFilter({
               }
             >
               {selectedPast
-                ? selectedPast.name
+                ? eventNameWithYear(selectedPast)
                 : searchOnly
                   ? allLabel
                   : `Other events (${past.length})`}

@@ -1307,6 +1307,32 @@ export async function setPlanStatus(registrationId, { action, keepsEarlyDiscount
     if (['cancelled', 'completed'].includes(plan.status)) {
       return { ok: false, error: 'This plan has already ended.' };
     }
+    // Nothing owed and nothing still clearing (Lawrence, 4 Nov 2026): the plan
+    // is finished, not stopped, so it is closed the way the charger closes
+    // one on its next date -- Completed, the dates left "Not needed" -- rather
+    // than reading "Cancelled by staff" beside a registration paid in full.
+    const [{ data: bal, error: balError }, { count: clearing, error: clearingError }] = await Promise.all([
+      supabase.from('registration_balances').select('balance_cents').eq('registration_id', registrationId).maybeSingle(),
+      supabase
+        .from('payments')
+        .select('id', { count: 'exact', head: true })
+        .eq('registration_id', registrationId)
+        .eq('status', 'processing'),
+    ]);
+    if (balError || clearingError) return { ok: false, error: (balError ?? clearingError).message };
+    if (bal && bal.balance_cents <= 0 && (clearing ?? 0) === 0) {
+      const { error: doneError } = await supabase.from('payment_plans').update({ status: 'completed' }).eq('id', plan.id);
+      if (doneError) return { ok: false, error: doneError.message };
+      const { error: waiveError } = await supabase
+        .from('payment_installments')
+        .update({ status: 'waived' })
+        .eq('payment_plan_id', plan.id)
+        .in('status', ['scheduled', 'failed']);
+      if (waiveError) return { ok: false, error: `The plan is closed, but its schedule was not: ${waiveError.message}` };
+      revalidateAll(registrationId);
+      revalidatePath('/admin/payments');
+      return { ok: true };
+    }
     update = {
       status: 'cancelled',
       cancelled_at: new Date().toISOString(),
