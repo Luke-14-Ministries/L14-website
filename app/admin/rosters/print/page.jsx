@@ -36,7 +36,7 @@ export default async function PrintRostersPage({ searchParams }) {
     { data: regs, error: regsError },
     { data: consents, error: consentsError },
   ] = await Promise.all([
-    supabase.from('events').select('id, name, starts_on, ends_on').order('starts_on'),
+    supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on'),
     supabase
       .from('registrations')
       .select(
@@ -56,9 +56,11 @@ export default async function PrintRostersPage({ searchParams }) {
   const consentOf = new Map();
   for (const c of consents ?? []) consentOf.set(`${c.person_id}:${c.kind}`, c.granted);
 
+  // No event chosen: every event but the archived ones, as on screen.
+  const archived = new Set((events ?? []).filter((e) => e.archived_at).map((e) => e.id));
   const byEvent = new Map();
   for (const r of regs ?? []) {
-    if (fEvent && r.event_id !== fEvent) continue;
+    if (fEvent ? r.event_id !== fEvent : archived.has(r.event_id)) continue;
     for (const p of r.registration_participants ?? []) {
       if (p.status === 'cancelled') continue;
       if (fRole && p.camp_role !== fRole) continue;

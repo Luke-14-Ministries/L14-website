@@ -84,17 +84,24 @@ export default function RosterTable({ events, rows, programs = [] }) {
     );
   }
 
+  // "All events" leaves archived ones out (Lawrence, 4 Nov 2026: "that's a
+  // lot of the point of archiving"). An archived event is still one pick
+  // away in the search box. The print view and the CSV follow the same rule.
+  const archivedIds = useMemo(
+    () => new Set(events.filter((e) => e.archivedAt ?? e.archived_at).map((e) => e.id)),
+    [events]
+  );
   const filtered = useMemo(
     () =>
       rows.filter(
         (r) =>
-          (!fEvent || r.eventId === fEvent) &&
+          (fEvent ? r.eventId === fEvent : !archivedIds.has(r.eventId)) &&
           (!fRole || r.role === fRole) &&
           (!fProgram ||
             (fProgram === '~~none~~' ? !r.programId : r.programId === fProgram)) &&
           (!fStatus || r.status === fStatus)
       ),
-    [rows, fEvent, fRole, fProgram, fStatus]
+    [rows, fEvent, fRole, fProgram, fStatus, archivedIds]
   );
 
   const sorted = useMemo(() => {
@@ -182,7 +189,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
           selected={fEvent || null}
           mode="search"
           allowAll
-          allLabel="All events"
+          allLabel="All events (not archived)"
           onSelect={(id) => setFEvent(id)}
         />
         <select value={fRole} onChange={(e) => setFRole(e.target.value)} className={selectCls}>

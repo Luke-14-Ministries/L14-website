@@ -27,7 +27,7 @@ export async function GET(request) {
     supabase
       .from('registrations')
       .select(
-        `id, event_id, family_notes, events ( name ),
+        `id, event_id, family_notes, events ( name, archived_at ),
          households ( display_name, email, phone, how_did_you_hear,
                       address_line1, city, state, postal_code ),
          registration_participants ( camp_role, status, submitted_at, created_at, checked_in_at,
@@ -79,7 +79,8 @@ export async function GET(request) {
      'Agreements signed', 'How they heard', 'Note from family', 'Fee', 'Submitted', 'Checked in'],
   ];
   for (const r of regs ?? []) {
-    if (fEvent && r.event_id !== fEvent) continue;
+    // No event chosen: every event but the archived ones, as on screen.
+    if (fEvent ? r.event_id !== fEvent : r.events?.archived_at) continue;
     for (const p of r.registration_participants ?? []) {
       if (fRole && p.camp_role !== fRole) continue;
       if (fStatus && p.status !== fStatus) continue;
