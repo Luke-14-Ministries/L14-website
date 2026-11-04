@@ -4009,3 +4009,23 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
   optional phone); `create_my_household()` makes the household with the caller as owner and primary
   contact, one per login, under the same RLS and guards as registration. The wizard then treats them
   as a returning family.
+- **Later the same day, from Lawrence's walk-through as Darlene (a new volunteer account):**
+  - **Overview** has event pills (All current events, Week 1, Week 2; no dropdown) that narrow its
+    numbers and lists; **event pills are soonest first everywhere** (Volunteers showed Week 2 first).
+  - **The Overview needs Registration read.** A prayer-team login lands on its first permitted page
+    (the sidebar list moved to `lib/adminNav.js`).
+  - **"Background check", never "check" alone** in staff wording; a waiver upload waiting on staff
+    reads "awaiting staff review".
+  - **Setup:** each event's details are a folding section, not a link.
+  - **Registration form:** "Your family or group" needs the contact's name, email and phone, and
+    asks (soft) for a mailing address; an untouched support card reads "Optional"; the bottom bar
+    lists what each card needs and the error follows the form as it changes; the signature label
+    says it must match the primary contact (exact match kept, Lawrence); "Who told you about us?";
+    the confirmation names who was saved, says "one lump sum", and drops confetti on a new
+    registration.
+  - **Dashboard:** a volunteers-only registration's button reads "Activity waivers" (volunteers do
+    not choose activities; they pay the camp fee, by design).
+  - **Photos:** a missing photo is flagged on the support form; **computers get "Use webcam"**, so
+    the camera is allowed on the two photo pages only (`Permissions-Policy` in next.config.mjs);
+    phones get a hint for portrait-mode photos.
+  - **Password boxes have a show/hide eye** (`components/PasswordInput.jsx`).
