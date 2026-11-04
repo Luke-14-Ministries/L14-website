@@ -466,7 +466,17 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
   );
 }
 
+// The summary counts are also filters (Lawrence, 4 Nov 2026: "waiting
+// review should maybe be a filter"). Each keeps the rows it counts.
+const SHOWS = {
+  all: () => true,
+  review: (r) => r.app?.status === 'applied',
+  noapp: (r) => !r.app,
+  check: (r) => Boolean(r.person?.id) && !isMinor(r.person?.date_of_birth) && clearancePill(r.clearance).key !== 'ok',
+};
+
 export default function VolunteerManager({ groups, maySeeChecks = false, canReview = true }) {
+  const [show, setShow] = useState('all');
   const total = groups.reduce((s, g) => s + g.rows.length, 0);
   const needsReview = groups.reduce(
     (s, g) => s + g.rows.filter((r) => r.app?.status === 'applied').length,
@@ -509,24 +519,36 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
       </p>
 
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
-        <span className="rounded-lg bg-white border border-neutral-200 px-4 py-2">
-          <span className="font-bold text-lg">{total}</span> registered
-        </span>
-        <span className="rounded-lg bg-white border border-neutral-200 px-4 py-2">
-          <span className="font-bold text-lg text-amber-700">{needsReview}</span> awaiting review
-        </span>
-        <span className="rounded-lg bg-white border border-neutral-200 px-4 py-2">
-          <span className="font-bold text-lg text-neutral-600">{noApp}</span> no application yet
-        </span>
-        <span
-          className="rounded-lg bg-white border border-neutral-200 px-4 py-2"
-          title="Adults (counted once, however many weeks they serve) without a current background check marked OK; under-18s are not screened"
-        >
-          <span className={`font-bold text-lg ${missingCheck.size > 0 ? 'text-amber-700' : 'text-green-700'}`}>
-            {missingCheck.size}
-          </span>{' '}
-          {missingCheck.size === 1 ? 'adult' : 'adults'} without a background check
-        </span>
+        {[
+          ['all', total, 'registered', ''],
+          ['review', needsReview, 'awaiting review', 'text-amber-700'],
+          ['noapp', noApp, 'no application yet', 'text-neutral-600'],
+          [
+            'check',
+            missingCheck.size,
+            missingCheck.size === 1 ? 'adult without a background check' : 'adults without a background check',
+            missingCheck.size > 0 ? 'text-amber-700' : 'text-green-700',
+          ],
+        ].map(([key, n, label, tone]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setShow(show === key && key !== 'all' ? 'all' : key)}
+            aria-pressed={show === key}
+            title={
+              key === 'check'
+                ? 'Adults (counted once, however many weeks they serve) without a current background check marked OK; under-18s are not screened. Click to show only them.'
+                : key === 'all'
+                  ? 'Show everyone'
+                  : 'Click to show only these; click again for everyone'
+            }
+            className={`rounded-lg border px-4 py-2 text-left ${
+              show === key ? 'border-brand bg-brand-light ring-1 ring-brand' : 'border-neutral-200 bg-white hover:border-brand'
+            }`}
+          >
+            <span className={`font-bold text-lg ${tone}`}>{n}</span> {label}
+          </button>
+        ))}
       </div>
 
       {total === 0 && (
@@ -536,7 +558,11 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
         </p>
       )}
 
-      {groups.map((g) => (
+      {total > 0 && groups.every((g) => !g.rows.some(SHOWS[show])) && (
+        <p className="text-neutral-500">Nobody here matches that.</p>
+      )}
+
+      {groups.map((g) => ({ ...g, rows: g.rows.filter(SHOWS[show]) })).filter((g) => g.rows.length > 0).map((g) => (
         <div key={g.event.id} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5 mb-6">
           <h3 className="font-bold">
             {g.event.name}
