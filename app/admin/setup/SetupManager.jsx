@@ -11,6 +11,7 @@ import { updateEventRegistration, updateEventDetails, createEvent, setHiddenFrom
 import { EVENT_TYPE_LABELS } from '@/lib/events';
 import { PLAN_MIN_DAYS } from '@/lib/plans';
 import FoldArrow from '@/components/FoldArrow';
+import TimeSelect from '@/components/TimeSelect';
 import { unfinishedTimeBox } from '@/lib/timeBoxes';
 
 const money = (cents) =>
@@ -28,7 +29,44 @@ const isoToLocal = (iso) => {
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-const localToIso = (v) => (v ? new Date(v).toISOString() : null);
+// Only a whole "YYYY-MM-DDTHH:MM" is a moment: a day with no time yet (or a
+// time with no day) is unfinished, and saveAll refuses it rather than
+// reading it as blank -- blank is "no limit".
+const WHOLE_LOCAL = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+const localToIso = (v) => (v && WHOLE_LOCAL.test(v) ? new Date(v).toISOString() : null);
+// The registration boxes are a day box and a TimeSelect (5 Nov 2026: Safari
+// misreads its native date-and-time box, as it did the activity times), kept
+// together as one "YYYY-MM-DDTHH:MM" string, either half possibly empty.
+const dayPart = (v) => (v ?? '').split('T')[0] ?? '';
+const timePart = (v) => (v ?? '').split('T')[1] ?? '';
+const joinDayTime = (day, time) => (day || time ? `${day}T${time}` : '');
+
+function DayTimeField({ label, value, onChange, dayRef }) {
+  const box = 'rounded-sm border border-neutral-300 px-2 py-1';
+  return (
+    <div className="text-sm">
+      <span className="block text-neutral-500 mb-0.5" title="Your local time zone. Blank = no limit on that end.">
+        {label}
+      </span>
+      <span className="flex flex-wrap gap-1">
+        <input
+          ref={dayRef}
+          type="date"
+          aria-label={`${label}: day`}
+          value={dayPart(value)}
+          onChange={(ev) => onChange(joinDayTime(ev.target.value, timePart(value)))}
+          className={box}
+        />
+        <TimeSelect
+          label={label}
+          value={timePart(value)}
+          onChange={(t) => onChange(joinDayTime(dayPart(value), t))}
+          className={box}
+        />
+      </span>
+    </div>
+  );
+}
 
 // One "Event status" in place of two tick boxes (Lawrence, 26 Oct 2026: both
 // could be ticked at once). It maps onto the two columns the rest of the site
@@ -135,9 +173,9 @@ function EventRow({ e }) {
   const [status, setStatus] = useState(savedStatus);
   const [opens, setOpens] = useState(isoToLocal(e.opensAt));
   const [closes, setCloses] = useState(isoToLocal(e.closesAt));
-  // A half-filled box ("01/15/2027 09:00 --", no AM/PM) reads as blank, and
-  // blank is "no limit": published, that is open now. Caught before saving
-  // (unfinishedTimeBox, 5 Nov 2026).
+  // A half-filled day box reads as blank, and blank is "no limit": published,
+  // that is open now. Caught before saving (unfinishedTimeBox, 5 Nov 2026),
+  // as is a day without a time or a time without a day.
   const opensRef = useRef(null);
   const closesRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -220,6 +258,14 @@ function EventRow({ e }) {
     ]);
     if (unfinished) {
       setNotice({ ok: false, message: `Nothing saved. ${unfinished}` });
+      return;
+    }
+    const half = [
+      [opens, 'Registration opens'],
+      [closes, 'Registration closes'],
+    ].find(([v]) => v && !WHOLE_LOCAL.test(v));
+    if (half) {
+      setNotice({ ok: false, message: `Nothing saved. "${half[1]}" needs both a day and a time, or neither.` });
       return;
     }
     setBusy(true);
@@ -340,30 +386,8 @@ function EventRow({ e }) {
             ))}
           </select>
         </label>
-        <label className="text-sm">
-          <span className="block text-neutral-500 mb-0.5" title="Your local time zone. Blank = no limit on that end.">
-            Registration opens
-          </span>
-          <input
-            ref={opensRef}
-            type="datetime-local"
-            value={opens}
-            onChange={(ev) => setOpens(ev.target.value)}
-            className="rounded-sm border border-neutral-300 px-2 py-1"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="block text-neutral-500 mb-0.5" title="Your local time zone. Blank = no limit on that end.">
-            Registration closes
-          </span>
-          <input
-            ref={closesRef}
-            type="datetime-local"
-            value={closes}
-            onChange={(ev) => setCloses(ev.target.value)}
-            className="rounded-sm border border-neutral-300 px-2 py-1"
-          />
-        </label>
+        <DayTimeField label="Registration opens" value={opens} onChange={setOpens} dayRef={opensRef} />
+        <DayTimeField label="Registration closes" value={closes} onChange={setCloses} dayRef={closesRef} />
         {(opens || closes) && (
           <button
             type="button"

@@ -21,6 +21,7 @@ import {
 } from './actions';
 import { activityDayBounds, formatDayShort } from '@/lib/events';
 import FoldArrow from '@/components/FoldArrow';
+import TimeSelect from '@/components/TimeSelect';
 
 // Wall-clock, formatted as people say it. No timezone maths anywhere in this
 // file, by design (0052): these are times AT CAMP, stored as a date and two
@@ -30,51 +31,6 @@ import { fmtDay, fmtTime, slotLabel } from '@/lib/activitySlots';
 
 const input = 'w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm';
 
-// Slot times are chosen, not typed (Ellen, 5 Nov 2026). Her Safari 26 showed
-// "04:30 PM" in a native time box while reporting it unfinished and reading
-// it as empty, after a refresh too; Chrome reads "02:00 --" (no AM/PM yet) as
-// empty. Two lists -- the hour with its AM/PM, then the minutes in fives (the
-// run comment below wants 2:20 possible) -- cannot be half-filled in any
-// browser. The value is "HH:MM", as the action expects.
-const HOURS = Array.from({ length: 24 }, (_, h) => [
-  String(h).padStart(2, '0'),
-  `${h % 12 || 12} ${h < 12 ? 'AM' : 'PM'}`,
-]);
-const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
-
-function TimeSelect({ value, onChange, label }) {
-  const [h, m] = value ? value.split(':') : ['', ''];
-  return (
-    <span className="flex gap-1">
-      <select
-        aria-label={`${label}: hour`}
-        className={`${input} min-w-0 flex-1`}
-        value={h}
-        onChange={(e) => onChange(e.target.value ? `${e.target.value}:${m || '00'}` : '')}
-      >
-        <option value="">Hour</option>
-        {HOURS.map(([v, text]) => (
-          <option key={v} value={v}>
-            {text}
-          </option>
-        ))}
-      </select>
-      <select
-        aria-label={`${label}: minutes`}
-        className={`${input} min-w-0 w-auto!`}
-        value={m || '00'}
-        disabled={!h}
-        onChange={(e) => onChange(`${h}:${e.target.value}`)}
-      >
-        {MINUTES.map((v) => (
-          <option key={v} value={v}>
-            :{v}
-          </option>
-        ))}
-      </select>
-    </span>
-  );
-}
 const label = 'block text-xs font-semibold text-neutral-700 mb-0.5';
 
 // ---------------------------------------------------------------------------
@@ -972,11 +928,11 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">From</span>
-          <TimeSelect label="From" value={f.start} onChange={(v) => setF((prev) => ({ ...prev, start: v }))} />
+          <TimeSelect className={input} label="From" value={f.start} onChange={(v) => setF((prev) => ({ ...prev, start: v }))} />
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">To</span>
-          <TimeSelect label="To" value={f.end} onChange={(v) => setF((prev) => ({ ...prev, end: v }))} />
+          <TimeSelect className={input} label="To" value={f.end} onChange={(v) => setF((prev) => ({ ...prev, end: v }))} />
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">Places</span>
@@ -1044,11 +1000,11 @@ export function SlotEditor({ activity, slots = [], event = null }) {
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Starts</span>
-              <TimeSelect label="Starts" value={g.start} onChange={(v) => setG((prev) => ({ ...prev, start: v }))} />
+              <TimeSelect className={input} label="Starts" value={g.start} onChange={(v) => setG((prev) => ({ ...prev, start: v }))} />
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Ends</span>
-              <TimeSelect label="Ends" value={g.end} onChange={(v) => setG((prev) => ({ ...prev, end: v }))} />
+              <TimeSelect className={input} label="Ends" value={g.end} onChange={(v) => setG((prev) => ({ ...prev, end: v }))} />
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Each (mins)</span>
