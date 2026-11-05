@@ -4108,3 +4108,12 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     dates over the blank band in the artwork's gold (Rubik 900 through `next/font`, self-hosted at
     build — no package added), placed and sized in proportion to the image. No retreat published,
     an empty band.
+  - **Staff pick times from lists, never a native time box** (5 Nov 2026). Ellen could not add
+    any activity time on Safari 26 (macOS): the box showed "04:30 PM" while the browser reported it
+    unfinished and read it as empty, after a refresh too. Chrome has its own trap: "02:00 --" reads
+    as empty until AM/PM is picked. `components/TimeSelect.jsx` is an hour list with its AM/PM and
+    a minutes list in fives (plus :59; a saved odd minute stays listed), value `"HH:MM"`. Used for
+    activity slot times and Setup's *Registration opens / closes* (a date box plus TimeSelect; a day
+    without a time is refused on Save, never read as blank, because blank is "no limit"). The slot
+    actions also read any time shape (`toHHMM()` in `lib/timeBoxes.js`) and log a refused one.
+    Ellen confirmed the Activities page works. Do not put `type="time"` or `datetime-local` back.
