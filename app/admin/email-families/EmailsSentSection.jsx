@@ -12,8 +12,8 @@
 
 import FoldCard from '@/components/FoldCard';
 import EmailSends from '@/components/EmailSends';
+import EventFilter from '@/components/EventFilter';
 import { KIND_FILTERS, MAX_FAMILY_MATCHES, hasEmailFilters } from '@/lib/emailLog';
-import { eventNameWithYear } from '@/lib/events';
 
 const BASE = '/admin/email-families/';
 const ANCHOR = 'emails-sent';
@@ -88,17 +88,17 @@ export default function EmailsSentSection({ result, byEvent, filters, eventOptio
               className={`${field} w-full`}
             />
           </label>
-          <label className="block">
-            <span className="block font-semibold mb-1">Event</span>
-            <select name="sent_event" defaultValue={filters.eventId} className={field}>
-              <option value="">All events</option>
-              {eventOptions.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {eventNameWithYear(e)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {/* The event dropdown every staff page uses (4 Nov 2026), as a
+              field of this form: it fills a hidden sent_event and Apply
+              sends it with the rest. */}
+          <EventFilter
+            events={eventOptions}
+            selected={filters.eventId || null}
+            name="sent_event"
+            allowAll
+            allLabel="All events"
+            className="w-full sm:w-64"
+          />
           <label className="block">
             <span className="block font-semibold mb-1">Kind</span>
             <select name="sent_kind" defaultValue={filters.kind} className={field}>

@@ -100,8 +100,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
   const regById = new Map((regs ?? []).map((r) => [r.id, r]));
   const dueToday = todayInMorristown();
 
-  // Every event that has at least one registration, newest first, for the
-  // "Specific event" section of the scope dropdown.
+  // Every event that has at least one registration, for the event dropdown
+  // (which sorts them itself: current soonest first, then the rest).
   const evById = new Map();
   for (const r of regs ?? []) if (r.events?.id) evById.set(r.events.id, r.events);
   const eventOptions = [...evById.values()].sort((a, b) =>
@@ -109,8 +109,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
   );
 
   // Event scope. The dashboard is a quick view of the events being worked
-  // on, not a wall of history — old years stay one dropdown selection away
-  // under "All events". Scope values:
+  // on, not a wall of history — old years stay one pick away in the event
+  // dropdown, under "All events — full history" or by name. Scope values:
   //   ''         default: current events -- isCurrentEventRow(), the rule
   //              every staff page uses (to two weeks after an event ends, a
   //              year ahead), so camp weeks open for registration show
@@ -122,7 +122,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
   // on isCurrentEventRow -- lib/events.js); 'all' and a chosen event keep it.
   const inScope = (ev) => inPaymentsScope(ev, eventFilter);
   const SCOPE_LABEL = {
-    '': 'Current events',
+    '': 'All current events',
     upcoming: 'Upcoming events (next 90 days)',
     recent: 'Recent events (last 90 days)',
     all: 'All events — full history',
@@ -266,10 +266,13 @@ export default async function AdminPaymentsPage({ searchParams }) {
         </div>
       )}
 
-      {/* The one event filter every staff page uses (16 Oct 2026): pills for
-          current events, a search box for the rest. The scope dropdown below
-          keeps the other scopes (90-day windows, full history); both drive
-          the same ?event= parameter, and both default to current events. */}
+      {/* The one event dropdown every staff page uses. It governs the cards,
+          fee covers, the balances table, and the Balances and Payments CSVs
+          (not the QuickBooks CSV, which is a date range of money received).
+          Default: current events. Until 4 Nov 2026 a second "Showing … Apply"
+          dropdown sat under the event pills offering the 90-day windows and
+          full history (Lawrence: pills and a dropdown were redundant); those
+          scopes are pinned options here now, on the same ?event= parameter. */}
       <EventFilter
         events={eventOptions.map((ev) => ({
           id: ev.id,
@@ -282,42 +285,16 @@ export default async function AdminPaymentsPage({ searchParams }) {
         basePath="/admin/payments"
         extraParams={{ paystate }}
         allowAll
+        allLabel={SCOPE_LABEL['']}
+        scopes={['upcoming', 'recent', 'all'].map((value) => ({ value, label: SCOPE_LABEL[value] }))}
       />
-
-      {/* Event scope: governs the cards, fee covers, the balances table,
-          and the Balances and Payments CSVs (not the QuickBooks CSV, which
-          is a date range of money received). Default: current events; full
-          history is one selection away. */}
-      <form method="get" action="/admin/payments" className="mb-6 flex flex-wrap items-center gap-2 text-sm">
-        <label className="font-semibold text-neutral-700" htmlFor="event-scope">Showing</label>
-        <select
-          id="event-scope"
-          name="event"
-          defaultValue={eventFilter}
-          className="rounded-sm border border-neutral-300 px-2 py-1"
-        >
-          <option value="">Current events</option>
-          <option value="upcoming">Upcoming events (next 90 days)</option>
-          <option value="recent">Recent events (last 90 days)</option>
-          <option value="all">All events — full history</option>
-          <optgroup label="Specific event">
-            {eventOptions.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {eventNameWithYear(ev)}
-              </option>
-            ))}
-          </optgroup>
-        </select>
-        {paystate && <input type="hidden" name="paystate" value={paystate} />}
-        <button type="submit" className="btn-outline py-1! px-3!">Apply</button>
-      </form>
 
       <h3 className="font-semibold text-neutral-700 mb-2">
         By event <span className="font-normal text-sm text-neutral-500">· {scopeLabel}</span>
       </h3>
       {events.size === 0 && (
         <p className="text-sm text-neutral-500 mb-8">
-          No events in this window. Choose another option above — &ldquo;All events&rdquo; shows the
+          No events in this window. Choose another in the event list above — &ldquo;All events&rdquo; shows the
           full history.
         </p>
       )}

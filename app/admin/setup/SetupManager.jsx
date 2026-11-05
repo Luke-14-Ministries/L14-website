@@ -310,8 +310,8 @@ function EventRow({ e }) {
         {/* Archived (0099, 16 Oct 2026): "current" is a rule -- until two
             weeks after the event ends -- and this is the one human override:
             a cancelled week or a duplicate drops out of every staff page's
-            pill row now, and registration can never be open for it. It stays
-            in history and in every "Other events" search box. */}
+            current events now, and registration can never be open for it. It
+            stays in history, under "Other events" in every event dropdown. */}
         <label className="text-sm">
           <span className="block font-semibold text-neutral-700 mb-0.5">Event status</span>
           <select

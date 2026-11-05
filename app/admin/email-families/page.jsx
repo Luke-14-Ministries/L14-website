@@ -101,7 +101,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
   const sentEventOptions = [
     ...current,
     ...(events ?? []).filter((e) => e.id === sentFilters.eventId && !current.some((c) => c.id === e.id)),
-  ].map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on }));
+  ].map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }));
 
   // The address the email's Activities link uses, so the preview shows it as
   // the family will see it.
@@ -136,7 +136,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
         before. Each send is recorded in the message log.
       </p>
       <EmailFamiliesForm
-        events={listed.map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on }))}
+        events={listed.map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }))}
         eventId={eventId}
         activities={(activities ?? []).map((a) => ({ id: a.id, name: a.name, active: a.active !== false }))}
         activityId={activity?.id ?? ''}

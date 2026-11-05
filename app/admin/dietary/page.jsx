@@ -72,8 +72,8 @@ export default async function DietaryPage({ searchParams }) {
   // one by id is the only way to see it -- there is no page-wide past mode.
   const showPast = false;
   const q = typeof params?.q === 'string' ? params.q.trim().toLowerCase() : '';
-  // Same window as the pill row (the same function), so the event this page
-  // OPENS on is always one that has a pill.
+  // Same window as the dropdown's current group (the same function), so the
+  // event this page OPENS on is always a current one.
   const isCurrent = isCurrentEventRow;
   const visibleEvents = (events ?? []).filter((ev) => {
     if (eventFilter) return ev.id === eventFilter;

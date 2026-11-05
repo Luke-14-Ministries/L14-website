@@ -2,25 +2,35 @@
 
 // Choosing which event a staff page is about.
 //
-// Five pages grew their own version of this. Rosters used a dropdown listing
-// every event ever; Activities, Dietary, Buddies and Rooms used pills plus a
-// "Show past events" link that dumped the whole history into the same row of
-// pills. Testing (25 Aug) put it plainly: it should be consistent, and past
-// events want a searchable list rather than a toggle — "eg can type 2025 to
-// filter to events from 2025".
+// ONE control, the same on every staff page: a searchable dropdown (Lawrence,
+// 4 Nov 2026). Until then current events were pills with an "Other events
+// (n) ▾" search box beside them, Event Payments had a third "Showing …
+// Apply" dropdown under both, and Check-In, the Overview and Rosters each had
+// their own shape. Pills and a dropdown answering one question were
+// redundant, and every exception made the next page look different again.
+// So every page that picks an event uses this, even the pages that only ever
+// offer current events: consistency is worth more than the click a pill saved.
 //
-// The split is by what the two lists are FOR. Current and upcoming events are
-// a handful and are the reason you opened the page, so they are pills: no
-// clicks, no reading. Everything else — finished events, and anything booked
-// more than a year out — is an archive that only grows, and you arrive at one
-// knowing roughly what you want, so it gets a search box.
+// What still holds from testing (25 Aug): past events are searchable -- "eg
+// can type 2025 to filter to events from 2025". Typing filters every event in
+// the list, current or not.
 //
-// Every event stays reachable either way. Nothing is hidden in the database;
-// this is about which few are one click away.
+// The open list, top to bottom:
+//   - the page's "all" choice (allLabel), pinned, where the page has one
+//   - any other pinned scopes the page offers (Event Payments' 90-day
+//     windows and full history)
+//   - CURRENT events, soonest first -- the reason the page was opened
+//   - "Other events": finished, far-future and archived ones, newest first,
+//     an archived one marked "(archived)". Archived is never current.
+//
+// The box itself is components/SearchSelect.jsx, a WAI-ARIA combobox, so the
+// keys and what a screen reader announces are the same as the print pages'
+// pickers. Every event stays reachable; nothing is hidden in the database.
 
-import { useRef, useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { eventWindow, eventNameWithYear } from '@/lib/events';
+import SearchSelect from '@/components/SearchSelect';
+import { eventWindow, eventNameWithYear, eventDateRange } from '@/lib/events';
 
 // "Current" has two edges, not one.
 //
@@ -29,22 +39,35 @@ import { eventWindow, eventNameWithYear } from '@/lib/events';
 // the archive.
 //
 // AHEAD: twelve months (agreed 25 Aug). Without it, an event booked three
-// years out sits in the pill row from the day it is created, and a row meant
-// to say "what is happening now" slowly becomes a list of everything.
-// Anything further off is still one search away.
+// years out sits at the top of the list from the day it is created, and a
+// group meant to say "what is happening now" slowly becomes everything.
+// Anything further off is under "Other events", one search away.
 // Both edges come from lib/events.js -- the same function every staff page
-// uses to decide which event it opens on -- so a pill and a page default can
-// never disagree.
+// uses to decide which event it opens on -- so the list and a page default
+// can never disagree.
 const cutoffISO = () => eventWindow().cutoff;
 const horizonISO = () => eventWindow().horizon;
 
 export function isCurrentEvent(e, cutoff = cutoffISO(), horizon = horizonISO()) {
-  // Archived on Setup (0099): never a pill, always in the search box.
+  // Archived on Setup (0099): never current, always under "Other events".
   if (e.archivedAt) return false;
   const ends = e.endsOn ?? e.startsOn ?? '9999';
   const starts = e.startsOn ?? e.endsOn ?? '0000';
   return ends >= cutoff && starts <= horizon;
 }
+
+const OTHER = 'Other events';
+
+// One event as the list shows it: the name (with its year, as every event
+// dropdown does) and the dates underneath, which is what tells Week 1 from
+// Week 2 -- Check-In's pills carried them for that reason -- and what "2025"
+// matches.
+const asOption = (e, group) => ({
+  value: e.id,
+  label: `${eventNameWithYear(e)}${e.archivedAt ? ' (archived)' : ''}`,
+  hint: eventDateRange(e.startsOn || null, e.endsOn || null),
+  group,
+});
 
 export default function EventFilter({
   events = [],
@@ -53,69 +76,59 @@ export default function EventFilter({
   // Query params to carry across when the event changes (e.g. a search box).
   extraParams = {},
   label = 'Event',
-  // Some pages (Dietary, Check-In) legitimately show EVERY current event at
-  // once — a kitchen list is not per-week. Those get an "All current" pill
-  // that clears the selection rather than picking one.
+  // Some pages (Dietary, Medical, Payments, the Overview) legitimately show
+  // EVERY current event at once — a kitchen list is not per-week. Those get
+  // an "all" choice, pinned first, that clears the selection.
   allowAll = false,
   allLabel = 'All current events',
-  // 'pills'  — current events as pills, past behind a search box.
-  // 'search' — everything in one searchable list, "all" pinned at the top.
-  //            Rosters wants this: it is a table filter over every event the
-  //            ministry has ever run, and a row of pills for that is a wall
-  //            (25 Aug).
-  mode = 'pills',
-  // Client-state pages (Rosters filters in the browser, not the URL) pass this
-  // and nothing navigates.
+  // Other non-event choices pinned under "all", each { value, label }. The
+  // value travels as ?event= exactly like an event id (Event Payments:
+  // 'upcoming', 'recent', 'all' -- folded in from its old "Showing" dropdown).
+  scopes = [],
+  // In the box while nothing is chosen and there is no "all".
+  placeholder = 'Choose an event',
+  // Client-state pages (Rosters filters in the browser, not the URL; Email
+  // Families' send form) pass this and nothing navigates.
   onSelect = null,
+  // Inside a GET form with its own Apply button (Email Families' sent list):
+  // a hidden input of this name carries the choice; nothing navigates.
+  name = null,
+  disabled = false,
+  // In a row of other filters the label line would push the box down out of
+  // line, so it is kept for screen readers only.
+  hideLabel = false,
+  // The wrapper: a block of its own by default; a row passes its own width.
+  className = 'mb-6 w-full max-w-sm',
 }) {
   const router = useRouter();
-  const [q, setQ] = useState('');
-  const [open, setOpen] = useState(false);
-  const boxRef = useRef(null);
+  const [pending, startTransition] = useTransition();
+
+  // Form mode keeps the pick until the form is submitted. A new `selected`
+  // from the server (the page reloaded with other filters) replaces it --
+  // React's "adjust state when a prop changes" pattern, no effect needed.
+  const [picked, setPicked] = useState(selected ?? '');
+  const [seen, setSeen] = useState(selected);
+  if (seen !== selected) {
+    setSeen(selected);
+    setPicked(selected ?? '');
+  }
 
   const cutoff = cutoffISO();
   const horizon = horizonISO();
-  // In search mode there is no pill row at all, so every event goes into the
-  // one list -- current ones first, because those are what people want.
-  const searchOnly = mode === 'search';
-  // Soonest first, whatever order the page passed them in (Lawrence, 4 Nov
+  // TWO TIERS, each sorted the opposite way (31 Aug 2026). Current events
+  // soonest first: the soonest is the one being worked on (Lawrence, 4 Nov
   // 2026: Volunteers lists events newest first, so its pills read Week 2,
-  // Week 1). The same rule as the search list below.
-  const current = searchOnly
-    ? []
-    : events
-        .filter((e) => isCurrentEvent(e, cutoff, horizon))
-        .sort((a, b) => String(a.startsOn ?? '').localeCompare(String(b.startsOn ?? '')));
-  const past = searchOnly
-    ? [...events].sort((a, b) => {
-        // TWO TIERS, and each sorts the opposite way. Corrected 31 Aug 2026:
-        // this sorted everything descending, so the roster's event list opened
-        // with the camp furthest in the future — Week 2 above Week 1, and the
-        // retreat happening this October last of the three.
-        //
-        // Current events ascending: the soonest is the one being worked on.
-        // Past events descending: the one that just finished is the one anybody
-        // still has questions about, and 2019 can stay at the bottom.
-        //
-        // This is the same rule the family dashboard already documents — "a
-        // plain ascending sort by date puts last month's camp above next
-        // month's retreat" — so the two now agree.
-        const aCur = isCurrentEvent(a, cutoff, horizon);
-        const bCur = isCurrentEvent(b, cutoff, horizon);
-        if (aCur !== bCur) return aCur ? -1 : 1;
-        const as = String(a.startsOn ?? '');
-        const bs = String(b.startsOn ?? '');
-        return aCur ? as.localeCompare(bs) : bs.localeCompare(as);
-      })
-    : events.filter((e) => !isCurrentEvent(e, cutoff, horizon));
-
-  const choose = (id) => {
-    if (onSelect) {
-      onSelect(id ?? '');
-      return;
-    }
-    router.push(href(id));
-  };
+  // Week 1). Other events newest first: the one that just finished is the one
+  // anybody still has questions about, and 2019 can stay at the bottom. The
+  // family dashboard documents the same rule.
+  const byStart = (a, b) => String(a.startsOn ?? '').localeCompare(String(b.startsOn ?? ''));
+  const current = events.filter((e) => isCurrentEvent(e, cutoff, horizon)).sort(byStart);
+  const other = events.filter((e) => !isCurrentEvent(e, cutoff, horizon)).sort((a, b) => byStart(b, a));
+  const options = [...current.map((e) => asOption(e, null)), ...other.map((e) => asOption(e, OTHER))];
+  // No events at all (a new database, a page with nothing yet): the box
+  // stays, greyed, and says so, rather than vanishing from the page.
+  const none = events.length === 0;
+  const pinned = none ? [] : [...(allowAll ? [{ value: '', label: allLabel }] : []), ...scopes];
 
   const href = (id) => {
     const p = new URLSearchParams();
@@ -127,172 +140,35 @@ export default function EventFilter({
     return qs ? `${basePath}?${qs}` : basePath;
   };
 
-  // Matching on the whole visible string, so typing "2025" finds every event
-  // that ran in 2025 even when the year is only in the dates.
-  //
-  // Not memoised, on purpose. `past` is rebuilt on every render, so a useMemo
-  // keyed on it re-ran every time anyway -- React's compiler lint said as much
-  // (react-hooks/preserve-manual-memoization). The list is at most every
-  // event the ministry has ever run, a few dozen strings, and filtering it
-  // once per keystroke costs nothing.
-  const needle = q.trim().toLowerCase();
-  const withDates = past.map((e) => ({
-    ...e,
-    haystack: `${e.name} ${e.startsOn ?? ''} ${e.endsOn ?? ''}`.toLowerCase(),
-  }));
-  const matches = needle ? withDates.filter((e) => e.haystack.includes(needle)) : withDates;
-
-  const selectedPast = past.find((e) => e.id === selected) ?? null;
+  const choose = (id) => {
+    if (name) {
+      setPicked(id ?? '');
+      return;
+    }
+    if (onSelect) {
+      onSelect(id ?? '');
+      return;
+    }
+    startTransition(() => router.push(href(id || null)));
+  };
 
   return (
-    // No bottom margin in search mode: there the component is ONE control
-    // inside somebody else's filter row (the roster header), and mb-6 there
-    // pushes the whole row apart from the inside. In pill mode it is a block
-    // of its own and the margin is right.
-    <div className={searchOnly ? '' : 'mb-6'}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="sr-only">{label}</span>
-        {/* In search mode "all" lives pinned at the top of the list, so a
-            standalone pill beside it is the same control twice (25 Aug). */}
-        {allowAll && !searchOnly && (
-          <button
-            type="button"
-            onClick={() => choose(null)}
-            className={`rounded-full px-3 py-1 text-sm font-semibold ${
-              !selected
-                ? 'bg-brand text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-            }`}
-          >
-            {allLabel}
-          </button>
-        )}
-        {current.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            onClick={() => choose(e.id)}
-            className={`rounded-full px-3 py-1 text-sm font-semibold ${
-              e.id === selected
-                ? 'bg-brand text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-            }`}
-          >
-            {eventNameWithYear(e)}
-          </button>
-        ))}
-
-        {!searchOnly && current.length === 0 && past.length > 0 && (
-          <span className="text-sm text-neutral-500">
-            Nothing current — pick an event from the list.
-          </span>
-        )}
-
-        {past.length > 0 && (
-          <div className="relative" ref={boxRef}>
-            <button
-              type="button"
-              onClick={() => setOpen((v) => !v)}
-              aria-expanded={open}
-              // Two shapes, because this button appears in two places. In the
-              // pill row (Dietary, Programs) it is one pill among pills. In
-              // SEARCH mode it is the first control in a row of native
-              // <select>s, and a rounded-full pill at py-1 beside three square
-              // boxes at py-1.5 is why the roster header never lined up.
-              className={
-                searchOnly
-                  ? `rounded-sm border px-3 py-1.5 text-sm bg-white ${
-                      selectedPast
-                        ? 'border-brand text-brand-dark font-semibold'
-                        : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
-                    }`
-                  : `rounded-full border px-3 py-1 text-sm font-semibold ${
-                      selectedPast
-                        ? 'border-brand bg-brand text-white'
-                        : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'
-                    }`
-              }
-            >
-              {selectedPast
-                ? eventNameWithYear(selectedPast)
-                : searchOnly
-                  ? allLabel
-                  : `Other events (${past.length})`}
-              <span aria-hidden className="ml-1.5 text-xs">
-                ▾
-              </span>
-            </button>
-
-            {open && (
-              <div className="absolute left-0 z-30 mt-1 w-80 rounded-lg border border-neutral-300 bg-white p-2 shadow-lg">
-                <input
-                  autoFocus
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Type to filter — a name, or a year"
-                  className="w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm"
-                />
-                <ul className="mt-2 max-h-64 overflow-y-auto">
-                  {searchOnly && allowAll && (
-                    <li className="border-b border-neutral-100 pb-1 mb-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpen(false);
-                          choose(null);
-                        }}
-                        className={`block w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-neutral-100 ${
-                          !selected ? 'font-bold text-brand' : ''
-                        }`}
-                      >
-                        {allLabel}
-                      </button>
-                    </li>
-                  )}
-                  {matches.length === 0 ? (
-                    <li className="px-2 py-2 text-sm text-neutral-500">
-                      Nothing matches &ldquo;{q}&rdquo;.
-                    </li>
-                  ) : (
-                    matches.map((e) => (
-                      <li key={e.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpen(false);
-                            choose(e.id);
-                          }}
-                          className={`block w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-neutral-100 ${
-                            e.id === selected ? 'font-bold text-brand' : ''
-                          }`}
-                        >
-                          {e.name}
-                          <span className="block text-xs text-neutral-500">
-                            {e.startsOn}
-                            {e.endsOn ? ` – ${e.endsOn}` : ''}
-                          </span>
-                        </button>
-                      </li>
-                    ))
-                  )}
-                </ul>
-                {selectedPast && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      choose(current[0]?.id ?? null);
-                    }}
-                    className="mt-2 w-full rounded-sm px-2 py-1 text-left text-sm text-neutral-600 underline"
-                  >
-                    Back to current events
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+    <div className={className}>
+      <SearchSelect
+        label={label}
+        hideLabel={hideLabel}
+        noun={['event', 'events']}
+        placeholder={none ? 'No events to choose from' : placeholder}
+        pinned={pinned}
+        options={options}
+        value={name ? picked : selected ?? ''}
+        onChange={choose}
+        busy={pending}
+        disabled={disabled || none}
+        // The page's own heading names the event on paper.
+        printPrefix={false}
+      />
+      {name && <input type="hidden" name={name} value={picked} />}
     </div>
   );
 }

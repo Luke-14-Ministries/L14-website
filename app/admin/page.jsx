@@ -86,10 +86,12 @@ export default async function AdminOverview({ searchParams }) {
 
   const supabase = await createClient();
 
-  // Pills for the current events (Lawrence, 4 Nov 2026: "Week 1 vs Week 2",
-  // pills, no dropdown): ?event= narrows the headline numbers, the review list
-  // and the plan and reply cards to one event; none means every current event.
-  // The By-event table always shows them all, the chosen one highlighted.
+  // A choice between the current events (Lawrence, 4 Nov 2026: "Week 1 vs
+  // Week 2"): ?event= narrows the headline numbers, the review list and the
+  // plan and reply cards to one event; none means every current event. The
+  // By-event table always shows them all, the chosen one highlighted. First
+  // pills; the same day, the shared event dropdown every page uses, for one
+  // control everywhere. Only current events are offered here.
   const { data: eventRows, error: eventRowsError } = await supabase
     .from('events')
     .select('id, name, starts_on, ends_on, archived_at, capacity')
@@ -410,9 +412,9 @@ export default async function AdminOverview({ searchParams }) {
           </Link>
         </div>
         {/* Every CURRENT event at once (16 Oct 2026): the table is the point
-            of this section, so the event pills at the top of the page (4 Nov
-            2026) highlight a row here rather than hide the others. Past events
-            are one link away. */}
+            of this section, so the event dropdown at the top of the page (4 Nov
+            2026) highlights a row here rather than hiding the others. Past
+            events are one link away. */}
         {(() => {
           const rowsAll = [...byEvent.entries()];
           const isCur = (name) => {

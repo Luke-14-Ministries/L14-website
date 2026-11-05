@@ -45,7 +45,7 @@ export default async function SetupPage() {
     startsOn: e.starts_on,
     endsOn: e.ends_on,
     published: e.published === true,
-    // 0099: archived on Setup -- out of every current pill row, never open.
+    // 0099: archived on Setup -- out of every current events list, never open.
     archivedAt: e.archived_at ?? null,
     hiddenFromFamiliesAt: e.hidden_from_families_at ?? null,
     opensAt: e.registration_opens_at,

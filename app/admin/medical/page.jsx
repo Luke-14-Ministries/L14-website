@@ -73,9 +73,10 @@ export default async function MedicalPage({ searchParams }) {
 
 
   // The page defaults to every CURRENT event at once (a nurse plans a week,
-  // not a day); one event by its pill, and anything past by the shared
-  // filter's search box (16 Oct 2026 -- this page had its own pill row and a
-  // "show past" toggle before). Same rule as every other staff page.
+  // not a day); one event, or anything past, from the shared event dropdown
+  // (16 Oct 2026 -- this page had its own pill row and a "show past" toggle
+  // before; one searchable dropdown since 4 Nov). Same rule as every other
+  // staff page.
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
   const q = typeof params?.q === 'string' ? params.q.trim().toLowerCase() : '';
   const visibleEvents = (events ?? []).map(withMedicalContact).filter((ev) => {

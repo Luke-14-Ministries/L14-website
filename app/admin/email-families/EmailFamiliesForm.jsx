@@ -9,7 +9,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { sendFamilyEmail } from './actions';
 import { familyEmailParts } from '@/lib/familyEmail';
-import { eventNameWithYear } from '@/lib/events';
+import EventFilter from '@/components/EventFilter';
 
 const input = 'w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm';
 const label = 'block text-sm font-semibold text-neutral-700 mb-1';
@@ -118,25 +118,20 @@ export default function EmailFamiliesForm({
   return (
     <div className="max-w-3xl space-y-5">
       <div className="grid gap-4 sm:grid-cols-3">
-        <label className="text-sm">
-          <span className={label}>Event</span>
-          <select
-            className={input}
-            value={eventId}
-            disabled={choosing || sending}
-            onChange={(e) => choose({ eventId: e.target.value, activityId: '' })}
-          >
-            <option value="">Choose an event…</option>
-            {/* Everyone at once (4 Nov 2026): one email per household, however
-                many current events it is registered for. */}
-            {events.length > 1 && <option value="current">All current events</option>}
-            {events.map((e) => (
-              <option key={e.id} value={e.id}>
-                {eventNameWithYear(e)}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* The event dropdown every staff page uses (4 Nov 2026). Nothing
+            chosen until staff choose: an email is never sent to an event by
+            default. "All current events" is everyone at once (4 Nov 2026):
+            one email per household, however many current events it is
+            registered for. */}
+        <EventFilter
+          events={events}
+          selected={eventId || null}
+          placeholder="Choose an event…"
+          scopes={events.length > 1 ? [{ value: 'current', label: 'All current events' }] : []}
+          onSelect={(id) => choose({ eventId: id, activityId: '' })}
+          disabled={choosing || sending}
+          className="w-full text-sm"
+        />
         <label className="text-sm">
           <span className={label}>Who</span>
           <select

@@ -32,8 +32,8 @@ export default async function LodgingPage({ searchParams }) {
 
   // Current-and-upcoming decides what the page OPENS on; EventFilter reaches
   // everything else by search, so no page-level "show past" toggle any more.
-  // Same window as the pill row -- the same function -- so the event this page
-  // OPENS on is always one that has a pill.
+  // Same window as the dropdown's current group -- the same function -- so
+  // the event this page OPENS on is always a current one.
   const visible = (events ?? []).filter(isCurrentEventRow);
   // A retreat's id in the URL falls back to the first camp event rather than
   // drawing a board for something that is sorted on arrival.

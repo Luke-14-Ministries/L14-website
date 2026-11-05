@@ -3,8 +3,9 @@
 // The Event Payments export toolbar (Lawrence, 26 Oct 2026): choose the
 // REPORT, then the FORMAT, then the dates -- two separate questions, not one
 // list mixing them. What each combination means:
-//   Payments received, CSV        the events shown below (Showing and the
-//                                 payment-state pill), between the dates
+//   Payments received, CSV        the events shown below (the event
+//                                 dropdown and the payment-state pill),
+//                                 between the dates
 //   Payments received, QuickBooks EVERY event, between the dates -- the
 //                                 treasurer books a month of money, not one
 //                                 event's families (route.js says why)

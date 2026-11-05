@@ -20,6 +20,11 @@
 // `pinned` options ("Every buddy") are shown first whatever is typed: the way
 // back to the whole booklet is never filtered away.
 //
+// An option may carry a `group` (4 Nov 2026, for EventFilter's "Other
+// events"): a small heading is drawn above the first option of each group
+// still showing after the filter. Headings are role="presentation", so the
+// keys walk the options only, as before.
+//
 // Two exports. `SearchSelect` takes an onChange(value) for client pages.
 // `SearchSelectLinks` is for server pages, which cannot hand a function to a
 // client component: each option carries its own `href` and choosing one
@@ -57,6 +62,10 @@ export default function SearchSelect({
   noun = ['option', 'options'],
   // While the caller's navigation is under way.
   busy = false,
+  // The label and count line kept for screen readers but not shown -- for a
+  // box sitting in a row of other filters (EventFilter on Rosters).
+  hideLabel = false,
+  disabled = false,
 }) {
   const id = useId();
   const listId = `${id}-list`;
@@ -131,7 +140,7 @@ export default function SearchSelect({
 
   return (
     <div>
-      <div className="mb-1 flex print:hidden items-baseline gap-2 text-sm">
+      <div className={hideLabel ? 'sr-only' : 'mb-1 flex print:hidden items-baseline gap-2 text-sm'}>
         {label && (
           <label htmlFor={id} className="font-semibold text-neutral-700">
             {label}
@@ -153,6 +162,7 @@ export default function SearchSelect({
           aria-activedescendant={open && shown[active] ? `${id}-opt-${active}` : undefined}
           autoComplete="off"
           spellCheck={false}
+          disabled={disabled}
           // Closed, the box reads as the current choice; open, it is the filter.
           value={open ? query : selected?.label ?? ''}
           placeholder={open ? selected?.label ?? placeholder : placeholder}
@@ -165,7 +175,7 @@ export default function SearchSelect({
           onClick={openList}
           onBlur={close}
           onKeyDown={onKeyDown}
-          className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-1.5 pr-8 text-sm focus:border-brand focus:outline-none"
+          className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-1.5 pr-8 text-sm focus:border-brand focus:outline-none disabled:bg-neutral-100 disabled:text-neutral-500"
         />
         <span aria-hidden className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-neutral-500">
           ▾
@@ -184,7 +194,22 @@ export default function SearchSelect({
           {shown.map((o, i) => {
             const isSelected = o.value === value;
             const isLastPinned = i === pinned.length - 1 && filtered > 0;
-            return (
+            // A group heading above the first option of each group still
+            // showing (pinned options never carry one).
+            const heading =
+              i >= pinned.length && o.group && (i === pinned.length || shown[i - 1].group !== o.group)
+                ? o.group
+                : null;
+            return [
+              heading && (
+                <li
+                  key={`group-${heading}`}
+                  role="presentation"
+                  className="px-2 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500"
+                >
+                  {heading}
+                </li>
+              ),
               <li
                 key={`${i < pinned.length ? 'pin' : 'opt'}-${o.value}`}
                 id={`${id}-opt-${i}`}
@@ -201,8 +226,8 @@ export default function SearchSelect({
               >
                 {o.label}
                 {o.hint && <span className="block text-xs font-normal text-neutral-500">{o.hint}</span>}
-              </li>
-            );
+              </li>,
+            ];
           })}
           {filtered === 0 && words.length > 0 && (
             <li role="presentation" className="px-2 py-2 text-sm text-neutral-500">

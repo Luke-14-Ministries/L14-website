@@ -195,8 +195,8 @@ export default async function ReviewQueuePage({ searchParams }) {
       if (show === 'all') return true;
       if (show === 'family') return Boolean(r.awaitingSince);
       if (show === 'replied') return r.familyReplied;
-      // Every current event unless one is chosen, as the "All current
-      // events" pill says -- a past camp's paperwork is not live work.
+      // Every current event unless one is chosen, as the event dropdown's
+      // "All current events" says -- a past camp's paperwork is not live work.
       if (show === 'waiver') return r.owed.length > 0 && (eventFilter || isCurrentEventRow(r.event));
       if (show === 'plan') return (r.planStopped || r.planFailing) && (eventFilter || isCurrentEventRow(r.event));
       if (show === 'nodeposit') {
@@ -205,7 +205,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       return (r.pending.length > 0 || r.familyReplied) && !r.awaitingSince;
     });
 
-  // The events on the queue, for the filter's pills.
+  // The events on the queue, for the event dropdown.
   const eventsForFilter = [
     ...new Map((regs ?? []).filter((r) => r.events?.id).map((r) => [r.events.id, r.events])).values(),
   ]

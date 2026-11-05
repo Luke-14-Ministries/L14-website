@@ -57,9 +57,9 @@ export default async function AdminActivitiesPage({ searchParams }) {
   // Same archiving convention as the rest of the staff portal: current and
   // upcoming by default, past one click away, nothing hidden in the database.
   // Current-and-upcoming is what the page opens on; EventFilter owns the
-  // rest, including reaching past events by search. Same window as the pill
-  // row -- literally the same function -- so the event this page OPENS on is
-  // always one that has a pill.
+  // rest, including reaching past events by search. Same window as the
+  // dropdown's current group -- literally the same function -- so the event
+  // this page OPENS on is always a current one.
   const visibleEvents = (events ?? []).filter(isCurrentEventRow);
   // With no event chosen, open on the first current event that has a provider
   // confirmation waiting to be checked -- the nav badge's work -- else the

@@ -86,7 +86,8 @@ export default function RosterTable({ events, rows, programs = [] }) {
 
   // "All events" leaves archived ones out (Lawrence, 4 Nov 2026: "that's a
   // lot of the point of archiving"). An archived event is still one pick
-  // away in the search box. The print view and the CSV follow the same rule.
+  // away in the event dropdown, under "Other events". The print view and the
+  // CSV follow the same rule.
   const archivedIds = useMemo(
     () => new Set(events.filter((e) => e.archivedAt ?? e.archived_at).map((e) => e.id)),
     [events]
@@ -183,11 +184,12 @@ export default function RosterTable({ events, rows, programs = [] }) {
           ml-auto so the wrap behaves. */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="flex flex-wrap items-center gap-2">
-        {/* The same picker the other staff pages use, in its search-only
-            shape: this is a filter over every event the ministry has ever run,
-            so a pill row would be a wall and a plain <select> gives you no way
-            to type "2025". "All events" is pinned at the top of the list
-            (25 Aug). */}
+        {/* The same event dropdown every staff page uses (one searchable
+            control everywhere since 4 Nov 2026): a filter over every event the
+            ministry has ever run, where a plain <select> gives you no way to
+            type "2025". "All events" is pinned at the top of the list
+            (25 Aug). Its label is for screen readers only, so the box lines
+            up with the other filters in this row. */}
         <EventFilter
           events={events.map((e) => ({
             id: e.id,
@@ -197,10 +199,11 @@ export default function RosterTable({ events, rows, programs = [] }) {
             archivedAt: e.archivedAt ?? e.archived_at ?? null,
           }))}
           selected={fEvent || null}
-          mode="search"
           allowAll
           allLabel="All events (not archived)"
           onSelect={(id) => setFEvent(id)}
+          hideLabel
+          className="w-full sm:w-72"
         />
         <select value={fRole} onChange={(e) => setFRole(e.target.value)} className={selectCls}>
           <option value="">All roles</option>

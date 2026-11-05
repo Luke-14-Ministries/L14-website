@@ -227,6 +227,8 @@ export default async function AdminVolunteersPage({ searchParams }) {
           selected={eventFilter || null}
           basePath="/admin/volunteers"
           allowAll
+          hideLabel
+          className="w-full sm:w-80"
         />
         <a
           href={`/admin/volunteers/print/${eventFilter ? `?event=${eventFilter}` : ''}`}

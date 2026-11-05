@@ -167,6 +167,7 @@ export default async function PhotographerListPage({ searchParams }) {
           }))}
           selected={event?.id ?? null}
           basePath="/admin/rosters/photos"
+          className="w-full max-w-sm"
         />
       </div>
 

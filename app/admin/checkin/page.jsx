@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -7,6 +6,7 @@ import { signedPhotoUrls } from '@/lib/photos';
 import { dollars } from '@/lib/payments';
 import CheckinList from './CheckinList';
 import MedicalContact from './MedicalContact';
+import EventFilter from '@/components/EventFilter';
 
 export const metadata = { title: 'Check-In — Staff Admin' };
 
@@ -21,23 +21,6 @@ export default async function CheckinPage({ searchParams }) {
   if (!staff) await bounceNonStaff('/admin/checkin/');
   if (!can(staff, 'read:registration')) redirect('/admin');
 
-  // Parsed by parts, never through new Date(iso): a date-only string is UTC
-  // midnight and renders as the day before in every US timezone.
-  const fmtRange = (a, b) => {
-    const one = (iso) => {
-      if (!iso) return '';
-      const [y, m, d] = String(iso).split('-').map(Number);
-      if (!y) return '';
-      return new Date(y, m - 1, d).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      });
-    };
-    const from = one(a);
-    const to = one(b);
-    return from ? `${from}${to && to !== from ? `–${to}` : ''}` : '';
-  };
-
   const supabase = await createClient();
   const { data: events, error: eventsError } = await supabase
     .from('events')
@@ -46,13 +29,13 @@ export default async function CheckinPage({ searchParams }) {
   // CLAUDE.md: never turn a query error into an empty list -- at the door it
   // would read as "nobody registered" or "everyone may be photographed".
   if (eventsError) throw new Error(`Events: ${eventsError.message}`);
-  // DELIBERATE DEVIATION from the shared EventFilter (kept 16 Oct 2026, when
-  // every other staff page moved to it): Check-In is used standing at a door
-  // on a phone, so its pills carry the dates ("Week 1" and "Week 2" look the
-  // same without them) and there is no search box -- nobody checks anyone in
-  // to last year's camp. WHICH events are current is the same rule as
-  // everywhere else (isCurrentEventRow: two weeks' grace, a year ahead,
-  // never an archived one), so the pill rows can never disagree.
+  // Current events only: nobody checks anyone in to last year's camp. WHICH
+  // events are current is the same rule as everywhere else
+  // (isCurrentEventRow: two weeks' grace, a year ahead, never an archived
+  // one). Until 4 Nov 2026 this page kept its own dated pills rather than the
+  // shared EventFilter; it uses the shared dropdown now, for one control on
+  // every page (Lawrence), and the dropdown shows each event's dates under
+  // its name -- at a door "Week 1" and "Week 2" look the same without them.
   const eventsList = (events ?? []).map(withMedicalContact).filter((e) => isCurrentEventRow(e));
   const eventId =
     typeof params?.event === 'string' && eventsList.some((e) => e.id === params.event)
@@ -200,30 +183,18 @@ export default async function CheckinPage({ searchParams }) {
       </p>
 
       {eventsList.length > 1 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {eventsList.map((ev) => (
-            <Link
-              key={ev.id}
-              href={`/admin/checkin?event=${ev.id}`}
-              className={`rounded-full px-4 py-1.5 text-sm font-semibold border ${
-                ev.id === eventId
-                  ? 'bg-brand text-white border-brand'
-                  : 'border-neutral-300 text-neutral-700 hover:border-brand'
-              }`}
-            >
-              {/* The dates on the pill: at a door, "Week 1" and "Week 2" look
-                  identical until you can see which week is which. */}
-              <span className="flex flex-col leading-tight">
-                <span>{ev.name}</span>
-                {ev.starts_on && (
-                  <span className="text-xs font-normal opacity-75">
-                    {fmtRange(ev.starts_on, ev.ends_on)}
-                  </span>
-                )}
-              </span>
-            </Link>
-          ))}
-        </div>
+        <EventFilter
+          events={eventsList.map((e) => ({
+            id: e.id,
+            name: e.name,
+            startsOn: e.starts_on,
+            endsOn: e.ends_on,
+            archivedAt: e.archived_at,
+          }))}
+          selected={eventId ?? null}
+          basePath="/admin/checkin"
+          className="mb-4 w-full max-w-sm"
+        />
       )}
 
       {eventId && (

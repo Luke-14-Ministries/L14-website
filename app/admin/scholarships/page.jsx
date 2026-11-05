@@ -163,9 +163,9 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
           selected={eventFilter || null}
           basePath="/admin/scholarships"
           extraParams={{ settled: showSettled ? '1' : '' }}
-          mode="search"
           allowAll
           allLabel="All events (not archived)"
+          className="w-full"
         />
       </div>
 
