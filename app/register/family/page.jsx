@@ -48,7 +48,12 @@ export default async function FamilyRegisterPage({ searchParams }) {
   // every write to a logged-in user -- so the door is a login, not an anonymous
   // form. Send guests to log in (or sign up) and back here.
   if (!user) {
-    const next = encodeURIComponent('/register/family/');
+    // ?program= comes along, so a guest sent from the Retreat page lands
+    // back on the retreat alone after logging in (5 Nov 2026).
+    const program = typeof params?.program === 'string' ? params.program : '';
+    const next = encodeURIComponent(
+      program ? `/register/family/?program=${encodeURIComponent(program)}` : '/register/family/'
+    );
     return (
       <section className="bg-neutral-50 py-12">
         <div className="container-site max-w-xl mx-auto text-center">

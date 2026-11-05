@@ -1,20 +1,44 @@
+import Link from 'next/link';
 import { asset } from '@/lib/site';
+import { getRetreatFacts } from '@/lib/campFacts';
+import { formatDueDate } from '@/lib/events';
+import { dollars } from '@/lib/payments';
 
 export const metadata = { title: 'Adult Adventure Retreat' };
 
-// The 2026 retreat registers on CampSite (Ellen, 14 Oct 2026): this
-// platform's first retreat is the next one. The buttons go straight to
-// CampSite, with the two links and labels the old Squarespace page used
-// (Lawrence, 28 Oct 2026). They used to point at that old page, which
-// disappears once luke14ministries.net points at this site. When
-// registration for a retreat opens here, replace both with one button to
-//   /register/family/?program=Adult%20Adventure%20Retreat%20<year>
-// (the chooser then skips the question the visitor has already answered
-// by being on this page), and drop RegisterButtons' second link.
-const CURRENT_REGISTRATION = {
-  returning: 'https://celebrate.campmanagement.com/p/campers/login_m.php',
-  new: 'https://celebrate.campmanagement.com/p/request_for_info_m.php?action=enroll',
-};
+// The dates, price, spots and whether registration is open come from the
+// retreat event on Setup (getRetreatFacts, Lawrence 5 Nov 2026), like the camp
+// pages. Until then this page printed them by hand and sent people to
+// CampSite, where the 2026 retreat registered (Ellen, 14 Oct 2026); that
+// retreat is over, and the next one registers here. With no retreat
+// published ahead, the page says the dates are coming and offers no button.
+//
+// The arrival time is not a Setup field, so it stays here: the weekday follows
+// the start date, the time is this line.
+const ARRIVAL_TIME = '6:00 PM';
+
+const day = (iso, opts) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
+
+// "Oct 29 – Nov 1" (short months: the hero's four-column grid is narrow).
+function shortRange(fromIso, toIso) {
+  if (!toIso || toIso === fromIso) return day(fromIso, { month: 'short', day: 'numeric' });
+  return fromIso.slice(5, 7) === toIso.slice(5, 7)
+    ? `${day(fromIso, { month: 'short', day: 'numeric' })}–${day(toIso, { day: 'numeric' })}`
+    : `${day(fromIso, { month: 'short', day: 'numeric' })} – ${day(toIso, { month: 'short', day: 'numeric' })}`;
+}
+
+// One line beside the button: what a visitor can do today.
+function statusLine(r) {
+  if (!r) return 'Dates and registration for the next retreat will be posted here soon.';
+  if (r.state === 'open') {
+    return r.early
+      ? `Register by ${formatDueDate(r.early.endsOn)} and get ${dollars(r.early.cents)} off each person.`
+      : `Registration for ${r.year} is open.`;
+  }
+  if (r.state === 'underway') return `The ${r.year} retreat is underway!`;
+  if (r.state === 'closed') return `Registration for ${r.year} has closed.`;
+  return r.opensOn ? `Registration for ${r.year} opens ${r.opensOn}.` : `Registration for ${r.year} opens soon.`;
+}
 
 // The hero borrows the BANNER'S PALETTE rather than reproducing the banner at
 // full bleed. Three reasons:
@@ -42,32 +66,17 @@ function Fact({ label, children }) {
   );
 }
 
-// CampSite asks returning campers to sign in and new campers to enrol, so
-// there are two doors, worded as the old site worded them.
-function RegisterButtons({ className }) {
+function RegisterButton({ retreat, className }) {
+  if (!retreat?.open) return null;
   return (
-    <>
-      <a
-        href={CURRENT_REGISTRATION.returning}
-        target="_blank"
-        rel="noopener"
-        className={className}
-      >
-        Returning Campers Register Here!
-      </a>
-      <a
-        href={CURRENT_REGISTRATION.new}
-        target="_blank"
-        rel="noopener"
-        className={className}
-      >
-        New Campers Register Here!
-      </a>
-    </>
+    <Link href={retreat.registerHref} className={className}>
+      Register for {retreat.year}
+    </Link>
   );
 }
 
-export default function AdultAdventureRetreatPage() {
+export default async function AdultAdventureRetreatPage() {
+  const retreat = await getRetreatFacts();
   return (
     <>
       <section style={{ backgroundColor: PINE }} className="text-white">
@@ -88,30 +97,28 @@ export default function AdultAdventureRetreatPage() {
                 &mdash; adventure, worship and community in the mountains near Gatlinburg.
               </p>
 
-              <dl className="mt-7 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4">
-                {/* The YEAR belongs here. Without it the page reads as
-                    evergreen, and a returning family cannot tell whether they
-                    are looking at this year's retreat or last year's page
-                    nobody updated (25 Aug). */}
-                {/* The year on its own line. As one string it wrapped as
-                    "Oct 29 – Nov / 1, 2026" in the four-column grid, which
-                    breaks the date across the dash and reads as two dates
-                    (25 Aug). */}
-                <Fact label="Dates">
-                  <span className="whitespace-nowrap">Oct 29 &ndash; Nov 1</span>
-                  <br />
-                  2026
-                </Fact>
-                <Fact label="Arrival">6:00 PM Thursday</Fact>
-                <Fact label="Cost">$480 per person</Fact>
-                <Fact label="Spots">Limited to 30</Fact>
-              </dl>
+{retreat && (
+                <dl className="mt-7 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4">
+                  {/* The YEAR belongs here: without it a returning family
+                      cannot tell this year's retreat from last year's page
+                      (25 Aug). On its own line, so the range never wraps
+                      across the dash (25 Aug). */}
+                  <Fact label="Dates">
+                    <span className="whitespace-nowrap">{shortRange(retreat.startsOn, retreat.endsOn)}</span>
+                    <br />
+                    {retreat.year}
+                  </Fact>
+                  <Fact label="Arrival">
+                    {ARRIVAL_TIME} {day(retreat.startsOn, { weekday: 'long' })}
+                  </Fact>
+                  {retreat.priceCents != null && <Fact label="Cost">{dollars(retreat.priceCents)} per person</Fact>}
+                  {retreat.capacity != null && <Fact label="Spots">Limited to {retreat.capacity}</Fact>}
+                </dl>
+              )}
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
-                <RegisterButtons className="btn-gold px-8!" />
-                <span className="text-white/80">
-                  Registration for 2026 is on CampSite, where it has always been.
-                </span>
+                <RegisterButton retreat={retreat} className="btn-gold px-8!" />
+                <span className="text-white/80">{statusLine(retreat)}</span>
               </div>
             </div>
 
@@ -149,13 +156,21 @@ export default function AdultAdventureRetreatPage() {
               independence &mdash; and the trained buddy each participant is paired with
               is there to make the adventure bigger, not smaller.
             </p>
-            <p>
-              Registering takes a few minutes and holds your place.
+            {retreat?.open && <p>Registering takes a few minutes and holds your place.</p>}
+          </div>
+          {retreat?.open ? (
+            <div className="mt-8 flex flex-wrap gap-4">
+              <RegisterButton retreat={retreat} className="btn-primary px-8!" />
+            </div>
+          ) : (
+            <p className="mt-8 text-neutral-700">
+              Questions about the next retreat?{' '}
+              <Link href="/contact/" className="text-brand underline font-semibold">
+                Get in touch
+              </Link>
+              .
             </p>
-          </div>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <RegisterButtons className="btn-primary px-8!" />
-          </div>
+          )}
         </div>
       </section>
     </>

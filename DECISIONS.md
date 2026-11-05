@@ -4096,3 +4096,11 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     starts (`campKey()` in `lib/events.js`; `recalc_multi_week_discount()` restated). Nothing
     changes while names carry the year; if the year ever leaves them, two years can no longer be
     joined into "both weeks".
+  - **The Adult Adventure Retreat page reads Setup** (Lawrence, 5 Nov 2026), like the camp pages:
+    the next published, unarchived `retreat` event gives the dates, arrival weekday, price, spots
+    and open / opens on / closed / underway (`getRetreatFacts()` in `lib/campFacts.js`). One
+    *Register* button to `/register/family/?program=<campKey>` appears only while registration is
+    open; with no retreat ahead the page says the dates are coming. The CampSite buttons are gone
+    (the 2026 retreat, the last on CampSite, is over). The arrival time (6:00 PM) is not a Setup
+    field and stays in the page. A guest sent to log in keeps `?program=`. The banner artwork
+    still carries "Oct. 29 – Nov. 1" in its pixels — new artwork is needed for the next year.
