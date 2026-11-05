@@ -4090,3 +4090,9 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
   - **Overview groups by event id**, never by name; **Scholarships keeps an open request** at a past
     event in its default view until it is decided or the event archived (requests left on purpose
     must not drop out by date).
+  - **`0154`: the weeks of one camp are paired by name and year.** The both-weeks discount, the
+    public camp facts, the register chooser, Setup's later weeks and the Ways to pay note all found
+    a camp's weeks by the name before " — " alone; now it is that **and** the calendar year the week
+    starts (`campKey()` in `lib/events.js`; `recalc_multi_week_discount()` restated). Nothing
+    changes while names carry the year; if the year ever leaves them, two years can no longer be
+    joined into "both weeks".

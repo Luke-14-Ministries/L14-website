@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { balanceDueOn, formatDueDate, formatDueDateShort, dateISO, programOf } from '@/lib/events';
+import { balanceDueOn, formatDueDate, formatDueDateShort, dateISO, campKey } from '@/lib/events';
 import { dollars, registrationDepositCents, CLEARING_PILL } from '@/lib/payments';
 import { planAvailable, planConsentText, planHasProblem } from '@/lib/plans';
 import FinishChoices from './FinishChoices';
@@ -178,11 +178,11 @@ export default async function FinishPage({ params, searchParams }) {
       .eq('camp_role', 'volunteer')
       .neq('status', 'cancelled');
     if (theirsError) throw new Error(`Volunteer weeks: ${theirsError.message}`);
-    const program = programOf(reg.events.name);
+    const program = campKey(reg.events);
     for (const personId of volunteerPeople) {
       const weeks = (theirs ?? [])
         .filter((t) => t.person_id === personId)
-        .filter((t) => !t.registrations?.events?.archived_at && programOf(t.registrations?.events?.name) === program)
+        .filter((t) => !t.registrations?.events?.archived_at && campKey(t.registrations?.events) === program)
         .sort((a, b) => String(a.registrations.events.starts_on).localeCompare(String(b.registrations.events.starts_on)));
       if (new Set(weeks.map((w) => w.registrations.events.id)).size < 2) continue;
       const later = weeks[weeks.length - 1];

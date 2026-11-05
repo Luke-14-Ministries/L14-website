@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import {
   programOf,
+  campKey,
   registrationOpen,
   OPEN_EVENT_COLUMNS,
   enrollmentOption,
@@ -91,7 +92,9 @@ export default async function FamilyRegisterPage({ searchParams }) {
     typeof params?.program === 'string' ? params.program : null;
   let openEvents = (events ?? []).filter((e) => registrationOpen(e));
   if (chosenProgram) {
-    const scoped = openEvents.filter((e) => programOf(e.name) === chosenProgram);
+    // ?program= carries the chooser's campKey (0154); an older link that
+    // carries the name alone still narrows by name.
+    const scoped = openEvents.filter((e) => campKey(e) === chosenProgram || programOf(e.name) === chosenProgram);
     if (scoped.length > 0) openEvents = scoped;
   }
 

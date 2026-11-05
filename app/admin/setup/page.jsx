@@ -74,10 +74,15 @@ export default async function SetupPage() {
   // the part before " — ", the pairing recalc_multi_week_discount() uses. The
   // both-weeks discount is set on the later week, where it applies, and an
   // earlier week's details are the later weeks' defaults.
-  const programOf = (name) => (String(name ?? '').includes(' — ') ? String(name).split(' — ')[0].trim() : null);
+  // 0154: and start in the same year -- campKey()'s rule, kept here for
+  // names with no " — " (an event on its own).
+  const programOf = (r) =>
+    String(r.name ?? '').includes(' — ')
+      ? `${String(r.name).split(' — ')[0].trim()}|${String(r.startsOn ?? '').slice(0, 4)}`
+      : null;
   for (const r of rows) {
-    const program = programOf(r.name);
-    const weeks = program ? rows.filter((o) => programOf(o.name) === program) : [r];
+    const program = programOf(r);
+    const weeks = program ? rows.filter((o) => programOf(o) === program) : [r];
     r.earlierWeeks = weeks.filter((o) => o.startsOn < r.startsOn).map((o) => o.name);
     r.laterWeeks = weeks
       .filter((o) => o.startsOn > r.startsOn)

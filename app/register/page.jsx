@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import BackLink from '@/components/BackLink';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { programOf, registrationOpen, OPEN_EVENT_COLUMNS, enrollmentOption } from '@/lib/events';
+import { programOf, campKey, registrationOpen, OPEN_EVENT_COLUMNS, enrollmentOption } from '@/lib/events';
 
 export const metadata = { title: 'Register — Luke 14 Ministries' };
 
@@ -48,10 +48,11 @@ export default async function RegisterPage() {
   // "Camp Celebrate 2027" card spanning both weeks.
   const programs = [];
   for (const e of open) {
-    const key = programOf(e.name);
+    // 0154: one card per camp -- name and year (campKey) -- titled by name.
+    const key = campKey(e);
     let p = programs.find((x) => x.key === key);
     if (!p) {
-      p = { key, events: [] };
+      p = { key, title: programOf(e.name), events: [] };
       programs.push(p);
     }
     p.events.push(e);
@@ -99,7 +100,7 @@ export default async function RegisterPage() {
                   className="rounded-lg border border-neutral-200 bg-white shadow-xs p-6"
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h2 className="text-xl font-bold">{p.key}</h2>
+                    <h2 className="text-xl font-bold">{p.title}</h2>
                     <p className="text-sm text-neutral-500">
                       {fmtDate(starts)} &ndash; {fmtDate(ends)} &middot;{' '}
                       {fees.length === 1

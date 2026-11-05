@@ -47,7 +47,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0153`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0154`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -159,6 +159,7 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
 | Is this event current? (to two weeks after it ends, a year ahead, never archived) | `isCurrentEventRow()` in `lib/events.js`; every page that picks an event uses the shared `EventFilter` — one searchable dropdown (current events, then *Other events*), no pills and no second dropdown, no exceptions (Lawrence, 4 Nov 2026). A page's "all" is three choices, *All* / *All (current)* (the default) / *All (archived)* (`?event=all` / none / `?event=archived`): filter with `eventInScope()` and `EVENT_SCOPES` in `lib/events.js` |
 | When is the balance due? | `balanceDueOn()` (`lib/events.js`) / `balance_due_on()` (SQL) — both read the event's column |
 | How is a stored timestamp printed? (ministry time, never the raw UTC string) | `whenInMorristown()` (a moment) / `dayInMorristown()` (a day) in `lib/events.js` |
+| Are these weeks one camp? (both-weeks discount, camp facts, chooser, Setup's later weeks) | `campKey()` in `lib/events.js` -- the name before " — " **and** the start year; `recalc_multi_week_discount()` pairs the same way (`0154`) |
 | Agreement text for an event | `agreementText()` in `lib/events.js` (fills `{{event}}`) |
 | Background-check status shown | `clearancePill()` in `lib/format.js` |
 | Is a date of birth real? | `dobProblem()` in `lib/format.js` (a trigger on `people` refuses before 1900 or in the future) |

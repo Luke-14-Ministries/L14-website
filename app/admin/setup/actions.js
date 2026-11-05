@@ -340,6 +340,8 @@ export async function updateEventDetails(
       .select('id, name')
       .like('name', like)
       .gt('starts_on', startsOn)
+      // 0154: the same camp is the same year too.
+      .lte('starts_on', `${String(startsOn).slice(0, 4)}-12-31`)
       .is('details_set_by_hand_at', null);
     if (laterError) {
       return { ok: false, error: `The event saved, but its later weeks could not be read: ${laterError.message}` };

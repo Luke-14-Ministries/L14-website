@@ -695,9 +695,11 @@ function lastCampWeeks(events) {
   const camps = events.filter((e) => e.eventType === 'camp_week' && e.startsOn && notTest(e));
   if (!camps.length) return [];
   const newest = camps.reduce((a, b) => (b.startsOn > a.startsOn ? b : a));
+  // 0154: the newest camp's weeks are its name AND year.
   const program = programOf(newest.name);
+  const year = String(newest.startsOn).slice(0, 4);
   return camps
-    .filter((e) => programOf(e.name) === program)
+    .filter((e) => programOf(e.name) === program && String(e.startsOn).slice(0, 4) === year)
     .sort((a, b) => a.startsOn.localeCompare(b.startsOn));
 }
 
