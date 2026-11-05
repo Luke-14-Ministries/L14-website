@@ -87,8 +87,15 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
       : '';
   const inScope = (r) => eventInScope(r.registration_participants?.registrations?.events, eventFilter);
   const all = (rows ?? []).filter(inScope);
-  const open = all.filter(
-    (r) => r.status === 'requested'
+  // An open request is never left behind by the calendar (Lawrence, 4 Nov
+  // 2026: requests "left unaddressed on purpose" must not be "swept under the
+  // rug"): under the default view one at a past event still waits here, as it
+  // does in the nav badge, until it is decided or its event is archived.
+  const open = (rows ?? []).filter(
+    (r) =>
+      r.status === 'requested' &&
+      (inScope(r) ||
+        (eventFilter === '' && !r.registration_participants?.registrations?.events?.archived_at))
   );
   const settled = all.filter((r) => r.status !== 'requested');
   const shown = showSettled ? settled : open;

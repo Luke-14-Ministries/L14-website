@@ -144,18 +144,23 @@ export default async function AdminOverview({ searchParams }) {
   const participants = parts ?? [];
 
   const regById = new Map();
-  // The event behind each name, for the current/past split and the scope.
+  // The event behind each id, for the current/past split and the scope.
+  // Everything here is keyed by the event's id, never its name (Lawrence,
+  // 4 Nov 2026): two events with one name -- "Week 1" in two years, should
+  // the year ever leave the names -- would otherwise share a row.
+  const UNASSIGNED = '~unassigned';
   const eventMeta = new Map();
   for (const r of registrations) {
     regById.set(r.id, {
       household: r.households?.display_name ?? 'Household',
+      eventId: r.events?.id ?? UNASSIGNED,
       event: r.events?.name ?? 'Unassigned',
       // The headline numbers and the review list follow the scope: by
       // default the CURRENT events only (Lawrence, 4 Nov 2026: an archived
       // test event was still counted) -- the rule every staff page uses.
       current: inScope(r.events),
     });
-    if (r.events?.id) eventMeta.set(r.events.name, r.events);
+    if (r.events?.id) eventMeta.set(r.events.id, r.events);
   }
 
   // Per-event rollup: families, people coming (not cancelled/draft),
@@ -180,7 +185,7 @@ export default async function AdminOverview({ searchParams }) {
 
   for (const p of participants) {
     const meta = regById.get(p.registration_id);
-    const ev = meta?.event ?? 'Unassigned';
+    const ev = meta?.eventId ?? UNASSIGNED;
     if (p.status === 'cancelled') {
       cancelled += 1;
       continue;
@@ -205,7 +210,7 @@ export default async function AdminOverview({ searchParams }) {
     if (p.status === 'submitted' && meta?.current) {
       const cur = needsReview.get(p.registration_id) ?? {
         household: meta?.household ?? 'Household',
-        event: ev,
+        event: meta?.event ?? 'Unassigned',
         count: 0,
       };
       cur.count += 1;
@@ -219,7 +224,7 @@ export default async function AdminOverview({ searchParams }) {
       .map((p) => p.registration_id)
   ).size;
   const currentRows = [...byEvent.entries()]
-    .filter(([name]) => (eventMeta.has(name) ? inScope(eventMeta.get(name)) : false))
+    .filter(([id]) => (eventMeta.has(id) ? inScope(eventMeta.get(id)) : false))
     .map(([, r]) => r);
   const totalPeople = currentRows.reduce((s, r) => s + r.people, 0);
   const totalConfirmed = currentRows.reduce((s, r) => s + r.confirmed, 0);
@@ -228,18 +233,18 @@ export default async function AdminOverview({ searchParams }) {
 
   const reviewList = [...needsReview.entries()];
 
-  // Each event's places (events.capacity; null is no limit), by name, as the
+  // Each event's places (events.capacity; null is no limit), by id, as the
   // rollup is keyed. Shown at the top for the events in scope and as a column
   // in By event (Lawrence, 4 Nov 2026: "total camp count relative to
   // capacity ... overview near top").
-  const capacityOf = new Map((eventRows ?? []).map((e) => [e.name, e.capacity ?? null]));
+  const capacityOf = new Map((eventRows ?? []).map((e) => [e.id, e.capacity ?? null]));
   // Places are a question about events still filling: the current ones in
   // scope, or the one event chosen -- not a line for every past event under
   // All, nor any under All (archived).
   const placesLine = (eventRows ?? [])
     .filter((e) => (chosenEvent ? e.id === chosenEvent : inScope(e) && isCurrentEventRow(e)))
     .map((e) => {
-      const r = byEvent.get(e.name) ?? { confirmed: 0, pending: 0 };
+      const r = byEvent.get(e.id) ?? { confirmed: 0, pending: 0 };
       const over = e.capacity != null && r.confirmed + r.pending > e.capacity;
       return {
         id: e.id,
@@ -434,8 +439,8 @@ export default async function AdminOverview({ searchParams }) {
             All and All (archived), which replaced a "Show past events" link
             here. A registration with no event shows under All. */}
         {(() => {
-          const shownRows = [...byEvent.entries()].filter(([name]) =>
-            eventMeta.has(name) ? inTable(eventMeta.get(name)) : scope === SCOPE_ALL
+          const shownRows = [...byEvent.entries()].filter(([id]) =>
+            eventMeta.has(id) ? inTable(eventMeta.get(id)) : scope === SCOPE_ALL
           );
           return (
             <>
@@ -464,10 +469,10 @@ export default async function AdminOverview({ searchParams }) {
                 {shownRows.map(([ev, r]) => (
                   <tr
                     key={ev}
-                    id={eventMeta.get(ev)?.id ? `event-${eventMeta.get(ev).id}` : undefined}
-                    className={`border-t border-neutral-100 ${chosenEvent && eventMeta.get(ev)?.id === chosenEvent ? 'bg-brand-light' : ''}`}
+                    id={eventMeta.has(ev) ? `event-${ev}` : undefined}
+                    className={`border-t border-neutral-100 ${chosenEvent && ev === chosenEvent ? 'bg-brand-light' : ''}`}
                   >
-                    <td className="py-2 pr-4 font-medium">{ev}</td>
+                    <td className="py-2 pr-4 font-medium">{eventMeta.get(ev)?.name ?? 'Unassigned'}</td>
                     <td className="py-2 pr-4 text-right">{r.families.size}</td>
                     <td className="py-2 pr-4 text-right">{r.people}</td>
                     <td className="py-2 pr-4 text-right text-green-700 font-semibold">{r.confirmed}</td>
