@@ -96,7 +96,7 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
   }
 
   const { activity, event, people, units, groups } = data;
-  const noun = groupNoun(activity.name);
+  const noun = groupNoun(activity.groupLabel);
   const minAge = activity.minAge;
 
   const blocksFor = (g) => {

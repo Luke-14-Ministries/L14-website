@@ -53,7 +53,7 @@ export default async function ActivityGroupsPage({ searchParams }) {
     );
   }
 
-  const noun = groupNoun(data.activity.name);
+  const noun = groupNoun(data.activity.groupLabel);
 
   return (
     <div>

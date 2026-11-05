@@ -15,7 +15,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
-import { buildUnits, unitOf, nextGroupName } from '@/lib/activityGroups';
+import { buildUnits, unitOf, nextGroupName, DEFAULT_GROUP_SIZE } from '@/lib/activityGroups';
 
 async function requireWrite() {
   const staff = await getStaff();
@@ -89,7 +89,7 @@ export async function createGroup({ activityId }) {
 
   const supabase = await createClient();
   const [{ data: activity, error: actError }, { data: existing, error: exError }] = await Promise.all([
-    supabase.from('activities').select('id, name').eq('id', activityId).maybeSingle(),
+    supabase.from('activities').select('id, name, group_label, group_size').eq('id', activityId).maybeSingle(),
     supabase.from('activity_groups').select('name, sort_order').eq('activity_id', activityId),
   ]);
   if (actError) return { ok: false, error: `The activity could not be read: ${actError.message}` };
@@ -101,8 +101,9 @@ export async function createGroup({ activityId }) {
     .from('activity_groups')
     .insert({
       activity_id: activityId,
-      name: nextGroupName(activity.name, rows.map((r) => r.name)),
-      capacity: 6,
+      name: nextGroupName(activity.group_label, rows.map((r) => r.name)),
+      // 0153: the activity's own size per group, six when unset.
+      capacity: activity.group_size ?? DEFAULT_GROUP_SIZE,
       sort_order: rows.reduce((m, r) => Math.max(m, r.sort_order ?? 0), 0) + 1,
     })
     .select('id')

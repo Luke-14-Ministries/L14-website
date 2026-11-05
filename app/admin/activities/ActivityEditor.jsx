@@ -396,6 +396,8 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
         </label>
       </div>
 
+      <GroupsBlock f={f} set={set} setMany={setMany} />
+
       <WaiverBlock
         f={f}
         set={set}
@@ -406,6 +408,61 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
         hadProvider={hadProvider}
       />
     </>
+  );
+}
+
+// Groups (0153, Lawrence 4 Nov 2026: the Add card should be able to make
+// today's activities again -- "groups/boats for pontoons and rafting was the
+// main question"). An activity that goes out in rafts or boats, or sits at
+// tables, is split into groups on its groups board; the name of one group and
+// how many fit set what the board calls them and the size each new one starts
+// at (a warning on the board, never a lock).
+function GroupsBlock({ f, set, setMany }) {
+  return (
+    <fieldset className="mt-4 rounded-sm border border-neutral-200 px-4 pb-3 pt-1">
+      <legend className="px-1 font-bold">Groups</legend>
+      <p className="mb-2 text-sm text-neutral-600">
+        Does this activity go out in rafts, boats or other groups that staff fill on a groups board?
+      </p>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="radio"
+          checked={!f.groups}
+          onChange={() => setMany({ groups: false })}
+        />
+        <span>
+          <span className="font-semibold">No</span> — everyone together.
+        </span>
+      </label>
+      <label className="mt-1 flex items-center gap-2 text-sm">
+        <input
+          type="radio"
+          checked={f.groups}
+          onChange={() => setMany({ groups: true, groupLabel: f.groupLabel || '' })}
+        />
+        <span>
+          <span className="font-semibold">Yes, in groups</span> — staff place people on its groups board; a
+          camper&rsquo;s buddy goes with them.
+        </span>
+      </label>
+      {f.groups && (
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          <label className="text-sm">
+            <span className={label}>
+              One group is called{' '}
+              <span className="font-normal text-neutral-500">— e.g. Raft, Boat, Table</span>
+            </span>
+            <input className={input} value={f.groupLabel} onChange={set('groupLabel')} placeholder="Raft" maxLength={40} />
+          </label>
+          <label className="text-sm">
+            <span className={label}>
+              People in each <span className="font-normal text-neutral-500">— blank means 6</span>
+            </span>
+            <input className={input} inputMode="numeric" value={f.groupSize} onChange={set('groupSize')} placeholder="6" />
+          </label>
+        </div>
+      )}
+    </fieldset>
   );
 }
 
@@ -451,6 +508,9 @@ export function ActivityEditor({ activity, eventId = null, canEmail = false, wai
     mode: activity.booking_mode ?? 'interest',
     capacity: activity.capacity == null ? '' : String(activity.capacity),
     minAge: activity.min_age == null ? '' : String(activity.min_age),
+    groups: Boolean(activity.group_label),
+    groupLabel: activity.group_label ?? '',
+    groupSize: activity.group_size == null ? '' : String(activity.group_size),
     providerName: activity.provider_name ?? '',
     providerUrl: activity.provider_url ?? '',
     sortOrder: String(activity.sort_order ?? 0),
@@ -570,6 +630,9 @@ export function AddActivity({ eventId, eventName, waiverChoices = [] }) {
     mode: 'interest',
     capacity: '',
     minAge: '',
+    groups: false,
+    groupLabel: '',
+    groupSize: '',
     providerName: '',
     providerUrl: '',
     sortOrder: '50',

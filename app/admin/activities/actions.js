@@ -91,6 +91,22 @@ function shape(input) {
     minAge = n;
   }
 
+  // Groups (0153): what one group is called, or blank for an activity not
+  // split into groups; and how many go in one (blank is 6). The size only
+  // means something with a name, so it goes with it.
+  const groupLabel = input?.groups ? String(input?.groupLabel ?? '').trim().slice(0, 40) : '';
+  if (input?.groups && !groupLabel) {
+    return { error: 'Say what one group is called — a raft, a boat, a table.' };
+  }
+  let groupSize = null;
+  if (groupLabel && String(input?.groupSize ?? '').trim() !== '') {
+    const n = Number(String(input.groupSize).trim());
+    if (!Number.isInteger(n) || n < 1 || n > 500) {
+      return { error: 'People in each group has to be a whole number (1 to 500), or blank for 6.' };
+    }
+    groupSize = n;
+  }
+
   const { waiver, error: waiverError } = shapeWaiver(input?.waiver);
   if (waiverError) return { error: waiverError };
 
@@ -111,6 +127,8 @@ function shape(input) {
       booking_mode: mode,
       capacity,
       min_age: minAge,
+      group_label: groupLabel || null,
+      group_size: groupSize,
       // A provider name is what makes the site tell families the outfitter has
       // their own form. Blank means the ministry runs it.
       provider_name: provider || null,

@@ -4081,3 +4081,12 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     event not archived", now default to current like every other page (past events are under All).
     The Overview's "Show past events" link is gone (All replaces it). Nav badges and work queues
     keep counting no archived event.
+  - **`0153`: an activity says whether it splits into groups.** Activities' editor and the *Add an
+    activity* card have a **Groups** block: no, or yes with what one group is called (Raft, Boat,
+    Table) and how many go in each (blank is 6). The groups board is offered only where it is set,
+    named its way; before, every activity had a board and "raft" in the name was the only way to get
+    Rafts (the pontoon's boats were "Groups"). Today's rafting is Rafts of 6, the pontoon Boats; a
+    new event copies the setting. With this the Add card can make every current activity again.
+  - **Overview groups by event id**, never by name; **Scholarships keeps an open request** at a past
+    event in its default view until it is decided or the event archived (requests left on purpose
+    must not drop out by date).

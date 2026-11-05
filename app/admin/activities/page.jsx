@@ -7,6 +7,7 @@ import { slotLabel } from '@/lib/activitySlots';
 import EventFilter from '@/components/EventFilter';
 import ReviewActions, { WaiverStatusPill, WaiverFileLink } from './WaiverReview';
 import { checkAnchor } from '@/lib/waiverAnchors';
+import { groupNoun } from '@/lib/activityGroups';
 
 export const metadata = { title: 'Activities — Staff Admin' };
 
@@ -80,7 +81,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
     ? await supabase
         .from('activities')
         .select(
-          'id, name, description, booking_mode, capacity, provider_name, provider_url, active, sort_order, min_age'
+          'id, name, description, booking_mode, capacity, provider_name, provider_url, active, sort_order, min_age, group_label, group_size'
         )
         .eq('event_id', selected)
         // Inactive last. Staff see activities families cannot (that is the
@@ -480,10 +481,13 @@ export default async function AdminActivitiesPage({ searchParams }) {
                 {a.description && (
                   <p className="mt-1 text-sm text-neutral-600">{a.description}</p>
                 )}
-                {/* 0125: the groups board (rafts, boats) for this activity. */}
-                <a href={`/admin/activities/groups/?activity=${a.id}`} className="mt-1 inline-block text-sm font-semibold text-brand underline">
-                  {/\braft/i.test(a.name) ? 'Rafts →' : 'Groups →'}
-                </a>
+                {/* 0125: the groups board (rafts, boats) -- since 0153 only for
+                    an activity set to split into groups, named its way. */}
+                {a.group_label && (
+                  <a href={`/admin/activities/groups/?activity=${a.id}`} className="mt-1 inline-block text-sm font-semibold text-brand underline">
+                    {groupNoun(a.group_label).Many} →
+                  </a>
+                )}
 
                 {hasProvider && (
                   <div className="mt-1 text-sm text-neutral-700">

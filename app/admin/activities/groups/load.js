@@ -23,7 +23,7 @@ export async function loadActivityGroups(supabase, activityId) {
   const { data: activity, error: actError } = await supabase
     .from('activities')
     .select(
-      'id, event_id, name, min_age, active, provider_name, provider_url, events ( id, name, starts_on, ends_on )'
+      'id, event_id, name, min_age, active, provider_name, provider_url, group_label, group_size, events ( id, name, starts_on, ends_on )'
     )
     .eq('id', activityId)
     .maybeSingle();
@@ -258,6 +258,8 @@ export async function loadActivityGroups(supabase, activityId) {
     activity: {
       id: activity.id,
       name: activity.name,
+      // 0153: what one group is called ("Raft", "Boat"), or null.
+      groupLabel: activity.group_label ?? null,
       minAge,
       active: activity.active !== false,
       eventId,
