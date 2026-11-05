@@ -16,9 +16,12 @@
 // the list, current or not.
 //
 // The open list, top to bottom:
-//   - the page's "all" choice (allLabel), pinned, where the page has one
+//   - where the page has an "all" choice: All, All (current), All (archived)
+//     -- the same three, same words, on every such page (Lawrence, 4 Nov
+//     2026; EVENT_SCOPES and eventInScope() in lib/events.js). All (current)
+//     is the default and includes upcoming events.
 //   - any other pinned scopes the page offers (Event Payments' 90-day
-//     windows and full history)
+//     windows)
 //   - CURRENT events, soonest first -- the reason the page was opened
 //   - "Other events": finished, far-future and archived ones, newest first,
 //     an archived one marked "(archived)". Archived is never current.
@@ -30,7 +33,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import SearchSelect from '@/components/SearchSelect';
-import { eventWindow, eventNameWithYear, eventDateRange } from '@/lib/events';
+import { eventWindow, eventNameWithYear, eventDateRange, EVENT_SCOPES } from '@/lib/events';
 
 // "Current" has two edges, not one.
 //
@@ -78,12 +81,14 @@ export default function EventFilter({
   label = 'Event',
   // Some pages (Dietary, Medical, Payments, the Overview) legitimately show
   // EVERY current event at once — a kitchen list is not per-week. Those get
-  // an "all" choice, pinned first, that clears the selection.
+  // the three "all" choices pinned first; All (current) is the empty value,
+  // so nothing chosen means current events, as before. No per-page wording
+  // (4 Nov 2026): "All events (not archived)" on one page and "All current
+  // events" on the next said the same thing two ways.
   allowAll = false,
-  allLabel = 'All current events',
-  // Other non-event choices pinned under "all", each { value, label }. The
+  // Other non-event choices pinned after those, each { value, label }. The
   // value travels as ?event= exactly like an event id (Event Payments:
-  // 'upcoming', 'recent', 'all' -- folded in from its old "Showing" dropdown).
+  // 'upcoming', 'recent' -- folded in from its old "Showing" dropdown).
   scopes = [],
   // In the box while nothing is chosen and there is no "all".
   placeholder = 'Choose an event',
@@ -128,7 +133,7 @@ export default function EventFilter({
   // No events at all (a new database, a page with nothing yet): the box
   // stays, greyed, and says so, rather than vanishing from the page.
   const none = events.length === 0;
-  const pinned = none ? [] : [...(allowAll ? [{ value: '', label: allLabel }] : []), ...scopes];
+  const pinned = none ? [] : [...(allowAll ? EVENT_SCOPES : []), ...scopes];
 
   const href = (id) => {
     const p = new URLSearchParams();

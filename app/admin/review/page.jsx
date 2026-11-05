@@ -7,7 +7,7 @@ import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel, planStoppedAt, planFailing
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { statusPill } from '@/lib/format';
-import { dayInMorristown, isCurrentEventRow } from '@/lib/events';
+import { dayInMorristown, isCurrentEventRow, eventInScope, isEventScope } from '@/lib/events';
 
 export const metadata = { title: 'Awaiting Review — Staff Admin' };
 
@@ -188,15 +188,17 @@ export default async function ReviewQueuePage({ searchParams }) {
     })
     .filter((r) => {
       if (r.people.length === 0) return false;
-      if (eventFilter && r.event?.id !== eventFilter) return false;
+      // One event, or All / All (archived) from the dropdown (4 Nov 2026).
+      if (eventFilter && !eventInScope(r.event, eventFilter)) return false;
       // An archived event is out of every tab unless it is picked (Lawrence,
       // 4 Nov 2026: the archived TEST retreat was still counted here).
       if (!eventFilter && r.event?.archived_at) return false;
       if (show === 'all') return true;
       if (show === 'family') return Boolean(r.awaitingSince);
       if (show === 'replied') return r.familyReplied;
-      // Every current event unless one is chosen, as the event dropdown's
-      // "All current events" says -- a past camp's paperwork is not live work.
+      // Every current event unless one or a scope is chosen, as the event
+      // dropdown's "All (current)" says -- a past camp's paperwork is not live
+      // work.
       if (show === 'waiver') return r.owed.length > 0 && (eventFilter || isCurrentEventRow(r.event));
       if (show === 'plan') return (r.planStopped || r.planFailing) && (eventFilter || isCurrentEventRow(r.event));
       if (show === 'nodeposit') {
@@ -388,7 +390,9 @@ export default async function ReviewQueuePage({ searchParams }) {
           status changes for this.{' '}
           {can(staff, 'write:registration') && (
           <Link
-            href={`/admin/email-families/?outstanding=1${eventFilter ? `&event=${eventFilter}` : ''}`}
+            // Email Families takes one event (or its own "All current events"),
+            // never a scope: All / All (archived) open it unchosen.
+            href={`/admin/email-families/?outstanding=1${eventFilter && !isEventScope(eventFilter) ? `&event=${eventFilter}` : ''}`}
             className="font-semibold text-brand underline"
           >
             Email these families →

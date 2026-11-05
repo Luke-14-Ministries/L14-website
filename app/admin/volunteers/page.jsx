@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { isCurrentEventRow } from '@/lib/events';
+import { eventInScope, SCOPE_ALL } from '@/lib/events';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import VolunteerManager from './VolunteerManager';
@@ -214,10 +214,12 @@ export default async function AdminVolunteersPage({ searchParams }) {
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
   // With no event chosen, the current events only (Lawrence, 4 Nov 2026: an
   // archived or finished event's volunteers stop counting) -- the rule every
-  // staff page uses. An older event is one pick away under "Other events".
-  const shownGroups = eventFilter
-    ? groups.filter((g) => g.event.id === eventFilter)
-    : groups.filter((g) => g.event.id === 'none' || isCurrentEventRow(g.event));
+  // staff page uses. An older event is one pick away under "Other events",
+  // and All / All (archived) are scopes (eventInScope, 4 Nov 2026).
+  // Volunteers with no event show under All (current) and All.
+  const shownGroups = groups.filter((g) =>
+    g.event.id === 'none' ? !eventFilter || eventFilter === SCOPE_ALL : eventInScope(g.event, eventFilter)
+  );
 
   return (
     <div>

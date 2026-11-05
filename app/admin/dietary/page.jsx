@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow } from '@/lib/events';
+import { isCurrentEventRow, eventInScope, isEventScope } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import { allergyPill } from '@/lib/format';
 import { allergySummary } from '@/lib/support';
@@ -76,7 +76,8 @@ export default async function DietaryPage({ searchParams }) {
   // event this page OPENS on is always a current one.
   const isCurrent = isCurrentEventRow;
   const visibleEvents = (events ?? []).filter((ev) => {
-    if (eventFilter) return ev.id === eventFilter;
+    // One event, or All / All (archived) from the dropdown (eventInScope).
+    if (eventFilter) return eventInScope(ev, eventFilter);
     return showPast || isCurrent(ev);
   });
   const pastCount = (events ?? []).filter((ev) => !isCurrent(ev)).length;
@@ -99,7 +100,7 @@ export default async function DietaryPage({ searchParams }) {
             className="btn-outline py-2! text-sm"
           >
             Kitchen list (no names)
-            {eventFilter && <span className="font-normal"> — this event</span>}
+            {eventFilter && !isEventScope(eventFilter) && <span className="font-normal"> — this event</span>}
           </a>
           {/* With names and severity, grouped by allergen (Ellen, 15 Oct
               2026): for the cook and the nurse, not the kitchen door. */}

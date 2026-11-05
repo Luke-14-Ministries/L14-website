@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import BackLink from '@/components/BackLink';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow } from '@/lib/events';
+import { isCurrentEventRow, eventInScope, eventScopeHeading } from '@/lib/events';
 import { allergenWords } from '@/lib/support';
 import PrintButton from '@/components/PrintButton';
 
@@ -58,7 +58,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
   // The same window the Dietary page uses, so "current" means the same thing.
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
   const isCurrent = isCurrentEventRow;
-  const shownEvents = (events ?? []).filter((ev) => (eventFilter ? ev.id === eventFilter : isCurrent(ev)));
+  const shownEvents = (events ?? []).filter((ev) => (eventFilter ? eventInScope(ev, eventFilter) : isCurrent(ev)));
   const shownIds = new Set(shownEvents.map((e) => e.id));
 
   // event id -> allergen word -> [{ name, role, household, severity }]
@@ -109,7 +109,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
         is the one to pin in the kitchen.
       </p>
       <p className="mb-6 text-sm font-semibold">
-        {eventFilter ? shownEvents[0]?.name ?? 'Selected event' : 'Current and upcoming events'}
+        {eventScopeHeading(eventFilter, shownEvents[0]?.name)}
       </p>
 
       {shownEvents.map((ev) => {

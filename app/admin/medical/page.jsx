@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow, staffAssigns } from '@/lib/events';
+import { isCurrentEventRow, eventInScope, staffAssigns } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 
 export const metadata = { title: 'Medical & Support — Staff Admin' };
@@ -80,7 +80,8 @@ export default async function MedicalPage({ searchParams }) {
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
   const q = typeof params?.q === 'string' ? params.q.trim().toLowerCase() : '';
   const visibleEvents = (events ?? []).map(withMedicalContact).filter((ev) => {
-    if (eventFilter) return ev.id === eventFilter;
+    // One event, or All / All (archived) from the dropdown (eventInScope).
+    if (eventFilter) return eventInScope(ev, eventFilter);
     return isCurrentEventRow(ev);
   });
   const matchesQ = (row) =>

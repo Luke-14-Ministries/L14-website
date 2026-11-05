@@ -4,7 +4,7 @@
 // (newest submissions first by default); CSV and print links that carry the
 // active filters so the export matches the screen.
 
-import { shortEventName, dayInMorristown } from '@/lib/events';
+import { shortEventName, dayInMorristown, eventInScope, isEventScope } from '@/lib/events';
 import { useMemo, useState } from 'react';
 import EventFilter from '@/components/EventFilter';
 import { STATUS_LABEL, statusPill } from '@/lib/format';
@@ -84,25 +84,38 @@ export default function RosterTable({ events, rows, programs = [] }) {
     );
   }
 
-  // "All events" leaves archived ones out (Lawrence, 4 Nov 2026: "that's a
-  // lot of the point of archiving"). An archived event is still one pick
-  // away in the event dropdown, under "Other events". The print view and the
-  // CSV follow the same rule.
-  const archivedIds = useMemo(
-    () => new Set(events.filter((e) => e.archivedAt ?? e.archived_at).map((e) => e.id)),
+  // The event dropdown's three scopes (Lawrence, 4 Nov 2026): All, All
+  // (current) -- the default, current and upcoming events, never an archived
+  // one ("that's a lot of the point of archiving") -- and All (archived).
+  // One event is a pick away under "Other events". eventInScope() is the
+  // one rule (lib/events.js); the print view and the CSV use it too. It
+  // reads database-shaped rows, so the events are put back in that shape.
+  const eventById = useMemo(
+    () =>
+      new Map(
+        events.map((e) => [
+          e.id,
+          {
+            id: e.id,
+            starts_on: e.startsOn ?? e.starts_on ?? null,
+            ends_on: e.endsOn ?? e.ends_on ?? null,
+            archived_at: e.archivedAt ?? e.archived_at ?? null,
+          },
+        ])
+      ),
     [events]
   );
   const filtered = useMemo(
     () =>
       rows.filter(
         (r) =>
-          (fEvent ? r.eventId === fEvent : !archivedIds.has(r.eventId)) &&
+          eventInScope(eventById.get(r.eventId) ?? null, fEvent) &&
           (!fRole || r.role === fRole) &&
           (!fProgram ||
             (fProgram === '~~none~~' ? !r.programId : r.programId === fProgram)) &&
           (!fStatus || r.status === fStatus)
       ),
-    [rows, fEvent, fRole, fProgram, fStatus, archivedIds]
+    [rows, fEvent, fRole, fProgram, fStatus, eventById]
   );
 
   const sorted = useMemo(() => {
@@ -129,8 +142,11 @@ export default function RosterTable({ events, rows, programs = [] }) {
   const csvHref = `/admin/exports/rosters${qs ? `?${qs}` : ''}`;
   const printHref = `/admin/rosters/print${qs ? `?${qs}` : ''}`;
   // The photographer's list (26 Oct 2026): one event's "no photos" people,
-  // printable, with faces for Sensitive read. Carries the chosen event.
-  const photosHref = `/admin/rosters/photos/${fEvent ? `?event=${fEvent}` : ''}`;
+  // printable, with faces for Sensitive read. Carries the chosen event (one
+  // event, never a scope -- the list is per event).
+  const photosHref = `/admin/rosters/photos/${fEvent && !isEventScope(fEvent) ? `?event=${fEvent}` : ''}`;
+  // The Event column is for a list that spans events: a scope, or none.
+  const manyEvents = !fEvent || isEventScope(fEvent);
 
   const families = new Set(filtered.map((r) => r.registrationId)).size;
   const eventName = (id) => events.find((e) => e.id === id)?.name ?? '';
@@ -200,7 +216,6 @@ export default function RosterTable({ events, rows, programs = [] }) {
           }))}
           selected={fEvent || null}
           allowAll
-          allLabel="All events (not archived)"
           onSelect={(id) => setFEvent(id)}
           hideLabel
           className="w-full sm:w-72"
@@ -358,7 +373,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                     )}
                   </th>
                 ))}
-                {!fEvent && <th className="px-4 py-2 font-semibold">Event</th>}
+                {manyEvents && <th className="px-4 py-2 font-semibold">Event</th>}
               </tr>
             </thead>
             <tbody>
@@ -513,7 +528,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                     )}
                   </td>
                   <td className="px-4 py-2 text-neutral-600">{r.submitted ? dayInMorristown(r.submitted) : '—'}</td>
-                  {!fEvent && (
+                  {manyEvents && (
                     <td className="px-4 py-2 text-neutral-600 whitespace-nowrap" title={eventName(r.eventId)}>
                       {shortEventName(eventName(r.eventId))}
                     </td>

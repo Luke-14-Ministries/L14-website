@@ -25,10 +25,11 @@ function Showing({ result, filters }) {
   const { emails, total, capped, windowDays } = result;
   const filtered = hasEmailFilters(filters);
   let text;
+  // Nothing chosen is All (current): emails about the current events.
   if (!filtered) {
     text = capped
-      ? `Showing the newest ${emails.length} of ${plural(total, 'email', 'emails')} from the past ${windowDays} days.`
-      : `Showing the last ${plural(total, 'email', 'emails')} (the past ${windowDays} days).`;
+      ? `Showing the newest ${emails.length} of ${plural(total, 'email', 'emails')} about current events from the past ${windowDays} days.`
+      : `Showing the last ${plural(total, 'email', 'emails')} about current events (the past ${windowDays} days).`;
   } else {
     text = `${plural(total, 'email matches', 'emails match')}${filters.q ? ` ‘${filters.q}’` : ''}`;
     if (windowDays) text += ` in the past ${windowDays} days`;
@@ -90,13 +91,13 @@ export default function EmailsSentSection({ result, byEvent, filters, eventOptio
           </label>
           {/* The event dropdown every staff page uses (4 Nov 2026), as a
               field of this form: it fills a hidden sent_event and Apply
-              sends it with the rest. */}
+              sends it with the rest. All / All (current) / All (archived)
+              as everywhere; an email with no registration is under All. */}
           <EventFilter
             events={eventOptions}
             selected={filters.eventId || null}
             name="sent_event"
             allowAll
-            allLabel="All events"
             className="w-full sm:w-64"
           />
           <label className="block">
@@ -141,7 +142,7 @@ export default function EmailsSentSection({ result, byEvent, filters, eventOptio
         <EmailSends
           byEvent={byEvent}
           empty={
-            hasEmailFilters(filters) ? 'No emails match these filters.' : `Nothing sent in the past ${result.windowDays} days.`
+            hasEmailFilters(filters) ? 'No emails match these filters.' : `Nothing sent about current events in the past ${result.windowDays} days.`
           }
         />
       </FoldCard>

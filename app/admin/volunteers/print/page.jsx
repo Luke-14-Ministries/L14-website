@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { clearanceMark, isMinor } from '@/lib/format';
-import { todayInMorristown, isCurrentEventRow } from '@/lib/events';
+import { todayInMorristown, eventInScope, isEventScope } from '@/lib/events';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
@@ -64,7 +64,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
 
   const vols = [];
   for (const r of regs ?? []) {
-    if (eventFilter && r.event_id !== eventFilter) continue;
+    if (eventFilter && !isEventScope(eventFilter) && r.event_id !== eventFilter) continue;
     for (const p of r.registration_participants ?? []) {
       if (p.camp_role !== 'volunteer' || p.status === 'cancelled') continue;
       vols.push({ participantId: p.id, eventId: r.event_id, status: p.status, person: p.people, household: r.households });
@@ -99,8 +99,9 @@ export default async function VolunteerPrintPage({ searchParams }) {
   };
 
   const groups = (events ?? [])
-    // No event chosen: the current events, as on the Volunteers page.
-    .filter((ev) => (eventFilter ? ev.id === eventFilter : isCurrentEventRow(ev)))
+    // No event chosen: the current events, as on the Volunteers page; one
+    // event, or All / All (archived), as chosen there (eventInScope).
+    .filter((ev) => eventInScope(ev, eventFilter))
     .map((ev) => ({
       event: ev,
       rows: vols

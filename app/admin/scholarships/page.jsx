@@ -4,6 +4,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import ScholarshipReview from './ScholarshipReview';
 import EventFilter from '@/components/EventFilter';
+import { eventInScope, isEventScope } from '@/lib/events';
 
 export const metadata = { title: 'Scholarship Requests — Staff Admin' };
 
@@ -56,7 +57,7 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
          registrations!inner (
            id,
            households ( display_name ),
-           events ( id, name, starts_on, archived_at )
+           events ( id, name, starts_on, ends_on, archived_at )
          )
        )`
     )
@@ -69,20 +70,22 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
   // empty queue, so it throws.
   if (error) throw new Error(`Scholarship requests: ${error.message}`);
 
-  // One event, chosen in the searchable filter (Lawrence, 4 Nov 2026); with
-  // none chosen, every event but the archived ones -- on both tabs, as the
-  // Roster does. An archived event's requests are one pick away.
+  // One event, chosen in the searchable filter (Lawrence, 4 Nov 2026), or one
+  // of the three "all" scopes (eventInScope, lib/events.js) -- on both tabs.
+  // None chosen is All (current): current and upcoming events, never an
+  // archived one. Until the scopes came (later on 4 Nov) none chosen meant
+  // every event but the archived ones; that is "All" less the archived now,
+  // and past requests are one pick away under All.
   const { data: eventRows, error: eventsError } = await supabase
     .from('events')
     .select('id, name, starts_on, ends_on, archived_at')
     .order('starts_on', { ascending: false });
   if (eventsError) throw new Error(`Events: ${eventsError.message}`);
   const eventFilter =
-    typeof params?.event === 'string' && (eventRows ?? []).some((e) => e.id === params.event) ? params.event : '';
-  const inScope = (r) => {
-    const ev = r.registration_participants?.registrations?.events;
-    return eventFilter ? ev?.id === eventFilter : !ev?.archived_at;
-  };
+    typeof params?.event === 'string' && (isEventScope(params.event) || (eventRows ?? []).some((e) => e.id === params.event))
+      ? params.event
+      : '';
+  const inScope = (r) => eventInScope(r.registration_participants?.registrations?.events, eventFilter);
   const all = (rows ?? []).filter(inScope);
   const open = all.filter(
     (r) => r.status === 'requested'
@@ -164,7 +167,6 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
           basePath="/admin/scholarships"
           extraParams={{ settled: showSettled ? '1' : '' }}
           allowAll
-          allLabel="All events (not archived)"
           className="w-full"
         />
       </div>

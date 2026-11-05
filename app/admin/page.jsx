@@ -1,6 +1,6 @@
 import { ADMIN_NAV } from '@/lib/adminNav';
 import Link from 'next/link';
-import { isCurrentEventRow } from '@/lib/events';
+import { isCurrentEventRow, eventInScope, isEventScope, SCOPE_ALL } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -73,7 +73,6 @@ function FailingPlansCard({ plans }) {
 
 export default async function AdminOverview({ searchParams }) {
   const params = await searchParams;
-  const showPast = params?.past === '1';
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/');
   // The Overview is registration numbers (4 Nov 2026). Anyone without
@@ -86,21 +85,30 @@ export default async function AdminOverview({ searchParams }) {
 
   const supabase = await createClient();
 
-  // A choice between the current events (Lawrence, 4 Nov 2026: "Week 1 vs
-  // Week 2"): ?event= narrows the headline numbers, the review list and the
-  // plan and reply cards to one event; none means every current event. The
-  // By-event table always shows them all, the chosen one highlighted. First
-  // pills; the same day, the shared event dropdown every page uses, for one
-  // control everywhere. Only current events are offered here.
+  // The event dropdown (Lawrence, 4 Nov 2026: "Week 1 vs Week 2"; first
+  // pills, then the shared dropdown every page uses): ?event= narrows the
+  // headline numbers, the review list and the plan and reply cards to one
+  // event or one of the three scopes every page shares -- All, All (current)
+  // (none chosen, the default), All (archived) (eventInScope, lib/events.js).
+  // The By-event table follows the scope; with one event chosen it keeps
+  // every current event, the chosen one highlighted. The scopes replaced the
+  // table's own "Show past events" link the same day.
   const { data: eventRows, error: eventRowsError } = await supabase
     .from('events')
     .select('id, name, starts_on, ends_on, archived_at, capacity')
     .order('starts_on');
   if (eventRowsError) throw new Error(`Events: ${eventRowsError.message}`);
-  const currentEvents = (eventRows ?? []).filter((e) => isCurrentEventRow(e));
-  const chosenEvent =
-    typeof params?.event === 'string' && currentEvents.some((e) => e.id === params.event) ? params.event : null;
-  const inScope = (ev) => (ev ? isCurrentEventRow(ev) && (!chosenEvent || ev.id === chosenEvent) : false);
+  const scope =
+    typeof params?.event === 'string' &&
+    (isEventScope(params.event) || (eventRows ?? []).some((e) => e.id === params.event))
+      ? params.event
+      : '';
+  // One event's id, when one is chosen rather than a scope.
+  const chosenEvent = scope && !isEventScope(scope) ? scope : null;
+  const inScope = (ev) => eventInScope(ev, scope);
+  // The By-event table: the scope, or with one event chosen, every current
+  // event plus that one (highlighted).
+  const inTable = (ev) => eventInScope(ev, chosenEvent ? '' : scope) || (chosenEvent && ev?.id === chosenEvent);
 
   // As staff, row-level security returns the whole ministry, not one household.
   // Stopped payment plans (22 Oct 2026): money, so only for Payments read --
@@ -142,9 +150,9 @@ export default async function AdminOverview({ searchParams }) {
     regById.set(r.id, {
       household: r.households?.display_name ?? 'Household',
       event: r.events?.name ?? 'Unassigned',
-      // The headline numbers and the review list are the CURRENT events only
-      // (Lawrence, 4 Nov 2026: an archived test event was still counted) --
-      // the rule every staff page uses. The By-event table keeps the past.
+      // The headline numbers and the review list follow the scope: by
+      // default the CURRENT events only (Lawrence, 4 Nov 2026: an archived
+      // test event was still counted) -- the rule every staff page uses.
       current: inScope(r.events),
     });
     if (r.events?.id) eventMeta.set(r.events.name, r.events);
@@ -225,8 +233,11 @@ export default async function AdminOverview({ searchParams }) {
   // in By event (Lawrence, 4 Nov 2026: "total camp count relative to
   // capacity ... overview near top").
   const capacityOf = new Map((eventRows ?? []).map((e) => [e.name, e.capacity ?? null]));
-  const placesLine = currentEvents
-    .filter((e) => !chosenEvent || e.id === chosenEvent)
+  // Places are a question about events still filling: the current ones in
+  // scope, or the one event chosen -- not a line for every past event under
+  // All, nor any under All (archived).
+  const placesLine = (eventRows ?? [])
+    .filter((e) => (chosenEvent ? e.id === chosenEvent : inScope(e) && isCurrentEventRow(e)))
     .map((e) => {
       const r = byEvent.get(e.name) ?? { confirmed: 0, pending: 0 };
       const over = e.capacity != null && r.confirmed + r.pending > e.capacity;
@@ -255,7 +266,8 @@ export default async function AdminOverview({ searchParams }) {
       .is('events.archived_at', null)
       .order('family_replied_at', { ascending: true });
     if (replyError) throw new Error(`Family replies: ${replyError.message}`);
-    replies = (replyRegs ?? []).filter((r) => !chosenEvent || r.events?.id === chosenEvent).map((r) => ({
+    // Every non-archived event's unless one event or a scope is chosen.
+    replies = (replyRegs ?? []).filter((r) => !scope || inScope(r.events)).map((r) => ({
       id: r.id,
       family: r.households?.display_name ?? 'Household',
       event: r.events?.name ?? '',
@@ -287,14 +299,18 @@ export default async function AdminOverview({ searchParams }) {
     <div>
       <h2 className="text-xl font-bold mb-4">Overview</h2>
 
-      {currentEvents.length > 1 && (
-        <EventFilter
-          events={currentEvents.map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on }))}
-          selected={chosenEvent}
-          basePath="/admin"
-          allowAll
-        />
-      )}
+      <EventFilter
+        events={(eventRows ?? []).map((e) => ({
+          id: e.id,
+          name: e.name,
+          startsOn: e.starts_on,
+          endsOn: e.ends_on,
+          archivedAt: e.archived_at,
+        }))}
+        selected={scope || null}
+        basePath="/admin"
+        allowAll
+      />
 
       {placesLine.length > 0 && (
         <ul className="mb-4 space-y-0.5 text-sm text-neutral-700">
@@ -411,30 +427,24 @@ export default async function AdminOverview({ searchParams }) {
             View full rosters
           </Link>
         </div>
-        {/* Every CURRENT event at once (16 Oct 2026): the table is the point
-            of this section, so the event dropdown at the top of the page (4 Nov
-            2026) highlights a row here rather than hiding the others. Past
-            events are one link away. */}
+        {/* Every event in the scope at once (16 Oct 2026: every CURRENT
+            event): the table is the point of this section, so one event chosen
+            at the top of the page (4 Nov 2026) highlights a row here rather
+            than hiding the others. Past and archived events are the scopes
+            All and All (archived), which replaced a "Show past events" link
+            here. A registration with no event shows under All. */}
         {(() => {
-          const rowsAll = [...byEvent.entries()];
-          const isCur = (name) => {
-            const m = eventMeta.get(name);
-            return m ? isCurrentEventRow(m) : false;
-          };
-          const shownRows = showPast ? rowsAll : rowsAll.filter(([name]) => isCur(name));
-          const pastCount = rowsAll.length - rowsAll.filter(([name]) => isCur(name)).length;
+          const shownRows = [...byEvent.entries()].filter(([name]) =>
+            eventMeta.has(name) ? inTable(eventMeta.get(name)) : scope === SCOPE_ALL
+          );
           return (
             <>
               {byEvent.size === 0 ? (
                 <p className="text-neutral-500">No sign-ups yet.</p>
               ) : shownRows.length === 0 ? (
                 <p className="text-neutral-500">
-                  No current events have sign-ups.{' '}
-                  {pastCount > 0 && (
-                    <Link href="/admin?past=1" className="text-brand underline">
-                      Show past events ({pastCount})
-                    </Link>
-                  )}
+                  No sign-ups at the events chosen. <em>All</em>, in the event list above, shows every
+                  event.
                 </p>
               ) : (
           <div className="overflow-x-auto">
@@ -472,20 +482,6 @@ export default async function AdminOverview({ searchParams }) {
                 ))}
               </tbody>
             </table>
-            {pastCount > 0 && !showPast && (
-              <p className="mt-2 text-xs text-neutral-500">
-                <Link href="/admin?past=1" className="underline">
-                  Show past events ({pastCount})
-                </Link>
-              </p>
-            )}
-            {showPast && (
-              <p className="mt-2 text-xs text-neutral-500">
-                <Link href="/admin" className="underline">
-                  Back to current events
-                </Link>
-              </p>
-            )}
           </div>
               )}
             </>

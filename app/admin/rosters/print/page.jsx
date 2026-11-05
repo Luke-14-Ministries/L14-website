@@ -5,6 +5,7 @@ import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
 import StatusMark from '@/components/StatusMark';
 import { STATUS_LABEL } from '@/lib/format';
+import { eventInScope } from '@/lib/events';
 
 export const metadata = { title: 'Print Rosters — Staff Admin' };
 
@@ -56,11 +57,12 @@ export default async function PrintRostersPage({ searchParams }) {
   const consentOf = new Map();
   for (const c of consents ?? []) consentOf.set(`${c.person_id}:${c.kind}`, c.granted);
 
-  // No event chosen: every event but the archived ones, as on screen.
-  const archived = new Set((events ?? []).filter((e) => e.archived_at).map((e) => e.id));
+  // The same scope as on screen (eventInScope, 4 Nov 2026): one event, All,
+  // All (archived), or none chosen -- All (current).
+  const eventById = new Map((events ?? []).map((e) => [e.id, e]));
   const byEvent = new Map();
   for (const r of regs ?? []) {
-    if (fEvent ? r.event_id !== fEvent : archived.has(r.event_id)) continue;
+    if (!eventInScope(eventById.get(r.event_id) ?? null, fEvent)) continue;
     for (const p of r.registration_participants ?? []) {
       if (p.status === 'cancelled') continue;
       if (fRole && p.camp_role !== fRole) continue;

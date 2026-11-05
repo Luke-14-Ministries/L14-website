@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { allergenWords } from '@/lib/support';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow } from '@/lib/events';
+import { isCurrentEventRow, eventInScope, eventScopeHeading } from '@/lib/events';
 import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
 
@@ -76,7 +76,7 @@ export default async function KitchenListPage({ searchParams }) {
   const showPast = params?.past === '1';
   const isCurrent = isCurrentEventRow;
   const shownEvents = (events ?? []).filter((ev) => {
-    if (eventFilter) return ev.id === eventFilter;
+    if (eventFilter) return eventInScope(ev, eventFilter);
     return showPast || isCurrent(ev);
   });
   const shownIds = new Set(shownEvents.map((e) => e.id));
@@ -127,7 +127,7 @@ export default async function KitchenListPage({ searchParams }) {
           filter is invisible once the paper leaves the screen. */}
       <p className="mb-6 text-sm font-semibold">
         {eventFilter
-          ? shownEvents[0]?.name ?? 'Selected event'
+          ? eventScopeHeading(eventFilter, shownEvents[0]?.name)
           : showPast
             ? 'All events, including past ones'
             : 'Current and upcoming events'}

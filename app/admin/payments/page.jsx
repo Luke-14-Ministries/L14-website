@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { balanceDueOn, formatDueDateShort, todayInMorristown, dayInMorristown, inPaymentsScope, eventNameWithYear } from '@/lib/events';
+import { balanceDueOn, formatDueDateShort, todayInMorristown, dayInMorristown, inPaymentsScope, eventNameWithYear, eventScopeLabel } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import RecordPaymentForm from './RecordPaymentForm';
 import FoldCard from '@/components/FoldCard';
@@ -110,24 +110,26 @@ export default async function AdminPaymentsPage({ searchParams }) {
 
   // Event scope. The dashboard is a quick view of the events being worked
   // on, not a wall of history — old years stay one pick away in the event
-  // dropdown, under "All events — full history" or by name. Scope values:
-  //   ''         default: current events -- isCurrentEventRow(), the rule
+  // dropdown, under "All" or by name. Scope values:
+  //   ''         All (current), the default -- isCurrentEventRow(), the rule
   //              every staff page uses (to two weeks after an event ends, a
   //              year ahead), so camp weeks open for registration show
+  //   'all'      All: full history, archived included
+  //   'archived' All (archived): archived events only
   //   'upcoming' starts within 90 days or currently running
   //   'recent'   ended within the last 90 days
-  //   'all'      full history
   //   <uuid>     one specific event
+  // The first three are every staff page's (EVENT_SCOPES, lib/events.js,
+  // 4 Nov 2026); the 90-day windows are this page's own.
   // An archived event is in none of the time scopes (inPaymentsScope, built
   // on isCurrentEventRow -- lib/events.js); 'all' and a chosen event keep it.
   const inScope = (ev) => inPaymentsScope(ev, eventFilter);
   const SCOPE_LABEL = {
-    '': 'All current events',
     upcoming: 'Upcoming events (next 90 days)',
     recent: 'Recent events (last 90 days)',
-    all: 'All events — full history',
   };
-  const scopeLabel = SCOPE_LABEL[eventFilter] ?? evById.get(eventFilter)?.name ?? 'Selected event';
+  const scopeLabel =
+    eventScopeLabel(eventFilter) ?? SCOPE_LABEL[eventFilter] ?? evById.get(eventFilter)?.name ?? 'Selected event';
 
   const events = new Map();
   for (const b of balances ?? []) {
@@ -269,10 +271,11 @@ export default async function AdminPaymentsPage({ searchParams }) {
       {/* The one event dropdown every staff page uses. It governs the cards,
           fee covers, the balances table, and the Balances and Payments CSVs
           (not the QuickBooks CSV, which is a date range of money received).
-          Default: current events. Until 4 Nov 2026 a second "Showing … Apply"
+          Default: All (current). Until 4 Nov 2026 a second "Showing … Apply"
           dropdown sat under the event pills offering the 90-day windows and
           full history (Lawrence: pills and a dropdown were redundant); those
-          scopes are pinned options here now, on the same ?event= parameter. */}
+          are pinned options here now -- full history is the shared "All" --
+          on the same ?event= parameter. */}
       <EventFilter
         events={eventOptions.map((ev) => ({
           id: ev.id,
@@ -285,8 +288,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
         basePath="/admin/payments"
         extraParams={{ paystate }}
         allowAll
-        allLabel={SCOPE_LABEL['']}
-        scopes={['upcoming', 'recent', 'all'].map((value) => ({ value, label: SCOPE_LABEL[value] }))}
+        scopes={Object.entries(SCOPE_LABEL).map(([value, label]) => ({ value, label }))}
       />
 
       <h3 className="font-semibold text-neutral-700 mb-2">
@@ -294,7 +296,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       </h3>
       {events.size === 0 && (
         <p className="text-sm text-neutral-500 mb-8">
-          No events in this window. Choose another in the event list above — &ldquo;All events&rdquo; shows the
+          No events in this window. Choose another in the event list above — &ldquo;All&rdquo; shows the
           full history.
         </p>
       )}

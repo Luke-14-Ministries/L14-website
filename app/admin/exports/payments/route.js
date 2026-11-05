@@ -117,7 +117,7 @@ export async function GET(request) {
      'Paid by', 'Payer email', 'Stripe reference', 'Note'],
   ];
   // Same event scope as the Event Payments page: '' = current events
-  // (isCurrentEventRow), 'upcoming', 'recent', 'all', or one event's id --
+  // (isCurrentEventRow), 'upcoming', 'recent', 'all', 'archived', or one event's id --
   // one function for both (inPaymentsScope, lib/events.js); archived events
   // are in no time scope.
   const inScope = (ev) => inPaymentsScope(ev, eventFilter);

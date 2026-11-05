@@ -4,7 +4,7 @@
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { csvCell } from '@/lib/csv';
-import { todayInMorristown } from '@/lib/events';
+import { todayInMorristown, eventInScope } from '@/lib/events';
 
 // Quoting and spreadsheet-formula safety: lib/csv.js.
 const esc = csvCell;
@@ -27,7 +27,7 @@ export async function GET(request) {
     supabase
       .from('registrations')
       .select(
-        `id, event_id, family_notes, events ( name, archived_at ),
+        `id, event_id, family_notes, events ( id, name, starts_on, ends_on, archived_at ),
          households ( display_name, email, phone, how_did_you_hear,
                       address_line1, city, state, postal_code ),
          registration_participants ( camp_role, status, submitted_at, created_at, checked_in_at,
@@ -79,8 +79,9 @@ export async function GET(request) {
      'Agreements signed', 'How they heard', 'Note from family', 'Fee', 'Submitted', 'Checked in'],
   ];
   for (const r of regs ?? []) {
-    // No event chosen: every event but the archived ones, as on screen.
-    if (fEvent ? r.event_id !== fEvent : r.events?.archived_at) continue;
+    // The same scope as on screen (eventInScope, 4 Nov 2026): one event, All,
+    // All (archived), or none chosen -- All (current).
+    if (!eventInScope(r.events ?? null, fEvent)) continue;
     for (const p of r.registration_participants ?? []) {
       if (fRole && p.camp_role !== fRole) continue;
       if (fStatus && p.status !== fStatus) continue;

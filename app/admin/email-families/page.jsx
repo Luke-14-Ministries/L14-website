@@ -93,15 +93,19 @@ export default async function EmailFamiliesPage({ searchParams }) {
   // "N emails sent" card is gone (26 Oct 2026) -- filtered by the sent_*
   // and q params, grouped by send and by event (27 Oct 2026; lib/emailLog.js).
   const sentFilters = emailFiltersFrom(params);
-  const sent = await searchEmailLog(supabase, sentFilters);
+  const sent = await searchEmailLog(supabase, sentFilters, events ?? []);
   const eventNames = new Map((events ?? []).map((e) => [e.id, e.name]));
   const sentByEvent = groupSendsByEvent(groupEmailsBySend(sent.emails), (id) => eventNames.get(id) ?? null);
-  // The event filter offers the current events; one chosen from a link to an
-  // older event stays in the list, as the send form's does.
-  const sentEventOptions = [
-    ...current,
-    ...(events ?? []).filter((e) => e.id === sentFilters.eventId && !current.some((c) => c.id === e.id)),
-  ].map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }));
+  // The sent list's event dropdown offers every event (a record: an older
+  // event's emails are one pick away under "Other events") and the shared
+  // scopes, All (current) the default (4 Nov 2026).
+  const sentEventOptions = (events ?? []).map((e) => ({
+    id: e.id,
+    name: e.name,
+    startsOn: e.starts_on,
+    endsOn: e.ends_on,
+    archivedAt: e.archived_at,
+  }));
 
   // The address the email's Activities link uses, so the preview shows it as
   // the family will see it.
