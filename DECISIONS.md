@@ -4064,3 +4064,11 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     Background screening, Checkr emails each person, the results file is uploaded there. Each
     volunteer's card shows which of those three steps they are at, then the verdict to record; the
     placeholder "Send background-check invitation" button is gone.
+  - **One event control on every staff page: a searchable dropdown** (Lawrence: event pills and a
+    dropdown beside them were redundant). `EventFilter` is now a single searchable box — the page's
+    "All current events" pinned first, then current events soonest first, then *Other events*
+    (past, far-future and archived, newest first, archived ones marked) — typing filters them all.
+    The pills, the *Other events (n)* button, Event Payments' second *Showing … Apply* dropdown
+    (its 90-day windows and full history are now pinned options in the one dropdown), and
+    Check-In's dated pills and the Overview's pills are gone; Email Families' two event `<select>`s
+    use it too. Default events and `?event=` URLs are unchanged.

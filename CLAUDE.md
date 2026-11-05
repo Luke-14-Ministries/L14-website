@@ -156,7 +156,7 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
 
 | Question | Use |
 |---|---|
-| Is this event current? (to two weeks after it ends, a year ahead, never archived) | `isCurrentEventRow()` in `lib/events.js`; pages use the shared `EventFilter` (Check-In's dated pills, Rosters' search-only and the Overview's jump pills are deliberate exceptions) |
+| Is this event current? (to two weeks after it ends, a year ahead, never archived) | `isCurrentEventRow()` in `lib/events.js`; every page that picks an event uses the shared `EventFilter` — one searchable dropdown (current events, then *Other events*), no pills and no second dropdown, no exceptions (Lawrence, 4 Nov 2026) |
 | When is the balance due? | `balanceDueOn()` (`lib/events.js`) / `balance_due_on()` (SQL) — both read the event's column |
 | How is a stored timestamp printed? (ministry time, never the raw UTC string) | `whenInMorristown()` (a moment) / `dayInMorristown()` (a day) in `lib/events.js` |
 | Agreement text for an event | `agreementText()` in `lib/events.js` (fills `{{event}}`) |
