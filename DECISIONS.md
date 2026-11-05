@@ -4102,5 +4102,9 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     *Register* button to `/register/family/?program=<campKey>` appears only while registration is
     open; with no retreat ahead the page says the dates are coming. The CampSite buttons are gone
     (the 2026 retreat, the last on CampSite, is over). The arrival time (6:00 PM) is not a Setup
-    field and stays in the page. A guest sent to log in keeps `?program=`. The banner artwork
-    still carries "Oct. 29 – Nov. 1" in its pixels — new artwork is needed for the next year.
+    field and stays in the page. A guest sent to log in keeps `?program=`. **The banner's dates
+    follow Setup too:** the artwork is the old banner with "Oct. 29 - Nov. 1" painted out
+    (`adult_adventure_banner_no_dates.jpeg`; the original kept), and the page sets the retreat's
+    dates over the blank band in the artwork's gold (Rubik 900 through `next/font`, self-hosted at
+    build — no package added), placed and sized in proportion to the image. No retreat published,
+    an empty band.

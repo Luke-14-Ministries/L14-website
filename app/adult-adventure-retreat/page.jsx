@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Rubik } from 'next/font/google';
 import { asset } from '@/lib/site';
 import { getRetreatFacts } from '@/lib/campFacts';
 import { formatDueDate } from '@/lib/events';
@@ -25,6 +26,26 @@ function shortRange(fromIso, toIso) {
   return fromIso.slice(5, 7) === toIso.slice(5, 7)
     ? `${day(fromIso, { month: 'short', day: 'numeric' })}–${day(toIso, { day: 'numeric' })}`
     : `${day(fromIso, { month: 'short', day: 'numeric' })} – ${day(toIso, { month: 'short', day: 'numeric' })}`;
+}
+
+// The banner's dates (Lawrence, 5 Nov 2026: "a dynamically visual version
+// where dates appear when the event gets published"). The artwork is the old
+// banner with its "Oct. 29 - Nov. 1" painted out (adult_adventure_banner_no_
+// dates.jpeg; the original is adult_adventure_screen_snip.jpeg), and the page
+// sets the dates from Setup over the blank band: same gold, a heavy rounded
+// face close to the artwork's, placed and sized in proportion to the image
+// (cqw), so it sits right at any width. No retreat published, no dates: the
+// band is simply empty.
+const bannerFont = Rubik({ subsets: ['latin'], weight: '900', display: 'swap' });
+const BANNER_GOLD = '#FCB316';
+// AP style, as the artwork had it: "Oct.", "Nov.", but "May", "June", "July".
+const AP_MONTHS = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+function bannerDates(fromIso, toIso) {
+  const md = (iso) => [AP_MONTHS[Number(iso.slice(5, 7)) - 1], Number(iso.slice(8, 10))];
+  const [m1, d1] = md(fromIso);
+  if (!toIso || toIso === fromIso) return `${m1} ${d1}`;
+  const [m2, d2] = md(toIso);
+  return m1 === m2 ? `${m1} ${d1} – ${d2}` : `${m1} ${d1} – ${m2} ${d2}`;
 }
 
 // One line beside the button: what a visitor can do today.
@@ -123,15 +144,29 @@ export default async function AdultAdventureRetreatPage() {
             </div>
 
             {/* Decorative: everything it says is also said in text beside it,
-                so it carries an empty alt rather than repeating the page to
-                someone using a screen reader. Sized up and centre-aligned
-                with the text block (24 Aug feedback) so the two read as one
-                composition rather than a picture stapled to a paragraph. */}
-            <img
-              src={asset('/images/adult_adventure_screen_snip.jpeg')}
-              alt=""
-              className="w-full h-auto self-start rounded-lg shadow-xl lg:scale-105 lg:origin-left"
-            />
+                so it carries an empty alt (and the dates aria-hidden) rather
+                than repeating the page to someone using a screen reader.
+                Sized up and centre-aligned with the text block (24 Aug
+                feedback) so the two read as one composition rather than a
+                picture stapled to a paragraph. */}
+            <div className="@container relative self-start lg:scale-105 lg:origin-left">
+              <img
+                src={asset('/images/adult_adventure_banner_no_dates.jpeg')}
+                alt=""
+                className="block w-full h-auto rounded-lg shadow-xl"
+              />
+              {retreat?.startsOn && (
+                <span
+                  aria-hidden="true"
+                  // Where the artwork's dates were: centred at 78% across and
+                  // 73% down; 3.7cqw gives their height.
+                  className={`${bannerFont.className} pointer-events-none absolute left-[78%] top-[73%] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[3.7cqw] leading-none`}
+                  style={{ color: BANNER_GOLD }}
+                >
+                  {bannerDates(retreat.startsOn, retreat.endsOn)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </section>
