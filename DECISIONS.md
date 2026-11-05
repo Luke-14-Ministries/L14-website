@@ -4072,3 +4072,12 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     (its 90-day windows and full history are now pinned options in the one dropdown), and
     Check-In's dated pills and the Overview's pills are gone; Email Families' two event `<select>`s
     use it too. Default events and `?event=` URLs are unchanged.
+  - **Every "all" in the event dropdown is three choices** (Lawrence: "'All', 'All (current)' and
+    'All (archived)'"): **All** (`?event=all`, every event, archived included), **All (current)**
+    (no `?event=`, the default: current and upcoming, never archived) and **All (archived)**
+    (`?event=archived`). Same words on every page with an all choice; `EVENT_SCOPES` and
+    `eventInScope()` in `lib/events.js` are the one rule, used by the pages, the roster print and
+    CSV, the payments CSVs and the email log. Rosters and Scholarships, whose default was "every
+    event not archived", now default to current like every other page (past events are under All).
+    The Overview's "Show past events" link is gone (All replaces it). Nav badges and work queues
+    keep counting no archived event.
