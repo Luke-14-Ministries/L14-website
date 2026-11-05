@@ -7,7 +7,7 @@
 // about zip line: "where do we activate things like this? Have to go through
 // you, right now? doesn't seem sensible." It isn't. This is the answer.
 
-import { useId, useState, useTransition } from 'react';
+import { useId, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -27,6 +27,7 @@ import FoldArrow from '@/components/FoldArrow';
 // times of day, and the moment anything converts them a boarding time is an
 // hour out at the dock.
 import { fmtDay, fmtTime, slotLabel } from '@/lib/activitySlots';
+import { unfinishedTimeBox } from '@/lib/timeBoxes';
 
 const input = 'w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm';
 const label = 'block text-xs font-semibold text-neutral-700 mb-0.5';
@@ -796,6 +797,12 @@ export function SlotEditor({ activity, slots = [], event = null }) {
   const [g, setG] = useState(genBlank);
   const setG_ = (k) => (e) => setG((prev) => ({ ...prev, [k]: e.target.value }));
   const [genOpen, setGenOpen] = useState(false);
+  // The four time boxes, so a half-filled one ("02:00 --", no AM/PM) is caught
+  // before sending: its value is empty (unfinishedTimeBox, Ellen 5 Nov 2026).
+  const fromRef = useRef(null);
+  const toRef = useRef(null);
+  const genFromRef = useRef(null);
+  const genToRef = useRef(null);
   // Folded by default, title and sub-title showing what it is for (Lawrence,
   // 26 Oct 2026): most activities never run in sittings.
   const [open, setOpen] = useState(false);
@@ -919,11 +926,11 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">From</span>
-          <input type="time" className={input} value={f.start} onChange={set('start')} />
+          <input ref={fromRef} type="time" className={input} value={f.start} onChange={set('start')} />
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">To</span>
-          <input type="time" className={input} value={f.end} onChange={set('end')} />
+          <input ref={toRef} type="time" className={input} value={f.end} onChange={set('end')} />
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">Places</span>
@@ -956,7 +963,11 @@ export function SlotEditor({ activity, slots = [], event = null }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
-          onClick={() => run(() => createSlot(activity.id, f))}
+          onClick={() => {
+            const unfinished = unfinishedTimeBox([[fromRef.current, 'From'], [toRef.current, 'To']]);
+            if (unfinished) return setError(unfinished);
+            run(() => createSlot(activity.id, f));
+          }}
           disabled={pending}
           className="btn-outline py-1.5! text-sm disabled:opacity-50"
         >
@@ -990,11 +1001,11 @@ export function SlotEditor({ activity, slots = [], event = null }) {
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Starts</span>
-              <input type="time" className={input} value={g.start} onChange={setG_('start')} />
+              <input ref={genFromRef} type="time" className={input} value={g.start} onChange={setG_('start')} />
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Ends</span>
-              <input type="time" className={input} value={g.end} onChange={setG_('end')} />
+              <input ref={genToRef} type="time" className={input} value={g.end} onChange={setG_('end')} />
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Each (mins)</span>
@@ -1033,13 +1044,15 @@ export function SlotEditor({ activity, slots = [], event = null }) {
           )}
 
           <button
-            onClick={() =>
+            onClick={() => {
+              const unfinished = unfinishedTimeBox([[genFromRef.current, 'Starts'], [genToRef.current, 'Ends']]);
+              if (unfinished) return setError(unfinished);
               run(async () => {
                 const res = await generateSlots(activity.id, g);
                 if (res.ok) setG(genBlank);
                 return res;
-              })
-            }
+              });
+            }}
             disabled={pending}
             className="mt-3 btn-primary py-1.5! text-sm disabled:opacity-50"
           >

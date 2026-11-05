@@ -600,7 +600,7 @@ export async function createSlot(activityId, input) {
   const end = String(input?.end ?? '').trim();
   if (!date) return { ok: false, error: 'Which day?' };
   if (!HHMM.test(start) || !HHMM.test(end)) {
-    return { ok: false, error: 'Give a start and end time.' };
+    return { ok: false, error: 'Give a start and end time, each with AM or PM.' };
   }
   if (end <= start) return { ok: false, error: 'The end time is before the start time.' };
 
@@ -686,7 +686,7 @@ export async function generateSlots(activityId, input) {
   const end = String(input?.end ?? '').trim();
   if (!date) return { ok: false, error: 'Which day?' };
   if (!HHMM.test(start) || !HHMM.test(end)) {
-    return { ok: false, error: 'Give a start and an end time for the whole run.' };
+    return { ok: false, error: 'Give a start and an end time for the whole run, each with AM or PM.' };
   }
   if (end <= start) return { ok: false, error: 'The run ends before it starts.' };
 

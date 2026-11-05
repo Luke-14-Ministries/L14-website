@@ -5,12 +5,13 @@
 // staffer in Tennessee and one traveling see the same instant rendered in
 // their own clocks.
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateEventRegistration, updateEventDetails, createEvent, setHiddenFromFamilies } from './actions';
 import { EVENT_TYPE_LABELS } from '@/lib/events';
 import { PLAN_MIN_DAYS } from '@/lib/plans';
 import FoldArrow from '@/components/FoldArrow';
+import { unfinishedTimeBox } from '@/lib/timeBoxes';
 
 const money = (cents) =>
   cents == null ? '—' : `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
@@ -134,6 +135,11 @@ function EventRow({ e }) {
   const [status, setStatus] = useState(savedStatus);
   const [opens, setOpens] = useState(isoToLocal(e.opensAt));
   const [closes, setCloses] = useState(isoToLocal(e.closesAt));
+  // A half-filled box ("01/15/2027 09:00 --", no AM/PM) reads as blank, and
+  // blank is "no limit": published, that is open now. Caught before saving
+  // (unfinishedTimeBox, 5 Nov 2026).
+  const opensRef = useRef(null);
+  const closesRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null); // { ok, message }
   // Each event card folds (Lawrence, 4 Nov 2026), opening by default unless
@@ -208,6 +214,14 @@ function EventRow({ e }) {
   }
 
   function saveAll() {
+    const unfinished = unfinishedTimeBox([
+      [opensRef.current, 'Registration opens'],
+      [closesRef.current, 'Registration closes'],
+    ]);
+    if (unfinished) {
+      setNotice({ ok: false, message: `Nothing saved. ${unfinished}` });
+      return;
+    }
     setBusy(true);
     setNotice(null);
     start(async () => {
@@ -331,6 +345,7 @@ function EventRow({ e }) {
             Registration opens
           </span>
           <input
+            ref={opensRef}
             type="datetime-local"
             value={opens}
             onChange={(ev) => setOpens(ev.target.value)}
@@ -342,6 +357,7 @@ function EventRow({ e }) {
             Registration closes
           </span>
           <input
+            ref={closesRef}
             type="datetime-local"
             value={closes}
             onChange={(ev) => setCloses(ev.target.value)}
