@@ -21,7 +21,7 @@ export default async function RostersPage() {
     { data: regs, error: regsError },
     { data: consents, error: consentsError },
     { data: sigs, error: sigsError },
-    { data: balances, error: balancesError },
+    { data: reviewRows, error: reviewError },
     { data: programs, error: programsError },
   ] =
     await Promise.all([
@@ -51,7 +51,12 @@ export default async function RostersPage() {
     // before a week starts, and "has this family held their places?" was not
     // answerable from it (25 Aug) -- a family of three showing one $50 deposit
     // looked settled.
-    supabase.from('registration_balances').select('registration_id, paid_cents'),
+    // The deposit verdict is registration_review's (0081/0103), the one the
+    // review queue and the registration page use: it caps the deposit at what
+    // is owed, so a full scholarship or a waiver is never "short" (Lawrence,
+    // 4 Nov 2026: Darlene's fully funded week read "Deposit short — $0.00 of
+    // $50.00"). Payments read only; others see no rows and no flag.
+    supabase.from('registration_review').select('registration_id, flags, confirmed_paid_cents, deposit_expected_cents'),
     // E21. The roster knew everything about a person except which program they
     // are in — the one thing a program leader's week is organised around. Read
     // as a small lookup rather than a nested join: PostgREST joins through two
@@ -65,29 +70,24 @@ export default async function RostersPage() {
   if (regsError) throw new Error(`Registrations: ${regsError.message}`);
   if (consentsError) throw new Error(`Consents: ${consentsError.message}`);
   if (sigsError) throw new Error(`Agreement signatures: ${sigsError.message}`);
-  if (balancesError) throw new Error(`Balances: ${balancesError.message}`);
+  if (reviewError) throw new Error(`Deposit review: ${reviewError.message}`);
   if (programsError) throw new Error(`Programs: ${programsError.message}`);
 
   const consentOf = new Map();
   for (const c of consents ?? []) consentOf.set(`${c.person_id}:${c.kind}`, c.granted);
   const signedRegs = new Set((sigs ?? []).map((s) => s.registration_id).filter(Boolean));
-  const paidByReg = new Map((balances ?? []).map((b) => [b.registration_id, b.paid_cents ?? 0]));
-  const depositByEvent = new Map((events ?? []).map((e) => [e.id, e.deposit_cents ?? 0]));
+  const reviewByReg = new Map((reviewRows ?? []).map((b) => [b.registration_id, b]));
 
   const programNameById = new Map((programs ?? []).map((g) => [g.id, g.name]));
 
   const rows = [];
   for (const r of regs ?? []) {
-    // Per REGISTRATION, not per person: the deposit holds places, so three
-    // people coming means three deposits.
-    const live = (r.registration_participants ?? []).filter((p) => p.status !== 'cancelled')
-      .length;
-    const each = depositByEvent.get(r.event_id) ?? 0;
-    const due = each * live;
-    // Only judged by someone who can see payments (0111): the balances view
-    // shows $0 to everyone else, which would flag every family as short.
-    const paid = paidByReg.get(r.id) ?? 0;
-    const depositShort = seesMoney && each > 0 && live > 0 && paid < due;
+    // Per REGISTRATION: the deposit holds places, $50 a person, capped at
+    // what is owed -- registration_review's arithmetic, read not re-derived.
+    const review = reviewByReg.get(r.id) ?? null;
+    const paid = review?.confirmed_paid_cents ?? 0;
+    const due = review?.deposit_expected_cents ?? 0;
+    const depositShort = seesMoney && (review?.flags ?? []).includes('deposit_short');
 
     for (const p of r.registration_participants ?? []) {
       const pid = p.people?.id;
