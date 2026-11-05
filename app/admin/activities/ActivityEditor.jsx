@@ -27,9 +27,54 @@ import FoldArrow from '@/components/FoldArrow';
 // times of day, and the moment anything converts them a boarding time is an
 // hour out at the dock.
 import { fmtDay, fmtTime, slotLabel } from '@/lib/activitySlots';
-import { unfinishedTimeBox } from '@/lib/timeBoxes';
 
 const input = 'w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm';
+
+// Slot times are chosen, not typed (Ellen, 5 Nov 2026). Her Safari 26 showed
+// "04:30 PM" in a native time box while reporting it unfinished and reading
+// it as empty, after a refresh too; Chrome reads "02:00 --" (no AM/PM yet) as
+// empty. Two lists -- the hour with its AM/PM, then the minutes in fives (the
+// run comment below wants 2:20 possible) -- cannot be half-filled in any
+// browser. The value is "HH:MM", as the action expects.
+const HOURS = Array.from({ length: 24 }, (_, h) => [
+  String(h).padStart(2, '0'),
+  `${h % 12 || 12} ${h < 12 ? 'AM' : 'PM'}`,
+]);
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+
+function TimeSelect({ value, onChange, label }) {
+  const [h, m] = value ? value.split(':') : ['', ''];
+  return (
+    <span className="flex gap-1">
+      <select
+        aria-label={`${label}: hour`}
+        className={`${input} min-w-0 flex-1`}
+        value={h}
+        onChange={(e) => onChange(e.target.value ? `${e.target.value}:${m || '00'}` : '')}
+      >
+        <option value="">Hour</option>
+        {HOURS.map(([v, text]) => (
+          <option key={v} value={v}>
+            {text}
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label={`${label}: minutes`}
+        className={`${input} min-w-0 w-auto!`}
+        value={m || '00'}
+        disabled={!h}
+        onChange={(e) => onChange(`${h}:${e.target.value}`)}
+      >
+        {MINUTES.map((v) => (
+          <option key={v} value={v}>
+            :{v}
+          </option>
+        ))}
+      </select>
+    </span>
+  );
+}
 const label = 'block text-xs font-semibold text-neutral-700 mb-0.5';
 
 // ---------------------------------------------------------------------------
@@ -797,16 +842,11 @@ export function SlotEditor({ activity, slots = [], event = null }) {
   const [g, setG] = useState(genBlank);
   const setG_ = (k) => (e) => setG((prev) => ({ ...prev, [k]: e.target.value }));
   const [genOpen, setGenOpen] = useState(false);
-  // The four time boxes, so a half-filled one ("02:00 --", no AM/PM) is caught
-  // before sending: its value is empty (unfinishedTimeBox, Ellen 5 Nov 2026).
-  // And what is sent is what the boxes SHOW, read at the click: Ellen's
-  // Safari 26 showed "01:00 PM" in boxes the page held as empty (5 Nov 2026).
+  // The day sent is what the day box SHOWS, read at the click: Safari 26's
+  // time boxes showed times the page never heard (Ellen, 5 Nov 2026), and the
+  // date box is the same kind of control. The times are TimeSelect lists.
   const dayRef = useRef(null);
-  const fromRef = useRef(null);
-  const toRef = useRef(null);
   const genDayRef = useRef(null);
-  const genFromRef = useRef(null);
-  const genToRef = useRef(null);
   const shown = (ref, fallback) => ref.current?.value || fallback;
   // Folded by default, title and sub-title showing what it is for (Lawrence,
   // 26 Oct 2026): most activities never run in sittings.
@@ -917,7 +957,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         </ul>
       )}
 
-      <div className="mt-3 grid gap-2 sm:grid-cols-5">
+      <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">Day</span>
           <input
@@ -932,11 +972,11 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">From</span>
-          <input ref={fromRef} type="time" className={input} value={f.start} onChange={set('start')} />
+          <TimeSelect label="From" value={f.start} onChange={(v) => setF((prev) => ({ ...prev, start: v }))} />
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">To</span>
-          <input ref={toRef} type="time" className={input} value={f.end} onChange={set('end')} />
+          <TimeSelect label="To" value={f.end} onChange={(v) => setF((prev) => ({ ...prev, end: v }))} />
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">Places</span>
@@ -969,18 +1009,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
-          onClick={() => {
-            const unfinished = unfinishedTimeBox([[fromRef.current, 'From'], [toRef.current, 'To']]);
-            if (unfinished) return setError(unfinished);
-            run(() =>
-              createSlot(activity.id, {
-                ...f,
-                date: shown(dayRef, f.date),
-                start: shown(fromRef, f.start),
-                end: shown(toRef, f.end),
-              })
-            );
-          }}
+          onClick={() => run(() => createSlot(activity.id, { ...f, date: shown(dayRef, f.date) }))}
           disabled={pending}
           className="btn-outline py-1.5! text-sm disabled:opacity-50"
         >
@@ -1000,7 +1029,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
             Splits one stretch of the day into equal slots — half-hour sittings all
             afternoon, fifteen-minute appointments. Each gets the same number of places.
           </p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-6">
+          <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Day</span>
               <input
@@ -1015,11 +1044,11 @@ export function SlotEditor({ activity, slots = [], event = null }) {
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Starts</span>
-              <input ref={genFromRef} type="time" className={input} value={g.start} onChange={setG_('start')} />
+              <TimeSelect label="Starts" value={g.start} onChange={(v) => setG((prev) => ({ ...prev, start: v }))} />
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Ends</span>
-              <input ref={genToRef} type="time" className={input} value={g.end} onChange={setG_('end')} />
+              <TimeSelect label="Ends" value={g.end} onChange={(v) => setG((prev) => ({ ...prev, end: v }))} />
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Each (mins)</span>
@@ -1058,20 +1087,13 @@ export function SlotEditor({ activity, slots = [], event = null }) {
           )}
 
           <button
-            onClick={() => {
-              const unfinished = unfinishedTimeBox([[genFromRef.current, 'Starts'], [genToRef.current, 'Ends']]);
-              if (unfinished) return setError(unfinished);
+            onClick={() =>
               run(async () => {
-                const res = await generateSlots(activity.id, {
-                  ...g,
-                  date: shown(genDayRef, g.date),
-                  start: shown(genFromRef, g.start),
-                  end: shown(genToRef, g.end),
-                });
+                const res = await generateSlots(activity.id, { ...g, date: shown(genDayRef, g.date) });
                 if (res.ok) setG(genBlank);
                 return res;
-              });
-            }}
+              })
+            }
             disabled={pending}
             className="mt-3 btn-primary py-1.5! text-sm disabled:opacity-50"
           >

@@ -603,7 +603,7 @@ export async function createSlot(activityId, input) {
     // What arrived, so a browser that sends something else shows in the logs
     // (two time strings; nothing about anyone).
     console.error('createSlot: unreadable time', JSON.stringify({ start: input?.start, end: input?.end }));
-    return { ok: false, error: 'Give a start and end time, each with AM or PM.' };
+    return { ok: false, error: 'Give a start and end time.' };
   }
   if (end <= start) return { ok: false, error: 'The end time is before the start time.' };
 
@@ -690,7 +690,7 @@ export async function generateSlots(activityId, input) {
   if (!date) return { ok: false, error: 'Which day?' };
   if (!start || !end) {
     console.error('generateSlots: unreadable time', JSON.stringify({ start: input?.start, end: input?.end }));
-    return { ok: false, error: 'Give a start and an end time for the whole run, each with AM or PM.' };
+    return { ok: false, error: 'Give a start and an end time for the whole run.' };
   }
   if (end <= start) return { ok: false, error: 'The run ends before it starts.' };
 
