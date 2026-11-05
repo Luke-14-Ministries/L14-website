@@ -799,10 +799,15 @@ export function SlotEditor({ activity, slots = [], event = null }) {
   const [genOpen, setGenOpen] = useState(false);
   // The four time boxes, so a half-filled one ("02:00 --", no AM/PM) is caught
   // before sending: its value is empty (unfinishedTimeBox, Ellen 5 Nov 2026).
+  // And what is sent is what the boxes SHOW, read at the click: Ellen's
+  // Safari 26 showed "01:00 PM" in boxes the page held as empty (5 Nov 2026).
+  const dayRef = useRef(null);
   const fromRef = useRef(null);
   const toRef = useRef(null);
+  const genDayRef = useRef(null);
   const genFromRef = useRef(null);
   const genToRef = useRef(null);
+  const shown = (ref, fallback) => ref.current?.value || fallback;
   // Folded by default, title and sub-title showing what it is for (Lawrence,
   // 26 Oct 2026): most activities never run in sittings.
   const [open, setOpen] = useState(false);
@@ -916,6 +921,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">Day</span>
           <input
+            ref={dayRef}
             type="date"
             className={input}
             value={f.date}
@@ -966,7 +972,14 @@ export function SlotEditor({ activity, slots = [], event = null }) {
           onClick={() => {
             const unfinished = unfinishedTimeBox([[fromRef.current, 'From'], [toRef.current, 'To']]);
             if (unfinished) return setError(unfinished);
-            run(() => createSlot(activity.id, f));
+            run(() =>
+              createSlot(activity.id, {
+                ...f,
+                date: shown(dayRef, f.date),
+                start: shown(fromRef, f.start),
+                end: shown(toRef, f.end),
+              })
+            );
           }}
           disabled={pending}
           className="btn-outline py-1.5! text-sm disabled:opacity-50"
@@ -991,6 +1004,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Day</span>
               <input
+                ref={genDayRef}
                 type="date"
                 className={input}
                 value={g.date}
@@ -1048,7 +1062,12 @@ export function SlotEditor({ activity, slots = [], event = null }) {
               const unfinished = unfinishedTimeBox([[genFromRef.current, 'Starts'], [genToRef.current, 'Ends']]);
               if (unfinished) return setError(unfinished);
               run(async () => {
-                const res = await generateSlots(activity.id, g);
+                const res = await generateSlots(activity.id, {
+                  ...g,
+                  date: shown(genDayRef, g.date),
+                  start: shown(genFromRef, g.start),
+                  end: shown(genToRef, g.end),
+                });
                 if (res.ok) setG(genBlank);
                 return res;
               });

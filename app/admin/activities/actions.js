@@ -15,6 +15,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { activityDayBounds, slotOutsideEventMessage } from '@/lib/events';
+import { toHHMM } from '@/lib/timeBoxes';
 
 const MODES = ['interest', 'signup'];
 
@@ -561,7 +562,6 @@ export async function reviewWaiverUpload(uploadId, status, note = null) {
 // from Mountain time is describing 2pm at camp, and a boarding time an hour out
 // is discovered at the dock.
 
-const HHMM = /^([01]?\d|2[0-3]):[0-5]\d$/;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 // A time must fall during its event: the first day (or the volunteers'
@@ -596,10 +596,13 @@ export async function createSlot(activityId, input) {
   if (!activityId) return { ok: false, error: 'Which activity?' };
 
   const date = String(input?.date ?? '').trim();
-  const start = String(input?.start ?? '').trim();
-  const end = String(input?.end ?? '').trim();
+  const start = toHHMM(input?.start);
+  const end = toHHMM(input?.end);
   if (!date) return { ok: false, error: 'Which day?' };
-  if (!HHMM.test(start) || !HHMM.test(end)) {
+  if (!start || !end) {
+    // What arrived, so a browser that sends something else shows in the logs
+    // (two time strings; nothing about anyone).
+    console.error('createSlot: unreadable time', JSON.stringify({ start: input?.start, end: input?.end }));
     return { ok: false, error: 'Give a start and end time, each with AM or PM.' };
   }
   if (end <= start) return { ok: false, error: 'The end time is before the start time.' };
@@ -682,10 +685,11 @@ export async function generateSlots(activityId, input) {
   if (!activityId) return { ok: false, error: 'Which activity?' };
 
   const date = String(input?.date ?? '').trim();
-  const start = String(input?.start ?? '').trim();
-  const end = String(input?.end ?? '').trim();
+  const start = toHHMM(input?.start);
+  const end = toHHMM(input?.end);
   if (!date) return { ok: false, error: 'Which day?' };
-  if (!HHMM.test(start) || !HHMM.test(end)) {
+  if (!start || !end) {
+    console.error('generateSlots: unreadable time', JSON.stringify({ start: input?.start, end: input?.end }));
     return { ok: false, error: 'Give a start and an end time for the whole run, each with AM or PM.' };
   }
   if (end <= start) return { ok: false, error: 'The run ends before it starts.' };
@@ -708,7 +712,7 @@ export async function generateSlots(activityId, input) {
     const [h, m] = t.split(':').map(Number);
     return h * 60 + m;
   };
-  const toHHMM = (m) =>
+  const minToHHMM = (m) =>
     `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
   const from = toMin(start);
@@ -731,8 +735,8 @@ export async function generateSlots(activityId, input) {
     rows.push({
       activity_id: activityId,
       slot_date: date,
-      start_time: toHHMM(from + i * minutes),
-      end_time: toHHMM(from + (i + 1) * minutes),
+      start_time: minToHHMM(from + i * minutes),
+      end_time: minToHHMM(from + (i + 1) * minutes),
       capacity,
       // Numbered so two slots at the same time on different boats can still be
       // told apart, and so the run reads as a run.
