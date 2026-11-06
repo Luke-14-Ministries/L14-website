@@ -1915,7 +1915,7 @@ export default async function DashboardPage({ searchParams }) {
                             visibly changes something (0037). */}
                         {household?.primary_contact_person_id === m.id && (
                           <span
-                            className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-600"
+                            className="ml-2 inline-block whitespace-nowrap rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-600"
                             title="Camp staff contact this person about your household"
                           >
                             primary contact
