@@ -128,7 +128,15 @@ export default async function MyStatementPage({ params }) {
         <img
           src="/images/Luke_14_Ministries_Logo__285_x_2_in_29.png"
           alt="Luke 14 Ministries"
-          className="h-16 w-auto"
+          className="site-logo-light h-16 w-auto"
+        />
+        {/* Dark mode's copy, words light, on screen only (app/theme-dark.css);
+            the printed sheet keeps the navy logo. */}
+        <img
+          src="/images/Luke_14_Ministries_Logo_dark.png"
+          alt="Luke 14 Ministries"
+          loading="lazy"
+          className="site-logo-dark hidden h-16 w-auto"
         />
         <p className="text-sm text-neutral-600 text-right">
           2348 W Andrew Johnson Hwy, #140 · Morristown, TN 37814

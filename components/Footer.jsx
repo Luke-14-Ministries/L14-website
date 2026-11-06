@@ -3,7 +3,9 @@ import { site } from '@/lib/site';
 
 export default function Footer() {
   return (
-    <footer className="bg-brand-dark text-white mt-16">
+    // keep-light: the footer is dark in both modes, so dark mode leaves its
+    // colours as they are (app/theme-dark.css).
+    <footer className="keep-light bg-brand-dark text-white mt-16">
       <div className="container-site py-12 grid gap-8 sm:grid-cols-3">
         <div>
           <h4 className="text-lg font-bold mb-3">Luke 14 Ministries</h4>

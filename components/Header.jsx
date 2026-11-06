@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { nav, site } from '@/lib/site';
+import ThemeSwitch from '@/components/ThemeSwitch';
 
 function DesktopDropdown({ group }) {
   if (!group.items) {
@@ -43,39 +44,61 @@ function DesktopDropdown({ group }) {
 // the public site's container-site.
 const ADMIN_CONTAINER = 'mx-auto max-w-[1500px] px-4 sm:px-6';
 
+// The signed-in pages, where a person may choose dark mode (6 Nov 2026,
+// components/ThemeSwitch.jsx). The marker below is what app/theme-dark.css
+// looks for; public pages carry none and stay light.
+const THEMED = ['/admin', '/account', '/register'];
+
 export default function Header() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname() ?? '';
   const container = pathname.startsWith('/admin') ? ADMIN_CONTAINER : 'container-site';
+  const themed = THEMED.some((p) => pathname.startsWith(p));
 
   return (
     <header className="bg-white border-b border-neutral-200">
+      {themed && <span data-theme-area hidden />}
       <div className={`${container} flex items-center justify-between py-4`}>
         <Link href="/" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={site.logo}
             alt="Luke 14 Ministries"
-            className="h-14 sm:h-16 w-auto"
+            className="site-logo-light h-14 sm:h-16 w-auto"
           />
+          {/* Dark mode's copy, words light (app/theme-dark.css swaps them).
+              Lazy, so it is fetched only once it shows. */}
+          {themed && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={site.logoDark}
+              alt="Luke 14 Ministries"
+              loading="lazy"
+              className="site-logo-dark hidden h-14 sm:h-16 w-auto"
+            />
+          )}
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1">
-          {nav.map((group) => (
-            <DesktopDropdown key={group.label} group={group} />
-          ))}
-          <Link href="/donate" className="btn-gold ml-3 py-2!">
-            Donate
-          </Link>
-        </nav>
+        <div className="flex items-center gap-3">
+          <nav className="hidden lg:flex items-center gap-1">
+            {nav.map((group) => (
+              <DesktopDropdown key={group.label} group={group} />
+            ))}
+            <Link href="/donate" className="btn-gold ml-3 py-2!">
+              Donate
+            </Link>
+          </nav>
 
-        <button
-          className="lg:hidden text-3xl px-2"
-          aria-label="Menu"
-          onClick={() => setOpen(!open)}
-        >
-          ☰
-        </button>
+          {themed && <ThemeSwitch className="lg:ml-2" />}
+
+          <button
+            className="lg:hidden text-3xl px-2"
+            aria-label="Menu"
+            onClick={() => setOpen(!open)}
+          >
+            ☰
+          </button>
+        </div>
       </div>
 
       {open && (
