@@ -4117,3 +4117,24 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
     without a time is refused on Save, never read as blank, because blank is "no limit"). The slot
     actions also read any time shape (`toHHMM()` in `lib/timeBoxes.js`) and log a refused one.
     Ellen confirmed the Activities page works. Do not put `type="time"` or `datetime-local` back.
+
+## 6 November 2026 — Dark mode for the signed-in pages
+
+- **By choice, Light by default** (Lawrence, 6 Nov 2026).
+  A *Dark* switch in the header on `/admin`, `/account` and `/register` only; everyone starts on
+  Light whatever their device prefers, and each person's choice is kept in that browser
+  (`localStorage` `l14-theme`, put back before the first paint by the `<head>` script in
+  `lib/theme.js`). Public pages are always light: the photos, banners and brand heroes were
+  designed for it. **How:** Tailwind 4 draws every colour class from a CSS variable, so
+  `app/theme-dark.css` swaps the variables (a dark grey ramp of our own; each hue turned end over
+  end, 50↔950, so a pale warning with dark words becomes a deep one with pale words) instead of
+  giving 2,000 classes a `dark:` twin. It acts only on `<html data-theme="dark">` **with** the
+  `[data-theme-area]` marker Header renders on those paths; screen only, so paper prints light.
+  Exceptions keep solid buttons solid (`bg-brand`, `bg-red-700`, the dark Staff Area button),
+  sitting in the utilities layer under `:where()` so hover and disabled variants still win;
+  the footer is `keep-light`; the logo has a light-lettered copy
+  (`Luke_14_Ministries_Logo_dark.png`). The CSS is **generated**: edit
+  `scripts/gen-dark-css.py` and re-run it. Checked page by page on a local copy against the live
+  data (three read-only checkers and a code review); the Giving pages, a family's finish and
+  statement pages and My Program were not seen (no grant or no registration on the login used).
+  No package added.
