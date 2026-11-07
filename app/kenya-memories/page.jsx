@@ -16,7 +16,7 @@ export const metadata = { title: 'Kenya Memories' };
 // channel. Labels must stay distinct: VideoYears keys its cards by label.
 const years = [
   { label: '2019', youtube: 'ke5kUTNt7qE' },
-  { label: '2018', youtube: '8jSzBpBeQJs' },
+  { label: '2018', youtube: '91PFF3ljTSM' }, // re-uploaded to @luke14ministries76, 7 Nov 2026
   { label: '2018 (the long version)', youtube: 'tu9goYe48pQ' },
 ];
 

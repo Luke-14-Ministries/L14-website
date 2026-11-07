@@ -14,7 +14,7 @@ const years = [
   { label: '2025 Week 2', youtube: 'R6-cMWllAHs' },
   { label: '2024', youtube: 'Z1TrxIL0Ew4' },
   { label: '2023', youtube: 'v1h2fB7TdXg' },
-  { label: '2022', youtube: 'rlGKgbCYOis' },
+  { label: '2022', youtube: 'Wqz00asfUf8' }, // re-uploaded to @luke14ministries76, 7 Nov 2026
   { label: '2021', youtube: 'hUrnuHMkmIQ' },
   { label: '2019', youtube: 'HO9SmcHJlZU' },
   { label: '2018', youtube: 'MeNiytYb3gI' },
