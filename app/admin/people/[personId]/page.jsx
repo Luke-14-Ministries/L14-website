@@ -282,11 +282,11 @@ function FormAnswers({ sensitive, support, name }) {
           <Answer q={Q.likes(name)}>
             <AnswerText value={s.likes_dislikes} />
           </Answer>
-          <Answer q={Q.night(name)}>
+          <Answer q={Q.nightOrAccommodation(name)}>
             <AnswerYesNo value={s.has_sleep_disturbance} saved={saved} tone="amber" />
           </Answer>
           {showDetail(s.has_sleep_disturbance, s.sleep_notes) && (
-            <Answer q={Q.nightDetail}>
+            <Answer q="What they need, and what helps">
               <AnswerText value={s.sleep_notes} />
             </Answer>
           )}

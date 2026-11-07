@@ -153,17 +153,17 @@ export default function SupportDetailsFields({
   const sleepQuestion = (
     <YesNo
       id={`${idPrefix}sleep`}
-      question={Q.night(name)}
+      question={isCamper ? Q.night(name) : Q.accommodation(name)}
       value={f.has_sleep_disturbance}
       onChange={setFlag('has_sleep_disturbance')}
     >
-      <label className={label}>{Q.nightDetail}</label>
+      <label className={label}>{isCamper ? Q.nightDetail : Q.accommodationDetail}</label>
       <textarea
         className={input}
         rows={2}
         value={f.sleep_notes}
         onChange={set('sleep_notes')}
-        placeholder={Q.nightExample}
+        placeholder={isCamper ? Q.nightExample : Q.accommodationExample}
       />
     </YesNo>
   );

@@ -410,6 +410,19 @@ export default async function FamilyRegisterPage({ searchParams }) {
     for (const h of householdPeople) {
       h.support = emptySupport(supportById.get(h.personId) ?? null);
     }
+    // The emergency contact carries across the household (Lawrence, 6 Nov
+    // 2026): anyone without one starts with the first one on file, the
+    // registering person's first. Each person can still change their own.
+    {
+      const keys = ['emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'];
+      const from = [...members, ...householdPeople].find((x) => (x.support?.emergency_contact_name ?? '').trim());
+      if (from) {
+        for (const x of [...members, ...householdPeople]) {
+          if ((x.support?.emergency_contact_name ?? '').trim()) continue;
+          for (const k of keys) x.support[k] = from.support[k] ?? '';
+        }
+      }
+    }
 
     // Caregiver links already on file (person_caregivers, 0012 -- Manage
     // Household writes them), so "Who is the caregiver?" opens on the person

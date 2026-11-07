@@ -44,6 +44,19 @@ import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 import { hasPhone } from '@/lib/caregivers';
 import { VOLUNTEER_CHILD_UNDER } from '@/lib/roles';
 
+// The emergency contact carried across the household (Lawrence, 6 Nov 2026):
+// see setSupport. A person added to the form starts with the contact the
+// others already have, and anyone can change their own.
+const EMERGENCY_FIELDS = ['emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'];
+function withHouseholdContact(member, others) {
+  const sup = member.support ?? emptySupport(null);
+  if ((sup.emergency_contact_name ?? '').trim()) return member;
+  const from = others.find((o) => (o.support?.emergency_contact_name ?? '').trim());
+  if (!from) return member;
+  const copy = Object.fromEntries(EMERGENCY_FIELDS.map((k) => [k, from.support[k] ?? '']));
+  return { ...member, support: { ...sup, ...copy } };
+}
+
 const emptyMember = {
   personId: null,
   firstName: '',
@@ -832,12 +845,29 @@ export default function FamilyWizard({
   // One person's support profile. Functional update, because the fields
   // component calls this many times between renders (a blur that tidies a
   // phone number right after the keystroke that typed it).
+  //
+  // The emergency contact carries across the household (Lawrence, 6 Nov
+  // 2026: typing it again for the second and third person was a chore). A
+  // change to one person's contact is copied to everyone whose contact is
+  // still empty or still the copy (equal to this person's before the change);
+  // anyone whose contact was changed by hand keeps theirs.
   const setSupport = (i) => (updater) =>
-    setMembers((prev) =>
-      prev.map((m, j) =>
-        j === i ? { ...m, support: updater(m.support ?? emptySupport(null)) } : m
-      )
-    );
+    setMembers((prev) => {
+      const before = prev[i]?.support ?? emptySupport(null);
+      const after = updater(before);
+      const changed = EMERGENCY_FIELDS.some((k) => (after[k] ?? '') !== (before[k] ?? ''));
+      return prev.map((m, j) => {
+        if (j === i) return { ...m, support: after };
+        if (!changed) return m;
+        const theirs = m.support ?? emptySupport(null);
+        const following = EMERGENCY_FIELDS.every(
+          (k) => !(theirs[k] ?? '').trim() || (theirs[k] ?? '') === (before[k] ?? '')
+        );
+        if (!following) return m;
+        const copy = Object.fromEntries(EMERGENCY_FIELDS.map((k) => [k, after[k] ?? '']));
+        return { ...m, support: { ...theirs, ...copy } };
+      });
+    });
   const setM = (i, k) => (e) => {
     const next = members.map((m, j) => (j === i ? { ...m, [k]: e.target.value } : m));
     setMembers(next);
@@ -882,13 +912,16 @@ export default function FamilyWizard({
           norm(h.lastName) === norm(family.contactLast) &&
           norm(h.firstName) !== ''
       );
-      const self = known
-        ? { ...emptyMember, ...known }
-        : {
-            ...emptyMember,
-            firstName: family.contactFirst.trim(),
-            lastName: family.contactLast.trim(),
-          };
+      const self = withHouseholdContact(
+        known
+          ? { ...emptyMember, ...known }
+          : {
+              ...emptyMember,
+              firstName: family.contactFirst.trim(),
+              lastName: family.contactLast.trim(),
+            },
+        members
+      );
       // Fill the first still-blank row rather than stacking a new card under
       // an untouched "Person 1".
       const blankIdx = members.findIndex((m) => !m.firstName.trim() && !m.lastName.trim());
@@ -1623,7 +1656,7 @@ export default function FamilyWizard({
                             // leave an empty card stranded above them.
                             (m) => m.firstName.trim() || m.lastName.trim() || m.personId
                           ),
-                          { ...emptyMember, ...p },
+                          withHouseholdContact({ ...emptyMember, ...p }, members),
                         ])
                       }
                       className="rounded-full border border-brand bg-white px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-light"
@@ -1640,7 +1673,7 @@ export default function FamilyWizard({
             <button
               type="button"
               className="btn-outline py-2!"
-              onClick={() => setMembers([...members, { ...emptyMember }])}
+              onClick={() => setMembers([...members, withHouseholdContact({ ...emptyMember }, members)])}
             >
               + Add someone new
             </button>
@@ -1736,6 +1769,25 @@ export default function FamilyWizard({
                         />
                       }
                     />
+                    {(() => {
+                      // Say where a carried-over contact came from, so a
+                      // different one is changed here rather than missed.
+                      const name = (sup.emergency_contact_name ?? '').trim();
+                      if (!name) return null;
+                      const from = members.find(
+                        (o, j) =>
+                          j < i &&
+                          o.firstName.trim() &&
+                          EMERGENCY_FIELDS.every((k) => (o.support?.[k] ?? '') === (sup[k] ?? ''))
+                      );
+                      if (!from) return null;
+                      const fromWho = (from.preferredName || '').trim() || from.firstName.trim();
+                      return (
+                        <p className="mt-2 text-sm text-neutral-600">
+                          Same emergency contact as {fromWho}. Change it above if {who}&rsquo;s is different.
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
               );
