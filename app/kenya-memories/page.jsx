@@ -14,7 +14,10 @@ export const metadata = { title: 'Kenya Memories' };
 // (Larry, 1 Nov 2026; it had been labelled 2017), so 2018 has two videos.
 // She gave permission on 29 Oct 2026 to show it here and on the ministry's
 // channel. Labels must stay distinct: VideoYears keys its cards by label.
+// 2024 was a video on the old site's Wheels for Kenya page only (Squarespace);
+// saved from there and put on @luke14ministries76 on 7 Nov 2026.
 const years = [
+  { label: '2024', youtube: 'fFNtHoJekXQ' },
   { label: '2019', youtube: 'ke5kUTNt7qE' },
   { label: '2018', youtube: '91PFF3ljTSM' }, // re-uploaded to @luke14ministries76, 7 Nov 2026
   { label: '2018 (the long version)', youtube: 'tu9goYe48pQ' },
