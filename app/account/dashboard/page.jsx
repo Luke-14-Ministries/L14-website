@@ -468,6 +468,9 @@ export default async function DashboardPage({ searchParams }) {
   const allDetailsDone =
     attendingPeople.length > 0 &&
     attendingPeople.every((p) => supportStatus.get(p.id) === 'complete');
+  // Who still owes details: the count on the card's pill, and its open/closed
+  // memory's key (SupportDetailsCard.jsx).
+  const supportTodo = attendingPeople.filter((p) => supportStatus.get(p.id) !== 'complete');
 
   // Registered volunteers who haven't filed their volunteer application yet —
   // surfaced as a nudge below, because the application is a separate short
@@ -855,6 +858,8 @@ export default async function DashboardPage({ searchParams }) {
           <SupportDetailsCard
             allDone={allDetailsDone}
             count={attendingPeople.length}
+            todoCount={supportTodo.length}
+            stateKey={`l14.dashboard.support:${supportTodo.map((p) => p.id).join(',')}`}
           >
             <p className="mt-1 text-sm text-neutral-600">
               A short form for each person attending: allergies, medications, what helps on
