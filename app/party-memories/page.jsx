@@ -7,7 +7,7 @@ export const metadata = { title: 'Party Memories' };
 // The old site's Party Memories page, year for year (28 Oct 2026); it has no
 // 2016. The hero is the old page's own photograph.
 // 2022 was a video on the old site's Luke 14 Party page only (Squarespace);
-// saved from there and put on @luke14ministries76 on 7 Nov 2026.
+// saved from there and put on the ministry channel (@luke14ministries) on 7 Nov 2026.
 const years = [
   { label: '2022', youtube: '-oQBCR7H7iY' },
   { label: '2019', youtube: 'SYNE4S1NGG8' },
