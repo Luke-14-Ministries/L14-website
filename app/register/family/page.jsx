@@ -420,6 +420,8 @@ export default async function FamilyRegisterPage({ searchParams }) {
         for (const x of [...members, ...householdPeople]) {
           if ((x.support?.emergency_contact_name ?? '').trim()) continue;
           for (const k of keys) x.support[k] = from.support[k] ?? '';
+          // A copy: follows the original until changed (FamilyWizard setSupport).
+          x.support.emergencyCopied = true;
         }
       }
     }

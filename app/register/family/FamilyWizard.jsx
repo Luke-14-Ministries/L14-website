@@ -54,7 +54,10 @@ function withHouseholdContact(member, others) {
   const from = others.find((o) => (o.support?.emergency_contact_name ?? '').trim());
   if (!from) return member;
   const copy = Object.fromEntries(EMERGENCY_FIELDS.map((k) => [k, from.support[k] ?? '']));
-  return { ...member, support: { ...sup, ...copy } };
+  // emergencyCopied: this person's contact is a copy, so it follows the
+  // original until they change it (setSupport). Form state only --
+  // supportPatch() saves the three columns and ignores it.
+  return { ...member, support: { ...sup, ...copy, emergencyCopied: true } };
 }
 
 const emptyMember = {
@@ -848,24 +851,31 @@ export default function FamilyWizard({
   //
   // The emergency contact carries across the household (Lawrence, 6 Nov
   // 2026: typing it again for the second and third person was a chore). A
-  // change to one person's contact is copied to everyone whose contact is
-  // still empty or still the copy (equal to this person's before the change);
-  // anyone whose contact was changed by hand keeps theirs.
+  // change to an ORIGINAL contact (one typed or saved for that person) is
+  // copied to everyone whose contact is empty, or still a copy of it; those
+  // are marked emergencyCopied. Changing a copy makes it that person's own
+  // and copies nothing back -- so two people who once shared a contact can
+  // always be split (review, 6 Nov: without the mark they moved in lockstep).
   const setSupport = (i) => (updater) =>
     setMembers((prev) => {
       const before = prev[i]?.support ?? emptySupport(null);
       const after = updater(before);
       const changed = EMERGENCY_FIELDS.some((k) => (after[k] ?? '') !== (before[k] ?? ''));
+      if (!changed) {
+        return prev.map((m, j) => (j === i ? { ...m, support: after } : m));
+      }
+      const wasCopy = before.emergencyCopied === true;
       return prev.map((m, j) => {
-        if (j === i) return { ...m, support: after };
-        if (!changed) return m;
+        if (j === i) return { ...m, support: { ...after, emergencyCopied: false } };
+        if (wasCopy) return m;
         const theirs = m.support ?? emptySupport(null);
-        const following = EMERGENCY_FIELDS.every(
-          (k) => !(theirs[k] ?? '').trim() || (theirs[k] ?? '') === (before[k] ?? '')
-        );
-        if (!following) return m;
+        const empty = EMERGENCY_FIELDS.every((k) => !(theirs[k] ?? '').trim());
+        const stillCopy =
+          theirs.emergencyCopied === true &&
+          EMERGENCY_FIELDS.every((k) => (theirs[k] ?? '') === (before[k] ?? ''));
+        if (!empty && !stillCopy) return m;
         const copy = Object.fromEntries(EMERGENCY_FIELDS.map((k) => [k, after[k] ?? '']));
-        return { ...m, support: { ...theirs, ...copy } };
+        return { ...m, support: { ...theirs, ...copy, emergencyCopied: true } };
       });
     });
   const setM = (i, k) => (e) => {
@@ -1773,11 +1783,12 @@ export default function FamilyWizard({
                       // Say where a carried-over contact came from, so a
                       // different one is changed here rather than missed.
                       const name = (sup.emergency_contact_name ?? '').trim();
-                      if (!name) return null;
+                      if (!name || sup.emergencyCopied !== true) return null;
                       const from = members.find(
                         (o, j) =>
-                          j < i &&
-                          o.firstName.trim() &&
+                          j !== i &&
+                          isNamed(o) &&
+                          o.support?.emergencyCopied !== true &&
                           EMERGENCY_FIELDS.every((k) => (o.support?.[k] ?? '') === (sup[k] ?? ''))
                       );
                       if (!from) return null;
