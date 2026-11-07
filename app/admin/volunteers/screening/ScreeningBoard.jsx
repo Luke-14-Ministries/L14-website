@@ -29,7 +29,7 @@ const PER_CHECK = 26.5; // Basic Plus $25.49 plus the passthrough fees actually 
 
 const STATUS_PILL = {
   clear: ['Cleared', 'bg-green-100 text-green-800'],
-  invited: ['Invited — waiting', 'bg-amber-100 text-amber-800'],
+  invited: ['Invited, waiting', 'bg-amber-100 text-amber-800'],
   pending: ['Running at Checkr', 'bg-amber-100 text-amber-800'],
   consider: ['Needs review', 'bg-red-100 text-red-800'],
   suspended: ['Checkr needs more from them', 'bg-amber-100 text-amber-800'],
@@ -127,9 +127,8 @@ export default function ScreeningBoard({ candidates }) {
       <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h2 className="text-xl font-bold">1 · Who is due</h2>
         <p className="mt-1 mb-4 max-w-4xl text-sm text-neutral-500">
-          Adult volunteers with no background check on file, or whose background check has expired.
-          Nothing here has been ordered yet and nothing is charged until you
-          upload the file to Checkr.
+          Adult volunteers with no background check on file, or whose check has expired. Nothing
+          here has been ordered yet. Nothing is charged until you upload the file to Checkr.
         </p>
 
         {/* Two different empty states (15 Oct 2026): nobody due because
@@ -138,12 +137,12 @@ export default function ScreeningBoard({ candidates }) {
             and the page said the first when it meant the second. */}
         {orderable.length === 0 && blocked.length === 0 ? (
           <p className="rounded-sm border border-green-200 bg-green-50 px-4 py-3 text-green-900">
-            Nobody is due. Every adult volunteer has a background check on file that is still in date.
+            Nobody is due. Every adult volunteer has a current background check on file.
           </p>
         ) : orderable.length === 0 ? (
           <p className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
             {blocked.length} {blocked.length === 1 ? 'person is' : 'people are'} due a background check,
-            but none can be ordered yet — each is missing something listed below.
+            but none can be ordered yet. Each one is missing something listed below.
           </p>
         ) : (
           <>
@@ -185,12 +184,12 @@ export default function ScreeningBoard({ candidates }) {
                     </span>
                     {c.sharesEmailWith?.length > 0 && (
                       <span className="ml-2 rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
-                        same inbox as {c.sharesEmailWith.join(' and ')} — two invitations, each opens their own
+                        same inbox as {c.sharesEmailWith.join(' and ')}: two invitations, each person opens their own
                       </span>
                     )}
                     <span className="block text-xs text-neutral-500">
                       {c.eventName}
-                      {c.reason ? ` — ${c.reason}` : ''}
+                      {c.reason ? ` · ${c.reason}` : ''}
                     </span>
                   </label>
                   {(() => {
@@ -214,9 +213,8 @@ export default function ScreeningBoard({ candidates }) {
               {busy ? 'Working…' : `Download CSV for ${picked.size} and mark as sent`}
             </button>
             <p className="mt-1.5 text-xs text-neutral-500">
-              One button on purpose. Downloading the file and recording that it went
-              out are the same act — otherwise the next batch invites these people
-              again, at about {money(PER_CHECK)} each.
+              This one button downloads the file and records it as sent. Otherwise the next batch
+              would invite these people again, at about {money(PER_CHECK)} each.
             </p>
           </>
         )}
@@ -229,7 +227,7 @@ export default function ScreeningBoard({ candidates }) {
             <ul className="mt-1.5 space-y-1 text-sm text-amber-900">
               {blocked.map((c) => (
                 <li key={c.personId}>
-                  <strong>{c.name}</strong> — {c.blockedBecause}
+                  <strong>{c.name}</strong>: {c.blockedBecause}
                 </li>
               ))}
             </ul>
@@ -245,7 +243,7 @@ export default function ScreeningBoard({ candidates }) {
                   <span>
                     <strong>{dayInMorristown(batch)}</strong> · {people.length}{' '}
                     {people.length === 1 ? 'person' : 'people'}
-                    <span className="text-neutral-500"> — {people.map((p) => p.name).join(', ')}</span>
+                    <span className="text-neutral-500">: {people.map((p) => p.name).join(', ')}</span>
                   </span>
                   <button
                     type="button"
@@ -289,8 +287,7 @@ export default function ScreeningBoard({ candidates }) {
           <li>Upload the file you just downloaded and pick the <strong>Basic Plus</strong> package.</li>
           <li>
             Checkr emails each person a link. They type their own Social Security
-            number into <em>Checkr&rsquo;s</em> form — it never reaches us, which is the
-            whole reason this is done by invitation rather than on paper.
+            number into <em>Checkr&rsquo;s</em> form, so it never reaches us.
           </li>
         </ol>
         {result?.ok && (
@@ -316,11 +313,11 @@ export default function ScreeningBoard({ candidates }) {
       <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h2 className="text-xl font-bold">3 · Bring the results back</h2>
         <p className="mt-1 mb-3 max-w-4xl text-sm text-neutral-500">
-          Export the reports from Checkr and choose the file here (or paste its contents).
-          Batches sent from this screen match on the address we invited, so somebody who
-          changes their email in between still matches. Background checks ordered by hand at
-          Checkr carry the <em>orderer&rsquo;s</em> address instead, so those match on name —
-          and the preview says which rows did that before anything is written.
+          Export the reports from Checkr and choose the file here, or paste its contents.
+          Batches sent from this screen match on the email we invited, even if the person has
+          changed their email since. Checks ordered by hand at Checkr carry
+          the <em>orderer&rsquo;s</em> email instead, so those match on name. The preview shows which
+          rows matched on name before anything is saved.
         </p>
         {/* A file picker as well as the box (Lawrence, 15 Oct 2026: "why paste
             and not upload a CSV?"). The file is read in the browser and lands
@@ -380,7 +377,7 @@ export default function ScreeningBoard({ candidates }) {
             <div>
               <p className="font-semibold">
                 Matched {preview.matched.length}
-                {preview.dryRun ? ' — nothing written yet' : ''}
+                {preview.dryRun ? ' (nothing saved yet)' : ''}
                 {preview.willClear != null && (
                   <span className="font-normal text-neutral-600">
                     {' '}· {preview.willClear} would be marked cleared
@@ -402,10 +399,10 @@ export default function ScreeningBoard({ candidates }) {
               {preview.unrecognised?.length > 0 && (
                 <p className="mt-1 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
                   Checkr used {preview.unrecognised.length === 1 ? 'a verdict' : 'verdicts'} this
-                  screen has not seen before —{' '}
-                  <strong>{preview.unrecognised.join(', ')}</strong>. Those rows are being treated
-                  as <strong>needing review</strong>, so nobody is cleared on a word we cannot
-                  read. Worth telling whoever maintains the site.
+                  screen hasn&rsquo;t seen before:{' '}
+                  <strong>{preview.unrecognised.join(', ')}</strong>. Those rows are marked
+                  as <strong>needing review</strong>, so nobody is cleared by mistake. Please tell
+                  whoever maintains the site.
                 </p>
               )}
               {preview.superseded > 0 && (
@@ -413,23 +410,22 @@ export default function ScreeningBoard({ candidates }) {
                   <strong>{preview.superseded}</strong>{' '}
                   {preview.superseded === 1 ? 'row is' : 'rows are'} an{' '}
                   <strong>older report</strong> for somebody who also has a newer one in this
-                  file. Checkr keeps every report, so a repeat background check appears twice. Only the most
-                  recent completed report counts — including when the older one is the kinder
-                  of the two.
+                  file. Checkr keeps every report, so a repeat check appears twice. Only the most
+                  recent completed report counts, even if the older one was better.
                 </p>
               )}
               {preview.byName > 0 && (
                 <p className="mt-1 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
                   <strong>{preview.byName}</strong> matched on <strong>name</strong>, not on the
-                  address we sent. Checkr&rsquo;s export carries whoever ordered the background check in the
-                  email column, so anything ordered by hand can only be matched by name — read
-                  those rows before applying.
+                  email we sent. Checkr&rsquo;s export puts the email of whoever ordered the check in
+                  the email column, so a check ordered by hand can only match by name. Read those
+                  rows before applying.
                 </p>
               )}
               <ul className="mt-1 space-y-0.5 text-neutral-700">
                 {preview.matched.map((m, i) => (
                   <li key={i} className={m.superseded ? 'text-neutral-400' : undefined}>
-                    {m.name} —{' '}
+                    {m.name}:{' '}
                     <span
                       className={
                         m.superseded
@@ -483,13 +479,12 @@ export default function ScreeningBoard({ candidates }) {
               <div className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 text-amber-900">
                 <p className="font-semibold">{preview.unmatched.length} row(s) matched nobody</p>
                 <p className="mt-0.5 text-xs">
-                  Usually somebody ordered before this screen existed. Listed so a short
-                  import is visible rather than silent.
+                  Usually these are checks ordered before this screen existed.
                 </p>
                 <ul className="mt-1 space-y-0.5">
                   {preview.unmatched.map((m, i) => (
                     <li key={i}>
-                      {m.name} <span className="text-xs">({m.email})</span> — {m.why}
+                      {m.name} <span className="text-xs">({m.email})</span>: {m.why}
                     </li>
                   ))}
                 </ul>
@@ -498,9 +493,9 @@ export default function ScreeningBoard({ candidates }) {
             <p className="text-xs text-neutral-500">
               Only a <strong>finished</strong> report with a <strong>clear</strong> assessment
               marks somebody cleared. Checkr&rsquo;s “Status” column says whether the report
-              finished, not what it found — a report that came back “consider” still reads
-              “complete” there. Anything that is not a clear verdict is left alone for a person
-              to decide. Software must not adjudicate a background check.
+              finished, not what it found. A report that came back “consider” still reads
+              “complete” there. Anything other than a clear verdict is left for a person to
+              decide.
             </p>
           </div>
         )}

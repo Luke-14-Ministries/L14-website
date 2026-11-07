@@ -48,7 +48,7 @@ export async function setParticipantProgram({ participantId, programId }) {
     return { ok: false, error: error.message || 'That placement could not be saved.' };
   }
   if (!saved) {
-    return { ok: false, error: 'Nothing was saved — that person is no longer on the roster.' };
+    return { ok: false, error: 'Nothing was saved. That person is no longer on the roster.' };
   }
 
   revalidatePath('/admin/programs');
@@ -77,7 +77,7 @@ export async function setManyParticipantPrograms({ participantIds, programId }) 
   }
   const saved = data ?? 0;
   if (saved === 0) {
-    return { ok: false, error: 'Nothing was saved — nobody selected is still on the roster.' };
+    return { ok: false, error: 'Nothing was saved. Nobody you selected is still on the roster.' };
   }
 
   revalidatePath('/admin/programs');
@@ -156,7 +156,7 @@ export async function grantProgramLeader({ email, profileId = null, programId, e
     return {
       ok: false,
       error:
-        'No account with that address. Ask them to create one first, then name them here — this grant lets someone see campers’ names, so it is never made against an address that has not been used.',
+        'No account with that address. Ask them to create one first, then name them here. A leader can see campers’ names, so this needs an account that is already in use.',
     };
   }
 
@@ -215,8 +215,7 @@ export async function grantProgramLeader({ email, profileId = null, programId, e
       error:
         `${profile.first_name ?? 'That person'} is not registered for this event. ` +
         'A program leader sees the names and support flags of the children in their ' +
-        'program, so the grant is only ever made to somebody who is coming to that ' +
-        'same camp. Ask them to register first.',
+        'program, so leaders must be coming to that camp. Ask them to register first.',
     };
   }
 
@@ -251,9 +250,9 @@ export async function grantProgramLeader({ email, profileId = null, programId, e
     // Shown beside the confirmation, not instead of it. The grant is made.
     warning: isVolunteer
       ? null
-      : 'They are registered for this event, but not as a volunteer — so they have not ' +
-        'filed a volunteer application, which is what carries the background check and the ' +
-        'Apostles’ Creed affirmation. Ask them to register as a volunteer as well.',
+      : 'They are registered for this event, but not as a volunteer, so they have no ' +
+        'volunteer application. That is where the background check and the ' +
+        'Apostles’ Creed affirmation come from. Ask them to register as a volunteer as well.',
   };
 }
 

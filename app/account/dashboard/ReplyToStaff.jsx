@@ -60,7 +60,7 @@ function ReplyForm({ registrationId, label, onSent, onCancel = null, tone = 'amb
         maxLength={MAX_REPLY}
         onChange={(e) => setBody(e.target.value)}
         className="mt-1 w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800"
-        placeholder="Write your answer here — camp staff read it on your registration."
+        placeholder="Write your answer here. Camp staff will read it on your registration."
       />
       {error && <p className="mt-1 text-sm text-red-700">{error}</p>}
       <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -123,8 +123,8 @@ export default function ReplyToStaff({
         <p className="font-bold text-amber-900">Camp staff need something from you</p>
         {awaitingReason && <p className="mt-1 whitespace-pre-wrap text-amber-900">{awaitingReason}</p>}
         <p className="mt-1 text-xs text-amber-900">
-          Answer here, and update your registration below if they asked for a change. Your
-          registration is held in the meantime.
+          Answer here. If they asked for a change, update your registration below too. Your
+          registration is held until then.
         </p>
         <Thread messages={messages} />
         <ReplyForm registrationId={registrationId} label="Reply to camp staff" onSent={setSentAt} />
@@ -172,7 +172,7 @@ export default function ReplyToStaff({
         {messages.length > 0 && <span className="text-xs text-neutral-500">({messages.length})</span>}
         {waitingOnStaff && (
           <span className="text-xs text-neutral-600">
-            · Sent {whenInMorristown(sentAt ?? repliedAt)} — camp staff will be in touch
+            · Sent {whenInMorristown(sentAt ?? repliedAt)}. Camp staff will be in touch.
           </span>
         )}
       </summary>

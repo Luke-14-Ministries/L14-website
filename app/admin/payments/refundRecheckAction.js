@@ -50,7 +50,7 @@ export async function recheckRefund(refundId) {
   if (rowError) return { ok: false, error: `The refund could not be read: ${rowError.message}` };
   if (!row) return { ok: false, error: 'That refund was not found.' };
   if (row.status !== 'pending') {
-    return { ok: true, status: row.status, message: `Already ${row.status} here — nothing to re-check.` };
+    return { ok: true, status: row.status, message: `Already ${row.status} here. Nothing to re-check.` };
   }
   if (!row.stripe_refund_id) {
     return {
@@ -108,18 +108,18 @@ export async function recheckRefund(refundId) {
     };
   }
   if (!moved || moved.length === 0) {
-    return { ok: true, status, message: 'Someone recorded this refund a moment ago — reload to see it.' };
+    return { ok: true, status, message: 'Someone recorded this refund a moment ago. Reload to see it.' };
   }
 
   revalidatePath('/admin/payments');
   revalidatePath(`/admin/registrations/${row.registration_id}`);
   revalidatePath('/account/dashboard');
 
-  if (status === 'succeeded') return { ok: true, status, message: 'Stripe says: succeeded — recorded.' };
+  if (status === 'succeeded') return { ok: true, status, message: 'Stripe says: succeeded. Recorded.' };
   const why = refund.failure_reason ? `: ${String(refund.failure_reason).replace(/_/g, ' ')}` : '';
   return {
     ok: true,
     status,
-    message: `Stripe says: ${status}${why} — recorded; ${money(row.amount_cents)} can be refunded again.`,
+    message: `Stripe says: ${status}${why}. Recorded. ${money(row.amount_cents)} can be refunded again.`,
   };
 }

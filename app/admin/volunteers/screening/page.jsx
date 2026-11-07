@@ -131,12 +131,12 @@ export default async function ScreeningPage() {
     let blockedBecause = null;
     if (adult === null) {
       blockedBecause =
-        'no date of birth on file, so we cannot confirm they are 18 — add it on their details page';
+        'no date of birth on file, so we can’t confirm they are 18. Add it on their details page.';
     } else if (!email) {
       blockedBecause =
-        'no email address on file for them or their household, and Checkr needs one to send the invitation';
+        'no email on file for them or their household. Checkr needs one to send the invitation.';
     } else if (waiting) {
-      blockedBecause = `already invited${c.order_batch ? ` on ${dayInMorristown(c.order_batch)}` : ''} — waiting on Checkr`;
+      blockedBecause = `already invited${c.order_batch ? ` on ${dayInMorristown(c.order_batch)}` : ''}, waiting on Checkr`;
     }
 
     candidates.push({
@@ -184,8 +184,8 @@ export default async function ScreeningPage() {
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Checkr&rsquo;s bulk upload takes a list of email addresses and invites each
-        person to fill in their own details. We never see or hold a Social Security
-        number, and there is no API key involved — the file is the whole integration.
+        person to fill in their own details. We never see or keep a Social Security
+        number.
       </p>
       <ScreeningBoard candidates={candidates} />
     </div>

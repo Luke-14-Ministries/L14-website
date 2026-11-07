@@ -61,7 +61,7 @@ export default async function ActivityGroupsPage({ searchParams }) {
           right, as everywhere signed in. */}
       <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
         <h2 className="text-xl font-bold">
-          {data.activity.name} &mdash; {noun.many}
+          {data.activity.name}: {noun.many}
         </h2>
         <BackLink
           href={`/admin/activities/${data.event ? `?event=${data.event.id}` : ''}`}
@@ -70,11 +70,10 @@ export default async function ActivityGroupsPage({ searchParams }) {
       </div>
       <p className="mb-4 max-w-4xl text-sm text-neutral-500">
         Everyone signed up for {data.activity.name}
-        {data.event ? ` at ${data.event.name}` : ''}, and each camper&rsquo;s paired buddy, who
-        goes wherever their camper goes. Pick someone, then choose their {noun.one}. A camper and
-        their buddy move together.
+        {data.event ? ` at ${data.event.name}` : ''}, plus each camper&rsquo;s buddy. Pick someone,
+        then choose their {noun.one}. A camper and their buddy always move together.
         {data.activity.minAge != null &&
-          ` The minimum age is ${data.activity.minAge}: younger people are flagged, not refused — check with camp staff.`}
+          ` The minimum age is ${data.activity.minAge}. Younger people are flagged but not turned away, so check with camp staff.`}
       </p>
 
       {!data.activity.active && (

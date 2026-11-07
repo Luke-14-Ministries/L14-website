@@ -29,7 +29,7 @@ export async function requestScholarship(registrationId, participantId, input) {
   }
   const cents = Math.round(dollars * 100);
   if (cents > MAX_CENTS) {
-    return { ok: false, error: 'That amount looks like a typo — please check it.' };
+    return { ok: false, error: 'That amount looks like a typo. Please check it.' };
   }
 
   const statement = (input?.statement || '').trim();

@@ -63,7 +63,7 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
 
   function approve() {
     if (!note.trim()) {
-      setError('Say briefly why — every scholarship decision keeps a note.');
+      setError('Add a short reason. Every scholarship decision needs one.');
       return;
     }
     run(() =>
@@ -78,12 +78,12 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
 
   function decline() {
     if (!note.trim()) {
-      setError('Say briefly why — the office will need it when the family asks.');
+      setError('Add a short reason. The office will need it if the family asks.');
       return;
     }
     if (
       !confirm(
-        `Turn down the request for ${row.name}?\n\nThey will see "Not granted this time" on their scholarship page, and they can ask again. Your note stays with staff.`
+        `Turn down the request for ${row.name}?\n\nThey will see "Not granted this time" on their scholarship page, and they can ask again. Your reason stays with staff.`
       )
     )
       return;
@@ -225,15 +225,19 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
                     the decision and printed on the answered card. Typed dates
                     also go stale and can be wrong; the stamp cannot. So the
                     note is for the one thing nothing else captures: WHY. */}
-                Note <span className="font-normal text-neutral-500">— required, to award or decline. Your name and the date are saved automatically, so use this to say <em>why</em>. Staff only; the family does not see it.</span>
+                Reason <span className="font-normal text-neutral-500">(staff only)</span>{' '}
+                <span className="text-red-600">*</span>
               </label>
               <input
                 id={`note-${row.participantId}`}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="e.g. Board hardship fund; spoke with the family by phone"
+                placeholder="e.g. Board hardship fund. Spoke with the family by phone."
                 className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
+              <p className="mt-1 text-xs text-neutral-500">
+                Needed to award or decline. Your name and the date are saved for you.
+              </p>
             </div>
           </div>
 

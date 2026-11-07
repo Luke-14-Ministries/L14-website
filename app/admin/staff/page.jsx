@@ -85,11 +85,11 @@ export default async function StaffAccessPage() {
         </a>
       </div>
       <p className="text-sm text-neutral-500 mb-4">
-        Who can do what. Each person holds <span className="font-semibold">grants</span> on ten
-        areas &mdash; read, write or nothing &mdash; set by a <span className="font-semibold">preset</span> in
-        one click and adjusted underneath (the <em>Grants</em> button on each row). The{' '}
-        <span className="font-semibold">Administrator</span> tick is what lets a person grant. Every
-        change is in the access log. One login, many hats: nobody needs a second account.
+        Who can do what. Each person has <span className="font-semibold">grants</span> on ten
+        areas: read, write or no access. Set them with a <span className="font-semibold">preset</span>,
+        then adjust them with the <em>Grants</em> button on each row. Only someone with the{' '}
+        <span className="font-semibold">Administrator</span> box checked can grant access. Every
+        change goes in the access log. One login covers every role, so nobody needs a second account.
       </p>
 
       {/* One fold, collapsed by default (Lawrence, 2 Oct 2026: the page is for
@@ -103,36 +103,37 @@ export default async function StaffAccessPage() {
           <span className="font-semibold">The presets.</span>{' '}
           <em>Every area, read and write</em>: all nine areas at write.{' '}
           <em>Registration &amp; coordination</em>: families, money and placements.{' '}
-          <em>Finance</em>: records payments and refunds, reads names and events; scholarship
-          decisions need Registration write too, so they stay with Registration &amp; coordination.{' '}
-          <em>Operations lead</em>: the door, rooms, activities and buddies; no money.{' '}
-          <em>Operations helper</em>: reads what is needed to move people around camp safely,
-          writes nothing. A preset is a starting point; any area can be adjusted by hand. No preset
-          makes an administrator: that is the tick in the <em>Administrator — grants access</em>{' '}
-          column, and it alone can grant, add or remove staff, name a program leader, or reset two-factor.
+          <em>Finance</em>: records payments and refunds, and reads names and events. Scholarship
+          decisions also need Registration write, so they stay with Registration &amp; coordination.{' '}
+          <em>Operations lead</em>: the door, rooms, activities and buddies, but no money.{' '}
+          <em>Operations helper</em>: reads what&rsquo;s needed to move people around camp safely,
+          and writes nothing. After applying a preset, you can adjust any area by hand. No preset
+          makes someone an administrator. That&rsquo;s the box in the{' '}
+          <em>Administrator (grants access)</em> column. Only an administrator can grant access, add
+          or remove staff, name a program leader, or reset two-factor.
         </p>
         <p className="text-neutral-600 mt-3">
           <span className="font-semibold">The ten areas.</span>{' '}
           <span className="font-semibold">Registration info</span>,{' '}
           <span className="font-semibold">Payments &amp; scholarships</span>,{' '}
-          <span className="font-semibold">Events &amp; camp setup</span> (the definitions), and the four
-          placements &mdash; <span className="font-semibold">Activities, Rooming, Buddies, Programs</span>{' '}
-          (who is in what). Then three that are need-to-know:{' '}
-          <span className="font-semibold">Sensitive</span> &mdash; medical, dietary and support details;{' '}
-          <span className="font-semibold">Giving</span> &mdash; donor gift records, never set by a preset,
-          always a hand tick for a named person;{' '}
-          <span className="font-semibold">Background checks</span> &mdash; read is the three facts every
-          staff member sees (on file, current, verdict); write &mdash; ordering, importing, the
-          verdict &mdash; is the administrator&rsquo;s alone.
+          <span className="font-semibold">Events &amp; camp setup</span> (the definitions), and four
+          placement areas: <span className="font-semibold">Activities, Rooming, Buddies, Programs</span>{' '}
+          (who is in what). Three more are need-to-know.{' '}
+          <span className="font-semibold">Sensitive:</span> medical, dietary and support details.{' '}
+          <span className="font-semibold">Giving:</span> donor gift records. It&rsquo;s never set by a
+          preset, only checked by hand for a named person.{' '}
+          <span className="font-semibold">Background checks:</span> read shows the three facts every
+          staff member sees (on file, current, verdict). Write covers ordering, importing and the
+          verdict, and is for administrators only.
         </p>
         <p className="text-neutral-600 mt-3">
           <span className="font-semibold">Administrators.</span> An administrator adds and removes
-          staff, changes anyone&rsquo;s grants, and can make or unmake another administrator. All
-          administrators are equal, and nobody can remove or deactivate themselves &mdash; that
-          takes another administrator, which is one reason to have two. Sensitive and Giving are
-          separate grants even for administrators: nothing about running the platform needs
-          medical details or donor giving, and an administrator with them off has safe screens to
-          project at check-in. Keep the administrator list short.
+          staff, changes anyone&rsquo;s grants, and can make or remove another administrator. All
+          administrators are equal. Nobody can remove or deactivate themselves. Another
+          administrator has to do it, which is one reason to have two. Sensitive and Giving are
+          separate grants, even for administrators. Running the site doesn&rsquo;t need medical
+          details or donor giving, and an administrator without them can safely project their screen
+          at check-in. Keep the administrator list short.
         </p>
       </details>
 

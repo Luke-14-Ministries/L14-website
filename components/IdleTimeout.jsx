@@ -350,11 +350,11 @@ export default function IdleTimeout() {
           Are you still there?
         </h2>
         <p className="text-neutral-700">
-          For security, you&rsquo;ll be signed out in{' '}
+          You&rsquo;ve been away a while. You&rsquo;ll be signed out in{' '}
           <strong className="tabular-nums">
             {mm}:{ss}
           </strong>{' '}
-          because of inactivity.
+          unless you choose to stay.
         </p>
         <div className="mt-5 flex gap-3">
           <button onClick={stay} className="btn-primary">

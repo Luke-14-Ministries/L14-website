@@ -45,7 +45,7 @@ function DayTimeField({ label, value, onChange, dayRef }) {
   const box = 'rounded-sm border border-neutral-300 px-2 py-1';
   return (
     <div className="text-sm">
-      <span className="block text-neutral-500 mb-0.5" title="Your local time zone. Blank = no limit on that end.">
+      <span className="block text-neutral-500 mb-0.5" title="In your local time zone. Leave blank for no limit.">
         {label}
       </span>
       <span className="flex flex-wrap gap-1">
@@ -78,14 +78,14 @@ function DayTimeField({ label, value, onChange, dayRef }) {
 // the list (Lawrence, 26 Oct 2026): blue on blue unpublished, green on green
 // published, grey on grey archived.
 const EVENT_STATUSES = [
-  ['unpublished', 'Unpublished', 'Hidden from the public site; staff can still set it up.', 'bg-blue-100 text-blue-800 border-blue-300'],
-  ['published', 'Published', 'On the public site; registration follows the open/close times.', 'bg-green-100 text-green-800 border-green-300'],
-  ['archived', 'Archived', 'Finished: out of every current list and off the public site; its records stay.', 'bg-neutral-200 text-neutral-700 border-neutral-300'],
+  ['unpublished', 'Unpublished', 'Hidden from the public site. Staff can still set it up.', 'bg-blue-100 text-blue-800 border-blue-300'],
+  ['published', 'Published', 'On the public site. Registration follows the open and close times.', 'bg-green-100 text-green-800 border-green-300'],
+  ['archived', 'Archived', 'Finished. Off the public site and out of current lists. Its records stay.', 'bg-neutral-200 text-neutral-700 border-neutral-300'],
 ];
 const STATUS_SAVED = {
-  unpublished: 'Unpublished — hidden from the public site; staff can keep setting it up.',
-  published: 'Published — on the public site now; registration follows the open/close times.',
-  archived: 'Archived — off the public site and out of every current list; its records stay.',
+  unpublished: 'Unpublished. It\'s hidden from the public site, and staff can keep setting it up.',
+  published: 'Published. It\'s on the public site now, and registration follows the open and close times.',
+  archived: 'Archived. It\'s off the public site and out of current lists. Its records stay.',
 };
 const statusTone = (v) => EVENT_STATUSES.find(([key]) => key === v)?.[3] ?? '';
 const eventStatus = (published, archivedAt) =>
@@ -98,10 +98,10 @@ const eventStatus = (published, archivedAt) =>
 function statusOf(row) {
   const now = new Date();
   const tone = (v) => statusTone(v).replace(/\bborder-\S+/g, '').trim();
-  if (row.status === 'archived') return ['Archived — out of every current list', tone('archived')];
-  if (row.status !== 'published') return ['Unpublished — not on the public site', tone('unpublished')];
+  if (row.status === 'archived') return ['Archived, out of current lists', tone('archived')];
+  if (row.status !== 'published') return ['Unpublished, not on the public site', tone('unpublished')];
   if (!row.hasPublishedOption)
-    return ['No published price — cannot open', 'bg-red-100 text-red-800'];
+    return ['No published price, can\'t open', 'bg-red-100 text-red-800'];
   if (row.opensAt && new Date(row.opensAt) > now)
     return [`Published · opens ${new Date(row.opensAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, tone('published')];
   if (row.closesAt && new Date(row.closesAt) < now)
@@ -124,10 +124,10 @@ function FamilyDashboardChoice({ e }) {
       hide &&
       !window.confirm(
         `Clear "${e.name}" from every family's dashboard?\n\n` +
-          'Use this only for a test event, or one cancelled before it took place. A real event that ' +
-          'happened should just stay archived, so families can look back at their registration and ' +
-          'payments.\n\nNothing is deleted: registrations, payments and refunds stay for staff and in ' +
-          'every export, and this can be undone here.'
+          'Use this only for a test event, or one cancelled before it took place. A real event ' +
+          'should stay archived, so families can look back at their registration and payments.' +
+          '\n\nNothing is deleted. Registrations, payments and refunds stay for staff and in every ' +
+          'export, and you can undo this here.'
       )
     )
       return;
@@ -581,16 +581,16 @@ function EventRow({ e }) {
             </summary>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
-                <strong>Price:</strong> a <em>lower</em> price applies to everyone already registered
-                too (unless their scholarship and discount add up to more than it; a family that has
-                paid more than the new total is due a refund, and Save says so). A <em>higher</em>{' '}
-                price applies to new registrations only. <strong>Places</strong> cannot go below the
+                <strong>Price:</strong> a <em>lower</em> price also applies to everyone already
+                registered, unless their scholarship and discount add up to more than the new price.
+                If a family has paid more than the new total, they&rsquo;re due a refund, and Save
+                tells you. A <em>higher</em> price applies to new registrations only. <strong>Places</strong> cannot go below the
                 number registered.
               </li>
               <li>
                 <strong>Deposit</strong> is per fee-paying person, never more than the price, and is
-                what staff look for before approving. A change applies to everyone registered; $0 is
-                no deposit.
+                what staff look for before approving. A change applies to everyone registered. $0
+                means no deposit.
               </li>
               <li>
                 <strong>Early discount:</strong> off each person registered by the early date, once
@@ -599,8 +599,8 @@ function EventRow({ e }) {
               </li>
               <li>
                 <strong>Balance due</strong> is shown to families. A payment plan is offered only when
-                it is set and more than {PLAN_MIN_DAYS} days away; blank means pay in full, or the
-                deposit now and the rest when staff say.
+                it is set and more than {PLAN_MIN_DAYS} days away. If it&rsquo;s blank, families pay in
+                full, or pay the deposit now and the rest when staff say.
               </li>
               <li>
                 <strong>Family discount:</strong> off the chosen person and every later fee-paying
@@ -610,8 +610,8 @@ function EventRow({ e }) {
               </li>
               <li>
                 <strong>Returned bank payment fee:</strong> added when a bank returns a payment, never
-                for a card decline; $0 is off. Families see it before choosing a bank payment and keep
-                the amount they agreed to.
+                for a declined card. $0 turns it off. Families see it before choosing to pay by bank,
+                and they&rsquo;re charged the amount they saw then.
               </li>
               <li>
                 <strong>Weeks of one camp:</strong> saving an earlier week copies its price, places,
@@ -680,7 +680,7 @@ function ReminderScheduleNote() {
           <strong>Payment plans:</strong> a notice 1 week before each automatic payment.
         </li>
       </ul>
-      <p className="mt-1">These go out by themselves each morning (in test mode, to staff addresses only, until the site goes live).</p>
+      <p className="mt-1">These go out automatically each morning. Until the site goes live, they go to staff addresses only.</p>
     </div>
   );
 }
@@ -903,7 +903,7 @@ function NewEventPanel({ events }) {
           ? cur
           : {
               ok: true,
-              message: `Created “${made.join('” and “')}”. ${made.length > 1 ? 'They are' : 'It is'} unpublished: check the details below, then set the Event status to Published when registration should open.`,
+              message: `Created “${made.join('” and “')}”. ${made.length > 1 ? 'They are' : 'It is'} unpublished. Check the details below, then set Event status to Published when registration should open.`,
             }
       );
       reset();
@@ -1011,19 +1011,19 @@ function NewEventPanel({ events }) {
           {drafts.length > 0 && (
             <p className="mt-3 text-xs text-neutral-600">
               {noTemplate ? (
-                <>There is no earlier event of this kind to start from, so this is a blank event of that type. </>
+                <>There&rsquo;s no earlier event of this kind to copy, so this starts as a blank event. </>
               ) : sources.length ? (
                 <>
-                  Drafted from {[...new Set(sources.map((s) => s.name))].join(' and ')}: dates moved to the same
-                  weekdays a year on, and its description, agreements, activities and their waivers
-                  {isCamp ? ', rooms and cabins (empty, no one assigned)' : ''}, and money settings (registration
-                  window, early registration and its discount, family and both-weeks discounts, balance due,
-                  returned-payment fee) copied, every date moved to match. People, assignments and program leaders
-                  are not copied. Check each box before creating.{' '}
+                  Copied from {[...new Set(sources.map((s) => s.name))].join(' and ')}, with every date moved to
+                  the same weekday a year later. This copies the description, agreements, activities and their
+                  waivers{isCamp ? ', rooms and cabins (empty, no one assigned)' : ''}, and the money settings:
+                  registration dates, early registration and its discount, family and both-weeks discounts,
+                  balance due and returned payment fee. People, assignments and program leaders are not
+                  copied. Check each box before you create it.{' '}
                 </>
               ) : (
                 <>
-                  A blank event gets the standard agreements and nothing else; add activities
+                  A blank event gets the standard agreements and nothing else. Add activities
                   {isCamp ? ' and rooms (Rooms & Cabins can copy them from another event)' : ''} afterwards.{' '}
                 </>
               )}
@@ -1034,7 +1034,7 @@ function NewEventPanel({ events }) {
           {drafts.length > 0 && (
             <details className="mt-3">
               <summary className="fold-summary cursor-pointer text-xs font-semibold text-neutral-700">
-                Reminder emails — set the first day and the balance due date
+                Reminder emails use the first day and the balance due date
               </summary>
               <ReminderScheduleNote />
             </details>

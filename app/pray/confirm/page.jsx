@@ -1,6 +1,6 @@
 import TokenAction from '../TokenAction';
 
-export const metadata = { title: 'Confirm — Prayer List' };
+export const metadata = { title: 'Join the Prayer List' };
 
 // The link in the prayer list's confirmation email lands here (0141).
 export default async function PrayerConfirmPage({ searchParams }) {

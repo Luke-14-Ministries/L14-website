@@ -98,7 +98,7 @@ const ROLE_LABEL = {
 
 const STATUS = {
   draft: ['Draft', 'bg-neutral-100 text-neutral-700'],
-  submitted: ['Submitted — pending review', 'bg-amber-100 text-amber-800'],
+  submitted: ['Submitted, awaiting review', 'bg-amber-100 text-amber-800'],
   waitlisted: ['Waitlisted', 'bg-orange-100 text-orange-800'],
   confirmed: ['Confirmed', 'bg-green-100 text-green-800'],
   cancelled: ['Cancelled', 'bg-neutral-200 text-neutral-500'],
@@ -373,11 +373,11 @@ export default async function DashboardPage({ searchParams }) {
       eventName: owedEvents.size > 1 ? eventNameByReg.get(o.registration_id) || null : null,
       text:
         o.kind === 'ours'
-          ? `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'} needs a waiver signed`
+          ? `${o.activity_name}: ${firstNameByPerson.get(o.person_id) || 'someone'} needs a waiver signed`
           : o.upload_status === 'rejected'
             ? // Camp staff rejected the upload (0124): say why, and ask again.
-              `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'}: camp staff couldn't accept the confirmation (${o.review_note || 'no reason given'}) — please upload it again`
-            : `${o.activity_name} — ${firstNameByPerson.get(o.person_id) || 'someone'}: upload the outfitter's confirmation`,
+              `${o.activity_name}: camp staff couldn't accept the confirmation for ${firstNameByPerson.get(o.person_id) || 'someone'} (${o.review_note || 'no reason given'}). Please upload it again.`
+            : `${o.activity_name}: upload the outfitter's confirmation for ${firstNameByPerson.get(o.person_id) || 'someone'}`,
     }))
     .sort((a, b) => String(a.eventName ?? '').localeCompare(String(b.eventName ?? '')) || a.text.localeCompare(b.text));
 
@@ -495,9 +495,9 @@ export default async function DashboardPage({ searchParams }) {
   // volunteer team on its own track — without the qualifier the two read as
   // contradictory ("Confirmed" beside "under review").
   const VOL_APP_LABEL = {
-    applied: 'submitted — volunteer team reviews this separately',
+    applied: 'submitted; the volunteer team reviews it separately',
     approved: 'approved',
-    declined: 'not approved — you can update and resubmit',
+    declined: 'not approved; you can update it and send it again',
     withdrawn: 'withdrawn',
   };
 
@@ -746,7 +746,7 @@ export default async function DashboardPage({ searchParams }) {
     pending: ['Started', 'bg-neutral-100 text-neutral-600'],
     processing: ['Clearing the bank', CLEARING_PILL],
     succeeded: ['Received', 'bg-green-100 text-green-800'],
-    failed: ['Failed — not received', 'bg-red-100 text-red-800'],
+    failed: ['Failed, not received', 'bg-red-100 text-red-800'],
     refunded: ['Refunded', 'bg-neutral-200 text-neutral-600'],
   };
   const payDate = (p) => dayInMorristown(p.received_on ?? p.created_at);
@@ -857,9 +857,9 @@ export default async function DashboardPage({ searchParams }) {
             count={attendingPeople.length}
           >
             <p className="mt-1 text-sm text-neutral-600">
-              A short form for each person attending — allergies, medications, what helps on
-              a hard day, and an emergency contact. Most of it is optional, but please fill
-              in what applies: staff use these to plan support, meals and medical cover.
+              A short form for each person attending: allergies, medications, what helps on
+              a hard day, and an emergency contact. Most of it is optional. Please fill in
+              what applies, because staff use it to plan support, meals and medical care.
             </p>
             <ul className="mt-4 divide-y divide-neutral-100">
               {attendingPeople.map((p) => {
@@ -976,7 +976,7 @@ export default async function DashboardPage({ searchParams }) {
             {!staff && leaderships.length > 0 && (
               <Link
                 href="/admin/my-program/"
-                title={`You lead: ${leaderships.map((l) => `${l.programName} — ${l.eventName}`).join('; ')}`}
+                title={`You lead: ${leaderships.map((l) => `${l.programName} · ${l.eventName}`).join('; ')}`}
                 className="rounded-sm bg-brand-dark px-5 py-2 font-semibold text-white hover:bg-brand"
               >
                 My Program
@@ -1005,10 +1005,9 @@ export default async function DashboardPage({ searchParams }) {
           <div className="mb-8 rounded-lg border border-neutral-300 bg-white p-5">
             <p className="font-semibold">That payment wasn&rsquo;t completed.</p>
             <p className="mt-1 text-sm text-neutral-600">
-              Nothing was charged. Your balance is unchanged below — you can try again
-              whenever you&rsquo;re ready, and choosing bank transfer sends more of your
-              payment to the ministry. If a card was declined, your bank can usually say
-              why.
+              Nothing was charged, and your balance below is unchanged. You can try again
+              whenever you&rsquo;re ready. Paying by bank transfer sends more of your payment
+              to the ministry. If a card was declined, your bank can usually tell you why.
             </p>
           </div>
         )}
@@ -1028,7 +1027,7 @@ export default async function DashboardPage({ searchParams }) {
               >
                 <div>
                   <p className="font-semibold text-red-900">
-                    {stopped ? 'Your payment plan has stopped' : 'A payment plan payment didn’t go through'} —{' '}
+                    {stopped ? 'Your payment plan has stopped' : 'A payment on your plan didn’t go through'}:{' '}
                     {r.events?.name ?? 'your registration'}
                   </p>
                   <p className="text-sm text-red-800">
@@ -1057,8 +1056,8 @@ export default async function DashboardPage({ searchParams }) {
                   .join(', ')}
               </p>
               <p className="text-sm text-amber-800">
-                Your registration is in — a few more questions tell us where you&rsquo;d like to
-                serve, and start the volunteer review.
+                Your registration is in. The volunteer application tells us where you&rsquo;d
+                like to serve, and it starts the volunteer review.
               </p>
             </div>
             <Link href="/register/volunteer" className="btn-primary py-2!">
@@ -1200,7 +1199,7 @@ export default async function DashboardPage({ searchParams }) {
                   const clearingPill =
                     clearing > 0 ? [{ text: `${dollars(clearing)} clearing the bank`, tone: 'clearing' }] : [];
                   const status = notFinished
-                    ? [{ text: 'Not finished — choose how to pay', tone: 'ask' }]
+                    ? [{ text: 'Not finished: choose how to pay', tone: 'ask' }]
                     : planOk
                     ? [
                         {
@@ -1287,7 +1286,7 @@ export default async function DashboardPage({ searchParams }) {
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span>
                                   {p.people?.first_name} {p.people?.last_name}
-                                  <span className="text-neutral-500"> — {ROLE_LABEL[p.camp_role] ?? p.camp_role}</span>
+                                  <span className="text-neutral-500"> · {ROLE_LABEL[p.camp_role] ?? p.camp_role}</span>
                                 </span>
                                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${cls}`}>
                                   {label}
@@ -1431,8 +1430,8 @@ export default async function DashboardPage({ searchParams }) {
                           <p className="font-bold text-amber-900">Camp staff are re-checking this registration</p>
                           {r.hold_reason && <p className="mt-1 text-amber-900">{r.hold_reason}</p>}
                           <p className="mt-1 text-xs text-amber-900">
-                            Your places are held while they look. Nothing is needed from you
-                            unless staff get in touch; questions to{' '}
+                            Your places are held while they look. You don&rsquo;t need to do
+                            anything unless staff get in touch. Questions? Email{' '}
                             <a href="mailto:registration@luke14ministries.net" className="underline">
                               registration@luke14ministries.net
                             </a>
@@ -1490,7 +1489,7 @@ export default async function DashboardPage({ searchParams }) {
                                       </span>
                                     )}
                                     {rf.reason && (
-                                      <span className="text-neutral-500"> — {rf.reason}</span>
+                                      <span className="text-neutral-500"> · {rf.reason}</span>
                                     )}
                                     {/* Where the money actually goes, in the
                                         family's terms. They do not know or care
@@ -1501,7 +1500,7 @@ export default async function DashboardPage({ searchParams }) {
                                     <span className="block text-xs text-neutral-500">
                                       {rf.status === 'succeeded'
                                         ? 'Sent back to the card or bank account you paid from.'
-                                        : 'On its way back to the card or bank account you paid from — this usually takes a few days.'}
+                                        : 'On its way back to the card or bank account you paid from. This usually takes a few days.'}
                                     </span>
                                   </span>
                                   <span
@@ -1642,27 +1641,27 @@ export default async function DashboardPage({ searchParams }) {
                         return (
                           <div className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                             <p className="font-semibold">
-                              A {dollars(dep)} deposit is needed before staff can approve this registration
+                              Please pay the {dollars(dep)} deposit so staff can approve this registration.
                               {heads > 1
-                                ? ` — ${dollars(r.events?.deposit_cents ?? 0)} for each of the ${heads} people on this registration.`
-                                : '.'}
+                                ? ` That is ${dollars(r.events?.deposit_cents ?? 0)} for each of the ${heads} people on it.`
+                                : ''}
                             </p>
                             <p className="mt-1">
-                              Requesting a full scholarship instead? It&rsquo;s under &ldquo;Ways to
-                              pay&rdquo; below, and staff will be in touch &mdash; no deposit needed.
+                              If you&rsquo;d like to request a full scholarship instead, choose it under
+                              &ldquo;Ways to pay&rdquo; below. No deposit is needed then, and staff will be
+                              in touch.
                             </p>
                             <p className="mt-1">
-                              The deposit is your family&rsquo;s commitment to come — and it lets
-                              the ministry book vendors and reserve locations with real numbers.
-                              The rest of the balance can be paid in one lump sum, in parts or with a
-                              payment plan (no extra fee)
+                              The deposit tells us your family is coming, so we can book vendors and
+                              reserve places for the right number of people. You can pay the rest all at
+                              once, in parts, or with a payment plan, with no extra fee.
                               {balanceDueOn(r.events) ? (
                                 <>
-                                  , and is due by{' '}
+                                  {' '}The balance is due by{' '}
                                   <strong>{formatDueDate(balanceDueOn(r.events))}</strong>.
                                 </>
                               ) : (
-                                '; camp staff will be in touch about the due date.'
+                                ' Camp staff will be in touch about the due date.'
                               )}
                             </p>
                           </div>
@@ -1699,7 +1698,7 @@ export default async function DashboardPage({ searchParams }) {
                                 className={`inline-flex items-center rounded-full ${CLEARING_PILL} px-3 py-1 text-sm font-semibold`}
                                 title="A bank transfer may take a few days to clear. Nothing more to do."
                               >
-                                Paid — {dollars(clearingNow)} clearing the bank
+                                Paid · {dollars(clearingNow)} clearing the bank
                               </span>
                             ) : (
                               <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 px-3 py-1 text-sm font-semibold">
@@ -1832,7 +1831,7 @@ export default async function DashboardPage({ searchParams }) {
                       <span className="text-neutral-700">
                         {dayInMorristown(g.received_on ?? g.created_at)} ·{' '}
                         <span className="font-semibold">{dollars(g.amount_cents)}</span>
-                        <span className="text-neutral-500"> — {g.fund}</span>
+                        <span className="text-neutral-500"> · {g.fund}</span>
                       </span>
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>
                         {label}
@@ -1846,8 +1845,8 @@ export default async function DashboardPage({ searchParams }) {
             <p className="mt-3 text-sm text-neutral-600">
               Luke 14 Ministries is a registered <strong>501(c)(3)</strong> nonprofit
               organization, and <strong>donations are tax-deductible</strong> to the extent
-              allowed by law. (Event registration payments — camp, retreats, and the like — are not; they cover
-              event costs such as food, lodging, and activities.)
+              allowed by law. Event registration payments, such as camp and retreats, are not.
+              They cover event costs such as food, lodging and activities.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               {/* Same destination as the header's Donate button, and that is
@@ -1877,13 +1876,13 @@ export default async function DashboardPage({ searchParams }) {
             <h2 className="text-xl font-bold mb-4">My Household</h2>
             {householdError ? (
               <p className="text-amber-800">
-                We couldn&rsquo;t load your household just now. Refreshing usually fixes
-                it — if it doesn&rsquo;t, please let the ministry know.
+                We couldn&rsquo;t load your household just now. Refreshing the page usually
+                fixes it. If it doesn&rsquo;t, please let us know.
               </p>
             ) : members.length === 0 ? (
               <p className="text-neutral-500">
-                No family members on file yet — add them below, or they&rsquo;re added
-                automatically when you register.
+                No family members on file yet. Add them below, or register and we&rsquo;ll
+                add them for you.
               </p>
             ) : (
               <ul className="space-y-2 text-neutral-700">
@@ -1910,7 +1909,7 @@ export default async function DashboardPage({ searchParams }) {
                       <span>
                         {m.first_name} {m.last_name}
                         <span className="text-neutral-500">
-                          {age != null ? ` (age ${age})` : ' (no DOB provided)'}
+                          {age != null ? ` (age ${age})` : ' (no date of birth yet)'}
                         </span>
                         {/* Named here so "who do staff call?" is answerable
                             from the dashboard, and so changing the contact

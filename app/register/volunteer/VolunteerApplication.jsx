@@ -25,9 +25,9 @@ const AREAS = [
 ];
 
 const STATUS_CHIP = {
-  applied: ['Submitted — under review', 'bg-amber-100 text-amber-800'],
+  applied: ['Submitted, under review', 'bg-amber-100 text-amber-800'],
   approved: ['Approved', 'bg-green-100 text-green-800'],
-  declined: ['Not approved — you can update and resubmit', 'bg-red-100 text-red-800'],
+  declined: ['Not approved. You can update it and resubmit', 'bg-red-100 text-red-800'],
   withdrawn: ['Withdrawn', 'bg-neutral-200 text-neutral-600'],
 };
 
@@ -124,7 +124,7 @@ export default function VolunteerApplication({
     const res = await submitVolunteerApplication(answers);
     setPending(false);
     if (!res?.ok) {
-      setError(res?.error || 'Something went wrong — please try again.');
+      setError(res?.error || 'Something went wrong. Please try again.');
       return;
     }
     setSaved(true);
@@ -140,7 +140,7 @@ export default function VolunteerApplication({
     setPending(true);
     const res = await withdrawVolunteerApplication(participantId);
     setPending(false);
-    if (!res?.ok) setError(res?.error || 'Something went wrong — please try again.');
+    if (!res?.ok) setError(res?.error || 'Something went wrong. Please try again.');
     else router.refresh();
   }
 
@@ -190,18 +190,18 @@ export default function VolunteerApplication({
               {prefill.registration_participants?.registrations?.events?.name
                 ? ` ${prefill.registration_participants.registrations.events.name}`
                 : ' earlier'}{' '}
-              application. Check it, change anything, and submit — this week is reviewed on its own.
+              application. Check it, change anything you need to, and submit. This week is reviewed on its own.
             </p>
           )}
           {!isChild && (
             <>
-          <label className={label}>Where would you like to serve? (pick any — required)</label>
+          <label className={label}>Where would you like to serve? (required)</label>
           {/* Katie, 14 Oct 2026: say up front that a preference is a
               preference. Leadership honours them where it can; the camp
               decides where each person is placed. */}
           <p className="mb-1 text-xs text-neutral-500">
-            This is to tell us your preference. Leadership will try to honor it where possible;
-            final placements are made by the camp team.
+            Pick as many as you like. This tells us your preference. The camp team makes the
+            final placements and will honor it where they can.
           </p>
           <div className="grid sm:grid-cols-2 gap-1">
             {AREAS.map((a) => (
@@ -241,13 +241,16 @@ export default function VolunteerApplication({
                   onChange={() => setFirstTime(v)}
                   className="h-4 w-4"
                 />
-                {v === 'yes' ? 'Yes — first time' : 'No — returning'}
+                {v === 'yes' ? 'Yes, first time' : 'No, I’ve been before'}
               </label>
             ))}
           </div>
 
-          <label className={label}>Home church (required — &ldquo;none&rdquo; is an answer)</label>
+          <label className={label}>Home church (required)</label>
           <input className={input} value={church} onChange={(e) => setChurch(e.target.value)} />
+          <p className="mt-1 text-xs text-neutral-500">
+            If you don&rsquo;t have one, write &ldquo;none&rdquo;.
+          </p>
 
           {/* The cap "(a sentence or two is plenty)" was removed on 29 August 2026 at Lee Anne's
               suggestion: it discouraged an answer we would often rather have in full. The box is
@@ -264,13 +267,16 @@ export default function VolunteerApplication({
           <label className={label}>Skills you&rsquo;d bring (music, lifeguard, nursing, crafts…)</label>
           <textarea className={input} rows={2} value={skills} onChange={(e) => setSkills(e.target.value)} />
 
-          <label className={label}>Experience with people with disabilities (required — none needed, just tell us)</label>
+          <label className={label}>Experience with people with disabilities (required)</label>
           <textarea
             className={input}
             rows={2}
             value={experience}
             onChange={(e) => setExperience(e.target.value)}
           />
+          <p className="mt-1 text-xs text-neutral-500">
+            You don&rsquo;t need any. If you have none yet, write &ldquo;none&rdquo;.
+          </p>
           <label className="mt-2 flex items-center gap-2 text-sm text-neutral-700">
             <input
               type="checkbox"
@@ -295,8 +301,8 @@ export default function VolunteerApplication({
                   ))}
               </select>
               <p className="text-xs text-neutral-500 mt-1">
-                If your accompanying adult isn&rsquo;t listed, add them to your household first
-                (or note it in the skills box and our team will follow up).
+                If the adult isn&rsquo;t listed, add them to your household first. Or write their
+                name in the skills box and our team will follow up.
               </p>
             </>
           )}
@@ -324,12 +330,12 @@ export default function VolunteerApplication({
                 <span className="text-sm">I have read the Apostles&rsquo; Creed and I affirm it.</span>
               </label>
               <p className="mt-2.5 text-sm text-neutral-700">
-                If you are not comfortable affirming this, leave the box unticked and please speak
-                with Larry (
+                If you&rsquo;re not comfortable affirming this, leave the box unchecked and talk
+                with Larry at{' '}
                 <a href="mailto:larry@luke14ministries.net" className="text-brand underline">
                   larry@luke14ministries.net
                 </a>
-                ) — the volunteer team will follow up with you before your application is reviewed.
+                . The volunteer team will follow up with you before your application is reviewed.
               </p>
             </div>
           )}
@@ -389,8 +395,8 @@ export default function VolunteerApplication({
             )}
           </div>
           <p className="text-xs text-neutral-500 mt-3">
-            After you submit, our team reviews the application and contacts you about the
-            background check — that step happens through the check provider, never on this site.
+            After you submit, our team reviews your application and contacts you about the
+            background check.
           </p>
         </div>
       )}

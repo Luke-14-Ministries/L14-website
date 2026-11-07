@@ -38,7 +38,7 @@ function PersonLine({ person, minAge }) {
       )}
       {person.ageUnknown && (
         <span className={`${pill} bg-amber-100 text-amber-800`} title="No date of birth on file">
-          Age unknown — check
+          Age unknown, check
         </span>
       )}
       {person.waiver === 'needed' && (
@@ -56,7 +56,7 @@ function PersonLine({ person, minAge }) {
       {person.ask && (
         <span
           className={`${pill} bg-blue-100 text-blue-800`}
-          title="There is something to know — ask the coordinator. The detail is on Medical & Support."
+          title="Ask the coordinator. The details are on Medical & Support."
         >
           ask the coordinator
         </span>
@@ -65,8 +65,8 @@ function PersonLine({ person, minAge }) {
         <span className={`${pill} bg-blue-50 text-blue-700`}>interested</span>
       )}
       {person.isBuddy && !person.signup && (
-        <span className="text-xs text-neutral-400" title="Goes with their camper; did not sign up themselves">
-          not signed up — goes with their camper
+        <span className="text-xs text-neutral-400" title="Goes with their camper. Did not sign up themselves.">
+          not signed up, goes with their camper
         </span>
       )}
       {person.stray && (
@@ -197,7 +197,7 @@ function GroupCard({
           <span className="flex items-baseline gap-3 text-sm">
             <span className={over ? 'font-semibold text-red-700' : 'text-neutral-500'}>
               {count} of {group.capacity}
-              {over ? ' — over' : ''}
+              {over ? ' (over)' : ''}
             </span>
             {canPlace && (
               <button
@@ -275,7 +275,7 @@ function GroupCard({
           className={`mt-3 btn-outline py-1! text-xs ${overBy > 0 ? 'border-red-400! text-red-700!' : ''}`}
         >
           Place {inHandNames} here
-          {overBy > 0 && ` — over by ${overBy}`}
+          {overBy > 0 && ` (over by ${overBy})`}
         </button>
       )}
     </div>
@@ -487,13 +487,13 @@ export default function GroupsBoard({
           </div>
           {inHand && (
             <p className="mt-2 rounded-sm border border-brand bg-brand-light px-3 py-2 text-sm">
-              Placing <span className="font-semibold">{inHandNames}</span> — choose a {noun.one} on
-              the right.
+              Placing <span className="font-semibold">{inHandNames}</span>. Choose a {noun.one} on the
+              right.
             </p>
           )}
           {filtering && (
             <p className="mt-1 text-xs text-neutral-500">
-              Filters narrow this list; the {noun.many} show everyone.
+              Filters only narrow this list. The {noun.many} still show everyone.
             </p>
           )}
 

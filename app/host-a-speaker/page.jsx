@@ -60,7 +60,7 @@ export default function HostASpeakerPage() {
           <div className="space-y-12">
             <div>
               <h3 className="text-xl font-bold mb-3">
-                Darlene LaPlue &mdash; Events Planner
+                Darlene LaPlue, Events Planner
               </h3>
               <div className="prose-site">
                 <p>
@@ -72,7 +72,7 @@ export default function HostASpeakerPage() {
                 </p>
                 <p>
                   Today, Darlene serves in multiple roles with Luke 14
-                  Ministries&mdash;planning the annual Luke 14 Dinner Party,
+                  Ministries: planning the annual Luke 14 Dinner Party,
                   helping lead wheelchair distribution teams to Kenya,
                   directing Camp Celebrate, and teaching an Adult Special
                   Friends Sunday School Class at her church in Morristown. Her
@@ -95,7 +95,7 @@ export default function HostASpeakerPage() {
 
             <div>
               <h3 className="text-xl font-bold mb-3">
-                Larry LaPlue &mdash; Executive Director
+                Larry LaPlue, Executive Director
               </h3>
               <div className="prose-site">
                 <p>

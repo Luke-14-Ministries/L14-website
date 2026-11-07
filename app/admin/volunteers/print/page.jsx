@@ -22,7 +22,7 @@ export const metadata = { title: 'Volunteer List — Staff Admin' };
 // keeps its own mark or word; the full words are the tooltip.
 const APP_MARK = {
   // Waiting on staff is a warning, not a tick (Lawrence, 28 Oct 2026).
-  applied: { state: 'warn', label: 'Submitted — waiting on review', title: 'Application submitted — waiting on review' },
+  applied: { state: 'warn', label: 'Submitted, waiting on review', title: 'Application submitted, waiting on review' },
   approved: { state: 'yes', label: 'Approved', title: 'Application approved' },
   declined: { state: 'no', label: 'Declined', title: 'Application declined' },
   withdrawn: { state: 'na', label: 'Withdrawn', title: 'Application withdrawn' },
@@ -122,9 +122,9 @@ export default async function VolunteerPrintPage({ searchParams }) {
         </span>
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">
-        Who is volunteering at each event, where they would like to serve, and where their
-        application stands. The household&rsquo;s contact details; nothing from the application
-        text and nothing medical.
+        Who is volunteering at each event, where they&rsquo;d like to serve, and where their
+        application stands. It includes household contact details, but nothing from the
+        application and nothing medical.
       </p>
       {groups.length > 0 && (
         <StatusLegend
@@ -183,7 +183,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
                     </td>
                     <td className="py-1 pr-2">
                       {v.campRole === 'volunteer_child' ? (
-                        <StatusMark state="na" title="Volunteer child — the Creed is not asked" />
+                        <StatusMark state="na" title="Volunteer child. The Creed is not asked." />
                       ) : a ? (
                         <StatusMark
                           state={a.creed_affirmed ? 'yes' : 'no'}

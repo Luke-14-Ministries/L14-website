@@ -31,8 +31,8 @@ export default async function ContactPage() {
           <BackLink />
         </div>
         <p className="text-neutral-600 mb-8">
-          These are your own account details. Your family&rsquo;s shared contact info — the
-          household phone and address camp uses — lives under{' '}
+          These are your own account details. Your family&rsquo;s shared contact info, the
+          household phone and address camp uses, is under{' '}
           <Link href="/account/household/" className="text-brand font-semibold">
             Manage Household
           </Link>

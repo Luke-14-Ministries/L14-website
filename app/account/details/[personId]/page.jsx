@@ -92,8 +92,7 @@ export default async function PersonDetailsPage({ params }) {
         </div>
         <p className="text-neutral-600 mt-2 mb-8">
           This is the fuller form we mentioned when you registered. It helps camp staff
-          look after {name} well — and it is how a week goes right rather than nearly
-          right.
+          look after {name} well all week.
         </p>
 
         <DetailsForm

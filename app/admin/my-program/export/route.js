@@ -38,7 +38,7 @@ export async function GET(request) {
     roster = await getProgramRoster({ programId: program.programId, eventId: program.eventId });
   } catch {
     // Never an empty file that looks like "nobody in this program".
-    return new Response('The roster could not be read. Nothing was exported; please try again.', {
+    return new Response('The roster could not be read. Nothing was exported. Please try again.', {
       status: 500,
     });
   }

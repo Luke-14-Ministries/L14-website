@@ -74,11 +74,11 @@ export default async function EmailFamiliesPage({ searchParams }) {
           subject: `${activity.name} at ${event.name}: the outfitter's form`,
           message: `Hello,\n\n${activity.name} at ${event.name} is run by ${
             activity.provider_name || 'an outside provider'
-          }, who need their own form completed for everyone taking part. Please complete it with them, then upload their confirmation (a screenshot, a photo of the signed page, or the PDF they send) on your Activities page.\n\nThank you — and if anything about this is a worry, just reply to this email.`,
+          }. They need their own form filled out for everyone taking part. Please fill it out with them, then upload their confirmation on your Activities page. You can upload a screenshot, a photo of the signed page or the PDF they send you.\n\nThank you. If you have any questions, reply to this email.`,
         }
       : {
           subject: `${activity.name} at ${event.name} now needs a waiver`,
-          message: `Hello,\n\nWe have added a waiver to ${activity.name} at ${event.name}, and it is needed for everyone already signed up. It takes a minute or two to read and sign on your Activities page, and nothing else about the place changes.\n\nThank you — and if you have any questions, just reply to this email.`,
+          message: `Hello,\n\nWe've added a waiver to ${activity.name} at ${event.name}, and everyone already signed up needs to sign it. It takes a minute or two on your Activities page. Your spot on the activity stays the same.\n\nThank you. If you have any questions, reply to this email.`,
         };
   }
 
@@ -134,10 +134,10 @@ export default async function EmailFamiliesPage({ searchParams }) {
     <div>
       <h2 className="text-xl font-bold mb-1">Email Registrants</h2>
       <p className="text-sm text-neutral-500 mb-4">
-        Tell the people registered for an event — everyone, the campers&rsquo; families, or the
-        volunteers, or only those on one activity — about a change. One email per household, to
-        the household&rsquo;s email, sent from registration@ when you press Send and never
-        before. Each send is recorded in the message log.
+        Email the people registered for an event about a change. You can send to everyone, the
+        campers&rsquo; families, the volunteers, or only the people on one activity. Each household
+        gets one email from registration@, sent only when you press Send. Every send is recorded
+        in the message log.
       </p>
       <EmailFamiliesForm
         events={listed.map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }))}

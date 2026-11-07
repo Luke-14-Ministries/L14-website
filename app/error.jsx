@@ -21,8 +21,8 @@ export default function Error({ error, reset }) {
       <div className="container-site max-w-lg mx-auto text-center">
         <h1 className="text-3xl font-bold">Something went wrong on this page</h1>
         <p className="mt-4 text-neutral-700">
-          Sorry about that — the page hit a problem while displaying. Anything you had
-          already saved is safe.
+          Sorry about that. The page hit a problem. Anything you had already saved is
+          safe.
         </p>
         <p className="mt-2 text-neutral-700">
           Refreshing almost always fixes this, especially if the site was just updated.
@@ -40,8 +40,8 @@ export default function Error({ error, reset }) {
           </Link>
         </div>
         <p className="mt-8 text-sm text-neutral-500">
-          Still stuck? Email info@luke14ministries.net and tell us what you were doing —
-          we&rsquo;ll sort it out.
+          Still stuck? Email info@luke14ministries.net and tell us what you were doing.
+          We&rsquo;ll sort it out.
         </p>
       </div>
     </section>

@@ -155,8 +155,8 @@ export default async function LodgingPage({ searchParams }) {
     <div>
       <h2 className="text-xl font-bold mb-1">Rooms &amp; Cabins</h2>
       <p className="text-sm text-neutral-500 mb-4">
-        Cabins can be assigned whole, or hold rooms that are assigned instead. Set up or correct
-        the rooms under &lsquo;Set up rooms&rsquo;. Families see nothing here until you publish.
+        A cabin can be assigned whole, or split into rooms that are assigned one by one. Add or
+        fix rooms under &lsquo;Set up rooms&rsquo;. Families see nothing here until you publish.
       </p>
 
       <EventFilter
@@ -174,7 +174,7 @@ export default async function LodgingPage({ searchParams }) {
         <p className="text-neutral-500">No events to show.</p>
       ) : lodgings.length === 0 ? (
         <p className="text-neutral-500">
-          No cabins or rooms are set up for this event yet — add them below, or copy them from
+          No cabins or rooms are set up for this event yet. Add them below, or copy them from
           another event.
         </p>
       ) : (

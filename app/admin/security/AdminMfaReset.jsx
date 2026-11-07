@@ -28,9 +28,9 @@ export default function AdminMfaReset() {
         ok: true,
         message:
           data.removed > 0
-            ? `Done — removed ${data.removed} two-factor ${
+            ? `Done. Removed ${data.removed} two-factor ${
                 data.removed === 1 ? 'device' : 'devices'
-              } from ${data.email}. They can log in with just their password and set it up again.`
+              } from ${data.email}. They can log in with their password and set it up again.`
             : `${data.email} had no two-factor set up, so there was nothing to remove.`,
       });
       setEmail('');

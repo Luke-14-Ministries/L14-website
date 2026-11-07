@@ -61,8 +61,8 @@ export default async function FamilyRegisterPage({ searchParams }) {
           <h1 className="text-4xl font-bold">Registration</h1>
           <p className="mt-4 text-neutral-700">
             Please log in or create an account first. Your registration is saved to
-            your account so you can leave and come back to it, and only you and camp
-            staff can ever see it.
+            your account, so you can leave and come back to it. Only you and camp
+            staff can see it.
           </p>
           <div className="mt-6 flex gap-3 justify-center">
             <Link href={`/account/?next=${next}`} className="btn-primary">
@@ -549,7 +549,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
         <p className="text-neutral-600 mt-2 mb-6">
           Signed in as {user.email}.{' '}
           {existing?.isUpdate
-            ? 'Your saved registration is loaded below — make changes and update.'
+            ? 'Your saved registration is below. Make your changes, then update it.'
             : 'Your answers save to your account.'}
         </p>
         {weeks.length === 0 ? (

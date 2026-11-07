@@ -53,7 +53,7 @@ const PERSON_ROLE_LABEL = {
 };
 
 const CONSENT_LABEL = {
-  media: 'Photos and video — may be featured in published material',
+  media: 'Photos and video: may be featured in published material',
   directory: 'Included in the participant directory',
 };
 
@@ -252,8 +252,8 @@ export default async function AgreementsPage() {
           <div className="mt-8 rounded-lg border border-neutral-200 bg-white shadow-xs p-6 sm:p-8 print:border-0 print:shadow-none print:p-0">
             <h2 className="text-xl font-bold">Permissions</h2>
             <p className="mt-1 text-sm text-neutral-600">
-              These are choices, not agreements — you can change either one at any
-              time, and doing so changes nothing else about your registration.
+              These are choices, not agreements. You can change either one at any
+              time.
             </p>
             <ul className="mt-4 space-y-2">
               {currentConsents.map((c) => (
@@ -261,7 +261,7 @@ export default async function AgreementsPage() {
                   <span className="font-semibold">
                     {c.people?.first_name} {c.people?.last_name}
                   </span>
-                  <span className="text-neutral-600">— {CONSENT_LABEL[c.kind] ?? c.kind}:</span>
+                  <span className="text-neutral-600">· {CONSENT_LABEL[c.kind] ?? c.kind}:</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                       c.granted ? 'bg-green-100 text-green-800' : 'bg-neutral-200 text-neutral-700'
@@ -277,12 +277,13 @@ export default async function AgreementsPage() {
             </ul>
             <p className="mt-4 text-xs text-neutral-500 print:hidden">
               To change one, open your registration and update the person&rsquo;s
-              answer, or contact camp staff. We keep the history of what was
-              permitted when, because published material outlives the permission
-              that allowed it. If a particular photo ever concerns you, email{' '}
-              <span className="font-semibold">info@luke14ministries.net</span> — we
-              can&rsquo;t promise nobody appears in a wide group shot, but we will work
-              to address a specific request promptly.
+              answer, or contact camp staff. We keep a record of what was permitted
+              and when, because a photo we publish can outlast the permission. If a
+              particular photo ever concerns you, email{' '}
+              <span className="font-semibold">info@luke14ministries.net</span>. We take
+              thousands of photos each week, so we can&rsquo;t promise nobody appears in
+              the background of a group shot, but we will take care of a specific
+              request promptly.
             </p>
           </div>
         )}

@@ -137,8 +137,8 @@ export default async function RostersPage() {
     <div>
       <h2 className="text-xl font-bold mb-1">Rosters</h2>
       <p className="text-sm text-neutral-500 mb-4">
-        Everyone registered, by event — filter below, click a column heading to sort. The CSV
-        download matches whatever is filtered on screen. Select a household to review it, change
+        Everyone registered, by event. Filter below, and click a column heading to sort. The CSV
+        download matches what is filtered on screen. Select a household to review it, change
         a status, or add and edit people.
       </p>
 

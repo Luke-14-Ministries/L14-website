@@ -43,7 +43,7 @@ export async function GET(request) {
   const failed = regRes.error ?? consentRes.error ?? sigRes.error;
   if (failed) {
     console.error('rosters export:', failed.message);
-    return new Response('The roster could not be read. Nothing was exported; please try again.', { status: 500 });
+    return new Response('The roster could not be read. Nothing was exported. Please try again.', { status: 500 });
   }
   const regs = regRes.data;
   const consents = consentRes.data;

@@ -154,12 +154,11 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
         <Link href="/admin/payments/" className="text-brand-dark hover:underline">
           Event Payments
         </Link>
-        {' '}— a scholarship decision is a money decision.
+        , because a scholarship decision is a money decision.
       </p>
       <p className="text-sm text-neutral-500 mb-4">
-        Families asking for help with the fee. Approving one takes the amount straight off
-        what that family owes — it shows on their balance, their dashboard, and their
-        statement immediately.
+        Families asking for help with the fee. Approving one takes the amount off what that
+        family owes. Their balance, dashboard and statement update right away.
       </p>
 
       <div className="mb-3 max-w-md">
@@ -206,7 +205,7 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
         <p className="text-neutral-500">
           {showSettled
             ? 'Nothing answered yet.'
-            : 'No requests waiting — nobody is sitting without an answer.'}
+            : 'No requests waiting.'}
         </p>
       ) : (
         <div className="space-y-4">

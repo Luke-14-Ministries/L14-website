@@ -5,9 +5,9 @@
 export default function FlagsNote({ needAsking, className = '' }) {
   return (
     <div className={className}>
-      <strong>What the flags mean.</strong> A marker here tells you there is something to ask
-      about — it does not tell you what. Allergy details, medications and support plans stay with
-      the camp coordinator, who will go through them with you before the week starts.{' '}
+      <strong>What the flags mean.</strong> A flag means there is something to ask about. It
+      doesn&rsquo;t say what. The camp coordinator keeps allergy details, medications and support
+      plans, and will go through them with you before the week starts.{' '}
       {needAsking > 0 ? (
         <>
           <strong>

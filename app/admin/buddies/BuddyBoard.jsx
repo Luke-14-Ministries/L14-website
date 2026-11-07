@@ -29,14 +29,14 @@ function SupportNotes({ support, canSee = true }) {
   if (!support && !canSee) {
     return (
       <p className="mt-1 text-sm text-neutral-500">
-        Support details hidden — they need the Sensitive grant.
+        Support details are hidden. You need the Sensitive grant to see them.
       </p>
     );
   }
   if (!support) {
     return (
       <p className="mt-1 text-sm text-amber-800">
-        No support details on file yet — pairing without them is guesswork.
+        No support details on file yet. Get them before you pair this camper.
       </p>
     );
   }
@@ -106,13 +106,12 @@ export default function BuddyBoard({
         `Record that ${name} does NOT need a one-to-one buddy?
 
 ` +
-          `Every camper is listed as needing one until somebody decides otherwise, so ` +
-          `this is a decision rather than a tidy-up: they come off the board and stop ` +
-          `being counted as waiting for a buddy.
+          `Every camper needs one until someone decides otherwise. This takes them off ` +
+          `the board, and they stop counting as waiting for a buddy.
 
 ` +
-          `Any buddy already paired with them stays paired — remove that pairing ` +
-          `separately if it is what you meant.`
+          `Any buddy already paired with them stays paired. Remove that pairing ` +
+          `separately if you meant to.`
       )
     ) {
       return;
@@ -183,7 +182,7 @@ export default function BuddyBoard({
     const pill = clearancePill(volunteer.clearance);
     if (pill.key !== 'ok') {
       const ok = window.confirm(
-        `${volunteer.name}: ${pill.text}.\n\nPair them with ${camper.name} anyway?\n\n(Clearances often arrive after pairing is drafted — this is a warning, not a rule. It must not still be true in the week before camp.)`
+        `${volunteer.name}: ${pill.text}.\n\nPair them with ${camper.name} anyway?\n\n(Background checks often come in after pairing starts, so this is a warning, not a block. It must be sorted out before the week of camp.)`
       );
       if (!ok) return;
     }
@@ -222,7 +221,7 @@ export default function BuddyBoard({
                 } no buddy.`
               : ''
           }`
-        : `Unpublish buddy assignments for ${eventName}?\n\nFamilies who have already seen their buddy will stop being able to.`
+        : `Unpublish buddy assignments for ${eventName}?\n\nFamilies will no longer see their buddy.`
     );
     if (!ok) return;
     start(async () => {
@@ -279,10 +278,10 @@ export default function BuddyBoard({
           <p className="font-semibold">
             {publishedAt ? (
               <span className="text-green-700">
-                Published — families can see their buddy
+                Published. Families can see their buddy.
               </span>
             ) : (
-              <span className="text-neutral-700">Draft — families see nothing yet</span>
+              <span className="text-neutral-700">Draft. Families can&rsquo;t see anything yet.</span>
             )}
           </p>
           <p className="text-sm text-neutral-500">
@@ -342,10 +341,10 @@ export default function BuddyBoard({
                         campers. */}
                     {c.role === 'sibling' && (
                       <span
-                        title="Siblings may be paired with a buddy when a volunteer is free — this is a preference, not a promise. Campers come first."
+                        title="Siblings get a buddy when a volunteer is free. Campers come first, so this is not a promise."
                         className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 align-middle"
                       >
-                        sibling — if available
+                        sibling, if available
                       </span>
                     )}
                   </h3>
@@ -375,7 +374,7 @@ export default function BuddyBoard({
                           needed". The name is the point: "who?" is the question
                           staff actually have. */}
                       {mine.length === 1 ? 'buddy assigned' : `${mine.length} buddies assigned`}
-                      {' — '}
+                      {': '}
                       {mine
                         .map((a) => volunteerById.get(a.buddyParticipantId)?.name ?? 'unknown')
                         .join(', ')}
@@ -446,7 +445,7 @@ export default function BuddyBoard({
                         </p>
                       ) : volunteers.every((v) => (loadByVolunteer.get(v.participantId) ?? 0) > 0) && hidePaired ? (
                         <p className="text-sm text-neutral-500">
-                          Every volunteer on this roster already has a camper — untick &ldquo;Hide paired&rdquo; to see them.
+                          Every volunteer on this roster already has a camper. Untick &ldquo;Hide paired&rdquo; to see them.
                         </p>
                       ) : (
                         <ul className="grid gap-1 sm:grid-cols-2">
@@ -510,7 +509,7 @@ export default function BuddyBoard({
               <span className="font-semibold">Marked as not needing a buddy</span>
               <span className="ml-2 text-sm text-neutral-500">
                 {otherCampers.length}{' '}
-                {otherCampers.length === 1 ? 'camper' : 'campers'} — put one back on the board
+                {otherCampers.length === 1 ? 'camper' : 'campers'}. Click one to put them back on the board.
               </span>
             </span>
           </button>
@@ -518,9 +517,8 @@ export default function BuddyBoard({
           {markOpen && (
             <>
               <p className="mt-2 text-sm text-neutral-600">
-                Somebody decided these campers do not need a one-to-one buddy. If that
-                has changed — or it was decided too quickly — put them back and they
-                return to the board above, ready to pair.
+                Someone decided these campers don&rsquo;t need a one-to-one buddy. If that has
+                changed, put them back and they return to the board above, ready to pair.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {otherCampers.map((c) => (

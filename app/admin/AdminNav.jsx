@@ -223,11 +223,11 @@ export default function AdminNav({
           it speaks of staff queues and background checks. */}
       {showLegend && (
         <p className="mt-3 px-3 text-xs leading-relaxed text-neutral-500">
-          Badge colours:{' '}
+          Badge colors:{' '}
           <span className="inline-block rounded-full bg-amber-100 px-1.5 font-semibold text-amber-800">
             amber
           </span>{' '}
-          waiting on staff — reaches zero when the work is done ·{' '}
+          waiting on staff, clears when the work is done ·{' '}
           <span className="inline-block rounded-full bg-blue-100 px-1.5 font-semibold text-blue-800">
             blue
           </span>{' '}

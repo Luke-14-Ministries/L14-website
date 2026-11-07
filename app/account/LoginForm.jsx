@@ -323,7 +323,7 @@ export default function LoginForm() {
       code: code.trim(),
     });
     if (vError) {
-      setError('That code did not match. It changes every 30 seconds — try the current one.');
+      setError('That code did not match. It changes every 30 seconds, so try the current one.');
       setBusy(false);
       return;
     }
@@ -412,7 +412,7 @@ export default function LoginForm() {
           Luke 14 Ministries
           {mfa.labels?.length === 1 && (
             <>
-              {' '}— the entry named <strong>{mfa.labels[0].label}</strong>
+              {' '}(the entry named <strong>{mfa.labels[0].label}</strong>)
             </>
           )}
           .
@@ -471,7 +471,7 @@ export default function LoginForm() {
             className="mt-0.5"
           />
           <span>
-            Remember this browser for {TRUST_DAYS} days ({TRUST_DAYS_STAFF} for staff) — your
+            Remember this browser for {TRUST_DAYS} days ({TRUST_DAYS_STAFF} for staff). Your
             password is still required, but not the code.{' '}
             <span className="text-neutral-500">
               (Leave unchecked on a shared or public computer.)

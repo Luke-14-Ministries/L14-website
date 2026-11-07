@@ -69,7 +69,7 @@ async function caresForNames(supabase, personId, householdId) {
 
 export async function updateHouseholdInfo(householdId, form) {
   if (!emailLooksValid(form.email)) {
-    return { ok: false, error: 'That email address doesn’t look right — please check it.' };
+    return { ok: false, error: 'That email address doesn’t look right. Please check it.' };
   }
   const supabase = await createClient();
   const patch = {
@@ -118,7 +118,7 @@ export async function updatePersonInfo(personId, form) {
   // than refusing it: the person believes something happened. Refuse, and say
   // why. Everything else on this form may legitimately be blanked.
   if ('first_name' in form && !clean(form.first_name)) {
-    return { ok: false, error: 'A first name is needed — this is how staff will know who they are.' };
+    return { ok: false, error: 'A first name is needed. It is how staff will know who they are.' };
   }
   if ('last_name' in form && !clean(form.last_name)) {
     return { ok: false, error: 'A last name is needed.' };
@@ -159,13 +159,13 @@ export async function updatePersonInfo(personId, form) {
         return {
           ok: false,
           error:
-            'This person is on a registration, so their name and date of birth are locked — camp rosters and signed agreements already use them. Email the ministry and staff can correct it.',
+            'This person is on a registration, so their name and date of birth are locked. Camp rosters and signed agreements already use them. Email the ministry and staff can correct it.',
         };
       }
     }
   }
   if (!emailLooksValid(form.email)) {
-    return { ok: false, error: 'That email address doesn’t look right — please check it.' };
+    return { ok: false, error: 'That email address doesn’t look right. Please check it.' };
   }
   {
     const bad = dobProblem(clean(form.date_of_birth));

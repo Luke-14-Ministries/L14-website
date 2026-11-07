@@ -25,7 +25,7 @@ const ROLE_LABEL = {
 const money = dollars;
 
 const STATUS = {
-  requested: ['Requested — staff will review', 'bg-amber-100 text-amber-800'],
+  requested: ['Requested; staff will review', 'bg-amber-100 text-amber-800'],
   approved: ['Approved', 'bg-green-100 text-green-800'],
   declined: ['Not granted this time', 'bg-neutral-200 text-neutral-600'],
   withdrawn: ['Withdrawn', 'bg-neutral-200 text-neutral-600'],
@@ -46,7 +46,7 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
   async function save() {
     if (!agreementReady) {
       setError(
-        'Please tick the scholarship agreement above and type your name to sign it — it covers every request on this registration.'
+        'Please check the scholarship agreement above and type your name to sign it. It covers every request on this registration.'
       );
       return;
     }
@@ -119,7 +119,7 @@ function PersonCard({ registrationId, row, agreementReady = true, agreementKey =
 
       {granted ? (
         <p className="mt-3 text-sm text-neutral-700">
-          Camp staff have applied this to {row.name}&rsquo;s fee — you&rsquo;ll see it on your
+          Camp staff have applied this to {row.name}&rsquo;s fee. You&rsquo;ll see it on your
           balance. If something has changed, please contact the office rather than editing this.
         </p>
       ) : !open ? (
@@ -238,7 +238,7 @@ export default function ScholarshipForm({
                   onChange={(e) => setAgreed(e.target.checked)}
                 />
                 <span className="text-sm font-semibold">
-                  I agree — this is signed with my request below.
+                  I agree. This is signed with my request below.
                 </span>
               </label>
               {/* The name, typed. A tick records that SOMEONE agreed; it does

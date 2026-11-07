@@ -95,7 +95,7 @@ export default async function KitchenListPage({ searchParams }) {
       const words = allergenWords(s);
       // An allergy with no words is still an allergy (18 Oct review: an
       // anaphylactic volunteer with nothing ticked vanished from the list).
-      if (s.has_allergies && words.length === 0) words.push('Allergy — not specified');
+      if (s.has_allergies && words.length === 0) words.push('Allergy, not specified');
       if (words.length > 0) {
         for (const w of words) addItem(r.event_id, 'allergy', w, s.allergy_severity);
         counted = true;
@@ -111,7 +111,7 @@ export default async function KitchenListPage({ searchParams }) {
   return (
     <div className="mx-auto max-w-2xl p-8 print-sheet bg-white print:text-[12px]">
       <div className="flex items-start justify-between mb-2 print:hidden">
-        <h1 className="text-xl font-bold">Kitchen list — no names</h1>
+        <h1 className="text-xl font-bold">Kitchen list (no names)</h1>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}
         <span className="flex flex-col items-end gap-2">
           <BackLink href={`/admin/dietary/${eventFilter ? `?event=${eventFilter}` : ''}`} label="Back to Dietary" />
@@ -119,8 +119,8 @@ export default async function KitchenListPage({ searchParams }) {
         </span>
       </div>
       <p className="text-sm text-neutral-500 mb-6 print:hidden">
-        Dietary needs and allergies tallied per event, with no names attached — safe to post in
-        the kitchen. The named list stays on the Dietary &amp; Allergies page.
+        Dietary needs and allergies counted by event, with no names, so it&rsquo;s safe to post in
+        the kitchen. The list with names is on the Dietary &amp; Allergies page.
       </p>
 
       {/* Says what it covers, on the printed page too — the one place the
@@ -175,12 +175,12 @@ export default async function KitchenListPage({ searchParams }) {
                           }
                         >
                           {it.severity === 'anaphylaxis'
-                            ? 'ALLERGY — ANAPHYLAXIS'
+                            ? 'ALLERGY: ANAPHYLAXIS'
                             : it.severity === 'severe'
-                              ? 'ALLERGY — severe'
+                              ? 'ALLERGY: severe'
                               : it.severity === 'mild'
-                                ? 'ALLERGY — mild'
-                                : 'ALLERGY — severity not recorded'}
+                                ? 'ALLERGY: mild'
+                                : 'ALLERGY: severity not recorded'}
                         </span>
                       ) : (
                         'dietary'
@@ -198,7 +198,7 @@ export default async function KitchenListPage({ searchParams }) {
       {people === 0 && <p className="text-neutral-500">No dietary needs or allergies recorded.</p>}
 
       <p className="text-xs text-neutral-400 mt-8">
-        Names withheld on purpose — ask the camp office for person-level detail. Printed{' '}
+        Names are left off on purpose. Ask the camp office if you need to know who. Printed{' '}
         {new Date().toLocaleDateString('en-US')} · Luke 14 Ministries.
       </p>
     </div>

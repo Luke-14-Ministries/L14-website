@@ -43,10 +43,10 @@ export async function submitVolunteerApplication(payload) {
   const owned = participantId ? await ownParticipant(supabase, user.id, participantId) : null;
   if (owned?.queryError) {
     console.error('submitVolunteerApplication:', owned.queryError);
-    return { ok: false, error: 'The application could not be saved. Please try again.' };
+    return { ok: false, error: 'We couldn\'t save your application. Please try again.' };
   }
   if (!owned) {
-    return { ok: false, error: 'That registration could not be found on your account.' };
+    return { ok: false, error: 'We couldn\'t find that registration on your account.' };
   }
 
   // The required answers, refused here exactly as the form refuses them and
@@ -74,7 +74,7 @@ export async function submitVolunteerApplication(payload) {
   // A failed read would save the application as though no Creed were asked.
   if (creedError) {
     console.error('submitVolunteerApplication:', creedError.message);
-    return { ok: false, error: 'The application could not be saved. Please try again.' };
+    return { ok: false, error: 'We couldn\'t save your application. Please try again.' };
   }
   const creed = creedRows?.[0] ?? null;
 
@@ -119,7 +119,7 @@ export async function submitVolunteerApplication(payload) {
 
   if (error) {
     console.error('submitVolunteerApplication:', error.message);
-    return { ok: false, error: 'The application could not be saved. Please try again.' };
+    return { ok: false, error: 'We couldn\'t save your application. Please try again.' };
   }
 
   // Record the affirmation against the VERSION that was on screen, so "what
@@ -207,10 +207,10 @@ export async function withdrawVolunteerApplication(participantId) {
   const owned = participantId ? await ownParticipant(supabase, user.id, participantId) : null;
   if (owned?.queryError) {
     console.error('withdrawVolunteerApplication:', owned.queryError);
-    return { ok: false, error: 'The application could not be withdrawn. Please try again.' };
+    return { ok: false, error: 'We couldn\'t withdraw your application. Please try again.' };
   }
   if (!owned) {
-    return { ok: false, error: 'That registration could not be found on your account.' };
+    return { ok: false, error: 'We couldn\'t find that registration on your account.' };
   }
 
 
@@ -221,7 +221,7 @@ export async function withdrawVolunteerApplication(participantId) {
 
   if (error) {
     console.error('withdrawVolunteerApplication:', error.message);
-    return { ok: false, error: 'The application could not be withdrawn. Please try again.' };
+    return { ok: false, error: 'We couldn\'t withdraw your application. Please try again.' };
   }
 
   revalidatePath('/register/volunteer');

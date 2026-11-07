@@ -320,8 +320,8 @@ export default function RosterTable({ events, rows, programs = [] }) {
               </>
             )}
             <p className="mt-2 text-xs text-neutral-500">
-              Share this with whoever is photographing. It means not featuring them as the
-              subject of a picture — nobody can promise absence from a wide group shot.
+              Share this with whoever is taking photos. It means not making them the subject of a
+              picture. They may still show up in the background of a group shot.
             </p>
             <a href={photosHref} className="mt-2 inline-block text-sm font-semibold text-brand underline">
               Photographer&rsquo;s list to print →
@@ -346,8 +346,8 @@ export default function RosterTable({ events, rows, programs = [] }) {
             CSV are the other two ways out, and both are one click away. */}
         <p className="mb-2 text-xs text-neutral-500">
           More columns than fit? Hold <kbd className="rounded-sm border border-neutral-300 bg-neutral-50 px-1">Shift</kbd>{' '}
-          and scroll to move sideways — the name column stays put. Print view and the CSV
-          both include every column.
+          and scroll to move sideways. The name column stays in place. The print view and the
+          CSV both include every column.
         </p>
         <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
           <table className="w-full text-left text-sm">
@@ -435,7 +435,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                     {r.depositShort && (
                       <div
                         className="mt-1 inline-block rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900"
-                        title={`Deposit is $${((r.depositDue ?? 0) / 100).toFixed(2)} for this family; $${((r.depositPaid ?? 0) / 100).toFixed(2)} received.`}
+                        title={`Deposit is $${((r.depositDue ?? 0) / 100).toFixed(2)} for this family. $${((r.depositPaid ?? 0) / 100).toFixed(2)} received.`}
                       >
                         {depositShortWords(r.depositPaid, r.depositDue)}
                       </div>

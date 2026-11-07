@@ -72,7 +72,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
         : p.people?.person_support;
       if (!s?.has_allergies) continue;
       const words = allergenWords(s);
-      if (words.length === 0) words.push('Allergy — not specified');
+      if (words.length === 0) words.push('Allergy, not specified');
       const severity = s.allergy_severity || 'unrecorded';
       const name = `${p.people?.preferred_name || p.people?.first_name || ''} ${p.people?.last_name ?? ''}`.trim();
       if (!byEvent.has(r.event_id)) byEvent.set(r.event_id, new Map());
@@ -93,7 +93,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
   return (
     <div className="mx-auto max-w-3xl p-8 print-sheet bg-white print:text-[12px]">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-2 print:hidden">
-        <h1 className="text-xl font-bold">Allergies by allergen — with names</h1>
+        <h1 className="text-xl font-bold">Allergies by allergen, with names</h1>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}
         <span className="flex flex-col items-end gap-2">
           <BackLink href={`/admin/dietary/${eventFilter ? `?event=${eventFilter}` : ""}`} label="Back to Dietary" />
@@ -101,12 +101,12 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
         </span>
       </div>
       <p className="text-sm text-neutral-500 mb-2 print:hidden">
-        Every allergen that anyone on a current event has ticked, with who and how serious —
-        anaphylaxis first. For the cook and the nurse. The{' '}
+        Every allergen ticked by anyone at a current event, with names and severity, anaphylaxis
+        first. This is for the cook and the nurse. The{' '}
         <a href={`/admin/dietary/print${eventFilter ? `?event=${eventFilter}` : ''}`} className="text-brand underline">
           no-names tally
         </a>{' '}
-        is the one to pin in the kitchen.
+        is the one to post in the kitchen.
       </p>
       <p className="mb-6 text-sm font-semibold">
         {eventScopeHeading(eventFilter, shownEvents[0]?.name)}

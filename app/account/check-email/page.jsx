@@ -32,15 +32,15 @@ export default async function CheckEmailPage({ searchParams }) {
               email is coming. */}
           <p className="mt-4 text-neutral-600 text-sm">
             <strong>Already have an account with this address?</strong> Then no
-            new email is sent &mdash;{' '}
-            <a href="/account/" className="text-brand underline">log in</a> instead, or use{' '}
+            new email is sent.{' '}
+            <a href="/account/" className="text-brand underline">Log in</a> instead, or use{' '}
             <a href="/account/forgot-password/" className="text-brand underline">Forgot password</a>.
           </p>
           <p className="mt-4 text-neutral-600 text-sm">
             The link works once and expires after about an hour, so it&rsquo;s
             best to open it now. If it doesn&rsquo;t arrive within a few
-            minutes, <strong>check your spam or junk folder</strong> &mdash;
-            new senders often land there at first.
+            minutes, <strong>check your spam or junk folder</strong>. New
+            senders often land there at first.
           </p>
           {/* The "Not junk" ask is not boilerplate — it is the single most
               effective thing a recipient can do for our deliverability.
@@ -55,8 +55,8 @@ export default async function CheckEmailPage({ searchParams }) {
                 mail client accepts a domain in its safe-senders list. */}
             and add{' '}
             <strong className="wrap-break-word">@luke14ministries.net</strong>{' '}
-            to your contacts or safe senders. That keeps our emails &mdash;
-            receipts, reminders, statements &mdash; out of spam for good.
+            to your contacts or safe senders. That keeps our emails (receipts,
+            reminders, statements) out of spam for good.
           </p>
           {/* Deliberately a mailto and a phone number rather than a link to the
               contact form. Someone reading this page is stuck outside their

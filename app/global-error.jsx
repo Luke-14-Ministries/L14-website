@@ -29,8 +29,8 @@ export default function GlobalError({ error, reset }) {
             Something went wrong
           </h1>
           <p style={{ lineHeight: 1.6, marginBottom: '1.5rem' }}>
-            Sorry — the site hit a problem. Anything you had already saved is safe, and
-            refreshing almost always fixes this.
+            Sorry, the site hit a problem. Anything you had already saved is safe.
+            Refreshing almost always fixes this.
           </p>
           <button
             type="button"

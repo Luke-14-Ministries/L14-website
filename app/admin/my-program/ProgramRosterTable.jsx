@@ -39,7 +39,7 @@ const COLUMNS = [
         r.buddy
       ) : r.buddyRequired ? (
         // The print sheet's mark (Lawrence, 28 Oct 2026): short in a narrow column.
-        <StatusMark state="warn" label="Not paired" title="Buddy needed — not paired yet" />
+        <StatusMark state="warn" label="Not paired" title="Needs a buddy, not paired yet" />
       ) : (
         none
       ),

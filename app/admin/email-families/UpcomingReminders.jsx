@@ -52,9 +52,9 @@ export default function UpcomingReminders({ rows, mode, error }) {
       )}
       <p className="mt-3 text-xs text-neutral-500">
         Sent each morning, one email per family. Pause them for a family from its registration&rsquo;s
-        <em> Emails sent</em> section. The schedule: deposit and balance monthly on the 15th, then 2 weeks
-        before the balance due date and on it, then weekly once past due; missing details monthly, then 2
-        weeks and 5 days before camp; a plan notice a week before each payment.
+        <em> Emails sent</em> section. Deposit and balance reminders go monthly on the 15th, then 2 weeks
+        before the balance due date and on it, then weekly once past due. Missing-details reminders go
+        monthly, then 2 weeks and 5 days before camp. Plan notices go a week before each payment.
       </p>
     </FoldCard>
   );

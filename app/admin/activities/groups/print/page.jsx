@@ -42,7 +42,7 @@ function Person({ id, people, minAge }) {
           {underAgeWords(minAge)}
         </span>
       )}
-      {p.ageUnknown && <span className="ml-1 text-xs font-semibold">age unknown — check</span>}
+      {p.ageUnknown && <span className="ml-1 text-xs font-semibold">age unknown, check</span>}
       {WAIVER_MARK[p.waiver] && (
         <span className={`ml-1 text-xs ${p.waiver === 'on_file' ? '' : 'font-semibold'}`}>
           · waiver <StatusMark {...WAIVER_MARK[p.waiver]} />
@@ -117,7 +117,7 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
     <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
       <div className="mb-2 flex items-start justify-between print:hidden">
         <h1 className="text-xl font-bold">
-          {activity.name} — {noun.many}
+          {activity.name}: {noun.many}
         </h1>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}
         <span className="flex flex-col items-end gap-2">
@@ -126,9 +126,9 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
         </span>
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">
-        One block per {noun.one}, each camper with their buddy on one line, then the outfitter
-        list (names only). Flags only — the detail behind &ldquo;ask the coordinator&rdquo; stays on
-        the Medical &amp; Support page.
+        One block per {noun.one}, with each camper and their buddy on one line, then the outfitter
+        list (names only). The details behind &ldquo;ask the coordinator&rdquo; are on the
+        Medical &amp; Support page.
       </p>
 
       <p className="mb-6 text-sm font-semibold">
@@ -160,7 +160,7 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
               {g.name}
               <span className="ml-2 text-sm font-normal">
                 {count} of {g.capacity}
-                {count > g.capacity ? ' — OVER' : ''}
+                {count > g.capacity ? ' (OVER)' : ''}
               </span>
             </h2>
             {count === 0 ? (
@@ -192,7 +192,7 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
       {groups.length > 0 && (
         <div className="break-before-page">
           <h2 className="mb-1 border-b-2 border-neutral-800 pb-1 text-lg font-bold">
-            Outfitter list — {activity.name}
+            Outfitter list: {activity.name}
             {event ? `, ${event.name}` : ''}
           </h2>
           {groups.some((g) => blocksFor(g).flat().some((id) => people[id]?.waiver && people[id].waiver !== 'on_file')) && (

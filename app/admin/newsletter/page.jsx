@@ -53,7 +53,7 @@ export default async function NewsletterPage() {
           <a
             href="/admin/newsletter/export?format=mailchimp"
             className="btn-outline py-2! text-sm"
-            title="Email Address, First Name, Last Name, Tags — Mailchimp's import layout, tagged 'website'"
+            title="Email Address, First Name, Last Name, Tags: Mailchimp's import layout, tagged 'website'"
           >
             Mailchimp import CSV
           </a>
@@ -61,9 +61,9 @@ export default async function NewsletterPage() {
       </div>
       <p className="mb-5 text-sm text-neutral-500">
         Everyone with an account who has <em>Ministry news &amp; updates</em> switched on. Families
-        change it themselves on My Account → Contact details. Sending happens in Mailchimp for now
-        (Ellen runs it; a move to Resend is for later); this is the list. People who signed up through
-        the public Google Form are not here.
+        change it themselves on My Account → Contact details. For now the newsletter is sent from
+        Mailchimp, which Ellen runs. This page is the list. People who signed up through the public
+        Google Form are not here.
       </p>
 
       {error && (
@@ -143,8 +143,8 @@ export default async function NewsletterPage() {
             </ul>
           )}
           <p className="mt-3 text-xs text-neutral-500">
-            Changes are recorded from 14 October 2026 onward; earlier opt-ins show their account
-            date under &ldquo;Since&rdquo;.
+            Changes are recorded from 14 October 2026 on. For earlier sign-ups, &ldquo;Since&rdquo;
+            shows the date the account was made.
           </p>
         </div>
       </div>

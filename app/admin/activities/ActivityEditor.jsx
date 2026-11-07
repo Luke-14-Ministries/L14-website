@@ -91,7 +91,7 @@ function sharerSentence(attached, what) {
   if (versions.size === 1) {
     return `${list.map(sharerName).join(', ')} also use ${what} and stay on version ${list[0].version} until you change them there.`;
   }
-  return `${list.map((s) => `${sharerName(s)} (version ${s.version})`).join(', ')} also use ${what}; each stays on its own version until you change it there.`;
+  return `${list.map((s) => `${sharerName(s)} (version ${s.version})`).join(', ')} also use ${what}. Each stays on its own version until you change it there.`;
 }
 
 // What to ask before saving, or null when the save needs no confirming. Only
@@ -108,14 +108,14 @@ function waiverConfirm(f, attached, activityName) {
     f.waiverMode === 'revise' &&
     (f.waiverTitle.trim() !== a.title || f.waiverBody.trim() !== String(a.body ?? '').trim())
   ) {
-    return `Save a new version of the ${a.title}?\n\nThis makes version ${attached.nextVersion} for "${activityName}". Signatures already given stay on file with version ${a.version}; anyone ticking ${activityName} from now on signs the new text, and people already signed up are asked to sign it too.\n\n${
+    return `Save a new version of the ${a.title}?\n\nThis makes version ${attached.nextVersion} for "${activityName}". Signatures already given stay on file with version ${a.version}. Anyone who ticks ${activityName} from now on signs the new text, and people already signed up are asked to sign it too.\n\n${
       attached.sharers.length > 0
         ? sharerSentence(attached, `the ${a.title}`)
         : 'No other activity uses it.'
     }`;
   }
   if (f.waiverMode === 'reuse' && f.waiverAgreementId && f.waiverAgreementId !== a.id) {
-    return `Swap the ${a.title} for the one you chose on "${activityName}"?\n\nSignatures of the ${a.title} stay on file; families ticking ${activityName} from now on sign the one you chose.`;
+    return `Swap the ${a.title} for the one you chose on "${activityName}"?\n\nSignatures of the ${a.title} stay on file. Families who tick ${activityName} from now on sign the one you chose.`;
   }
   return null;
 }
@@ -142,7 +142,7 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
     <fieldset className="mt-4 rounded-lg border border-neutral-200 bg-white p-3">
       <legend className="px-1 text-sm font-bold">Waiver</legend>
       <p className="text-xs text-neutral-500">
-        How a family agrees to the risks of this activity, if it carries any.
+        How a family agrees to the risks of this activity, if there are any.
       </p>
 
       <div className="mt-2 space-y-2 text-sm">
@@ -150,7 +150,7 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
           <input type="radio" name={group} className={radio} checked={f.waiverChoice === 'none'} onChange={choose('none')} />
           <span>
             <span className="font-semibold">None</span>
-            <span className="text-neutral-600"> — no waiver for this activity.</span>
+            <span className="text-neutral-600">. No waiver for this activity.</span>
           </span>
         </label>
 
@@ -159,7 +159,7 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
           <span>
             <span className="font-semibold">The outside provider&rsquo;s own form</span>
             <span className="text-neutral-600">
-              {' '}— the family completes it with the provider and uploads their confirmation.
+              . The family fills it out with the provider and uploads their confirmation.
             </span>
           </span>
         </label>
@@ -190,7 +190,7 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
               </p>
             ) : (
               <p className="mt-1 text-xs text-neutral-500">
-                Name the provider — a blank name means camp runs it, and families are told nothing.
+                Name the provider. If it&rsquo;s blank, families aren&rsquo;t told there&rsquo;s an outside form.
               </p>
             )}
           </div>
@@ -201,7 +201,7 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
           <span>
             <span className="font-semibold">Our own waiver, signed on the site</span>
             <span className="text-neutral-600">
-              {' '}— the family reads and signs it when they tick the activity.
+              . The family reads and signs it when they tick the activity.
             </span>
           </span>
         </label>
@@ -255,15 +255,15 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
                 <option value="">Choose a waiver…</option>
                 {others.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.title} — {c.key}, version {c.version}
+                    {c.title} ({c.key}, version {c.version})
                   </option>
                 ))}
                 <option value="__new__">Write a new waiver…</option>
               </select>
             </label>
             <p className="mt-1 text-xs text-neutral-500">
-              Waivers already in use on an activity, at their current version. Choosing one
-              attaches it to {name}; nothing changes for the other activities using it.
+              Waivers already used on an activity, at their current version. Choosing one adds
+              it to {name}. The other activities that use it don&rsquo;t change.
             </p>
             {attached && (
               <button type="button" onClick={back} className="mt-1 text-xs text-neutral-600 underline">
@@ -290,12 +290,12 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
             </label>
             <p className="mt-1 text-xs text-neutral-500">
               Plain text, as the family will read it. Write <code>{'{{event}}'}</code> where the
-              event&rsquo;s name should appear — the page fills it in.
+              event&rsquo;s name should go.
             </p>
             {f.waiverMode === 'revise' && a && (
               <p className="mt-1 text-xs text-neutral-600">
                 Saving makes version {attached.nextVersion} of the {a.title}. Signatures already
-                given stay on file with version {a.version}; anyone ticking {name} from now on
+                given stay on file with version {a.version}. Anyone who ticks {name} from now on
                 signs the new text, and people already signed up are asked to sign it too.
                 {attached.sharers.length > 0 &&
                   ` ${sharerSentence(attached, 'it')}`}
@@ -326,7 +326,7 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
         <label className="text-sm">
           <span className={label}>
             Position in the list{' '}
-            <span className="font-normal text-neutral-500">— lowest number first</span>
+            <span className="font-normal text-neutral-500">(lowest number first)</span>
           </span>
           <input
             className={input}
@@ -338,7 +338,7 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
           {/* Numbered in tens by convention so a new activity can be dropped
               between two existing ones without renumbering the rest. */}
           <span className="mt-0.5 block text-xs text-neutral-500">
-            Counting in tens (10, 20, 30) leaves room to slot one in later.
+            Count in tens (10, 20, 30) so you can add one in between later.
           </span>
         </label>
       </div>
@@ -347,7 +347,7 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
         <span className={label}>
           Description{' '}
           <span className="font-normal text-neutral-500">
-            — what a family reads. Say when it usually happens.
+            (what families read, including when it usually happens)
           </span>
         </span>
         <textarea
@@ -362,15 +362,15 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
         <label className="text-sm">
           <span className={label}>How it books</span>
           <select className={input} value={f.mode} onChange={set('mode')}>
-            <option value="interest">Interest — just tell us who fancies it</option>
-            <option value="signup">Sign-up — holds a place</option>
+            <option value="interest">Interest: families say they&rsquo;d like to go</option>
+            <option value="signup">Sign-up: holds a place</option>
           </select>
         </label>
         <label className="text-sm">
           <span className={label}>
             Places{' '}
             <span className="font-normal text-neutral-500">
-              {f.mode === 'interest' ? '— not used for interest' : '— blank means no limit'}
+              {f.mode === 'interest' ? '(not used for interest lists)' : '(blank means no limit)'}
             </span>
           </span>
           <input
@@ -433,7 +433,7 @@ function GroupsBlock({ f, set, setMany }) {
           onChange={() => setMany({ groups: false })}
         />
         <span>
-          <span className="font-semibold">No</span> — everyone together.
+          <span className="font-semibold">No</span>, everyone goes together.
         </span>
       </label>
       <label className="mt-1 flex items-center gap-2 text-sm">
@@ -443,8 +443,8 @@ function GroupsBlock({ f, set, setMany }) {
           onChange={() => setMany({ groups: true, groupLabel: f.groupLabel || '' })}
         />
         <span>
-          <span className="font-semibold">Yes, in groups</span> — staff place people on its groups board; a
-          camper&rsquo;s buddy goes with them.
+          <span className="font-semibold">Yes, in groups.</span> Staff place people on its groups board.
+          A camper&rsquo;s buddy goes with them.
         </span>
       </label>
       {f.groups && (
@@ -452,13 +452,13 @@ function GroupsBlock({ f, set, setMany }) {
           <label className="text-sm">
             <span className={label}>
               One group is called{' '}
-              <span className="font-normal text-neutral-500">— e.g. Raft, Boat, Table</span>
+              <span className="font-normal text-neutral-500">(e.g. Raft, Boat, Table)</span>
             </span>
             <input className={input} value={f.groupLabel} onChange={set('groupLabel')} placeholder="Raft" maxLength={40} />
           </label>
           <label className="text-sm">
             <span className={label}>
-              People in each <span className="font-normal text-neutral-500">— blank means 6</span>
+              People in each <span className="font-normal text-neutral-500">(blank means 6)</span>
             </span>
             <input className={input} inputMode="numeric" value={f.groupSize} onChange={set('groupSize')} placeholder="6" />
           </label>
@@ -603,7 +603,7 @@ export function ActivityEditor({ activity, eventId = null, canEmail = false, wai
               onClick={() => {
                 if (
                   !confirm(
-                    `Remove "${activity.name}" from this event?\n\nThis is only possible while nobody has put their name down. If anyone has, turn it off instead — that hides it and keeps the record.`
+                    `Remove "${activity.name}" from this event?\n\nYou can only remove it while nobody has signed up. If anyone has, turn it off instead. That hides it and keeps the list of names.`
                   )
                 )
                   return;
@@ -669,10 +669,10 @@ export function AddActivity({ eventId, eventName, waiverChoices = [] }) {
           do I put the times?" and the answer is "not yet" (25 Aug). */}
       {f.mode === 'signup' && (
         <p className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
-          <span className="font-semibold">Times come afterwards.</span> If this one runs in
-          sittings — a trip that goes out four times, a chair that takes one person at a time —
-          add it first, then open it and use <span className="font-semibold">Times</span>. You
-          can add them one at a time or generate a whole run at once.
+          <span className="font-semibold">Add times later.</span> If this runs at set times (a
+          trip that goes out four times, or one person at a time), add the activity first. Then
+          open it and use <span className="font-semibold">Times</span>. You can add times one by
+          one or make a whole run at once.
         </p>
       )}
       {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
@@ -758,7 +758,7 @@ export function ActivityCard({
           <span>{modeLabel}</span>
           <span className={over ? 'font-semibold text-amber-700' : 'font-semibold'}>
             {capacity != null ? `${signedUp} of ${capacity}` : total}
-            {over ? ' — over' : ''}
+            {over ? ' (over)' : ''}
             {capacity == null && (
               <span className="font-normal">
                 {' '}
@@ -825,8 +825,8 @@ export function SlotEditor({ activity, slots = [], event = null }) {
   if (activity.booking_mode !== 'signup') {
     return (
       <p className="mt-3 text-xs text-neutral-500">
-        Times are for sign-up activities. This one is an interest list — set it to
-        &ldquo;Sign-up&rdquo; above if it runs in sittings.
+        Times are for sign-up activities. This one is an interest list. Change it to
+        &ldquo;Sign-up&rdquo; above if it runs at set times.
       </p>
     );
   }
@@ -875,11 +875,10 @@ export function SlotEditor({ activity, slots = [], event = null }) {
 
       {slots.length === 0 ? (
         <p className="mt-3 text-sm text-neutral-500">
-          No times yet — families just put their name on the activity.
+          No times yet. Families sign up for the activity without choosing a time.
           {' '}
           <span className="text-neutral-600">
-            Adding the first one will require everyone to choose a time, including anyone
-            already signed up.
+            Once you add a time, everyone has to choose one, including people already signed up.
           </span>
         </p>
       ) : (
@@ -892,7 +891,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
               <span className="font-medium">{slotLabel(s)}</span>
               {outsideCamp(s.slot_date) && (
                 <span className="rounded-sm bg-amber-100 px-1.5 text-xs font-semibold text-amber-900">
-                  Not during the event — remove it and add the right day
+                  Not during the event. Remove it and add the right day.
                 </span>
               )}
               <span className="text-xs text-neutral-500">
@@ -982,8 +981,8 @@ export function SlotEditor({ activity, slots = [], event = null }) {
       {genOpen && (
         <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
           <p className="text-xs text-neutral-600">
-            Splits one stretch of the day into equal slots — half-hour sittings all
-            afternoon, fifteen-minute appointments. Each gets the same number of places.
+            Splits part of the day into equal slots, such as half-hour sittings all afternoon
+            or 15-minute appointments. Each slot gets the same number of places.
           </p>
           <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <label className="text-xs">

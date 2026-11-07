@@ -72,7 +72,7 @@ export default function PrayerComposer({ count }) {
           placeholder="Leave a blank line between paragraphs. Web addresses become links."
         />
         <p className="mt-1 text-xs text-neutral-500">
-          Write above the sign-off; change it or delete it as you like. Every copy ends with an
+          Write above the sign-off. You can change or delete the sign-off. Every copy ends with an
           Unsubscribe link and the prayer-request address. Replies go to the prayer team&rsquo;s address.
         </p>
       </div>

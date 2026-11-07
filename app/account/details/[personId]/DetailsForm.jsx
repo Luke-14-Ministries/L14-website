@@ -82,7 +82,7 @@ export default function DetailsForm({
     const missing = supportProblems(f, { isCamper });
     if (missing.length > 0) {
       setError(
-        `Please fill in: ${missing.join('; ')}. "None" or "N/A" is a fine answer — staff read every one.`
+        `Please fill in: ${missing.join('; ')}. If something doesn't apply, write "None" or "N/A".`
       );
       return;
     }
@@ -110,8 +110,8 @@ export default function DetailsForm({
     ) {
       const ok = window.confirm(
         `Save without an emergency contact?\n\n` +
-          `Camp staff need someone they can reach during the event who is NOT attending it — ` +
-          `if there is an accident or someone becomes unwell, this is who gets the call.\n\n` +
+          `Camp staff need someone they can reach during the event who is NOT attending it. ` +
+          `If there is an accident or someone becomes unwell, this is who gets the call.\n\n` +
           `Press Cancel to add it now; it takes about twenty seconds.`
       );
       if (!ok) return;
@@ -142,7 +142,7 @@ export default function DetailsForm({
       >
         {!hasPhoto && (
           <p className="mb-3 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
-            No photo yet — staff need one before they can approve {name}&rsquo;s registration.
+            No photo yet. Staff need one before they can approve {name}&rsquo;s registration.
           </p>
         )}
         {/* CampSite blocks registration until a photo is uploaded. Ours is
@@ -165,7 +165,7 @@ export default function DetailsForm({
         title={`About ${name}`}
         subtitle={
           roleNote ??
-          'Answer what you can — a blank tells us as much as a guess, and you can come back and add to this at any time.'
+          'Answer what you can. If you are not sure, leave it blank rather than guess. You can come back and add to this at any time.'
         }
       >
         <SupportDetailsFields
@@ -188,8 +188,8 @@ export default function DetailsForm({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-neutral-600">
             {isCamper
-              ? 'The marked boxes are required for a camper — "N/A" is an answer. Come back and add to it any time.'
-              : 'Most of this is optional — fill in whatever applies. The emergency contact is the one we ask of everyone.'}
+              ? 'The marked boxes are required for a camper. Write "N/A" where something does not apply. You can come back and add to it any time.'
+              : 'Most of this is optional. Fill in whatever applies. The emergency contact is the one thing we ask of everyone.'}
           </p>
           <div className="flex items-center gap-4">
             {/* Cancel only while there is something unsaved to leave behind:
@@ -217,8 +217,8 @@ export default function DetailsForm({
       </div>
 
       <p className="text-center text-sm text-neutral-500 pb-2">
-        Only camp staff who need it can see this — the same small group who handle medical and
-        support information. It is never shown on rosters or shared outside the ministry.
+        Only the small group of camp staff who handle medical and support information can see
+        this. It is never shown on rosters or shared outside the ministry.
       </p>
     </div>
   );

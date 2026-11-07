@@ -144,7 +144,7 @@ export async function setParticipantStatus(
   let waitlistReason = null;
   if (status === 'waitlisted') {
     waitlistReason = typeof options.reason === 'string' ? options.reason.trim() : '';
-    if (!waitlistReason) return { ok: false, error: 'Say why they are waitlisted — the family sees the reason.' };
+    if (!waitlistReason) return { ok: false, error: 'Say why they are waitlisted. The family sees the reason.' };
     if (waitlistReason.length > 500) {
       return { ok: false, error: 'Keep the waitlist reason to 500 characters.' };
     }
@@ -208,8 +208,8 @@ export async function setParticipantStatus(
         needsOverride: true,
         error:
           `The deposit for this registration is ${fmt(due)} and ${fmt(paid)} has been ` +
-          `received. Confirming marks the places as held. Record the payment first, or ` +
-          `confirm again to do it anyway.`,
+          `received. Confirming holds their places. Record the payment first, or ` +
+          `confirm anyway.`,
       };
     }
   }
@@ -382,11 +382,11 @@ export async function updatePerson(registrationId, personId, fields, options = {
           needsConfirm: true,
           error:
             `${before?.first_name ?? 'This person'} ${before?.last_name ?? ''}`.trim() +
-            ' is on a live registration. Changing their name or date of birth also changes ' +
-            'what appears on rosters and check-in lists, and the agreements already signed ' +
-            'will still carry the old name. Returning families are matched by name and date ' +
-            'of birth, so an edit here can create a duplicate person at their next ' +
-            'registration. This will be recorded in Recent Changes.',
+            ' is on a live registration. Changing their name or date of birth changes ' +
+            'rosters and check-in lists, but agreements already signed keep the old name. ' +
+            'Returning families are matched by name and date of birth, so this could ' +
+            'create a duplicate person the next time they register. The change is logged ' +
+            'in Recent Changes.',
         };
       }
     }
@@ -632,7 +632,7 @@ export async function deleteParticipantPermanently(registrationId, participantId
   if (row.status !== 'cancelled') {
     return {
       ok: false,
-      error: 'Cancel this person first (which is reversible), then you can permanently delete them.',
+      error: 'Cancel this person first. Then you can delete them permanently.',
     };
   }
 
@@ -677,7 +677,7 @@ export async function setAdjustments(registrationId, participantId, input) {
   }
   // Every scholarship decision keeps a note (Lawrence, 4 Nov 2026), and a
   // hand-set amount here is one.
-  if (!note) return { ok: false, error: 'Say briefly why — every scholarship decision keeps a note.' };
+  if (!note) return { ok: false, error: 'Add a short reason. Every scholarship decision needs one.' };
 
   const supabase = await createClient();
 
@@ -788,7 +788,7 @@ export async function addFamilyMessage(registrationId, body) {
   if (!can(staff, 'write:registration')) return { ok: false, error: 'Not permitted.' };
   const text = typeof body === 'string' ? body.trim() : '';
   if (!text) return { ok: false, error: 'Write the note first.' };
-  if (text.length > 4000) return { ok: false, error: 'That note is too long — please keep it under 4,000 characters.' };
+  if (text.length > 4000) return { ok: false, error: 'That note is too long. Keep it under 4,000 characters.' };
 
   const supabase = await createClient();
   const { error } = await supabase.rpc('staff_message_to_family', {
@@ -851,7 +851,7 @@ export async function reviewRegistration(registrationId, { action, reason = '', 
     // Waitlisting needs its reason (0128); checked once, before anybody moves.
     const waitlistReason = next === 'waitlisted' && typeof reason === 'string' ? reason.trim() : '';
     if (next === 'waitlisted' && !waitlistReason) {
-      return { ok: false, error: 'Say why they are waitlisted — the family sees the reason.' };
+      return { ok: false, error: 'Say why they are waitlisted. The family sees the reason.' };
     }
     if (waitlistReason.length > 500) return { ok: false, error: 'Keep the waitlist reason to 500 characters.' };
     for (const r of rows) {
@@ -993,7 +993,7 @@ export async function holdRegistration(registrationId, reason = '') {
   const { error: authError } = await requireRegistrar();
   if (authError) return { ok: false, error: authError };
   const text = typeof reason === 'string' ? reason.trim().slice(0, 1000) : '';
-  if (!text) return { ok: false, error: 'Say why the registration is going on hold — the family sees it.' };
+  if (!text) return { ok: false, error: 'Say why the registration is going on hold. The family sees the reason.' };
 
   const supabase = await createClient();
   const {
@@ -1046,7 +1046,7 @@ export async function deleteFamilyMessage(registrationId, messageId) {
     console.error('deleteFamilyMessage:', error.message);
     return { ok: false, error: 'The note could not be removed.' };
   }
-  if (!data?.length) return { ok: false, error: 'That note could not be removed — a family’s reply stays in the record.' };
+  if (!data?.length) return { ok: false, error: 'That note can’t be removed. A family’s reply stays on file.' };
   revalidatePath(`/admin/registrations/${registrationId}`);
   return { ok: true };
 }
@@ -1127,7 +1127,7 @@ export async function refundPayment(registrationId, input) {
     .filter((r) => r.status === 'pending' || r.status === 'succeeded')
     .reduce((s, r) => s + (r.fee_cover_cents ?? 0), 0);
   if (feeCover > (payment.fee_cover_cents ?? 0) - feeAlready) {
-    return { ok: false, error: 'That is more than the processing-fee contribution left on this payment.' };
+    return { ok: false, error: 'That’s more than is left of the processing fee they added to this payment.' };
   }
 
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
@@ -1255,7 +1255,7 @@ function refundRefusal(error) {
     return 'This refund has already been sent. Refresh the page to see it.';
   }
   if (/exceed/i.test(m)) {
-    return 'That would refund more than this payment has left. Refresh the page — another refund may have just been recorded.';
+    return 'That would refund more than this payment has left. Another refund may have just been recorded, so refresh the page.';
   }
   if (/status/i.test(m)) return 'This payment has not been received, so there is nothing to refund yet.';
   return 'The refund could not be recorded. Nothing was sent. Please try again, or tell an administrator.';
@@ -1400,7 +1400,7 @@ export async function addRegistrationFee(registrationId, { dollars, reason } = {
   const n = Number.parseFloat(String(dollars ?? '').replace(/[$,\s]/g, ''));
   if (Number.isNaN(n) || n <= 0) return { ok: false, error: 'Give the fee as a dollar amount over $0.' };
   const why = String(reason ?? '').trim();
-  if (!why) return { ok: false, error: 'Give the reason for the fee; the family sees it.' };
+  if (!why) return { ok: false, error: 'Give the reason for the fee. The family sees it.' };
 
   const supabase = await createClient();
   const { error } = await supabase.rpc('add_registration_fee', {

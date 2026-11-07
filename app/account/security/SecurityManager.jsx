@@ -188,7 +188,7 @@ export default function SecurityManager({ required }) {
     });
     setBusy(false);
     if (vError) {
-      setError('That code did not match. It changes every 30 seconds — try the current one.');
+      setError('That code did not match. It changes every 30 seconds, so try the current one.');
       return;
     }
     // The session is AAL2 now. Carry on with what the person was doing.
@@ -277,7 +277,7 @@ export default function SecurityManager({ required }) {
     });
     if (vError) {
       setBusy(false);
-      setError('That code did not match. It changes every 30 seconds — try the current one.');
+      setError('That code did not match. It changes every 30 seconds, so try the current one.');
       return;
     }
     // Save the nickname now that the factor is real.
@@ -377,7 +377,7 @@ export default function SecurityManager({ required }) {
     <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
       <h2 className="text-2xl font-bold mb-1">Two-factor authentication</h2>
       <p className="text-sm text-neutral-500 mb-5">
-        A second step at login — a 6-digit code from an app on your phone — so a
+        A second step at login: a 6-digit code from an app on your phone. A
         stolen password alone can&rsquo;t get into your account.
       </p>
 
@@ -458,8 +458,8 @@ export default function SecurityManager({ required }) {
           </p>
           <ol className="list-decimal pl-5 space-y-3 text-neutral-700 mb-4">
             <li>
-              Open your authenticator app (Google Authenticator, Authy, 1Password,
-              Microsoft Authenticator — any of them work).
+              Open your authenticator app. Google Authenticator, Authy, 1Password and
+              Microsoft Authenticator all work.
             </li>
             <li>Scan this QR code, or type in the key below it.</li>
             <li>Enter the 6-digit code the app shows.</li>
@@ -512,7 +512,7 @@ export default function SecurityManager({ required }) {
             Name this device
           </label>
           <p className="text-sm text-neutral-500 mb-2">
-            So you can tell your authenticators apart later — for example
+            So you can tell your authenticators apart later, for example
             &ldquo;My phone&rdquo; or &ldquo;Work laptop (1Password).&rdquo;
           </p>
           <input
@@ -591,8 +591,8 @@ export default function SecurityManager({ required }) {
             <p className="text-sm font-semibold mb-1">Trusted browsers</p>
             <p className="text-sm text-neutral-500 mb-2">
               {trustedCount > 0
-                ? `${trustedCount} ${trustedCount === 1 ? 'browser is' : 'browsers are'} remembered — the code is skipped there for 30 days (password still required).`
-                : 'None right now. Ticking “Remember this browser” at login skips the code there for 30 days.'}
+                ? `${trustedCount} ${trustedCount === 1 ? 'browser is' : 'browsers are'} remembered. The code is skipped there for 30 days; the password is still required.`
+                : 'None right now. Checking “Remember this browser” at login skips the code there for 30 days.'}
             </p>
             {trustedCount > 0 && (
               <button

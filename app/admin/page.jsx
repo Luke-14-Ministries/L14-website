@@ -52,7 +52,7 @@ function FailingPlansCard({ plans }) {
     <div className="rounded-lg border border-amber-300 bg-white p-5 shadow-xs">
       <div className="text-3xl font-bold text-amber-700">{plans.length}</div>
       <div className="text-sm font-semibold text-neutral-700">
-        {plans.length === 1 ? 'Plan payment failed' : 'Plan payments failed'} — retrying
+        {plans.length === 1 ? 'Plan payment failed' : 'Plan payments failed'}, retrying
       </div>
       <ul className="mt-1 space-y-0.5 text-xs">
         {plans.map((p) => (
@@ -323,7 +323,7 @@ export default async function AdminOverview({ searchParams }) {
             <li key={l.id} className={l.over ? 'font-semibold text-amber-900' : ''}>
               <span className="font-semibold">{l.name}:</span> {l.text}
               {l.waiting > 0 && ` · ${l.waiting} waiting on a decision`}
-              {l.over && ' — approving everyone waiting would pass capacity'}
+              {l.over && ' · approving everyone waiting would go over capacity'}
             </li>
           ))}
         </ul>
@@ -403,9 +403,8 @@ export default async function AdminOverview({ searchParams }) {
         >
           <h3 className="font-bold mb-1">New registrations awaiting review</h3>
           <p className="text-sm text-neutral-500 mb-3">
-            Families with someone marked &ldquo;submitted — pending review&rdquo; — new sign-ups,
-            newly added people, or a changed role. Open one to confirm, waitlist, or edit.
-            (Edits to existing info live on the Recent Changes page instead.)
+            New sign-ups, newly added people and changed roles. Open one to confirm, waitlist or
+            edit it. Changes to existing details are on the Recent Changes page.
           </p>
           <ul className="divide-y divide-neutral-100">
             {reviewList.map(([id, r]) => (
@@ -414,7 +413,7 @@ export default async function AdminOverview({ searchParams }) {
                   <Link href={`/admin/registrations/${id}`} className="text-brand underline font-medium">
                     {r.household}
                   </Link>
-                  <span className="text-neutral-500"> — {r.event}</span>
+                  <span className="text-neutral-500"> · {r.event}</span>
                 </span>
                 <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-xs font-semibold">
                   {r.count} pending
@@ -448,8 +447,7 @@ export default async function AdminOverview({ searchParams }) {
                 <p className="text-neutral-500">No sign-ups yet.</p>
               ) : shownRows.length === 0 ? (
                 <p className="text-neutral-500">
-                  No sign-ups at the events chosen. <em>All</em>, in the event list above, shows every
-                  event.
+                  No sign-ups at the chosen events. Choose <em>All</em> above to see every event.
                 </p>
               ) : (
           <div className="overflow-x-auto">

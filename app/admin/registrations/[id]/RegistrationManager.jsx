@@ -57,7 +57,7 @@ const SIGNER_ROLE_LABEL = {
 
 const STATUS_OPTIONS = [
   ['draft', 'Draft'],
-  ['submitted', 'Submitted — pending review'],
+  ['submitted', 'Submitted, pending review'],
   ['waitlisted', 'Waitlisted'],
   ['confirmed', 'Confirmed'],
   ['cancelled', 'Cancelled'],
@@ -166,12 +166,12 @@ function StatusControl({ registrationId, participant }) {
       );
       const reason = (typed ?? '').trim();
       if (!reason) {
-        if (typed != null) setError('Say why they are waitlisted — nothing was changed.');
+        if (typed != null) setError('Nothing was changed. Say why they are waitlisted.');
         router.refresh(); // put the dropdown back where it was
         return;
       }
       if (reason.length > 500) {
-        setError('Keep the waitlist reason to 500 characters — nothing was changed.');
+        setError('Nothing was changed. Keep the waitlist reason to 500 characters or fewer.');
         router.refresh();
         return;
       }
@@ -327,8 +327,8 @@ function PersonEditor({ registrationId, person, onDone }) {
         </button>
       </div>
       <p className="mt-2 text-xs text-neutral-400">
-        Medical and support details are edited on the Medical &amp; Support screen, which is a
-        separate permission.
+        Edit medical and support details on the Medical &amp; Support screen. It needs its own
+        permission.
       </p>
     </div>
   );
@@ -349,7 +349,7 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
   function save() {
     setError('');
     if (!f.note.trim()) {
-      setError('Say briefly why — every scholarship decision keeps a note.');
+      setError('Add a short reason. Every scholarship decision needs one.');
       return;
     }
     start(async () => {
@@ -366,8 +366,8 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
     <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
       <h4 className="font-semibold mb-1 text-sm">Scholarship &amp; discount</h4>
       <p className="text-xs text-neutral-500 mb-3">
-        Reduces what this person owes. Flows into the family&rsquo;s balance, their dashboard,
-        and the printable statement automatically. Fee: {money(participant.fee_cents)}.
+        Lowers what this person owes. The family&rsquo;s balance, dashboard and statement update
+        to match. Fee: {money(participant.fee_cents)}.
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
@@ -379,7 +379,7 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
           <input className={inputCls} inputMode="decimal" value={f.discount} onChange={set('discount')} />
         </div>
         <div className="sm:col-span-3">
-          <label className={labelCls}>Note — required: why (kept with the scholarship record)</label>
+          <label className={labelCls}>Reason (staff only) <span className="text-red-600">*</span></label>
           <input className={inputCls} value={f.note} onChange={set('note')} placeholder="e.g. Board-approved hardship scholarship" />
         </div>
       </div>
@@ -434,7 +434,7 @@ function ParticipantRow({
   function cancel() {
     if (
       !confirm(
-        `Remove ${p.first_name} ${p.last_name} from this week?\n\nThis is reversible — they move to "cancelled" and you can Restore them at any time. Nothing is deleted.`
+        `Remove ${p.first_name} ${p.last_name} from this week?\n\nTheir status changes to Cancelled. You can restore them at any time. Nothing is deleted.`
       )
     )
       return;
@@ -448,7 +448,7 @@ function ParticipantRow({
   function hardDelete() {
     if (
       !confirm(
-        `Permanently delete ${p.first_name} ${p.last_name} from this registration?\n\nThis CANNOT be undone. Their household record stays; only this week's entry is removed.`
+        `Permanently delete ${p.first_name} ${p.last_name} from this registration?\n\nThis can't be undone. Only this week's entry is removed. Their household record stays.`
       )
     )
       return;
@@ -701,7 +701,7 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
         Enrollment answers
       </p>
       <p className="text-xs text-neutral-500 mb-2">
-        Ordinary edits — saving replaces the previous answer.
+        Saving replaces the previous answer.
       </p>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -712,7 +712,7 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
             onChange={(e) => setTshirt(e.target.value)}
             className="rounded-sm border border-neutral-300 px-2 py-1 bg-white"
           >
-            <option value="">— not answered —</option>
+            <option value="">Not answered</option>
             {TSHIRT_SIZES.map((s) => (
               <option key={s}>{s}</option>
             ))}
@@ -725,9 +725,9 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
             onChange={(e) => setFirstTime(e.target.value)}
             className="rounded-sm border border-neutral-300 px-2 py-1 bg-white"
           >
-            <option value="">— not answered —</option>
+            <option value="">Not answered</option>
             <option value="true">Yes</option>
-            <option value="false">No — been before</option>
+            <option value="false">No, they&rsquo;ve been before</option>
           </select>
         </label>
         <button onClick={saveEnrollment} disabled={pending} className="btn-primary py-1.5! text-sm">
@@ -740,12 +740,11 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
           Permissions
         </p>
         <p className="text-xs text-neutral-500">
-          A different kind of record: these are kept as a dated history, never
-          overwritten.
+          Each change is saved as a new dated entry. Earlier answers are kept.
         </p>
         <ConsentRow
           label="Photos & video"
-          help={`We may feature ${who} in published material. Recording "no" does not promise they never appear in a wide group shot.`}
+          help={`Whether we may feature ${who} in photos and video we share. With "no" we do our best not to feature them, but they may still appear in a group shot.`}
           record={participant.media}
           disabled={pending || !personId}
           onSet={(v) => saveConsent('media', v)}
@@ -757,10 +756,6 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
           disabled={pending || !personId}
           onSet={(v) => saveConsent('directory', v)}
         />
-        <p className="text-xs text-neutral-500">
-          Changing one of these records a new dated entry — the previous answer is kept, not
-          replaced.
-        </p>
       </div>
 
       <ErrorNote>{error}</ErrorNote>
@@ -832,9 +827,9 @@ function AgreementsCard({ signatures }) {
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
           <p className="font-semibold text-amber-900">No signed agreements on file</p>
           <p className="mt-1 text-sm text-amber-800">
-            Nothing has been signed for this registration. Families sign during registration;
-            a registration created by staff by hand will not have them, and neither will one
-            submitted before agreements were introduced (23 Aug 2026).
+            Families sign while they register. A registration staff entered by hand won&rsquo;t
+            have signatures, and neither will one submitted before 23 Aug 2026, when agreements
+            were added.
           </p>
         </div>
       </Panel>
@@ -888,8 +883,8 @@ function AgreementsCard({ signatures }) {
         ))}
       </ul>
       <p className="mt-3 text-xs text-neutral-500">
-        Signatures are never rewritten — the date on a release is part of the record. If the
-        board revises an agreement, the new version is signed alongside, not over the top.
+        Signatures are never changed. If the board revises an agreement, the family signs the
+        new version and the old signature stays on file.
       </p>
     </Panel>
   );
@@ -983,7 +978,7 @@ function AddPerson({ registrationId, options }) {
             {options.length === 0 && <option value="">No options published</option>}
             {options.map((o) => (
               <option key={o.id} value={o.id}>
-                {o.name} — {money(o.fee_cents)}
+                {o.name} ({money(o.fee_cents)})
               </option>
             ))}
           </select>
@@ -1232,11 +1227,10 @@ function FamilyMessages({ registrationId, messages, unreadIds = [], canWrite = t
       defaultOpen={defaultOpen}
     >
       <p className="text-sm text-neutral-500 mb-3">
-        Shown on the family&rsquo;s dashboard under this registration — e.g. &ldquo;We added a
-        $100 scholarship credit to your registration on 8/17.&rdquo; Everything written here is
-        visible to the family, and they can reply from their dashboard; their replies appear
-        here in amber. The one note only staff can see is the one kept with a
-        scholarship or discount (People on this week → Scholarship &amp; discount → Note).
+        The family sees these notes on their dashboard and can reply there. Their replies show
+        here in amber. For example: &ldquo;We added a $100 scholarship to your registration on
+        8/17.&rdquo; For a note only staff see, use the reason under People on this week →
+        Scholarship &amp; discount.
       </p>
       {messages.length > 0 && (
         <ul className="mb-4 space-y-2">
@@ -1327,9 +1321,9 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
         Payments <span className="text-sm font-normal text-neutral-500">({payments.length})</span>
       </h3>
       <p className="text-sm text-neutral-500 mb-4">
-        Refunds go back against the payment they came from. Card and bank payments are
-        refunded through Stripe here; checks and cash are recorded here and paid by the
-        ministry.
+        Each refund is made against one payment. Card and bank payments are refunded through
+        Stripe from here. For a check or cash payment, record the refund here and the ministry
+        pays it.
       </p>
       <ul className="divide-y divide-neutral-100">
         {payments.map((p) => (
@@ -1392,7 +1386,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                   {p.payer_email && <span className="select-all">{p.payer_email}</span>}
                 </>
               ) : (
-                <span className="italic">Payer not recorded — this payment predates that record.</span>
+                <span className="italic">Payer not recorded (an older payment).</span>
               )}
               {p.stripe_payment_intent_id && stripeBase && (
                 <>
@@ -1433,9 +1427,9 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                     {isStaleRefund(r) && (
                       <span
                         className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-400"
-                        title={`A refund normally clears within a few business days; this one has been pending more than ${STALE_REFUND_DAYS} days. Check it in Stripe.`}
+                        title={`Refunds usually clear in a few business days. This one has been pending more than ${STALE_REFUND_DAYS} days. Check it in Stripe.`}
                       >
-                        ⚑ pending since {dayInMorristown(r.created_at)} — check Stripe
+                        ⚑ pending since {dayInMorristown(r.created_at)}, check Stripe
                       </span>
                     )}
                     {/* Ask Stripe directly and record its answer (refundRecheckAction.js). */}
@@ -1554,11 +1548,11 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
   // so the tooltip, the line under the button and the disabled state can never
   // tell three different stories.
   const blockedBecause = !reason.trim()
-    ? 'Add a reason first — a refund nobody can explain next year is worse than no refund.'
+    ? 'Add a reason first.'
     : cents < 1
       ? 'Enter an amount to refund.'
       : cents > payment.refundableCents
-        ? `That is more than the ${money(payment.refundableCents)} still refundable on this payment.`
+        ? `That's more than the ${money(payment.refundableCents)} left to refund on this payment.`
         : '';
 
   return (
@@ -1568,8 +1562,8 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
       </p>
       <p className="mt-0.5 text-sm text-amber-800">
         {payment.isStripe
-          ? 'Pressing Refund sends this to Stripe straight away, and it goes back to the card or bank account it came from. Stripe usually shows it to the family within 5–10 days; the reference appears here as soon as it is accepted.'
-          : 'This records a refund the ministry pays by check or cash. Nothing is sent anywhere automatically.'}
+          ? 'Refund sends this to Stripe right away. The money goes back to the card or bank account it came from, and the family usually sees it in 5–10 days. The Stripe reference shows here once it is accepted.'
+          : 'This records a refund the ministry pays by check or cash. Nothing is sent automatically.'}
       </p>
 
       {settle > 0 && (
@@ -1578,7 +1572,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
           <p className="mt-0.5">
             This registration has paid <strong>{money(creditCents)}</strong> more than it owes.
             {settle < creditCents
-              ? ` This payment can return ${money(settle)} of it; refund the rest from another payment.`
+              ? ` This payment can return ${money(settle)} of it. Refund the rest from another payment.`
               : ' Refunding that from this payment brings the balance to $0.00.'}
           </p>
           {cents !== settle && (
@@ -1595,12 +1589,12 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
 
       {rule && settle === 0 && (
         <div className="mt-3 rounded-sm border border-amber-200 bg-white px-3 py-2 text-sm text-neutral-700">
-          <p className="font-semibold text-neutral-800">Suggested refund, worked for this payment</p>
+          <p className="font-semibold text-neutral-800">Suggested refund for this payment</p>
           <p className="mt-0.5">
             The {money(event?.deposit_cents ?? 0)}-a-person deposit is kept
             {feePeople > 0 ? ` (${money((event?.deposit_cents ?? 0) * feePeople)} for ${feePeople} ${feePeople === 1 ? 'person' : 'people'}` : ''}
             {feePeople > 0 && rule.keep < (event?.deposit_cents ?? 0) * feePeople ? `, capped at this payment's ${money(rule.keep)})` : feePeople > 0 ? ')' : ''}
-            ; the rest is refunded in full until {REFUND_FULL_UNTIL_DAYS} days before the event and half after.
+            . The rest is refunded in full until {REFUND_FULL_UNTIL_DAYS} days before the event, and half after that.
             {' '}Today is{' '}
             {rule.daysBefore >= 0
               ? `${rule.daysBefore} ${rule.daysBefore === 1 ? 'day' : 'days'} before`
@@ -1610,8 +1604,8 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
             {rule.half ? <> → half is <strong>{money(rule.suggested)}</strong></> : null}.
           </p>
           <p className="mt-1 text-neutral-500">
-            A suggestion, not a lock — if an earlier refund already kept the deposit, type the
-            amount that is right and say why below.
+            This is only a suggestion. If an earlier refund already kept the deposit, type the
+            right amount and say why below.
           </p>
           {cents !== rule.suggested && (
             <button
@@ -1663,12 +1657,12 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
       <label className="mt-3 block">
         <span className="block text-sm font-semibold text-neutral-600 mb-0.5">
           Reason <span className="text-red-700">(required)</span>
-          <span className="font-normal"> — recorded, and visible to the family</span>
+          <span className="font-normal"> · the family sees this</span>
         </span>
         <input
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="Withdrew from Week 1 — family illness"
+          placeholder="Withdrew from Week 1 because of family illness"
           aria-required="true"
           className={`w-full rounded-sm border px-2 py-1 bg-white ${
             reason.trim() ? 'border-neutral-300' : 'border-red-300'
@@ -1786,7 +1780,7 @@ function WeekTab({ reg, active }) {
         </span>
       )}
       {cancelledOnly && <span className="block text-xs font-normal">cancelled</span>}
-      {attention.length > 0 && <span className="sr-only"> — waiting on staff: {attention.join(', ')}</span>}
+      {attention.length > 0 && <span className="sr-only">, waiting on staff: {attention.join(', ')}</span>}
     </>
   );
   return active ? (
@@ -1967,7 +1961,7 @@ function MoneySummary({ balance, livePeople, staleRefunds = 0, canDecide = false
             </p>
             <p className="mt-1">
               A refund of <strong>{money(pending)}</strong> has been sent to the family&rsquo;s card or
-              bank but has not cleared yet, so it is not taken off &ldquo;Paid&rdquo; above. Once it
+              bank. It hasn&rsquo;t cleared yet, so &ldquo;Paid&rdquo; above still includes it. Once it
               clears, the family will have paid <strong>{money(afterPaid)}</strong> and the balance
               becomes{' '}
               <strong className={afterBal > 0 ? 'text-amber-700' : 'text-green-700'}>
@@ -1981,8 +1975,8 @@ function MoneySummary({ balance, livePeople, staleRefunds = 0, canDecide = false
                   {staleRefunds === 1 ? 'One of these refunds has' : `${staleRefunds} of these refunds have`} been
                   pending more than {STALE_REFUND_DAYS} days.
                 </span>{' '}
-                A refund normally clears within a few business days, so this may need checking in
-                Stripe before the figures above are relied on.
+                Refunds usually clear in a few business days. Check Stripe before relying on the
+                figures above.
               </p>
             )}
           </>
@@ -2281,7 +2275,7 @@ export default function RegistrationManager({
 
         <Panel title="People on this week" count={parts.length} id="people" opensFor="person-" defaultOpen={peopleOpen}>
           <p className="text-sm text-neutral-500 mb-2">
-            Change a status to move someone off &ldquo;submitted — pending review.&rdquo;
+            Change someone&rsquo;s status to move them out of &ldquo;Submitted, pending review.&rdquo;
           </p>
           {parts.length === 0 ? (
             <p className="text-neutral-500 text-sm py-2">Nobody is on this registration yet.</p>
@@ -2353,7 +2347,7 @@ export default function RegistrationManager({
                   return (
                     <li key={i}>
                       <span className="font-medium text-neutral-800">{who}</span>
-                      {' — '}
+                      {': '}
                       {outcome}
                       {r.grantedBy && <> · by {r.grantedBy}</>}
                       {r.at && <> · {dayInMorristown(r.at)}</>}
@@ -2404,13 +2398,13 @@ export default function RegistrationManager({
             {depositShort && (
               <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
                 <p className="font-bold text-amber-900">
-                  Deposit short — {money(depositPaid)} of {money(depositDue)}
+                  Deposit short: {money(depositPaid)} of {money(depositDue)} paid
                 </p>
                 <p className="mt-1 text-amber-900">
                   {livePeople} {livePeople === 1 ? 'place' : 'places'} at {money(depositEach)} each.{' '}
                   {depositPaid === 0
                     ? 'Nothing has been paid, so nothing is held yet.'
-                    : `${money(depositDue - depositPaid)} still to come before every place is held.`}
+                    : `${money(depositDue - depositPaid)} more is needed to hold every place.`}
                 </p>
               </div>
             )}

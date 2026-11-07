@@ -30,8 +30,8 @@ export default function LinkExpiredPage() {
               button. */}
           <p className="mt-4 text-neutral-700">
             Nothing is lost, and your account is safe. <strong>Try logging in
-            first</strong> — if you were confirming a new account, it is very
-            likely already confirmed and your password will get you straight in.
+            first.</strong> If you were confirming a new account, it is very
+            likely already confirmed, and your password will get you straight in.
           </p>
           <p className="mt-4 text-neutral-700">
             If that doesn&rsquo;t work, request a new link and it will arrive in

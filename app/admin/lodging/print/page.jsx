@@ -63,7 +63,7 @@ function ageOn(dob, onDate) {
 // a border rather than a checkbox input, so it prints the same in every
 // browser and is not clickable on the screen.
 function Occupants({ rows }) {
-  if (rows.length === 0) return <p className="text-sm text-neutral-400">&mdash; empty &mdash;</p>;
+  if (rows.length === 0) return <p className="text-sm text-neutral-400">(empty)</p>;
   return (
     <table className="w-full border-collapse text-left text-sm">
       <tbody>
@@ -190,9 +190,8 @@ export default async function RoomListPrintPage({ searchParams }) {
         </span>
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">
-        Who is in each room, by building. Names, role, age and household only &mdash; mobility
-        and care notes stay on the Rooms &amp; Cabins screen, because this sheet is paper and
-        paper gets left on a table.
+        Who is in each room, by building. Names, role, age and household only. Mobility and care
+        notes stay on the Rooms &amp; Cabins screen, because paper sheets get left lying around.
       </p>
 
       <p className="mb-6 text-sm font-semibold">
@@ -249,7 +248,7 @@ export default async function RoomListPrintPage({ searchParams }) {
             })}
 
             {rooms.length === 0 && own.length === 0 && (
-              <p className="text-sm text-neutral-400">&mdash; empty &mdash;</p>
+              <p className="text-sm text-neutral-400">(empty)</p>
             )}
           </div>
         );
@@ -272,7 +271,7 @@ export default async function RoomListPrintPage({ searchParams }) {
       )}
 
       <p className="mt-8 text-xs text-neutral-400">
-        Support and access notes withheld on purpose &mdash; see the Rooms &amp; Cabins screen.
+        Support and access notes are left off on purpose. See the Rooms &amp; Cabins screen.
         Printed {new Date().toLocaleDateString('en-US')} · Luke 14 Ministries.
       </p>
     </div>

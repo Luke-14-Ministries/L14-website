@@ -58,7 +58,7 @@ straight with you about the limits: this is about not *featuring* someone as the
 picture, and with a small team and thousands of photos in a week we can't promise nobody ever
 appears in a wide group or whole-camp shot.
 
-**After:** If you uncheck this, we won't feature Victoria in the photos we share. We take thousands
+**After:** If you uncheck this, we'll do our best not to feature Victoria in the photos we share. We take thousands
 of photos each week, so she may still show up in the background of a group shot. If you see one
 you're not comfortable with, email Larry at larry@luke14ministries.net and we'll take care of it.
 

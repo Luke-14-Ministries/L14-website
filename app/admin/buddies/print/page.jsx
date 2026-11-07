@@ -175,8 +175,8 @@ export default async function BuddyPrintPage({ searchParams }) {
         </span>
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">
-        One page per pairing — the buddy, the camper, the pairing notes from the board, and the
-        safety facts a buddy must not be surprised by. A buddy with two campers gets two pages.
+        One page per pairing, with the buddy, the camper, the notes from the board and the safety
+        facts every buddy needs to know. A buddy with two campers gets two pages.
         Hand them out at orientation and collect them at the end of camp.
       </p>
       {pickerOptions.length > 1 && (
@@ -244,7 +244,7 @@ export default async function BuddyPrintPage({ searchParams }) {
                 <div className="mt-2 flex flex-wrap gap-2 text-sm">
                   {sp?.has_allergies && (
                     <span className="rounded-sm border border-red-700 px-2 py-0.5 font-semibold text-red-800">
-                      ALLERGY{sp.allergy_severity ? ` — ${SEVERITY[sp.allergy_severity] ?? sp.allergy_severity}` : ' — severity not recorded'}
+                      ALLERGY{sp.allergy_severity ? ` (${SEVERITY[sp.allergy_severity] ?? sp.allergy_severity})` : ' (severity not recorded)'}
                       {allergySummary(sp) ? `: ${allergySummary(sp)}` : ''}
                     </span>
                   )}
@@ -255,13 +255,13 @@ export default async function BuddyPrintPage({ searchParams }) {
                   )}
                   {sp?.has_rescue_medication && (
                     <span className="rounded-sm border border-red-700 px-2 py-0.5 font-semibold text-red-800">
-                      RESCUE MEDICATION — the nurse holds it
+                      RESCUE MEDICATION (the nurse holds it)
                       {sp.rescue_medication_detail ? `: ${sp.rescue_medication_detail}` : ''}
                     </span>
                   )}
                   {!sp && (
                     <span className="rounded-sm border border-amber-600 px-2 py-0.5 font-semibold text-amber-800">
-                      No support details on file — ask the coordinator before camp
+                      No support details on file. Ask the coordinator before camp.
                     </span>
                   )}
                 </div>
@@ -287,9 +287,8 @@ export default async function BuddyPrintPage({ searchParams }) {
           })}
 
           <p className="mt-6 border-t border-neutral-300 pt-2 text-xs text-neutral-500">
-            Questions or concerns about anything here can go to the family, or to the coordinator
-            or the camp nurse. This sheet is for you alone: keep it with you, and hand it back at the end of
-            camp. Printed {todayInMorristown()} · Luke 14 Ministries.
+            Take any questions about this sheet to the family, the coordinator or the camp nurse. This
+            sheet is only for you. Keep it with you and hand it back at the end of camp. Printed {todayInMorristown()} · Luke 14 Ministries.
           </p>
         </div>
       ))}

@@ -110,7 +110,7 @@ export default async function RegisterPage() {
                   </div>
                   {p.events.length > 1 && (
                     <p className="mt-1 text-sm text-neutral-600">
-                      {p.events.length} sessions — you&rsquo;ll pick yours during
+                      {p.events.length} sessions. You&rsquo;ll pick yours during
                       registration.
                     </p>
                   )}
@@ -127,12 +127,12 @@ export default async function RegisterPage() {
                       Register
                     </Link>
                     <p className="mt-3 text-sm text-neutral-600">
-                      Families, groups and volunteers all start here. Volunteering? Choose the
-                      role <strong>Volunteer</strong>; the short{' '}
+                      Families, groups and volunteers all start here. If you&rsquo;re volunteering,
+                      choose <strong>Volunteer</strong> as your role. You&rsquo;ll fill out the{' '}
                       <Link href="/register/volunteer/" className="text-brand underline font-semibold">
                         volunteer application
                       </Link>{' '}
-                      comes after.
+                      after.
                     </p>
                   </div>
                 </div>
@@ -149,8 +149,8 @@ export default async function RegisterPage() {
                 className="text-brand underline font-semibold"
               >
                 Log in
-              </Link>{' '}
-              &mdash; you&rsquo;ll come straight back here.
+              </Link>
+              . You&rsquo;ll come straight back here.
           </p>
         )}
       </div>

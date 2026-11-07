@@ -78,7 +78,7 @@ async function readGroup(supabase, groupId) {
     .eq('id', groupId)
     .maybeSingle();
   if (error) return { error: `The group could not be read: ${error.message}` };
-  if (!data) return { error: 'That group no longer exists — reload the page.' };
+  if (!data) return { error: 'That group no longer exists. Reload the page.' };
   return { group: data };
 }
 
@@ -109,7 +109,7 @@ export async function createGroup({ activityId }) {
     .select('id')
     .maybeSingle();
   if (error) return { ok: false, error: `That could not be added: ${dbWords(error)}` };
-  if (!made) return { ok: false, error: 'Nothing was added — you may not have permission.' };
+  if (!made) return { ok: false, error: 'Nothing was added. You may not have permission.' };
   revalidate();
   return { ok: true };
 }
@@ -135,7 +135,7 @@ export async function updateGroup({ groupId, name, capacity }) {
     .select('id');
   if (error) return { ok: false, error: `That could not be saved: ${dbWords(error)}` };
   if (!data || data.length === 0) {
-    return { ok: false, error: 'Nothing was saved — the group may be gone, or you may not have permission.' };
+    return { ok: false, error: 'Nothing was saved. The group may be gone, or you may not have permission.' };
   }
   revalidate();
   return { ok: true };
@@ -154,7 +154,7 @@ export async function deleteGroup({ groupId }) {
     .select('id');
   if (error) return { ok: false, error: `That could not be deleted: ${dbWords(error)}` };
   if (!data || data.length === 0) {
-    return { ok: false, error: 'Nothing was deleted — the group may be gone, or you may not have permission.' };
+    return { ok: false, error: 'Nothing was deleted. The group may be gone, or you may not have permission.' };
   }
   revalidate();
   return { ok: true };
@@ -204,7 +204,7 @@ export async function placeUnits({ groupId, participantIds }) {
   if (!data || data.length !== unit.length) {
     return {
       ok: false,
-      error: `Only ${data?.length ?? 0} of ${unit.length} were placed — reload the page and check ${group.name}.`,
+      error: `Only ${data?.length ?? 0} of ${unit.length} were placed. Reload the page and check ${group.name}.`,
     };
   }
   revalidate();
@@ -241,7 +241,7 @@ export async function unplaceUnit({ activityId, participantId }) {
     .select('registration_participant_id');
   if (error) return { ok: false, error: `That could not be removed: ${dbWords(error)}` };
   if (!data || data.length === 0) {
-    return { ok: false, error: 'Nothing was removed — they may already be off, or you may not have permission.' };
+    return { ok: false, error: 'Nothing was removed. They may already be off, or you may not have permission.' };
   }
   revalidate();
   return { ok: true };

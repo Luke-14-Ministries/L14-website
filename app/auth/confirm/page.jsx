@@ -95,7 +95,7 @@ export default async function ConfirmPage({ searchParams }) {
           </h1>
           <p className="text-neutral-700 mb-6">
             {isRecovery
-              ? 'Click the button to continue to the password reset form.'
+              ? 'Press the button to choose a new password.'
               : 'One more click and your account is ready.'}
           </p>
           <form action={confirmAction}>
@@ -107,8 +107,8 @@ export default async function ConfirmPage({ searchParams }) {
             </button>
           </form>
           <p className="mt-5 text-sm text-neutral-500">
-            Didn&rsquo;t expect this email? You can safely ignore it &mdash;
-            nothing happens unless the button is clicked.
+            Didn&rsquo;t expect this email? You can ignore it. Nothing happens
+            unless you press the button.
           </p>
         </div>
       </div>

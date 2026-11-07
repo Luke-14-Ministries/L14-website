@@ -66,7 +66,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
           <input
             defaultValue={m.title}
             placeholder="Job title, e.g. Camp Director (optional)"
-            title="A display-only job title shown alongside their name. Does not affect access."
+            title="Shown next to their name. It doesn't affect access."
             disabled={busy}
             onBlur={(e) => {
               if (e.target.value.trim() !== m.title) onPatch(m.profileId, { title: e.target.value });
@@ -88,7 +88,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
             title={
               isSelf && m.role === 'admin'
                 ? 'You cannot remove your own administrator access. Ask another administrator.'
-                : 'Granting access, accounts, naming a program leader, the camp doctor\u2019s dated access.'
+                : 'Grants access, manages accounts, names program leaders, and sets the camp doctor\u2019s dated access.'
             }
           >
             <input
@@ -102,7 +102,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
                   !window.confirm(
                     `Make ${m.name} an administrator?
 
-An administrator can grant and remove access, manage accounts and name program leaders. This also sets every area, Giving included, to write. Taking the tick away later leaves the grants as they are.`
+An administrator can grant and remove access, manage accounts and name program leaders. This also sets every area, including Giving, to write. Unchecking it later leaves the grants as they are.`
                   )
                 ) {
                   return;
@@ -144,7 +144,7 @@ An administrator can grant and remove access, manage accounts and name program l
             <button
               onClick={() => {
                 if (isSelf) return;
-                if (window.confirm(`Deactivate ${m.name}? They keep their account but lose all staff access. This is reversible.`)) {
+                if (window.confirm(`Deactivate ${m.name}? They keep their account but lose all staff access. You can undo this.`)) {
                   onPatch(m.profileId, { active: false });
                 }
               }}
@@ -171,7 +171,7 @@ An administrator can grant and remove access, manage accounts and name program l
                 onClick={() => {
                   if (
                     window.confirm(
-                      `Remove ${m.name} from the staff list entirely? Their account and family records are untouched, and they can be re-added later — but their role and access grants here will be forgotten.`
+                      `Remove ${m.name} from the staff list? Their account and family records stay, and you can add them again later. Their role and access grants here will be lost.`
                     )
                   ) {
                     onRemove(m);
@@ -211,7 +211,7 @@ function Table({
         <thead className="bg-neutral-50 text-neutral-500">
                     <tr>
             <SortTh k="name" {...sortProps}>Person</SortTh>
-            <SortTh k="role" center {...sortProps}>Administrator — grants access</SortTh>
+            <SortTh k="role" center {...sortProps}>Administrator (grants access)</SortTh>
             <SortTh k="grants" center {...sortProps}>Grants</SortTh>
             <th className="px-4 py-2" />
           </tr>
@@ -313,7 +313,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       const res = await setStaffGrants(profileId, grants);
       if (res.ok && res.grants) remember(profileId, { grants: res.grants });
       if (!res.ok) setError(res.error);
-      else setNotice(res.changed ? `Grants saved — ${res.changed} ${res.changed === 1 ? 'change' : 'changes'} logged.` : 'Nothing changed.');
+      else setNotice(res.changed ? `Grants saved. ${res.changed} ${res.changed === 1 ? 'change' : 'changes'} logged.` : 'Nothing changed.');
       setBusyId(null);
       router.refresh();
     });
@@ -326,7 +326,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       const res = await applyPreset(profileId, key);
       if (res.ok) remember(profileId, { role: res.role, ...(res.grants ? { grants: res.grants } : {}) });
       if (!res.ok) setError(res.error);
-      else setNotice(`${res.label} preset applied — the areas are set, the administrator tick is not touched; see the access log.`);
+      else setNotice(`${res.label} preset applied. The areas are set and the Administrator box is unchanged. See the access log.`);
       setBusyId(null);
       router.refresh();
     });
@@ -340,7 +340,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       const res = await removeStaffMember(m.profileId);
       if (!res.ok) setError(res.error);
       else {
-        setNotice(`${m.name} removed from staff. Their account and records are untouched.`);
+        setNotice(`${m.name} removed from staff. Their account and records stay.`);
         setSaved((cur) => {
           const next = { ...cur };
           delete next[m.profileId];
@@ -422,9 +422,9 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
   const loginNote = (
     <p className="mb-3 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
       <strong>Access belongs to the login, not the person.</strong> The address under each name is
-      the account that has this access. Somebody who signs in with a different address — a second
-      email, a personal one — will see no staff area at all, even though they are listed here. If
-      that happens, check which address they signed in with before granting anything else.
+      the account that has this access. If someone signs in with a different email, such as a
+      personal one, they won&rsquo;t see the staff area at all, even though they&rsquo;re listed here.
+      If that happens, check which email they signed in with before granting anything else.
     </p>
   );
 
@@ -499,9 +499,9 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       <div className="mt-8 rounded-lg bg-white border border-neutral-200 shadow-xs p-6 max-w-lg">
         <h3 className="font-bold mb-1">Add a staff member</h3>
         <p className="text-sm text-neutral-500 mb-3">
-          They need an account on the site first (created the same way families do). Start typing
-          their name or email and pick the account from the list — that way the grant lands on the
-          login they actually use. New staff must set up two-factor before the staff area opens.
+          They need an account on the site first, made the same way families make one. Start typing
+          their name or email and pick their account from the list, so the access goes to the login
+          they actually use. New staff must set up two-factor before they can open the staff area.
         </p>
         {/* items-start, not items-end: the email column grows a helper line
             under the box once an account is picked, and bottom-alignment
@@ -577,8 +577,8 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
             )}
             {exact && !pickerOpen && (
               <span className="mt-1 block text-xs text-neutral-500">
-                {exact.name ? `${exact.name} — ` : ''}
-                {exact.onStaff ? 'already on staff; adding again updates their role.' : 'has an account; not on staff yet.'}
+                {exact.name ? `${exact.name}: ` : ''}
+                {exact.onStaff ? 'already on staff. Adding again updates their role.' : 'has an account, not on staff yet.'}
               </span>
             )}
           </label>

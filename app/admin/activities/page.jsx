@@ -311,8 +311,8 @@ export default async function AdminActivitiesPage({ searchParams }) {
         </a>
       </div>
       <p className="text-sm text-neutral-500 mb-4">
-        What is on offer for each event, and who has chosen it. Numbers here are what to give
-        the stable, the boat, and the outfitter.
+        What each event offers and who has signed up. Give these numbers to the stable, the boat
+        company and the outfitter.
       </p>
 
       <EventFilter
@@ -346,9 +346,9 @@ export default async function AdminActivitiesPage({ searchParams }) {
           ) : (
             <>
               <p className="mt-1 text-sm text-neutral-600">
-                Outside providers&rsquo; forms the families have uploaded proof of, oldest first.
+                Proof of outside providers&rsquo; forms that families have uploaded, oldest first.
                 {canReview
-                  ? ' Open the file, then accept it — or reject it with a reason the family reads, and they upload again.'
+                  ? ' Open the file, then accept it or reject it. If you reject it, give a reason. The family sees it and uploads again.'
                   : ' Someone with Registration write accepts or rejects each one.'}
               </p>
               <div className="mt-2 overflow-x-auto">
@@ -393,7 +393,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
 
       {(activities ?? []).length === 0 ? (
         <p className="text-neutral-500 mb-4">
-          Nothing is on offer for this event yet — add the first one below.
+          No activities for this event yet. Add the first one below.
         </p>
       ) : (
         <div className="space-y-4">
@@ -494,18 +494,18 @@ export default async function AdminActivitiesPage({ searchParams }) {
                   <div className="mt-1 text-sm text-neutral-700">
                     <p>
                       <span className="font-semibold">Outside provider: {a.provider_name || 'named by link only'}</span>
-                      {' '}— families upload the provider&rsquo;s confirmation; staff check each one in{' '}
+                      . Families upload the provider&rsquo;s confirmation, and staff check each one in{' '}
                       <a href="#to-check" className="text-brand underline">Confirmations to check</a> above.
                     </p>
                     <details className="mt-0.5 text-xs text-neutral-500">
                       <summary className="fold-summary">How this works</summary>
                       <p className="mt-1">
-                        The provider&rsquo;s own waiver is the family&rsquo;s to complete with them; they
-                        upload proof here. Each upload is <em>awaiting staff review</em> until someone with
-                        Registration write accepts it, or rejects it with a reason &mdash; the family
-                        reads the reason and uploads again. Volunteers and buddies upload too, ready in
-                        case their camper goes. &ldquo;told&rdquo; records only that the family ticked
-                        that they know the provider has a form of its own.
+                        The family fills out the provider&rsquo;s waiver with the provider and uploads
+                        proof here. Each upload is <em>awaiting staff review</em> until someone with
+                        Registration write accepts or rejects it. A rejection needs a reason, which the
+                        family sees before uploading again. Volunteers and buddies upload too, in case
+                        their camper goes. &ldquo;Told&rdquo; means only that the family ticked a box
+                        saying they know the provider has its own form.
                       </p>
                     </details>
                   </div>
@@ -530,7 +530,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                         {p.uploadOnly && (
                           <span
                             className="text-xs text-neutral-500"
-                            title="Not signed up: goes if their camper does, and uploaded the provider's form ahead"
+                            title="Not signed up. Goes if their camper does, and has already uploaded the provider's form"
                           >
                             {ROLE_WORD[p.role] ?? p.role} · buddy
                           </span>

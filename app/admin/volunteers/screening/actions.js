@@ -80,14 +80,14 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
     // the difference between a fixable problem and a silent short batch.
     const sendTo = normEmail(p.email) || normEmail(p.households?.email);
     if (!sendTo) {
-      skipped.push(`${name} — no email address on file for them or their household`);
+      skipped.push(`${name}: no email on file for them or their household`);
       continue;
     }
     // The database refuses a Checkr order for a minor or for anyone whose age
     // we do not know (migration 0056). Catching it here too means the
     // coordinator is told before the file is built rather than after.
     if (!p.date_of_birth) {
-      skipped.push(`${name} — no date of birth on file, so we cannot confirm they are 18`);
+      skipped.push(`${name}: no date of birth on file, so we can’t confirm they are 18`);
       continue;
     }
     rows.push({
@@ -356,8 +356,8 @@ export async function importCheckrResults(csvText, { dryRun = true } = {}) {
       ok: false,
       error:
         'No "Candidate ID" column. This looks like a billing or usage export rather than the ' +
-        'Reports export — without a candidate id a result cannot be tied back to the report it ' +
-        'came from. Export from Checkr\u2019s Reports screen instead.',
+        'Reports export. Without a candidate ID, a result can\u2019t be tied to its report. ' +
+        'Export from Checkr\u2019s Reports screen instead.',
     };
   }
   if (iAssess === -1) {
@@ -454,7 +454,7 @@ export async function importCheckrResults(csvText, { dryRun = true } = {}) {
           name: fullName || '(no name)',
           email: email || '(no email)',
           verdict,
-          why: `${emailIds.size} people were invited at this address and the name on the row does not settle which — match it by hand`,
+          why: `${emailIds.size} people were invited at this email and the name doesn’t say which one. Match it by hand.`,
         });
         continue;
       }
@@ -467,7 +467,7 @@ export async function importCheckrResults(csvText, { dryRun = true } = {}) {
         name: fullName || '(no name)',
         email: email || '(no email)',
         verdict,
-        why: 'the address on this row belongs to one person and the name to another — match it by hand',
+        why: 'the email on this row belongs to one person and the name to another. Match it by hand.',
       });
       continue;
     }
@@ -479,10 +479,10 @@ export async function importCheckrResults(csvText, { dryRun = true } = {}) {
         email: email || '(no email)',
         verdict,
         why: nameKey && nameCount.get(nameKey) > 1
-          ? 'more than one person has that name — match it by hand'
+          ? 'more than one person has that name. Match it by hand.'
           : emailIsOrderers
             ? 'the email on this row is the staff member who ordered it, not the candidate, and no unique person has that name'
-            : 'nobody in the system matches this name or address',
+            : 'nobody on the site matches this name or email',
       });
       continue;
     }

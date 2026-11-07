@@ -120,7 +120,7 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
           <span className="font-semibold">
             Camp staff couldn&rsquo;t accept this: {done.review_note || 'no reason given'}.
           </span>{' '}
-          Please upload the confirmation again — a screenshot, a photo of the signed page, or the
+          Please upload the confirmation again: a screenshot, a photo of the signed page, or the
           PDF {providerName || 'the provider'} sent.{' '}
           <label className="btn-outline py-1! px-2! cursor-pointer text-xs">
             {busy ? 'Uploading…' : 'Choose file'}
@@ -129,7 +129,7 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
         </p>
       ) : done ? (
         <p className="text-blue-900">
-          <span className="font-semibold">Uploaded {dayInMorristown(done.uploaded_at)}</span> — camp
+          <span className="font-semibold">Uploaded {dayInMorristown(done.uploaded_at)}</span>. Camp
           staff will check it.{' '}
           <label className="cursor-pointer underline">
             Replace
@@ -140,9 +140,9 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
         <p className="text-amber-900">
           <span className="font-semibold">
             Once {personName ? `${personName}’s` : 'the'} form for {providerName || 'the provider'} is completed, upload their confirmation
-          </span>{' '}
-          — a screenshot, a photo of the signed page, or the PDF they sent. Staff need this before
-          the day; a verbal &ldquo;done&rdquo; is not enough.{' '}
+          </span>
+          : a screenshot, a photo of the signed page, or the PDF they sent. Staff need this before
+          the day. A verbal &ldquo;done&rdquo; is not enough.{' '}
           <label className="btn-outline py-1! px-2! cursor-pointer text-xs">
             {busy ? 'Uploading…' : 'Choose file'}
             {fileInput}

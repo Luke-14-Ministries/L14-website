@@ -39,7 +39,7 @@ function describe(field, from, to) {
 
 const labelOf = (field) =>
   field.startsWith('grant:')
-    ? `Grant — ${AREA_LABEL[field.slice(6)] ?? field.slice(6)}`
+    ? `Grant: ${AREA_LABEL[field.slice(6)] ?? field.slice(6)}`
     : FIELD_LABEL[field] ?? field;
 
 const name = (p) =>
@@ -78,16 +78,16 @@ export default async function AccessLogPage() {
         <BackLink href="/admin/staff" label="Back to Staff &amp; Access" />
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        Every change to what a staff member may see or do — their grants on
-        each area, the role label, and whether their account is active. Written
-        automatically and cannot be edited or deleted by anyone, including an
-        administrator. Most recent 200.
+        Every change to what a staff member can see or do: their grants on each
+        area, their role label, and whether their account is active. Changes are
+        logged automatically, and nobody can edit or delete them, including an
+        administrator. Shows the most recent 200.
       </p>
 
       {error && (
         <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
-          The log could not be read: {error.message}. This is a failure to load, not
-          an empty log — do not read it as “nothing has changed”.
+          The log could not be read: {error.message}. The log didn&rsquo;t load, so
+          this doesn&rsquo;t mean nothing has changed.
         </p>
       )}
 
@@ -95,16 +95,15 @@ export default async function AccessLogPage() {
         <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <strong>{selfGrants}</strong>{' '}
           {selfGrants === 1 ? 'permission was' : 'permissions were'} granted by
-          somebody to their own account. That is allowed — an administrator has to
-          be able to — and it is shown here because it is the change most worth
-          being able to find.
+          somebody to their own account. Administrators are allowed to do that. It&rsquo;s
+          flagged here because it&rsquo;s the change most worth being able to find.
         </p>
       )}
 
       {!error && (rows ?? []).length === 0 ? (
         <p className="text-neutral-600">
-          Nothing recorded yet. Logging began on 26 August 2026; anything before that
-          date happened before there was a log to write it in.
+          Nothing recorded yet. The log started on 26 August 2026, so earlier changes
+          aren&rsquo;t in it.
         </p>
       ) : (
         <div className="overflow-x-auto">

@@ -46,7 +46,7 @@ export async function programForCaller(grant) {
     const { data: strong, error } = await supabase.rpc('session_is_strong');
     if (error) {
       console.error('my-program access: session_is_strong:', error.message);
-      return { status: 500, message: 'Your sign-in could not be checked. Nothing was exported; please try again.' };
+      return { status: 500, message: 'Your sign-in could not be checked. Nothing was exported. Please try again.' };
     }
     if (strong !== true) {
       return { status: 403, message: 'Enter your two-factor code first.' };
@@ -64,7 +64,7 @@ export async function programForCaller(grant) {
   const failed = progRes.error ?? eventRes.error;
   if (failed) {
     console.error('my-program access:', failed.message);
-    return { status: 500, message: 'The program could not be read. Nothing was exported; please try again.' };
+    return { status: 500, message: 'The program could not be read. Nothing was exported. Please try again.' };
   }
   if (!progRes.data || !eventRes.data) return { status: 404, message: 'No such program at that event.' };
   return {

@@ -18,7 +18,7 @@ import { setAllergySeverity } from './actions';
 import { allergyPill } from '@/lib/format';
 
 const OPTIONS = [
-  ['', 'allergy — severity not recorded'],
+  ['', 'allergy (severity not recorded)'],
   ['mild', 'mild allergy'],
   ['severe', 'severe allergy'],
   ['anaphylaxis', 'ANAPHYLAXIS'],

@@ -58,7 +58,7 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
   if (!stripe) return { ok: false, error: 'Online payment is not switched on yet.' };
   if (!SCHEDULE_LABEL[schedule]) return { ok: false, error: 'Please choose how often to pay.' };
   if (method !== 'card' && method !== 'bank') return { ok: false, error: 'Please choose a payment method.' };
-  if (!agreed) return { ok: false, error: 'Please tick the box to agree to the automatic payments.' };
+  if (!agreed) return { ok: false, error: 'Please check the box to agree to the automatic payments.' };
 
   const supabase = await createClient();
   const { reg, error: regError } = await ownRegistration(supabase, user.id, registrationId);
@@ -149,7 +149,7 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
           price_data: {
             currency: 'usd',
             unit_amount: deposit,
-            product_data: { name: `${ev.name ?? 'Camp registration'} — Deposit (payment plan)` },
+            product_data: { name: `${ev.name ?? 'Camp registration'}: Deposit (payment plan)` },
           },
         },
       ],

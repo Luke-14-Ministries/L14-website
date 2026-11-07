@@ -350,10 +350,10 @@ export default async function ReviewQueuePage({ searchParams }) {
         </div>
       </div>
       <p className="text-sm text-neutral-500 mb-4">
-        Every family with somebody still <em>submitted</em>, with everything a reviewer needs in
-        one row: whether the deposit is in or a scholarship was asked for, and any flag that wants
-        a conversation first. Open the registration: its Review card approves or waitlists
-        everyone at once, or sends the registration back to the family for more information.
+        Every family with someone still <em>submitted</em>. Each row shows whether the deposit is
+        in or a scholarship was requested, and any flag that needs a conversation first. Open the
+        registration to approve or waitlist everyone at once on its Review card, or to ask the
+        family for more information.
         {' '}
         <strong>{totalPending}</strong> {totalPending === 1 ? 'person' : 'people'} waiting
         {totalFlags > 0 && (
@@ -395,9 +395,9 @@ export default async function ReviewQueuePage({ searchParams }) {
 
       {show === 'waiver' && (
         <p className="mb-4 text-sm text-neutral-600">
-          Families with someone on an activity whose waiver is still missing — a waiver or an
-          outside provider added after they signed up. Confirmed families are listed too; nobody&rsquo;s
-          status changes for this.{' '}
+          Families with someone on an activity whose waiver is still missing, usually because a
+          waiver or outside provider was added after they signed up. Confirmed families are listed
+          too. Nobody&rsquo;s status changes because of this.{' '}
           {can(staff, 'write:registration') && (
           <Link
             // Email Families takes one event (or its own "All current events"),
@@ -413,12 +413,11 @@ export default async function ReviewQueuePage({ searchParams }) {
 
       {show === 'plan' && (
         <p className="mb-4 text-sm text-neutral-600">
-          Families whose payment plan has a problem: a payment failed and will be tried again
-          (amber — three days later, {PLAN_MAX_TRIES} tries in all), or the plan stopped after{' '}
-          {PLAN_MAX_TRIES} failed payments (red).
-          Confirmed families are listed too; nobody&rsquo;s status changes for this. Open the
-          registration to retry, pause or cancel the plan, and to decide whether the family keeps
-          the early-registration discount.
+          Families whose payment plan has a problem. Amber means a payment failed and will be tried
+          again three days later, up to {PLAN_MAX_TRIES} tries in all. Red means the plan stopped
+          after {PLAN_MAX_TRIES} failed payments. Confirmed families are listed too. Nobody&rsquo;s
+          status changes because of this. Open the registration to retry, pause or cancel the plan,
+          and to decide whether the family keeps the early-registration discount.
         </p>
       )}
 
@@ -539,7 +538,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                             {r.planFailing && (
                               <li className="whitespace-nowrap text-xs font-semibold text-amber-800">
                                 ⚑ Plan payment failed
-                                {r.planFailing.since ? ` ${dayInMorristown(r.planFailing.since)}` : ''} —{' '}
+                                {r.planFailing.since ? ` ${dayInMorristown(r.planFailing.since)}` : ''}.{' '}
                                 {planFailingNext(r.planFailing)}
                               </li>
                             )}
@@ -556,7 +555,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                             {r.creed?.covered.length > 0 && (
                               // Talked through with Larry (0130): informs, no longer alarms.
                               <li className="text-xs text-neutral-600">
-                                ✓ {REVIEW_FLAG.creed_not_affirmed}: {r.creed.covered.map((c) => c.name).join(', ')} —
+                                ✓ {REVIEW_FLAG.creed_not_affirmed}: {r.creed.covered.map((c) => c.name).join(', ')},
                                 talked with Larry
                               </li>
                             )}
@@ -574,7 +573,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                                 {o.kind === 'ours'
                                   ? 'needs the waiver signed'
                                   : o.upload_status === 'rejected'
-                                    ? "outfitter's confirmation rejected — needs a new upload"
+                                    ? "outfitter's confirmation rejected, needs a new upload"
                                     : "needs the outfitter's confirmation"}
                               </li>
                             ))}

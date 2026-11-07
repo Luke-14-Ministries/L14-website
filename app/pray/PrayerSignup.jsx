@@ -32,7 +32,7 @@ export default function PrayerSignup() {
     const res = await signUpForPrayerList({ ...form, captchaToken });
     setBusy(false);
     if (!res?.ok) {
-      setError(res?.error || 'Sorry — something went wrong. Please try again.');
+      setError(res?.error || 'Sorry, something went wrong. Please try again.');
       setCaptchaToken(null);
       setCaptchaBump((n) => n + 1);
       return;
@@ -43,7 +43,7 @@ export default function PrayerSignup() {
   if (done) {
     return (
       <div role="status" className="rounded-sm border border-brand bg-brand-light px-5 py-6 text-left text-brand-dark">
-        <p className="text-lg font-bold">Thank you — please check your email.</p>
+        <p className="text-lg font-bold">Thank you! Now check your email.</p>
         <p className="mt-2">
           We sent a confirmation to <span className="font-semibold">{form.email}</span>. Press the
           button in it and the prayer emails will start coming. If it is not there in a few minutes,

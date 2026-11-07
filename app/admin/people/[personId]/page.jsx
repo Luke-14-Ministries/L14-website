@@ -162,7 +162,7 @@ function FormAnswers({ sensitive, support, name }) {
       <div id="form-answers" className="mt-4">
         <Section title="Form answers">
           <p className="text-amber-700">
-            No form answers on file — nobody has filled in the support details for {name} yet.
+            No form answers on file. Nobody has filled in the support details for {name} yet.
           </p>
         </Section>
       </div>
@@ -188,13 +188,13 @@ function FormAnswers({ sensitive, support, name }) {
         title="Form answers"
         note={
           saved
-            ? `What the family wrote, under the form's own questions. Last saved ${dayInMorristown(s.details_saved_at)}.`
-            : 'What is on file. The family has never saved the form, so a yes/no left at its default reads "Not answered".'
+            ? `What the family wrote, under the questions from the form. Last saved ${dayInMorristown(s.details_saved_at)}.`
+            : 'What\'s on file. The family has never saved the form, so any yes/no question they skipped shows "Not answered".'
         }
       >
         <AnswerGroup
           title={`About ${name}`}
-          hint="Asked of campers. Anyone else is asked these only if they already had answers here."
+          hint="Campers are asked these. Others are asked only if they already have answers here."
         >
           <Answer q="Disability or diagnosis, in your own words">
             <AnswerText value={s.disabilities} />
@@ -239,7 +239,7 @@ function FormAnswers({ sensitive, support, name }) {
               <Answer q="What happens, and what should we do?">
                 {legacyAllergyText ? (
                   <span className="text-neutral-500">
-                    Given before the tick list, as one answer — shown under &ldquo;Which ones&rdquo;.
+                    Given as one answer before the checklist existed. It shows under &ldquo;Which ones&rdquo;.
                   </span>
                 ) : (
                   <AnswerText value={s.allergy_detail} alert />
@@ -353,7 +353,7 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
           return (
             <AnswerGroup
               key={p.id}
-              title={`${p.registrations?.events?.name ?? 'Event'} — ${a.status}${
+              title={`${p.registrations?.events?.name ?? 'Event'}: ${a.status}${
                 a.updated_at ? `, last saved ${dayInMorristown(a.updated_at)}` : ''
               }`}
             >
@@ -371,9 +371,9 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
                 {a.first_time_volunteering == null ? (
                   <NotAnswered />
                 ) : a.first_time_volunteering ? (
-                  'Yes — first time'
+                  'Yes, first time'
                 ) : (
-                  'No — returning'
+                  'No, returning'
                 )}
               </Answer>
               <Answer q="Home church">
@@ -409,11 +409,11 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
               )}
               <Answer q="I have read the Apostles' Creed and I affirm it.">
                 {child ? (
-                  <span className="text-neutral-600">Not asked — volunteer child</span>
+                  <span className="text-neutral-600">Not asked (volunteer child)</span>
                 ) : a.creed_affirmed === true ? (
                   <span className="text-green-700">Affirmed</span>
                 ) : a.creed_affirmed === false ? (
-                  <span className="font-semibold text-red-700">⚠ Not affirmed — speak with Larry</span>
+                  <span className="font-semibold text-red-700">⚠ Not affirmed, speak with Larry</span>
                 ) : (
                   <NotAnswered />
                 )}
@@ -767,7 +767,7 @@ export default async function PersonPage({ params }) {
         <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           <strong>Some of this person&rsquo;s information is hidden.</strong> Allergies,
           medical flags and the emergency contact need the <em>sensitive information</em>{' '}
-          permission. An administrator grants it on Staff &amp; Access.
+          permission. An administrator can grant it on Staff &amp; Access.
         </p>
       )}
 
@@ -862,7 +862,7 @@ export default async function PersonPage({ params }) {
                           {sigs.map((sg, i) => (
                             <li key={i} className="text-xs">
                               {sg.agreements?.title ?? sg.agreements?.key}
-                              {sg.agreements?.version ? ` (v${sg.agreements.version})` : ''} —{' '}
+                              {sg.agreements?.version ? ` (v${sg.agreements.version})` : ''}, signed{' '}
                               {fmtDate(sg.signed_at)} by {sg.signer_name}
                               {sg.signer_role ? `, ${SIGNER_ROLE[sg.signer_role] ?? sg.signer_role}` : ''}
                             </li>
@@ -886,7 +886,7 @@ export default async function PersonPage({ params }) {
                             ) : a.creed_affirmed ? (
                               <span className="text-green-700">Creed affirmed</span>
                             ) : (
-                              <span className="font-semibold text-red-700">⚠ Creed not affirmed — speak with Larry</span>
+                              <span className="font-semibold text-red-700">⚠ Creed not affirmed, speak with Larry</span>
                             )}
                           </>
                         );
@@ -899,7 +899,7 @@ export default async function PersonPage({ params }) {
           )}
         </Section>
 
-        <Section title="Permissions" note="The latest answer given for this person; earlier answers are kept.">
+        <Section title="Permissions" note="The latest answer for this person. Earlier answers are kept.">
           {latestConsent.size === 0 ? (
             <p className="text-neutral-500">Nothing recorded yet.</p>
           ) : (
@@ -924,7 +924,7 @@ export default async function PersonPage({ params }) {
 
         <Section
           title="Buddy"
-          note="Both directions — who supports them, and who they support."
+          note="Who supports them, and who they support."
         >
           {(asCamper ?? []).length === 0 && (asBuddy ?? []).length === 0 ? (
             <p className="text-neutral-500">No buddy pairing.</p>
@@ -1007,7 +1007,7 @@ export default async function PersonPage({ params }) {
         >
           {!sensitive ? (
             <p className="text-neutral-500">
-              Hidden — needs the <em>sensitive information</em> permission.
+              Hidden. You need the <em>sensitive information</em> permission.
             </p>
           ) : !support ? (
             <p className="text-neutral-500">Nothing recorded.</p>
@@ -1037,9 +1037,8 @@ export default async function PersonPage({ params }) {
                   after somebody is paired. This row went on saying "Yes" for
                   the rest of the season. */}
               <p className="mt-2 text-xs text-neutral-500">
-                The summary. Every answer the family gave, in the form&rsquo;s own questions, is
-                under <a href="#form-answers" className="text-brand underline">Form answers</a>{' '}
-                below.
+                This is a summary. Every answer the family gave is under{' '}
+                <a href="#form-answers" className="text-brand underline">Form answers</a> below.
               </p>
             </>
           )}
@@ -1048,11 +1047,11 @@ export default async function PersonPage({ params }) {
         <Section title="Emergency contact" note="Someone not attending the event.">
           {!sensitive ? (
             <p className="text-neutral-500">
-              Hidden — needs the <em>sensitive information</em> permission.
+              Hidden. You need the <em>sensitive information</em> permission.
             </p>
           ) : !support?.emergency_contact_name && !support?.emergency_contact_phone ? (
             <p className="text-amber-700">
-              None recorded. This is the one thing the family form asks of everyone.
+              None recorded. The family form asks everyone for this.
             </p>
           ) : (
             <>

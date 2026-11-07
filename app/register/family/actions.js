@@ -681,7 +681,7 @@ export async function submitFamilyRegistration(payload) {
         }
         const bad = caregiverLinkProblem({ name: carer.first_name, phone });
         if (bad) {
-          notes.push(`${carer.first_name} was not linked as ${m.firstName}'s caregiver — no phone number`);
+          notes.push(`${carer.first_name} was not linked as ${m.firstName}'s caregiver (no phone number)`);
           continue;
         }
         const { error: linkError } = await supabase
@@ -694,7 +694,7 @@ export async function submitFamilyRegistration(payload) {
       notes.push('the caregiver links could not all be saved');
     }
     if (notes.length > 0) {
-      caregiverNotice = `Your registration was saved, but ${notes.join('; ')}. You can link caregivers in your household from your dashboard, under Manage household; for a caregiver from outside your household, tell staff their name and phone.`;
+      caregiverNotice = `Your registration was saved, but ${notes.join('; ')}. You can link caregivers in your household from your dashboard, under Manage household. For a caregiver outside your household, tell staff their name and phone.`;
     }
     revalidatePath('/account/household');
   }

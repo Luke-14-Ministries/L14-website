@@ -71,7 +71,7 @@ export default async function MyProgramPrintPage({ searchParams }) {
 
       <FlagsNote needAsking={needAsking} className="mt-3 text-sm" />
       {rows.some((r) => !r.buddy && r.buddyRequired) && (
-        <StatusLegend className="mt-1" items={[['warn', 'buddy needed — not paired yet']]} />
+        <StatusLegend className="mt-1" items={[['warn', 'needs a buddy, not paired yet']]} />
       )}
 
       {rows.length === 0 ? (
@@ -107,7 +107,7 @@ export default async function MyProgramPrintPage({ searchParams }) {
                   {r.buddy || (
                     <StatusMark
                       {...(r.buddyRequired
-                        ? { state: 'warn', label: 'Not paired', title: 'Buddy needed — not paired yet' }
+                        ? { state: 'warn', label: 'Not paired', title: 'Needs a buddy, not paired yet' }
                         : { state: 'na', title: 'No buddy' })}
                     />
                   )}
@@ -120,8 +120,8 @@ export default async function MyProgramPrintPage({ searchParams }) {
       )}
 
       <p className="mt-6 border-t border-neutral-300 pt-2 text-xs text-neutral-500">
-        Questions about a flag, or about anybody on this list, go to the camp coordinator rather
-        than the family. Printed {todayInMorristown()} · Luke 14 Ministries.
+        Take questions about a flag, or about anyone on this list, to the camp coordinator, not
+        the family. Printed {todayInMorristown()} · Luke 14 Ministries.
       </p>
     </div>
   );

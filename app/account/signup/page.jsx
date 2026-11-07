@@ -11,8 +11,8 @@ export default function SignupPage() {
           Create Your Account
         </h1>
         <p className="text-center text-neutral-600 mb-8">
-          One account for camp registration and giving — for both families and
-          volunteers.
+          One account for camp registration and giving, for families and
+          volunteers alike.
         </p>
         {/* Suspense is required, not decorative: SignupForm reads the ?next=
             query string, and Next.js refuses to prerender a page that does that

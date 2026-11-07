@@ -258,7 +258,7 @@ export default function LodgingBoard({
     const room = lodging.capacity == null ? Infinity : lodging.capacity - occ;
     if (room < group.length) {
       window.alert(
-        `${lodging.name} has room for ${room === 1 ? '1 more person' : `${room} more people`}, and this family has ${group.length}.\n\nPlace the ones who fit individually, and put the rest next door — or use a bigger room.`
+        `${lodging.name} has room for ${room === 1 ? '1 more person' : `${room} more people`}, and this family has ${group.length}.\n\nPlace the ones who fit one at a time and put the rest next door, or use a bigger room.`
       );
       return;
     }
@@ -441,7 +441,7 @@ export default function LodgingBoard({
               ) : (
                 <span
                   className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-500"
-                  title="Not marked accessible — this may simply mean nobody has checked"
+                  title="Not marked accessible. This may only mean nobody has checked."
                 >
                   not marked accessible
                 </span>
@@ -454,20 +454,20 @@ export default function LodgingBoard({
                     {lodging.capacity != null
                       ? `${campersHere} of ${lodging.capacity} campers`
                       : `${campersHere} campers`}
-                    {over ? ' — over' : ''}
+                    {over ? ' (over)' : ''}
                   </span>
                   <span
                     className={`ml-1 ${staffOver ? 'font-semibold text-amber-700' : 'text-neutral-500'}`}
                     title="Volunteers, support team and childcare placed here, against the room's staff capacity"
                   >
                     · {staffHere} of {lodging.staffCapacity} staff
-                    {staffOver ? ' — over' : ''}
+                    {staffOver ? ' (over)' : ''}
                   </span>
                 </>
               ) : (
                 <span className={over ? 'font-semibold text-amber-700' : 'text-neutral-500'}>
                   {lodging.capacity != null ? `${occ} of ${lodging.capacity}` : `${occ} placed`}
-                  {over ? ' — over' : ''}
+                  {over ? ' (over)' : ''}
                 </span>
               )}
             </span>
@@ -506,8 +506,8 @@ export default function LodgingBoard({
           {kids.length > 0 && (placing || (placingGroup && placingGroup.length > 0)) && (
             <p className="mt-3 text-xs text-neutral-500">
               {isOpen(lodging.id)
-                ? 'Pick one of the rooms below — a building is not assigned itself.'
-                : `Open ${lodging.name} to pick one of its ${kids.length} rooms — a building is not assigned itself.`}
+                ? 'Pick one of the rooms below. People go in a room, not the building.'
+                : `Open ${lodging.name} to pick one of its ${kids.length} rooms. People go in a room, not the building.`}
             </p>
           )}
 
@@ -596,10 +596,10 @@ export default function LodgingBoard({
           <p className="font-semibold">
             {publishedAt ? (
               <span className="text-green-700">
-                Published — families can see where they are staying
+                Published. Families can see where they are staying.
               </span>
             ) : (
-              <span className="text-neutral-700">Draft — families see nothing yet</span>
+              <span className="text-neutral-700">Draft. Families can&rsquo;t see anything yet.</span>
             )}
           </p>
           <p className="text-sm text-neutral-500">
@@ -644,8 +644,8 @@ export default function LodgingBoard({
         {placingGroup && placingGroup.length > 0 && (
           <p className="mt-2 rounded-sm border border-brand bg-brand-light px-3 py-2 text-sm">
             Placing the whole{' '}
-            <span className="font-semibold">{placingGroup[0]?.household}</span> household —{' '}
-            {placingGroup.length} {placingGroup.length === 1 ? 'person' : 'people'}. Choose a room below.{' '}
+            <span className="font-semibold">{placingGroup[0]?.household}</span> household (
+            {placingGroup.length} {placingGroup.length === 1 ? 'person' : 'people'}). Choose a room below.{' '}
             <button
               onClick={() => setPlacingGroup(null)}
               className="underline font-semibold"
@@ -657,8 +657,8 @@ export default function LodgingBoard({
 
         {placing && placedIds.has(placing) && (
           <p className="mt-2 rounded-sm border border-brand bg-brand-light px-3 py-2 text-sm">
-            Moving <span className="font-semibold">{peopleById.get(placing)?.name}</span> —
-            choose their new place below.{' '}
+            Moving <span className="font-semibold">{peopleById.get(placing)?.name}</span>. Choose
+            their new place below.{' '}
             <button onClick={() => setPlacing(null)} className="underline font-semibold">
               Never mind
             </button>
@@ -673,8 +673,8 @@ export default function LodgingBoard({
               Pick someone, then choose their place below.{' '}
               <span className="font-semibold text-neutral-700">
                 Keep a family together where you can
-              </span>{' '}
-              — same room if they fit, adjacent rooms if they do not.
+              </span>
+              : the same room if they fit, or rooms next to each other if they don&rsquo;t.
             </p>
             {unplacedByHousehold.map(([householdName, group]) => (
             <div key={householdName} className="mt-3">

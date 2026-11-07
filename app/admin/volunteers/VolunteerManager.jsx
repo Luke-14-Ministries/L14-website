@@ -35,19 +35,19 @@ function volunteerState(app, placeStatus) {
 // visible (and reviewable) before any key is issued.
 const CHECKR_CHIP = {
   not_started: ['Not started', 'bg-neutral-100 text-neutral-500'],
-  invited: ['Invited — waiting on volunteer', 'bg-amber-100 text-amber-800'],
+  invited: ['Invited, waiting on volunteer', 'bg-amber-100 text-amber-800'],
   pending: ['Running at Checkr', 'bg-blue-100 text-blue-800'],
   clear: ['Clear', 'bg-green-100 text-green-800'],
-  consider: ['Consider — needs a decision', 'bg-red-100 text-red-800'],
+  consider: ['Consider: needs a decision', 'bg-red-100 text-red-800'],
   suspended: ['Suspended at Checkr', 'bg-red-100 text-red-800'],
   dispute: ['Disputed by volunteer', 'bg-amber-100 text-amber-800'],
   canceled: ['Cancelled', 'bg-neutral-200 text-neutral-600'],
 };
 
 const ADJUDICATION_LABEL = {
-  engaged: 'Engaged — proceeding despite the result',
+  engaged: 'Engaged: going ahead despite the result',
   pre_adverse_action: 'Pre-adverse action notice sent',
-  post_adverse_action: 'Post-adverse action — declined',
+  post_adverse_action: 'Post-adverse action: declined',
 };
 
 const fmtAge = (dob) => {
@@ -115,11 +115,11 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
               and a row saved before it may still carry an old one. */}
           {clearance?.background_check_date && clearance?.expires_on
             ? `Expires ${clearance.expires_on} (12 months from the background-check date)`
-            : 'Expiry is worked out from the background-check date: 12 months — background checks are annual.'}
+            : 'Background checks are annual. Expiry is 12 months from the background check date.'}
         </span>
       </div>
       <div className="mt-3">
-        <span className="block text-xs font-semibold text-neutral-500 mb-1">Verdict — the ministry&rsquo;s decision, not Checkr&rsquo;s word</span>
+        <span className="block text-xs font-semibold text-neutral-500 mb-1">Verdict (the ministry&rsquo;s decision, not Checkr&rsquo;s)</span>
         <div className="flex flex-wrap gap-4">
           <label className="flex items-center gap-1.5">
             <input type="radio" name={`verdict-${personId}`} checked={verdict === ''} onChange={() => setVerdict('')} />
@@ -136,7 +136,7 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           maxLength={500}
-          placeholder="Note (optional) — e.g. spoke with Larry 14 Oct; cleared to serve with a buddy"
+          placeholder="Note (optional), e.g. Spoke with Larry 14 Oct. Cleared to serve with a buddy."
           className="mt-2 w-full rounded-sm border border-neutral-300 px-2 py-1"
         />
         <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -198,10 +198,10 @@ function CheckrPanel({ clearance, email }) {
           {sent ? '✓' : '1.'} Name and email sent to Checkr in a batch
         </li>
         <li className={resultIn ? 'text-green-800' : sent ? 'font-semibold text-neutral-800' : 'text-neutral-500'}>
-          {resultIn ? '✓' : '2.'} Checkr emails them; they fill in their own details
+          {resultIn ? '✓' : '2.'} Checkr emails them, and they fill in their own details
         </li>
         <li className={resultIn ? 'font-semibold text-neutral-800' : 'text-neutral-500'}>
-          3. Result uploaded here — then record the verdict below
+          3. Result uploaded here, then record the verdict below
         </li>
       </ol>
       <p className="mt-2 text-sm">
@@ -210,24 +210,24 @@ function CheckrPanel({ clearance, email }) {
             Not sent yet. It goes in the next batch from{' '}
             <Link href="/admin/volunteers/screening/" className="text-brand underline">
               Background screening
-            </Link>{' '}
-            — to {email || <strong>no email on file (add one first)</strong>}.
+            </Link>
+            . It will go to {email || <strong>no email on file (add one first)</strong>}.
           </>
         ) : !resultIn ? (
           <>
             Sent{clearance?.order_batch ? ` in the batch of ${dayInMorristown(clearance.order_batch)}` : ''}
-            {clearance?.invited_email ? ` to ${clearance.invited_email}` : ''}. Waiting on Checkr; upload the
-            results file on{' '}
+            {clearance?.invited_email ? ` to ${clearance.invited_email}` : ''}. Waiting on Checkr. When the
+            results file comes back, upload it on{' '}
             <Link href="/admin/volunteers/screening/" className="text-brand underline">
               Background screening
-            </Link>{' '}
-            when it comes back.
+            </Link>
+            .
           </>
         ) : (
           <>
             Result uploaded{clearance?.report_completed_at ? ` ${clearance.report_completed_at.slice(0, 10)}` : ''}:{' '}
-            <strong>{label}</strong>. Record the ministry&rsquo;s verdict below — a volunteer is approved only
-            once it reads OK to serve.
+            <strong>{label}</strong>. Record the ministry&rsquo;s verdict below. A volunteer can be approved
+            only once it reads OK to serve.
             {clearance?.adjudication && <> ({ADJUDICATION_LABEL[clearance.adjudication] ?? clearance.adjudication})</>}
           </>
         )}
@@ -269,7 +269,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
     if (
       decision === 'declined' &&
       !window.confirm(
-        `Decline ${person?.first_name ?? 'this volunteer'}'s application?\n\nTheir place at camp goes on the waitlist, and the family sees: "Volunteer application not approved — the office will be in touch."`
+        `Decline ${person?.first_name ?? 'this volunteer'}'s application?\n\nTheir place at camp goes on the waitlist, and the family sees: "Volunteer application not approved. The office will be in touch."`
       )
     )
       return;
@@ -347,7 +347,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
             type="button"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
-            title={open ? 'Close the application' : 'Open the application — approve or decline here'}
+            title={open ? 'Close the application' : 'Open the application to approve or decline'}
             className={`rounded-full px-2.5 py-0.5 font-semibold hover:underline ${stateTone}`}
           >
             {stateLabel} <span aria-hidden>{open ? '▾' : '▸'}</span>
@@ -365,8 +365,8 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 row.creedAffirmed
                   ? 'Affirmed the Apostles’ Creed on the volunteer application'
                   : row.creedWithdrawn
-                    ? 'Affirmed the Apostles’ Creed on an earlier save and left it unticked on the latest one — speak with Larry before approving'
-                    : 'Did not affirm the Apostles’ Creed — they were asked to speak with Larry; confirm that has happened before approving'
+                    ? 'Affirmed the Apostles’ Creed earlier but unchecked it on the latest save. Speak with Larry before approving.'
+                    : 'Did not affirm the Apostles’ Creed. They were asked to speak with Larry. Make sure that happened before approving.'
               }
             >
               {/* The fact only (Lawrence, 15 Oct 2026): red already says
@@ -400,7 +400,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                   approves or declines it, and what that rests on. */}
               <span className="mr-1 font-semibold">
                 {toDecide
-                  ? 'Waiting on your decision — read the application below, then:'
+                  ? 'Waiting on your decision. Read the application below, then:'
                   : app.status === 'approved'
                     ? `Approved${app.reviewed_at ? ` ${new Date(app.reviewed_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}` : ''}. Change it:`
                     : `Declined${app.reviewed_at ? ` ${new Date(app.reviewed_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}` : ''}. Change it:`}
@@ -409,7 +409,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 <button
                   onClick={() => review('approved')}
                   disabled={pending || !cleared}
-                  title={cleared ? undefined : 'Needs a background check on file marked OK to serve — record it below'}
+                  title={cleared ? undefined : 'Needs a background check marked OK to serve. Record it below.'}
                   className="btn-primary py-1.5! text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Approve
@@ -425,11 +425,11 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 </button>
               )}
               <span className="w-full text-xs text-neutral-600">
-                Before deciding: {row.creedAsked === false ? 'Volunteer child — Creed not asked' : row.creedAffirmed ? 'Creed affirmed' : 'Creed not affirmed — speak with Larry first'} · {pill.text}
+                Before deciding: {row.creedAsked === false ? 'Volunteer child, Creed not asked' : row.creedAffirmed ? 'Creed affirmed' : 'Creed not affirmed, speak with Larry first'} · {pill.text}
                 {!cleared && toDecide && (
-                  <strong className="text-red-800"> — approval waits for a background check marked OK to serve (below)</strong>
+                  <strong className="text-red-800">. Approval waits for a background check marked OK to serve (below)</strong>
                 )}
-                . One decision: approving also confirms their place at camp; declining puts the place on the waitlist.
+                . Approving also confirms their place at camp. Declining puts their place on the waitlist.
               </span>
             </div>
           )}
@@ -438,7 +438,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
               <div>
                 <dt className="text-xs font-semibold text-neutral-500">Age</dt>
                 <dd>
-                  {age != null ? `${age}` : 'unknown — no birth date on file'}
+                  {age != null ? `${age}` : 'unknown (no birth date on file)'}
                   {person?.date_of_birth && (
                     <span className="text-neutral-500"> (b. {person.date_of_birth})</span>
                   )}
@@ -460,7 +460,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
               )}
               <div>
                 <dt className="text-xs font-semibold text-neutral-500">First time?</dt>
-                <dd>{app.first_time_volunteering == null ? '—' : app.first_time_volunteering ? 'Yes' : 'No — returning'}</dd>
+                <dd>{app.first_time_volunteering == null ? '—' : app.first_time_volunteering ? 'Yes' : 'No, returning'}</dd>
               </div>
               <div>
                 <dt className="text-xs font-semibold text-neutral-500">Home church</dt>
@@ -497,7 +497,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 <div>
                   <dt className="text-xs font-semibold text-neutral-500">Age</dt>
                   <dd>
-                    {age != null ? `${age}` : 'unknown — no birth date on file'}
+                    {age != null ? `${age}` : 'unknown (no birth date on file)'}
                     {person?.date_of_birth && (
                       <span className="text-neutral-500"> (b. {person.date_of_birth})</span>
                     )}
@@ -509,8 +509,8 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 </div>
               </dl>
               <p className="text-neutral-500">
-                No application filed yet — the family completes it at /register/volunteer (their
-                dashboard reminds them).
+                No application yet. The family fills it out at /register/volunteer, and their
+                dashboard reminds them.
               </p>
             </div>
           )}
@@ -525,9 +525,9 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
             />
           ) : (
             <p className="mt-4 rounded-sm border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
-              The pill above is all you can see: on file, current, and the verdict. The record
-              itself (dates, what Checkr said, who decided) is kept by administrators. Ask one if
-              something looks wrong.
+              You can see the pill above: on file, current, and the verdict. Administrators keep the
+              full record (dates, Checkr&rsquo;s result, who decided). Ask one if something looks
+              wrong.
             </p>
           )}
         </div>
@@ -581,12 +581,10 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
         )}
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        Everyone registered with the Volunteer role, with their application and background-check
-        status. The background-check paperwork itself lives in the restricted SharePoint folder. The
-        record here — ordering, the import from Checkr (the background-check company), the
-        background-check date and the verdict — is an
-        administrator&rsquo;s to keep; everyone else on staff sees on file, current, and the
-        verdict.
+        Everyone registered as a Volunteer, with their application and background check status.
+        The paperwork is kept in the restricted SharePoint folder. Administrators keep the record
+        here: ordering checks from Checkr, importing results, the check date and the verdict. Other
+        staff see whether a check is on file, whether it&rsquo;s current, and the verdict.
       </p>
 
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
@@ -608,10 +606,10 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
             aria-pressed={show === key}
             title={
               key === 'check'
-                ? 'Adults (counted once, however many weeks they serve) without a current background check marked OK; under-18s are not screened. Click to show only them.'
+                ? 'Adults without a current background check marked OK, counted once however many weeks they serve. Under-18s are not screened. Click to show only them.'
                 : key === 'all'
                   ? 'Show everyone'
-                  : 'Click to show only these; click again for everyone'
+                  : 'Click to show only these. Click again to show everyone.'
             }
             className={`rounded-lg border px-4 py-2 text-left ${
               show === key ? 'border-brand bg-brand-light ring-1 ring-brand' : 'border-neutral-200 bg-white hover:border-brand'
@@ -624,8 +622,8 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
 
       {total === 0 && (
         <p className="text-neutral-500">
-          No volunteers registered yet. Volunteers register through the ordinary registration
-          flow with the role &ldquo;Volunteer,&rdquo; then complete their application.
+          No volunteers registered yet. Volunteers register like everyone else, choose the
+          role &ldquo;Volunteer,&rdquo; and then fill out their application.
         </p>
       )}
 

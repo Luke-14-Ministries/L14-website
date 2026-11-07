@@ -12,7 +12,7 @@ export default function RemoveButton({ id, email }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
   function go() {
-    if (!confirm(`Take ${email} off the prayer list? They will not be emailed again unless they sign up afresh.`)) return;
+    if (!confirm(`Take ${email} off the prayer list? They won't be emailed again unless they sign up again.`)) return;
     setError('');
     start(async () => {
       const res = await removeFromPrayerList(id);

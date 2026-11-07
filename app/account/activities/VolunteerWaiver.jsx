@@ -41,7 +41,7 @@ export default function VolunteerWaiver({ volunteer, activity, signed }) {
   return (
     <div className="mt-2">
       <p className="text-sm">
-        <span className="font-semibold">{activity.name}</span> — {activity.agreement.title}
+        <span className="font-semibold">{activity.name}</span>: {activity.agreement.title}
       </p>
       {signed ? (
         <p className="mt-1 rounded-sm border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
@@ -52,7 +52,7 @@ export default function VolunteerWaiver({ volunteer, activity, signed }) {
           person={volunteer}
           activity={activity}
           agreement={activity.agreement}
-          intro={`If ${firstName}'s camper chooses ${activity.name}, ${firstName} goes too, so this waiver is signed for ${firstName} ahead of time.`}
+          intro={`If ${firstName}'s camper chooses ${activity.name}, ${firstName} goes too. Signing now means it is ready ahead of time.`}
           pending={pending}
           onSign={sign}
           onCancel={() => setOpen(false)}

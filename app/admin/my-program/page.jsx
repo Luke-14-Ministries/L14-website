@@ -63,7 +63,7 @@ export default async function MyProgramPage({ searchParams }) {
       <h2 className="text-xl font-bold mb-1">{current.programName}</h2>
       <p className="text-sm text-neutral-500 mb-4">
         {current.eventName}
-        {current.startsOn ? ` · from ${current.startsOn}` : ''} — {rows.length}{' '}
+        {current.startsOn ? ` · from ${current.startsOn}` : ''} · {rows.length}{' '}
         {rows.length === 1 ? 'person' : 'people'} in your program.
       </p>
 
@@ -119,24 +119,24 @@ export default async function MyProgramPage({ searchParams }) {
             Print / PDF
           </Link>
           <span className="text-xs text-neutral-500">
-            The CSV and the print view hold the whole list, not just the rows a search is showing.
+            The CSV and the print view include the whole list, not only the rows your search shows.
           </span>
         </div>
       )}
 
       {rows.length === 0 ? (
         <p className="rounded-sm border border-neutral-200 bg-white p-6 text-neutral-500">
-          Nobody has been placed in {current.programName} for {current.eventName} yet. This page
-          fills up as the coordinator assigns people — there is nothing for you to do here.
+          Nobody has been placed in {current.programName} for {current.eventName} yet. People will
+          appear here as the coordinator assigns them. You don&rsquo;t need to do anything.
         </p>
       ) : (
         <ProgramRosterTable rows={rows} />
       )}
 
       <p className="mt-4 text-xs text-neutral-500">
-        Something wrong on this list — somebody missing, somebody who should not be here, a name
-        spelled wrong? Tell the camp coordinator rather than the family. Changes are made in one
-        place so that the roster and this page never disagree.
+        Is someone missing, someone here who shouldn&rsquo;t be, or a name spelled wrong? Tell the
+        camp coordinator, not the family. The coordinator makes all changes so this page always
+        matches the roster.
       </p>
     </div>
   );

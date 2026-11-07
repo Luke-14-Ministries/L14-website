@@ -77,7 +77,7 @@ export default function CheckinList({ rows }) {
               path: '/account/dashboard/',
               title: 'Pay on your phone',
               caption:
-                'Point your phone’s camera here and sign in. Your page shows what is left to pay; “Ways to pay” takes a card or a bank account.',
+                'Point your phone’s camera here and sign in. Your page shows what is left to pay. Use “Ways to pay” to pay by card or bank account.',
             })
           }
           className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-700 hover:border-brand"
@@ -117,7 +117,7 @@ export default function CheckinList({ rows }) {
                 {r.noPhoto && (
                   <span
                     className="ml-2 rounded-full bg-neutral-800 text-white px-2 py-0.5 text-xs font-semibold align-middle"
-                    title="This family asked us not to feature them in published photos or video. Not a promise they never appear in a wide group shot."
+                    title="This family asked us not to feature them in photos or video we share. They may still appear in the background of a group shot."
                   >
                     no photos
                   </span>
@@ -138,7 +138,7 @@ export default function CheckinList({ rows }) {
                         path: `/account/finish/${r.registrationId}/`,
                         title: `${r.household}: ${r.owed} left to pay`,
                         caption:
-                          'Point your phone’s camera here and sign in. It opens this registration’s “Ways to pay”, and the payment goes onto it by itself.',
+                          'Point your phone’s camera here and sign in. It opens “Ways to pay” for this registration, and the payment is applied to it.',
                       })
                     }
                     title="What this family still owes. Tap for a QR code that opens their own payment page."

@@ -86,7 +86,7 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
             failed ? 'bg-red-100 text-red-800' : STATUS_PILL[plan.status] ?? 'bg-neutral-200 text-neutral-700'
           }`}
         >
-          {failed && plan.status === 'active' ? 'Payment failed — retrying' : PLAN_STATUS_LABEL[plan.status] ?? plan.status}
+          {failed && plan.status === 'active' ? 'Payment failed, retrying' : PLAN_STATUS_LABEL[plan.status] ?? plan.status}
         </span>
         {canChange && !confirmCancel && (
           <>
@@ -105,9 +105,9 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
         <div className="mt-2 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
           <p className="font-semibold">Stop this payment plan?</p>
           <p className="mt-1">
-            No more automatic payments will be taken. Nothing already paid is refunded, and what is
+            No more automatic payments will be taken. Nothing already paid is refunded. What is
             still owed{balanceCents > 0 ? ` (${dollars(balanceCents)})` : ''} stays on your balance,
-            to pay by the due date from &ldquo;Ways to pay&rdquo;. If the plan earned an
+            and you can pay it by the due date from &ldquo;Ways to pay&rdquo;. If the plan earned an
             early-registration discount, camp staff will let you know whether it stays.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -133,7 +133,7 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
           {plan.status === 'failed'
             ? 'The plan is paused and camp staff will be in touch. Saving a new card or bank account starts it again.'
             : setAside
-              ? `The payment on ${formatDueDateShort(setAside.due_on)}${setAside.last_error ? ` (${declineReason(setAside.last_error)})` : ''} has been spread over the payments still to come, but the same card or bank account is still on file — please change it below so the next payment goes through.`
+              ? `The payment on ${formatDueDateShort(setAside.due_on)}${setAside.last_error ? ` (${declineReason(setAside.last_error)})` : ''} has been spread over the payments still to come. The same card or bank account is still on file, so please change it below so the next payment goes through.`
               : next?.next_attempt_on
               ? `We'll try again on ${formatDueDateShort(next.next_attempt_on)}.`
               : ''}
@@ -169,8 +169,8 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
           <ul className="mt-1 space-y-0.5">
             {upcoming.map((i) => (
               <li key={i.id}>
-                {formatDueDateShort(i.due_on)} — about {dollars(i.status === 'processing' ? i.amount_cents : each)}
-                {i.status === 'processing' ? ' (clearing the bank)' : i.status === 'failed' ? ' (failed — will retry)' : ''}
+                {formatDueDateShort(i.due_on)}: about {dollars(i.status === 'processing' ? i.amount_cents : each)}
+                {i.status === 'processing' ? ' (clearing the bank)' : i.status === 'failed' ? ' (failed, will retry)' : ''}
               </li>
             ))}
           </ul>

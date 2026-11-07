@@ -50,7 +50,7 @@ export async function reviewVolunteerApplication(participantId, decision, { over
   // family reads, so it can be undone by approving later.
   if (decision === 'declined' && ['confirmed', 'submitted'].includes(part.status)) {
     const res = await setParticipantStatus(part.registration_id, participantId, 'waitlisted', {
-      reason: 'Volunteer application not approved — the office will be in touch.',
+      reason: 'Volunteer application not approved. The office will be in touch.',
     });
     if (!res.ok) return { ok: false, error: `The application is declined, but the place did not move: ${res.error}` };
   }
@@ -76,7 +76,7 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
   }
   if (!personId) return { ok: false, error: 'Missing person.' };
   const isOn = Boolean(onFile);
-  if (isOn && !date) return { ok: false, error: 'Give the date of the background check — the expiry is worked out from it.' };
+  if (isOn && !date) return { ok: false, error: 'Give the date of the background check. The expiry is based on it.' };
   const v = verdict ? String(verdict) : null;
   if (v && !VERDICTS.includes(v)) return { ok: false, error: 'Unknown verdict.' };
   if (v && !isOn) return { ok: false, error: 'A verdict needs the paperwork on file first.' };

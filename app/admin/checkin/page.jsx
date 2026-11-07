@@ -152,7 +152,7 @@ export default async function CheckinPage({ searchParams }) {
               t: 'no buddy assigned',
               tone: 'amber',
               title:
-                'This person asked for a one-to-one buddy and none is assigned yet. Pairing is done by staff on the Buddy Assignments page.',
+                'This person needs a one-to-one buddy and has none yet. Staff pair buddies on the Buddy Assignments page.',
             });
           }
         }
@@ -177,9 +177,9 @@ export default async function CheckinPage({ searchParams }) {
     <div>
       <h2 className="text-xl font-bold mb-1">Check-In</h2>
       <p className="text-sm text-neutral-500 mb-4">
-        Mark arrivals as people come through the door. Works on a phone. Red flags are the
-        at-a-glance alerts; full detail lives on the Medical &amp; Support page. A family paying at
-        the door pays on their own phone: show them the QR code.
+        Mark people as they arrive. Works on a phone. Red flags are quick alerts, and the full
+        details are on the Medical &amp; Support page. A family paying at the door pays on their own
+        phone. Show them the QR code.
       </p>
 
       {eventsList.length > 1 && (

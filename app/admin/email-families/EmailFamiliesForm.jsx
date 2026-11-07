@@ -36,7 +36,7 @@ function urlFor({ eventId, activityId, outstanding, who }) {
 const STATUS_TEXT = {
   sent: ['Sent', 'bg-green-100 text-green-800'],
   failed: ['Failed', 'bg-red-100 text-red-800'],
-  skipped: ['Not sent — no email on file', 'bg-neutral-100 text-neutral-700'],
+  skipped: ['Not sent: no email on file', 'bg-neutral-100 text-neutral-700'],
 };
 
 export default function EmailFamiliesForm({
@@ -176,9 +176,9 @@ export default function EmailFamiliesForm({
         <span>
           <span className="font-semibold">Only families with a waiver outstanding</span>
           <span className="text-neutral-600">
-            {' '}— someone on {activityId ? 'this activity' : 'an activity'} still needs our waiver
-            signed or the outfitter&rsquo;s confirmation uploaded. The email lists each one and
-            links to the family&rsquo;s Activities page.
+            . Someone on {activityId ? 'this activity' : 'an activity'} still needs to sign our waiver
+            or upload the outfitter&rsquo;s confirmation. The email lists each one and links to the
+            family&rsquo;s Activities page.
           </span>
         </span>
       </label>
@@ -218,7 +218,7 @@ export default function EmailFamiliesForm({
         ) : preview && !preview.ok ? (
           <p className="font-semibold text-red-700">{preview.error}</p>
         ) : households.length === 0 ? (
-          <p className="text-neutral-600">Nobody matches — no family would get this.</p>
+          <p className="text-neutral-600">Nobody matches, so no family would get this.</p>
         ) : (
           <>
             <p>
@@ -230,7 +230,7 @@ export default function EmailFamiliesForm({
             </p>
             {noEmail.length > 0 && (
               <p className="mt-1 text-amber-800">
-                Not sent — no email on file: {noEmail.map((h) => h.name).join(', ')}.
+                Not sent (no email on file): {noEmail.map((h) => h.name).join(', ')}.
               </p>
             )}
             {askedFor.length > 1 && (
@@ -242,7 +242,7 @@ export default function EmailFamiliesForm({
                   {askedFor.map((f) => (
                     <li key={f.id} className="text-sm">
                       <span className="font-medium">{f.name}</span>
-                      {f.lines.length > 0 ? ` — ${f.lines.join(' ')}` : ' — nothing listed'}
+                      {f.lines.length > 0 ? `: ${f.lines.join(' ')}` : ': nothing listed'}
                     </li>
                   ))}
                 </ul>

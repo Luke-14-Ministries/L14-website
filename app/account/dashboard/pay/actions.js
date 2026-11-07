@@ -112,7 +112,7 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
   const fee = coverFee ? coverFeeCents(base, method) : 0;
   const charge = base + fee;
   const KIND_LABEL = { deposit: 'Deposit', balance: 'Balance', custom: 'Payment' };
-  const label = `${ev?.name ?? 'Camp registration'} — ${KIND_LABEL[kind]}`;
+  const label = `${ev?.name ?? 'Camp registration'}: ${KIND_LABEL[kind]}`;
 
   // Build the return URLs from the request's own host, so this works the same
   // on the production domain and on any preview deployment.

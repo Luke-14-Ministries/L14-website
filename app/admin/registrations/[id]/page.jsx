@@ -711,7 +711,7 @@ export default async function RegistrationDetailPage({ params }) {
         o.kind === 'ours'
           ? `${o.activity_name}: ${personName.get(o.person_id) || 'someone'} has not signed the ${o.agreement_title || 'waiver'}.`
           : o.upload_status === 'rejected'
-            ? `${o.activity_name}: the outfitter's confirmation for ${personName.get(o.person_id) || 'someone'} was rejected (${o.review_note || 'no reason given'}) — the family needs to upload it again.`
+            ? `${o.activity_name}: the outfitter's confirmation for ${personName.get(o.person_id) || 'someone'} was rejected (${o.review_note || 'no reason given'}). The family needs to upload it again.`
             : `${o.activity_name}: no outfitter's confirmation uploaded for ${personName.get(o.person_id) || 'someone'}.`,
     }))
     .sort((a, b) => a.text.localeCompare(b.text));
@@ -802,7 +802,7 @@ export default async function RegistrationDetailPage({ params }) {
           <EmailLog
             emails={emails}
             eventOf={manyEvents ? (rid) => eventNameByReg.get(rid) ?? null : null}
-            empty="The site has not emailed this family yet."
+            empty="No emails have gone to this family yet."
           />
         </Panel>
       }

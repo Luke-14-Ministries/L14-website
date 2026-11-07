@@ -83,7 +83,7 @@ function Headcount({ h }) {
       {h.capacity != null ? ` of ${h.capacity} places (${Math.max(0, h.capacity - h.confirmed)} left)` : ' · no capacity set'}
       {h.waiting > 0 && ` · ${h.waiting} waiting on a decision`}
       {h.waitlisted > 0 && ` · ${h.waitlisted} waitlisted`}
-      {over && ' — approving everyone waiting would pass capacity'}
+      {over && '. Approving everyone waiting would go over capacity.'}
     </p>
   );
 }
@@ -302,7 +302,7 @@ export default function ReviewCard({
     : !decidedOnly
       ? cls.hint
       : review.review_class === 'neither' && review.deposit_expected_cents > 0
-        ? 'Decided — the deposit is still owed'
+        ? 'Decided, deposit still owed'
         : 'Decided';
 
   const count = waiting.length === 0
@@ -323,8 +323,8 @@ export default function ReviewCard({
           Mark as read, are in the conversation below. */}
       {familyReply?.unread && (
         <p className="mb-3 text-sm text-amber-900">
-          <span aria-hidden>✉</span> <strong>Family replied {when(familyReply.at)}</strong> — read
-          and answer in <PanelLink to="family-messages">Notes to and from the family</PanelLink>.
+          <span aria-hidden>✉</span> <strong>Family replied {when(familyReply.at)}.</strong> Read
+          and answer it in <PanelLink to="family-messages">Notes to and from the family</PanelLink>.
         </p>
       )}
       {waitlisted.length > 0 && (
@@ -336,7 +336,7 @@ export default function ReviewCard({
                 <PanelLink to={`person-${p.id}`} className="font-semibold underline">
                   {p.name || 'Person'}
                 </PanelLink>
-                {' — '}
+                {': '}
                 {p.waitlistReason ? <>&ldquo;{p.waitlistReason}&rdquo;</> : <em>no reason recorded</em>}
                 {changedNote(p)}
               </li>
@@ -395,9 +395,9 @@ export default function ReviewCard({
               .map((c) => c.name)
               .join(', ')}
           </strong>{' '}
-          cannot be approved until a background check is on file marked OK to serve —{' '}
+          can&rsquo;t be approved until a background check marked OK to serve is on file.{' '}
           <Link href={`/admin/volunteers/${eventId ? `?event=${eventId}` : ''}`} className="font-semibold underline">
-            record it on Volunteers
+            Record it on Volunteers
           </Link>
           . Approving a volunteer here also approves their application.
         </p>
@@ -421,7 +421,7 @@ export default function ReviewCard({
                 <span className="text-neutral-600">
                   {' '}
                   (recorded before as {creed.pending.filter((p) => p.renamedFrom).map((p) => p.renamedFrom).join(', ')}
-                  {' '}— the name has changed since)
+                  {' '}before a name change)
                 </span>
               )}
               {canWrite && !creedNoting && (
@@ -437,7 +437,7 @@ export default function ReviewCard({
               {canWrite && creedNoting && (
                 <div className="mt-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
                   <label className="block text-sm font-semibold mb-1" htmlFor="creed-note">
-                    Talked with Larry about the Apostles&rsquo; Creed —{' '}
+                    Talked with Larry about the Apostles&rsquo; Creed:{' '}
                     {creed.pending.map((p) => p.name).join(', ')}
                   </label>
                   <input
@@ -445,12 +445,12 @@ export default function ReviewCard({
                     value={creedNote}
                     onChange={(e) => setCreedNote(e.target.value)}
                     maxLength={500}
-                    placeholder="Note (optional) — e.g. spoke by phone; happy for them to serve"
+                    placeholder="Note (optional), e.g. Spoke by phone. Happy for them to serve."
                     className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm"
                   />
                   <p className="mt-1 text-xs text-neutral-500">
-                    Recorded for the people named, with your name and today&rsquo;s date. Someone added to
-                    this registration later, or renamed, will show here again.
+                    Saved for the people named, with your name and today&rsquo;s date. Anyone added or
+                    renamed later will show here again.
                   </p>
                   <div className="mt-2 flex gap-2">
                     <button
@@ -473,7 +473,7 @@ export default function ReviewCard({
               when and the note, and one Undo for Registration write. */}
           {creed?.covered.map((c, i) => (
             <li key={c.personId} className="text-neutral-700">
-              <span aria-hidden>✓</span> {REVIEW_FLAG.creed_not_affirmed}: {c.name} — talked with Larry,{' '}
+              <span aria-hidden>✓</span> {REVIEW_FLAG.creed_not_affirmed}: {c.name}, talked with Larry on{' '}
               {when(c.at)}
               {c.by ? ` (${c.by})` : ''}
               {c.note ? <>: &ldquo;{c.note}&rdquo;</> : ''}
@@ -516,7 +516,7 @@ export default function ReviewCard({
                 ⚑ {REVIEW_FLAG[f] ?? f}
                 {f === 'deposit_short' && clearingCents > 0 && (
                   <span className="ml-2 font-normal text-neutral-600">
-                    — {money(clearingCents)} is clearing the bank; nothing to chase yet.
+                    {money(clearingCents)} is clearing the bank. Nothing to chase yet.
                   </span>
                 )}
               </li>
@@ -529,8 +529,8 @@ export default function ReviewCard({
         <div className="mb-3 rounded-sm border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">
           <p>
             <span className="font-semibold">Deposit waived</span> on {when(depositWaived.at)}
-            {depositWaived.reason && <> — &ldquo;{depositWaived.reason}&rdquo;</>}. Each fee-paying person holds a
-            scholarship of at least the per-person deposit; the registration counts as deposit-received.
+            {depositWaived.reason && <>: &ldquo;{depositWaived.reason}&rdquo;</>}. Each fee-paying person has a
+            scholarship of at least the deposit, so the registration counts as deposit received.
           </p>
           {/* Undoing it (0127; Lawrence, 26 Oct 2026: "suppose it was done in
               error??"). Each person's scholarship from before the waiver comes
@@ -551,7 +551,7 @@ export default function ReviewCard({
                 value={undoReason}
                 onChange={(e) => setUndoReason(e.target.value)}
                 maxLength={300}
-                placeholder="Why it is being undone (required) — e.g. waived on the wrong family"
+                placeholder="Why are you undoing it? (required) e.g. Waived on the wrong family"
                 className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900"
               />
               <div className="mt-2 flex gap-2">
@@ -561,7 +561,7 @@ export default function ReviewCard({
                   onClick={() => {
                     if (
                       window.confirm(
-                        'This takes back the deposit scholarship it granted. Anyone already approved stays approved; the registration will show its real deposit again.'
+                        'This takes back the deposit scholarship. Anyone already approved stays approved, and the registration shows its real deposit again.'
                       )
                     ) {
                       run('undo_deposit_waiver', { reason: undoReason });
@@ -595,15 +595,15 @@ export default function ReviewCard({
                 Waive the {money(depositCents)}-per-person deposit for this family?
               </p>
               <p className="text-xs text-neutral-600 mb-2">
-                Each fee-paying person gets a scholarship of {money(depositCents)} (kept if they already
-                hold more), recorded with your name, and the registration counts as deposit-received.
-                The balance is otherwise unchanged.
+                Each fee-paying person gets a {money(depositCents)} scholarship, unless they already have
+                more. It&rsquo;s saved with your name, and the registration counts as deposit received.
+                Nothing else about the balance changes.
               </p>
               <input
                 value={waiveReason}
                 onChange={(e) => setWaiveReason(e.target.value)}
                 maxLength={300}
-                placeholder="Reason (optional) — e.g. spoke with the family; paying at camp"
+                placeholder="Reason (optional), e.g. Spoke with the family. Paying at camp."
                 className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
               <div className="mt-2 flex gap-2">
@@ -630,12 +630,12 @@ export default function ReviewCard({
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
           <p className="font-bold text-amber-900">
             On hold since {when(hold.since)}
-            {hold.by ? ` — ${hold.by}` : ''}
+            {hold.by ? ` by ${hold.by}` : ''}
           </p>
           {hold.reason && <p className="mt-1 text-amber-900">&ldquo;{hold.reason}&rdquo;</p>}
           <p className="mt-1 text-xs text-amber-900">
-            Everyone on it went back to <em>submitted</em>. Approve or waitlist below to
-            finish the re-check; the family sees the reason on their dashboard.
+            Everyone on it went back to <em>submitted</em>. Approve or waitlist below when
+            you&rsquo;re done. The family sees the reason on their dashboard.
           </p>
           {canWrite && <button
             type="button"
@@ -657,15 +657,15 @@ export default function ReviewCard({
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
               <p className="text-sm font-semibold mb-1">Put this registration on hold?</p>
               <p className="text-xs text-neutral-600 mb-2">
-                Everyone confirmed or waitlisted goes back to <em>submitted</em> and the
-                registration returns to Awaiting Review. The reason is shown to the family.
-                Nothing is emailed — write to them from Outlook if they should hear from you.
+                Everyone confirmed or waitlisted goes back to <em>submitted</em>, and the
+                registration returns to Awaiting Review. The family sees the reason. No email is
+                sent, so write to them from Outlook if they need to hear from you.
               </p>
               <input
                 value={holdReason}
                 onChange={(e) => setHoldReason(e.target.value)}
                 maxLength={1000}
-                placeholder="e.g. Sam's seizure plan changed — the nurse needs to look again"
+                placeholder="e.g. Sam's seizure plan changed. The nurse needs to look again."
                 className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
               <div className="mt-2 flex gap-2">
@@ -690,9 +690,8 @@ export default function ReviewCard({
           <p className="font-bold text-amber-900">Waiting on the family since {when(awaiting.since)}</p>
           {awaiting.reason && <p className="mt-1 text-amber-900">&ldquo;{awaiting.reason}&rdquo;</p>}
           <p className="mt-1 text-xs text-amber-900">
-            Not counted as waiting on staff while this is set. The family can reply from their
-            dashboard, which brings it back to staff by itself; their edits still arrive in Recent
-            Changes.
+            This doesn&rsquo;t count as waiting on staff. When the family replies from their
+            dashboard, it comes back to staff. Their edits still show in Recent Changes.
           </p>
           {canWrite && <button
             type="button"
@@ -700,7 +699,7 @@ export default function ReviewCard({
             onClick={() => run('answered')}
             className="btn-outline py-1.5! mt-2 text-sm"
           >
-            The family has answered — back to staff
+            The family has answered
           </button>}
         </div>
       )}
@@ -713,7 +712,7 @@ export default function ReviewCard({
           <p className="font-bold">
             {scholarshipSlot && '1 · '}
             {canWrite ? 'Waiting on your decision' : 'Waiting on a decision'}
-            {onFamily && <span className="font-normal"> — the family has been asked for more first</span>}
+            {onFamily && <span className="font-normal"> (the family was asked for more first)</span>}
           </p>
           <ul className="mt-1 space-y-1">
             {waiting.map((p) => (
@@ -721,14 +720,14 @@ export default function ReviewCard({
                 <PanelLink to={`person-${p.id}`} className="font-semibold underline">
                   {p.baseName || p.name || 'Person'}
                 </PanelLink>
-                {p.role && <span className="text-sky-900"> — {p.role}</span>}
+                {p.role && <span className="text-sky-900"> ({p.role})</span>}
               </li>
             ))}
           </ul>
           {canWrite && (
             <p className="mt-1 text-xs">
-              Approving confirms them and takes the family out of Awaiting Review. One at a time:{' '}
-              <PeopleLink />.
+              Approving confirms them and takes the family out of Awaiting Review. To decide one
+              person at a time, use <PeopleLink />.
             </p>
           )}
         </div>
@@ -736,12 +735,12 @@ export default function ReviewCard({
 
       {!canWrite ? (
         <p className="text-sm text-neutral-600">
-          Read only — approving, waitlisting and asking the family need Registration write.
+          Read only. Approving, waitlisting and asking the family need Registration write.
         </p>
       ) : waiting.length === 0 ? (
         <p className="text-sm text-neutral-600">
           {checks.some((c) => c.application === 'applied')
-            ? 'Every place is decided; a volunteer application is still waiting on a decision (the Application column above). '
+            ? 'Every place is decided. A volunteer application still needs a decision (see the Application column above). '
             : 'Nobody on this registration is waiting on review. '}
           Each person&rsquo;s status is in <PeopleLink />.
         </p>
@@ -789,12 +788,11 @@ export default function ReviewCard({
                 value={waitlistReason}
                 onChange={(e) => setWaitlistReason(e.target.value)}
                 maxLength={500}
-                placeholder="e.g. The camper cabins are full for this week; we will call if a place opens."
+                placeholder="e.g. The camper cabins are full this week. We'll call if a place opens."
                 className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
               <p className="mt-1 text-xs text-neutral-500">
-                The family can see this reason. It is kept with each person and shown at the top of
-                this card; nothing is emailed.
+                The family can see this reason. It shows at the top of this card. No email is sent.
               </p>
               <div className="mt-2 flex gap-2">
                 <button
@@ -826,10 +824,9 @@ export default function ReviewCard({
                 className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
               />
               <p className="mt-1 text-xs text-neutral-500">
-                Sent to the family as a note on their dashboard, and recorded here as the reason
-                this registration is waiting on them. They reply on their dashboard, and the reply
-                brings it back to staff. Nothing is emailed automatically — write to them as well
-                if it is urgent.
+                The family sees this as a note on their dashboard and can reply there. Their reply
+                brings the registration back to staff. No email is sent, so write to them as well if
+                it&rsquo;s urgent.
               </p>
               <div className="mt-2 flex gap-2">
                 <button
@@ -859,8 +856,8 @@ export default function ReviewCard({
             {waiting.length > 0 ? '2 · ' : ''}The scholarship request{' '}
             {waiting.length > 0 && (
               <span className="font-normal text-neutral-600">
-                — decide after approving: approval applies any both-weeks discount, so the award is
-                on what is left.
+                Decide this after approving. Approval applies any both-weeks discount, so the award
+                is based on what&rsquo;s left.
               </span>
             )}
           </p>

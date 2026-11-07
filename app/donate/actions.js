@@ -39,7 +39,7 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
   if (base > MAX_GIFT_CENTS) {
     return {
       ok: false,
-      error: 'For a gift over $50,000, please contact the ministry and we will arrange it with you directly.',
+      error: 'For a gift over $50,000, please contact the ministry and we\'ll arrange it with you directly.',
     };
   }
   const chosenFund = FUNDS.includes(fund) ? fund : FUNDS[0];
@@ -66,7 +66,7 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
   const check = await verifyTurnstile(captchaToken, ip);
   if (!check.ok) {
-    return { ok: false, error: 'That check timed out. Please tick the box again and press Give.', retryCaptcha: true };
+    return { ok: false, error: 'That check timed out. Please check the box again and press Give.', retryCaptcha: true };
   }
 
   const host = h.get('host');
@@ -91,7 +91,7 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
           price_data: {
             currency: 'usd',
             unit_amount: total,
-            product_data: { name: `Donation — ${chosenFund}` },
+            product_data: { name: `Donation: ${chosenFund}` },
           },
         },
       ],

@@ -61,8 +61,8 @@ export default function RecordGiftForm() {
     <form onSubmit={submit} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
       <h3 className="font-bold mb-1">Record a mailed or cash gift</h3>
       <p className="text-sm text-neutral-500 mb-4">
-        The donor&rsquo;s email links the gift to their giving history if they have (or later
-        create) an account. Online gifts record themselves.
+        The donor&rsquo;s email links the gift to their giving history if they have an account
+        now or create one later. Online gifts are recorded automatically.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2">

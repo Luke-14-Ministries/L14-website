@@ -17,7 +17,7 @@ export const metadata = { title: 'Kenya Memories' };
 const years = [
   { label: '2019', youtube: 'ke5kUTNt7qE' },
   { label: '2018', youtube: '8jSzBpBeQJs' },
-  { label: '2018 — the long version', youtube: 'tu9goYe48pQ' },
+  { label: '2018 (the long version)', youtube: 'tu9goYe48pQ' },
 ];
 
 export default function KenyaMemoriesPage() {

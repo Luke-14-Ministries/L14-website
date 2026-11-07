@@ -73,18 +73,17 @@ export default function GivingForm({ signedInEmail }) {
           chance to log in first and come straight back here. */}
       {signedInEmail ? (
         <p className="mb-5 rounded-sm border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-800">
-          Signed in as <strong>{signedInEmail}</strong> — this gift will be saved
-          to your giving history and receipts.
+          Signed in as <strong>{signedInEmail}</strong>. This gift will show in
+          your giving history, with its receipt.
         </p>
       ) : (
         <div className="mb-5 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
           <p>
-            <strong>Giving as a guest</strong> — quick and easy, with a receipt
-            emailed to you.
+            <strong>Giving as a guest.</strong> You&rsquo;ll get a receipt by email.
           </p>
           <p className="mt-1.5 text-neutral-600">
-            Think you might want to look back at your giving later — for
-            receipts, history, or a year-end record?{' '}
+            Want to look back at your giving later, for receipts or a year-end
+            statement?{' '}
             <Link href="/account/?next=/donate/" className="text-brand underline font-medium">
               Log in
             </Link>{' '}
@@ -92,7 +91,7 @@ export default function GivingForm({ signedInEmail }) {
             <Link href="/account/signup/?next=/donate/" className="text-brand underline font-medium">
               create a free account
             </Link>{' '}
-            first — you&rsquo;ll come right back to this page.
+            first. You&rsquo;ll come right back to this page.
           </p>
         </div>
       )}
@@ -155,7 +154,7 @@ export default function GivingForm({ signedInEmail }) {
       <div className="flex gap-2 mb-4">
         {[
           ['card', 'Card', 'Instant confirmation'],
-          ['bank', 'Bank transfer', 'Lower processing fee — more of your gift reaches the ministry'],
+          ['bank', 'Bank transfer', 'Lower processing fee, so more of your gift reaches the ministry'],
         ].map(([v, label, sub]) => (
           <label
             key={v}
@@ -185,8 +184,8 @@ export default function GivingForm({ signedInEmail }) {
         />
         <span>
           Add {dollars(prospectiveFee)} to cover processing, so my whole gift reaches the
-          ministry. <span className="text-neutral-500">(optional — it all counts as part of
-          your donation)</span>
+          ministry. <span className="text-neutral-500">(optional, and it all counts as part
+          of your donation)</span>
         </span>
       </label>
 
@@ -202,8 +201,8 @@ export default function GivingForm({ signedInEmail }) {
         {pending ? 'Starting…' : `Give ${dollars(totalCents)}`}
       </button>
       <p className="mt-3 text-sm text-neutral-500 text-center">
-        Secure checkout by Stripe. Luke 14 Ministries is a registered 501(c)(3);
-        donations are tax-deductible and a receipt is emailed automatically.
+        Secure checkout by Stripe. Luke 14 Ministries is a registered 501(c)(3).
+        Donations are tax-deductible, and we&rsquo;ll email you a receipt.
       </p>
     </form>
   );

@@ -49,15 +49,14 @@ export default async function VolunteerInformationPage() {
             disability.
           </p>
           <p>
-            Volunteering takes three short steps: create an account, register
-            for the week you want to serve (choosing the role
-            &ldquo;Volunteer&rdquo;), and complete a short application telling
-            us where you&rsquo;d like to help. Start here — the page walks you
-            through all three.
+            To volunteer, create an account, register for the week you&rsquo;d
+            like to serve (choose the role &ldquo;Volunteer&rdquo;), and fill
+            out an application telling us where you&rsquo;d like to help. Start
+            below and the page will walk you through it.
           </p>
         </div>
         <Link href="/register/volunteer" className="btn-primary mt-6 inline-block">
-          Volunteer — Start Here
+          Volunteer: Start Here
         </Link>
         <p className="mt-6 text-neutral-600">
           Already have an account?{' '}

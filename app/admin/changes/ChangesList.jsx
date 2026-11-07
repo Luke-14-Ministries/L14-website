@@ -159,7 +159,7 @@ export default function ChangesList({ groups }) {
   // will read. One prompt, prefilled with what changed.
   function hold(c) {
     const reason = window.prompt(
-      `Put ${c.person || 'this household'}'s current registration on hold for re-review?\n\nWhy — the family sees this:`,
+      `Put ${c.person || 'this household'}'s current registration on hold for another review?\n\nWhy? The family sees this:`,
       `A change to ${(FIELD_LABEL[c.field] ?? c.field).toLowerCase()} on ${c.when} needs a second look.`
     );
     if (reason === null) return;
@@ -189,7 +189,7 @@ export default function ChangesList({ groups }) {
   if (groups.length === 0) {
     return (
       <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-800">
-        All caught up — no unreviewed family changes.
+        All caught up. No family changes to review.
       </p>
     );
   }
@@ -220,8 +220,8 @@ export default function ChangesList({ groups }) {
             {medicalCount} medical {medicalCount === 1 ? 'change' : 'changes'} unreviewed
           </span>
           <span className="text-red-900">
-            Seizures, rescue medication, allergies and medications — the nurse&rsquo;s list and
-            the buddy briefings are built from these.
+            Seizures, rescue medication, allergies and medications. The nurse&rsquo;s list and the
+            buddy sheets come from these.
           </span>
           <button
             onClick={() => setMedicalOnly((v) => !v)}
@@ -288,7 +288,7 @@ export default function ChangesList({ groups }) {
                     {isSafety(c) && (
                       <span
                         className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-800"
-                        title="Medical safety — the nurse, the buddy and the medication plan are built from this"
+                        title="Medical safety. The nurse's list, the buddy sheet and the medication plan use this."
                       >
                         medical
                       </span>

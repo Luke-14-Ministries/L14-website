@@ -51,7 +51,7 @@ export default function ResetPasswordForm() {
       <h2 className="text-2xl font-bold mb-1">Set a new password</h2>
       <p className="text-sm text-neutral-500 mb-5">
         {annual
-          ? 'Staff passwords are changed once a year. Choose a new one to carry on — at least 10 characters, and not one you use anywhere else.'
+          ? 'Staff passwords are changed once a year. Choose a new one to carry on: at least 10 characters, and not one you use anywhere else.'
           : <>You&rsquo;re signed in from the link in your email. Choose a new password (at least 10 characters) and you&rsquo;re done.</>}
       </p>
 

@@ -55,8 +55,8 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
             </p>
           )}
           <p className="mt-0.5 text-xs text-neutral-600">
-            R = read, W = write, — = no access. Giving is never set by a preset — tick it by hand
-            for a named person. Every change is written to the access log.
+            R = read, W = write, — = no access. Presets never set Giving. Check it by hand for a
+            named person. Every change goes in the access log.
           </p>
         </div>
         <button type="button" onClick={onClose} className="text-xs underline">
@@ -105,7 +105,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
               <td className="py-1.5 pr-3 font-medium whitespace-nowrap">
                 {label}
                 {PRESET_LEAVES.has(key) && (
-                  <span className="ml-1 text-xs font-normal text-neutral-500" title="Presets never set or remove this area: tick it for each person (Administrator gets it automatically)">
+                  <span className="ml-1 text-xs font-normal text-neutral-500" title="Presets never set or remove this area. Check it for each person. Administrators get it automatically.">
                     (not in presets)
                   </span>
                 )}
@@ -150,8 +150,8 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
           </button>
         )}
         <span className="text-xs text-neutral-500">
-          These ticks are what the database enforces. Granting access to others is not an area
-          here: it is the <em>Administrator — grants access</em> tick on the person&rsquo;s row.
+          These boxes control what each person can do. Granting access to others isn&rsquo;t an area
+          here. It&rsquo;s the <em>Administrator (grants access)</em> box on the person&rsquo;s row.
         </span>
       </div>
     </div>

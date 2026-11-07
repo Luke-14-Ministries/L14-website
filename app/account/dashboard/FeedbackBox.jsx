@@ -44,7 +44,7 @@ export default function FeedbackBox() {
     }
     setError(
       res?.failed || !res?.error
-        ? `That didn’t send — please email ${site.emails.info}.`
+        ? `That didn’t send. Please email ${site.emails.info}.`
         : res.error
     );
   }
@@ -54,7 +54,7 @@ export default function FeedbackBox() {
       <h2 className="text-lg font-bold">Send us feedback</h2>
       {sent ? (
         <div role="status" className="mt-3">
-          <p className="font-semibold text-brand-dark">Thank you &mdash; we&rsquo;ve got it.</p>
+          <p className="font-semibold text-brand-dark">Thank you. We&rsquo;ve got it.</p>
           <button
             type="button"
             onClick={() => setSent(false)}

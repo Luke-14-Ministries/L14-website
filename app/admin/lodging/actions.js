@@ -46,7 +46,7 @@ export async function assignLodging({ participantId, lodgingId, note }) {
   if (kids && kids.length > 0) {
     return {
       ok: false,
-      error: 'That place holds rooms — put people in one of its rooms, not the building itself.',
+      error: 'That place has rooms. Put people in one of its rooms, not the building itself.',
     };
   }
 
@@ -258,7 +258,7 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
     // No rows back means the policy refused -- Postgres does not call an
     // UPDATE that matches nothing a failure, so say it here.
     if (!data || data.length === 0) {
-      return { ok: false, error: 'Nothing was saved — you may not have permission to change this.' };
+      return { ok: false, error: 'Nothing was saved. You may not have permission to change this.' };
     }
     revalidatePath('/admin/lodging');
     return { ok: true, id };
@@ -332,7 +332,7 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
     return { ok: false, error: 'That could not be added.' };
   }
   if (!data || data.length === 0) {
-    return { ok: false, error: 'Nothing was saved — you may not have permission to change this.' };
+    return { ok: false, error: 'Nothing was saved. You may not have permission to change this.' };
   }
 
   revalidatePath('/admin/lodging');
@@ -433,7 +433,7 @@ async function setActive(id, active) {
     return { ok: false, error: 'That could not be changed.' };
   }
   if (!data || data.length === 0) {
-    return { ok: false, error: 'Nothing was saved — you may not have permission to change this.' };
+    return { ok: false, error: 'Nothing was saved. You may not have permission to change this.' };
   }
 
   revalidatePath('/admin/lodging');
@@ -487,7 +487,7 @@ export async function copyLodgingsFrom({ fromEventId, toEventId }) {
   if ((existing ?? 0) > 0) {
     return {
       ok: false,
-      error: `This event already has ${existing} active ${existing === 1 ? 'place' : 'places'}. Copying only works into an empty event — retire what is here first if you really mean to replace it.`,
+      error: `This event already has ${existing} active ${existing === 1 ? 'place' : 'places'}. Copying only works into an empty event. To replace them, retire what is here first.`,
     };
   }
 

@@ -20,7 +20,7 @@ const ROLE_INFO = {
   admin: {
     label: 'Administrator',
     blurb:
-      'Full access — registrations, rosters, settings, accounts, and two-factor resets; can grant or revoke any staff role, administrator included.',
+      'Full access: registrations, rosters, settings, accounts and two-factor resets. You can grant or remove any staff role, including administrator.',
   },
   registrar: {
     label: 'Registrar',
@@ -532,9 +532,9 @@ export default async function AdminLayout({ children }) {
             {isLeaderOnly
               ? `You lead ${leaderships
                   .map((l) => l.programName)
-                  .join(', ')} — you see who is in your program, and nothing else.`
+                  .join(', ')}. You can see who is in your program and nothing else.`
               : (ROLE_INFO[staff.role] ?? {}).blurb ?? 'Staff access.'}
-            {staff?.grants?.sensitive ? ' Plus medical & support details.' : ''}
+            {staff?.grants?.sensitive ? ' You can also see medical and support details.' : ''}
           </p>
           </div>
 

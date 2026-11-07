@@ -145,7 +145,7 @@ export default function WelcomeNotice() {
         <div id={bodyId} className="mt-3 space-y-3 leading-relaxed text-neutral-700">
           <p>
             We&rsquo;ve rebuilt how families register for camp and our other events. If anything
-            seems confusing, wrong, or could be better, please tell us &mdash; every note helps us
+            seems confusing, wrong, or could be better, please tell us. Every note helps us
             get it right for everyone.
           </p>
           <p>

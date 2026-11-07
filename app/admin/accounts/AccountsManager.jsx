@@ -204,7 +204,7 @@ export default function AccountsManager({
     <div>
       {loadError && (
         <p className="mb-4 rounded-sm border border-red-300 bg-red-50 text-red-800 px-4 py-3">
-          The account list could not be loaded. Refresh the page; if it keeps
+          The account list could not be loaded. Refresh the page. If it keeps
           happening, check the server logs for admin_list_accounts.
         </p>
       )}
@@ -408,7 +408,7 @@ export default function AccountsManager({
                             run(
                               () => resetMfa(a.user_id),
                               (r) =>
-                                `Two-factor reset for ${a.email} — removed ${r.removed} ${
+                                `Two-factor reset for ${a.email}. Removed ${r.removed} ${
                                   r.removed === 1 ? 'device' : 'devices'
                                 }.`
                             )
@@ -478,17 +478,17 @@ export default function AccountsManager({
           </h2>
           <p className="text-sm text-neutral-700 mb-3">
             This deletes the sign-in only. Registrations, payments and family
-            records are kept — but nobody will be able to sign in to them until
-            the person creates a new account, and a new account will{' '}
-            <strong>not</strong> automatically reconnect to the old records.
+            records are kept, but nobody can sign in to them until the person
+            makes a new account. A new account will{' '}
+            <strong>not</strong> reconnect to the old records on its own.
           </p>
           {confirm.rows.some((r) => (r.registration_count ?? 0) > 0) && (
             <p className="text-sm rounded-sm border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 mb-3">
               {confirm.rows.length === 1
                 ? `${confirm.rows[0].email} belongs to a household with ${confirm.rows[0].registration_count} registration${confirm.rows[0].registration_count === 1 ? '' : 's'}.`
                 : 'At least one selected account belongs to a household with registrations.'}{' '}
-              If the goal is to clear test data completely, use &ldquo;Delete
-              family &amp; all their data&rdquo; instead.
+              To clear test data completely, use &ldquo;Delete family &amp; all
+              their data&rdquo; instead.
             </p>
           )}
           <ul className="text-sm text-neutral-600 mb-4 max-h-32 overflow-y-auto list-disc pl-5">
@@ -529,8 +529,8 @@ export default function AccountsManager({
             Connects <strong className="wrap-break-word">{confirm.row.email}</strong> to
             an existing family, giving it access to that household&rsquo;s
             registrations, payments and records. Do this only after
-            you&rsquo;ve confirmed who you&rsquo;re talking to &mdash; by
-            phone or in person, not by email alone.
+            you&rsquo;ve confirmed who you&rsquo;re talking to by phone or in
+            person, not by email alone.
           </p>
           {/* Searchable (Lawrence, 4 Nov 2026): the list grows with every family. */}
           <div className="mb-4">
@@ -570,7 +570,7 @@ export default function AccountsManager({
                     onChange={(e) => setConfirm({ ...confirm, personId: e.target.value })}
                     className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-1 bg-white"
                   >
-                    <option value="">Don&rsquo;t mark anyone — just link the household</option>
+                    <option value="">Don&rsquo;t mark anyone, only link the household</option>
                     {candidates.map((pp) => (
                       <option key={pp.id} value={pp.id}>
                         {pp.first_name} {pp.last_name}
@@ -579,9 +579,9 @@ export default function AccountsManager({
                     ))}
                   </select>
                   <p className="text-xs text-neutral-500 mb-4">
-                    Marks that person&rsquo;s record as belonging to this login,
-                    so the site knows which family member is signed in. Adults
-                    only; skip it if unsure &mdash; it can be set later.
+                    This tells the site which family member uses this login.
+                    Adults only. If you&rsquo;re not sure, skip it. You can set
+                    it later.
                   </p>
                 </>
               );
@@ -661,7 +661,7 @@ export default function AccountsManager({
                       .map(([table, n]) => `${n} ${table.replace(/^public\./, '').replace(/_/g, ' ')}`)
                       .join(', ');
                     return `Merged ${confirm.row.household_name ?? 'the household'} into ${kept}${
-                      moved ? ` — moved ${moved}` : ''
+                      moved ? `. Moved ${moved}` : ''
                     }.`;
                   }
                 )

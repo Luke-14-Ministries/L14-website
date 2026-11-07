@@ -64,7 +64,7 @@ export async function holdFromChange(changeId, reason) {
   if (regs.size === 0) {
     return {
       ok: false,
-      error: 'Nobody on a current registration is confirmed or waitlisted for this change — there is nothing to hold.',
+      error: 'Nobody on a current registration is confirmed or waitlisted for this change, so there is nothing to hold.',
     };
   }
   const held = [];

@@ -158,7 +158,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     const r = regById.get(b.registration_id);
     return {
       id: b.registration_id,
-      label: `${r?.households?.display_name ?? 'Household'} — ${eventNameWithYear(r?.events)} (balance ${money(b.balance_cents)})`,
+      label: `${r?.households?.display_name ?? 'Household'}: ${eventNameWithYear(r?.events)} (balance ${money(b.balance_cents)})`,
     };
   });
 
@@ -210,7 +210,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     ['deposit_paid', 'To review: deposit received'],
     ['full_scholarship', 'To contact: full scholarship'],
     ['neither', 'Deposit short'],
-    ['flagged', 'Deposit short — part paid'],
+    ['flagged', 'Deposit short, part paid'],
     ['credit', 'Credit to settle'],
   ];
   // One helper builds every filter-carrying URL (pills, CSVs) so the active
@@ -235,8 +235,9 @@ export default async function AdminPaymentsPage({ searchParams }) {
       {/* Exports: report, then format, then dates (ExportBar.jsx). */}
       <ExportBar eventFilter={eventFilter} paystate={paystate} defaultFrom={monthStart} defaultTo={dueToday} />
       <p className="text-sm text-neutral-500 mb-4">
-        What each family owes and has paid for an event (Camp Celebrate, retreats, and the rest). Online payments record themselves; checks
-        and cash are entered below. Donations live on the separate Giving page.
+        What each family owes and has paid for an event (Camp Celebrate, retreats and others). Online
+        payments are recorded automatically. Enter checks and cash below. Donations are on the Giving
+        page.
       </p>
 
       {staleRefunds.length > 0 && (
@@ -246,9 +247,9 @@ export default async function AdminPaymentsPage({ searchParams }) {
             than {STALE_REFUND_DAYS} days
           </p>
           <p className="mt-1">
-            A refund normally clears within a few business days. Until these clear they are not taken off
-            &ldquo;Paid&rdquo;, so check each one: <em>Re-check with Stripe</em> asks Stripe and records
-            its answer.
+            Refunds usually clear in a few business days. Until these clear, &ldquo;Paid&rdquo; still
+            includes them, so check each one. <em>Re-check with Stripe</em> asks Stripe for the status and
+            records it.
           </p>
           <ul className="mt-2 space-y-0.5">
             {staleRefunds.map((r) => {
@@ -296,7 +297,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       </h3>
       {events.size === 0 && (
         <p className="text-sm text-neutral-500 mb-8">
-          No events in this window. Choose another in the event list above — &ldquo;All&rdquo; shows the
+          No events in this window. Choose another in the event list above. &ldquo;All&rdquo; shows the
           full history.
         </p>
       )}
@@ -318,9 +319,9 @@ export default async function AdminPaymentsPage({ searchParams }) {
           <h4 className="font-bold mb-2">Fee covers</h4>
           <div className="text-2xl font-bold">{money(feeCoverTotal)}</div>
           <p className="text-xs text-neutral-500 mt-1">
-            Voluntarily added by payers to cover processing fees, totaled for the events shown
-            above. Never counts toward a family&rsquo;s balance; how it is classified is a
-            treasurer decision.
+            What payers chose to add to cover processing fees, for the events shown above. It
+            never counts toward a family&rsquo;s balance. The treasurer decides how it&rsquo;s
+            classified.
           </p>
         </div>
       </div>
@@ -419,7 +420,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
             key={label}
             type="button"
             disabled
-            title="Planned — not active yet"
+            title="Planned, not active yet"
             className="cursor-not-allowed rounded-sm border border-dashed border-neutral-300 px-3 py-1 text-neutral-400"
           >
             {label}
@@ -547,10 +548,10 @@ export default async function AdminPaymentsPage({ searchParams }) {
                           )}
                           {credit > 0 && (
                             <span
-                              title="Paid more than is owed: a refund due, a later scholarship, or a cancelled person. Settle it -- refund, or carry it as a credit."
+                              title="Paid more than is owed, from a refund due, a later scholarship, or a cancelled person. Refund it, or carry it as a credit."
                               className="block text-xs font-semibold text-amber-800"
                             >
-                              ⚑ Credit of {money(credit)} — paid more than owed
+                              ⚑ Credit of {money(credit)}, paid more than owed
                             </span>
                           )}
                           {(rv.flags ?? []).filter((f) => f === 'deposit_short').map((f) => (
@@ -587,7 +588,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                         <button
                           type="button"
                           disabled
-                          title="Planned — not active yet"
+                          title="Planned, not active yet"
                           className="block w-full cursor-not-allowed px-3 py-1.5 text-left text-neutral-400"
                         >
                           Email balance owed + payment link

@@ -22,7 +22,7 @@ function providerMark(provider) {
     return {
       state: 'no',
       label: 'Provider form rejected',
-      title: `Provider confirmation rejected — ${provider.note || 'no reason given'}`,
+      title: `Provider confirmation rejected: ${provider.note || 'no reason given'}`,
     };
   }
   return { state: 'warn', label: 'Provider form unchecked', title: 'Provider confirmation uploaded, awaiting staff review' };
@@ -40,7 +40,7 @@ function safetyFlags(f) {
   if (f.has_allergies) {
     // allergenWords() names the ticked allergens; allergy_detail is not read.
     const names = allergenWords({ has_allergies: true, allergens: f.allergens ?? [], allergy_other: f.allergy_other }).join(', ');
-    const sev = SEVERITY_WORD[f.allergy_severity] ? ` — ${SEVERITY_WORD[f.allergy_severity]}` : '';
+    const sev = SEVERITY_WORD[f.allergy_severity] ? ` (${SEVERITY_WORD[f.allergy_severity]})` : '';
     out.push(`Allergy${sev}${names ? `: ${names}` : ''}`);
   }
   if (f.has_seizures) out.push('Seizures');
@@ -365,8 +365,8 @@ export default async function ActivityPrintPage({ searchParams }) {
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">
         One register per activity, per sitting. <strong>Health &amp; safety</strong> shows flags and
-        allergen names only &mdash; the detail stays on the Medical &amp; Support page, because this
-        sheet is paper and paper gets left on a table.
+        allergen names only. The details stay on the Medical &amp; Support page, because paper
+        sheets get left lying around.
       </p>
       {pickerOptions.length > 1 && (
         <div className="mb-6">
@@ -419,7 +419,7 @@ export default async function ActivityPrintPage({ searchParams }) {
               slots.map((sl) => (
                 <div key={sl.id} className="mb-5 break-inside-avoid">
                   <p className="mb-1 text-sm font-semibold">
-                    {sl.label ? `${sl.label} — ` : ''}
+                    {sl.label ? `${sl.label}: ` : ''}
                     {timeOf(sl)}
                     <span className="ml-2 font-normal text-neutral-500">
                       {(bySlot.get(sl.id) ?? []).length}

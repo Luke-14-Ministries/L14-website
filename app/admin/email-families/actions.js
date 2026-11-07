@@ -240,7 +240,7 @@ export async function sendFamilyEmail({
   if (sendable.length !== Number(expectedFamilies)) {
     return {
       ok: false,
-      error: `The list changed since the preview — it is now ${sendable.length} ${sendable.length === 1 ? 'family' : 'families'}. Check it and send again.`,
+      error: `The list changed since the preview. It is now ${sendable.length} ${sendable.length === 1 ? 'family' : 'families'}. Check it and send again.`,
     };
   }
 

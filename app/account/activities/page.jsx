@@ -383,7 +383,7 @@ export default async function ActivitiesPage({ searchParams }) {
           <div className="mt-6 rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-600">
             <p>There are no activities to choose from yet.</p>
             <p className="mt-2 text-sm">
-              Camp staff open these closer to each event — you&rsquo;ll find them here when
+              Camp staff open these closer to each event. You&rsquo;ll find them here when
               they do.
             </p>
           </div>
@@ -450,23 +450,23 @@ function EventSection({ section: s }) {
       <div className="space-y-6 p-5">
         {hasCampers ? (
           <p className="text-neutral-700">
-            Choose what each person would like to do — a camper&rsquo;s buddy goes along with them.
-            Nothing here is binding — tell us what you&rsquo;d like and camp staff will
+            Choose what each person would like to do. A camper&rsquo;s buddy goes along with
+            them. Nothing here is binding. Tell us what you&rsquo;d like, and camp staff will
             confirm the details closer to the time. You can change your mind whenever you
             like.{' '}
             <span className="font-semibold text-neutral-800">
               Put a name down for anything that appeals, even if you are not sure it will
               work.
             </span>{' '}
-            Camp has done this before — there is a great deal of support on hand, and staff
-            can usually accommodate a wide range of needs. Any questions or concerns, just
-            ask.
+            Camp has done this before. There is a great deal of support on hand, and staff
+            can usually make a wide range of needs work. If you have questions or concerns,
+            please ask.
           </p>
         ) : (
           hasVolunteers && (
             <p className="text-neutral-700">
-              As a volunteer you go where your camper goes. Some activities need a waiver from
-              everyone who goes, volunteers included: sign ours here, and where an outside
+              As a volunteer, you go where your camper goes. Some activities need a waiver from
+              everyone who goes, volunteers included. Sign ours here. Where an outside
               provider runs an activity, complete their form with them and upload their
               confirmation here.
             </p>
@@ -512,12 +512,12 @@ function EventSection({ section: s }) {
 function VolunteerWaivers({ section: s, withIntro }) {
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-5">
-      <h3 className="text-lg font-bold">Volunteers and buddies — waivers</h3>
+      <h3 className="text-lg font-bold">Waivers for volunteers and buddies</h3>
       {withIntro ? (
         <p className="mt-1 text-sm text-neutral-600">
           A buddy goes wherever their camper goes, and some activities need a waiver from
-          everyone who goes. Sign ours here; where an activity is run by an outside provider,
-          complete their form with them, then upload their confirmation here — this can be
+          everyone who goes. Sign ours here. Where an outside provider runs an activity,
+          complete their form with them, then upload their confirmation here. This can be
           done after camp starts, once pairings are known.
         </p>
       ) : (
@@ -531,7 +531,7 @@ function VolunteerWaivers({ section: s, withIntro }) {
       <p className="mt-3 rounded-sm border border-brand/30 bg-brand-light px-3 py-2 text-sm text-brand-dark">
         <span className="font-semibold">This does not sign you up.</span> Whether you go depends
         on the camper you are paired with: if they choose the activity, you go with them.
-        Signing a waiver or completing a provider&rsquo;s form now simply means you are ready
+        Signing a waiver or completing a provider&rsquo;s form now means you are ready
         in case they do.
       </p>
       {s.volunteers.map((v) => (
@@ -548,7 +548,7 @@ function VolunteerWaivers({ section: s, withIntro }) {
           {s.providerActivities.map((a) => (
             <div key={a.id} className="mt-2">
               <p className="text-sm">
-                <span className="font-semibold">{a.name}</span> — run by{' '}
+                <span className="font-semibold">{a.name}</span>, run by{' '}
                 {a.provider_name || 'an outside provider'}
                 {a.provider_url && (
                   <>

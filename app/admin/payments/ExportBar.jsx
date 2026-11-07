@@ -70,7 +70,7 @@ export default function ExportBar({ eventFilter = '', paystate = '', defaultFrom
         >
           <option value="csv">CSV (spreadsheet)</option>
           <option value="quickbooks" disabled={balances}>
-            QuickBooks CSV{balances ? ' — payments only' : ''}
+            QuickBooks CSV{balances ? ' (payments only)' : ''}
           </option>
         </select>
         <label htmlFor="export-from" className={balances ? 'text-neutral-400' : 'text-neutral-600'}>

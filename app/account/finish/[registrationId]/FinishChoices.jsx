@@ -94,7 +94,7 @@ function PayWith({ method, setMethod, returnedFeeCents, coverFee, setCoverFee, b
           </span>
         </span>
         <span className="mt-0.5 block text-sm text-neutral-700">
-          Lowest processing fee — more of your payment goes to camp.
+          Lowest processing fee, so more of your payment goes to camp.
         </span>
       </button>
       {bank ? (
@@ -119,7 +119,7 @@ function PayWith({ method, setMethod, returnedFeeCents, coverFee, setCoverFee, b
           picked, and without a dollar figure. */}
       <p className="text-sm text-neutral-600">
         <strong>Paying from your bank account costs the camp less in processing fees than a card.</strong>{' '}
-        Thank you for choosing it — it extends the impact of Luke 14 Ministries.
+        Thank you for choosing it. It helps the ministry go further.
       </p>
       {/* 0123: the returned-payment fee is disclosed BEFORE a family chooses
           a bank payment, and only when the event has one. The amount shown is
@@ -259,7 +259,7 @@ export default function FinishChoices({
           open={route === 'plan'}
           onToggle={() => toggle('plan')}
           title="Set up a payment plan"
-          summary={`Pay ${depositDue ? `the ${dollars(depositCents)} deposit` : `a first ${dollars(depositCents)}`} now, and the rest is charged automatically to the card or bank account you save, ending on the due date. No extra fee for a plan.`}
+          summary={`Pay ${depositDue ? `the ${dollars(depositCents)} deposit` : `a first ${dollars(depositCents)}`} now. The rest is charged automatically to the card or bank account you save, with the last payment on the due date. There is no extra fee for a plan.`}
         >
           {plan && (
             <>
@@ -319,11 +319,11 @@ export default function FinishChoices({
       <OptionCard
         open={route === 'full'}
         onToggle={() => toggle('full')}
-        title={`Pay in full now — ${dollars(payInFullCents)}`}
+        title={`Pay in full now: ${dollars(payInFullCents)}`}
         summary={
           early
             ? `Includes your ${dollars(earlySavingCents)} early-registration discount.`
-            : 'One payment, and you are done.'
+            : 'One payment and you’re done.'
         }
       >
         <PayWith
@@ -347,17 +347,17 @@ export default function FinishChoices({
       <OptionCard
         open={route === 'part'}
         onToggle={() => toggle('part')}
-        title={depositDue ? `Pay the deposit only — ${dollars(depositCents)}` : 'Pay part of the balance'}
+        title={depositDue ? `Pay the deposit only: ${dollars(depositCents)}` : 'Pay part of the balance'}
         summary={
           depositDue
-            ? 'Staff approve the registration once the deposit arrives. The rest can be paid later, in one lump sum or in parts.'
+            ? 'Staff approve the registration once the deposit arrives. You can pay the rest later, all at once or in parts.'
             : `Any amount up to ${dollars(balanceCents)}. The rest stays on your balance.`
         }
       >
         {depositDue && (
           <div className="flex gap-2">
             <Pill value="deposit" cur={partKind} set={setPartKind}>
-              Deposit — {dollars(depositCents)}
+              {dollars(depositCents)} deposit
             </Pill>
             <Pill value="custom" cur={partKind} set={setPartKind}>
               Another amount…
@@ -408,8 +408,8 @@ export default function FinishChoices({
           Need help with the fee?{' '}
           <Link href={`/account/scholarship/${registrationId}/`} className="font-semibold text-brand underline">
             Request a scholarship
-          </Link>{' '}
-          — it will not affect anyone&rsquo;s place, and staff will be in touch.
+          </Link>
+          . It won&rsquo;t affect anyone&rsquo;s place, and staff will be in touch.
         </p>
       )}
 

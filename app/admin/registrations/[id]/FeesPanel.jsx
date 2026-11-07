@@ -176,8 +176,8 @@ export default function FeesPanel({ registrationId, fees = [], canWrite = false,
       )}
       {canWrite && <AddFeeForm registrationId={registrationId} />}
       <p className="mt-2 text-xs text-neutral-500">
-        Unwaived fees are part of the balance. A returned bank payment adds the fee the family was
-        shown when they chose to pay by bank; a plan&rsquo;s remaining charges collect it.
+        Fees that aren&rsquo;t waived are part of the balance. A returned bank payment adds the fee
+        the family saw when they chose to pay by bank. A plan&rsquo;s remaining charges collect it.
       </p>
     </section>
   );

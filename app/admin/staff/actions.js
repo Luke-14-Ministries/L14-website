@@ -72,7 +72,7 @@ export async function addStaffMember(email, role) {
     return {
       ok: false,
       error:
-        'No account found with that email. They need to create an account on the site first — then add them here.',
+        'No account found with that email. They need to create an account on the site first, then you can add them here.',
     };
   }
 

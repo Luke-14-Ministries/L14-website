@@ -28,7 +28,7 @@ export async function replyToStaff({ registrationId, body } = {}) {
   const text = String(body ?? '').trim();
   if (!text) return { ok: false, error: 'Write your reply first.' };
   if (text.length > MAX_REPLY) {
-    return { ok: false, error: `That is a little long — please keep it under ${MAX_REPLY.toLocaleString('en-US')} characters.` };
+    return { ok: false, error: `That is a little long. Please keep it under ${MAX_REPLY.toLocaleString('en-US')} characters.` };
   }
 
   const supabase = await createClient();

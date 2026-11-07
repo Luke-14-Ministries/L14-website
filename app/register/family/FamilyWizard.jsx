@@ -182,11 +182,11 @@ function CaregiverPicker({ who, choices, value, onChange, phone, onPhone, idPref
           {choices.length === 0
             ? 'Add the caregiver in “Who’s coming” (role: Caregiver) and they will appear here. '
             : 'Choose them here if they are coming with this registration. '}
-          Only someone in your own household can be linked. If they are and are registering later,
-          save this registration as it is, then add them and link them as {who}&rsquo;s caregiver
-          from your dashboard, under <strong>Manage household</strong>. If the caregiver is from
-          outside your household (a support worker, or a friend registering on their own account),
-          put their name and phone under <strong>Anything else about this registration?</strong> at the end so staff know
+          Only someone in your household can be linked. If they&rsquo;re registering later, save
+          this registration now, then link them as {who}&rsquo;s caregiver from your dashboard,
+          under <strong>Manage household</strong>. If the caregiver is outside your household (a
+          support worker, or a friend registering on their own account), put their name and phone
+          under <strong>Anything else about this registration?</strong> at the end, so staff know
           who to reach.
         </p>
       )}
@@ -200,18 +200,18 @@ function CaregiverPicker({ who, choices, value, onChange, phone, onPhone, idPref
 // OK keeps the permission; Cancel turns it off.
 const RECONSIDER = {
   mediaConsent: (who) =>
-    `Photos are how the ministry shows people what camp is actually like — most of what you see on the website and in print came from a week like this one.\n\n` +
-    `Unchecking tells us you'd rather we didn't feature ${who}, and we'll do our best to honour that. Some families have good reasons, and we'd much rather you tell us than not.\n\n` +
-    `You can change your mind at any time. If you are uncomfortable, please contact Larry at larry@luke14ministries.net and we'll work it out together.\n\n` +
+    `Photos are how we show people what camp is like. Most of what you see on the website and in print came from a week like this one.\n\n` +
+    `If you uncheck this, we'll do our best not to feature ${who} in the photos we share. Some families have good reasons, and we'd rather know.\n\n` +
+    `You can change your mind at any time. If anything worries you, email Larry at larry@luke14ministries.net.\n\n` +
     // "Would you be willing" rather than "would you like" -- they have just
     // told us what they'd like by unchecking; the question being asked is
     // whether they are willing to reconsider (wording flagged 24 Aug).
     `Would you be willing to leave photo permission on for ${who}?\n\n` +
-    `OK = leave it on.  Cancel = tell us you'd rather we didn't.`,
+    `OK = leave it on.  Cancel = turn it off.`,
   directoryConsent: (who) =>
-    `The directory is how attending families find each other — it is the main way people connect before and after, and a lot of friendships have started there.\n\n` +
-    `Households appear as one combined entry with the adults' contact details — children are never listed individually.\n\n` +
-    `Leaving ${who} out means other families can't reach you. Some families prefer to keep their details private, and that is entirely fine. Would you be willing to stay listed?\n\n` +
+    `The directory is how families find each other before and after camp. A lot of friendships have started there.\n\n` +
+    `Your household appears as one entry with the adults' contact details. Children are never listed on their own.\n\n` +
+    `If you leave ${who} out, other families can't reach you. Some families prefer to keep their details private. Would you be willing to stay listed?\n\n` +
     `OK = stay listed.  Cancel = leave us out.`,
 };
 
@@ -394,7 +394,7 @@ function familyNeeds({ family }) {
   if (missing.length > 0) {
     out.push({
       chip: missing.join(', '),
-      message: `Please add ${missing.join(', ')} in “Your family or group” — it is how camp staff reach you.`,
+      message: `Please add ${missing.join(', ')} in “Your family or group”. That is how camp staff reach you.`,
     });
   }
   // A malformed email is worth catching here rather than after a
@@ -403,14 +403,14 @@ function familyNeeds({ family }) {
   if (family.email && !emailLooksValid(family.email)) {
     out.push({
       chip: 'an email address that looks right',
-      message: `That email address doesn't look right — "${family.email}". Please check it in "Your family or group"; it is where your confirmation goes.`,
+      message: `That email address doesn't look right: "${family.email}". Please check it in "Your family or group". Your confirmation goes there.`,
     });
   }
   if (!family.address?.trim() || !family.city?.trim() || !family.state?.trim() || !family.postalCode?.trim()) {
     out.push({
       chip: 'a mailing address',
       confirm:
-        'No full mailing address entered (street, city, state and ZIP).\n\nCamp staff use it for anything sent by post. Save anyway?',
+        'No full mailing address entered (street, city, state and ZIP).\n\nCamp staff use it for anything sent by mail. Save anyway?',
     });
   }
   return out;
@@ -438,7 +438,7 @@ function peopleNeeds({ members }) {
   if (missingRole.length > 0) {
     out.push({
       chip: `a role for ${whoList(missingRole.map((m) => m.firstName.trim()))}`,
-      message: `Please choose a role for: ${fullNames(missingRole)} — in “Who's coming”.`,
+      message: `Please choose a role for ${fullNames(missingRole)} in “Who's coming”.`,
     });
   }
   // Soft requirement: date of birth. It is one of the ways family members
@@ -447,7 +447,7 @@ function peopleNeeds({ members }) {
   if (missingDob.length > 0) {
     out.push({
       chip: `a date of birth for ${whoList(missingDob.map((m) => m.firstName.trim()))}`,
-      confirm: `No date of birth entered for: ${fullNames(missingDob)}.\n\nBirth dates help us tell family members apart, and help program leaders at camp plan resources and accommodations appropriately. Save anyway?`,
+      confirm: `No date of birth entered for ${fullNames(missingDob)}.\n\nBirth dates help us tell family members apart, and help program leaders at camp plan the right activities and accommodations. Save anyway?`,
     });
   }
   // Same soft requirement for sex: program leaders use it for volunteer
@@ -456,7 +456,7 @@ function peopleNeeds({ members }) {
   if (missingSex.length > 0) {
     out.push({
       chip: `sex for ${whoList(missingSex.map((m) => m.firstName.trim()))}`,
-      confirm: `Sex not selected for: ${fullNames(missingSex)}.\n\nCamp leaders use this for rooming assignments, volunteer pairing, and program planning. Save anyway?`,
+      confirm: `Sex not selected for ${fullNames(missingSex)}.\n\nCamp leaders use it for room assignments, volunteer pairing and program planning. Save anyway?`,
     });
   }
   return out;
@@ -478,7 +478,7 @@ function supportNeeds({ members }) {
   return [
     {
       chip: `support details for ${whoList(lacking.map((x) => x.m.firstName.trim()))}`,
-      message: `Support details for ${first.m.firstName.trim()}: ${first.problems.join('; ')} — in “Support and medical details”.`,
+      message: `Support details for ${first.m.firstName.trim()}, in “Support and medical details”: ${first.problems.join('; ')}.`,
       // Which person's block the error box's button opens.
       personIndex: members.indexOf(first.m),
       personName: (first.m.preferredName || '').trim() || first.m.firstName.trim(),
@@ -495,8 +495,8 @@ function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, 
   const unchecked = agreements.filter((a) => !agreed.has(a.key));
   if (unchecked.length > 0) {
     out.push({
-      chip: `${unchecked.length} ${unchecked.length === 1 ? 'agreement' : 'agreements'} ticked`,
-      message: `Please read and agree to: ${unchecked.map((a) => a.title).join(', ')} — in the “Agreements” card.`,
+      chip: `${unchecked.length} ${unchecked.length === 1 ? 'agreement' : 'agreements'} checked`,
+      message: `Please read and agree to ${unchecked.map((a) => a.title).join(', ')} in the “Agreements” card.`,
     });
   }
   if (!signerName.trim()) {
@@ -509,16 +509,16 @@ function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, 
   if (undecided.length > 0) {
     out.push({
       chip: `how you are signing for ${whoList(undecided.map((m) => m.firstName.trim()))}`,
-      message: `Please say how you are signing for ${undecided
+      message: `Please say how you're signing for ${undecided
         .map((m) => m.firstName.trim())
-        .join(', ')} — in the “Agreements” card.`,
+        .join(', ')} in the “Agreements” card.`,
     });
   }
   if (facts.needsAffirmation && !affirmOthers) {
     out.push({
       chip: 'the permission confirmation',
       message:
-        'Please confirm that the other adults you are signing for have given you permission — in the “Agreements” card.',
+        'Please confirm, in the “Agreements” card, that the other adults you\'re signing for have given you permission.',
     });
   }
   // The signature must name the accountable adult filling in this form --
@@ -532,7 +532,7 @@ function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, 
   ) {
     out.push({
       chip: 'a signature matching the primary contact',
-      message: `The signature must match the primary contact's name — "${family.contactFirst} ${family.contactLast}". If someone else is completing this form, update the primary contact in "Your family" first, so the signature names the person actually responsible.`,
+      message: `The signature must match the primary contact's name, "${family.contactFirst} ${family.contactLast}". If someone else is filling in this form, change the primary contact in "Your family or group" first, so the signature names the person responsible.`,
     });
   }
   return out;
@@ -955,7 +955,7 @@ export default function FamilyWizard({
       // without a word was not. Ask, then honour the answer either way.
       if (!untouched) {
         const ok = window.confirm(
-          `${m.firstName || 'This person'} already has answers filled in on this registration.\n\nRemove them from it anyway? Their answers on this form will be discarded.`
+          `${m.firstName || 'This person'} already has answers filled in on this registration.\n\nRemove them anyway? Their answers on this form will be lost.`
         );
         if (!ok) return;
       }
@@ -1105,12 +1105,12 @@ export default function FamilyWizard({
               deposit.
             </p>
             <p className="mt-1 text-sm">
-              Your registration is saved, and camp staff approve it once the deposit
-              ({`$${Math.round((result.depositPerPersonCents ?? 5000) / 100)}`} a person) arrives — unless you are requesting a full scholarship, in
-              which case choose &ldquo;Ways to pay&rdquo; on your dashboard and request one, and
-              staff will be in touch. You can pay the deposit from &ldquo;Ways to pay&rdquo; in
-              about a minute; the rest can be paid in one lump sum, in parts, or with a
-              payment plan, at no extra fee.{' '}
+              Your registration is saved. Camp staff approve it once the deposit
+              ({`$${Math.round((result.depositPerPersonCents ?? 5000) / 100)}`} a person) arrives.
+              You can pay it from &ldquo;Ways to pay&rdquo; on your dashboard in about a minute.
+              The rest can be paid all at once, in parts, or with a payment plan, at no extra fee.
+              If you&rsquo;re requesting a full scholarship, choose &ldquo;Ways to pay&rdquo; and
+              request one instead, and staff will be in touch.{' '}
               {result.balanceDue ? (
                 <>
                   The balance is due by{' '}
@@ -1161,7 +1161,7 @@ export default function FamilyWizard({
           what still needs doing is what shows. */}
       {isUpdate && (
         <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-sm text-neutral-600">
-          <span>Cards that are complete are folded — open any to change it.</span>
+          <span>Complete cards are folded. Open any to change it.</span>
           <span className="flex items-center gap-2">
             <button
               type="button"
@@ -1237,7 +1237,7 @@ export default function FamilyWizard({
             </span>{' '}
             ({alreadyRegisteredHere.people}{' '}
             {alreadyRegisteredHere.people === 1 ? 'person' : 'people'}). This form is blank
-            because it starts something new.{' '}
+            because it starts a new one.{' '}
             <a
               href={`/register/family/?event=${alreadyRegisteredHere.eventId}`}
               className="font-semibold text-brand underline"
@@ -1257,7 +1257,7 @@ export default function FamilyWizard({
         onToggle={toggleCard('family')}
         status={statusOf('family')}
         title="Your family or group"
-        subtitle="We've filled in what we know from your account. The primary contact is who camp staff will call or email about this registration — if that should be someone else, just change the details below."
+        subtitle="We've filled in what we know from your account. The primary contact is who camp staff will call or email about this registration. If that should be someone else, change the details below."
       >
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -1274,9 +1274,8 @@ export default function FamilyWizard({
             own name field and no such person existed anywhere -- which is how
             a household ended up called "Victoria" with only Lawrence in it. */}
         <p className="mt-1.5 text-sm text-neutral-500">
-          This is who camp staff will call or email. They&rsquo;re added to your household
-          as the contact — whether or not they&rsquo;re attending — and you can change who
-          it is later from Manage Household.
+          The primary contact is added to your household, whether or not they&rsquo;re
+          attending. You can change who it is later on Manage Household.
         </p>
         <label className={label}>Email</label>
         <input type="email" className={input} value={family.email} onChange={setF('email')} />
@@ -1335,7 +1334,7 @@ export default function FamilyWizard({
             />
             {!zipLooksValid(family.postalCode) && (
               <p className="mt-1 text-xs text-amber-700">
-                A ZIP is five digits (or nine, as 37814-1234).
+                A ZIP code is five digits, or nine like 37814-1234.
               </p>
             )}
           </div>
@@ -1379,7 +1378,7 @@ export default function FamilyWizard({
         onToggle={toggleCard('people')}
         status={statusOf('people')}
         title="Who's coming"
-        subtitle="Everyone attending — including yourself if you're coming. Each person gets their own place and fee."
+        subtitle="Everyone attending, including you if you're coming. Each person gets their own place and fee."
       >
         <div className="space-y-6">
           {/* Said ONCE, at the top, rather than in small grey type under every
@@ -1391,10 +1390,10 @@ export default function FamilyWizard({
               Names and roles here; support and medical details below.
             </p>
             <p className="mt-1 text-neutral-700">
-              Once a person is named, their questions — allergies, medications, what helps on a
-              hard day, an emergency contact — appear in <em>Support and medical details</em>
-              (section 4). For a camper they are required before you{' '}
-              {isUpdate ? 'update' : 'submit'}.
+              Once you&rsquo;ve named a person, their questions (allergies, medications, what
+              helps on a hard day, an emergency contact) appear in{' '}
+              <em>Support and medical details</em> (section 4). For a camper, those are required
+              before you {isUpdate ? 'update' : 'submit'}.
             </p>
           </div>
 
@@ -1410,9 +1409,8 @@ export default function FamilyWizard({
               onChange={toggleSelf}
             />
             <span className="text-sm">
-              <span className="font-semibold">I&rsquo;m coming too</span> — add{' '}
-              {family.contactFirst.trim() || 'the primary contact'} as one of the people
-              attending.
+              <span className="font-semibold">I&rsquo;m coming too.</span> Adds{' '}
+              {family.contactFirst.trim() || 'the primary contact'} to the people attending.
             </span>
           </label>
           {members.map((m, i) => (
@@ -1543,8 +1541,8 @@ export default function FamilyWizard({
                   <label className={label}>First time at a Luke 14 event?</label>
                   <select className={input} value={m.firstTime} onChange={setM(i, 'firstTime')}>
                     <option value="">— select —</option>
-                    <option value="true">Yes — first time</option>
-                    <option value="false">No — been before</option>
+                    <option value="true">Yes, first time</option>
+                    <option value="false">No, I&rsquo;ve been before</option>
                   </select>
                 </div>
               </div>
@@ -1569,8 +1567,8 @@ export default function FamilyWizard({
                   />
                   <span className="text-sm">
                     <span className="font-semibold">Photos and videos.</span> We may feature{' '}
-                    {m.firstName.trim() || 'this person'} in material we publish — our
-                    website, social media, printed pieces.
+                    {m.firstName.trim() || 'this person'} in what we publish: our website,
+                    social media and printed pieces.
                     {/* Deliberately worded as a PREFERENCE we will work hard to
                         honour, not a guarantee we can enforce. Luke 14 has two
                         paid staff and runs on volunteers, and a week of camp
@@ -1579,30 +1577,28 @@ export default function FamilyWizard({
                         ministry cannot keep. Naming the route for a specific
                         concern is worth more than a broad assurance. */}
                     <span className="block mt-1 text-xs text-neutral-500">
-                      Unchecking tells us you&rsquo;d rather we didn&rsquo;t, and
-                      we&rsquo;ll do our best to honour that. Being straight with you
-                      about the limits: this is about not <em>featuring</em> someone as
-                      the subject of a picture, and with a small team and thousands of
-                      photos in a week we can&rsquo;t promise nobody ever appears in a
-                      wide group or whole-camp shot. If you see something you&rsquo;re
-                      not comfortable with, please contact Larry at{' '}
+                      If you uncheck this, we&rsquo;ll do our best not to feature{' '}
+                      {m.firstName.trim() || 'this person'} in the photos we share. We take
+                      thousands of photos each week, so they may still show up in the
+                      background of a group shot. If you see one you&rsquo;re not comfortable
+                      with, email Larry at{' '}
                       <span className="font-semibold">larry@luke14ministries.net</span> and
-                      we&rsquo;ll work to address it promptly.
+                      we&rsquo;ll take care of it.
                     </span>
                     {/* Unticking flags the registration for staff review
                         (Lawrence, 30 Sep 2026) -- it never blocks it. */}
                     {m.mediaConsent !== 'true' && (
                       <span className="mt-1 block rounded-sm bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-900">
                         Photo permission is off for {m.firstName.trim() || 'this person'}. A
-                        staff member will look at this with you. If you&rsquo;re uncomfortable,
-                        please contact Larry at larry@luke14ministries.net.
+                        staff member will talk it through with you. If anything worries you,
+                        email Larry at larry@luke14ministries.net.
                       </span>
                     )}
                     {m.mediaWasNo && m.mediaConsent === 'true' && (
                       <span className="mt-1 block rounded-sm bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-900">
                         Last time you told us you&rsquo;d rather we didn&rsquo;t. We ask
-                        again each year in case you feel differently now — uncheck if
-                        your preference hasn&rsquo;t changed.
+                        again each year in case you feel differently now. Uncheck the box if
+                        you haven&rsquo;t changed your mind.
                       </span>
                     )}
                   </span>
@@ -1619,16 +1615,15 @@ export default function FamilyWizard({
                     {m.firstName.trim() || 'this person'} in the list shared with the other
                     families attending.
                     <span className="block mt-1 text-xs text-neutral-500">
-                      It&rsquo;s how families connect before and after. Your household
-                      appears as one combined entry with the adults&rsquo; contact details
-                      — children are never listed individually. Uncheck to be left out;
-                      nothing else about your registration changes.
+                      It&rsquo;s how families connect before and after camp. Your household
+                      appears as one entry with the adults&rsquo; contact details. Children are
+                      never listed on their own. Uncheck the box to be left out.
                     </span>
                     {m.directoryWasNo && m.directoryConsent === 'true' && (
                       <span className="mt-1 block rounded-sm bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-900">
                         Last time you asked to be left out. We ask again each year in
-                        case you feel differently now — uncheck if your answer
-                        hasn&rsquo;t changed.
+                        case you feel differently now. Uncheck the box if you haven&rsquo;t
+                        changed your mind.
                       </span>
                     )}
                   </span>
@@ -1650,9 +1645,9 @@ export default function FamilyWizard({
               <div className="rounded-sm border border-neutral-200 bg-neutral-50 p-4">
                                 <p className="text-sm font-semibold">Already in your household</p>
                 <p className="mt-0.5 text-xs text-neutral-600">
-                  Tap to add them to this registration — no need to type them in again.
-                  &ldquo;Household&rdquo; here means everyone on your account, related or not
-                  — a group home or church group works the same way.
+                  Tap a name to add them to this registration. &ldquo;Household&rdquo; means
+                  everyone on your account, related or not. A group home or church group works
+                  the same way.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {available.map((p) => (
@@ -1688,7 +1683,7 @@ export default function FamilyWizard({
               + Add someone new
             </button>
             <span className="text-sm text-neutral-500">
-              Anyone you add here is saved to your household for next time.
+              We&rsquo;ll remember anyone you add here for next time.
             </span>
           </div>
         </div>
@@ -1706,12 +1701,12 @@ export default function FamilyWizard({
         onToggle={toggleCard('support')}
         status={statusOf('support')}
         title="Support and medical details"
-        subtitle="Required for each camper before you submit — “N/A” is an answer in any box. Volunteers and other adults get the short version."
+        subtitle="Required for each camper before you submit. Write “N/A” in any box where there is nothing to say. Volunteers and other adults get the short version."
       >
         {named.length === 0 ? (
           <p className="text-sm text-neutral-600">
-            Nobody named yet — add the people attending in &ldquo;Who&rsquo;s coming&rdquo; above,
-            and their questions appear here.
+            Nobody named yet. Add the people attending in &ldquo;Who&rsquo;s coming&rdquo; above
+            and their questions will appear here.
           </p>
         ) : (
           <div className="space-y-6">
@@ -1736,8 +1731,8 @@ export default function FamilyWizard({
                       {!m.role
                         ? 'choose a role above'
                         : camper
-                          ? 'camper — full details required'
-                          : `${m.role.toLowerCase()} — short version`}
+                          ? 'camper: full details required'
+                          : `${m.role.toLowerCase()}: short version`}
                     </span>
                   </h3>
                   <div className="mt-3">
@@ -1764,7 +1759,7 @@ export default function FamilyWizard({
                             .map((o) => ({
                               key: memberKey(o),
                               first: (o.preferredName || '').trim() || o.firstName.trim(),
-                              label: `${o.firstName.trim()} ${o.lastName.trim()}${o.role ? ` — ${o.role}` : ''}`,
+                              label: `${o.firstName.trim()} ${o.lastName.trim()}${o.role ? ` (${o.role})` : ''}`,
                               phone: (o.phone || '').trim(),
                             }))}
                           value={m.caregiverKey}
@@ -1815,7 +1810,7 @@ export default function FamilyWizard({
         onToggle={toggleCard('notes')}
         status={statusOf('notes')}
         title="Anything else about this registration?"
-        subtitle="Optional — for camp staff, about the registration as a whole (a note about one person goes with their details above)."
+        subtitle="Optional. For camp staff, about the registration as a whole. A note about one person goes with their details above."
       >
         <textarea
           className={input}
@@ -1837,7 +1832,7 @@ export default function FamilyWizard({
           title="Agreements"
           subtitle={
             alreadySigned
-              ? 'Already signed for everyone on this registration — nothing to do here.'
+              ? 'Already signed for everyone on this registration. Nothing to do here.'
               : 'Please read each one. Your typed name at the bottom signs them, for each person listed below.'
           }
         >
@@ -1853,7 +1848,7 @@ export default function FamilyWizard({
                 .
               </p>
               <p className="mt-1 text-sm text-green-800">
-                Signatures aren&rsquo;t re-taken when you update a registration — the
+                We don&rsquo;t ask you to sign again when you update a registration. The
                 date on a release is part of the record. Anyone you add later is signed
                 for when you add them.{' '}
                 <Link href="/account/agreements/" className="underline font-semibold">
@@ -1980,9 +1975,9 @@ export default function FamilyWizard({
                     day: 'numeric',
                     year: 'numeric',
                   })}
-                  . Typing your name here has the same effect as signing on paper. Your
-                  signature is recorded separately for each person above, with the version
-                  of each agreement you saw, and a copy is on your dashboard afterwards.
+                  . Typing your name here counts the same as signing on paper. Your
+                  signature is recorded for each person above, with the version of each
+                  agreement you saw. You&rsquo;ll find a copy on your dashboard afterwards.
                 </p>
               </div>
             </>
@@ -2025,7 +2020,7 @@ export default function FamilyWizard({
                 : `${namedCount} ${namedCount === 1 ? 'person' : 'people'} · ${money(total)}`}
             </p>
             <p className="text-xs text-neutral-500">
-              {week ? fmtWeek(week) : 'Choose a session above'} · payment happens on your
+              {week ? fmtWeek(week) : 'Choose a session above'} · you pay from your
               dashboard afterwards
             </p>
             {/* What each card still needs, said here, each a way to it
@@ -2091,16 +2086,16 @@ export default function FamilyWizard({
           button has been misled by us. The deposit paragraph in the
           confirmation email changes with it. */}
       <p className="text-center text-sm text-neutral-500 pb-2">
-        Cost shouldn&rsquo;t decide this. You can submit without paying: a{' '}
+        Don&rsquo;t let cost decide this. You can submit without paying. A{' '}
         {week?.depositCents ? `$${Math.round(week.depositCents / 100)}` : '$50'} deposit
-        per person is needed for approval, unless you request a full
-        scholarship &mdash; choose &ldquo;Ways to pay&rdquo; on your
-        dashboard after submitting. Asking does not affect anyone&rsquo;s place.
+        per person is needed for approval, unless you request a full scholarship: choose
+        &ldquo;Ways to pay&rdquo; on your dashboard after you submit. Asking doesn&rsquo;t
+        affect anyone&rsquo;s place.
         {anyVolunteer && week?.volunteerArrivesOn
           ? ` Volunteers arrive ${formatDueDateShort(week.volunteerArrivesOn)}, a day before campers, for orientation.`
           : ''}
         {isUpdate
-          ? ' Updating replaces your saved answers for this session; people are matched by name and date of birth, so nobody is duplicated.'
+          ? ' Updating replaces your saved answers for this session. Nobody is added twice.'
           : ''}
       </p>
     </div>

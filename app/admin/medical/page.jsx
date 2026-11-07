@@ -102,8 +102,8 @@ export default async function MedicalPage({ searchParams }) {
       <h2 className="text-xl font-bold mb-1">Medical &amp; Support</h2>
       <p className="text-sm text-neutral-500 mb-6">
         Medications, seizure and rescue-medication details, and emergency contacts, per event.
-        This is the most sensitive page in the system — it is a separate permission, and printouts
-        deserve the same care as the screen.
+        This is the most sensitive page on the site. It needs its own permission, so take the same
+        care with printouts as with the screen.
       </p>
 
 
@@ -157,7 +157,7 @@ export default async function MedicalPage({ searchParams }) {
                 </>
               ) : (
                 <span className="text-neutral-500">
-                  No medical contact set for this event — an administrator can add one on the{' '}
+                  No medical contact set for this event. An administrator can add one on the{' '}
                   {/* A link, not a mention (Lawrence, 15 Oct 2026): it lands on
                       Check-In with this event already selected. */}
                   <Link href={`/admin/checkin?event=${ev.id}`} className="text-brand underline">

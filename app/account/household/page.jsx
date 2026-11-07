@@ -145,9 +145,9 @@ export default async function ManageHouseholdPage() {
           <BackLink />
         </div>
         <p className="text-neutral-600 mb-8">
-          Keep your family&rsquo;s details current — camp staff see whatever is saved here. Each
-          person can have up to two linked caregivers; we suggest the parents/guardians in your
-          household, but you can change them.
+          Keep your family&rsquo;s details current. Camp staff see whatever is saved here. Each
+          person can have up to two linked caregivers. We suggest the parents or guardians in
+          your household, but you can change them.
         </p>
 
         <HouseholdManager

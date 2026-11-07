@@ -42,8 +42,8 @@ export default async function DeleteDataPage() {
       <p className="mt-3 text-neutral-700">
         You can ask us to delete your family&rsquo;s medical information, or your whole account. A
         staff member looks at every request and will contact you before anything is removed. Some
-        records &mdash; payments and signed releases, for example &mdash; have to be kept for a
-        time even after the rest is gone, and staff will tell you what those are.
+        records, such as payments and signed releases, have to be kept for a time even after the
+        rest is gone. Staff will tell you which.
       </p>
       {(requests ?? []).length > 0 && (
         <ul className="mt-6 divide-y divide-neutral-200 rounded-sm border border-neutral-200 bg-white text-sm">

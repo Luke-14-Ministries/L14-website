@@ -30,19 +30,19 @@ export default async function VolunteerPage() {
             <h2 className="text-lg font-bold mb-3">How volunteering works</h2>
             <ol className="list-decimal pl-5 space-y-2 text-neutral-700">
               <li>
-                <span className="font-semibold">Create an account</span> (or log in) — it takes a
+                <span className="font-semibold">Create an account</span> (or log in). It takes a
                 minute.
               </li>
               <li>
-                <span className="font-semibold">Register for the week</span> you want to serve,
-                choosing the role <span className="font-semibold">Volunteer</span>. Coming with
-                your family? One registration covers everyone. Coming solo? Register just
+                <span className="font-semibold">Register for the week</span> you&rsquo;d like to
+                serve and choose <span className="font-semibold">Volunteer</span> as your role.
+                One registration covers your whole family. Coming on your own? Register
                 yourself.
               </li>
               <li>
-                <span className="font-semibold">Complete the short application</span> on this page
-                — where you&rsquo;d like to serve, and a little about you. Our team reviews it and
-                follows up about the background check.
+                <span className="font-semibold">Fill out the volunteer application</span> on this
+                page: where you&rsquo;d like to serve and a little about you. Our team reviews it
+                and follows up about the background check.
               </li>
             </ol>
           </div>
@@ -54,8 +54,8 @@ export default async function VolunteerPage() {
               Already have one?{' '}
               <Link href="/account/?next=/register/volunteer/" className="text-brand underline font-semibold">
                 Log in
-              </Link>{' '}
-              — either way you&rsquo;ll come straight back here to finish.
+              </Link>
+              . Either way, you&rsquo;ll come straight back here to finish.
             </p>
           </div>
         </div>
@@ -113,11 +113,10 @@ export default async function VolunteerPage() {
           <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6 mt-8">
             <h2 className="text-lg font-bold mb-2">First, register for the week</h2>
             <p className="text-neutral-700 mb-4">
-              The application attaches to a registration, so start there: register for the week
-              you want to serve and choose the role{' '}
-              <span className="font-semibold">Volunteer</span> for yourself. Registering your
-              whole family in the same pass is fine — each person gets their own role. Then come
-              back here (we&rsquo;ll also remind you on your dashboard).
+              To volunteer, first register for the week you&rsquo;d like to serve and choose{' '}
+              <span className="font-semibold">Volunteer</span> as your role. You can register
+              your family at the same time. Then come back here to fill out the volunteer
+              application. Your dashboard will remind you.
             </p>
             <div>
               <Link href="/register/family" className="btn-primary px-8!">
@@ -128,7 +127,7 @@ export default async function VolunteerPage() {
                 <Link href="/account/dashboard" className="text-brand underline font-semibold">
                   your dashboard
                 </Link>{' '}
-                for what&rsquo;s already in place.
+                to see what you&rsquo;ve already registered for.
               </p>
             </div>
           </div>
@@ -261,9 +260,8 @@ export default async function VolunteerPage() {
           <BackLink />
         </div>
         <p className="text-neutral-600 mt-2 mb-8">
-          A few short questions so we can place you well. Our team reviews every application and
-          follows up about the background check — that paperwork happens separately, never on
-          this site.
+          Tell us where you&rsquo;d like to serve and a little about yourself. Our team reviews
+          every application and will contact you about the background check.
         </p>
         <div className="space-y-6">
           {volunteers.map(({ participant, event }) => (

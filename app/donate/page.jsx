@@ -9,7 +9,7 @@ const impacts = [
   'Providing practical resources and ongoing support for families',
   'Hosting inclusive events and celebrations where everyone is welcomed',
   'Training churches to become places of genuine belonging',
-  'Equipping volunteers to serve individuals and families affected by disability—both locally and around the world',
+  'Equipping volunteers to serve individuals and families affected by disability, both locally and around the world',
 ];
 
 export default async function DonatePage() {

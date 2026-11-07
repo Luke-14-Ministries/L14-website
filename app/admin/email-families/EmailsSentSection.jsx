@@ -33,7 +33,7 @@ function Showing({ result, filters }) {
   } else {
     text = `${plural(total, 'email matches', 'emails match')}${filters.q ? ` ‘${filters.q}’` : ''}`;
     if (windowDays) text += ` in the past ${windowDays} days`;
-    text += capped ? ` — the newest ${emails.length} are shown.` : '.';
+    text += capped ? `. The newest ${emails.length} are shown.` : '.';
   }
   return (
     <p className="text-sm text-neutral-700">
@@ -61,10 +61,10 @@ export default function EmailsSentSection({ result, byEvent, filters, eventOptio
         defaultOpen
       >
         <p className="text-sm text-neutral-500 mb-3">
-          From here and the site&rsquo;s own (payment plans), one line per send — open one for each
-          family&rsquo;s address and <em>What it said</em>. Each family&rsquo;s full list is on their
-          registration page. <em>Delivery</em> opens the mail service&rsquo;s record: delivered,
-          bounced or opened.
+          Emails sent from this page and the site&rsquo;s automatic emails (payment plans), one line
+          per send. Open one to see each family&rsquo;s address and <em>What it said</em>. Each
+          family&rsquo;s full list is on their registration page. <em>Delivery</em> opens the mail
+          service&rsquo;s record: delivered, bounced or opened.
         </p>
 
         {/* Plain GET form (like Giving's): the URL is the filter. The send
@@ -134,7 +134,7 @@ export default function EmailsSentSection({ result, byEvent, filters, eventOptio
           {result.familyMatchesCapped && (
             <p className="text-sm text-amber-800">
               More than {MAX_FAMILY_MATCHES} families&rsquo; names contain &lsquo;{filters.q}&rsquo;, so family
-              names were left out of this search — type more of the name.
+              names were left out of this search. Type more of the name.
             </p>
           )}
         </div>

@@ -68,10 +68,10 @@ export default function CancelRequest({ registrationId, people = [], openRequest
             .join(', ') || 'selected people';
     return (
       <div className="mt-4 rounded-sm border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm">
-        <p className="font-semibold">Cancellation requested — {who}</p>
+        <p className="font-semibold">Cancellation requested for {who}</p>
         <p className="mt-1 text-neutral-700">
-          Camp staff have this and will be in touch. Nothing is cancelled yet, and any
-          money already paid is unaffected until they have spoken to you.
+          Camp staff have your request and will be in touch. Nothing is cancelled yet, and
+          any money already paid stays as it is until they have talked with you.
         </p>
         {error && <p className="mt-2 text-red-700">{error}</p>}
         <button
@@ -79,7 +79,7 @@ export default function CancelRequest({ registrationId, people = [], openRequest
           disabled={pending}
           className="mt-2 text-sm font-semibold text-brand underline disabled:opacity-50"
         >
-          {pending ? 'Working…' : 'Never mind — withdraw this request'}
+          {pending ? 'Working…' : 'Never mind, withdraw this request'}
         </button>
       </div>
     );
@@ -100,15 +100,15 @@ export default function CancelRequest({ registrationId, people = [], openRequest
     <div className="mt-4 rounded-sm border border-neutral-300 bg-neutral-50 p-4">
       <p className="font-semibold">Ask to cancel</p>
       <p className="mt-1 text-sm text-neutral-700">
-        This sends a note to camp staff — it does <strong>not</strong> cancel anything by
-        itself. They will confirm with you, and sort out anything already paid.
+        This sends a note to camp staff. It does <strong>not</strong> cancel anything by
+        itself. They will confirm with you and sort out anything already paid.
       </p>
 
       {people.length > 1 && (
         <fieldset className="mt-3">
           <legend className="text-sm font-semibold">Who is cancelling?</legend>
           <p className="text-xs text-neutral-500 mb-1">
-            Leave all unticked if the whole family is cancelling.
+            Leave them all unchecked if the whole family is cancelling.
           </p>
           <div className="space-y-1">
             {people.map((p) => (
@@ -134,7 +134,7 @@ export default function CancelRequest({ registrationId, people = [], openRequest
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         className="mt-1 w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
-        placeholder="A short note is plenty. If cost is the problem, say so — the ministry would rather help than lose you."
+        placeholder="A short note is plenty. If cost is the problem, please say so. We would rather help than lose you."
       />
 
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}

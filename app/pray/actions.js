@@ -33,14 +33,14 @@ export async function signUpForPrayerList(form) {
   const name = String(form?.name ?? '').trim().slice(0, PRAYER_MAX.name);
   const email = String(form?.email ?? '').trim().toLowerCase().slice(0, PRAYER_MAX.email);
   if (!emailLooksValid(email)) {
-    return { ok: false, error: 'That email address doesn’t look right — please check it.' };
+    return { ok: false, error: 'That email address doesn’t look right. Please check it.' };
   }
 
   const h = await headers();
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
   const check = await verifyTurnstile(form?.captchaToken, ip);
   if (!check.ok) {
-    return { ok: false, error: 'That check timed out. Please tick the box again and resend.', retryCaptcha: true };
+    return { ok: false, error: 'That check timed out. Please check the box again and resend.', retryCaptcha: true };
   }
 
   const db = createAdminClient();
@@ -53,7 +53,7 @@ export async function signUpForPrayerList(form) {
     .maybeSingle();
   if (readError) {
     console.error('prayer sign-up (read):', readError.message);
-    return { ok: false, error: 'Sorry — the sign-up could not be saved. Please try again in a moment.' };
+    return { ok: false, error: 'Sorry, the sign-up could not be saved. Please try again in a moment.' };
   }
 
   // Already on the list: nothing to send. The answer is the same as for a
@@ -70,7 +70,7 @@ export async function signUpForPrayerList(form) {
       .eq('id', row.id);
     if (error) {
       console.error('prayer sign-up (update):', error.message);
-      return { ok: false, error: 'Sorry — the sign-up could not be saved. Please try again in a moment.' };
+      return { ok: false, error: 'Sorry, the sign-up could not be saved. Please try again in a moment.' };
     }
   } else {
     const { data, error } = await db
@@ -80,7 +80,7 @@ export async function signUpForPrayerList(form) {
       .single();
     if (error) {
       console.error('prayer sign-up (insert):', error.message);
-      return { ok: false, error: 'Sorry — the sign-up could not be saved. Please try again in a moment.' };
+      return { ok: false, error: 'Sorry, the sign-up could not be saved. Please try again in a moment.' };
     }
     saved = data;
   }
@@ -90,7 +90,7 @@ export async function signUpForPrayerList(form) {
   // The email is the whole point here: without it the person cannot confirm,
   // so a failed send is said, not swallowed (like the contact form).
   if (!sent.ok) {
-    return { ok: false, error: `Sorry — the confirmation email could not be sent. Please try again, or write to ${site.emails.pray}.` };
+    return { ok: false, error: `Sorry, the confirmation email could not be sent. Please try again, or write to ${site.emails.pray}.` };
   }
   return { ok: true };
 }
@@ -106,7 +106,7 @@ export async function confirmPrayerList(token) {
     .select('email');
   if (error) {
     console.error('prayer confirm:', error.message);
-    return { ok: false, error: 'Sorry — that did not save. Please try again in a moment.' };
+    return { ok: false, error: 'Sorry, that did not save. Please try again in a moment.' };
   }
   if (!data?.length) return { ok: false, error: 'This link is no longer valid. Please sign up again on the Pray page.' };
   return { ok: true, email: data[0].email };
@@ -123,8 +123,8 @@ export async function unsubscribePrayerList(token) {
     .select('email');
   if (error) {
     console.error('prayer unsubscribe:', error.message);
-    return { ok: false, error: 'Sorry — that did not save. Please try again in a moment.' };
+    return { ok: false, error: 'Sorry, that did not save. Please try again in a moment.' };
   }
-  if (!data?.length) return { ok: false, error: 'This link is no longer valid — the address may already be off the list.' };
+  if (!data?.length) return { ok: false, error: 'This link is no longer valid. The address may already be off the list.' };
   return { ok: true, email: data[0].email };
 }

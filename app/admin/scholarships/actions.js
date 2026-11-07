@@ -31,7 +31,7 @@ import { getStaff, can } from '@/lib/staff';
 async function requireRegistrar() {
   const staff = await getStaff();
   if (!can(staff, 'decide:scholarships')) {
-    return { error: 'Scholarship decisions belong to Registration & coordination (Payments and Registration write).' };
+    return { error: 'Scholarship decisions need both Payments write and Registration write.' };
   }
   return { staff };
 }
@@ -65,7 +65,7 @@ export async function grantScholarship({ registrationId, participantId, amount, 
   // 4 Nov 2026): whoever looks at this family's money later needs the why,
   // and an award is money the ministry gave away.
   if (!String(note ?? '').trim()) {
-    return { ok: false, error: 'Say briefly why — every scholarship decision keeps a note.' };
+    return { ok: false, error: 'Add a short reason. Every scholarship decision needs one.' };
   }
   if (cents <= 0) {
     // A "grant" of nothing is a refusal wearing the wrong word, and it would
@@ -179,7 +179,7 @@ export async function declineScholarship({ registrationId, participantId, note }
     // nothing. Staff see this note; the family sees only the outcome.
     return {
       ok: false,
-      error: 'Say briefly why — the office will need it when the family asks.',
+      error: 'Add a short reason. The office will need it if the family asks.',
     };
   }
 

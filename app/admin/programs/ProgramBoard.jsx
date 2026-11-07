@@ -260,7 +260,7 @@ export default function ProgramBoard({
             onChange={(e) => setBulkProgram(e.target.value)}
             className="rounded-sm border border-neutral-300 px-2 py-1 text-sm"
           >
-            <option value="">— no program —</option>
+            <option value="">No program</option>
             {programs.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -365,7 +365,7 @@ export default function ProgramBoard({
                       p.programId ? 'border-neutral-300' : 'border-amber-400 bg-amber-50'
                     }`}
                   >
-                    <option value="">— not placed —</option>
+                    <option value="">Not placed</option>
                     {programs.map((prog) => (
                       <option key={prog.id} value={prog.id}>
                         {prog.name}
@@ -478,10 +478,10 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
       <h3 className="text-lg font-bold mb-1">Program leaders for {eventName}</h3>
       <p className="mb-3 text-sm text-neutral-500">
                 A leader signs in and sees one page: the people in their program, with their buddy and a
-        flag where there is something to ask about. No medical detail, no other programs, no
-        editing. Access is for this event only and ends with it. A program may have more than one
-        leader; make one the <strong>head leader</strong> so check-in staff and drivers know who to
-        find — it changes nothing about what either of them can see.
+        flag where there is something to ask about. They see no medical details and no other
+        programs, and they can&rsquo;t edit anything. Access is for this event only and ends with it.
+        A program can have more than one leader. Make one the <strong>head leader</strong> so
+        check-in staff and drivers know who to find. It doesn&rsquo;t change what either can see.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -495,7 +495,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
                   No leader named
                   {canGrant ? (
                     <>
-                      {' '}—{' '}
+                      {': '}
                       <button type="button" onClick={() => nameFor(p.id)} className="text-brand underline">
                         name one below
                       </button>
@@ -558,8 +558,9 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
         >
           <h4 className="font-semibold">Name a program leader</h4>
           <p className="mt-0.5 mb-3 text-sm text-neutral-600">
-            Type part of their name or email. People registered for {eventName} are listed first;
-            a leader must be registered for this event (best as a volunteer) before they can be named.
+            Type part of their name or email. People registered for {eventName} are listed first.
+            A leader must be registered for this event, ideally as a volunteer, before you can name
+            them.
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-80">
@@ -584,7 +585,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
               onChange={(e) => setProgramId(e.target.value)}
               className="rounded-sm border border-neutral-300 bg-white px-2 py-1.5 text-sm"
             >
-              <option value="">— choose —</option>
+              <option value="">Choose…</option>
               {programs.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -616,7 +617,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
         </form>
       ) : (
         <p className="mt-3 text-sm text-neutral-500">
-          Naming a program leader is an administrator’s job — ask one.
+          Only an administrator can name a program leader.
         </p>
       )}
 

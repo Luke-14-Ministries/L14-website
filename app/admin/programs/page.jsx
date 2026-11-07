@@ -167,9 +167,9 @@ export default async function ProgramsPage({ searchParams }) {
     <div>
       <h2 className="text-xl font-bold mb-1">Programs</h2>
       <p className="text-sm text-neutral-500 mb-4">
-        Who belongs with whom for the week — nursery, children, youth, young adults, men, women.
-        Families never see this and never choose it. A program leader sees only their own list,
-        with flags rather than medical detail.
+        Which group each person is in for the week: nursery, children, youth, young adults, men or
+        women. Families never see or choose this. A program leader sees only their own list, with
+        flags instead of medical details.
       </p>
 
       <EventFilter

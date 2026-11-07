@@ -38,7 +38,7 @@ export default function ReminderPause({ registrationId, pause, canWrite }) {
         </button>
       )}
       <span className="text-xs text-neutral-500">
-        Pausing stops deposit, balance and missing-details reminders; confirmations and payment-plan notices still go.
+        Pausing stops deposit, balance and missing-details reminders. Confirmations and payment plan notices still go out.
       </span>
       {error && <span className="text-red-700">{error}</span>}
     </div>

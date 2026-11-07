@@ -33,10 +33,10 @@ export async function sendWebsiteFeedback({ message, page, userAgent } = {}) {
 
   const text = String(message ?? '').trim();
   if (text.length < MIN_MESSAGE) {
-    return { ok: false, error: `Please write a little more — at least ${MIN_MESSAGE} characters.` };
+    return { ok: false, error: `Please write a little more, at least ${MIN_MESSAGE} characters.` };
   }
   if (text.length > MAX_MESSAGE) {
-    return { ok: false, error: `That is a little long — please keep it under ${MAX_MESSAGE} characters.` };
+    return { ok: false, error: `That is a little long. Please keep it under ${MAX_MESSAGE} characters.` };
   }
   const pageText = String(page ?? '').trim().slice(0, MAX_PAGE);
   let ua = String(userAgent ?? '').trim();

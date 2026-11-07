@@ -27,7 +27,7 @@ function Row({ row }) {
     // rather than letting the queue drift out of step with the roster.
     if (status === 'actioned') {
       const ok = window.confirm(
-        `Mark this handled as CANCELLED?\n\nThis records that you dealt with it. It does not release the places or refund anything — do those on the registration and the payment first if you have not already.`
+        `Mark this handled as CANCELLED?\n\nThis records that you dealt with it. It doesn't release the places or refund anything. Do those on the registration and the payment first if you haven't already.`
       );
       if (!ok) return;
     }
@@ -81,7 +81,7 @@ function Row({ row }) {
           Open the registration
         </Link>
         <span className="text-xs text-neutral-500">
-          — cancel the places there, and refund on the payment below them
+          Cancel the places there, then refund from the payment below them.
         </span>
       </div>
 
@@ -104,14 +104,14 @@ function Row({ row }) {
               disabled={pending}
               className="btn-primary py-1.5! text-sm"
             >
-              {pending ? 'Saving…' : 'Handled — places cancelled'}
+              {pending ? 'Saving…' : 'Handled: places cancelled'}
             </button>
             <button
               onClick={() => settle('declined')}
               disabled={pending}
               className="btn-outline py-1.5! text-sm"
             >
-              Handled — staying after all
+              Handled: staying after all
             </button>
           </div>
         </div>

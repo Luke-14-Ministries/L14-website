@@ -34,7 +34,7 @@ export default function ContactForm() {
     setBusy(false);
 
     if (!res?.ok) {
-      setError(res?.error || 'Sorry — something went wrong. Please try again.');
+      setError(res?.error || 'Sorry, something went wrong. Please try again.');
       // Spend-and-replace, always: the token is gone either way once the
       // server has looked at it.
       setCaptchaToken(null);
@@ -53,7 +53,7 @@ export default function ContactForm() {
         role="status"
         className="rounded-sm border border-brand bg-brand-light px-5 py-6 text-brand-dark"
       >
-        <p className="text-lg font-bold">Thank you — your message is on its way.</p>
+        <p className="text-lg font-bold">Thank you! Your message is on its way.</p>
         <p className="mt-2">
           Someone from Luke 14 Ministries will read it and get back to you at{' '}
           <span className="font-semibold">{form.email}</span>. If it is urgent, please call{' '}

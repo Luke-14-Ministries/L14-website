@@ -114,8 +114,8 @@ export default async function AdultAdventureRetreatPage() {
                 Adult Adventure Retreat
               </h1>
               <p className="mt-4 text-xl text-white/90">
-                A retreat tailored for independent adults with disabilities
-                &mdash; adventure, worship and community in the mountains near Gatlinburg.
+                A retreat for independent adults with disabilities: adventure,
+                worship and community in the mountains near Gatlinburg.
               </p>
 
 {retreat && (
@@ -181,15 +181,15 @@ export default async function AdultAdventureRetreatPage() {
           <h2 className="text-3xl font-bold mb-6">What the weekend looks like</h2>
           <div className="prose-site">
             <p>
-              Days are built around real adventure in the Smokies &mdash; time outdoors,
-              activities chosen for the group, and space to try things with support close
-              by. Evenings are worship, food, and the kind of unhurried time together
-              that turns a retreat into friendships that last past the weekend.
+              Days are built around adventure in the Smokies: time outdoors, activities
+              chosen for the group, and the chance to try new things with support close
+              by. Evenings are worship, good food, and unhurried time together. The
+              friendships made here last well past the weekend.
             </p>
             <p>
-              It is designed for adults who manage their day-to-day with a degree of
-              independence &mdash; and the trained buddy each participant is paired with
-              is there to make the adventure bigger, not smaller.
+              It is for adults who manage their day-to-day with some independence. Each
+              participant is paired with a trained buddy, who is there to make the
+              adventure bigger, not smaller.
             </p>
             {retreat?.open && <p>Registering takes a few minutes and holds your place.</p>}
           </div>

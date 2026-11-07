@@ -167,8 +167,8 @@ function LodgingForm({ initial, kinds, submitLabel, onSubmit, onCancel, pending 
             className={inputCls}
           />
           <p className="mt-0.5 text-xs text-neutral-500">
-            Shown to a family, with the campus map, once one of them is checked in. Set it on the
-            building; its rooms use it.
+            Families see it, with the campus map, once one of them is checked in. Set it on the
+            building and its rooms will use it.
           </p>
         </div>
       </div>
@@ -309,7 +309,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
     const ok = window.confirm(
       `Retire ${lodging.name}${
         kids.length > 0 ? ` and the ${kids.length} ${kids.length === 1 ? 'room' : 'rooms'} in it` : ''
-      }?\n\nIt comes off the board but nothing is deleted — you can bring it back from the retired list. If anyone is still placed there, this will refuse and tell you how many.`
+      }?\n\nIt comes off the board, but nothing is deleted. You can bring it back from the retired list. If anyone is still placed there, it won't be retired and you'll see how many people are in it.`
     );
     if (!ok) return;
     run(
@@ -329,7 +329,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
     if (!copyFrom) return;
     const from = otherEvents.find((e) => e.id === copyFrom);
     const ok = window.confirm(
-      `Copy every active room and building from ${from?.name ?? 'that event'} into ${eventName}?\n\nOnly the places come across — nobody's assignment does.`
+      `Copy every active room and building from ${from?.name ?? 'that event'} into ${eventName}?\n\nOnly the rooms and buildings are copied, not who is placed in them.`
     );
     if (!ok) return;
     run(
@@ -368,9 +368,9 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
       {open && (
         <div className="border-t border-neutral-200 px-4 py-4">
           <p className="mb-3 text-sm text-neutral-500">
-            Buildings hold rooms; a family is placed in a room, a cabin can be assigned whole.
-            Retiring hides a place from the board without deleting it. Capacity is advisory
-            &mdash; the board warns, it never refuses.
+            Buildings hold rooms. Families are placed in a room, and a cabin can be assigned whole.
+            Retiring hides a place from the board without deleting it. Capacity is a guide: the
+            board warns you but never stops you.
           </p>
 
           {message && (
@@ -431,7 +431,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
                     onChange={(e) => setCopyFrom(e.target.value)}
                     className="rounded-sm border border-neutral-300 px-2 py-1 text-sm"
                   >
-                    <option value="">— choose an event —</option>
+                    <option value="">Choose an event</option>
                     {otherEvents.map((e) => (
                       <option key={e.id} value={e.id}>
                         {e.name}
@@ -451,8 +451,8 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
               </div>
             ) : (
               <p className="mb-4 text-xs text-neutral-500">
-                To copy the rooms from another event instead, retire everything here first
-                &mdash; copying only works into an empty event.
+                To copy the rooms from another event instead, retire everything here first.
+                Copying only works into an empty event.
               </p>
             ))}
 

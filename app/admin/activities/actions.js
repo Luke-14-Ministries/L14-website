@@ -43,10 +43,10 @@ function shapeWaiver(w) {
       return { error: 'Choose a waiver from the list, or write a new one.' };
     }
     if (mode === 'new' || mode === 'revise') {
-      if (!title) return { error: 'The waiver needs a title — what the family will see it called.' };
+      if (!title) return { error: 'Give the waiver a title. This is the name families see.' };
       if (title.length > 120) return { error: 'Keep the waiver title under 120 characters.' };
       if (body.length < 20) {
-        return { error: 'The waiver needs its text — what the family is agreeing to.' };
+        return { error: 'Add the waiver text that families agree to.' };
       }
     }
   }
@@ -87,7 +87,7 @@ function shape(input) {
   if (String(input?.minAge ?? '').trim() !== '') {
     const n = Number(String(input.minAge).trim());
     if (!Number.isInteger(n) || n < 0 || n > 120) {
-      return { error: 'Minimum age has to be a whole number of years (0 to 120), or blank for none.' };
+      return { error: 'Minimum age has to be a whole number from 0 to 120, or blank for none.' };
     }
     minAge = n;
   }
@@ -97,7 +97,7 @@ function shape(input) {
   // means something with a name, so it goes with it.
   const groupLabel = input?.groups ? String(input?.groupLabel ?? '').trim().slice(0, 40) : '';
   if (input?.groups && !groupLabel) {
-    return { error: 'Say what one group is called — a raft, a boat, a table.' };
+    return { error: 'Say what one group is called, such as Raft, Boat or Table.' };
   }
   let groupSize = null;
   if (groupLabel && String(input?.groupSize ?? '').trim() !== '') {
@@ -314,7 +314,7 @@ async function freeKey(supabase, title) {
   for (let i = 2; i < 1000; i += 1) {
     if (!taken.has(`${base}_${i}`)) return { key: `${base}_${i}` };
   }
-  return { error: 'That title is already in use too many times — try another.' };
+  return { error: 'That title is already used too many times. Try another.' };
 }
 
 // This activity's requirement rows that point at a waiver signed on the site.
@@ -369,12 +369,12 @@ async function applyWaiver(supabase, activityId, waiver) {
       .eq('id', waiver.agreementId)
       .maybeSingle();
     if (error) return { ok: false, error: `That waiver could not be read: ${error.message}` };
-    if (!agr) return { ok: false, error: 'That waiver no longer exists — choose another.' };
+    if (!agr) return { ok: false, error: 'That waiver no longer exists. Choose another.' };
     if (agr.delivery !== 'internal_document') {
       return { ok: false, error: `${agr.title} is an outside link, not a waiver signed on the site.` };
     }
     if (!agr.active) {
-      return { ok: false, error: `That version of ${agr.title} has been retired — choose the current one.` };
+      return { ok: false, error: `That version of ${agr.title} has been retired. Choose the current one.` };
     }
     agreementId = agr.id;
   } else if (waiver.mode === 'new') {
@@ -386,7 +386,7 @@ async function applyWaiver(supabase, activityId, waiver) {
   } else {
     // revise: version n+1 of the attached waiver's key.
     if (!current) {
-      return { ok: false, error: 'There is no waiver on this activity to revise — write a new one instead.' };
+      return { ok: false, error: 'This activity has no waiver to edit. Write a new one instead.' };
     }
     const old = current.agreements;
     if (old.title === waiver.title && String(old.body ?? '').trim() === waiver.body) {
@@ -503,7 +503,7 @@ export async function deleteActivity(activityId) {
       ok: false,
       error: `${count} ${
         count === 1 ? 'person has' : 'people have'
-      } already put their name down for this. Turn it off instead — that hides it from families and keeps the record of who asked.`,
+      } already signed up for this. Turn it off instead. That hides it from families and keeps the list of who signed up.`,
     };
   }
 
@@ -659,7 +659,7 @@ export async function deleteSlot(slotId) {
       ok: false,
       error: `${count} ${
         count === 1 ? 'person is' : 'people are'
-      } booked on this time. Move them to another time first — they cannot be left on the activity with no time.`,
+      } booked on this time. Move them to another time first, because nobody can be left on the activity without a time.`,
     };
   }
 
@@ -726,7 +726,7 @@ export async function generateSlots(activityId, input) {
   if (count > 60) {
     return {
       ok: false,
-      error: `That would make ${count} slots. If you really want that many, add them in a few runs — it is usually a typo in the length.`,
+      error: `That would make ${count} slots. Check the slot length. If you want that many, add them in a few smaller runs.`,
     };
   }
 

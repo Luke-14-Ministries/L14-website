@@ -55,7 +55,7 @@ function signatureProblem(signature, participant) {
     return `${participant.people?.first_name ?? 'The rider'} is under 18 at the start of the event, so a parent or legal guardian signs for them.`;
   }
   if (role === 'self' && norm(name) !== norm(rider)) {
-    return `To sign as the rider, type the rider's own name (${rider.trim()}) — or choose how you are signing for them.`;
+    return `To sign as the rider, type the rider's own name (${rider.trim()}), or choose how you are signing for them.`;
   }
   if (role === 'authorized_adult' && signature.affirmed !== true) {
     return `Please confirm that ${participant.people?.first_name ?? 'the rider'} has given you permission to sign on their behalf.`;
@@ -152,7 +152,7 @@ async function signRequiredWaivers(supabase, { activity, participant, signature,
 
     if (!signature || signature.agreementId !== agreement.id) {
       return {
-        error: `${activity.name} needs the ${agreement.title} signed first. Tick the activity to read and sign it.`,
+        error: `${activity.name} needs the ${agreement.title} signed first. Check the activity's box to read and sign it.`,
       };
     }
     const problem = signatureProblem(signature, participant);
@@ -200,10 +200,10 @@ export async function setActivityChoice({
   signature = null,
 }) {
   if (!participantId || !activityId) {
-    return { ok: false, error: 'Something is missing — please refresh and try again.' };
+    return { ok: false, error: 'Something is missing. Please refresh the page and try again.' };
   }
   if (!['interested', 'signed_up', 'cancelled'].includes(status)) {
-    return { ok: false, error: 'That is not a choice we recognise.' };
+    return { ok: false, error: 'That is not a choice we recognize.' };
   }
 
   const supabase = await createClient();
@@ -219,7 +219,7 @@ export async function setActivityChoice({
     return { ok: false, error: 'Sign-ups for this one have not opened yet.' };
   }
   if (activity.signup_closes_at && new Date(activity.signup_closes_at).getTime() < now) {
-    return { ok: false, error: 'Sign-ups for this one have closed — please ask camp staff.' };
+    return { ok: false, error: 'Sign-ups for this one have closed. Please ask camp staff.' };
   }
 
   // A provider-run activity cannot be taken without the family being told that
@@ -230,7 +230,7 @@ export async function setActivityChoice({
   if (status === 'signed_up' && needsAck && !acknowledgeWaiver) {
     return {
       ok: false,
-      error: `${activity.name} is run by an outside provider. Please tick to confirm you understand their own form has to be completed with them.`,
+      error: `${activity.name} is run by an outside provider. Please check the box to confirm you understand their own form has to be completed with them.`,
     };
   }
 
@@ -273,7 +273,7 @@ export async function setActivityChoice({
       return {
         ok: false,
         error:
-          'That time filled up while you were choosing. Pick another — or email info@luke14ministries.net and staff will see whether they can make room.',
+          'That time filled up while you were choosing. Pick another, or email info@luke14ministries.net and staff will see whether they can make room.',
       };
     }
     if (/activity full/i.test(error.message)) {
@@ -284,7 +284,7 @@ export async function setActivityChoice({
         // the river and up the climbing wall. A message that closes the
         // subject contradicts the ministry it is speaking for. Capacity is a
         // number staff can often move; the family should be told that.
-        error: `${activity.name} is full at the moment — but please ask. Email info@luke14ministries.net and staff will look at whether the numbers can stretch. Camp would far rather find a way than turn someone away.`,
+        error: `${activity.name} is full at the moment, but please ask. Email info@luke14ministries.net and staff will see whether the numbers can stretch. Camp would far rather find a way than turn someone away.`,
       };
     }
     console.error('setActivityChoice:', error.message);
@@ -310,10 +310,10 @@ export async function setActivityChoice({
 // the same household scope and the same signing rules apply.
 export async function signActivityWaiver({ participantId, activityId, signature }) {
   if (!participantId || !activityId) {
-    return { ok: false, error: 'Something is missing — please refresh and try again.' };
+    return { ok: false, error: 'Something is missing. Please refresh the page and try again.' };
   }
   if (!signature) {
-    return { ok: false, error: 'Please read the waiver, tick to agree, and type the name of the person signing.' };
+    return { ok: false, error: 'Please read the waiver, check the box to agree, and type the name of the person signing.' };
   }
 
   const supabase = await createClient();
@@ -343,7 +343,7 @@ export async function signActivityWaiver({ participantId, activityId, signature 
     participant.status !== 'cancelled' &&
     activity.event_id === participant.registrations?.event_id;
   if ((!signup || signup.status === 'cancelled') && !volunteerReady) {
-    return { ok: false, error: `${participant.people?.first_name ?? 'This person'} is not signed up for ${activity.name}. Tick the activity to sign up and sign together.` };
+    return { ok: false, error: `${participant.people?.first_name ?? 'This person'} is not signed up for ${activity.name}. Check the activity's box to sign up and sign the waiver together.` };
   }
 
   const signed = await signRequiredWaivers(supabase, {

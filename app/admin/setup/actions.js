@@ -22,7 +22,7 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
   if (!eventId) return { ok: false, error: 'Missing event.' };
   if (!EVENT_STATUSES.has(status)) return { ok: false, error: 'Choose an event status.' };
   if (opensAt && closesAt && new Date(opensAt) >= new Date(closesAt)) {
-    return { ok: false, error: 'Registration would close before it opens — check the two times.' };
+    return { ok: false, error: 'Registration would close before it opens. Check the two times.' };
   }
 
   const supabase = await createClient();
@@ -130,7 +130,7 @@ export async function updateEventDetails(
 
   if (!startsOn || !endsOn) return { ok: false, error: 'An event needs a start and an end date.' };
   if (endsOn < startsOn) {
-    return { ok: false, error: 'The end date is before the start date — check the two.' };
+    return { ok: false, error: 'The end date is before the start date. Check the two dates.' };
   }
 
   let cap = null;
@@ -202,7 +202,7 @@ export async function updateEventDetails(
   let pct;
   if (multiWeekPercent !== undefined) {
     if (String(multiWeekPercent ?? '').trim() === '') {
-      return { ok: false, error: 'Give the both-weeks discount as a percentage — 0 for none.' };
+      return { ok: false, error: 'Give the both-weeks discount as a percentage, or 0 for none.' };
     }
     pct = Number.parseInt(String(multiWeekPercent).replace(/[^0-9]/g, ''), 10);
     if (!Number.isInteger(pct) || pct < 0 || pct > 100) {
@@ -213,7 +213,7 @@ export async function updateEventDetails(
   // 0123: the returned bank payment fee. Blank is not zero (the 18 Oct
   // lesson above): say 0 to switch it off.
   if (String(returnedFeeDollars ?? '').trim() === '') {
-    return { ok: false, error: 'Give the returned bank payment fee in dollars — 0 for none.' };
+    return { ok: false, error: 'Give the returned bank payment fee in dollars, or 0 for none.' };
   }
   const feeN = Number.parseFloat(String(returnedFeeDollars).replace(/[$,\s]/g, ''));
   if (Number.isNaN(feeN) || feeN < 0) {
@@ -226,7 +226,7 @@ export async function updateEventDetails(
   // the event's current figure -- so a change applies to everyone registered.
   // Blank is not zero: say 0 for no deposit. Never more than the price.
   if (String(depositDollars ?? '').trim() === '') {
-    return { ok: false, error: 'Give the deposit per person in dollars — 0 for none.' };
+    return { ok: false, error: 'Give the deposit per person in dollars, or 0 for none.' };
   }
   const depN = Number.parseFloat(String(depositDollars).replace(/[$,\s]/g, ''));
   if (Number.isNaN(depN) || depN < 0) {
@@ -460,7 +460,7 @@ export async function createEvent({
   }
   if (!startsOn || !endsOn) return { ok: false, error: 'An event needs a first and a last day.' };
   if (endsOn < startsOn) {
-    return { ok: false, error: 'The last day is before the first day — check the two.' };
+    return { ok: false, error: 'The last day is before the first day. Check the two dates.' };
   }
 
   const fee = parseDollars(feeDollars);

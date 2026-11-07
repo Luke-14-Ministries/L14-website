@@ -58,7 +58,7 @@ export default function GivingExportBar({ from = '', to = '', fund = '', method 
         >
           <option value="csv" disabled={statements}>CSV (spreadsheet)</option>
           <option value="quickbooks" disabled={statements}>QuickBooks CSV</option>
-          <option value="pdf" disabled={!statements}>PDF / print — statements only</option>
+          <option value="pdf" disabled={!statements}>PDF / print (statements only)</option>
         </select>
         <a href={href} className="btn-outline py-1.5! text-sm">
           {statements ? 'Open print view' : 'Download'}
@@ -68,7 +68,7 @@ export default function GivingExportBar({ from = '', to = '', fund = '', method 
         {statements
           ? 'One letter per donor for the dates in the filter below (this year when none are set). Print it, or choose “Save as PDF” in the print dialog.'
           : format === 'quickbooks'
-            ? 'Gifts that arrived, in the filter below, laid out as QuickBooks Sales Receipts: the fund as Product/Service and Class, 40000 Individual Contributions.'
+            ? 'Received gifts in the filter below, set up as QuickBooks Sales Receipts. The fund is the Product/Service and Class, with account 40000 Individual Contributions.'
             : 'Every gift in the filter below, one row each.'}
       </p>
     </div>

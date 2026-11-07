@@ -176,7 +176,7 @@ export default async function BuddiesPage({ searchParams }) {
       <h2 className="text-xl font-bold mb-1">Buddy Assignments</h2>
       <p className="text-sm text-neutral-500 mb-4">
         Campers who need a one-to-one buddy, and the volunteers who can be one. Siblings are
-        listed too and may be paired when a volunteer is free — a preference, not a promise.
+        listed too and get a buddy when a volunteer is free, but that isn&rsquo;t promised.
         Families see nothing here until you publish.
       </p>
 

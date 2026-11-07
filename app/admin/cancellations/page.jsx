@@ -80,7 +80,7 @@ export default async function CancellationsPage({ searchParams }) {
     <div>
       <h2 className="text-xl font-bold mb-1">Cancellation Requests</h2>
       <p className="text-sm text-neutral-500 mb-4">
-        Families asking to cancel. Marking one handled records that you dealt with it — it
+        Families asking to cancel. Marking one handled records that you dealt with it. It
         does <strong>not</strong> release places or move money. Do those on the registration
         and the payment.
       </p>
@@ -106,7 +106,7 @@ export default async function CancellationsPage({ searchParams }) {
 
       {shaped.length === 0 ? (
         <p className="text-neutral-500">
-          {showHandled ? 'Nothing settled yet.' : 'No open requests — nothing waiting.'}
+          {showHandled ? 'Nothing settled yet.' : 'No open requests.'}
         </p>
       ) : (
         <CancellationList rows={shaped} />

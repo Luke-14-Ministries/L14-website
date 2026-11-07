@@ -271,7 +271,7 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
       if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
       objectUrl.current = URL.createObjectURL(blob);
       setPreview(objectUrl.current);
-      setNote(`Saved — ${Math.round(blob.size / 1024)}KB.`);
+      setNote(`Saved (${Math.round(blob.size / 1024)}KB).`);
       cancelFraming();
       // Tell the parent (the details form uses this to stop urging for a
       // photo once one exists).
@@ -287,7 +287,7 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
     return (
       <div>
         <p className="font-semibold text-sm mb-2">
-          Frame {personName || 'the'} photo — drag to position, slide to zoom.
+          Frame {personName || 'the'} photo. Drag to position, slide to zoom.
         </p>
         <div
           className="relative inline-block touch-none cursor-move rounded-lg overflow-hidden border border-neutral-300"
@@ -433,9 +433,8 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
         )}
         <p className="mt-2 text-xs text-neutral-500 max-w-sm">
           A clear photo of {personName || 'this person'}&rsquo;s face helps staff greet them by
-          name at check-in. You&rsquo;ll get to frame it after choosing, and it is resized on
-          your device before it is sent. Camp staff can see it; it is never published and never
-          leaves the ministry.
+          name at check-in. You&rsquo;ll get to frame it after choosing. Only camp staff can see
+          it. It is never published.
         </p>
         {note && <p className="mt-1 text-xs text-green-700 font-semibold">{note}</p>}
         {error && <p className="mt-1 text-xs text-red-700">{error}</p>}

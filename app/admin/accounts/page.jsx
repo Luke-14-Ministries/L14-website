@@ -66,12 +66,12 @@ export default async function AccountsPage() {
           than a choice (26 Aug), so the answer was less text, not a wider
           column -- it was explaining three things where two do. */}
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        Every login on the platform. Removing a login never deletes a
-        family&rsquo;s registrations or payments &mdash; that takes the separate
-        &ldquo;delete family &amp; data&rdquo; action, which spells out what it
-        is about to remove. The amber count on the nav is accounts created in
-        the last 7 days &mdash; awareness, not a queue; &ldquo;New this
-        week&rdquo; below shows exactly those.
+        Every login on the site. Removing a login never deletes a
+        family&rsquo;s registrations or payments. That takes the separate
+        &ldquo;Delete family &amp; all their data&rdquo; action, which lists
+        what it will remove first. The amber count in the menu is accounts
+        made in the last 7 days. It&rsquo;s for your information, not a to-do
+        list. &ldquo;New this week&rdquo; below shows those accounts.
       </p>
       <AccountsManager
         accounts={accounts ?? []}

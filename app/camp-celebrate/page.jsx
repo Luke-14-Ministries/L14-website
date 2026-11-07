@@ -78,8 +78,8 @@ export default async function CampCelebratePage() {
             Returning camper or volunteer?{' '}
             <Link href="/account" className="text-brand underline font-semibold">
               Log in
-            </Link>{' '}
-            — your dashboard picks up right where you left off.
+            </Link>
+            . Your dashboard picks up right where you left off.
           </p>
         </div>
       </section>

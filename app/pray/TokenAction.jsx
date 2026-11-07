@@ -34,7 +34,7 @@ export default function TokenAction({ kind, token }) {
     setError('');
     const res = await a.run(token);
     setBusy(false);
-    if (!res?.ok) setError(res?.error || 'Sorry — something went wrong. Please try again.');
+    if (!res?.ok) setError(res?.error || 'Sorry, something went wrong. Please try again.');
     else setDoneFor({ email: res.email ?? null });
   }
 

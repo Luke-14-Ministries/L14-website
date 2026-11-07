@@ -41,7 +41,7 @@ export function WaiverSigningBox({ person, activity, agreement, intro, pending, 
     ? [
         ['self', 'I am the rider'],
         ['parent_guardian', "I am the rider's parent or legal guardian"],
-        ['authorized_adult', 'I am an adult authorised to sign for this adult'],
+        ['authorized_adult', 'I am an adult authorized to sign for this adult'],
       ]
     : [['parent_guardian', "I am the rider's parent or legal guardian"]];
   const [signerRole, setSignerRole] = useState(roleOptions.length === 1 ? roleOptions[0][0] : '');
@@ -55,7 +55,7 @@ export function WaiverSigningBox({ person, activity, agreement, intro, pending, 
     setError('');
     const name = signerName.trim();
     if (!agreed) {
-      setError('Please tick to confirm you have read the agreement and agree to it.');
+      setError('Please check the box to confirm you have read the agreement and agree to it.');
       return;
     }
     if (name.length < 2 || name.length > 120) {
@@ -91,8 +91,8 @@ export function WaiverSigningBox({ person, activity, agreement, intro, pending, 
           in the agreement; this line only frames it. */}
       {/^\s*WARNING\b/.test(agreement.body ?? '') && (
         <p className="mt-2 text-sm text-neutral-600">
-          A notice Tennessee law asks us to include in every horseback agreement — please read
-          it, then the waiver below.
+          Tennessee law asks us to include this notice in every horseback agreement. Please
+          read it, then the waiver below.
         </p>
       )}
       <div className="mt-2 max-h-72 overflow-y-auto whitespace-pre-line rounded-sm border border-neutral-200 bg-white p-3 text-sm text-neutral-800">
@@ -319,7 +319,7 @@ function ActivityRow({ person, activity }) {
             )}
             {needsProvider && (
               <span className="mt-1 block text-sm text-amber-800">
-                Run by {activity.provider_name || 'an outside provider'} — their own form
+                Run by {activity.provider_name || 'an outside provider'}. Their own form
                 has to be completed with them, not here.
                 {activity.provider_url && (
                   <>
@@ -353,7 +353,7 @@ function ActivityRow({ person, activity }) {
       {hasSlots && (isOn || choosing || slotId !== '' || error) && (
         <fieldset className="mt-2 ml-7">
           <legend className="text-sm font-semibold">
-            {isOn ? 'Time' : 'Choose a time — the tick takes effect once a time is picked'}
+            {isOn ? 'Time' : 'Choose a time. Your place is saved once a time is picked.'}
           </legend>
           <div className="mt-1 space-y-1">
             {slots.map((sl) => {
@@ -419,7 +419,7 @@ function ActivityRow({ person, activity }) {
             {activity.name} now needs a waiver for {firstName}.
             {!agreement && (
               <span className="font-normal">
-                {' '}Camp staff will send it — or email info@luke14ministries.net.
+                {' '}Camp staff will send it, or you can email info@luke14ministries.net.
               </span>
             )}
           </p>
@@ -428,7 +428,7 @@ function ActivityRow({ person, activity }) {
               person={person}
               activity={activity}
               agreement={agreement}
-              intro={`${firstName}'s place on ${activity.name} stays as it is — signing here is all that is needed.`}
+              intro={`${firstName}'s place on ${activity.name} is safe. Signing here is all that is needed.`}
               pending={pending}
               setError={setError}
               onSign={signForHeldPlace}
@@ -466,7 +466,7 @@ function ActivityRow({ person, activity }) {
             what we need.
             {acking && !ack && (
               <span className="mt-0.5 block font-semibold text-amber-800">
-                Tick this to save {firstName}&rsquo;s place on {activity.name}.
+                Check this box to save {firstName}&rsquo;s place on {activity.name}.
               </span>
             )}
           </span>
@@ -497,8 +497,8 @@ function ActivityRow({ person, activity }) {
 
       {full && (
         <p className="mt-1 ml-7 text-sm text-amber-800">
-          Full at the moment — <span className="font-semibold">please ask anyway</span>.
-          Email info@luke14ministries.net and staff will look at whether the numbers can
+          Full at the moment, but <span className="font-semibold">please ask anyway</span>.
+          Email info@luke14ministries.net and staff will see whether the numbers can
           stretch.
         </p>
       )}

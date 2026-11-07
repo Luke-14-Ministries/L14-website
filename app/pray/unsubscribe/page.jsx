@@ -1,6 +1,6 @@
 import TokenAction from '../TokenAction';
 
-export const metadata = { title: 'Unsubscribe — Prayer List' };
+export const metadata = { title: 'Leave the Prayer List' };
 
 // The footer link in every prayer email lands here (0141). Without a token
 // (a staff test send, or a link copied short) there is nothing to act on.

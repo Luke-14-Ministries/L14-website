@@ -102,8 +102,8 @@ export default function ContactManager({ email, profile }) {
         <h2 className="text-lg font-bold mb-1">Login email</h2>
         <p className="text-sm text-neutral-500 mb-4">
           Currently <span className="font-semibold">{email}</span>. To change it, enter the new
-          address — we&rsquo;ll email it a confirmation link, and nothing changes until you click
-          it.
+          address. We&rsquo;ll email a confirmation link to it, and nothing changes until you
+          click that link.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <label className="block flex-1 min-w-[16rem]">
@@ -121,7 +121,7 @@ export default function ContactManager({ email, profile }) {
       <div id="email-preferences" className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
         <h2 className="text-lg font-bold mb-1">Email preferences</h2>
         <p className="text-sm text-neutral-500 mb-4">
-          Receipts, registration confirmations, and account emails always send — this only
+          Receipts, registration confirmations and account emails always send. This only
           controls optional mail.
         </p>
         <label className="flex items-center gap-3">

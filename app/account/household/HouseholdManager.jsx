@@ -261,9 +261,9 @@ Anything already saved is untouched.`
             one) they read as duplicates of each other. Testing hit exactly
             this, 25 Aug. */}
         <p className="mb-4 rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
-          This section is about the <strong>household</strong> — the phone and email camp
-          staff use to reach your family, and where post is sent. Each person&rsquo;s own
-          phone and email live on their card further down, and are only used if staff need
+          This section is about the <strong>household</strong>: the phone and email camp
+          staff use to reach your family, and where mail is sent. Each person&rsquo;s own
+          phone and email are on their card further down, and are only used if staff need
           that person directly.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -288,7 +288,7 @@ Anything already saved is untouched.`
             </select>
             <span className="mt-1 block text-xs text-neutral-500">
               Whoever camp staff should call first. Only people in your household appear
-              here — add someone through a registration.
+              here. To add someone, register them for an event.
             </span>
           </Field>
           <Field label="Main phone">
@@ -581,7 +581,7 @@ Anything already saved is untouched.`
                   <p className="text-sm font-semibold mb-2">
                     Linked caregivers
                     {!hasSaved && defaults.length > 0 && (
-                      <span className="font-normal text-neutral-500"> (suggested — save to confirm)</span>
+                      <span className="font-normal text-neutral-500"> (suggested; save to confirm)</span>
                     )}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -697,9 +697,9 @@ Anything already saved is untouched.`
       >
         <h2 className="text-lg font-bold mb-1">Add a family member</h2>
         <p className="text-sm text-neutral-600 mb-4">
-          Anyone in your family can live here whether or not they&rsquo;re attending
-          something — then you just tick them when you register, instead of typing
-          them in again.
+          Add anyone in your family here, whether or not they&rsquo;re attending
+          something. Then you can check their name when you register instead of
+          typing them in again.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First name">
@@ -734,13 +734,13 @@ Anything already saved is untouched.`
           />
           {state.add?.error && <span className="text-sm text-red-700">{state.add.error}</span>}
           {state.add?.saved && (
-            <span className="text-sm text-green-700">Added — they&rsquo;re in the list above.</span>
+            <span className="text-sm text-green-700">Added. They&rsquo;re in the list above.</span>
           )}
         </div>
       </form>
 
       <p className="text-sm text-neutral-500">
-        Someone already on a registration can&rsquo;t be removed here — contact the
+        Someone already on a registration can&rsquo;t be removed here. Contact the
         ministry and staff will cancel their place properly, so the roster and any
         fees stay correct.
       </p>

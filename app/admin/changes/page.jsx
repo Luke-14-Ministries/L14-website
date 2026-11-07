@@ -114,9 +114,9 @@ export default async function RecentChangesPage() {
           How reviewing works
         </summary>
         <p className="mt-1 pl-4 border-l-2 border-neutral-200">
-          Marking a change &ldquo;reviewed&rdquo; doesn&rsquo;t alter anyone&rsquo;s status — it
-          just confirms staff have seen it. New people added to a registration don&rsquo;t appear
-          here; they land in the{' '}
+          Marking a change &ldquo;reviewed&rdquo; doesn&rsquo;t change anyone&rsquo;s status. It
+          only shows that staff have seen it. New people added to a registration don&rsquo;t appear
+          here. They go to the{' '}
           <Link href="/admin#awaiting-review" className="text-brand underline font-semibold">
             &ldquo;Awaiting Review&rdquo; queue on the Overview
           </Link>

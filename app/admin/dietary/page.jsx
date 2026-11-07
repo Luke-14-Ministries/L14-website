@@ -100,7 +100,7 @@ export default async function DietaryPage({ searchParams }) {
             className="btn-outline py-2! text-sm"
           >
             Kitchen list (no names)
-            {eventFilter && !isEventScope(eventFilter) && <span className="font-normal"> — this event</span>}
+            {eventFilter && !isEventScope(eventFilter) && <span className="font-normal">, this event</span>}
           </a>
           {/* With names and severity, grouped by allergen (Ellen, 15 Oct
               2026): for the cook and the nurse, not the kitchen door. */}
@@ -113,15 +113,15 @@ export default async function DietaryPage({ searchParams }) {
         </span>
       </div>
       <p className="text-sm text-neutral-500 mb-6">
-        Everyone with dietary needs or allergies, per event — the kitchen list. This page is a
-        separate permission; treat printouts with the same care as the screen.
+        Everyone with dietary needs or allergies, by event. This is the kitchen list. It needs its
+        own permission, so take the same care with printouts as with the screen.
       </p>
       {/* Staff may set severity (ruling 29 Sep 2026, Testing Script 3 §13.3) --
           with this reminder in view rather than a dialog in the way. */}
       <p className="mb-6 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-        <strong>Severity is a medical fact, not a reading of the text.</strong> The amber box beside
-        each allergy lets staff record or correct <em>Mild / Severe / Anaphylaxis</em> — set it only
-        from what the family or the camp doctor has told you, and say so in the notes. It changes
+        <strong>Severity is a medical fact. Don&rsquo;t guess it from the text.</strong> Use the amber
+        box beside each allergy to record or correct <em>Mild / Severe / Anaphylaxis</em>. Set it
+        only from what the family or the camp doctor told you, and say so in the notes. It changes
         what the kitchen sees.
       </p>
 

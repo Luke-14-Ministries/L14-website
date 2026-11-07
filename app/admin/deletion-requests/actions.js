@@ -16,7 +16,7 @@ export async function settleDeletionRequest({ requestId, status, staffNote }) {
   if (!requestId) return { ok: false, error: 'Which request?' };
   if (!['done', 'declined'].includes(status)) return { ok: false, error: 'That is not a way to close a request.' };
   if (!(staffNote || '').trim()) {
-    return { ok: false, error: 'Please note what was deleted (or why not) — the family sees this.' };
+    return { ok: false, error: 'Write what was deleted, or why not. The family sees this.' };
   }
   const user = await getCurrentUser();
   const supabase = await createClient();

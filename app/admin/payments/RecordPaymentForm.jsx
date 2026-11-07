@@ -59,8 +59,8 @@ export default function RecordPaymentForm({ registrations }) {
     // The card and its title are the page's FoldCard (page.jsx).
     <form onSubmit={submit}>
       <p className="text-sm text-neutral-500 mb-4">
-        For money that arrived by mail or in person. Online card and bank payments record
-        themselves.
+        For money that arrived by mail or in person. Online card and bank payments are
+        recorded automatically.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -84,7 +84,7 @@ export default function RecordPaymentForm({ registrations }) {
             className={`${inputCls} mb-1.5`}
           />
           <select className={inputCls} value={f.registrationId} onChange={set('registrationId')}>
-            {filtered.length === 0 && <option value="">No matches — clear the filter above</option>}
+            {filtered.length === 0 && <option value="">No matches. Clear the filter above.</option>}
             {filtered.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.label}

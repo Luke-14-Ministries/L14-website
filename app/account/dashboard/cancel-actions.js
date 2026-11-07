@@ -42,7 +42,7 @@ export async function requestCancellation({ registrationId, participantIds, reas
   if (existing) {
     return {
       ok: false,
-      error: 'You already have a cancellation request open for this registration — staff will be in touch.',
+      error: 'You already have a cancellation request open for this registration. Staff will be in touch.',
     };
   }
 
@@ -78,7 +78,7 @@ export async function withdrawCancellation({ requestId }) {
 
   if (error) {
     console.error('withdrawCancellation:', error.message);
-    return { ok: false, error: 'That could not be withdrawn — staff may already have acted on it.' };
+    return { ok: false, error: 'That could not be withdrawn. Staff may already have acted on it.' };
   }
 
   revalidatePath('/account/dashboard');

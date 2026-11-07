@@ -41,7 +41,7 @@ export async function sendContactMessage(form) {
   // a server action is a public endpoint whatever the page in front of it does.
   if (!name) return { ok: false, error: 'Please tell us your name.' };
   if (!emailLooksValid(email)) {
-    return { ok: false, error: 'That email address doesn’t look right — please check it.' };
+    return { ok: false, error: 'That email address doesn’t look right. Please check it.' };
   }
   if (!message) return { ok: false, error: 'Please write a message.' };
 
@@ -58,7 +58,7 @@ export async function sendContactMessage(form) {
       // nothing wrong -- most often the token simply expired while they were
       // still typing -- and being accused is a poor first contact with a
       // ministry. The form resets the widget so the retry can succeed.
-      error: 'That check timed out. Please tick the box again and resend.',
+      error: 'That check timed out. Please check the box again and resend.',
       retryCaptcha: true,
     };
   }
@@ -88,7 +88,7 @@ export async function sendContactMessage(form) {
     return {
       ok: false,
       error:
-        'Sorry — we could not send that just now. Please email us directly at ' +
+        'Sorry, we could not send that just now. Please email us at ' +
         `${site.emails.info}, or call (423) 748-4954.`,
     };
   }

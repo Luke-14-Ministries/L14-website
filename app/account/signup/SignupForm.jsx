@@ -53,7 +53,7 @@ export default function SignupForm() {
     // Caught before Supabase is asked, so the message names the field rather
     // than surfacing as a provider error the person cannot act on.
     if (!emailLooksValid(form.email)) {
-      setError('That email address doesn’t look right — please check it.');
+      setError('That email address doesn’t look right. Please check it.');
       return;
     }
 
@@ -167,7 +167,7 @@ export default function SignupForm() {
       />
       {phoneLooksShort && (
         <p id="su-phone-hint" className="mt-1.5 text-sm text-amber-800">
-          That looks short for a phone number — a US number has 10 digits. Leave
+          That looks short for a phone number. A US number has 10 digits. Leave
           it as it is if it&rsquo;s right.
         </p>
       )}

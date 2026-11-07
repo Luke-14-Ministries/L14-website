@@ -118,8 +118,11 @@ export default function SupportDetailsFields({
   // "(required -- 'N/A' is an answer)" on a camper's boxes; "(optional)" is
   // not written on the others, because almost everything else is.
   const req = isCamper ? (
-    <span className="font-normal text-neutral-500">(required — &ldquo;N/A&rdquo; is an answer)</span>
+    <span className="font-normal text-neutral-500">(required)</span>
   ) : null;
+  // The one line that says "N/A" is an answer, under each heading that has
+  // required boxes, instead of on every label.
+  const naHint = isCamper ? 'If there is nothing to say in a required box, write "N/A".' : '';
 
   // The "About" questions (diagnosis, communication, getting around, personal
   // care) are a camper's -- a volunteer who opens "tell us more" is not asked
@@ -146,7 +149,7 @@ export default function SupportDetailsFields({
         rows={2}
         value={f.rescue_medication_detail}
         onChange={set('rescue_medication_detail')}
-        placeholder="EpiPen in her backpack — use for any reaction with facial swelling"
+        placeholder="EpiPen in her backpack. Use it for any reaction with facial swelling"
       />
     </YesNo>
   );
@@ -182,7 +185,7 @@ export default function SupportDetailsFields({
     <div>
       {aboutOpen && (
         <>
-          <Heading>About {name}</Heading>
+          <Heading hint={naHint || undefined}>About {name}</Heading>
           <label className={label}>
             Disability or diagnosis, in your own words {req}
           </label>
@@ -194,7 +197,7 @@ export default function SupportDetailsFields({
             rows={2}
             value={f.communication}
             onChange={set('communication')}
-            placeholder="Speech, signs, a device, gestures — and anything that helps us understand them"
+            placeholder="Speech, signs, a device, gestures, and anything that helps us understand them"
           />
 
           <label className={label}>Getting around {req}</label>
@@ -212,7 +215,7 @@ export default function SupportDetailsFields({
             rows={2}
             value={f.personal_care}
             onChange={set('personal_care')}
-            placeholder="Dressing, toileting, showering — what they do themselves and where they need a hand"
+            placeholder="Dressing, toileting, showering: what they do themselves and where they need a hand"
           />
 
           <label className={label}>Anything else about daily routine</label>
@@ -225,7 +228,9 @@ export default function SupportDetailsFields({
         </>
       )}
 
-      <Heading hint="Camp has medical staff on site. What matters most is what we should DO, not the medical name for it.">
+      <Heading
+        hint={`Camp has medical staff on site. What matters most is what we should do, not the medical name for it.${naHint ? ` ${naHint}` : ''}`}
+      >
         Health
       </Heading>
       <YesNo
@@ -237,11 +242,11 @@ export default function SupportDetailsFields({
       >
         {/* The tick list (0097). Fixed words, so the kitchen list, the buddy
             sheet and the Dietary page all count "peanut" once. */}
-        <label className={label}>Which ones? Tick all that apply.</label>
+        <label className={label}>Which ones? Check all that apply.</label>
         {legacyAllergyText && (
           <p className="mb-2 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            You told us before: &ldquo;{f.allergy_detail.trim()}&rdquo;. Please tick the matching
-            boxes — we now keep a list so the kitchen reads the same words for everyone.
+            You told us before: &ldquo;{f.allergy_detail.trim()}&rdquo;. Please check the matching
+            boxes. We keep a list now, so the kitchen reads the same words for everyone.
           </p>
         )}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
@@ -307,8 +312,8 @@ export default function SupportDetailsFields({
           })}
         </div>
         <p className="mt-1 text-xs text-neutral-500">
-          One severity for the person. The kitchen list is printed without names, so this is
-          what tells somebody how carefully to treat it.
+          Pick one level for {name}. The kitchen list is printed without names, so this is
+          what tells staff how careful to be.
         </p>
 
         <label className={label}>What happens, and what should we do?</label>
@@ -317,12 +322,11 @@ export default function SupportDetailsFields({
           rows={2}
           value={f.allergy_detail}
           onChange={set('allergy_detail')}
-          placeholder="Hives and swelling within minutes — antihistamine in the bag"
+          placeholder="Hives and swelling within minutes. Antihistamine is in the bag"
         />
         <p className="mt-1 text-xs text-neutral-500">
-          If {name} carries emergency medication for a reaction — an EpiPen, for example —
-          record it under <strong>rescue medication</strong> below, so it is written down once,
-          in the place staff will look for it.
+          If {name} carries emergency medication for a reaction, such as an EpiPen, put it under{' '}
+          <strong>rescue medication</strong> below. That is where staff will look for it.
         </p>
       </YesNo>
 
@@ -355,7 +359,7 @@ export default function SupportDetailsFields({
             rows={3}
             value={f.medications}
             onChange={set('medications')}
-            placeholder="Name, dose and when it's taken. Families keep and give their own medications at camp — staff never take them into custody."
+            placeholder="Name, dose and when it's taken. Families keep and give their own medications at camp; staff don't hold them."
           />
         </>
       )}
@@ -442,14 +446,15 @@ export default function SupportDetailsFields({
             >
               {caregiverSlot ?? (
                 <p className="mt-2 text-sm text-neutral-600">
-                  Make sure they are registered for the event as well, so they have a place and a
-                  meal. If they are in your household, link them as {name}&rsquo;s caregiver on{' '}
+                  Make sure they&rsquo;re registered for the event too, so they have a place and
+                  meals. If they&rsquo;re in your household, link them as {name}&rsquo;s caregiver
+                  on{' '}
                   <Link href="/account/household/" className="text-brand underline">
                     Manage household
-                  </Link>{' '}
-                  — that tells staff who to reach for {name} during camp. A caregiver from outside
-                  your household (a support worker, or a friend on their own account) cannot be
-                  linked there: tell staff their name and phone, so they know who to reach.
+                  </Link>
+                  , so staff know who to reach for {name} during camp. If the caregiver is outside
+                  your household (a support worker, or a friend with their own account), tell staff
+                  their name and phone instead.
                 </p>
               )}
             </YesNo>
@@ -464,8 +469,8 @@ export default function SupportDetailsFields({
         <div className="mt-5 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 text-center">
           <p className="text-sm text-neutral-700">
             We&rsquo;ve kept this short because {name} isn&rsquo;t registered as a camper. If
-            there is more we should know — regular medications, seizures, help getting around,
-            anything about their room — it all matters just as much.
+            there&rsquo;s more we should know, such as regular medications, seizures, help getting
+            around or anything about their room, please tell us.
           </p>
           <button type="button" onClick={onShowAll} className="btn-outline py-1.5! text-sm mt-3">
             Tell us more about {name}
@@ -505,7 +510,7 @@ export default function SupportDetailsFields({
           />
           {f.emergency_contact_phone?.trim() && !isFullPhone(f.emergency_contact_phone) && (
             <p className="mt-1 text-xs font-semibold text-red-700">
-              Please give all 10 digits, area code first — e.g. (423) 555-0123.
+              Please give all 10 digits, area code first, like (423) 555-0123.
             </p>
           )}
         </div>

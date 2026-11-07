@@ -93,14 +93,13 @@ export default async function SetupPage() {
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <h1 className="text-xl font-bold mb-1">Setup &amp; Manage Events</h1>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        Create events, and open and close registration, event by event. Each event&rsquo;s{' '}
-        <span className="font-semibold">Event status</span> is the master switch:{' '}
-        <em>Unpublished</em> keeps it off the public site while staff set it up,{' '}
-        <em>Published</em> puts it on the site, and <em>Archived</em> takes a finished event
-        out of every current list and off the site while keeping its records. The open/close
-        times are optional refinements: leave them blank and a published event takes
-        registrations indefinitely; set them and registration opens and closes itself on
-        schedule, no midnight clicking required.
+        Create events and open or close registration for each one. The{' '}
+        <span className="font-semibold">Event status</span> controls each event.{' '}
+        <em>Unpublished</em> keeps it off the public site while staff set it up.{' '}
+        <em>Published</em> puts it on the site. <em>Archived</em> takes a finished event off the
+        site and out of current lists, and keeps its records. Registration open and close times
+        are optional. Leave them blank and a published event takes registrations until you
+        change it. Set them and registration opens and closes on its own.
       </p>
       <SetupManager events={rows} />
     </div>

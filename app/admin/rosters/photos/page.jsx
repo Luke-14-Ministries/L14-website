@@ -155,7 +155,7 @@ export default async function PhotographerListPage({ searchParams }) {
       </div>
       <p className="mb-3 text-sm text-neutral-500 print:hidden">
         Everyone at one event whose family asked us not to feature them in photos or video.
-        Print it for whoever is photographing.
+        Print it for whoever is taking photos.
       </p>
       <div className="mb-6 print:hidden">
         <EventFilter
@@ -234,8 +234,8 @@ export default async function PhotographerListPage({ searchParams }) {
           )}
 
           <p className="mt-4 text-xs text-neutral-600">
-            Not featuring someone means not making them the subject of a picture — nobody can
-            promise absence from a wide group shot.
+            Not featuring someone means not making them the subject of a picture. They may still
+            show up in the background of a group shot.
             {unanswered > 0 &&
               ` ${unanswered} ${unanswered === 1 ? 'other person has' : 'others have'} no answer on file.`}
             {!seesPhotos && ' Names only: photos need the Sensitive read permission.'}

@@ -32,7 +32,7 @@ const QUICK_REASONS = ['Wrong file', "Can't read it", 'Picture too small', 'Not 
 
 function reviewedLine(upload) {
   return upload.reviewedAt
-    ? ` — ${upload.status} ${upload.reviewedAt}${upload.reviewerName ? ` by ${upload.reviewerName}` : ''}`
+    ? `, ${upload.status} ${upload.reviewedAt}${upload.reviewerName ? ` by ${upload.reviewerName}` : ''}`
     : '';
 }
 
@@ -52,7 +52,7 @@ export function WaiverStatusPill({ upload }) {
     return (
       <a
         href={`#${checkAnchor(upload.id)}`}
-        title={`Uploaded ${upload.uploadedAt} — check it in Confirmations to check, at the top of the page`}
+        title={`Uploaded ${upload.uploadedAt}. Check it under Confirmations to check, at the top of the page.`}
         className={`rounded-full px-2 py-0.5 text-xs font-semibold underline ${pill.cls}`}
       >
         awaiting staff review
@@ -66,7 +66,7 @@ export function WaiverStatusPill({ upload }) {
       rel="noopener noreferrer"
       title={`${pill.key === 'rejected' ? `Rejected: ${upload.note || 'no reason given'}. ` : ''}Uploaded ${
         upload.uploadedAt
-      }${reviewedLine(upload)} — opens the file`}
+      }${reviewedLine(upload)}. Opens the file.`}
       className={`rounded-full px-2 py-0.5 text-xs font-semibold ${pill.cls}`}
     >
       {pill.key === 'rejected' ? 'rejected' : pill.text}
@@ -82,7 +82,7 @@ export function WaiverFileLink({ upload }) {
       target="_blank"
       rel="noopener noreferrer"
       className="text-sm font-semibold text-brand underline"
-      title={`Uploaded ${upload.uploadedAt} — opens the file`}
+      title={`Uploaded ${upload.uploadedAt}. Opens the file.`}
     >
       Open file ↗
     </a>
@@ -138,7 +138,7 @@ export default function ReviewActions({ upload, canReview = false }) {
       {rejecting && (
         <span className="basis-full rounded-sm border border-red-200 bg-red-50 px-2 py-2 text-xs">
           <label htmlFor={reasonId} className="block font-semibold text-red-900">
-            Why can it not be accepted? The family reads this and uploads again.
+            Why can&rsquo;t it be accepted? The family sees this and uploads again.
           </label>
           <span className="mt-1 flex flex-wrap gap-1">
             {QUICK_REASONS.map((r) => (

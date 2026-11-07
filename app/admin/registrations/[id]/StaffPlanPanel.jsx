@@ -71,7 +71,7 @@ export default function StaffPlanPanel({
       <h3 className="mb-1 text-base font-bold">How this registration is being paid</h3>
       <p className={`text-sm mb-3 ${unfinished ? 'font-semibold text-amber-800' : 'text-neutral-600'}`}>
         {ROUTE_LABEL[route] ?? route ?? '—'}
-        {unfinished && ' — the family has not chosen pay in full, a payment plan or a scholarship yet.'}
+        {unfinished && '. The family hasn\'t chosen pay in full, a payment plan or a scholarship yet.'}
         {earlyDiscountCents > 0 && ` · Early-registration discount ${money(earlyDiscountCents)}`}
         {familyDiscountCents > 0 && ` · Family discount ${money(familyDiscountCents)}`}
       </p>
@@ -92,7 +92,7 @@ export default function StaffPlanPanel({
               try fails. */}
           {failing && (
             <p className="mb-2 text-sm font-semibold text-amber-800">
-              ⚑ A plan payment failed{failing.since ? ` on ${dayInMorristown(failing.since)}` : ''} —{' '}
+              ⚑ A plan payment failed{failing.since ? ` on ${dayInMorristown(failing.since)}` : ''}.{' '}
               {planFailingNext(failing)}.
             </p>
           )}
@@ -117,8 +117,8 @@ export default function StaffPlanPanel({
           )}
           {plan.status === 'completed' && (installments ?? []).some((i) => i.status === 'waived') && (
             <p className="mt-1 text-sm text-neutral-700">
-              Closed {dayInMorristown(plan.updated_at)}: nothing was left to pay, so the dates still to
-              come were not needed.
+              Closed {dayInMorristown(plan.updated_at)}. Nothing was left to pay, so the remaining
+              dates weren&rsquo;t needed.
             </p>
           )}
           {plan.consented_at && (
@@ -151,9 +151,9 @@ export default function StaffPlanPanel({
                         2026): it failed, and what it would have taken is
                         spread over the payments still to come. */}
                     {setAsideAfterFailing(i)
-                      ? `Failed${i.last_error ? ` — ${declineReason(i.last_error)}` : ''} · moved into the later payments`
+                      ? `Failed${i.last_error ? ` (${declineReason(i.last_error)})` : ''} · moved into the later payments`
                       : INST_LABEL[i.status] ?? i.status}
-                    {i.status === 'failed' && i.last_error ? ` — ${declineReason(i.last_error)}` : ''}
+                    {i.status === 'failed' && i.last_error ? ` (${declineReason(i.last_error)})` : ''}
                     {i.status === 'failed' && i.next_attempt_on ? ` (retry ${i.next_attempt_on}, try ${i.attempts})` : ''}
                   </td>
                 </tr>
@@ -161,8 +161,8 @@ export default function StaffPlanPanel({
             </tbody>
           </table>
           <p className="text-xs text-neutral-500 mt-1">
-            Amounts marked ≈ are estimates. Each charge is worked out on the day from the balance
-            still owed, so the last one lands the balance on $0.
+            Amounts marked ≈ are estimates. Each charge is figured on the day from the balance still
+            owed, so the last one brings the balance to $0.
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">

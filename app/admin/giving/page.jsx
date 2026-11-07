@@ -86,9 +86,9 @@ export default async function AdminGivingPage({ searchParams }) {
           filter form below. */}
       <GivingExportBar from={fFrom} to={fTo} fund={fFund} method={fMethod} />
       <p className="text-sm text-neutral-500 mb-6">
-        Donations — tax-deductible, and kept fully separate from camp payments (which are not).
-        Access to this page is its own permission. Online gifts record themselves; mailed checks
-        and cash are entered below.
+        Tax-deductible donations, kept separate from camp payments (which are not deductible).
+        This page needs its own permission. Online gifts are recorded automatically. Enter mailed
+        checks and cash below.
       </p>
 
       {/* Plain GET form: works with no JavaScript, and the URL becomes a
@@ -130,7 +130,7 @@ export default async function AdminGivingPage({ searchParams }) {
         Showing <span className="font-semibold">{periodLabel}</span>
         {fFund && <> · {fFund}</>}
         {fMethod && <> · {fMethod}</>}
-        {!fFrom && !fTo && <> — set From and To above for a period.</>}
+        {!fFrom && !fTo && <>. Set From and To above to choose a period.</>}
       </p>
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
         <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
