@@ -113,10 +113,10 @@ export default async function VolunteerPage() {
           <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6 mt-8">
             <h2 className="text-lg font-bold mb-2">First, register for the week</h2>
             <p className="text-neutral-700 mb-4">
-              To volunteer, first register for the week you&rsquo;d like to serve and choose{' '}
+              To volunteer, register for the camp week you&rsquo;d like to serve and choose{' '}
               <span className="font-semibold">Volunteer</span> as your role. You can register
-              your family at the same time. Then come back here to fill out the volunteer
-              application. Your dashboard will remind you.
+              your family at the same time. After you register, there&rsquo;s a volunteer
+              application to fill out. You&rsquo;ll find the link on your dashboard.
             </p>
             <div>
               <Link href="/register/family" className="btn-primary px-8!">

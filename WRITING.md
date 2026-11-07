@@ -49,9 +49,12 @@ want to serve and choose the role **Volunteer** for yourself. Registering your w
 same pass is fine — each person gets their own role. Then come back here (we'll also remind you on
 your dashboard).
 
-**After:** To volunteer, first register for the week you'd like to serve and choose **Volunteer**
-as your role. You can register your family at the same time. Then come back here to fill out the
-volunteer application. Your dashboard will remind you.
+**After:** To volunteer, register for the camp week you'd like to serve and choose **Volunteer** as
+your role. You can register your family at the same time. After you register, there's a volunteer
+application to fill out. You'll find the link on your dashboard.
+
+(An earlier "after" said "Then come back here". Lawrence, 7 Nov: "here" is confusing on a page
+people reach from many places. Say where the next step is, not "here".)
 
 **Before:** Unchecking tells us you'd rather we didn't, and we'll do our best to honour that. Being
 straight with you about the limits: this is about not *featuring* someone as the subject of a
