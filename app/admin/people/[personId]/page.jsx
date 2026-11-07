@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { allergyPill, statusPill } from '@/lib/format';
 import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/support';
 import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
-import { dayInMorristown } from '@/lib/events';
+import { dayInMorristown, isCurrentEventRow } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 import { isVolunteerRole } from '@/lib/roles';
 
@@ -458,7 +458,7 @@ export default async function PersonPage({ params }) {
     .select(
       `id, camp_role, status, program_id, registration_id,
        registrations ( id, event_id, household_id,
-         events ( id, name, starts_on, ends_on ),
+         events ( id, name, starts_on, ends_on, archived_at ),
          households ( display_name, email, phone ) )`
     )
     .eq('person_id', personId)
@@ -476,6 +476,11 @@ export default async function PersonPage({ params }) {
     const c = String(ea.starts_on ?? '').localeCompare(String(eb.starts_on ?? ''));
     return pa ? -c : c;
   });
+  // Current events lead; finished and archived ones fold away underneath
+  // (Lawrence, 7 Nov 2026: an archived test retreat sat at the top of his own
+  // page). "Current" is the site's one rule, isCurrentEventRow().
+  const currentParts = sortedParts.filter((p) => isCurrentEventRow(p.registrations?.events));
+  const earlierParts = sortedParts.filter((p) => !isCurrentEventRow(p.registrations?.events));
 
   const participantIds = (parts ?? []).map((p) => p.id);
 
@@ -721,62 +726,14 @@ export default async function PersonPage({ params }) {
   const photoUrl = (await signedPhotoUrls(supabase, sensitive, [personId])).get(personId) ?? null;
 
   const displayName = [person.first_name, person.last_name].filter(Boolean).join(' ');
-  const soonest = (parts ?? [])
+  // The age is at the next current event; with none, it is today's age.
+  const soonest = currentParts
     .map((p) => p.registrations?.events?.starts_on)
     .filter(Boolean)
     .sort()[0];
 
-  return (
-    <div>
-      {/* An admin sub-page's header (26 Oct 2026): the person left, the back
-          pill right, as everywhere signed in. */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="flex items-center gap-4">
-      {photoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={photoUrl}
-          alt=""
-          className="h-20 w-20 shrink-0 rounded-full object-cover border border-neutral-200"
-        />
-      )}
-      <div className="min-w-0">
-      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Person</p>
-      <h1 className="text-xl font-bold">
-        {displayName}
-        {person.preferred_name && person.preferred_name !== person.first_name && (
-          <span className="ml-2 text-lg font-normal text-neutral-500">
-            goes by &ldquo;{person.preferred_name}&rdquo;
-          </span>
-        )}
-      </h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        {household?.display_name ?? 'No household'}
-        {' · '}
-        {ageAt(person.date_of_birth, soonest) != null
-          ? `${ageAt(person.date_of_birth, soonest)} at camp`
-          : 'age not recorded'}
-        {person.gender ? ` · ${person.gender}` : ''}
-      </p>
-      </div>
-      </div>
-      <BackLink href="/admin/rosters/" label="Back to rosters" />
-      </div>
-
-      {!sensitive && (
-        <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <strong>Some of this person&rsquo;s information is hidden.</strong> Allergies,
-          medical flags and the emergency contact need the <em>sensitive information</em>{' '}
-          permission. An administrator can grant it on Staff &amp; Access.
-        </p>
-      )}
-
-      <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <Section title="At camp" note="Every event this person is registered for.">
-          {sortedParts.length === 0 ? (
-            <p className="text-neutral-500">Not registered for anything.</p>
-          ) : (
-            sortedParts.map((p) => {
+  // One event card, shared by the current list and the folded earlier one.
+  const renderPart = (p) => {
               const place = placeFor(p.id);
               return (
                 <div key={p.id} className="mb-3 last:mb-0 rounded-sm border border-neutral-200 p-3">
@@ -791,6 +748,9 @@ export default async function PersonPage({ params }) {
                     >
                       {p.registrations?.events?.name ?? 'Event'}
                     </Link>
+                    {p.registrations?.events?.archived_at && (
+                      <span className="ml-2 text-xs font-normal text-neutral-500">archived</span>
+                    )}
                   </p>
                   <Row label="Role">{ROLE_LABEL[p.camp_role] ?? p.camp_role}</Row>
                   <Row label="Status">
@@ -895,7 +855,66 @@ export default async function PersonPage({ params }) {
                   )}
                 </div>
               );
-            })
+  };
+
+  return (
+    <div>
+      {/* An admin sub-page's header (26 Oct 2026): the person left, the back
+          pill right, as everywhere signed in. */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex items-center gap-4">
+      {photoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photoUrl}
+          alt=""
+          className="h-20 w-20 shrink-0 rounded-full object-cover border border-neutral-200"
+        />
+      )}
+      <div className="min-w-0">
+      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Person</p>
+      <h1 className="text-xl font-bold">
+        {displayName}
+        {person.preferred_name && person.preferred_name !== person.first_name && (
+          <span className="ml-2 text-lg font-normal text-neutral-500">
+            goes by &ldquo;{person.preferred_name}&rdquo;
+          </span>
+        )}
+      </h1>
+      <p className="mt-1 text-sm text-neutral-500">
+        {household?.display_name ?? 'No household'}
+        {' · '}
+        {ageAt(person.date_of_birth, soonest) != null
+          ? `${ageAt(person.date_of_birth, soonest)}${soonest ? ' at camp' : ''}`
+          : 'age not recorded'}
+        {person.gender ? ` · ${person.gender}` : ''}
+      </p>
+      </div>
+      </div>
+      <BackLink href="/admin/rosters/" label="Back to rosters" />
+      </div>
+
+      {!sensitive && (
+        <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <strong>Some of this person&rsquo;s information is hidden.</strong> Allergies,
+          medical flags and the emergency contact need the <em>sensitive information</em>{' '}
+          permission. An administrator can grant it on Staff &amp; Access.
+        </p>
+      )}
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <Section title="At camp" note="Current events this person is registered for.">
+          {currentParts.length === 0 && (
+            <p className="text-neutral-500">Not registered for a current event.</p>
+          )}
+          {currentParts.map((p) => renderPart(p))}
+          {earlierParts.length > 0 && (
+            <details className={currentParts.length ? 'mt-3' : 'mt-2'}>
+              <summary className="cursor-pointer text-neutral-600">
+                Earlier and archived events ({earlierParts.length})
+              </summary>
+              <div className="mt-3">{earlierParts.map((p) => renderPart(p))}</div>
+            </details>
           )}
         </Section>
 
