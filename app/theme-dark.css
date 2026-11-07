@@ -480,6 +480,15 @@
     :where(html[data-theme='dark']:has([data-theme-area])) .text-black {
       color: var(--color-neutral-900);
     }
+    /* The open list of a drop-down is drawn by the browser, which kept it white
+       while the words took the pale dark-mode colour (Lawrence, 7 Nov 2026:
+       the Role list could not be read). Colour the list itself. */
+    :where(html[data-theme='dark']:has([data-theme-area])) select,
+    :where(html[data-theme='dark']:has([data-theme-area])) select option,
+    :where(html[data-theme='dark']:has([data-theme-area])) select optgroup {
+      background-color: var(--dark-card);
+      color: var(--color-neutral-900);
+    }
     /* A pop-up (a menu, a dropdown) sits a shade above the card it opens
        over: on dark a shadow alone does not lift it. */
     /* Heavy rules (border-neutral-800 under print-sheet headings) would turn
