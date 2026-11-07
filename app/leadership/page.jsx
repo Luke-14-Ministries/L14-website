@@ -17,7 +17,7 @@ const leaders = [
     image:
       asset('/images/Darlene_Headshot.jpg'),
     bio: [
-      'Darlene LaPlue is a farm girl from Kentucky who loves Jesus and loves being busy about the work of His Kingdom. She fell in love with disability ministry nearly 25 years ago as she met so many amazing and beautiful people and began seeing the heart of God as she had never seen it before. Her part in this ministry now includes: planning the annual Luke 14 Dinner Party, helping lead teams going to Kenya to distribute wheelchair, directing Camp Celebrate, and teaching am Adult Special Friends Sunday School Class at her church in Morristown. Her spiritual gift is throwing a party. She is working to take back the “party” for The Kingdom!',
+      'Darlene LaPlue is a farm girl from Kentucky who loves Jesus and loves being busy about the work of His Kingdom. She fell in love with disability ministry nearly 25 years ago as she met so many amazing and beautiful people and began seeing the heart of God as she had never seen it before. Her part in this ministry now includes: planning the annual Luke 14 Dinner Party, helping lead teams going to Kenya to distribute wheelchair, directing Camp Celebrate, and teaching an Adult Special Friends Sunday School Class at her church in Morristown. Her spiritual gift is throwing a party. She is working to take back the “party” for The Kingdom!',
     ],
   },
   {
@@ -46,7 +46,7 @@ const leaders = [
     // 280×320 original: shown at its own size, not stretched.
     cap: 'max-w-[280px] max-h-[320px]',
     bio: [
-      'Debbie Salanksy is a physical therapist and former Director of Rehabilitation who resides in Morristown, Tennessee. She has worked extensively both in-country and abroad, in both professional capacities and as a volunteer, with a wide range of people across the lifespan. In her international travels, she directly served individuals/families with assessments and fitting of adaptive equipment. She has volunteered by working with trip preparation, equipment modification and training therapists as well as STM volunteers involved in Luke 14 Ministry. She views ministry involvement as a priority and considers working with others a blessing and an act of worship.',
+      'Debbie Salansky is a physical therapist and former Director of Rehabilitation who resides in Morristown, Tennessee. She has worked extensively both in-country and abroad, in both professional capacities and as a volunteer, with a wide range of people across the lifespan. In her international travels, she directly served individuals/families with assessments and fitting of adaptive equipment. She has volunteered by working with trip preparation, equipment modification and training therapists as well as STM volunteers involved in Luke 14 Ministry. She views ministry involvement as a priority and considers working with others a blessing and an act of worship.',
     ],
   },
   {

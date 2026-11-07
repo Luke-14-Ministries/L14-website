@@ -21,7 +21,7 @@ const resources = [
   {
     title: 'Camp Celebrate Volunteer Guide',
     description:
-      'This guide provides an in-depth overview of Cemp Celebrate and what it looks like to work as a volunteer.',
+      'This guide provides an in-depth overview of Camp Celebrate and what it looks like to work as a volunteer.',
     image:
       asset('/images/PXL_20240722_172319434.jpg'),
     linkText: 'Download the Volunteer Guide',
