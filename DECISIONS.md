@@ -4138,3 +4138,28 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
   data (three read-only checkers and a code review); the Giving pages, a family's finish and
   statement pages and My Program were not seen (no grant or no registration on the login used).
   No package added.
+
+## 6 November 2026 — Volunteer children, a shorter application for them, and sign-up fixes
+
+- **A new role, *Volunteer child (under 16)*** (`volunteer_child`, `0155`; Lawrence): a child who
+  serves alongside the volunteers, usually with a volunteering parent; not a camper. Treated like a
+  volunteer minus the adult parts: on the volunteer lists, lodged with staff, asked the volunteer
+  application, the same fee, counted for the both-weeks volunteer discount. No background check
+  (under 18 is not screened, `0152`). Not in the buddy pool. `isVolunteerRole()` in `lib/roles.js`
+  is the one test; SQL reads `camp_role in ('volunteer', 'volunteer_child')`.
+- **Three age checks, flags only, never a block** (`roleAgeFlags()`, age on the event's first day):
+  16 or older in the role; a plain Volunteer under 16; a volunteer child with no adult Volunteer or
+  Parent/Guardian on the registration. Hints in the wizard; amber flags on Awaiting review and the
+  registration's Review card.
+- **A volunteer child's application asks first time, home church, skills and experience only** — no
+  areas, faith or Creed, and the Creed flag never fires for them (`creed_status`,
+  `registration_review` and `mark_creed_discussed()` still read `'volunteer'` alone). Decided from
+  the role on the registration, never from the form.
+- **Adults may pick Adult programs, Operations (e.g. golf cart driver) and Translation**; Translation
+  asks the languages they speak (`volunteer_applications.languages`).
+- **The emergency contact carries across the household in the wizard:** a change copies to everyone
+  whose contact is empty or still the copy, a person added starts with it, a returning family's empty
+  contacts start from the first on file; each person can change theirs.
+- **"Trouble sleeping away from home" is a camper's question.** Everyone else is asked *Does … need
+  any accommodations at camp?* (same columns, so staff read one answer).
+- **Deposit short is amber everywhere** (the review pill was the one grey copy).

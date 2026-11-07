@@ -26,7 +26,7 @@
 -- are FLAGS on the staff pages, never a block, so they live in the site
 -- (roleAgeFlags() in lib/roles.js), not here.
 --
--- Every function and view is restated in full from the live definition; the
+-- Every function is restated in full from the live definition; the
 -- only change in each is the role test.
 --
 -- Also (Lawrence, same day): adults may now pick Translation among the places

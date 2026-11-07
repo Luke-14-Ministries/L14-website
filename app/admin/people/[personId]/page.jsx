@@ -348,6 +348,8 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
           const a = appByPart.get(p.id);
           const age = ageAt(dob, p.registrations?.events?.starts_on);
           const minor = age != null && age < 18;
+          // A volunteer child is not asked areas, faith or the Creed (0155).
+          const child = p.camp_role === 'volunteer_child';
           return (
             <AnswerGroup
               key={p.id}
@@ -355,9 +357,11 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
                 a.updated_at ? `, last saved ${dayInMorristown(a.updated_at)}` : ''
               }`}
             >
-              <Answer q="Where would you like to serve?">
-                <AnswerText value={a.preferred_areas} />
-              </Answer>
+              {!child && (
+                <Answer q="Where would you like to serve?">
+                  <AnswerText value={a.preferred_areas} />
+                </Answer>
+              )}
               {a.languages && (
                 <Answer q="Languages spoken (translation)">
                   <AnswerText value={a.languages} />
@@ -375,9 +379,11 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
               <Answer q="Home church">
                 <AnswerText value={a.church_attendance} />
               </Answer>
-              <Answer q="A little about your faith">
-                <AnswerText value={a.faith_statement} />
-              </Answer>
+              {!child && (
+                <Answer q="A little about your faith">
+                  <AnswerText value={a.faith_statement} />
+                </Answer>
+              )}
               <Answer q="Skills you'd bring (music, lifeguard, nursing, crafts…)">
                 <AnswerText value={a.relevant_skills} />
               </Answer>
@@ -402,7 +408,9 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
                 </Answer>
               )}
               <Answer q="I have read the Apostles' Creed and I affirm it.">
-                {a.creed_affirmed === true ? (
+                {child ? (
+                  <span className="text-neutral-600">Not asked — volunteer child</span>
+                ) : a.creed_affirmed === true ? (
                   <span className="text-green-700">Affirmed</span>
                 ) : a.creed_affirmed === false ? (
                   <span className="font-semibold text-red-700">⚠ Not affirmed — speak with Larry</span>
@@ -873,7 +881,9 @@ export default async function PersonPage({ params }) {
                             <span className="capitalize">{a.status}</span>
                             {a.reviewed_at ? ` · reviewed ${fmtDate(a.reviewed_at)}` : ''}
                             {' · '}
-                            {a.creed_affirmed ? (
+                            {p.camp_role === 'volunteer_child' ? (
+                              <span className="text-neutral-600">Creed not asked (volunteer child)</span>
+                            ) : a.creed_affirmed ? (
                               <span className="text-green-700">Creed affirmed</span>
                             ) : (
                               <span className="font-semibold text-red-700">⚠ Creed not affirmed — speak with Larry</span>
