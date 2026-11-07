@@ -8,6 +8,7 @@ import BackBar from '@/components/BackBar';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { agreementText, isCurrentEventRow } from '@/lib/events';
 import { CHOOSES_ACTIVITIES } from '@/lib/activityRoles';
+import { isVolunteerRole } from '@/lib/roles';
 
 export const metadata = { title: 'Activities — Luke 14 Ministries' };
 
@@ -317,7 +318,7 @@ export default async function ActivitiesPage({ searchParams }) {
       const providerActivities = activities.filter((a) => a.provider_name || a.provider_url);
       const ourActivities = activities.filter((a) => a.agreement);
       const volunteers = (r.registration_participants ?? [])
-        .filter((p) => p.status !== 'cancelled' && p.camp_role === 'volunteer')
+        .filter((p) => p.status !== 'cancelled' && isVolunteerRole(p.camp_role))
         .map((p) => {
           const age = ageAt(p.people?.date_of_birth, r.events?.starts_on);
           return {

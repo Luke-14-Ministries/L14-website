@@ -16,6 +16,7 @@ import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import EmailLog from '@/components/EmailLog';
 import ReminderPause from './ReminderPause';
 import Panel from './Panel';
+import { isVolunteerRole, roleAgeFlags } from '@/lib/roles';
 
 export const metadata = { title: 'Registration — Staff Admin' };
 
@@ -495,11 +496,22 @@ export default async function RegistrationDetailPage({ params }) {
   const signedFor = new Set(
     (sigRows ?? []).map((s) => `${s.person_id ?? '*'}:${s.agreements?.key}`)
   );
+  // Volunteer child (under 16), 0155: the age checks, as flags only.
+  const ageFlags = roleAgeFlags(
+    (reg.registration_participants ?? [])
+      .filter((p) => p.status !== 'cancelled')
+      .map((p) => ({
+        name: `${p.people?.preferred_name || p.people?.first_name || ''} ${p.people?.last_name || ''}`.trim(),
+        camp_role: p.camp_role,
+        date_of_birth: p.people?.date_of_birth,
+      })),
+    reg.events?.starts_on
+  );
   const reviewChecks = (reg.registration_participants ?? [])
     .filter((p) => p.status !== 'cancelled')
     .map((p) => {
       const pid = p.people?.id;
-      const volunteer = p.camp_role === 'volunteer';
+      const volunteer = isVolunteerRole(p.camp_role);
       const age = ageAt(p.people?.date_of_birth, reg.events?.starts_on);
       const creedRow = creedOfPerson.get(pid);
       const app = [].concat(p.volunteer_applications ?? [])[0] ?? null;
@@ -517,7 +529,8 @@ export default async function RegistrationDetailPage({ params }) {
         volunteer,
         clearance: clearanceMarkOf,
         // affirmed | talked (with Larry, still current) | not
-        creed: !volunteer
+        // Not asked of a volunteer child (Lawrence, 6 Nov 2026).
+        creed: !volunteer || p.camp_role === 'volunteer_child'
           ? null
           : creedRow?.creed_affirmed
             ? 'affirmed'
@@ -772,6 +785,7 @@ export default async function RegistrationDetailPage({ params }) {
       familyReply={familyReply}
       hold={hold}
       creed={creed}
+      ageFlags={ageFlags}
       reviewChecks={reviewChecks}
       headcount={headcount}
       eventId={reg.events?.id ?? null}

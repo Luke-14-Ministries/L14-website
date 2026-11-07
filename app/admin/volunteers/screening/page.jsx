@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
 import { dayInMorristown } from '@/lib/events';
+import { isVolunteerRole } from '@/lib/roles';
 
 export const metadata = { title: 'Background Screening — Staff Admin' };
 
@@ -69,7 +70,7 @@ export default async function ScreeningPage() {
   const byPerson = new Map();
   for (const r of regs ?? []) {
     for (const p of r.registration_participants ?? []) {
-      if (p.camp_role !== 'volunteer' || p.status === 'cancelled') continue;
+      if (!isVolunteerRole(p.camp_role) || p.status === 'cancelled') continue;
       const person = p.people;
       if (!person?.id) continue;
       const ev = eventById.get(r.event_id);

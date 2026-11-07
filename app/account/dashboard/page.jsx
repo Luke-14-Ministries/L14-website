@@ -24,6 +24,7 @@ import WelcomeNotice from '@/components/WelcomeNotice';
 import { depositDueNow, supportState, volunteerApplicationNeeded } from '@/lib/familyNeeds';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { CHOOSES_ACTIVITIES } from '@/lib/activityRoles';
+import { isVolunteerRole } from '@/lib/roles';
 
 export const metadata = { title: 'Dashboard' };
 
@@ -90,6 +91,7 @@ const ROLE_LABEL = {
   sibling: 'Sibling / Child',
   caregiver: 'Caregiver',
   volunteer: 'Volunteer',
+  volunteer_child: 'Volunteer child (under 16)',
   childcare: 'Childcare',
   support_team: 'Support team',
 };
@@ -360,7 +362,7 @@ export default async function DashboardPage({ searchParams }) {
   const owedAnchor = (o) => {
     const role = roleByParticipant.get(o.registration_participant_id);
     if (role === 'camper') return `person-${o.registration_participant_id}`;
-    if (role === 'volunteer') return `vol-${o.registration_participant_id}`;
+    if (isVolunteerRole(role)) return `vol-${o.registration_participant_id}`;
     return `reg-${o.registration_id}`;
   };
   const waiversOwed = (owedRows ?? [])
@@ -474,7 +476,7 @@ export default async function DashboardPage({ searchParams }) {
   // apply for.
   const volunteerParts = regs.filter((r) => !isPast(r)).flatMap((r) =>
     (r.registration_participants ?? []).filter(
-      (p) => p.camp_role === 'volunteer' && p.status !== 'cancelled'
+      (p) => isVolunteerRole(p.camp_role) && p.status !== 'cancelled'
     )
   );
   let volunteersNeedingApp = [];
@@ -1373,7 +1375,7 @@ export default async function DashboardPage({ searchParams }) {
                               {/* Volunteers keep a permanent path back to their
                                   application — the amber banner only covers the
                                   not-yet-filed case. */}
-                              {p.camp_role === 'volunteer' && p.status !== 'cancelled' && !isPast(r) && (
+                              {isVolunteerRole(p.camp_role) && p.status !== 'cancelled' && !isPast(r) && (
                                 <p className="mt-1 text-xs text-neutral-500">
                                   Volunteer application:{' '}
                                   {VOL_APP_LABEL[volAppStatus.get(p.id)] ?? 'not started'} ·{' '}
@@ -1751,7 +1753,7 @@ export default async function DashboardPage({ searchParams }) {
                             nothing there, so the button does not appear. */}
                         {(r.registration_participants ?? []).some(
                           (p) =>
-                            (CHOOSES_ACTIVITIES.has(p.camp_role) || p.camp_role === 'volunteer') &&
+                            (CHOOSES_ACTIVITIES.has(p.camp_role) || isVolunteerRole(p.camp_role)) &&
                             p.status !== 'cancelled'
                         ) && (
                           // This registration's event only (Script 6 item 7.1,

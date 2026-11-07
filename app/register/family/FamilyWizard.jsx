@@ -42,6 +42,7 @@ import { formatDueDate, agreementText, formatDueDateShort, todayInMorristown } f
 import SupportDetailsFields from '@/components/SupportDetailsFields';
 import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 import { hasPhone } from '@/lib/caregivers';
+import { VOLUNTEER_CHILD_UNDER } from '@/lib/roles';
 
 const emptyMember = {
   personId: null,
@@ -823,7 +824,7 @@ export default function FamilyWizard({
   const eventForText = week
     ? { name: week.name, starts_on: week.startsOn, ends_on: week.endsOn }
     : null;
-  const anyVolunteer = named.some((m) => m.role === 'Volunteer' || m.alsoVolunteering);
+  const anyVolunteer = named.some((m) => m.role === 'Volunteer' || m.role === 'Volunteer child' || m.alsoVolunteering);
   const namedCount = named.length;
   const total = (week?.feeCents ?? 0) * namedCount;
 
@@ -1451,7 +1452,31 @@ export default function FamilyWizard({
                     <option value="Sibling">Sibling / Child</option>
                     <option value="Caregiver">Caregiver</option>
                     <option value="Volunteer">Volunteer</option>
+                    <option value="Volunteer child">Volunteer child (under 16)</option>
                   </select>
+                  {/* The age checks are hints here and flags for staff, never a
+                      block (Lawrence, 6 Nov 2026; roleAgeFlags() in lib/roles.js
+                      gives staff the same three). */}
+                  {(() => {
+                    const a = ageOn(m.dob, week?.startsOn);
+                    const who = m.firstName.trim() || 'This person';
+                    let hint = '';
+                    if (m.role === 'Volunteer child' && a !== null && a >= VOLUNTEER_CHILD_UNDER) {
+                      hint = `${who} will be ${a} at camp. Volunteer child is for under 16, so Volunteer may fit better. Camp staff will check.`;
+                    } else if (m.role === 'Volunteer' && a !== null && a < VOLUNTEER_CHILD_UNDER) {
+                      hint = `${who} will be ${a} at camp. A volunteer under 16 registers as Volunteer child (under 16).`;
+                    } else if (
+                      m.role === 'Volunteer child' &&
+                      !members.some(
+                        (o) =>
+                          (o.role === 'Volunteer' || o.role === 'Parent/Guardian') &&
+                          (ageOn(o.dob, week?.startsOn) ?? 18) >= 18
+                      )
+                    ) {
+                      hint = 'A volunteer child serves alongside an adult. Add the volunteering parent or adult to this registration too.';
+                    }
+                    return hint ? <p className="mt-1 text-sm text-amber-800">{hint}</p> : null;
+                  })()}
 
                   {/* "Also volunteering" was offered here from 29 Aug to
                       14 Oct 2026 (0069): a parent who also volunteers, as a

@@ -55,6 +55,8 @@ const ROLE_MAP = {
   // preferred areas, background-check hand-off -- is a separate roadmap item;
   // this makes the fee-carrying registration itself possible today.
   'Volunteer': 'volunteer',
+  // 0155 (6 Nov 2026): a child under 16 who serves alongside the volunteers.
+  'Volunteer child': 'volunteer_child',
 };
 
 export async function submitFamilyRegistration(payload) {

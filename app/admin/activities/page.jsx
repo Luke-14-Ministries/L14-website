@@ -19,6 +19,7 @@ const ROLE_WORD = {
   sibling: 'sibling',
   caregiver: 'caregiver',
   volunteer: 'volunteer',
+  volunteer_child: 'volunteer child',
   childcare: 'childcare',
   support_team: 'support team',
 };

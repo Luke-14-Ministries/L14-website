@@ -8,7 +8,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { volunteerApplicationProblem } from '@/lib/volunteer';
+import { volunteerApplicationProblem, TRANSLATION_AREA } from '@/lib/volunteer';
 
 // Returns the participant's ids when this login owns it, or null. It used to
 // return a boolean; the Creed signature needs person_id and registration_id,
@@ -26,12 +26,12 @@ async function ownParticipant(supabase, userId, participantId) {
 
   const { data: part, error: partError } = await supabase
     .from('registration_participants')
-    .select('id, person_id, registration_id, registrations!inner ( household_id )')
+    .select('id, person_id, registration_id, camp_role, registrations!inner ( household_id )')
     .eq('id', participantId)
     .in('registrations.household_id', householdIds)
     .maybeSingle();
   if (partError) return { queryError: partError.message };
-  return part ? { personId: part.person_id, registrationId: part.registration_id } : null;
+  return part ? { personId: part.person_id, registrationId: part.registration_id, campRole: part.camp_role } : null;
 }
 
 export async function submitVolunteerApplication(payload) {
@@ -52,14 +52,19 @@ export async function submitVolunteerApplication(payload) {
   // The required answers, refused here exactly as the form refuses them and
   // in the same words (lib/volunteer.js). Until 22 Oct 2026 only the browser
   // checked, so a stale tab or a hand-made request saved blanks.
-  const problem = volunteerApplicationProblem(payload);
+  // A volunteer child is asked less (Lawrence, 6 Nov 2026) -- decided from
+  // their role on the registration, never from what the form says.
+  const child = owned.campRole === 'volunteer_child';
+  const problem = volunteerApplicationProblem(payload, { child });
   if (problem) return { ok: false, error: problem };
 
   // The Apostles' Creed affirmation (migration 0062, item L2). Asked of
   // volunteers, never of families or campers -- which is why it is looked up
   // by key here rather than through agreement_requirements.
   //
-  const { data: creedRows, error: creedError } = await supabase
+  const { data: creedRows, error: creedError } = child
+    ? { data: [], error: null }
+    : await supabase
     .from('agreements')
     .select('id, version')
     .eq('key', 'apostles_creed')
@@ -86,9 +91,14 @@ export async function submitVolunteerApplication(payload) {
     {
       registration_participant_id: participantId,
       first_time_volunteering: typeof payload.firstTime === 'boolean' ? payload.firstTime : null,
-      preferred_areas: clean(payload.preferredAreas, 500),
+      preferred_areas: child ? null : clean(payload.preferredAreas, 500),
+      // Kept only with Translation picked (0155).
+      languages:
+        !child && String(payload.preferredAreas ?? '').split(' · ').includes(TRANSLATION_AREA)
+          ? clean(payload.languages, 300)
+          : null,
       church_attendance: clean(payload.church, 300),
-      faith_statement: clean(payload.faith),
+      faith_statement: child ? null : clean(payload.faith),
       relevant_skills: clean(payload.skills),
       disability_experience: clean(payload.experience),
       // Optional tick beside the experience question (0118). Not one of the

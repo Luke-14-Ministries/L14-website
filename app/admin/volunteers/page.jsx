@@ -4,6 +4,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import VolunteerManager from './VolunteerManager';
 import EventFilter from '@/components/EventFilter';
+import { isVolunteerRole } from '@/lib/roles';
 
 export const metadata = { title: 'Volunteers — Staff Admin' };
 
@@ -46,12 +47,13 @@ export default async function AdminVolunteersPage({ searchParams }) {
   const vols = [];
   for (const r of regs ?? []) {
     for (const p of r.registration_participants ?? []) {
-      if (p.camp_role !== 'volunteer' || p.status === 'cancelled') continue;
+      if (!isVolunteerRole(p.camp_role) || p.status === 'cancelled') continue;
       vols.push({
         participantId: p.id,
         registrationId: r.id,
         eventId: r.event_id,
         participantStatus: p.status,
+        campRole: p.camp_role,
         person: p.people,
         household: r.households,
       });
@@ -66,7 +68,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
       ? supabase
           .from('volunteer_applications')
           .select(
-            'registration_participant_id, first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills, disability_experience, first_time_disability_ministry, accompanying_adult_person_id, status, reviewed_at, updated_at, creed_affirmed'
+            'registration_participant_id, first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills, disability_experience, first_time_disability_ministry, accompanying_adult_person_id, status, reviewed_at, updated_at, creed_affirmed, languages'
           )
           .in('registration_participant_id', partIds)
       : Promise.resolve({ data: [] }),
@@ -194,6 +196,8 @@ export default async function AdminVolunteersPage({ searchParams }) {
       // exists but the last save left the box unticked -- re-flagged, per
       // Lawrence 29 Sep); never affirmed. The answer on the application wins;
       // the signature only fills in for applications saved before the column.
+      // A volunteer child is not asked the Creed (Lawrence, 6 Nov 2026).
+      creedAsked: v.campRole !== 'volunteer_child',
       creedAffirmed: app?.creed_affirmed ?? creedAffirmedBy.has(v.person?.id),
       creedWithdrawn: app?.creed_affirmed === false && creedAffirmedBy.has(v.person?.id),
     };

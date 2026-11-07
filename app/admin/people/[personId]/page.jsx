@@ -8,6 +8,7 @@ import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/sup
 import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
+import { isVolunteerRole } from '@/lib/roles';
 
 export const metadata = { title: 'Person — Staff Admin' };
 
@@ -40,6 +41,7 @@ const ROLE_LABEL = {
   sibling: 'Sibling',
   caregiver: 'Caregiver',
   volunteer: 'Volunteer',
+  volunteer_child: 'Volunteer child (under 16)',
   childcare: 'Childcare',
   support_team: 'Support team',
 };
@@ -356,6 +358,11 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
               <Answer q="Where would you like to serve?">
                 <AnswerText value={a.preferred_areas} />
               </Answer>
+              {a.languages && (
+                <Answer q="Languages spoken (translation)">
+                  <AnswerText value={a.languages} />
+                </Answer>
+              )}
               <Answer q="Is this your first time volunteering with us?">
                 {a.first_time_volunteering == null ? (
                   <NotAnswered />
@@ -512,7 +519,7 @@ export default async function PersonPage({ params }) {
         ? supabase
             .from('volunteer_applications')
             .select(
-              'registration_participant_id, status, creed_affirmed, reviewed_at, updated_at, preferred_areas, first_time_volunteering, church_attendance, faith_statement, relevant_skills, first_time_disability_ministry, disability_experience, accompanying_adult_person_id'
+              'registration_participant_id, status, creed_affirmed, reviewed_at, updated_at, preferred_areas, first_time_volunteering, church_attendance, faith_statement, relevant_skills, first_time_disability_ministry, disability_experience, accompanying_adult_person_id, languages'
             )
             .in('registration_participant_id', participantIds)
             .then((res) => {
@@ -856,7 +863,7 @@ export default async function PersonPage({ params }) {
                       );
                     })()}
                   </Row>
-                  {(p.camp_role === 'volunteer' || appByPart.has(p.id)) && (
+                  {(isVolunteerRole(p.camp_role) || appByPart.has(p.id)) && (
                     <Row label="Volunteer application">
                       {(() => {
                         const a = appByPart.get(p.id);

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { staffAssigns, isCurrentEventRow } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import ProgramBoard from './ProgramBoard';
+import { isVolunteerRole } from '@/lib/roles';
 
 export const metadata = { title: 'Programs — Staff Admin' };
 
@@ -106,7 +107,7 @@ export default async function ProgramsPage({ searchParams }) {
   // rest flagged "not registered" -- the grant still refuses them (a leader
   // sees campers' names, so only someone coming to this camp). The account
   // list is admin-only (admin_list_accounts, 0022/0023), as the grant is.
-  const ROLE_WORD = { volunteer: 'Volunteer', parent_guardian: 'Parent/Guardian', caregiver: 'Caregiver', support_team: 'Support team', childcare: 'Childcare', camper: 'Camper', sibling: 'Sibling' };
+  const ROLE_WORD = { volunteer: 'Volunteer', volunteer_child: 'Volunteer child', parent_guardian: 'Parent/Guardian', caregiver: 'Caregiver', support_team: 'Support team', childcare: 'Childcare', camper: 'Camper', sibling: 'Sibling' };
   const rolesByProfile = new Map();
   for (const r of participantRows ?? []) {
     const pid = r.people?.profile_id;
@@ -141,7 +142,7 @@ export default async function ProgramsPage({ searchParams }) {
             .filter(Boolean)
             .join(' · '),
           registered: roles.length > 0 || familyRegistered,
-          volunteer: roles.includes('volunteer'),
+          volunteer: roles.some(isVolunteerRole),
         };
       })
       .sort(

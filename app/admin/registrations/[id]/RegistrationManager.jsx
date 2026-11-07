@@ -77,6 +77,7 @@ const ROLE_OPTIONS = [
   ['sibling', 'Sibling'],
   ['caregiver', 'Caregiver'],
   ['volunteer', 'Volunteer'],
+  ['volunteer_child', 'Volunteer child (under 16)'],
   ['childcare', 'Childcare'],
   ['support_team', 'Support team'],
 ];
@@ -88,6 +89,7 @@ const ROLE_PLURAL = {
   sibling: 'Siblings',
   caregiver: 'Caregivers',
   volunteer: 'Volunteers',
+  volunteer_child: 'Volunteer children',
   childcare: 'Childcare',
   support_team: 'Support team',
 };
@@ -99,6 +101,7 @@ const ROLE_BADGE = {
   // Indigo, not amber (Lawrence, 27 Oct 2026): amber is the site's "needs
   // attention" colour, and a volunteer is not a problem. Purple is caregivers'.
   volunteer: 'bg-indigo-100 text-indigo-800',
+  volunteer_child: 'bg-indigo-100 text-indigo-800',
   childcare: 'bg-blue-100 text-blue-800',
   support_team: 'bg-blue-100 text-blue-800',
 };
@@ -2000,6 +2003,7 @@ export default function RegistrationManager({
   // The Apostles' Creed flag (0130, lib/creed.js): { pending, covered } or
   // null when everyone has affirmed it.
   creed = null,
+  ageFlags = [],
   // For the Review card's "Photographer's list" link.
   eventId = null,
   depositWaived = null,
@@ -2229,6 +2233,7 @@ export default function RegistrationManager({
           }
           hold={hold}
           creed={creed}
+          ageFlags={ageFlags}
           checks={reviewChecks}
           headcount={headcount}
           eventId={eventId}

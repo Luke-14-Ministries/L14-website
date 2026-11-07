@@ -4,6 +4,7 @@ import { yearsSince } from '@/lib/format';
 import VolunteerApplication from './VolunteerApplication';
 import BackBar from '@/components/BackBar';
 import BackLink from '@/components/BackLink';
+import { isVolunteerRole } from '@/lib/roles';
 
 export const metadata = { title: 'Volunteer — Luke 14 Ministries' };
 
@@ -93,7 +94,7 @@ export default async function VolunteerPage() {
   const volunteers = [];
   for (const r of registrations ?? []) {
     for (const p of r.registration_participants ?? []) {
-      if (p.camp_role !== 'volunteer' || p.status === 'cancelled') continue;
+      if (!isVolunteerRole(p.camp_role) || p.status === 'cancelled') continue;
       // Not for an archived event (4 Nov 2026): nothing left to apply for.
       if (r.events?.archived_at) continue;
       volunteers.push({ participant: p, event: r.events });
@@ -141,7 +142,7 @@ export default async function VolunteerPage() {
   const { data: apps, error: appsError } = await supabase
     .from('volunteer_applications')
     .select(
-      'registration_participant_id, first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills, disability_experience, first_time_disability_ministry, accompanying_adult_person_id, status, creed_affirmed'
+      'registration_participant_id, first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills, disability_experience, first_time_disability_ministry, accompanying_adult_person_id, status, creed_affirmed, languages'
     )
     .in('registration_participant_id', volIds);
   if (appsError) throw new Error(`Volunteer applications: ${appsError.message}`);
@@ -157,7 +158,7 @@ export default async function VolunteerPage() {
         .from('volunteer_applications')
         .select(
           `first_time_volunteering, preferred_areas, church_attendance, faith_statement, relevant_skills,
-           disability_experience, first_time_disability_ministry, accompanying_adult_person_id, updated_at,
+           disability_experience, first_time_disability_ministry, accompanying_adult_person_id, languages, updated_at,
            registration_participants!inner ( person_id, registrations ( events ( name ) ) )`
         )
         .in('registration_participants.person_id', volPersonIds)
@@ -281,7 +282,9 @@ export default async function VolunteerPage() {
               }
               adults={adults}
               defaultChurch={defaultChurch}
-              creed={creed}
+              // A volunteer child is not asked the Creed, faith or areas (6 Nov 2026).
+              isChild={participant.camp_role === 'volunteer_child'}
+              creed={participant.camp_role === 'volunteer_child' ? null : creed}
               // The box opens as it was LAST saved (0075): an applicant who
               // unticked it stays unticked, whatever the signature history says.
               creedAlreadySigned={

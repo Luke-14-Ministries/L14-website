@@ -35,7 +35,7 @@ const PAUSE_MS = 600;
 // roles; '' is everyone registered.
 const WHO_ROLES = {
   families: ['camper', 'parent_guardian', 'sibling', 'caregiver'],
-  volunteers: ['volunteer', 'childcare', 'support_team'],
+  volunteers: ['volunteer', 'volunteer_child', 'childcare', 'support_team'],
 };
 // The event choice that means every current event at once -- one email per
 // household however many weeks it is registered for.

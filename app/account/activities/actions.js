@@ -9,6 +9,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { isVolunteerRole } from '@/lib/roles';
 
 // The capacities a signature is given in -- the wizard's vocabulary
 // (app/register/family/actions.js), and its notes, so a staff member reading
@@ -338,7 +339,7 @@ export async function signActivityWaiver({ participantId, activityId, signature 
   // case", the way they upload an outside provider's form. Their own active
   // place on a registration for THIS activity's event is what allows it.
   const volunteerReady =
-    participant.camp_role === 'volunteer' &&
+    isVolunteerRole(participant.camp_role) &&
     participant.status !== 'cancelled' &&
     activity.event_id === participant.registrations?.event_id;
   if ((!signup || signup.status === 'cancelled') && !volunteerReady) {

@@ -39,6 +39,7 @@ const ROLE_LABEL = {
   sibling: 'Sibling',
   caregiver: 'Caregiver',
   volunteer: 'Volunteer',
+  volunteer_child: 'Volunteer child (under 16)',
   childcare: 'Childcare',
   support_team: 'Support team',
 };

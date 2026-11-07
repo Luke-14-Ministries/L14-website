@@ -356,7 +356,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
               without it is a conversation with Larry that has to happen
               before approval, so the gap is loud here rather than a wall on
               the form. Red on purpose: it must not read as "not asked". */}
-          {app && app.status !== 'withdrawn' && (
+          {app && app.status !== 'withdrawn' && row.creedAsked !== false && (
             <span
               className={`rounded-full px-2.5 py-0.5 font-semibold ${
                 row.creedAffirmed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -425,7 +425,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 </button>
               )}
               <span className="w-full text-xs text-neutral-600">
-                Before deciding: {row.creedAffirmed ? 'Creed affirmed' : 'Creed not affirmed — speak with Larry first'} · {pill.text}
+                Before deciding: {row.creedAsked === false ? 'Volunteer child — Creed not asked' : row.creedAffirmed ? 'Creed affirmed' : 'Creed not affirmed — speak with Larry first'} · {pill.text}
                 {!cleared && toDecide && (
                   <strong className="text-red-800"> — approval waits for a background check marked OK to serve (below)</strong>
                 )}
@@ -452,6 +452,12 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 <dt className="text-xs font-semibold text-neutral-500">Preferred areas</dt>
                 <dd>{app.preferred_areas || '—'}</dd>
               </div>
+              {app.languages && (
+                <div>
+                  <dt className="text-xs font-semibold text-neutral-500">Languages (translation)</dt>
+                  <dd>{app.languages}</dd>
+                </div>
+              )}
               <div>
                 <dt className="text-xs font-semibold text-neutral-500">First time?</dt>
                 <dd>{app.first_time_volunteering == null ? '—' : app.first_time_volunteering ? 'Yes' : 'No — returning'}</dd>

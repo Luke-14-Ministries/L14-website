@@ -28,6 +28,7 @@ const CAMP_ROLES = [
   'sibling',
   'caregiver',
   'volunteer',
+  'volunteer_child',
   'childcare',
   'support_team',
 ];

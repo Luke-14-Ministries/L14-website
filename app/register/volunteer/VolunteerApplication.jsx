@@ -8,15 +8,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitVolunteerApplication, withdrawVolunteerApplication } from './actions';
-import { volunteerApplicationProblem } from '@/lib/volunteer';
+import { volunteerApplicationProblem, TRANSLATION_AREA } from '@/lib/volunteer';
 
 const AREAS = [
   'Buddy (one-on-one with a camper)',
   'Children/Youth programs',
+  // Lawrence, 6 Nov 2026: three more. Translation asks the languages.
+  'Adult programs',
   'Kitchen & meals',
   'Music & worship',
   'Recreation & activities',
   'Media & photography',
+  'Operations (e.g. golf cart driver)',
+  TRANSLATION_AREA,
   'Wherever I am needed most',
 ];
 
@@ -35,6 +39,8 @@ export default function VolunteerApplication({
   personId,
   personName,
   isMinor,
+  // A volunteer child (under 16, 0155): no areas, faith or Creed asked.
+  isChild = false,
   eventName,
   existing,
   // An empty form starts from this person's latest application elsewhere
@@ -63,6 +69,7 @@ export default function VolunteerApplication({
   const [church, setChurch] = useState(seed?.church_attendance ?? defaultChurch ?? '');
   const [faith, setFaith] = useState(seed?.faith_statement ?? '');
   const [skills, setSkills] = useState(seed?.relevant_skills ?? '');
+  const [languages, setLanguages] = useState(seed?.languages ?? '');
   const [experience, setExperience] = useState(seed?.disability_experience ?? '');
   // Katie, Website Feedback list (22 Oct 2026): a tick beside the experience
   // question. Optional; it does not stand in for the answer above it.
@@ -101,12 +108,13 @@ export default function VolunteerApplication({
       preferredAreas: picked.join(' · '),
       church,
       faith,
+      languages,
       skills,
       experience,
       firstTimeDisabilityMinistry: firstTimeDm,
       accompanyingAdultId: adultId || null,
     };
-    const problem = volunteerApplicationProblem(answers);
+    const problem = volunteerApplicationProblem(answers, { child: isChild });
     if (problem) {
       setError(problem);
       return;
@@ -185,6 +193,8 @@ export default function VolunteerApplication({
               application. Check it, change anything, and submit — this week is reviewed on its own.
             </p>
           )}
+          {!isChild && (
+            <>
           <label className={label}>Where would you like to serve? (pick any — required)</label>
           {/* Katie, 14 Oct 2026: say up front that a preference is a
               preference. Leadership honours them where it can; the camp
@@ -206,6 +216,19 @@ export default function VolunteerApplication({
               </label>
             ))}
           </div>
+          {picked.includes(TRANSLATION_AREA) && (
+            <>
+              <label className={label}>Languages you speak (required for translation)</label>
+              <input
+                className={input}
+                value={languages}
+                onChange={(e) => setLanguages(e.target.value)}
+                placeholder="e.g. Spanish, American Sign Language"
+              />
+            </>
+          )}
+            </>
+          )}
 
           <label className={label}>Is this your first time volunteering with us? (required)</label>
           <div className="flex gap-4 text-sm text-neutral-700">
@@ -231,8 +254,12 @@ export default function VolunteerApplication({
               taller for the same reason -- a two-row box says "keep it short" even without the
               words. These faith questions are on the VOLUNTEER application only; families and
               campers never see them (confirmed by Larry, 29 Aug 2026). */}
-          <label className={label}>A little about your faith (required)</label>
-          <textarea className={input} rows={4} value={faith} onChange={(e) => setFaith(e.target.value)} />
+          {!isChild && (
+            <>
+              <label className={label}>A little about your faith (required)</label>
+              <textarea className={input} rows={4} value={faith} onChange={(e) => setFaith(e.target.value)} />
+            </>
+          )}
 
           <label className={label}>Skills you&rsquo;d bring (music, lifeguard, nursing, crafts…)</label>
           <textarea className={input} rows={2} value={skills} onChange={(e) => setSkills(e.target.value)} />

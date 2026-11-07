@@ -5,6 +5,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel, planStoppedAt, planFailingSince, planFailingNext, PLAN_MAX_TRIES } from '@/lib/plans';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
+import { roleAgeFlags } from '@/lib/roles';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { statusPill } from '@/lib/format';
 import { dayInMorristown, isCurrentEventRow, eventInScope, isEventScope } from '@/lib/events';
@@ -96,7 +97,7 @@ export default async function ReviewQueuePage({ searchParams }) {
         ),
       supabase
         .from('registration_participants')
-        .select('registration_id, person_id, status, camp_role, people ( first_name, last_name )'),
+        .select('registration_id, person_id, status, camp_role, people ( first_name, last_name, date_of_birth )'),
       supabase
         .from('registration_review')
         .select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents'),
@@ -184,6 +185,15 @@ export default async function ReviewQueuePage({ searchParams }) {
         // The Creed (0130): who is still waiting on the conversation with
         // Larry, and who has had it under their current name.
         creed: creedByReg.get(r.id) ?? null,
+        // Volunteer child (under 16), 0155: the age checks, as flags only.
+        ageFlags: roleAgeFlags(
+          people.map((p) => ({
+            name: [p.people?.first_name, p.people?.last_name].filter(Boolean).join(' '),
+            camp_role: p.camp_role,
+            date_of_birth: p.people?.date_of_birth,
+          })),
+          r.events?.starts_on
+        ),
       };
     })
     .filter((r) => {
@@ -245,7 +255,7 @@ export default async function ReviewQueuePage({ searchParams }) {
   const onFamily = (regs ?? []).filter((r) => r.awaiting_family_since && !r.events?.archived_at).length;
   // For the Family replied tab's count (0126): unread replies, every event.
   const repliedRegs = (regs ?? []).filter((r) => r.family_reply_unread && !r.events?.archived_at).length;
-  const totalFlags = rows.reduce((s, r) => s + r.flags.length + (r.creed ? 1 : 0), 0);
+  const totalFlags = rows.reduce((s, r) => s + r.flags.length + (r.creed ? 1 : 0) + r.ageFlags.length, 0);
   // For the tab's count: registrations at a current event with a waiver owed.
   const waiverRegs = (regs ?? []).filter(
     (r) => owedByReg.has(r.id) && isCurrentEventRow(r.events)
@@ -504,7 +514,7 @@ export default async function ReviewQueuePage({ searchParams }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        {flags.length === 0 && !r.creed && !r.awaitingSince && r.owed.length === 0 && !r.planStopped && !r.planFailing && !r.familyReplied ? (
+                        {flags.length === 0 && !r.creed && r.ageFlags.length === 0 && !r.awaitingSince && r.owed.length === 0 && !r.planStopped && !r.planFailing && !r.familyReplied ? (
                           <span className="text-neutral-400">—</span>
                         ) : (
                           <ul className="space-y-0.5">
@@ -533,6 +543,11 @@ export default async function ReviewQueuePage({ searchParams }) {
                                 {planFailingNext(r.planFailing)}
                               </li>
                             )}
+                            {r.ageFlags.map((f) => (
+                              <li key={f.text} className="text-xs font-semibold text-amber-800">
+                                ⚑ {f.text}
+                              </li>
+                            ))}
                             {r.creed?.pending.length > 0 && (
                               <li className="text-xs font-semibold text-amber-800">
                                 ⚑ {REVIEW_FLAG.creed_not_affirmed}: {r.creed.pending.map((p) => p.name).join(', ')}

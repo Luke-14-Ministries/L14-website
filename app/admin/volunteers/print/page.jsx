@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
 import StatusMark, { StatusLegend } from '@/components/StatusMark';
+import { isVolunteerRole } from '@/lib/roles';
 
 export const metadata = { title: 'Volunteer List — Staff Admin' };
 
@@ -66,8 +67,8 @@ export default async function VolunteerPrintPage({ searchParams }) {
   for (const r of regs ?? []) {
     if (eventFilter && !isEventScope(eventFilter) && r.event_id !== eventFilter) continue;
     for (const p of r.registration_participants ?? []) {
-      if (p.camp_role !== 'volunteer' || p.status === 'cancelled') continue;
-      vols.push({ participantId: p.id, eventId: r.event_id, status: p.status, person: p.people, household: r.households });
+      if (!isVolunteerRole(p.camp_role) || p.status === 'cancelled') continue;
+      vols.push({ participantId: p.id, eventId: r.event_id, status: p.status, campRole: p.camp_role, person: p.people, household: r.households });
     }
   }
   const partIds = vols.map((v) => v.participantId);
@@ -76,7 +77,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
     partIds.length
       ? supabase
           .from('volunteer_applications')
-          .select('registration_participant_id, first_time_volunteering, preferred_areas, status, creed_affirmed')
+          .select('registration_participant_id, first_time_volunteering, preferred_areas, languages, status, creed_affirmed')
           .in('registration_participant_id', partIds)
       : Promise.resolve({ data: [] }),
     // The three facts any staff member may know (clearance_status, 0091).
@@ -172,13 +173,18 @@ export default async function VolunteerPrintPage({ searchParams }) {
                         {(v.person?.phone ?? v.household?.phone) ? ` · ${v.person?.phone ?? v.household?.phone}` : ''}
                       </div>
                     </td>
-                    <td className="py-1 pr-2">{a?.preferred_areas ?? '—'}</td>
+                    <td className="py-1 pr-2">
+                      {a?.preferred_areas ?? '—'}
+                      {a?.languages && <div className="text-xs text-neutral-600">Languages: {a.languages}</div>}
+                    </td>
                     <td className="py-1 pr-2"><StatusMark {...newMark(a)} /></td>
                     <td className="py-1 pr-2">
                       <StatusMark {...(a ? APP_MARK[a.status] ?? { state: 'na', label: a.status } : NO_APP)} />
                     </td>
                     <td className="py-1 pr-2">
-                      {a ? (
+                      {v.campRole === 'volunteer_child' ? (
+                        <StatusMark state="na" title="Volunteer child — the Creed is not asked" />
+                      ) : a ? (
                         <StatusMark
                           state={a.creed_affirmed ? 'yes' : 'no'}
                           title={a.creed_affirmed ? 'Affirmed the Apostles’ Creed' : 'Did NOT affirm the Apostles’ Creed'}

@@ -7,6 +7,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sinceISO, STAFF_ASSIGNED_TYPES, isCurrentEventRow } from '@/lib/events';
 import { isMinor } from '@/lib/format';
 import AdminNav from './AdminNav';
+import { VOLUNTEER_ROLES } from '@/lib/roles';
 
 export const metadata = { title: 'Staff Admin — Luke 14 Ministries' };
 
@@ -315,7 +316,7 @@ export default async function AdminLayout({ children }) {
       const { data: volRows, error: volRowsError } = await supabase
         .from('registration_participants')
         .select('person_id, people ( date_of_birth ), registrations!inner ( events!inner ( ends_on, archived_at ) )')
-        .eq('camp_role', 'volunteer')
+        .in('camp_role', [...VOLUNTEER_ROLES])
         .neq('status', 'cancelled')
         .gte('registrations.events.ends_on', today)
         .is('registrations.events.archived_at', null);

@@ -40,6 +40,7 @@ const ROLE_SHORT = {
   sibling: 'sibling',
   caregiver: 'caregiver',
   volunteer: 'volunteer',
+  volunteer_child: 'volunteer child',
   childcare: 'childcare',
   support_team: 'support',
 };

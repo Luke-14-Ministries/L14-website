@@ -20,6 +20,7 @@ const ROLE_LABEL = {
   parent_guardian: 'Parent / guardian',
   caregiver: 'Caregiver',
   volunteer: 'Volunteer',
+  volunteer_child: 'Volunteer child (under 16)',
   childcare: 'Childcare',
   support_team: 'Support team',
 };

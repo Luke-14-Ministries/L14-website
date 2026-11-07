@@ -6,6 +6,7 @@ import { planAvailable, planConsentText, planHasProblem } from '@/lib/plans';
 import FinishChoices from './FinishChoices';
 import Link from 'next/link';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
+import { isVolunteerRole, VOLUNTEER_ROLES } from '@/lib/roles';
 
 export const metadata = { title: 'Finish Registering — Luke 14 Ministries' };
 
@@ -163,7 +164,7 @@ export default async function FinishPage({ params, searchParams }) {
   // with no hint. A line says so; it goes once the discount is on.
   const bothWeeksNotes = [];
   const volunteerPeople = (reg.registration_participants ?? [])
-    .filter((p) => p.camp_role === 'volunteer' && p.status !== 'cancelled')
+    .filter((p) => isVolunteerRole(p.camp_role) && p.status !== 'cancelled')
     .map((p) => p.person_id);
   if (volunteerPeople.length > 0 && reg.events?.name) {
     const { data: theirs, error: theirsError } = await supabase
@@ -175,7 +176,7 @@ export default async function FinishPage({ params, searchParams }) {
          registrations!inner ( events!inner ( id, name, starts_on, archived_at, multi_week_discount_percent ) )`
       )
       .in('person_id', volunteerPeople)
-      .eq('camp_role', 'volunteer')
+      .in('camp_role', [...VOLUNTEER_ROLES])
       .neq('status', 'cancelled');
     if (theirsError) throw new Error(`Volunteer weeks: ${theirsError.message}`);
     const program = campKey(reg.events);

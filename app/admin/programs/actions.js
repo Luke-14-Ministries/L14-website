@@ -16,6 +16,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
+import { isVolunteerRole } from '@/lib/roles';
 
 async function requireCoordinator() {
   const staff = await getStaff();
@@ -224,7 +225,7 @@ export async function grantProgramLeader({ email, profileId = null, programId, e
   // what carries the background check and the Creed affirmation, and those are
   // exactly the things a leader is trusted on. Warned, not blocked: the person
   // deciding is an administrator who can see the whole picture.
-  const isVolunteer = myRoles.includes('volunteer');
+  const isVolunteer = myRoles.some(isVolunteerRole);
 
   const { error } = await supabase.from('program_leaders').upsert(
     {

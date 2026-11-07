@@ -21,7 +21,7 @@ const KIND_LABEL = {
 
 // Roles that count against a room's STAFF capacity rather than its bed count
 // (0076: CampSite tracked "2 / 10 campers - 0 / 3 staff" per room).
-const STAFF_ROLES = new Set(['volunteer', 'support_team', 'childcare']);
+const STAFF_ROLES = new Set(['volunteer', 'volunteer_child', 'support_team', 'childcare']);
 
 // A hint, not a label: the gender word stays on the chip. The tint is there
 // so a coordinator scanning forty chips for "is this room mixed?" sees it at
@@ -61,6 +61,7 @@ const ROLE_SHORT = {
   sibling: 'sibling',
   caregiver: 'caregiver',
   volunteer: 'volunteer',
+  volunteer_child: 'volunteer child',
   childcare: 'childcare',
   support_team: 'support',
 };

@@ -161,7 +161,7 @@ function Checks({ checks, eventId }) {
               {anyVolunteer && (
                 <>
                   <td className="py-1.5 pr-3">{c.volunteer ? <StatusMark {...clearanceWords(c.clearance)} /> : dash}</td>
-                  <td className="py-1.5 pr-3">{c.volunteer ? <StatusMark {...CREED_MARK[c.creed]} /> : dash}</td>
+                  <td className="py-1.5 pr-3">{c.creed ? <StatusMark {...CREED_MARK[c.creed]} /> : dash}</td>
                   <td className="py-1.5">
                     {!c.volunteer ? (
                       dash
@@ -207,6 +207,8 @@ export default function ReviewCard({
   // The Apostles' Creed flag (0130, lib/creed.js): { pending: [{ name,
   // renamedFrom }], covered: [{ name, at, by, note }] }, or null.
   creed = null,
+  // Volunteer child (under 16), 0155: [{ name, text }] from roleAgeFlags().
+  ageFlags = [],
   // The registration's event, for the photographer's list link.
   eventId = null,
   depositWaived = null,
@@ -400,8 +402,14 @@ export default function ReviewCard({
           . Approving a volunteer here also approves their application.
         </p>
       )}
-      {(flags.length > 0 || creed) && (
+      {(flags.length > 0 || creed || ageFlags.length > 0) && (
         <ul className="mb-3 space-y-1 text-sm">
+          {/* The role and age checks: a flag to look at, never a block. */}
+          {ageFlags.map((f) => (
+            <li key={f.text} className="font-semibold text-amber-800">
+              ⚑ {f.text}
+            </li>
+          ))}
           {/* The Creed, still waiting on the conversation with Larry: amber,
               naming who, with the button that records it for them. */}
           {creed?.pending.length > 0 && (
