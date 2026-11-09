@@ -3,12 +3,13 @@ import LeaderBio from './LeaderBio';
 
 export const metadata = { title: 'Leadership' };
 
-// Staff first, then the board A to Z by last name (Lawrence, 9 Nov 2026).
-// Darlene is staff and on the board; she is listed once, with the staff.
+// Larry, Darlene and Lee Anne (Board Chair) first, then everyone else A to Z
+// by last name, in one grid three to a row (Ellen, 9 Nov 2026: no Staff and
+// Board headings, just "Meet Our Leadership").
 // The bios are the leaders' own words: slips fixed 9 Nov 2026 (spelling,
 // "Luke 14 Ministries", STM spelled out), nothing else changed. Trimming them
 // and the figures that go out of date are open in Staff Questions §1.
-const staff = [
+const leaders = [
   {
     name: 'Larry LaPlue',
     role: 'Executive Director',
@@ -19,15 +20,21 @@ const staff = [
   },
   {
     name: 'Darlene LaPlue',
-    role: 'Events Planner and Board Member',
+    role: 'Events Planner',
     image: asset('/images/leaders/darlene-laplue.jpg'),
     bio: [
       'Darlene LaPlue is a farm girl from Kentucky who loves Jesus and loves being busy about the work of His Kingdom. She fell in love with disability ministry nearly 25 years ago as she met so many amazing and beautiful people and began seeing the heart of God as she had never seen it before. Her part in this ministry now includes planning the annual Luke 14 Dinner Party, helping lead teams going to Kenya to distribute wheelchairs, directing Camp Celebrate, and teaching an Adult Special Friends Sunday School Class at her church in Morristown. Her spiritual gift is throwing a party. She is working to take back the “party” for The Kingdom!',
     ],
   },
-];
+  {
+    name: 'Lee Anne LaPlue',
+    role: 'Board Chair',
+    image: asset('/images/leaders/lee-anne-laplue.jpg'),
+    bio: [
+      'Though raised in East Tennessee, Lee Anne LaPlue has participated in disability ministry around the world. Lee Anne grew up volunteering at Joni and Friends family retreats and went on a Wheels for the World wheelchair distribution to Ghana while in college. These experiences lit a fire in her which later propelled her to move to Nigeria where, while teaching, she joined hands with a local orphanage for children with special needs. To better serve friends with disabilities, Lee Anne later sought a doctorate in Occupational Therapy, which she now uses to serve children in Phoenix, Arizona, through an outpatient pediatric clinic that specializes in sensory processing disorder. Lee Anne has been heavily involved in Luke 14 Ministries since its inception.',
+    ],
+  },
 
-const board = [
   {
     name: 'Patti Baker',
     role: 'Board Member',
@@ -62,14 +69,6 @@ const board = [
     image: asset('/images/leaders/vova-gorbenko.jpg'),
     bio: [
       'Dr. Vova Gorbenko is the Associate Director of Campus Ministries and an Assistant Professor of New Testament. He was born and raised in Ukraine and has over twenty years of experience in teaching, mentoring, and providing leadership to faculty and staff in a seminary setting. He served as Academic Dean of Zaporizhzhia Bible Seminary for 15 years and taught Hermeneutics and New Testament for 21 years. He also served as senior pastor of a rapidly growing urban church for 14 years. Dr. Gorbenko was a frequent speaker at national pastors’ conferences in Ukraine in the last few years before the war broke out in that country. Now, at Carson-Newman, Dr. Gorbenko primarily teaches Introduction to New Testament courses. He has developed a program for integrating Christian worldview, identity and purpose into the lives and vocations of students in the College and Professional Studies programs. Dr. Gorbenko is happily married to Marina. They have two children: Katya (17) and Andrii (19).',
-    ],
-  },
-  {
-    name: 'Lee Anne LaPlue',
-    role: 'Board Director',
-    image: asset('/images/leaders/lee-anne-laplue.jpg'),
-    bio: [
-      'Though raised in East Tennessee, Lee Anne LaPlue has participated in disability ministry around the world. Lee Anne grew up volunteering at Joni and Friends family retreats and went on a Wheels for the World wheelchair distribution to Ghana while in college. These experiences lit a fire in her which later propelled her to move to Nigeria where, while teaching, she joined hands with a local orphanage for children with special needs. To better serve friends with disabilities, Lee Anne later sought a doctorate in Occupational Therapy, which she now uses to serve children in Phoenix, Arizona, through an outpatient pediatric clinic that specializes in sensory processing disorder. Lee Anne has been heavily involved in Luke 14 Ministries since its inception.',
     ],
   },
   {
@@ -117,7 +116,7 @@ function LeaderCard({ leader }) {
         />
       </div>
       <div className="p-6 flex-1">
-        <h3 className="text-xl font-bold text-center">{leader.name}</h3>
+        <h2 className="text-xl font-bold text-center">{leader.name}</h2>
         <p className="text-sm font-semibold uppercase tracking-wide text-brand text-center mt-1 mb-4">
           {leader.role}
         </p>
@@ -132,17 +131,8 @@ export default function LeadershipPage() {
     <section className="container-site py-14">
       <h1 className="text-4xl font-bold text-center mb-12">Meet Our Leadership</h1>
 
-      <h2 className="text-2xl font-bold text-center mb-6">Staff</h2>
-      {/* Two staff cards: two columns, centred, the same card width as the board's. */}
-      <div className="grid gap-10 sm:grid-cols-2 lg:max-w-[calc((100%-5rem)*2/3+2.5rem)] lg:mx-auto mb-14">
-        {staff.map((leader) => (
-          <LeaderCard key={leader.name} leader={leader} />
-        ))}
-      </div>
-
-      <h2 className="text-2xl font-bold text-center mb-6">Board of Directors</h2>
       <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-        {board.map((leader) => (
+        {leaders.map((leader) => (
           <LeaderCard key={leader.name} leader={leader} />
         ))}
       </div>
