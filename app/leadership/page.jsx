@@ -12,7 +12,7 @@ export const metadata = { title: 'Leadership' };
 const leaders = [
   {
     name: 'Larry LaPlue',
-    role: 'Executive Director',
+    role: 'Co-founder and Executive Director',
     image: asset('/images/leaders/larry-laplue.jpg'),
     bio: [
       'Larry LaPlue has worked as a volunteer in providing services to individuals with disabilities for the past 20 years. Activities include volunteering at summer camps for families affected by disability, helping coordinate an annual banquet for individuals with disabilities, and helping lead international trips to perform wheelchair distributions.',
@@ -20,7 +20,7 @@ const leaders = [
   },
   {
     name: 'Darlene LaPlue',
-    role: 'Events Planner',
+    role: 'Co-founder and Events Planner',
     image: asset('/images/leaders/darlene-laplue.jpg'),
     bio: [
       'Darlene LaPlue is a farm girl from Kentucky who loves Jesus and loves being busy about the work of His Kingdom. She fell in love with disability ministry nearly 25 years ago as she met so many amazing and beautiful people and began seeing the heart of God as she had never seen it before. Her part in this ministry now includes planning the annual Luke 14 Dinner Party, helping lead teams going to Kenya to distribute wheelchairs, directing Camp Celebrate, and teaching an Adult Special Friends Sunday School Class at her church in Morristown. Her spiritual gift is throwing a party. She is working to take back the “party” for The Kingdom!',
