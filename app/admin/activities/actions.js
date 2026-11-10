@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { activityDayBounds, slotOutsideEventMessage } from '@/lib/events';
 import { toHHMM } from '@/lib/timeBoxes';
+import { withReason } from '@/lib/dbErrors';
 
 const MODES = ['interest', 'signup'];
 
@@ -482,7 +483,7 @@ export async function setActivityActive(activityId, active) {
     .from('activities')
     .update({ active: Boolean(active), updated_at: new Date().toISOString() })
     .eq('id', activityId);
-  if (error) return { ok: false, error: 'That could not be changed.' };
+  if (error) return { ok: false, error: withReason('That could not be changed.', error) };
 
   revalidateAll();
   return { ok: true };
@@ -514,7 +515,7 @@ export async function deleteActivity(activityId) {
   const { error } = await supabase.from('activities').delete().eq('id', activityId);
   if (error) {
     console.error('deleteActivity:', error.message);
-    return { ok: false, error: 'That could not be removed.' };
+    return { ok: false, error: withReason('That could not be removed.', error) };
   }
 
   revalidateAll();
@@ -668,7 +669,7 @@ export async function deleteSlot(slotId) {
   }
 
   const { error } = await supabase.from('activity_slots').delete().eq('id', slotId);
-  if (error) return { ok: false, error: 'That time could not be removed.' };
+  if (error) return { ok: false, error: withReason('That time could not be removed.', error) };
 
   revalidateAll();
   return { ok: true };

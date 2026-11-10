@@ -22,6 +22,7 @@ import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { csvPlainText } from '@/lib/csv';
 import { dayInMorristown, todayInMorristown } from '@/lib/events';
+import { withReason } from '@/lib/dbErrors';
 
 // How long a check stands before the person is due again.
 //
@@ -67,7 +68,7 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
     .from('people')
     .select('id, first_name, last_name, email, phone, date_of_birth, households!people_household_id_fkey ( email, phone )')
     .in('id', personIds);
-  if (peopleError) return { ok: false, error: 'Could not read those people.' };
+  if (peopleError) return { ok: false, error: withReason('Could not read those people.', peopleError) };
 
   const now = new Date().toISOString();
   const skipped = [];

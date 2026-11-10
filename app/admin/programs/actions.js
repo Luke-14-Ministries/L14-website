@@ -17,6 +17,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { isVolunteerRole } from '@/lib/roles';
+import { withReason } from '@/lib/dbErrors';
 
 async function requireCoordinator() {
   const staff = await getStaff();
@@ -146,7 +147,7 @@ export async function grantProgramLeader({ email, profileId = null, programId, e
     });
     if (lookupError) {
       console.error('grantProgramLeader lookup:', lookupError.message);
-      return { ok: false, error: 'Could not look that address up.' };
+      return { ok: false, error: withReason('Could not look that address up.', lookupError) };
     }
     profile = found?.[0]
       ? { id: found[0].profile_id, first_name: found[0].first_name, last_name: found[0].last_name }
@@ -240,7 +241,7 @@ export async function grantProgramLeader({ email, profileId = null, programId, e
 
   if (error) {
     console.error('grantProgramLeader:', error.message);
-    return { ok: false, error: 'That leader could not be saved.' };
+    return { ok: false, error: withReason('That leader could not be saved.', error) };
   }
 
   revalidatePath('/admin/programs');
@@ -276,7 +277,7 @@ export async function revokeProgramLeader({ grantId }) {
 
   if (error) {
     console.error('revokeProgramLeader:', error.message);
-    return { ok: false, error: 'That could not be removed.' };
+    return { ok: false, error: withReason('That could not be removed.', error) };
   }
 
   revalidatePath('/admin/programs');
@@ -315,7 +316,7 @@ export async function setProgramLead({ grantId, isLead }) {
       .eq('is_lead', true);
     if (clearError) {
       console.error('setProgramLead clear:', clearError.message);
-      return { ok: false, error: 'The previous head leader could not be cleared.' };
+      return { ok: false, error: withReason('The previous head leader could not be cleared.', clearError) };
     }
   }
 
@@ -325,7 +326,7 @@ export async function setProgramLead({ grantId, isLead }) {
     .eq('id', grantId);
   if (error) {
     console.error('setProgramLead:', error.message);
-    return { ok: false, error: 'That could not be saved.' };
+    return { ok: false, error: withReason('That could not be saved.', error) };
   }
 
   revalidatePath('/admin/programs');

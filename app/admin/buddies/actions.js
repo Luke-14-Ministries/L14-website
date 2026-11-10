@@ -10,6 +10,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
+import { withReason } from '@/lib/dbErrors';
 
 // Every write here needs Buddies write (0101 enforces it in the database;
 // 18 Oct review: the actions never asked, so a read-only reviewer was
@@ -46,7 +47,7 @@ export async function assignBuddy({ eventId, camperParticipantId, buddyParticipa
       return { ok: false, error: 'Those two are already paired.' };
     }
     console.error('assignBuddy:', error.message);
-    return { ok: false, error: 'That pairing could not be saved.' };
+    return { ok: false, error: withReason('That pairing could not be saved.', error) };
   }
 
   revalidatePath('/admin/buddies');
@@ -71,7 +72,7 @@ export async function unassignBuddy({ assignmentId }) {
 
   if (error) {
     console.error('unassignBuddy:', error.message);
-    return { ok: false, error: 'That pairing could not be ended.' };
+    return { ok: false, error: withReason('That pairing could not be ended.', error) };
   }
 
   revalidatePath('/admin/buddies');
@@ -101,7 +102,7 @@ export async function setBuddyPublication({ eventId, publish }) {
 
   if (error) {
     console.error('setBuddyPublication:', error.message);
-    return { ok: false, error: 'That could not be changed.' };
+    return { ok: false, error: withReason('That could not be changed.', error) };
   }
   if (!found) return { ok: false, error: 'That event was not found.' };
 
@@ -155,7 +156,7 @@ export async function setBuddyRequired({ personId, required }) {
 
   if (error) {
     console.error('setBuddyRequired:', error.message);
-    return { ok: false, error: 'That could not be saved.' };
+    return { ok: false, error: withReason('That could not be saved.', error) };
   }
 
   revalidatePath('/admin/buddies');

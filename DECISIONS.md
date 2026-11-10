@@ -4204,3 +4204,10 @@ From Ellen's Website Feedback list (9 Nov 2026).
   anyone holds a place.
 - **Not built, a policy question for Lawrence:** Ellen's suggestion that background checks run only
   once the family's deposit is paid.
+- **A staff save or delete that fails says why** (Lawrence, same day: "intelligible if possible;
+  gobbledy goop from Supabase if not, that we can bring back to a code session"). `withReason()` in
+  `lib/dbErrors.js` keeps the page's first sentence and adds the reason: permission, "something else
+  still refers to it", a duplicate, a missing field, our own trigger's words as they are, and
+  otherwise the database's message with its code. Applied to the 35 staff actions that said only
+  "That could not be saved / removed / changed". New staff actions use it. Family pages keep their
+  friendly lines; the detail goes to the server log there.

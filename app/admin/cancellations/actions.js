@@ -11,6 +11,7 @@
 import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
+import { withReason } from '@/lib/dbErrors';
 
 export async function settleCancellation({ requestId, status, staffNote }) {
   const staff = await getStaff();
@@ -37,7 +38,7 @@ export async function settleCancellation({ requestId, status, staffNote }) {
 
   if (error) {
     console.error('settleCancellation:', error.message);
-    return { ok: false, error: 'That could not be saved.' };
+    return { ok: false, error: withReason('That could not be saved.', error) };
   }
 
   revalidatePath('/admin/cancellations');

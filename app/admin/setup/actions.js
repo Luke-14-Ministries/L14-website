@@ -7,6 +7,7 @@
 import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { withReason } from '@/lib/dbErrors';
 
 // One "Event status" (26 Oct 2026), stored on the two columns everything else
 // reads: unpublished = not published, not archived; published = published, not
@@ -44,7 +45,7 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
       .maybeSingle();
     if (curError) {
       console.error('updateEventRegistration (read archived_at):', curError.message);
-      return { ok: false, error: 'Could not save. Please try again.' };
+      return { ok: false, error: withReason('Could not save. Please try again.', curError) };
     }
     if (!cur) return { ok: false, error: 'That event was not found.' };
     patch.archived_at = cur.archived_at ?? new Date().toISOString();
@@ -58,7 +59,7 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
 
   if (error) {
     console.error('updateEventRegistration:', error.message);
-    return { ok: false, error: 'Could not save. Please try again.' };
+    return { ok: false, error: withReason('Could not save. Please try again.', error) };
   }
 
   // Every public surface that lists open events re-renders with the change.
@@ -89,7 +90,7 @@ export async function setHiddenFromFamilies(eventId, hidden) {
     .select('id');
   if (error) {
     console.error('setHiddenFromFamilies:', error.message);
-    return { ok: false, error: 'Could not save. Please try again.' };
+    return { ok: false, error: withReason('Could not save. Please try again.', error) };
   }
   if (!data?.length) return { ok: false, error: 'Archive the event first (Event status → Archived, then Save).' };
 
@@ -264,7 +265,7 @@ export async function updateEventDetails(
     .eq('id', eventId);
   if (error) {
     console.error('updateEventDetails:', error.message);
-    return { ok: false, error: 'Could not save the event. Please try again.' };
+    return { ok: false, error: withReason('Could not save the event. Please try again.', error) };
   }
   // A changed discount applies to everyone already registered -- it is a rule
   // recomputed from stored facts (0070, 0081), not a price copied at sign-up.

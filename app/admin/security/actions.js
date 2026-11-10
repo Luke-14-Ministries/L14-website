@@ -11,6 +11,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
+import { withReason } from '@/lib/dbErrors';
 
 export async function resetMfaByEmail(email) {
   const staff = await getStaff();
@@ -20,7 +21,7 @@ export async function resetMfaByEmail(email) {
 
   const supabase = await createClient();
   const { data: found, error: lookupError } = await supabase.rpc('staff_lookup_by_email', { p_email: clean });
-  if (lookupError) return { ok: false, error: 'Could not look that account up.' };
+  if (lookupError) return { ok: false, error: withReason('Could not look that account up.', lookupError) };
   const target = found?.[0];
   if (!target) return { ok: false, error: `No account found for ${clean}.` };
 

@@ -20,6 +20,7 @@ import { getStaff, can } from '@/lib/staff';
 import { getStripe } from '@/lib/stripe/server';
 import { registrationDepositCents } from '@/lib/payments';
 import { planNoticeDays } from '@/lib/plans';
+import { withReason } from '@/lib/dbErrors';
 
 const STATUSES = ['draft', 'submitted', 'waitlisted', 'confirmed', 'cancelled'];
 const CAMP_ROLES = [
@@ -1044,7 +1045,7 @@ export async function deleteFamilyMessage(registrationId, messageId) {
     .select('id');
   if (error) {
     console.error('deleteFamilyMessage:', error.message);
-    return { ok: false, error: 'The note could not be removed.' };
+    return { ok: false, error: withReason('The note could not be removed.', error) };
   }
   if (!data?.length) return { ok: false, error: 'That note can’t be removed. A family’s reply stays on file.' };
   revalidatePath(`/admin/registrations/${registrationId}`);

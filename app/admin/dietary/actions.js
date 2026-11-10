@@ -17,6 +17,7 @@
 import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
+import { withReason } from '@/lib/dbErrors';
 
 const SEVERITIES = ['mild', 'severe', 'anaphylaxis'];
 
@@ -44,7 +45,7 @@ export async function setAllergySeverity({ personId, severity }) {
 
   if (error) {
     console.error('setAllergySeverity:', error.message);
-    return { ok: false, error: 'That could not be saved.' };
+    return { ok: false, error: withReason('That could not be saved.', error) };
   }
   if (!data?.length) {
     return { ok: false, error: 'This person has no allergies recorded, so there is no severity to set.' };

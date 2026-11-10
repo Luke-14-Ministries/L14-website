@@ -7,6 +7,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
+import { withReason } from '@/lib/dbErrors';
 
 // Place one person. UNIQUE on registration_participant_id makes this an
 // upsert: moving someone from Cabin 2 to Cabin 3 edits their row rather than
@@ -41,7 +42,7 @@ export async function assignLodging({ participantId, lodgingId, note }) {
     .limit(1);
   if (kidsError) {
     console.error('assignLodging children:', kidsError.message);
-    return { ok: false, error: 'That could not be checked.' };
+    return { ok: false, error: withReason('That could not be checked.', kidsError) };
   }
   if (kids && kids.length > 0) {
     return {
@@ -62,7 +63,7 @@ export async function assignLodging({ participantId, lodgingId, note }) {
 
   if (error) {
     console.error('assignLodging:', error.message);
-    return { ok: false, error: 'That could not be saved.' };
+    return { ok: false, error: withReason('That could not be saved.', error) };
   }
 
   revalidatePath('/admin/lodging');
@@ -83,7 +84,7 @@ export async function unassignLodging({ participantId }) {
 
   if (error) {
     console.error('unassignLodging:', error.message);
-    return { ok: false, error: 'That could not be removed.' };
+    return { ok: false, error: withReason('That could not be removed.', error) };
   }
 
   revalidatePath('/admin/lodging');
@@ -111,7 +112,7 @@ export async function setLodgingPublication({ eventId, publish }) {
 
   if (error) {
     console.error('setLodgingPublication:', error.message);
-    return { ok: false, error: 'That could not be changed.' };
+    return { ok: false, error: withReason('That could not be changed.', error) };
   }
 
   revalidatePath('/admin/lodging');
@@ -253,7 +254,7 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
       .select('id');
     if (dbError) {
       console.error('upsertLodging update:', dbError.message);
-      return { ok: false, error: 'That could not be saved.' };
+      return { ok: false, error: withReason('That could not be saved.', dbError) };
     }
     // No rows back means the policy refused -- Postgres does not call an
     // UPDATE that matches nothing a failure, so say it here.
@@ -277,7 +278,7 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
       .maybeSingle();
     if (parentError) {
       console.error('upsertLodging parent:', parentError.message);
-      return { ok: false, error: 'That could not be checked.' };
+      return { ok: false, error: withReason('That could not be checked.', parentError) };
     }
     if (!parent || parent.event_id !== eventId) {
       return { ok: false, error: 'That building is not on this event.' };
@@ -306,7 +307,7 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
     const { data: dupRows, error: dupError } = await dup;
     if (dupError) {
       console.error('upsertLodging duplicate check:', dupError.message);
-      return { ok: false, error: 'That could not be checked.' };
+      return { ok: false, error: withReason('That could not be checked.', dupError) };
     }
     if (dupRows && dupRows.length > 0) {
       return {
@@ -319,7 +320,7 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
   let sort_order = Number.isInteger(sortOrder) ? sortOrder : null;
   if (sort_order == null) {
     const next = await nextSortOrder(supabase, eventId, parentId || null);
-    if (next.error) return { ok: false, error: 'That could not be added.' };
+    if (next.error) return { ok: false, error: withReason('That could not be added.', next.error) };
     sort_order = next.n;
   }
 
@@ -329,7 +330,7 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
     .select('id');
   if (dbError) {
     console.error('upsertLodging insert:', dbError.message);
-    return { ok: false, error: 'That could not be added.' };
+    return { ok: false, error: withReason('That could not be added.', dbError) };
   }
   if (!data || data.length === 0) {
     return { ok: false, error: 'Nothing was saved. You may not have permission to change this.' };
@@ -386,12 +387,12 @@ async function setActive(id, active) {
     .maybeSingle();
   if (targetError) {
     console.error('setActive:', targetError.message);
-    return { ok: false, error: 'That could not be checked.' };
+    return { ok: false, error: withReason('That could not be checked.', targetError) };
   }
   if (!target) return { ok: false, error: 'That place no longer exists.' };
 
   const tree = await lodgingTree(supabase, target.event_id);
-  if (tree.error) return { ok: false, error: 'That could not be checked.' };
+  if (tree.error) return { ok: false, error: withReason('That could not be checked.', tree.error) };
 
   let ids;
   if (active) {
@@ -412,7 +413,7 @@ async function setActive(id, active) {
       .in('lodging_id', ids);
     if (countError) {
       console.error('setActive count:', countError.message);
-      return { ok: false, error: 'That could not be checked.' };
+      return { ok: false, error: withReason('That could not be checked.', countError) };
     }
     if ((count ?? 0) > 0) {
       const where = ids.length > 1 ? `${target.name} or the rooms in it` : target.name;
@@ -430,7 +431,7 @@ async function setActive(id, active) {
     .select('id');
   if (error) {
     console.error('setActive:', error.message);
-    return { ok: false, error: 'That could not be changed.' };
+    return { ok: false, error: withReason('That could not be changed.', error) };
   }
   if (!data || data.length === 0) {
     return { ok: false, error: 'Nothing was saved. You may not have permission to change this.' };
@@ -482,7 +483,7 @@ export async function copyLodgingsFrom({ fromEventId, toEventId }) {
     .eq('active', true);
   if (existingError) {
     console.error('copyLodgingsFrom count:', existingError.message);
-    return { ok: false, error: 'That could not be checked.' };
+    return { ok: false, error: withReason('That could not be checked.', existingError) };
   }
   if ((existing ?? 0) > 0) {
     return {
@@ -501,7 +502,7 @@ export async function copyLodgingsFrom({ fromEventId, toEventId }) {
     .order('sort_order');
   if (srcError) {
     console.error('copyLodgingsFrom read:', srcError.message);
-    return { ok: false, error: 'The other event could not be read.' };
+    return { ok: false, error: withReason('The other event could not be read.', srcError) };
   }
   if (!source || source.length === 0) {
     return { ok: false, error: 'That event has no active rooms or buildings to copy.' };
