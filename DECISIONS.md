@@ -4243,3 +4243,35 @@ existing expiry dates".
 - **The Checkr import no longer works out its own expiry.** It wrote check date + a 12-month constant;
   it now writes the date and leaves the expiry to the database, so the setting governs both paths.
 - Tests: `supabase/tests/background_check_length_rules.sql` (6 checks); the harness passes.
+
+## 10 November 2026 — A family can ask for one scholarship for the whole registration
+
+Lawrence (relayed): "request for scholarship should be able to be done by family as well as
+individual.... eg if the lawrence laplue family request a 50% or $1500 scholarship, should be a way
+to apply it across the family." Built as `0159`/`0160`. His answers to the policy questions, same day:
+
+- **A dollar award is split by each person's fee**, never more than a person owes after discounts.
+  (Not staff typing each share, not oldest first.)
+- **One request per week.** Each week is its own registration and its own request, as now.
+- **Stored as fixed dollars.** A family may ask for a percentage; staff see what it comes to and award
+  dollars, which do not move when fees or discounts change later.
+- **People change after the award: flag for staff.** The total stays; a removed person's share moves
+  to the others (up to what each owes); a person added later gets no share.
+
+Chosen in the build, not asked:
+
+- **A registration has a family request or per-person requests, never both.** A family request is
+  refused once anyone on the registration has a per-person award; a per-person request is refused
+  while a family request waits or stands. Staff can still change one person's amount by hand.
+- **The award can never be more than the whole family owes.** So a scholarship never eats an automatic
+  discount; the database says the most that can be awarded.
+- **Each share is also written to the person's own `scholarships` row.** That way the review class,
+  the deposit rule, the dashboard's "full scholarship requested", statements, exports and Event
+  Payments all keep working with no change. A 100% ask is stored per person as a request with no figure.
+- **After a decline the family may ask again as a family.** Asking per person after a family decline
+  stays closed by 0111's rule (an answered person request stays answered); after a withdrawal it is
+  open (`0160`).
+- **The 4 Nov rule holds:** every family decision, award or decline, needs a note.
+- Badges and the Monday staff summary count a family request once.
+- Tests: `supabase/tests/family_scholarship_rules.sql` (10 checks); the harness passes.
+

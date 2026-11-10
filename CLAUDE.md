@@ -47,7 +47,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0158`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0160`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -308,6 +308,16 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   required): each person's scholarship from before the waiver comes back from `money_change_log`
   where it is still the waiver's (one staff changed since is left alone), the mark clears, the
   discounts re-run, and nobody is un-approved — the registration reads its real deposit again.
+- **A family can ask for one scholarship for the whole registration** (`0159`/`0160`, Lawrence
+  10 Nov 2026): a percentage, an amount or no figure, in `family_scholarship_requests` (one per
+  registration, so per week). Staff award **dollars** (`decide_family_scholarship()`, decide-scholarships
+  check, note required), split over the people **by each person's fee, never more than each owes**
+  (`split_by_weight()`), and each share is written to that person's `scholarships` row
+  (`family_request_id`) and `participant_money` — so every reader of scholarships works unchanged; a
+  100% ask is stored per person as a request with no figure (= all they owe). A registration has a
+  family request **or** per-person requests (`guard_scholarship_family_link()`). Someone removed after
+  the award: the total is re-spread over the others; someone added: no share; both flag the request
+  (`needs_review_since`/`_reason`) for staff. Shared loader: `lib/familyScholarships.js`.
 - **One role per person per event** (`0086`); the wizard does not offer a second and the database
   refuses it.
 - **Payment plans** (`0080`): created only by `stripe-plans-webhook`; families read, never write; the

@@ -17,6 +17,7 @@ import EmailLog from '@/components/EmailLog';
 import ReminderPause from './ReminderPause';
 import Panel from './Panel';
 import { isVolunteerRole, roleAgeFlags } from '@/lib/roles';
+import { loadFamilyScholarshipRows } from '@/lib/familyScholarships';
 
 export const metadata = { title: 'Registration — Staff Admin' };
 
@@ -230,7 +231,7 @@ export default async function RegistrationDetailPage({ params }) {
     const { data: schols, error: scholsError } = await supabase
       .from('scholarships')
       .select(
-        'registration_participant_id, requested_cents, granted_cents, status, family_statement, staff_note, reviewed_by, reviewed_at, created_at, updated_at'
+        'registration_participant_id, requested_cents, granted_cents, status, family_statement, staff_note, reviewed_by, reviewed_at, created_at, updated_at, family_request_id'
       )
       .in('registration_participant_id', partIds);
     if (scholsError) throw new Error(`Scholarships: ${scholsError.message}`);
@@ -262,7 +263,8 @@ export default async function RegistrationDetailPage({ params }) {
       }));
 
     scholarshipRequests = (schols ?? [])
-      .filter((s) => s.status === 'requested')
+      // A share of a family request is decided on the family's card (0159).
+      .filter((s) => s.status === 'requested' && !s.family_request_id)
       .map((s) => {
         const part = partById.get(s.registration_participant_id);
         return {
@@ -295,6 +297,9 @@ export default async function RegistrationDetailPage({ params }) {
       // Someone removed from the week has nothing left to decide.
       .filter((r) => !r.cancelled);
   }
+
+  // One request for the whole family (0159), if they made one.
+  const [familyScholarship = null] = await loadFamilyScholarshipRows(supabase, { registrationIds: [reg.id] });
 
   // The conversation with the family (0019; their replies since 0126): staff
   // notes and the family's replies, OLDEST first so it reads as a thread,
@@ -820,6 +825,7 @@ export default async function RegistrationDetailPage({ params }) {
       payments={payments}
       stripeBase={stripeBase}
       scholarshipRequests={scholarshipRequests}
+      familyScholarship={familyScholarship}
       moneyAlerts={moneyAlerts}
       // How it is being paid, drawn as the last section of the Money card.
       planPanel={

@@ -12,6 +12,8 @@ import Link from 'next/link';
 // The same card the Scholarship Requests queue uses. Shared deliberately: a
 // decision has to mean the same thing wherever a registrar makes it.
 import ScholarshipReview from '@/app/admin/scholarships/ScholarshipReview';
+import FamilyScholarshipReview from '@/app/admin/scholarships/FamilyScholarshipReview';
+import { familyRequestOpen } from '@/lib/familyScholarships';
 import { registrationHeads, refundSuggestion, REFUND_FULL_UNTIL_DAYS, isStaleRefund, STALE_REFUND_DAYS, CLEARING_PILL } from '@/lib/payments';
 import {
   setParticipantStatus,
@@ -2013,6 +2015,8 @@ export default function RegistrationManager({
   options,
   adjustmentRecords = [],
   scholarshipRequests = [],
+  // One request for the whole family (0159), or null.
+  familyScholarship = null,
   // The Review card's person-by-person checks and the event's headcount
   // against capacity (page.jsx, 4 Nov 2026).
   reviewChecks = [],
@@ -2046,7 +2050,13 @@ export default function RegistrationManager({
   const total = moneyKnown ? parts.reduce((s, p) => s + (p.fee_cents ?? 0), 0) : null;
   // Which people are waiting on a decision about the fee, so their row can say
   // so where a registrar is already looking.
-  const awaitingScholarship = new Set(scholarshipRequests.map((r) => r.participantId));
+  const familyOpen = Boolean(familyScholarship) && familyRequestOpen(familyScholarship);
+  const awaitingScholarship = new Set([
+    ...scholarshipRequests.map((r) => r.participantId),
+    ...(familyScholarship?.status === 'requested'
+      ? familyScholarship.people.filter((p) => p.covered).map((p) => p.participantId)
+      : []),
+  ]);
 
   // Is the deposit actually covered? Raised 25 Aug: a family of three had paid
   // one $50 deposit and nothing on the page said the other two were not held.
@@ -2097,7 +2107,7 @@ export default function RegistrationManager({
   const reviewOpen =
     anySubmitted || replyUnread || Boolean(hold?.since) || Boolean(awaiting?.since) || openFlags.length > 0 || creedPending ||
     // A scholarship request waiting is decided inside the Review card now.
-    scholarshipRequests.length > 0 ||
+    scholarshipRequests.length > 0 || familyOpen ||
     // So is the reason a week tab shows its dot for a volunteer application.
     reviewChecks.some((c) => c.application === 'applied');
   // People: open while anyone is submitted or waitlisted, or someone still
@@ -2217,8 +2227,9 @@ export default function RegistrationManager({
           awaiting={awaiting}
           familyReply={familyReply}
           scholarshipSlot={
-            scholarshipRequests.length > 0 ? (
+            scholarshipRequests.length > 0 || familyOpen ? (
               <div className="space-y-4">
+                {familyOpen && <FamilyScholarshipReview row={familyScholarship} />}
                 {scholarshipRequests.map((row) => (
                   <ScholarshipReview key={row.participantId} row={row} />
                 ))}

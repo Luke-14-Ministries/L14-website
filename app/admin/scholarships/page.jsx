@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import ScholarshipReview from './ScholarshipReview';
+import FamilyScholarshipReview from './FamilyScholarshipReview';
+import { loadFamilyScholarshipRows, familyRequestOpen } from '@/lib/familyScholarships';
 import EventFilter from '@/components/EventFilter';
 import { eventInScope, isEventScope } from '@/lib/events';
 
@@ -63,6 +65,8 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
        )`
     )
     .neq('registration_participants.status', 'cancelled')
+    // A share of a family request is shown on the family's card (0159).
+    .is('family_request_id', null)
     .order('created_at', { ascending: true });
 
   // Surfaced, not swallowed. An empty page that means "the query failed" must
@@ -100,6 +104,16 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
   );
   const settled = all.filter((r) => r.status !== 'requested');
   const shown = showSettled ? settled : open;
+
+  // Family requests (0159): one card per registration, open while waiting
+  // or flagged after the award; the same event rules as above.
+  const familyRows = await loadFamilyScholarshipRows(supabase);
+  const familyInScope = (f) => eventInScope(f.event, eventFilter);
+  const familyOpen = familyRows.filter(
+    (f) => familyRequestOpen(f) && (familyInScope(f) || (eventFilter === '' && !f.event?.archived_at))
+  );
+  const familySettled = familyRows.filter((f) => familyInScope(f) && !familyRequestOpen(f));
+  const familyShown = showSettled ? [...familySettled].reverse() : familyOpen;
 
   // Reviewer names, looked up separately: two FKs from scholarships into
   // profiles would make a nested join ambiguous, and a flat lookup cannot
@@ -157,8 +171,9 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
         , because a scholarship decision is a money decision.
       </p>
       <p className="text-sm text-neutral-500 mb-4">
-        Families asking for help with the fee. Approving one takes the amount off what that
-        family owes. Their balance, dashboard and statement update right away.
+        Families asking for help with the fee, for one person or for the whole family.
+        Approving one takes the amount off what that family owes. Their balance, dashboard and
+        statement update right away.
       </p>
 
       <div className="mb-3 max-w-md">
@@ -187,7 +202,7 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
               : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
           }`}
         >
-          Waiting ({open.length})
+          Waiting ({open.length + familyOpen.length})
         </Link>
         <Link
           href={`/admin/scholarships?settled=1${eventFilter ? `&event=${eventFilter}` : ''}`}
@@ -197,11 +212,11 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
               : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
           }`}
         >
-          Answered ({settled.length})
+          Answered ({settled.length + familySettled.length})
         </Link>
       </div>
 
-      {shaped.length === 0 ? (
+      {shaped.length === 0 && familyShown.length === 0 ? (
         <p className="text-neutral-500">
           {showSettled
             ? 'Nothing answered yet.'
@@ -209,6 +224,9 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
         </p>
       ) : (
         <div className="space-y-4">
+          {familyShown.map((row) => (
+            <FamilyScholarshipReview key={row.id} row={row} showRegistrationLink />
+          ))}
           {shaped.map((row) => (
             <ScholarshipReview key={row.participantId} row={row} showRegistrationLink />
           ))}

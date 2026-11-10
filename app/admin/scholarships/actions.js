@@ -27,6 +27,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
+import { withReason } from '@/lib/dbErrors';
 
 async function requireRegistrar() {
   const staff = await getStaff();
@@ -234,6 +235,52 @@ export async function declineScholarship({ registrationId, participantId, note }
     };
   }
 
+  revalidateAll(registrationId);
+  return { ok: true };
+}
+
+// A family request (0159, Lawrence 10 Nov 2026): one decision for the whole
+// registration. The database splits the award over the people by each
+// person's fee, never more than each owes, and records the decision on every
+// person as well as on the family request. A second run is a new decision
+// (to change the amount, or after the request was flagged).
+export async function decideFamilyScholarship({ registrationId, amount, note }) {
+  const { error: authError } = await requireRegistrar();
+  if (authError) return { ok: false, error: authError };
+  if (!registrationId) return { ok: false, error: 'Which registration?' };
+  const cents = toCents(amount);
+  if (cents === null) return { ok: false, error: 'Enter an amount, in dollars.' };
+  if (cents <= 0) {
+    return { ok: false, error: 'A scholarship has to be more than $0. To turn the request down, use Decline.' };
+  }
+  if (!String(note ?? '').trim()) {
+    return { ok: false, error: 'Add a short reason. Every scholarship decision needs one.' };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('decide_family_scholarship', {
+    p_registration_id: registrationId,
+    p_granted_cents: cents,
+    p_note: String(note).trim(),
+  });
+  if (error) return { ok: false, error: withReason('The award was not saved.', error) };
+  revalidateAll(registrationId);
+  return { ok: true };
+}
+
+export async function declineFamilyScholarship({ registrationId, note }) {
+  const { error: authError } = await requireRegistrar();
+  if (authError) return { ok: false, error: authError };
+  if (!registrationId) return { ok: false, error: 'Which registration?' };
+  if (!String(note ?? '').trim()) {
+    return { ok: false, error: 'Add a short reason. The office will need it if the family asks.' };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('decide_family_scholarship', {
+    p_registration_id: registrationId,
+    p_granted_cents: 0,
+    p_note: String(note).trim(),
+  });
+  if (error) return { ok: false, error: withReason('The decision was not saved.', error) };
   revalidateAll(registrationId);
   return { ok: true };
 }

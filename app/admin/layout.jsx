@@ -221,6 +221,7 @@ export default async function AdminLayout({ children }) {
       { count: scholCount, error: scholError },
       { count: reviewCount, error: reviewError },
       { data: repliedRows, error: repliedError },
+      { data: familyScholRows, error: familyScholError },
     ] = await Promise.all([
         supabase
           .from('family_change_log')
@@ -261,6 +262,8 @@ export default async function AdminLayout({ children }) {
           .from('scholarships')
           .select('id, registration_participants!inner ( registrations!inner ( events!inner ( archived_at ) ) )', { count: 'exact', head: true })
           .eq('status', 'requested')
+          // A share of a family request is counted once, below (0159).
+          .is('family_request_id', null)
           .is('registration_participants.registrations.events.archived_at', null),
         // New sign-ups waiting to be confirmed or waitlisted -- the biggest
         // review queue in the ministry, and until now the only one with no
@@ -295,6 +298,13 @@ export default async function AdminLayout({ children }) {
           .eq('family_reply_unread', true)
           .is('awaiting_family_since', null)
           .is('events.archived_at', null),
+        // Family scholarship requests (0159): waiting on a decision, or
+        // decided and flagged since. One per family.
+        supabase
+          .from('family_scholarship_requests')
+          .select('status, needs_review_since, registrations!inner ( events!inner ( archived_at ) )')
+          .in('status', ['requested', 'granted'])
+          .is('registrations.events.archived_at', null),
       ]);
     // A failed count is logged and shows no badge (null counts as 0).
     if (changesError) console.error('changes badge:', changesError.message);
@@ -302,6 +312,7 @@ export default async function AdminLayout({ children }) {
     if (payError) console.error('payments badge:', payError.message);
     if (cancelError) console.error('cancellations badge:', cancelError.message);
     if (scholError) console.error('scholarships badge:', scholError.message);
+    if (familyScholError) console.error('family scholarships badge:', familyScholError.message);
     if (reviewError) console.error('review badge:', reviewError.message);
     if (repliedError) console.error('review badge (family replies):', repliedError.message);
     unreviewedChanges = changesCount ?? 0;
@@ -357,7 +368,9 @@ export default async function AdminLayout({ children }) {
       if (delError) console.error('deletion requests badge:', delError.message);
       openDeletions = delCount ?? 0;
     }
-    openScholarships = scholCount ?? 0;
+    openScholarships =
+      (scholCount ?? 0) +
+      (familyScholRows ?? []).filter((f) => f.status === 'requested' || f.needs_review_since).length;
     awaitingReview = reviewCount ?? 0;
     unreadReplies = (repliedRows ?? []).length;
   }

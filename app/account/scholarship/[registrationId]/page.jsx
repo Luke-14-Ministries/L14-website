@@ -37,7 +37,7 @@ export default async function ScholarshipPage({ params }) {
       `id, household_id,
        events ( name, starts_on ),
        registration_participants ( id, status, camp_role,
-         participant_money ( fee_cents ),
+         participant_money ( fee_cents, discount_cents, early_discount_cents, family_discount_cents ),
          people ( first_name, last_name ) )`
     )
     .eq('id', registrationId)
@@ -98,11 +98,31 @@ export default async function ScholarshipPage({ params }) {
   const { data: schols, error: scholsError } = parts.length
     ? await supabase
         .from('scholarships')
-        .select('registration_participant_id, requested_cents, granted_cents, status, family_statement')
+        .select('registration_participant_id, requested_cents, granted_cents, status, family_statement, family_request_id')
         .in('registration_participant_id', parts.map((p) => p.id))
     : { data: [] };
   if (scholsError) throw new Error(`Scholarship requests: ${scholsError.message}`);
   const byPart = new Map((schols ?? []).map((s) => [s.registration_participant_id, s]));
+
+  // One request for the whole family (0159, Lawrence 10 Nov 2026), if they
+  // made one. Scoped by the registration already checked above.
+  const { data: familyReq, error: familyError } = await supabase
+    .from('family_scholarship_requests')
+    .select('id, ask_kind, ask_percent, ask_cents, family_statement, status, granted_cents')
+    .eq('registration_id', reg.id)
+    .maybeSingle();
+  if (familyError) throw new Error(`Family scholarship request: ${familyError.message}`);
+
+  // What each person still owes after every discount (the database splits a
+  // family request on the same figure). null when the money row is missing.
+  const owesOf = (p) => {
+    const m = participantMoney(p, 'scholarship');
+    if (!m) return null;
+    return Math.max(
+      0,
+      (m.fee_cents ?? 0) - (m.discount_cents ?? 0) - (m.early_discount_cents ?? 0) - (m.family_discount_cents ?? 0)
+    );
+  };
 
   const rows = parts.map((p) => {
     const s = byPart.get(p.id);
@@ -121,8 +141,23 @@ export default async function ScholarshipPage({ params }) {
       grantedCents: s?.granted_cents ?? 0,
       status: s?.status ?? null,
       statement: s?.family_statement ?? '',
+      owesCents: owesOf(p),
+      inFamilyRequest: Boolean(s?.family_request_id),
     };
   });
+  const familyOwesCents = rows.some((r) => r.owesCents == null)
+    ? null
+    : rows.reduce((t, r) => t + (r.owesCents ?? 0), 0);
+  const family = familyReq
+    ? {
+        kind: familyReq.ask_kind,
+        percent: familyReq.ask_percent,
+        cents: familyReq.ask_cents,
+        statement: familyReq.family_statement ?? '',
+        status: familyReq.status,
+        grantedCents: familyReq.granted_cents ?? 0,
+      }
+    : null;
 
   return (
     <section className="bg-neutral-50 py-12">
@@ -144,6 +179,8 @@ export default async function ScholarshipPage({ params }) {
           agreementSigned={agreementSigned}
           contactName={contactName}
           eventName={reg.events?.name ?? ''}
+          family={family}
+          familyOwesCents={familyOwesCents}
         />
 
         <p className="text-sm text-neutral-500 mt-8">
