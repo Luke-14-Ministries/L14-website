@@ -4303,3 +4303,8 @@ all of those suggestions". Done the same day:
 
 Fonts were left alone (Lawrence: "fonts aren't a big deal"). The Hazelnut Movement stays off (28 Oct).
 Staff see a plain list of main changes in `Luke14-Site-Changes.pdf` (SharePoint root, started today).
+
+**Later the same day:** the header is pinned on every screen size, not only phones (Lawrence asked; my
+recommendation). On the public pages it stays at the top as you scroll and slims after the first 40px
+(logo 64→48px on computers, less padding, a light shadow; about 97px → 65px), so it doesn't crowd a
+laptop screen. The preview banner no longer sticks at all; it scrolls away above the header.

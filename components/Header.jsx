@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { nav, site } from '@/lib/site';
@@ -54,23 +54,41 @@ export default function Header() {
   const pathname = usePathname() ?? '';
   const container = pathname.startsWith('/admin') ? ADMIN_CONTAINER : 'container-site';
   const themed = THEMED.some((p) => pathname.startsWith(p));
-  // On a phone, the public pages keep the header (and its Donate button) in
-  // view as you scroll (home page review, 10 Nov 2026). Not on the signed-in
-  // pages, whose forms and staff screens have their own layout.
-  const stickyOnPhone = !themed && !pathname.startsWith('/admin');
+  // The public pages keep the header in view as you scroll, on every screen
+  // size (phones first, from the home page review; computers too, Lawrence
+  // 10 Nov 2026). Once the page has scrolled a little it slims down (smaller
+  // logo, less padding) so it doesn't crowd a laptop screen; at the top of
+  // the page it looks as it always did. Not on the signed-in pages, whose
+  // forms and staff screens have their own layout.
+  const pinned = !themed && !pathname.startsWith('/admin');
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    if (!pinned) return undefined;
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [pinned]);
+  const slim = pinned && scrolled;
 
   return (
     <header
-      className={`bg-white border-b border-neutral-200 ${stickyOnPhone ? 'sticky top-0 z-40 lg:static' : ''}`}
+      className={`bg-white border-b border-neutral-200 ${pinned ? 'sticky top-0 z-40' : ''} ${
+        slim ? 'shadow-sm' : ''
+      }`}
     >
       {themed && <span data-theme-area hidden />}
-      <div className={`${container} flex items-center justify-between py-3 sm:py-4`}>
+      <div
+        className={`${container} flex items-center justify-between transition-[padding] duration-200 ${
+          slim ? 'py-2' : 'py-3 sm:py-4'
+        }`}
+      >
         <Link href="/" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={site.logo}
             alt="Luke 14 Ministries"
-            className="site-logo-light h-12 sm:h-16 w-auto"
+            className={`site-logo-light w-auto transition-[height] duration-200 ${slim ? 'h-10 sm:h-12' : 'h-12 sm:h-16'}`}
           />
           {/* Dark mode's copy, words light (app/theme-dark.css swaps them).
               Lazy, so it is fetched only once it shows. */}
