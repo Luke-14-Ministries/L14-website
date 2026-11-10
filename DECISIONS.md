@@ -4308,3 +4308,6 @@ Staff see a plain list of main changes in `Luke14-Site-Changes.pdf` (SharePoint 
 recommendation). On the public pages it stays at the top as you scroll and slims after the first 40px
 (logo 64→48px on computers, less padding, a light shadow; about 97px → 65px), so it doesn't crowd a
 laptop screen. The preview banner no longer sticks at all; it scrolls away above the header.
+
+**And:** the two buttons on the home page photo (camp, Donate) are gone (Lawrence: "distracting and
+redundant on that page"). Donate is in the pinned header and Camp Celebrate is the first program card.

@@ -71,8 +71,8 @@ const actions = [
   { title: 'Pray', line: 'Join the prayer list', href: '/pray', image: asset('/images/DSC_0264.jpg') },
 ];
 
-// The camp button names the next camp from Setup (getCampFacts, 28 Oct
-// 2026), so it never advertises a summer that has passed.
+// No buttons on the photo (Lawrence, 10 Nov 2026: "distracting and
+// redundant"): Donate is in the header and the camp is the first program card.
 export default async function HomePage() {
   const [camp, retreat] = await Promise.all([getCampFacts(), getRetreatFacts()]);
 
@@ -128,14 +128,6 @@ export default async function HomePage() {
             Luke 14 Ministries helps families and individuals affected by disability find community
             and connection to Jesus through His church.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link href="/camp-celebrate" className="btn-primary">
-              {camp?.program ?? 'Camp Celebrate'}
-            </Link>
-            <Link href="/donate" className="btn-gold">
-              Donate
-            </Link>
-          </div>
         </div>
       </section>
 
