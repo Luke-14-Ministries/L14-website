@@ -107,9 +107,17 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* The group photo's people run from about 23% to 90% of its height
+          (raised hands to the front row's feet). A fixed 480px band cut off
+          the front row and the top (Lawrence, 10 Nov 2026), so on wider
+          screens the band keeps a 21:10 shape and sits a little low, which
+          shows everyone; phones keep the 480px minimum the words need. */}
       <section
-        className="relative flex items-center justify-center min-h-[480px] bg-cover bg-center"
-        style={{ backgroundImage: `url(${asset('/images/IMG_3690_2__281_29.jpg')})` }}
+        className="relative flex items-center justify-center min-h-[480px] sm:aspect-[21/10] bg-cover"
+        style={{
+          backgroundImage: `url(${asset('/images/IMG_3690_2__281_29.jpg')})`,
+          backgroundPosition: 'center 62%',
+        }}
       >
         <div className="absolute inset-0 bg-black/45" />
         <div className="relative container-site py-20 text-center">
