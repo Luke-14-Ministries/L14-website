@@ -4202,8 +4202,16 @@ From Ellen's Website Feedback list (9 Nov 2026).
   one family had picked it and then unticked it. Only a held place (signed up or interested) blocks
   removal now; cancelled choices go with the activity. Turning it off is still the answer when
   anyone holds a place.
-- **Not built, a policy question for Lawrence:** Ellen's suggestion that background checks run only
-  once the family's deposit is paid.
+- **Background checks wait for the deposit** (`0157`; Ellen's suggestion, Lawrence: "hold until
+  paid, but still flag that it is missing/out of date"), so the ministry is not out a check fee for
+  someone who backs out. A volunteer stays on Background screening with their check missing or out of
+  date, under *cannot be ordered yet*, "waiting on the deposit", until any of their volunteer places
+  on an upcoming event is on a registration whose deposit is paid, waived, covered by a full
+  scholarship, or not owed at all. The batch action refuses them too. `registration_deposit_in()`
+  gives that one yes/no to background-checks staff (registration_review shows only to Payments
+  readers) and mirrors its rules; on 9 Nov it agreed with registration_review on all 5 live
+  registrations. Approval still needs a check, as `0152` says: an unpaid volunteer cannot be approved
+  until both are done.
 - **A staff save or delete that fails says why** (Lawrence, same day: "intelligible if possible;
   gobbledy goop from Supabase if not, that we can bring back to a code session"). `withReason()` in
   `lib/dbErrors.js` keeps the page's first sentence and adds the reason: permission, "something else

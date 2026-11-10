@@ -227,7 +227,9 @@ export default function ScreeningBoard({ candidates }) {
             <ul className="mt-1.5 space-y-1 text-sm text-amber-900">
               {blocked.map((c) => (
                 <li key={c.personId}>
-                  <strong>{c.name}</strong>: {c.blockedBecause}
+                  <strong>{c.name}</strong>
+                  {/* Missing or out of date, said even while held (Lawrence, 9 Nov 2026). */}
+                  {c.reason ? ` (${c.reason === 'never checked' ? 'no check on file' : `check ${c.reason}`})` : ''}: {c.blockedBecause}
                 </li>
               ))}
             </ul>

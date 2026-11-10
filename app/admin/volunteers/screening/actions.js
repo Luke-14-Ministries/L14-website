@@ -22,6 +22,7 @@ import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { csvPlainText } from '@/lib/csv';
 import { dayInMorristown, todayInMorristown } from '@/lib/events';
+import { depositInByPerson, WAITING_ON_DEPOSIT } from '@/lib/screeningDeposit';
 import { withReason } from '@/lib/dbErrors';
 
 // How long a check stands before the person is due again.
@@ -74,11 +75,26 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
   const skipped = [];
   const rows = [];
 
+  // Volunteers wait for their registration's deposit (Ellen and Lawrence,
+  // 9 Nov 2026) -- checked here too, so a stale page cannot order one.
+  let depositIn = new Map();
+  if (reason === 'volunteer') {
+    try {
+      depositIn = await depositInByPerson(supabase, personIds);
+    } catch (err) {
+      return { ok: false, error: `Nothing was ordered: the deposits could not be checked. ${err.message}` };
+    }
+  }
+
   for (const p of people ?? []) {
     const name = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Someone';
     // Checkr's bulk template makes email the one required column, so a person
     // without one cannot be ordered at all. Saying which person, by name, is
     // the difference between a fixable problem and a silent short batch.
+    if (depositIn.get(p.id) === false) {
+      skipped.push(`${name}: ${WAITING_ON_DEPOSIT}`);
+      continue;
+    }
     const sendTo = normEmail(p.email) || normEmail(p.households?.email);
     if (!sendTo) {
       skipped.push(`${name}: no email on file for them or their household`);

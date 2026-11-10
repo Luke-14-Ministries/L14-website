@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
+import { depositInByPerson, WAITING_ON_DEPOSIT } from '@/lib/screeningDeposit';
 import { createClient } from '@/lib/supabase/server';
 import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
@@ -103,6 +104,11 @@ export default async function ScreeningPage() {
   if (clearancesError) throw new Error(`Background checks: ${clearancesError.message}`);
   const clearanceBy = new Map((clearances ?? []).map((c) => [c.person_id, c]));
 
+  // Held until the deposit is in (Ellen and Lawrence, 9 Nov 2026). Still
+  // listed, with the check missing or out of date, under "cannot be ordered
+  // yet"; markBatchOrdered() refuses them too.
+  const depositIn = await depositInByPerson(supabase, personIds);
+
   const isAdult = (dob) => {
     if (!dob) return null;                       // null = unknown, not false
     const d = new Date(`${dob}T00:00:00Z`);
@@ -137,6 +143,11 @@ export default async function ScreeningPage() {
         'no email on file for them or their household. Checkr needs one to send the invitation.';
     } else if (waiting) {
       blockedBecause = `already invited${c.order_batch ? ` on ${dayInMorristown(c.order_batch)}` : ''}, waiting on Checkr`;
+    }
+    // The deposit hold comes first: until it is in, nothing else matters yet.
+    // Anything else wrong is kept on the end so it can be fixed meanwhile.
+    if (!waiting && depositIn.get(personId) === false) {
+      blockedBecause = blockedBecause ? `${WAITING_ON_DEPOSIT}. Also: ${blockedBecause}` : WAITING_ON_DEPOSIT;
     }
 
     candidates.push({
