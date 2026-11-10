@@ -102,7 +102,22 @@ export default function AdminNav({
     writeOpen(!open);
   }
 
-  const isActive = (href) =>
+  // A sub-item (Background Checks under Volunteers) owns its pages, so the
+  // parent does not light as well. Read from the items passed in.
+  const subItems = [...top, ...sections.flatMap((sec) => sec.items), ...loose].filter((n) => n.sub);
+  const under = (path, href) => path === href || path === `${href}/` || path?.startsWith(`${href}/`);
+  const ownedBySub = (href) =>
+    subItems.some(
+      (n) => n.href !== href && n.href.startsWith(`${href}/`) &&
+        [n.href, ...(n.alsoActive ?? [])].some((h) => under(pathname, h))
+    );
+  const isActive = (href) => {
+    const sub = subItems.find((n) => n.href === href);
+    if (sub && (sub.alsoActive ?? []).some((h) => under(pathname, h))) return true;
+    if (ownedBySub(href)) return false;
+    return isActiveBase(href);
+  };
+  const isActiveBase = (href) =>
     pathname === href ||
     pathname === `${href}/` ||
     (href !== '/admin' && pathname?.startsWith(`${href}/`)) ||
@@ -125,7 +140,7 @@ export default function AdminNav({
         // rather than a count on it (25 Aug). Now the label takes the room it
         // needs and the badge holds its place at the end.
         className={`flex items-center justify-between gap-2 rounded-sm px-3 py-2 font-medium hover:bg-brand-light/60 ${
-          indent ? 'ml-4' : ''
+          indent ? (n.sub ? 'ml-8' : 'ml-4') : ''
         } ${
           isActive(n.href)
             ? 'bg-brand-light text-brand-dark font-semibold border-l-4 border-brand pl-2'

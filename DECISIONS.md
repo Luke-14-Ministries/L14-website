@@ -4219,3 +4219,27 @@ From Ellen's Website Feedback list (9 Nov 2026).
   otherwise the database's message with its code. Applied to the 35 staff actions that said only
   "That could not be saved / removed / changed". New staff actions use it. Family pages keep their
   friendly lines; the detail goes to the server log there.
+
+## 9 November 2026 — Background Checks under Volunteers; how long a check lasts is a setting
+
+Lawrence: "what is the 'out of date' background check based on? this should be editable in admin
+portal somewhere", and, asked whether a change should move dates already on file, "recalculate
+existing expiry dates".
+
+- **A *Background Checks* page under Volunteers in the sidebar** (`/admin/volunteers/background-checks/`,
+  the background-checks grant): every adult volunteer on an upcoming event with their check date,
+  expiry and status; filters for no check on file, waiting on Checkr, out of date, expiring within
+  60 days, and current; "waiting on the deposit" where `0157` holds an order. *Order checks* opens
+  Background screening, which now lights the same sidebar item and links back here. Checks are still
+  recorded on the Volunteers page or by the Checkr import.
+- **How long a check lasts is a setting** (`0158`, `background_check_settings`), 12 months as before
+  (annual Basic Plus, Larry and Ellen, 15 Oct). Holders of background-checks write change it on that
+  page through `set_clearance_interval_months()`, which **recalculates every expiry on file from its
+  check date** in the same step. It does so by clearing each expiry so `clearance_review_stamp()`
+  refills it, so every person's history (`clearance_review_log`) shows the old and new expiry and
+  who changed it; the change itself is in `background_check_settings_log`. *Alternative:* change only
+  checks recorded from then on (what the importer's old comment described); rejected so that one rule
+  covers everyone.
+- **The Checkr import no longer works out its own expiry.** It wrote check date + a 12-month constant;
+  it now writes the date and leaves the expiry to the database, so the setting governs both paths.
+- Tests: `supabase/tests/background_check_length_rules.sql` (6 checks); the harness passes.

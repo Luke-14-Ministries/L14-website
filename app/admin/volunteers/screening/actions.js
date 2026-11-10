@@ -27,22 +27,10 @@ import { withReason } from '@/lib/dbErrors';
 
 // How long a check stands before the person is due again.
 //
-// THREE YEARS IS TODAY'S PRACTICE, NOT A DECISION. The board is weighing
-// annual re-checks against the current three-year cycle, and the arithmetic is
-// close: annual on Basic Plus and triennial on Complete Criminal land within
-// about $150 of each other at this ministry's volume. Change this one number
-// if they choose annual -- and note it only affects checks recorded FROM THEN
-// ON, because expires_on is stored per row. Existing dates are history and are
-// deliberately left alone.
-// 12 months: annual Basic Plus (Larry and Ellen, 15 Oct 2026; migration 0095
-// holds the same number for the manual record). Was 36.
-const DEFAULT_INTERVAL_MONTHS = 12;
-
-function addMonths(iso, months) {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCMonth(d.getUTCMonth() + months);
-  return d.toISOString().slice(0, 10);
-}
+// HOW LONG A CHECK LASTS is a setting since 0158 (Lawrence, 9 Nov 2026), set
+// on the Background Checks page. The importer writes the check date only; the
+// database fills the expiry from it by that setting (clearance_review_stamp),
+// so an import and a hand-recorded check can never disagree.
 
 const normEmail = (v) => (v || '').trim().toLowerCase();
 
@@ -564,7 +552,9 @@ export async function importCheckrResults(csvText, { dryRun = true } = {}) {
         ? {
             background_check_on_file: true,
             background_check_date: completedOn,
-            expires_on: addMonths(completedOn, DEFAULT_INTERVAL_MONTHS),
+            // Cleared so the database refills it from the date by the setting,
+            // even when the date is unchanged (0158).
+            expires_on: null,
             report_completed_at: new Date(`${completedOn}T00:00:00Z`).toISOString(),
           }
         : {}),

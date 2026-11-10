@@ -46,7 +46,7 @@ export default async function ScreeningPage() {
       <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
           <h1 className="text-xl font-bold">Background Screening</h1>
-          <BackLink href="/admin/volunteers" label="Back to Volunteers" />
+          <BackLink href="/admin/volunteers/background-checks" label="Back to Background Checks" />
         </div>
         <p className="text-neutral-600">
           No upcoming events, so nobody is due a background check for one.
@@ -191,7 +191,7 @@ export default async function ScreeningPage() {
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
         <h1 className="text-xl font-bold">Background Screening</h1>
-        <BackLink href="/admin/volunteers" label="Back to Volunteers" />
+        <BackLink href="/admin/volunteers/background-checks" label="Back to Background Checks" />
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Checkr&rsquo;s bulk upload takes a list of email addresses and invites each

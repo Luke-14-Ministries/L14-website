@@ -44,7 +44,7 @@ const ROLE_INFO = {
 const SECTIONS = [
   // Search is the box in the header, not a sidebar item (Lawrence, 15 Oct
   // 2026); /admin/search is only where a search lands.
-  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/changes'] },
+  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/volunteers/background-checks', '/admin/changes'] },
   {
     key: 'camp',
     label: 'Camp Week',
