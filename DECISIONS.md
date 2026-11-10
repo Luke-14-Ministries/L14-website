@@ -4167,9 +4167,9 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
 ## 9 November 2026 — The alpha testers no longer hold up the address swap
 
 - **H2 is an open item, not a hold on Stage C** (Lawrence). Staff are still recruiting alpha testers,
-  and waiting for their real registrations would push the swap back for no gain: what H2 was meant to
-  prove (real money, plans, scholarship requests on the live keys) already passed in B4, and their
-  registrations work the same after the swap. Staff would like to swap within a day or two.
+  and their real registrations can come after the swap. Staff would like to swap within a day or
+  two. (The real-money paths H2 would exercise, deposits, plans and refunds on the live keys, were
+  already tested in B4.)
 - **H3 still holds it up** (one whole registration with a card payment and receipt on a phone),
   unless Lawrence says otherwise. It is the one check no one has done on a phone yet.
 - **H1, checked in the live data:** both 2027 weeks published, $50 deposit, balance due 1 Jul 2027,
