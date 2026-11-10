@@ -9,6 +9,10 @@
 // person. Placing or removing a unit moves everybody in it; the server works
 // the unit out again from the database (actions.js). Over capacity is allowed
 // and shown red -- the size is a warning, not a lock.
+//
+// VOLUNTEERS (Ellen, 9 Nov 2026): every volunteer on the event who is not
+// already going is listed under "Volunteers" below To place, and can be put
+// in a group without signing up, so a boat's count is its true count.
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -286,6 +290,7 @@ export default function GroupsBoard({
   activity,
   people,
   units,
+  volunteerUnits = [],
   groups,
   programs,
   noun,
@@ -302,8 +307,12 @@ export default function GroupsBoard({
   const [underOnly, setUnderOnly] = useState(false);
   const [waiverOnly, setWaiverOnly] = useState(false);
 
-  const going = useMemo(() => Object.values(people).filter((p) => !p.stray), [people]);
+  const going = useMemo(
+    () => Object.values(people).filter((p) => !p.stray && !p.volunteerPool),
+    [people]
+  );
   const placed = going.filter((p) => p.groupId).length;
+  const volunteersPlaced = Object.values(people).filter((p) => p.volunteerPool && p.groupId).length;
 
   // A unit is "to place" while anyone in it has no group.
   const toPlace = useMemo(
@@ -402,6 +411,8 @@ export default function GroupsBoard({
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4">
         <p className="font-semibold">
           {going.length} going · {placed} placed · {going.length - placed} to place ·{' '}
+          {volunteersPlaced > 0 &&
+            `${volunteersPlaced} ${volunteersPlaced === 1 ? 'volunteer' : 'volunteers'} placed · `}
           {groups.length} {groups.length === 1 ? noun.one : noun.many}
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -546,6 +557,40 @@ export default function GroupsBoard({
                 );
               })}
             </>
+          )}
+
+          {volunteerUnits.length > 0 && (
+            <details className="mt-5 border-t border-neutral-200 pt-3">
+              <summary className="cursor-pointer font-bold">
+                Volunteers ({volunteerUnits.length})
+              </summary>
+              <p className="mt-1 text-xs text-neutral-500">
+                Volunteers on this event who are not signed up and are not a camper&rsquo;s buddy
+                for it. They don&rsquo;t need to sign up: place them to fill a {noun.one}, and they
+                count toward its size.
+              </p>
+              {(() => {
+                const list = volunteerUnits.filter((u) => matches(people[u[0]]));
+                return list.length === 0 ? (
+                  <p className="mt-2 text-sm text-neutral-500">No volunteer matches the filters.</p>
+                ) : (
+                  <ul className="mt-2 space-y-1">
+                    {list.map((u) => (
+                      <li key={u[0]}>
+                        <UnitButton
+                          unit={u}
+                          people={people}
+                          minAge={activity.minAge}
+                          selected={isSelected(u)}
+                          disabled={pending || !canPlace}
+                          onPick={() => pick(u)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
+            </details>
           )}
         </section>
 

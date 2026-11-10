@@ -232,6 +232,11 @@ export default async function ActivitiesPage({ searchParams }) {
         id: row.slot_id,
         capacity: row.capacity,
         taken: row.taken,
+        // Raw wall-clock values, compared as strings ("13:00:00") to grey out
+        // a time that overlaps one already booked for the same person (0156).
+        slot_date: row.slot_date,
+        start_time: row.start_time,
+        end_time: row.end_time,
         // Formatted once, on the server, so every surface says the time the
         // same way and no client does date maths on a wall-clock value.
         label_text: `${fmtDay(row.slot_date)}, ${fmtTime(row.start_time)}–${fmtTime(

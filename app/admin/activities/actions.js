@@ -467,9 +467,12 @@ async function applyWaiver(supabase, activityId, waiver) {
 // who had signed up, when, and what they acknowledged. That is what you want
 // for "not running this year".
 //
-// DELETING removes the row. Allowed only while nobody has signed up, because
+// DELETING removes the row. Allowed only while nobody holds a place, because
 // activity_signups cascades — deleting an activity with names on it would
 // silently take a family's answer with it, and no screen would ever say so.
+// A CANCELLED choice holds nothing and does not block it (Ellen, 9 Nov 2026:
+// Salon could not be removed because one family had picked it and then
+// unticked it); those rows go with the activity.
 export async function setActivityActive(activityId, active) {
   const { error: authError } = await requireCoordinator();
   if (authError) return { ok: false, error: authError };
@@ -494,7 +497,8 @@ export async function deleteActivity(activityId) {
   const { count, error: countError } = await supabase
     .from('activity_signups')
     .select('id', { count: 'exact', head: true })
-    .eq('activity_id', activityId);
+    .eq('activity_id', activityId)
+    .neq('status', 'cancelled');
   // A failed count must not read as "nobody signed up" -- the delete cascades.
   if (countError) return { ok: false, error: `The signups could not be counted: ${countError.message}` };
 
@@ -503,7 +507,7 @@ export async function deleteActivity(activityId) {
       ok: false,
       error: `${count} ${
         count === 1 ? 'person has' : 'people have'
-      } already signed up for this. Turn it off instead. That hides it from families and keeps the list of who signed up.`,
+      } signed up for this. Turn it off instead. That hides it from families and keeps the list of who signed up.`,
     };
   }
 

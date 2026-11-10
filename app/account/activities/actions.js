@@ -266,6 +266,16 @@ export async function setActivityChoice({
   if (error) {
     // The capacity trigger speaks SQL; a family should not have to.
     // The two slot guards from 0052 speak SQL; a family should not have to.
+    // 0156: one person, one place at a time. The database names the clash
+    // ("Haircut, 1:00-1:20"); the page greys those times out, so this is
+    // reached only from a stale page or a second tab.
+    const clash = /clashes with (.+?) already booked/i.exec(error.message);
+    if (clash) {
+      return {
+        ok: false,
+        error: `That time overlaps ${clash[1]}, already booked for ${participant.people?.first_name ?? 'this person'}. Please choose another time.`,
+      };
+    }
     if (/choose a time/i.test(error.message)) {
       return { ok: false, error: 'Please choose a time for this one.' };
     }

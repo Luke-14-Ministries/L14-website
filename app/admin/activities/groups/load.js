@@ -14,6 +14,7 @@
 
 import { ageAt } from '@/lib/programs';
 import { buildUnits } from '@/lib/activityGroups';
+import { isVolunteerRole } from '@/lib/roles';
 
 function fail(what, error) {
   throw new Error(`Activity groups — ${what}: ${error.message}`);
@@ -114,6 +115,21 @@ export async function loadActivityGroups(supabase, activityId) {
     pairs.filter((p) => statusById.has(p.camperId)).map((p) => p.buddyId)
   );
 
+  // VOLUNTEERS WITHOUT A SIGN-UP (Ellen, 9 Nov 2026): "Volunteers need to be
+  // visible on the pages we assign people to boats, though I don't think
+  // volunteers need to sign up for these activities. This gives an idea of
+  // true boat capacity." Every volunteer on the event who is not already
+  // going (signed up, or riding with their camper as a buddy) can be placed
+  // in a group, one at a time, and counts toward its size. Unplaced, they show
+  // only in the board's own Volunteers list -- not in "To place", the print
+  // sheet or the CSV, which stay about the people going. Placed, they are in
+  // the group everywhere. The database already allowed it: a placement is per
+  // person and never required a signup (0125).
+  const poolIds = rows
+    .filter((r) => isVolunteerRole(r.camp_role) && !goingIds.has(r.id))
+    .map((r) => r.id);
+  const poolSet = new Set(poolIds);
+
   // ---- Waivers ------------------------------------------------------------
   // Does the activity carry one at all? Ours (a required internal agreement)
   // or the outfitter's (a provider named), the two kinds the view knows.
@@ -136,12 +152,12 @@ export async function loadActivityGroups(supabase, activityId) {
   // board, the print and the CSV until staff accept the confirmation. Awaiting
   // check reads as its own state; rejected counts as missing, as in the view.
   const uploadStatus = new Map();
-  if (hasProvider && goingIds.size > 0) {
+  if (hasProvider && goingIds.size + poolIds.length > 0) {
     const { data, error } = await supabase
       .from('activity_waiver_uploads')
       .select('registration_participant_id, review_status')
       .eq('activity_id', activityId)
-      .in('registration_participant_id', [...goingIds]);
+      .in('registration_participant_id', [...goingIds, ...poolIds]);
     if (error) fail('waiver uploads', error);
     for (const u of data ?? []) uploadStatus.set(u.registration_participant_id, u.review_status);
   }
@@ -150,7 +166,8 @@ export async function loadActivityGroups(supabase, activityId) {
   // activity_waivers_outstanding -- the view is built from signups. For them
   // the page asks whether our waiver is signed on this registration, so the
   // raft list does not show a buddy as "on file" by silence.
-  const unsignedBuddies = [...buddyIds].filter((id) => !statusById.has(id));
+  // The same question for a volunteer placed without a sign-up.
+  const unsignedBuddies = [...buddyIds, ...poolIds].filter((id) => !statusById.has(id));
   const buddySigned = new Set();
   if (ourAgreementIds.length > 0 && unsignedBuddies.length > 0) {
     const personIds = unsignedBuddies.map((id) => rowById.get(id)?.people?.id).filter(Boolean);
@@ -214,14 +231,18 @@ export async function loadActivityGroups(supabase, activityId) {
       isBuddy: buddyIds.has(id),
       pairedWith: [...(pairedWith.get(id) ?? [])],
       groupId: groupOf.get(id) ?? null,
+      // A volunteer on the event, not signed up and not a going camper's
+      // buddy: placeable without a sign-up (Ellen, 9 Nov 2026).
+      volunteerPool: poolSet.has(id),
       // Placed, but neither signed up nor a going camper's buddy any more
       // (a cancelled signup, an ended pairing). Shown, never hidden.
-      stray: !goingIds.has(id),
+      stray: !goingIds.has(id) && !poolSet.has(id),
     };
   };
 
   const people = {};
   for (const id of goingIds) people[id] = shapePerson(id);
+  for (const id of poolIds) people[id] = shapePerson(id);
   for (const m of members) {
     const id = m.registration_participant_id;
     if (!people[id] && rowById.has(id)) people[id] = shapePerson(id);
@@ -244,7 +265,14 @@ export async function loadActivityGroups(supabase, activityId) {
       .map((m) => m.registration_participant_id)
       .filter((id) => people[id]?.stray)
       .map((id) => [id]),
+    // Volunteers placed without a sign-up, each on their own.
+    ...poolIds.filter((id) => people[id].groupId).map((id) => [id]),
   ];
+  // Volunteers not yet placed, by name, for the board's Volunteers list only.
+  const volunteerUnits = poolIds
+    .filter((id) => !people[id].groupId)
+    .sort((a, b) => people[a].name.localeCompare(people[b].name))
+    .map((id) => [id]);
 
   const groups = (groupRes.data ?? []).map((g) => ({
     id: g.id,
@@ -271,6 +299,7 @@ export async function loadActivityGroups(supabase, activityId) {
       : null,
     people,
     units: allUnits,
+    volunteerUnits,
     groups,
     programs: (progRes.data ?? []).map((p) => ({ id: p.id, name: p.name })),
   };

@@ -5,11 +5,13 @@
 // the family registration wizard. Temporary: lib/notices.js holds the date it
 // stops (WELCOME_NOTICE_UNTIL) and the storage key.
 //
-// Once per browser until dismissed WITH the tick: closing it any other way
-// (Got it, Close, Escape) hides it for this page only, and it comes back on
-// the next visit. The tick is stored in localStorage; private mode or blocked
-// storage means the card simply comes back next time, which is the safe way
-// round for a notice.
+// Once per browser until dismissed WITH the tick (localStorage). Closing it
+// any other way (Got it, Close, Escape) hides it for the rest of the visit:
+// until the browser tab is closed (sessionStorage). Until 9 Nov 2026 that
+// was for this page only, so it came back every time the family returned to
+// the dashboard (Ellen: "those things reoccur only when logging in"). Private
+// mode or blocked storage means the card simply comes back, which is the
+// safe way round for a notice.
 //
 // Styled like the site's other overlays (components/IdleTimeout.jsx, the
 // Creed pop-out on the volunteer form): a plain fixed overlay, no dialog
@@ -23,7 +25,7 @@
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { site } from '@/lib/site';
-import { WELCOME_DISMISS_KEY, welcomeNoticeCurrent } from '@/lib/notices';
+import { WELCOME_DISMISS_KEY, WELCOME_SESSION_KEY, welcomeNoticeCurrent } from '@/lib/notices';
 
 const listeners = new Set();
 function subscribe(callback) {
@@ -38,9 +40,22 @@ function subscribe(callback) {
 function readHidden() {
   if (!welcomeNoticeCurrent()) return true;
   try {
-    return window.localStorage.getItem(WELCOME_DISMISS_KEY) === '1';
+    if (window.localStorage.getItem(WELCOME_DISMISS_KEY) === '1') return true;
+  } catch {
+    // fall through to this visit's answer
+  }
+  try {
+    return window.sessionStorage.getItem(WELCOME_SESSION_KEY) === '1';
   } catch {
     return false;
+  }
+}
+// Closed without the tick: hidden until this tab is closed.
+function rememberClosedThisVisit() {
+  try {
+    window.sessionStorage.setItem(WELCOME_SESSION_KEY, '1');
+  } catch {
+    // Not fatal: it comes back on the next page, as it did before.
   }
 }
 function rememberDismissed() {
@@ -90,6 +105,7 @@ export default function WelcomeNotice() {
       if (e.key === 'Escape') {
         e.preventDefault();
         if (dontShowRef.current) rememberDismissed();
+        else rememberClosedThisVisit();
         setClosed(true);
         return;
       }
@@ -118,6 +134,7 @@ export default function WelcomeNotice() {
 
   function close() {
     if (dontShow) rememberDismissed();
+    else rememberClosedThisVisit();
     setClosed(true);
   }
 

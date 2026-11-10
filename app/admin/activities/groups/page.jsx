@@ -88,6 +88,7 @@ export default async function ActivityGroupsPage({ searchParams }) {
         event={data.event}
         people={data.people}
         units={data.units}
+        volunteerUnits={data.volunteerUnits}
         groups={data.groups}
         programs={data.programs}
         noun={noun}

@@ -4177,3 +4177,30 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
   now midnight ET, matching Week 1 (Lawrence's OK; a direct update of the one row). Week 2's open
   time, already past, was left alone. Larry and Ellen's sign-off on the rest of Setup is still to
   record.
+
+## 9 November 2026 — Ellen's feedback: overlapping times, the welcome card, volunteers on boats, removing Salon
+
+From Ellen's Website Feedback list (9 Nov 2026).
+
+- **One person, one place at a time** (`0156`). A camper could book the 1pm Haircut and the 1pm
+  Massage on the same day. The family's activity page now greys out a time that overlaps one already
+  booked for that person ("overlaps Haircut"), and a trigger refuses it in the database for everyone,
+  staff included: a person cannot be in two places whoever booked it. Back to back is allowed. Rows
+  that already overlapped are left alone; the page shows the clash in amber and asks the family to
+  move one (on 9 Nov the only one was on a staff test registration). Tests:
+  `supabase/tests/activity_overlap_rules.sql`.
+- **The welcome card stays closed for the visit.** Closing it without "Don't show this again" used
+  to hide it for that page only, so it came back every time the family returned to the dashboard.
+  Now it stays hidden until the browser tab is closed (sessionStorage); the tick is still permanent
+  for that browser.
+- **Volunteers can be placed in rafts and boats without signing up.** Every volunteer on the event
+  who is not already going (signed up, or riding with their camper as a buddy) is listed under
+  *Volunteers* on the groups board and counts toward a group's size once placed, so the boat count
+  is the true count. Unplaced volunteers stay off *To place*, the print sheet and the CSV, which
+  remain about the people going. The database already allowed it (placements are per person, 0125).
+- **An activity with only cancelled choices can be removed.** Salon could not be removed because
+  one family had picked it and then unticked it. Only a held place (signed up or interested) blocks
+  removal now; cancelled choices go with the activity. Turning it off is still the answer when
+  anyone holds a place.
+- **Not built, a policy question for Lawrence:** Ellen's suggestion that background checks run only
+  once the family's deposit is paid.

@@ -191,7 +191,25 @@ function Availability({ activity }) {
   );
 }
 
-function ActivityRow({ person, activity }) {
+// ONE PLACE AT A TIME (0156, Ellen 9 Nov 2026): a time that overlaps one
+// already booked for this person on another activity, the same day, is greyed
+// out with what it clashes with. Back to back is fine. The database refuses
+// the overlap too, so a stale page or a second tab cannot get round it.
+// Wall-clock strings ("13:00:00") compare correctly as text.
+function clashWith(slot, booked, activityId) {
+  if (!slot?.slot_date) return null;
+  return (
+    booked.find(
+      (b) =>
+        b.activityId !== activityId &&
+        b.slot.slot_date === slot.slot_date &&
+        b.slot.start_time < slot.end_time &&
+        slot.start_time < b.slot.end_time
+    ) ?? null
+  );
+}
+
+function ActivityRow({ person, activity, booked = [] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
@@ -360,26 +378,32 @@ function ActivityRow({ person, activity }) {
               const left = sl.capacity == null ? null : Math.max(0, sl.capacity - (sl.taken ?? 0));
               const mine = existing?.slot_id === sl.id;
               const soldOut = left === 0 && !mine;
+              const clash = clashWith(sl, booked, activity.id);
+              const blocked = soldOut || (clash && !mine);
               return (
                 <label
                   key={sl.id}
                   className={`flex items-center gap-2 rounded-sm border px-3 py-1.5 text-sm ${
                     mine ? 'border-brand bg-brand-light font-semibold' : 'border-neutral-200'
-                  } ${soldOut ? 'opacity-60' : 'cursor-pointer'}`}
+                  } ${blocked ? 'opacity-60' : 'cursor-pointer'}`}
                 >
                   <input
                     type="radio"
                     name={`slot-${person.participantId}-${activity.id}`}
                     checked={mine || slotId === sl.id}
-                    disabled={pending || soldOut}
+                    disabled={pending || blocked}
                     onChange={() => {
                       setSlotId(sl.id);
                       toggle(true, sl.id);
                     }}
                   />
                   <span>{sl.label_text}</span>
-                  <span className="ml-auto text-xs text-neutral-500">
-                    {left == null ? '' : soldOut ? 'full' : `${left} left`}
+                  <span className="ml-auto text-right text-xs text-neutral-500">
+                    {clash
+                      ? mine
+                        ? <span className="font-semibold text-amber-800">overlaps {clash.name}</span>
+                        : `overlaps ${clash.name}`
+                      : left == null ? '' : soldOut ? 'full' : `${left} left`}
                   </span>
                 </label>
               );
@@ -388,6 +412,13 @@ function ActivityRow({ person, activity }) {
           {chosenSlot && isOn && (
             <p className="mt-1 text-xs text-neutral-500">
               Booked on {chosenSlot.label_text}. Pick another to move.
+            </p>
+          )}
+          {/* Booked before 0156, or by staff: say so, and let them move it. */}
+          {chosenSlot && isOn && clashWith(chosenSlot, booked, activity.id) && (
+            <p className="mt-1 text-sm text-amber-800">
+              This time overlaps {clashWith(chosenSlot, booked, activity.id).name}. Please pick
+              another time for one of them.
             </p>
           )}
         </fieldset>
@@ -509,6 +540,13 @@ function ActivityRow({ person, activity }) {
 }
 
 export default function ActivityPicker({ person, activities }) {
+  // Every time already booked for this person, for clashWith().
+  const booked = activities.flatMap((a) => {
+    const c = person.choices[a.id];
+    if (!c || c.status === 'cancelled' || !c.slot_id) return [];
+    const slot = (a.slots ?? []).find((sl) => sl.id === c.slot_id);
+    return slot ? [{ activityId: a.id, name: a.name, slot }] : [];
+  });
   const chosenCount = activities.filter((a) => {
     const c = person.choices[a.id];
     return c && (c.status === 'interested' || c.status === 'signed_up');
@@ -530,7 +568,7 @@ export default function ActivityPicker({ person, activities }) {
       </div>
       <ul className="divide-y divide-neutral-100">
         {activities.map((a) => (
-          <ActivityRow key={a.id} person={person} activity={a} />
+          <ActivityRow key={a.id} person={person} activity={a} booked={booked} />
         ))}
       </ul>
     </div>

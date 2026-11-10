@@ -603,7 +603,7 @@ export function ActivityEditor({ activity, eventId = null, canEmail = false, wai
               onClick={() => {
                 if (
                   !confirm(
-                    `Remove "${activity.name}" from this event?\n\nYou can only remove it while nobody has signed up. If anyone has, turn it off instead. That hides it and keeps the list of names.`
+                    `Remove "${activity.name}" from this event?\n\nYou can only remove it while nobody is signed up. If anyone is, turn it off instead. That hides it and keeps the list of names.`
                   )
                 )
                   return;
