@@ -160,8 +160,9 @@ export default async function BackgroundChecksPage({ searchParams }) {
           </Link>
         </div>
         <p className="mt-1 text-sm text-neutral-600">
-          Adult volunteers on upcoming events. Record a check (on file, its date, OK to serve) on
-          the Volunteers page; Checkr results come in through Order checks.
+          Every adult volunteer signed up for an upcoming event, and where their background check
+          stands. Order checks makes the file you send to Checkr and brings Checkr&rsquo;s results
+          back in. To enter a check by hand, use the Volunteers page.
           {minors > 0 && ` ${minors} under 18 ${minors === 1 ? 'is' : 'are'} not screened and not listed.`}
         </p>
       </div>
