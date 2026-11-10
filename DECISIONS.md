@@ -4163,3 +4163,17 @@ From Lawrence's first real registration on the TEST retreat during Stage B.
 - **"Trouble sleeping away from home" is a camper's question.** Everyone else is asked *Does … need
   any accommodations at camp?* (same columns, so staff read one answer).
 - **Deposit short is amber everywhere** (the review pill was the one grey copy).
+
+## 9 November 2026 — The alpha testers no longer hold up the address swap
+
+- **H2 is an open item, not a hold on Stage C** (Lawrence). Staff are still recruiting alpha testers,
+  and waiting for their real registrations would push the swap back for no gain: what H2 was meant to
+  prove (real money, plans, scholarship requests on the live keys) already passed in B4, and their
+  registrations work the same after the swap. Staff would like to swap within a day or two.
+- **H3 still holds it up** (one whole registration with a card payment and receipt on a phone),
+  unless Lawrence says otherwise. It is the one check no one has done on a phone yet.
+- **H1, checked in the live data:** both 2027 weeks published, $50 deposit, balance due 1 Jul 2027,
+  capacity 230 each. Week 2's registration close (27 Jun 2027, 3:07 PM ET) looked accidental and is
+  now midnight ET, matching Week 1 (Lawrence's OK; a direct update of the one row). Week 2's open
+  time, already past, was left alone. Larry and Ellen's sign-off on the rest of Setup is still to
+  record.
