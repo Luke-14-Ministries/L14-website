@@ -18,14 +18,16 @@ export default function Footer() {
         </div>
         <div>
           <h4 className="text-lg font-bold mb-3">Info</h4>
-          <ul className="space-y-1.5 text-neutral-200">
+          {/* Footer links: taller on a phone so each is easy to tap (home page
+              review, 10 Nov 2026). */}
+          <ul className="space-y-1 sm:space-y-1.5 text-neutral-200 [&_a]:inline-block [&_a]:py-1.5 sm:[&_a]:py-0">
             <li><Link href="/mission" className="hover:underline">About</Link></li>
             <li><Link href="/contact" className="hover:underline">Contact</Link></li>
             <li><Link href="/donate" className="hover:underline">Donate</Link></li>
             <li><Link href="/account/dashboard/" className="hover:underline">My Account</Link></li>
           </ul>
           <p className="mt-4 text-neutral-300">Follow us on social media!</p>
-          <div className="flex gap-4 mt-2 text-neutral-200">
+          <div className="flex flex-wrap gap-x-4 mt-2 text-neutral-200 [&_a]:inline-block [&_a]:py-1.5 sm:[&_a]:py-0">
             <a href={site.social.facebook} aria-label="Facebook" className="hover:underline">Facebook</a>
             <a href={site.social.instagram} aria-label="Instagram" className="hover:underline">Instagram</a>
             <a href={site.social.youtube} aria-label="YouTube" className="hover:underline">YouTube</a>
@@ -33,7 +35,7 @@ export default function Footer() {
         </div>
         <div>
           <h4 className="text-lg font-bold mb-3">Programs</h4>
-          <ul className="space-y-1.5 text-neutral-200">
+          <ul className="space-y-1 sm:space-y-1.5 text-neutral-200 [&_a]:inline-block [&_a]:py-1.5 sm:[&_a]:py-0">
             <li><Link href="/camp-celebrate" className="hover:underline">Camp Celebrate</Link></li>
             <li><Link href="/luke-14-party" className="hover:underline">Luke 14 Party</Link></li>
             <li><Link href="/wheels-for-kenya" className="hover:underline">Wheels for Kenya</Link></li>
@@ -41,7 +43,7 @@ export default function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-white/20 py-4 text-center text-sm text-neutral-300">
+      <div className="border-t border-white/20 px-4 py-4 text-center text-sm text-neutral-300">
         © {new Date().getFullYear()} Luke 14 Ministries · Luke 14 Ministries is a
         501(c)3 non-profit ministry.
       </div>

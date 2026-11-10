@@ -34,7 +34,9 @@ export default function RootLayout({ children }) {
       <body>
         {/* print:hidden — when any page is printed (rosters, kitchen list,
             statements), the site chrome stays off the paper. */}
-        <div className="print:hidden">
+        {/* contents: the wrapper draws no box, so the header can stay in view
+            on a phone (sticky to the page, not to this div; 10 Nov 2026). */}
+        <div className="print:hidden contents">
           <PreviewBanner />
           <Header />
         </div>

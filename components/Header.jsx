@@ -54,17 +54,23 @@ export default function Header() {
   const pathname = usePathname() ?? '';
   const container = pathname.startsWith('/admin') ? ADMIN_CONTAINER : 'container-site';
   const themed = THEMED.some((p) => pathname.startsWith(p));
+  // On a phone, the public pages keep the header (and its Donate button) in
+  // view as you scroll (home page review, 10 Nov 2026). Not on the signed-in
+  // pages, whose forms and staff screens have their own layout.
+  const stickyOnPhone = !themed && !pathname.startsWith('/admin');
 
   return (
-    <header className="bg-white border-b border-neutral-200">
+    <header
+      className={`bg-white border-b border-neutral-200 ${stickyOnPhone ? 'sticky top-0 z-40 lg:static' : ''}`}
+    >
       {themed && <span data-theme-area hidden />}
-      <div className={`${container} flex items-center justify-between py-4`}>
+      <div className={`${container} flex items-center justify-between py-3 sm:py-4`}>
         <Link href="/" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={site.logo}
             alt="Luke 14 Ministries"
-            className="site-logo-light h-14 sm:h-16 w-auto"
+            className="site-logo-light h-12 sm:h-16 w-auto"
           />
           {/* Dark mode's copy, words light (app/theme-dark.css swaps them).
               Lazy, so it is fetched only once it shows. */}
@@ -74,7 +80,7 @@ export default function Header() {
               src={site.logoDark}
               alt="Luke 14 Ministries"
               loading="lazy"
-              className="site-logo-dark hidden h-14 sm:h-16 w-auto"
+              className="site-logo-dark hidden h-12 sm:h-16 w-auto"
             />
           )}
         </Link>
@@ -91,9 +97,15 @@ export default function Header() {
 
           {themed && <ThemeSwitch className="lg:ml-2" />}
 
+          {/* Donate stays one tap away on a phone, not only inside the menu. */}
+          <Link href="/donate" className="lg:hidden btn-gold px-3! py-1.5! text-sm">
+            Donate
+          </Link>
+
           <button
-            className="lg:hidden text-3xl px-2"
+            className="lg:hidden text-3xl min-h-11 min-w-11 flex items-center justify-center"
             aria-label="Menu"
+            aria-expanded={open}
             onClick={() => setOpen(!open)}
           >
             ☰
@@ -102,7 +114,16 @@ export default function Header() {
       </div>
 
       {open && (
-        <nav className="lg:hidden border-t border-neutral-200 pb-4">
+        <nav className="lg:hidden border-t border-neutral-200 pb-4 max-h-[calc(100vh-5rem)] overflow-y-auto">
+          <div className="px-6 pt-4">
+            <Link
+              href="/camp-celebrate"
+              className="btn-primary"
+              onClick={() => setOpen(false)}
+            >
+              Register for camp
+            </Link>
+          </div>
           {nav.map((group) =>
             group.items ? (
               <div key={group.label} className="px-6 pt-3">

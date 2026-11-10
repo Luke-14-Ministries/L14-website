@@ -4275,3 +4275,31 @@ Chosen in the build, not asked:
 - Badges and the Monday staff summary count a family request once.
 - Tests: `supabase/tests/family_scholarship_rules.sql` (10 checks); the harness passes.
 
+
+## 10 November 2026 — Home page: keep the new layout, borrow the old site's warmth
+
+Lawrence asked why the new home page looks so different from the live Squarespace one. It was never
+decided: the first preview build (2 July 2026, "site recreation") copied the words and photos from the
+live site but not its design (teal and gold, Georgia and system fonts, a hero with buttons and a card grid,
+where Squarespace has full-width photo strips, Bodoni and Proxima Nova). Nothing recorded a choice since.
+
+A design reviewer compared the two at desktop and phone widths and picked the new layout: it says what
+to do in the first screen, reads better over photos and is much better on a phone. Lawrence: "implement
+all of those suggestions". Done the same day:
+
+- A short headline ("Every family has a place here", a first draft for staff to improve) with the
+  mission sentence under it.
+- One line under each program card, and "Registration open" / "Registration opens …" from Setup for
+  Camp Celebrate and the retreat.
+- Adult Adventure Retreat as a fourth program card, with the live site's own photo of it (IMG_2225,
+  downloaded with Lawrence's OK and shrunk to 1600px).
+- One full-width camp photo with Luke 14:23 (the mission page's verse), the old site's warmth.
+- An action line on each Get Involved card; card photos are decoration (alt=""), so screen readers
+  read each title once.
+- On phones the header stays in view with a Donate button, the menu starts with "Register for camp",
+  the menu button is 44px, footer links are taller, the copyright line has side margins, and the empty
+  strip above the footer is gone. To let the header stick, the wrapper around the preview banner and
+  header draws no box (`contents`), and the preview banner sticks only on desktop.
+
+Fonts were left alone (Lawrence: "fonts aren't a big deal"). The Hazelnut Movement stays off (28 Oct).
+Staff see a plain list of main changes in `Luke14-Site-Changes.pdf` (SharePoint root, started today).
