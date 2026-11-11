@@ -74,7 +74,7 @@ convention here.
 ```powershell
 mkdir C:\dev
 cd C:\dev
-git clone https://github.com/luke-14-ministries/website.git luke14
+git clone https://github.com/Luke-14-Ministries/L14-website.git luke14
 cd luke14
 npm ci
 npm run dev
