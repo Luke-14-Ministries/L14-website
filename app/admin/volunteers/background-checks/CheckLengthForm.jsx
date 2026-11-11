@@ -48,8 +48,8 @@ export default function CheckLengthForm({ months, onFile, canEdit }) {
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4">
-      <h2 className="font-bold">How long a check lasts</h2>
+    <div className="rounded-lg border border-neutral-300 bg-white p-4">
+      <h3 className="font-bold">How long a check lasts</h3>
       {editing ? (
         <form onSubmit={save} className="mt-2 flex flex-wrap items-end gap-2">
           <label className="text-sm">

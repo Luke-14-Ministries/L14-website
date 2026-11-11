@@ -27,6 +27,7 @@ import { loadScreeningPeople, registryBucket, fullCheckCurrent } from '@/lib/bac
 import CheckLengthForm from './CheckLengthForm';
 import RegistrySearchForm from './RegistrySearchForm';
 import RegistryQueue from './RegistryQueue';
+import CheckCard from './CheckCard';
 
 export const metadata = { title: 'Background Checks' };
 
@@ -103,9 +104,18 @@ function FilterPills({ filters, counts, current, hrefFor, label }) {
   );
 }
 
+// One outlined box style for "where and how to do this check" in both parts
+// (Lawrence, 11 Nov 2026: both cards laid out the same way). CheckLengthForm
+// and RegistryQueue use the same classes.
+const HOW_TO_BOX = 'rounded-lg border border-neutral-300 bg-white p-4';
+
+const RED = 'bg-red-100 text-red-800';
+const AMBER = 'bg-amber-100 text-amber-900';
+const QUIET = 'bg-white text-neutral-600 ring-1 ring-neutral-200';
+
 function StatusPill({ pill }) {
   return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${pill.cls}`} title={pill.title}>
+    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${pill.cls}`} title={pill.title}>
       {pill.text}
     </span>
   );
@@ -252,6 +262,39 @@ export default async function BackgroundChecksPage({ searchParams }) {
         .sort((a, b) => a.name.localeCompare(b.name))
     : [];
 
+  // ---- What each folded header says (Lawrence, 11 Nov 2026) ----
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const volunteerSummary = [
+    plural(vCounts[''], 'volunteer', 'volunteers'),
+    `${vCounts.missing} no check on file`,
+    `${vCounts.waiting} waiting on Checkr`,
+    `${vCounts.expired} out of date`,
+    `${vCounts.current + vCounts.soon} current`,
+  ].join(' · ');
+  // Work due: someone with no check, or one out of date or about to be.
+  const volunteerWork = vCounts.missing + vCounts.expired + vCounts.soon;
+  const volunteerPills = [
+    vCounts.missing > 0 && { text: `${vCounts.missing} no check`, cls: RED },
+    vCounts.expired > 0 && { text: `${vCounts.expired} out of date`, cls: RED },
+    vCounts.soon > 0 && { text: `${vCounts.soon} expiring soon`, cls: AMBER },
+    volunteerWork === 0 && vCounts[''] > 0 && { text: 'Nothing due', cls: QUIET },
+  ].filter(Boolean);
+  const registrySummary = [
+    plural(rCounts[''], 'adult', 'adults'),
+    plural(rCounts.due, 'search due', 'searches due'),
+    `${rCounts.follow_up} ${rCounts.follow_up === 1 ? 'needs' : 'need'} follow-up`,
+    `${rCounts.not_permitted} not permitted`,
+    `${rCounts.current + rCounts.soon} current`,
+  ].join(' · ');
+  const registryWork = rCounts.due + rCounts.follow_up;
+  const registryPills = [
+    rCounts.due > 0 && { text: plural(rCounts.due, 'search due', 'searches due'), cls: AMBER },
+    rCounts.follow_up > 0 && { text: `${rCounts.follow_up} follow-up`, cls: AMBER },
+    rCounts.not_permitted > 0 && { text: `${rCounts.not_permitted} not permitted`, cls: RED },
+    rCounts.soon > 0 && { text: `${rCounts.soon} expiring soon`, cls: AMBER },
+    registryWork === 0 && rCounts.not_permitted === 0 && rCounts[''] > 0 && { text: 'Nothing due', cls: QUIET },
+  ].filter(Boolean);
+
   return (
     <div className="space-y-5">
       <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
@@ -272,21 +315,35 @@ export default async function BackgroundChecksPage({ searchParams }) {
       </div>
 
       {/* ---- Part 1 ---- */}
-      <section id="volunteers" className="space-y-4 rounded-lg border border-neutral-300 bg-neutral-50 p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-lg font-bold">Volunteers: full background check (Checkr)</h2>
-          <Link href="/admin/volunteers/screening/" className="btn-primary py-2!">
-            Order checks
-          </Link>
-        </div>
+      <CheckCard
+        id="volunteers"
+        title="Volunteers: full background check (Checkr)"
+        summary={volunteerSummary}
+        pills={volunteerPills}
+        defaultOpen={volunteerWork > 0 || Boolean(vFilter)}
+      >
         <p className="text-sm text-neutral-600">
-          {volunteerRows.length} adult {volunteerRows.length === 1 ? 'volunteer' : 'volunteers'}. Order checks
-          makes the file you send to Checkr and brings Checkr&rsquo;s results back in. To enter a check
-          by hand, use the Volunteers page. A volunteer can&rsquo;t be approved without a current check
-          marked OK to serve.
+          {volunteerRows.length} adult {volunteerRows.length === 1 ? 'volunteer' : 'volunteers'} on upcoming
+          events. A volunteer can&rsquo;t be approved without a current check marked OK to serve.
         </p>
 
-        <CheckLengthForm months={months} onFile={onFileCount ?? 0} canEdit={canWrite} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className={HOW_TO_BOX}>
+            <h3 className="font-bold">How to run a check</h3>
+            <p className="mt-1 text-sm text-neutral-700">
+              <strong>Order checks</strong> makes the file you send to Checkr and brings
+              Checkr&rsquo;s results back in. To enter a check by hand, use the{' '}
+              <Link href="/admin/volunteers/" className="font-semibold text-brand underline">
+                Volunteers page
+              </Link>
+              .
+            </p>
+            <Link href="/admin/volunteers/screening/" className="btn-primary mt-3 inline-block py-2!">
+              Order checks
+            </Link>
+          </div>
+          <CheckLengthForm months={months} onFile={onFileCount ?? 0} canEdit={canWrite} />
+        </div>
 
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <FilterPills
@@ -302,12 +359,12 @@ export default async function BackgroundChecksPage({ searchParams }) {
             </p>
           ) : (
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[40rem] text-sm">
                 <thead>
                   <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                     <th className="py-2 pr-3">Name</th>
                     <th className="py-2 pr-3">Event</th>
-                    <th className="py-2 pr-3">Check date</th>
+                    <th className="py-2 pr-3">Date checked</th>
                     <th className="py-2 pr-3">Expires</th>
                     <th className="py-2">Status</th>
                   </tr>
@@ -327,18 +384,18 @@ export default async function BackgroundChecksPage({ searchParams }) {
                         <span className="flex flex-wrap gap-1">
                           <StatusPill pill={x.pill} />
                           {x.bucket === 'waiting' && (
-                            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                            <span className="whitespace-nowrap rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
                               Waiting on Checkr
                             </span>
                           )}
                           {x.bucket === 'soon' && (
-                            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-300">
+                            <span className="whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-300">
                               Expires soon
                             </span>
                           )}
                           {x.heldForDeposit && (
                             <span
-                              className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-700"
+                              className="whitespace-nowrap rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-700"
                               title="Not ordered until their registration's deposit is paid, waived or covered by a scholarship."
                             >
                               Waiting on the deposit
@@ -353,11 +410,16 @@ export default async function BackgroundChecksPage({ searchParams }) {
             </div>
           )}
         </div>
-      </section>
+      </CheckCard>
 
       {/* ---- Part 2 ---- */}
-      <section id="registry" className="space-y-4 rounded-lg border border-neutral-300 bg-neutral-50 p-4">
-        <h2 className="text-lg font-bold">Campers &amp; families: registry search</h2>
+      <CheckCard
+        id="registry"
+        title="Campers & families: registry search"
+        summary={registrySummary}
+        pills={registryPills}
+        defaultOpen={registryWork > 0 || Boolean(rFilter)}
+      >
         <p className="text-sm text-neutral-600">
           {registryRows.length} {registryRows.length === 1 ? 'adult' : 'adults'} who aren&rsquo;t volunteers:
           campers, parents and guardians, siblings and caregivers. Each needs
@@ -370,7 +432,16 @@ export default async function BackgroundChecksPage({ searchParams }) {
           doesn&rsquo;t count as a volunteer&rsquo;s check.
         </p>
 
-        {canWrite && <RegistryQueue rows={queue} today={today} />}
+        {canWrite ? (
+          <RegistryQueue rows={queue} today={today} />
+        ) : (
+          <div className={HOW_TO_BOX}>
+            <h3 className="font-bold">Registry searches due ({rCounts.due})</h3>
+            <p className="mt-1 text-sm text-neutral-700">
+              Searches are run and recorded here by staff who can edit background checks.
+            </p>
+          </div>
+        )}
 
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <FilterPills
@@ -386,13 +457,13 @@ export default async function BackgroundChecksPage({ searchParams }) {
             </p>
           ) : (
             <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[40rem] text-sm">
                 <thead>
                   <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                     <th className="py-2 pr-3">Name</th>
                     <th className="py-2 pr-3">Role</th>
                     <th className="py-2 pr-3">Event</th>
-                    <th className="py-2 pr-3">Searched</th>
+                    <th className="py-2 pr-3">Date checked</th>
                     <th className="py-2 pr-3">Expires</th>
                     <th className="py-2">Status</th>
                   </tr>
@@ -413,7 +484,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
                         <span className="flex flex-wrap gap-1">
                           <StatusPill pill={x.pill} />
                           {x.bucket === 'soon' && (
-                            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-300">
+                            <span className="whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-300">
                               Expires soon
                             </span>
                           )}
@@ -429,7 +500,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
             </div>
           )}
         </div>
-      </section>
+      </CheckCard>
     </div>
   );
 }

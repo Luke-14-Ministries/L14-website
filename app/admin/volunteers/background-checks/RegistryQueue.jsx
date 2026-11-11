@@ -165,8 +165,10 @@ export default function RegistryQueue({ rows, today }) {
   }
 
   return (
-    <div className="rounded-lg border border-amber-300 bg-white p-4">
-      <h2 className="font-bold">Registry searches due ({left.length})</h2>
+    // Same box as the volunteer part's "How to run a check" (HOW_TO_BOX on
+    // the page; Lawrence, 11 Nov 2026).
+    <div className="rounded-lg border border-neutral-300 bg-white p-4">
+      <h3 className="font-bold">Registry searches due ({left.length})</h3>
       <p className="mt-1 text-sm text-neutral-600">
         Adults who aren&rsquo;t volunteers and have no current search. For each one:{' '}
         <strong>Copy last name and search</strong> opens nsopw.gov with the last name on your
