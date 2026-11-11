@@ -54,8 +54,12 @@ ledger begins at `0012` (`0001`–`0011` predate it) and some files are more tha
 **The RLS harness.** `supabase/migrations/rls_test.sql` seeds personas (families, staff at several
 grant levels, the camp doctor, an anonymous visitor) and must end `ALL CHECKS PASSED`. Run it
 locally — PostgreSQL 16 is on the build machine: `bash supabase/tests/run_rls_local.sh` builds a
-fresh database from every migration and runs it. The other suites in `supabase/tests/`
-(`payment_plans_rules.sql`, `staff_answers_rules.sql`, `refunds_rules.sql`) run the same way. Run the harness after any
+fresh database from every migration and runs it. The other suites are every `*_rules.sql` in
+`supabase/tests/` (ten on 10 Nov 2026), and each needs a fresh database **seeded first**:
+`L14_DB=<name> bash supabase/tests/run_rls_local.sh supabase/tests/payment_plans_seed.sql`, then
+`psql -d <name> -f supabase/tests/<suite>.sql` (`lower_price_rules.sql` loads the seed itself, so pass
+it to the runner instead). Run straight after the migrations, without the seed, they fail on their
+first insert. Run the harness after any
 access change; `L14_DB=<name>` gives a second copy when two runs overlap.
 
 **Auth** works end to end: sign-up → confirmation → session → dashboard, with
