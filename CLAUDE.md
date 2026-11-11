@@ -603,6 +603,17 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   (`render_checklist.py` for testing scripts). **The ink guard:** a PDF changed by a person since the
   script last wrote it (ink, comments) is not overwritten. Copy it to
   `00 Comments and Critiques\Testing notes` under a dated name **before** re-running with `--force`.
+- **Pull before you work, and again before you push** (Lawrence, 11 Nov 2026). Three people push to
+  `main` from three PCs: Lawrence's sessions, Larry's, and Cowork through Claude Code. Every session,
+  without being reminded:
+  - run `git pull --ff-only` (or `git fetch` then rebase) **before starting work**, and **again right
+    before pushing**;
+  - **never force-push to `main`**;
+  - if the pull brings in changes to files you edited, **re-read those files and re-run lint, build and
+    the affected tests** before pushing;
+  - **before writing a new migration**, check its number against `origin/main`
+    (`git ls-tree --name-only origin/main supabase/migrations/`) **and** the live ledger
+    (Supabase `list_migrations`), so two people never take the same next number.
 - **Commit in small, described steps.** The commit log is documentation for a future volunteer.
 - **Ask before adding a dependency.** Every package is something someone has to keep updated.
 - Commit identity is the ministry account, not a personal address. Check `git config user.email`
