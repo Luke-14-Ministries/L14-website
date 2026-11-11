@@ -60,6 +60,25 @@ export function methodLabel(pm: Stripe.PaymentMethod | null): string | null {
   return pm.type;
 }
 
+// The href that dials a stored phone number -- the same rule as telHref() in
+// lib/phone.js (an edge function cannot import the site's lib/). An extension
+// goes on the standard way, tel:+14232006158;ext=12; stripping every non-digit
+// used to glue it onto the number (Lawrence, 11 Nov 2026).
+export function telHref(raw: string | null | undefined): string | null {
+  const s = String(raw ?? '');
+  const m = s.match(/\s*[,;]?\s*(?:x|ext\.?|extension)\s*(\d+)\s*$/i);
+  const main = m ? s.slice(0, m.index) : s;
+  const ext = m ? m[1] : '';
+  const digits = main.replace(/\D/g, '');
+  if (!digits) return null;
+  let number: string;
+  if (main.trim().startsWith('+')) number = `+${digits}`;
+  else if (digits.length === 10) number = `+1${digits}`;
+  else if (digits.length === 11 && digits.startsWith('1')) number = `+${digits}`;
+  else number = digits;
+  return ext ? `tel:${number};ext=${ext}` : `tel:${number}`;
+}
+
 // ---------------------------------------------------------------------------
 // Email. Fire-and-tolerate: a failed email never fails a money write.
 //
@@ -284,12 +303,12 @@ async function staffFacts(
   }
   const row = (k: string, v: string) =>
     `<tr><td style="padding:3px 12px 3px 0;color:#555;vertical-align:top">${k}</td><td style="padding:3px 0">${v}</td></tr>`;
-  const tel = ctx.phone ? ctx.phone.replace(/[^0-9+]/g, '') : '';
+  const tel = telHref(ctx.phone);
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:12px 0;font-size:14px">
   ${owedNowCents != null ? row('Owed this time', `<strong>${dollars(owedNowCents)}</strong>`) : ''}
   ${row('Remaining balance', remaining)}
   ${row('Family email', ctx.email ? `<a href="mailto:${esc(ctx.email)}" style="color:#14606a">${esc(ctx.email)}</a>` : 'none on file')}
-  ${row('Family phone', ctx.phone ? `<a href="tel:${esc(tel)}" style="color:#14606a">${esc(ctx.phone)}</a>` : 'none on file')}
+  ${row('Family phone', ctx.phone ? (tel ? `<a href="${esc(tel)}" style="color:#14606a">${esc(ctx.phone)}</a>` : esc(ctx.phone)) : 'none on file')}
 </table>
 ${button(`${SITE}/admin/registrations/${registrationId}/`, 'Open the registration')}`;
 }

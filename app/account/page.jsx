@@ -2,7 +2,8 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import LoginForm from './LoginForm';
-import { safeNextPath } from '@/lib/site';
+import { NEW_SITE_NOTE, newSiteNoteShowing, safeNextPath } from '@/lib/site';
+import { todayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'My Account' };
 
@@ -38,15 +39,24 @@ export default async function AccountPage({ searchParams }) {
     }
   }
 
+  // Until 1 Aug 2027 (NEW_SITE_NOTE_UNTIL in lib/site.js). This page is
+  // rendered per request (it reads the session), so the date is today's.
+  const newSite = newSiteNoteShowing(todayInMorristown());
+
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-md mx-auto">
         <h1 className="text-4xl font-bold text-center mb-8">My Account</h1>
+        {newSite && (
+          <p className="mb-6 rounded-lg border border-brand/30 bg-white px-4 py-3 text-center text-sm text-neutral-700">
+            {NEW_SITE_NOTE}
+          </p>
+        )}
         {/* The Suspense boundary is required, not decorative: LoginForm reads
             the ?next= query string, and Next.js refuses to prerender a page
             that does that without one. */}
         <Suspense fallback={<div className="h-96 rounded-lg bg-white/60" />}>
-          <LoginForm />
+          <LoginForm newSite={newSite} />
         </Suspense>
         <p className="mt-6 text-center text-neutral-600 text-sm">
           One account for everything: register your family or volunteer for

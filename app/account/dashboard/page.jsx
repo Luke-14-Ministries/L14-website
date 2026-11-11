@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { telHref } from '@/lib/phone';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff } from '@/lib/staff';
@@ -1290,7 +1291,7 @@ export default async function DashboardPage({ searchParams }) {
                             {mc.name}
                             {mc.name && mc.phone ? ' · ' : ''}
                             {mc.phone && (
-                              <a href={`tel:${mc.phone.replace(/[^0-9+]/g, '')}`} className="text-brand underline">
+                              <a href={telHref(mc.phone) ?? undefined} className="text-brand underline">
                                 {mc.phone}
                               </a>
                             )}

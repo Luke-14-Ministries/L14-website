@@ -76,7 +76,7 @@ async function withTimeout(promise, ms, fallback) {
   }
 }
 
-export default function LoginForm() {
+export default function LoginForm({ newSite = false } = {}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -557,7 +557,8 @@ export default function LoginForm() {
 
       <div className="mt-5 text-center text-neutral-600">
         <p>
-          New to Luke 14 Ministries?{' '}
+          {/* Until 1 Aug 2027 (NEW_SITE_NOTE_UNTIL in lib/site.js). */}
+          {newSite ? 'First time on our new site?' : 'New to Luke 14 Ministries?'}{' '}
           <Link href="/account/signup" className="text-brand underline">
             Create an account
           </Link>

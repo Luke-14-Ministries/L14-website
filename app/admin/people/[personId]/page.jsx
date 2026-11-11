@@ -3,7 +3,7 @@ import BackLink from '@/components/BackLink';
 import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { allergyPill, statusPill } from '@/lib/format';
+import { allergyPill, statusPill, telHref } from '@/lib/format';
 import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/support';
 import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
 import { dayInMorristown, isCurrentEventRow } from '@/lib/events';
@@ -307,7 +307,7 @@ function FormAnswers({ sensitive, support, name }) {
             {isBlank(s.emergency_contact_phone) ? (
               <NotAnswered />
             ) : (
-              <a href={`tel:${s.emergency_contact_phone}`} className="text-brand underline">
+              <a href={telHref(s.emergency_contact_phone) ?? undefined} className="text-brand underline">
                 {s.emergency_contact_phone}
               </a>
             )}
@@ -1075,7 +1075,7 @@ export default async function PersonPage({ params }) {
               <Row label="Name">{support.emergency_contact_name || '—'}</Row>
               <Row label="Phone">
                 {support.emergency_contact_phone ? (
-                  <a href={`tel:${support.emergency_contact_phone}`} className="text-brand underline">
+                  <a href={telHref(support.emergency_contact_phone) ?? undefined} className="text-brand underline">
                     {support.emergency_contact_phone}
                   </a>
                 ) : (
