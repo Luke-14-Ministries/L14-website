@@ -25,6 +25,7 @@
 // family who collapsed a card in June would not see July's deposit ask. The
 // key carries what is outstanding, so a new need opens the card again.
 
+import Link from 'next/link';
 import { useVisitChoice } from './visitChoice';
 import FoldArrow from '@/components/FoldArrow';
 import { CLEARING_PILL } from '@/lib/payments';
@@ -47,6 +48,13 @@ export default function RegistrationCard({
   // A small green "All set" when nothing is outstanding. The page leaves it
   // off for a past event that owes nothing: there is nothing to reassure.
   allSet = false,
+  // The same outstanding list as links ([{ text, href }]), shown as a full
+  // line under the title bar, folded or not (Lawrence, 11 Nov 2026: a family
+  // "wasn't quite sure" when registration was finished; the pills alone were
+  // small). `complete` (the sentence after "Registration complete ✓", or
+  // null) shows the green line instead, for an upcoming event.
+  todo = [],
+  complete = null,
   stateKey,
   defaultOpen = false,
   children,
@@ -114,6 +122,31 @@ export default function RegistrationCard({
           </span>
         </span>
       </button>
+
+      {todo.length > 0 ? (
+        <p className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+          <span className="font-semibold">Still to do:</span>{' '}
+          {todo.map((t, i) => (
+            <span key={i}>
+              {i > 0 && ', '}
+              {t.href ? (
+                <Link href={t.href} className="font-semibold underline hover:text-amber-950">
+                  {t.text}
+                </Link>
+              ) : (
+                t.text
+              )}
+            </span>
+          ))}
+          .
+        </p>
+      ) : (
+        complete && (
+          <p className="border-t border-green-200 bg-green-50 px-4 py-2 text-sm text-green-900">
+            <span className="font-semibold">Registration complete ✓.</span> {complete}
+          </p>
+        )
+      )}
 
       {/* Unmounted rather than hidden with CSS: the body holds live controls
           (the pay panel, links), and leaving them in the tree but invisible

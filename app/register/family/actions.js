@@ -746,6 +746,10 @@ export async function submitFamilyRegistration(payload) {
   // "already paid" are different facts. A failure here leaves this undefined
   // and the card errs toward asking, which is the safe direction.
   let depositDue;
+  // Paid and still owed, so the success card can tell "deposit in, rest to
+  // pay" from "nothing paid" (Lawrence, 11 Nov 2026). null when unread.
+  let paidCents = null;
+  let balanceCents = null;
   let depositCents = null;
   let depositPerPersonCents = null;
   let balanceDue = null;
@@ -788,14 +792,40 @@ export async function submitFamilyRegistration(payload) {
       }
       depositDue =
         deposit > 0 && (bal?.paid_cents ?? 0) === 0 && (bal?.balance_cents ?? 0) > 0;
+      paidCents = bal?.paid_cents ?? null;
+      balanceCents = bal?.balance_cents ?? null;
     }
   } catch (e) {
     console.error('deposit-due check:', e?.message);
   }
 
+  // Who is on the registration now, by name, so the success card can link
+  // each person still missing details to their own page. Never fatal.
+  let people = [];
+  try {
+    if (data?.registrationId) {
+      const { data: rows, error: peopleError } = await supabase
+        .from('registration_participants')
+        .select('person_id, people ( first_name, last_name )')
+        .eq('registration_id', data.registrationId)
+        .neq('status', 'cancelled');
+      if (peopleError) throw new Error(peopleError.message);
+      people = (rows ?? []).map((r) => ({
+        personId: r.person_id,
+        firstName: r.people?.first_name ?? '',
+        lastName: r.people?.last_name ?? '',
+      }));
+    }
+  } catch (e) {
+    console.error('people read-back:', e?.message);
+  }
+
   return {
     ok: true,
     registrationId: data?.registrationId,
+    paidCents,
+    balanceCents,
+    people,
     saved: data?.saved ?? mapped.length,
     signed,
     signatureError,

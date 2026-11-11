@@ -289,6 +289,30 @@ export default async function FinishPage({ params, searchParams }) {
             </p>
           </div>
         )}
+        {/* The middle state (Lawrence, 11 Nov 2026): the deposit is in (or on
+            its way), no route is chosen, and the rest is owed. Choosing is not
+            required (requiresPaymentChoice is false), so this says when the
+            rest is due and that a plan is an option, never a step. */}
+        {!done && !depositDue && balance > 0 && ((bal?.paid_cents ?? 0) > 0 || clearing > 0) && (
+          <div className="mb-6 rounded-sm border border-green-300 bg-green-50 px-4 py-3 text-green-900">
+            <p className="font-semibold">
+              {(bal?.paid_cents ?? 0) > 0
+                ? 'Your place is saved and your deposit is in.'
+                : 'Your place is saved and your deposit is clearing the bank.'}
+            </p>
+            <p className="mt-1 text-sm">
+              Still to do: pay the rest
+              {due && due >= today ? (
+                <>
+                  {' '}by <strong>{formatDueDate(due)}</strong>
+                </>
+              ) : due ? (
+                ', which is due now'
+              ) : null}
+              {canPlan ? ', or set up a payment plan' : ''}, below.
+            </p>
+          </div>
+        )}
         {/* With a route chosen, one-off payments are still here: an extra
             payment on a plan, or part of what a scholarship leaves. */}
         {done && balance > 0 && <h2 className="mb-3 text-lg font-semibold">Make a payment</h2>}

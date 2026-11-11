@@ -790,15 +790,36 @@ export default async function DashboardPage({ searchParams }) {
       fullScholarship: fullScholarshipRequested(live, scholarshipsByPart),
     });
     const needs = [];
-    if (unfinished(r)) needs.push('choose how to pay');
-    if (depositDue) needs.push('deposit');
+    // The same list as links, for the card's "Still to do" line (Lawrence,
+    // 11 Nov 2026). Built from the SAME checks, in the same order, so the line
+    // and the "Needs:" chip can never disagree. href null: the fix is inside
+    // the card itself (the plan panel, the reply box), which opens itself
+    // when anything is outstanding.
+    const todo = [];
+    const waysToPay = `/account/finish/${r.id}/`;
+    if (unfinished(r)) {
+      needs.push('choose how to pay');
+      todo.push({ text: 'choose how to pay', href: waysToPay });
+    }
+    if (depositDue) {
+      needs.push('deposit');
+      todo.push({ text: 'pay the deposit', href: waysToPay });
+    }
     const plan = planByReg.get(r.id);
     if (plan && plan.status !== 'pending' && planHasProblem(plan)) {
-      needs.push(plan.status === 'failed' ? 'payment plan stopped' : 'plan payment failed');
+      const t = plan.status === 'failed' ? 'payment plan stopped' : 'plan payment failed';
+      needs.push(t);
+      todo.push({ text: plan.status === 'failed' ? 'your payment plan stopped (see below)' : 'a plan payment failed (see below)', href: null });
     }
     const dueOn = balanceDueOn(r.events);
-    if ((bal?.balance_cents ?? 0) > 0 && dueOn && dueOn < todayISO) needs.push('balance past due');
-    if (r.awaiting_family_since) needs.push('staff asked a question');
+    if ((bal?.balance_cents ?? 0) > 0 && dueOn && dueOn < todayISO) {
+      needs.push('balance past due');
+      todo.push({ text: 'the balance is past due', href: waysToPay });
+    }
+    if (r.awaiting_family_since) {
+      needs.push('staff asked a question');
+      todo.push({ text: 'answer a question from staff (below)', href: null });
+    }
     if (!isPast(r)) {
       // Named for what is actually missing (Lawrence, 29 Oct 2026: a
       // volunteer read "support details" when only the photo was left). A
@@ -815,22 +836,26 @@ export default async function DashboardPage({ searchParams }) {
         if ((supportStatus.get(id) ?? 'empty') !== 'complete') {
           const missing = supportMissing.get(id) ?? [];
           const name = p.people?.first_name || 'someone';
-          if (missing.length === 1 && missing[0] === 'a photo') photoNames.push(name);
-          else supportNames.push(name);
+          if (missing.length === 1 && missing[0] === 'a photo') photoNames.push({ id, name });
+          else supportNames.push({ id, name });
         }
       }
-      if (photoNames.length) needs.push(`a photo of ${nameList(photoNames)}`);
-      if (supportNames.length) needs.push(`support details for ${nameList(supportNames)}`);
+      if (photoNames.length) needs.push(`a photo of ${nameList(photoNames.map((x) => x.name))}`);
+      if (supportNames.length) needs.push(`support details for ${nameList(supportNames.map((x) => x.name))}`);
+      // One link per person: the photo is added on the same details page.
+      for (const x of photoNames) todo.push({ text: `a photo of ${x.name}`, href: `/account/details/${x.id}/` });
+      for (const x of supportNames) todo.push({ text: `${x.name}'s support and medical details`, href: `/account/details/${x.id}/` });
       for (const o of (owedRows ?? []).filter((x) => x.registration_id === r.id)) {
         const who = firstNameByPerson.get(o.person_id) || 'someone';
-        needs.push(
+        const t =
           o.kind === 'ours'
             ? `${o.activity_name} waiver for ${who}`
-            : `${o.activity_name} confirmation for ${who}`
-        );
+            : `${o.activity_name} confirmation for ${who}`;
+        needs.push(t);
+        todo.push({ text: t, href: `/account/activities/?registration=${r.id}` });
       }
     }
-    needsByReg.set(r.id, { needs, depositDue });
+    needsByReg.set(r.id, { needs, todo, depositDue });
   }
   const needCount = [...needsByReg.values()].filter((x) => x.needs.length > 0).length;
   // The card's remembered "closed" holds only while the same registrations
@@ -1183,7 +1208,7 @@ export default async function DashboardPage({ searchParams }) {
                     balanceCents: bal?.balance_cents,
                   });
                   // One rule for the pill, the banner and the Needs chip.
-                  const { needs, depositDue } = needsByReg.get(r.id);
+                  const { needs, todo, depositDue } = needsByReg.get(r.id);
                   const owes = (bal?.balance_cents ?? 0) > 0;
                   // The event's own date (0096); null for events without one,
                   // whose pill stays as it was.
@@ -1275,6 +1300,21 @@ export default async function DashboardPage({ searchParams }) {
                         (n) => !(n === 'deposit' && depositDue) && !(n === 'choose how to pay' && notFinished)
                       )}
                       allSet={allSet}
+                      todo={isPast(r) && !owes ? [] : todo}
+                      // What "complete" means here: nothing to do now. A balance
+                      // not yet due is said, so "nothing more to do" is never
+                      // said to a family who still owes before camp.
+                      complete={
+                        allSet && !isPast(r)
+                          ? planOk
+                            ? 'Your payment plan takes care of the rest.'
+                            : owes
+                              ? dueOn
+                                ? `The ${dollars(bal.balance_cents)} balance is due by ${formatDueDate(dueOn)}.`
+                                : `The ${dollars(bal.balance_cents)} balance is still to pay.`
+                              : 'Nothing more to do until camp.'
+                          : null
+                      }
                       stateKey={`l14.dashboard.registration:${r.id}:${needs.join('|')}`}
                       defaultOpen={defaultOpen}
                     >

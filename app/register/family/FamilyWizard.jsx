@@ -476,6 +476,34 @@ function peopleNeeds({ members }) {
   return out;
 }
 
+// Where one person's support and medical details stand on this form
+// (Lawrence, 11 Nov 2026: the medical step was easy to miss). 'done': nothing
+// supportProblems() asks for is missing and there is an emergency contact (the
+// dashboard counts the contact too); 'empty': nothing typed yet; otherwise
+// 'started'. Everyone named gets a details block (campers the full version),
+// so everyone named has a state.
+const DETAIL_META = new Set(['showAll', 'emergencyCopied']);
+function detailsState(m) {
+  const sup = m.support ?? {};
+  const problems = supportProblems(sup, { isCamper: m.role === 'Camper with disability' });
+  const contact = (sup.emergency_contact_name ?? '').trim() && (sup.emergency_contact_phone ?? '').trim();
+  if (problems.length === 0 && contact) return 'done';
+  const typed = Object.entries(sup).some(([k, v]) => {
+    if (DETAIL_META.has(k)) return false;
+    // A contact copied from someone else on the form is not this person's own work.
+    if (sup.emergencyCopied && k.startsWith('emergency_contact_')) return false;
+    if (typeof v === 'string') return v.trim() !== '';
+    if (Array.isArray(v)) return v.length > 0;
+    return v === true || v === false;
+  });
+  return typed ? 'started' : 'empty';
+}
+const DETAILS_WORDS = {
+  done: 'Medical details: done ✓',
+  started: 'Medical details: not finished ↓',
+  empty: 'Medical details: not started ↓',
+};
+
 function supportNeeds({ members }) {
   // HARD requirement (16 Oct 2026): a camper's support and medical details,
   // and the detail behind any "yes" for everyone. Same rule as the
@@ -835,6 +863,18 @@ export default function FamilyWizard({
     }
     showNeeding(errorAt.card);
   }
+  // The "Medical details" link on a person in "Who's coming": open card 4 and
+  // go to that person. A timer rather than requestAnimationFrame, which a
+  // background tab never runs.
+  function goToDetails(i) {
+    setOpenCards((o) => ({ ...o, support: true }));
+    setTimeout(() => {
+      const el = document.getElementById(`support-person-${i}`);
+      if (!el) return;
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      el.focus({ preventScroll: true });
+    }, 0);
+  }
   function showNeeding(focusKey = needing[0]) {
     setOpenCards((o) => {
       const next = { ...o };
@@ -1136,6 +1176,61 @@ export default function FamilyWizard({
             </p>
           </div>
         )}
+        {/* The middle state (Lawrence, 11 Nov 2026): the deposit is in, the
+            rest is not, and nothing more must be chosen (requiresPaymentChoice
+            is false), so it says when the rest is due and that a plan is an
+            option, not a step. */}
+        {result.depositDue === false && (result.paidCents ?? 0) > 0 && (result.balanceCents ?? 0) > 0 && (
+          <div className="mt-4 rounded-sm border border-green-300 bg-green-50 px-4 py-3 text-left text-green-900">
+            <p className="font-semibold">Your place is saved and your deposit is in.</p>
+            <p className="mt-1 text-sm">
+              Still to do: pay the rest
+              {result.balanceDue ? (
+                <>
+                  {' '}by <strong>{formatDueDate(result.balanceDue)}</strong>
+                </>
+              ) : null}
+              , or choose a payment plan, on{' '}
+              <Link href={`/account/finish/${result.registrationId}/`} className="font-semibold underline">
+                Ways to pay
+              </Link>
+              .
+            </p>
+          </div>
+        )}
+        {(() => {
+          const missing = members.filter(isNamed).filter((m) => detailsState(m) !== 'done');
+          if (missing.length === 0) return null;
+          const idFor = (m) =>
+            m.personId ||
+            (result.people ?? []).find(
+              (p) =>
+                (p.firstName ?? '').toLowerCase() === m.firstName.trim().toLowerCase() &&
+                (p.lastName ?? '').toLowerCase() === m.lastName.trim().toLowerCase()
+            )?.personId;
+          return (
+            <div className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900">
+              <p className="font-semibold">Support and medical details still missing for:</p>
+              <ul className="mt-1 space-y-0.5">
+                {missing.map((m, i) => {
+                  const id = idFor(m);
+                  const name = `${m.firstName.trim()} ${m.lastName.trim()}`;
+                  return (
+                    <li key={i}>
+                      {id ? (
+                        <Link href={`/account/details/${id}/`} className="font-semibold underline">
+                          {name}: add them now
+                        </Link>
+                      ) : (
+                        <>{name}: open them from your dashboard</>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })()}
         {/* "Whenever suits" was too generous (flagged 24 Aug): camp staff
             need these to plan, and a form that arrives the week of camp is
             most of the way to useless. Whether they should GATE confirmation
@@ -1492,6 +1587,18 @@ export default function FamilyWizard({
                   </button>
                 )}
               </div>
+              {isNamed(m) && (() => {
+                const state = detailsState(m);
+                return (
+                  <button
+                    type="button"
+                    onClick={() => goToDetails(i)}
+                    className={`mt-1 text-sm underline ${state === 'done' ? 'text-green-700' : 'font-semibold text-amber-800'}`}
+                  >
+                    {DETAILS_WORDS[state]}
+                  </button>
+                );
+              })()}
               <div className="grid sm:grid-cols-2 gap-4 mt-2">
                 <div>
                   <label className={label} htmlFor={`fw-p${i}-first`}>First name</label>
@@ -1787,7 +1894,12 @@ export default function FamilyWizard({
         open={openCards.support}
         onToggle={toggleCard('support')}
         status={statusOf('support')}
-        title="Support and medical details"
+        title={(() => {
+          const named = members.filter(isNamed);
+          if (named.length === 0) return 'Support and medical details';
+          const done = named.filter((m) => detailsState(m) === 'done').length;
+          return `Support and medical details (${done} of ${named.length} done)`;
+        })()}
         subtitle="Required for each camper before you submit. Write “N/A” in any box where there is nothing to say. Volunteers and other adults get the short version."
       >
         {named.length === 0 ? (
