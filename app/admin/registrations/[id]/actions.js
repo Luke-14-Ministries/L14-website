@@ -30,8 +30,6 @@ const CAMP_ROLES = [
   'caregiver',
   'volunteer',
   'volunteer_child',
-  'childcare',
-  'support_team',
 ];
 
 // Fields a staff member may edit on a person and on a household. Anything not

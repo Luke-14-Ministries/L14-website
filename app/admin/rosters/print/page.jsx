@@ -16,8 +16,6 @@ const ROLE_LABEL = {
   caregiver: 'Caregiver',
   volunteer: 'Volunteer',
   volunteer_child: 'Volunteer child (under 16)',
-  childcare: 'Childcare',
-  support_team: 'Support team',
 };
 
 // A compact, ink-friendly roster for printing. Uses the browser's own print

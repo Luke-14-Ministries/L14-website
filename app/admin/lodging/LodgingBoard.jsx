@@ -21,7 +21,7 @@ const KIND_LABEL = {
 
 // Roles that count against a room's STAFF capacity rather than its bed count
 // (0076: CampSite tracked "2 / 10 campers - 0 / 3 staff" per room).
-const STAFF_ROLES = new Set(['volunteer', 'volunteer_child', 'support_team', 'childcare']);
+const STAFF_ROLES = new Set(['volunteer', 'volunteer_child']);
 
 // A hint, not a label: the gender word stays on the chip. The tint is there
 // so a coordinator scanning forty chips for "is this room mixed?" sees it at
@@ -62,8 +62,6 @@ const ROLE_SHORT = {
   caregiver: 'caregiver',
   volunteer: 'volunteer',
   volunteer_child: 'volunteer child',
-  childcare: 'childcare',
-  support_team: 'support',
 };
 
 function PersonChip({ person, onRemove, onMove, pending, accessWarning, moving }) {
@@ -400,7 +398,7 @@ export default function LodgingBoard({
     const occ = occupancyOf(lodging);
     // With a staff capacity set (0076), the card reads the way CampSite's did:
     // "2 of 10 campers · 0 of 3 staff", campers being everyone who is not a
-    // volunteer, support-team member or childcare worker. Without one, the
+    // volunteer. Without one, the
     // single count stays -- most places do not track staff separately.
     const splitStaff = lodging.staffCapacity != null;
     const staffHere = splitStaff ? staffOf(lodging) : 0;
@@ -458,7 +456,7 @@ export default function LodgingBoard({
                   </span>
                   <span
                     className={`ml-1 ${staffOver ? 'font-semibold text-amber-700' : 'text-neutral-500'}`}
-                    title="Volunteers, support team and childcare placed here, against the room's staff capacity"
+                    title="Volunteers placed here, against the room's staff capacity"
                   >
                     · {staffHere} of {lodging.staffCapacity} staff
                     {staffOver ? ' (over)' : ''}

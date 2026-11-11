@@ -1,7 +1,7 @@
 'use client';
 
 // Registry searches due (Lawrence, 10-11 Nov 2026): every adult who isn't a
-// volunteer (camper, parent, sibling, caregiver, childcare, support team) whose
+// volunteer (camper, parent, sibling, caregiver) whose
 // sex-offender registry search is missing or out of date, as a queue staff can
 // work through quickly.
 //

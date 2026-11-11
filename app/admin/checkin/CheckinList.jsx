@@ -17,8 +17,6 @@ const ROLE_LABEL = {
   caregiver: 'Caregiver',
   volunteer: 'Volunteer',
   volunteer_child: 'Volunteer child (under 16)',
-  childcare: 'Childcare',
-  support_team: 'Support team',
 };
 
 export default function CheckinList({ rows }) {

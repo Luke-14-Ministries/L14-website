@@ -17,8 +17,6 @@ const ROLE_LABEL = {
   caregiver: 'Caregiver',
   volunteer: 'Volunteer',
   volunteer_child: 'Volunteer child (under 16)',
-  childcare: 'Childcare',
-  support_team: 'Support team',
 };
 
 // STATUS_LABEL and statusPill now live in lib/format.js, so the person page

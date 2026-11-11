@@ -42,8 +42,6 @@ const ROLE_LABEL = {
   caregiver: 'Caregiver',
   volunteer: 'Volunteer',
   volunteer_child: 'Volunteer child (under 16)',
-  childcare: 'Childcare',
-  support_team: 'Support team',
 };
 
 // Age AT the event, not today. A birthday between now and camp is exactly when

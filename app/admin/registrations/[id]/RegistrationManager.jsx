@@ -80,8 +80,6 @@ const ROLE_OPTIONS = [
   ['caregiver', 'Caregiver'],
   ['volunteer', 'Volunteer'],
   ['volunteer_child', 'Volunteer child (under 16)'],
-  ['childcare', 'Childcare'],
-  ['support_team', 'Support team'],
 ];
 const ROLE_LABEL = Object.fromEntries(ROLE_OPTIONS);
 const ROLE_ORDER = ROLE_OPTIONS.map(([v]) => v);
@@ -92,8 +90,6 @@ const ROLE_PLURAL = {
   caregiver: 'Caregivers',
   volunteer: 'Volunteers',
   volunteer_child: 'Volunteer children',
-  childcare: 'Childcare',
-  support_team: 'Support team',
 };
 const ROLE_BADGE = {
   camper: 'bg-teal-100 text-teal-800',
@@ -104,8 +100,6 @@ const ROLE_BADGE = {
   // attention" colour, and a volunteer is not a problem. Purple is caregivers'.
   volunteer: 'bg-indigo-100 text-indigo-800',
   volunteer_child: 'bg-indigo-100 text-indigo-800',
-  childcare: 'bg-blue-100 text-blue-800',
-  support_team: 'bg-blue-100 text-blue-800',
 };
 
 const PAY_METHOD_LABEL = {

@@ -20,7 +20,7 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const WHO_OPTIONS = [
   ['', 'Everyone registered'],
   ['families', 'Campers and their families'],
-  ['volunteers', 'Volunteers, childcare and support team'],
+  ['volunteers', 'Volunteers'],
 ];
 
 function urlFor({ eventId, activityId, outstanding, who }) {

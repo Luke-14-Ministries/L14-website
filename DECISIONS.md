@@ -4408,3 +4408,15 @@ needs to be covered by one of the background check options". Built as `0162` plu
   day refused; the grant; not_permitted holds approval; a Checkr order keeps not_permitted; follow-up
   doesn't hold). The RLS harness passes.
 
+## 11 November 2026 — The 'childcare' and 'support_team' roles are gone (0163)
+
+Lawrence, relayed: those people are volunteers. Both roles came with the first schema (0001), were never
+defined for staff or families, and nobody held either one (checked live before dropping them: no
+participant row, no event option, no function or view). 0163 restates the two CHECK constraints
+(`registration_participants.camp_role`, `event_options.participant_role`) without them, and every label
+map and role set in the site lost them: the registration editor's role list, lodging's staff roles,
+Email Registrants' "Volunteers" group, activities, programs, check-in, statements, the dashboard, the
+scholarship form, the person page, rosters, search and Background Checks. Their people sign up as
+Volunteers and get the full background check, the application and the Creed. This replaces the note in
+today's earlier entry that a registry search covered them.
+

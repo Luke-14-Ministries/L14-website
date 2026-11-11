@@ -272,8 +272,7 @@ export default async function ActivitiesPage({ searchParams }) {
       // The whole family chooses (Lawrence, 27 Oct 2026: "parents and siblings
       // can be signed up for rafting, pontoon, etc"), replacing campers-only
       // (14 Oct). Volunteers still do not: they go where their camper goes,
-      // and have their own waiver block below. Staff roles (support team,
-      // childcare) are working, not choosing.
+      // and have their own waiver block below.
       const people = (r.registration_participants ?? [])
         .filter((p) => p.status !== 'cancelled' && CHOOSES_ACTIVITIES.has(p.camp_role))
         .map((p) => {

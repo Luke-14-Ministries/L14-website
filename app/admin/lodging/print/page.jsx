@@ -41,8 +41,6 @@ const ROLE_SHORT = {
   caregiver: 'caregiver',
   volunteer: 'volunteer',
   volunteer_child: 'volunteer child',
-  childcare: 'childcare',
-  support_team: 'support',
 };
 
 function ageOn(dob, onDate) {

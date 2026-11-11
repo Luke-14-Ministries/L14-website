@@ -20,8 +20,6 @@ const ROLE_WORD = {
   caregiver: 'caregiver',
   volunteer: 'volunteer',
   volunteer_child: 'volunteer child',
-  childcare: 'childcare',
-  support_team: 'support team',
 };
 
 const MODE_LABEL = {

@@ -7,7 +7,7 @@
 //      screening, linked from here; a check entered by hand goes on the
 //      Volunteers page; how long a check lasts is set here (0158).
 //   2. Campers & families: every other adult (camper, parent/guardian,
-//      sibling, caregiver, childcare, support team) gets a search of the public
+//      sibling, caregiver) gets a search of the public
 //      sex-offender registry at nsopw.gov, recorded here, or is covered by a
 //      current full check. A missing search is a flag; "Not permitted" holds
 //      approval (0162).
@@ -56,8 +56,6 @@ const ROLE_LABEL = {
   parent_guardian: 'Parent / guardian',
   sibling: 'Sibling',
   caregiver: 'Caregiver',
-  childcare: 'Childcare',
-  support_team: 'Support team',
 };
 
 // Both parts keep their own filter in the URL: v= for volunteers, r= for the
@@ -362,7 +360,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
         <h2 className="text-lg font-bold">Campers &amp; families: registry search</h2>
         <p className="text-sm text-neutral-600">
           {registryRows.length} {registryRows.length === 1 ? 'adult' : 'adults'} who aren&rsquo;t volunteers:
-          campers, parents and guardians, siblings, caregivers, childcare and support team. Each needs
+          campers, parents and guardians, siblings and caregivers. Each needs
           a search of the public sex-offender registry at{' '}
           <a href="https://www.nsopw.gov/" target="_blank" rel="noopener noreferrer" className="underline">
             nsopw.gov
