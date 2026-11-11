@@ -214,7 +214,9 @@ export async function submitFamilyRegistration(payload) {
 
   const { data, error } = await supabase.rpc('submit_family_registration', {
     payload: {
-      family,
+      // The phone tidied here as well as on blur: autofill fills the box
+      // without the blur (alpha feedback, 11 Nov 2026).
+      family: { ...family, phone: formatPhone(family.phone ?? '') },
       members: mapped,
       eventId,
       optionId,
@@ -598,22 +600,33 @@ export async function submitFamilyRegistration(payload) {
       if (partsError) throw new Error(partsError.message);
       const now = new Date().toISOString();
       const seen = new Set();
+      // Whose details landed, so anyone left over is NAMED to the family
+      // rather than skipped in silence (alpha feedback, 11 Nov 2026: "some
+      // fields saved and some didn't").
+      const recorded = new Set();
+      const failed = [];
       for (const r of parts ?? []) {
         const key = `${r.people?.first_name ?? ''}|${r.people?.last_name ?? ''}`.toLowerCase();
         const patch = bySupportKey.get(key);
         if (!patch || !r.person_id || seen.has(r.person_id)) continue;
         seen.add(r.person_id);
+        const row = { ...patch, person_id: r.person_id, details_saved_at: now };
+        if (row.emergency_contact_phone) row.emergency_contact_phone = formatPhone(row.emergency_contact_phone);
         const { error: supErr } = await supabase
           .from('person_support')
-          .upsert(
-            { ...patch, person_id: r.person_id, details_saved_at: now },
-            { onConflict: 'person_id' }
-          );
+          .upsert(row, { onConflict: 'person_id' });
         if (supErr) {
           console.error('support details:', supErr.message);
-          supportError =
-            'Your registration was saved, but the support details could not all be recorded. Please open each person from your dashboard and check them.';
+          failed.push(r.people?.first_name || 'someone');
+        } else {
+          recorded.add(key);
         }
+      }
+      const missed = mapped
+        .filter((m) => m.support && !recorded.has(`${m.firstName}|${m.lastName}`.toLowerCase()))
+        .map((m) => m.firstName);
+      if (missed.length > 0) {
+        supportError = `Your registration was saved, but the support and medical details for ${missed.join(', ')} could not be recorded${failed.length ? '' : ' (we could not match them to the saved registration)'}. Please open ${missed.length === 1 ? 'them' : 'each of them'} from your dashboard ("Support and medical details") and save again.`;
       }
       revalidatePath('/admin/medical');
       revalidatePath('/admin/dietary');

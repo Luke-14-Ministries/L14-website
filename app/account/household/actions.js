@@ -1,6 +1,6 @@
 'use server';
 
-import { dobProblem } from '@/lib/format';
+import { dobProblem, formatPhone } from '@/lib/format';
 import { caregiverLinkProblem, caregiverPhoneProblem } from '@/lib/caregivers';
 // Manage Household: families edit their own household's contact info, their
 // people's basic details (incl. a phone per adult), and each person's two
@@ -74,7 +74,7 @@ export async function updateHouseholdInfo(householdId, form) {
   const supabase = await createClient();
   const patch = {
     display_name: clean(form.display_name) ?? undefined,
-    phone: clean(form.phone),
+    phone: clean(formatPhone(form.phone ?? '')),
     email: clean(form.email),
     address_line1: clean(form.address_line1),
     city: clean(form.city),
@@ -195,7 +195,7 @@ export async function updatePersonInfo(personId, form) {
     // actually clears it: unlike a legal name, "no preferred name" is a real
     // answer meaning "just use their first name".
     preferred_name: clean(form.preferred_name) ?? null,
-    phone: clean(form.phone),
+    phone: clean(formatPhone(form.phone ?? '')),
     email: clean(form.email),
   };
   const { error } = await supabase
@@ -237,7 +237,7 @@ export async function addHouseholdPerson(householdId, form) {
       last_name: last,
       date_of_birth: clean(form.date_of_birth),
       gender: clean(form.gender),
-      phone: clean(form.phone),
+      phone: clean(formatPhone(form.phone ?? '')),
       email: clean(form.email),
     })
     .select('id')
@@ -403,14 +403,23 @@ export async function createMyHousehold(form) {
   const { error } = await supabase.rpc('create_my_household', {
     p_first_name: first,
     p_last_name: last,
-    p_phone: clean(form?.phone),
+    // Tidied here too: autofill fills the box without the blur that tidies it.
+    p_phone: clean(formatPhone(form?.phone ?? '')),
   });
   if (error) {
+    // Say why (alpha feedback, 11 Nov 2026: "Please try again" left a family
+    // retrying something that could not work).
+    console.error('createMyHousehold:', error.message);
+    const msg = error.message ?? '';
     return {
       ok: false,
-      error: error.message?.includes('already have a household')
+      error: msg.includes('already have a household')
         ? 'You already have a household. Reload the page to manage it.'
-        : 'Your household could not be set up. Please try again.',
+        : msg.includes('not authenticated')
+          ? 'You have been signed out. Please sign in again, then set up your household.'
+          : msg.includes('first and last name')
+            ? 'Give your first and last name.'
+            : `Your household could not be set up (${msg || 'no reason given'}). Please try again, or email registration@luke14ministries.net if it keeps happening.`,
     };
   }
   revalidatePath('/account/household');

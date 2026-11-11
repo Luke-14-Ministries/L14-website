@@ -8,6 +8,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createMyHousehold } from './actions';
+import { formatPhone } from '@/lib/format';
 
 const input = 'w-full rounded-sm border border-neutral-300 bg-white px-3 py-2';
 const label = 'block text-sm font-semibold text-neutral-700 mb-1';
@@ -49,7 +50,17 @@ export default function SetUpHousehold({ firstName = '', lastName = '' }) {
           <span className={label}>
             Phone <span className="font-normal text-neutral-500">(optional)</span>
           </span>
-          <input className={input} value={f.phone} onChange={set('phone')} autoComplete="tel" inputMode="tel" />
+          <input
+            type="tel"
+            className={input}
+            value={f.phone}
+            onChange={set('phone')}
+            // Tidied on blur like every other phone box (alpha feedback,
+            // 11 Nov 2026: a number typed here was saved as bare digits).
+            onBlur={() => setF((prev) => ({ ...prev, phone: formatPhone(prev.phone) }))}
+            autoComplete="tel"
+            inputMode="tel"
+          />
         </label>
       </div>
       {error && <p className="mt-3 text-sm font-semibold text-red-700">{error}</p>}

@@ -1259,14 +1259,33 @@ export default function FamilyWizard({
         title="Your family or group"
         subtitle="We've filled in what we know from your account. The primary contact is who camp staff will call or email about this registration. If that should be someone else, change the details below."
       >
+        {/* Every box has an id its label points at, and the contact boxes say
+            what they are (autoComplete), so a browser's autofill puts the
+            account holder's own details HERE and nowhere else (alpha
+            feedback, 11 Nov 2026: with no names or hints on any box, autofill
+            had to guess, and a label click focused nothing). */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className={label}>Primary contact first name</label>
-            <input className={input} value={family.contactFirst} onChange={setF('contactFirst')} />
+            <label className={label} htmlFor="fw-contact-first">Primary contact first name</label>
+            <input
+              id="fw-contact-first"
+              name="contact-given-name"
+              autoComplete="given-name"
+              className={input}
+              value={family.contactFirst}
+              onChange={setF('contactFirst')}
+            />
           </div>
           <div>
-            <label className={label}>Primary contact last name</label>
-            <input className={input} value={family.contactLast} onChange={setF('contactLast')} />
+            <label className={label} htmlFor="fw-contact-last">Primary contact last name</label>
+            <input
+              id="fw-contact-last"
+              name="contact-family-name"
+              autoComplete="family-name"
+              className={input}
+              value={family.contactLast}
+              onChange={setF('contactLast')}
+            />
           </div>
         </div>
         {/* Said out loud because it is now true: naming a contact adds them to
@@ -1277,11 +1296,23 @@ export default function FamilyWizard({
           The primary contact is added to your household, whether or not they&rsquo;re
           attending. You can change who it is later on Manage Household.
         </p>
-        <label className={label}>Email</label>
-        <input type="email" className={input} value={family.email} onChange={setF('email')} />
-        <label className={label}>Phone</label>
+        <label className={label} htmlFor="fw-email">Email</label>
         <input
+          id="fw-email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          className={input}
+          value={family.email}
+          onChange={setF('email')}
+        />
+        <label className={label} htmlFor="fw-phone">Phone</label>
+        <input
+          id="fw-phone"
+          name="tel"
           type="tel"
+          autoComplete="tel"
+          inputMode="tel"
           className={input}
           value={family.phone}
           onChange={setF('phone')}
@@ -1294,8 +1325,11 @@ export default function FamilyWizard({
             all-lower (so "McMinnville" is never "corrected"). No address
             lookup service is called -- see the Staff Questions log for why
             that is a deliberate choice and what it would take to add one. */}
-        <label className={label}>Street address</label>
+        <label className={label} htmlFor="fw-address">Street address</label>
         <input
+          id="fw-address"
+          name="address-line1"
+          autoComplete="address-line1"
           className={input}
           value={family.address}
           onChange={setF('address')}
@@ -1303,8 +1337,11 @@ export default function FamilyWizard({
         />
         <div className="grid sm:grid-cols-[2fr_1fr_1fr] gap-4">
           <div>
-            <label className={label}>City</label>
+            <label className={label} htmlFor="fw-city">City</label>
             <input
+              id="fw-city"
+              name="address-level2"
+              autoComplete="address-level2"
               className={input}
               value={family.city}
               onChange={setF('city')}
@@ -1312,8 +1349,15 @@ export default function FamilyWizard({
             />
           </div>
           <div>
-            <label className={label}>State</label>
-            <select className={input} value={family.state} onChange={setF('state')}>
+            <label className={label} htmlFor="fw-state">State</label>
+            <select
+              id="fw-state"
+              name="address-level1"
+              autoComplete="address-level1"
+              className={input}
+              value={family.state}
+              onChange={setF('state')}
+            >
               <option value="">—</option>
               {US_STATES.map(([code, name]) => (
                 <option key={code} value={code} title={name}>
@@ -1323,8 +1367,11 @@ export default function FamilyWizard({
             </select>
           </div>
           <div>
-            <label className={label}>ZIP</label>
+            <label className={label} htmlFor="fw-zip">ZIP</label>
             <input
+              id="fw-zip"
+              name="postal-code"
+              autoComplete="postal-code"
               className={input}
               value={family.postalCode}
               onChange={setF('postalCode')}
@@ -1339,8 +1386,8 @@ export default function FamilyWizard({
             )}
           </div>
         </div>
-        <label className={label}>Home church (optional)</label>
-        <input className={input} value={family.church} onChange={setF('church')} />
+        <label className={label} htmlFor="fw-church">Home church (optional)</label>
+        <input id="fw-church" className={input} value={family.church} onChange={setF('church')} />
 
         {/* Asked once per family, never again -- the server only sends
             askHeardAbout when this household has no answer on file. */}
@@ -1433,12 +1480,26 @@ export default function FamilyWizard({
               </div>
               <div className="grid sm:grid-cols-2 gap-4 mt-2">
                 <div>
-                  <label className={label}>First name</label>
-                  <input className={input} value={m.firstName} onChange={setM(i, 'firstName')} />
+                  <label className={label} htmlFor={`fw-p${i}-first`}>First name</label>
+                  <input
+                    id={`fw-p${i}-first`}
+                    name={`person-${i}-first`}
+                    autoComplete="off"
+                    className={input}
+                    value={m.firstName}
+                    onChange={setM(i, 'firstName')}
+                  />
                 </div>
                 <div>
-                  <label className={label}>Last name</label>
-                  <input className={input} value={m.lastName} onChange={setM(i, 'lastName')} />
+                  <label className={label} htmlFor={`fw-p${i}-last`}>Last name</label>
+                  <input
+                    id={`fw-p${i}-last`}
+                    name={`person-${i}-last`}
+                    autoComplete="off"
+                    className={input}
+                    value={m.lastName}
+                    onChange={setM(i, 'lastName')}
+                  />
                 </div>
               </div>
               {/* items-end (29 Oct 2026, Lawrence): when the nametag label
@@ -1446,19 +1507,29 @@ export default function FamilyWizard({
                   in one row. */}
               <div className="grid sm:grid-cols-3 sm:items-end gap-4">
                 <div>
-                  <label className={label}>Date of birth</label>
-                  <input type="date" className={input} value={m.dob} onChange={setM(i, 'dob')} min="1900-01-01" max={todayInMorristown()} />
+                  <label className={label} htmlFor={`fw-p${i}-dob`}>Date of birth</label>
+                  <input
+                    id={`fw-p${i}-dob`}
+                    name={`person-${i}-dob`}
+                    autoComplete="off"
+                    type="date"
+                    className={input}
+                    value={m.dob}
+                    onChange={setM(i, 'dob')}
+                    min="1900-01-01"
+                    max={todayInMorristown()}
+                  />
                 </div>
                 <div>
-                  <label className={label}>Sex</label>
-                  <select className={input} value={m.sex} onChange={setM(i, 'sex')}>
+                  <label className={label} htmlFor={`fw-p${i}-sex`}>Sex</label>
+                  <select id={`fw-p${i}-sex`} className={input} value={m.sex} onChange={setM(i, 'sex')}>
                     <option value="">— select —</option>
                     <option>Male</option>
                     <option>Female</option>
                   </select>
                 </div>
                 <div>
-                  <label className={label}>
+                  <label className={label} htmlFor={`fw-p${i}-preferred`}>
                     Preferred name (for nametags), if different
                   </label>
                   {/* E45, second half. It was asked only on Manage household,
@@ -1469,6 +1540,8 @@ export default function FamilyWizard({
                       column either way, so setting it in one place shows in
                       the other. */}
                   <input
+                    id={`fw-p${i}-preferred`}
+                    autoComplete="off"
                     className={input}
                     value={m.preferredName}
                     onChange={setM(i, 'preferredName')}
