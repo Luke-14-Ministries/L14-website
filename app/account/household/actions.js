@@ -1,7 +1,7 @@
 'use server';
 
 import { dobProblem, formatPhone } from '@/lib/format';
-import { caregiverLinkProblem, caregiverPhoneProblem } from '@/lib/caregivers';
+import { carerPhone, caregiverPhoneProblem, hasPhone } from '@/lib/caregivers';
 // Manage Household: families edit their own household's contact info, their
 // people's basic details (incl. a phone per adult), and each person's two
 // linked caregivers. RLS is the real gate everywhere: households_update /
@@ -176,9 +176,19 @@ export async function updatePersonInfo(personId, form) {
   if ('phone' in form) {
     const { names, error: cgError } = await caresForNames(supabase, personId, current.household_id);
     if (cgError) return { ok: false, error: cgError };
+    let phone = form.phone;
+    if (names.length > 0 && !hasPhone(phone)) {
+      const { data: hh, error: hhError } = await supabase
+        .from('households')
+        .select('phone, primary_contact_person_id')
+        .eq('id', current.household_id)
+        .maybeSingle();
+      if (hhError) return { ok: false, error: `Your household could not be read: ${hhError.message}` };
+      phone = carerPhone({ id: personId, phone }, hh);
+    }
     const bad = caregiverPhoneProblem({
       name: nextFirst ?? current.first_name,
-      phone: form.phone,
+      phone,
       caresFor: names,
     });
     if (bad) return { ok: false, error: bad };
@@ -339,36 +349,51 @@ export async function removeHouseholdPerson(personId) {
 //
 // Both ends must be in the caller's own household (checked here as well as by
 // person_caregivers_write), and a NEW link needs a caregiver with a phone
-// (lib/caregivers.js). Everything is checked before the old links are
-// deleted, so a refusal leaves the saved links exactly as they were. A link
-// already on file is kept even if that caregiver has no phone -- existing
-// data is flagged on the page, not rewritten.
+// (lib/caregivers.js) -- their own, or the household's for the primary
+// contact (carerPhone). A new link still waiting on a phone is NOT made and
+// is returned in `skipped` (first names); the other link is still saved
+// (alpha feedback, 11 Nov 2026: a suggested caregiver with no phone blocked
+// saving a son's name). A link already on file is kept even if that
+// caregiver has no phone -- existing data is flagged on the page, not
+// rewritten. Everything is read before the old links are deleted.
 export async function setCaregivers(personId, caregiver1Id, caregiver2Id) {
   const supabase = await createClient();
   const { person, error: scopeError } = await myPerson(supabase, personId);
   if (scopeError) return { ok: false, error: scopeError };
 
   const chosen = [...new Set([caregiver1Id, caregiver2Id].filter(Boolean))];
+  const skip = new Set();
+  const skipped = [];
   if (chosen.length > 0) {
     const { data: existing, error: exError } = await supabase
       .from('person_caregivers')
       .select('caregiver_person_id')
       .eq('person_id', personId);
     if (exError) return { ok: false, error: `Caregiver links could not be read: ${exError.message}` };
-    const { data: carers, error: carerError } = await supabase
-      .from('people')
-      .select('id, first_name, phone')
-      .in('id', chosen)
-      .eq('household_id', person.household_id);
+    const [{ data: carers, error: carerError }, { data: hh, error: hhError }] = await Promise.all([
+      supabase
+        .from('people')
+        .select('id, first_name, phone')
+        .in('id', chosen)
+        .eq('household_id', person.household_id),
+      supabase
+        .from('households')
+        .select('phone, primary_contact_person_id')
+        .eq('id', person.household_id)
+        .maybeSingle(),
+    ]);
     if (carerError) return { ok: false, error: `Caregivers could not be read: ${carerError.message}` };
+    if (hhError) return { ok: false, error: `Your household could not be read: ${hhError.message}` };
     if ((carers ?? []).length !== chosen.length) {
       return { ok: false, error: 'A linked caregiver has to be someone in your household.' };
     }
     const already = new Set((existing ?? []).map((l) => l.caregiver_person_id));
     for (const c of carers) {
       if (already.has(c.id)) continue;
-      const bad = caregiverLinkProblem({ name: c.first_name, phone: c.phone });
-      if (bad) return { ok: false, error: bad };
+      if (!hasPhone(carerPhone(c, hh))) {
+        skip.add(c.id);
+        skipped.push(c.first_name);
+      }
     }
   }
 
@@ -378,15 +403,32 @@ export async function setCaregivers(personId, caregiver1Id, caregiver2Id) {
     .eq('person_id', personId);
   if (delError) return { ok: false, error: delError.message };
 
-  const rows = [];
-  if (caregiver1Id) rows.push({ person_id: personId, caregiver_person_id: caregiver1Id, position: 1 });
-  if (caregiver2Id && caregiver2Id !== caregiver1Id) {
-    rows.push({ person_id: personId, caregiver_person_id: caregiver2Id, position: 2 });
-  }
+  // Positions follow the slots the family filled, minus anyone skipped.
+  const keep = [caregiver1Id, caregiver2Id].filter((id, i, all) => id && !skip.has(id) && all.indexOf(id) === i);
+  const rows = keep.map((id, i) => ({ person_id: personId, caregiver_person_id: id, position: i + 1 }));
   if (rows.length > 0) {
     const { error } = await supabase.from('person_caregivers').insert(rows);
     if (error) return { ok: false, error: error.message };
   }
+  revalidatePath('/account/household');
+  return { ok: true, skipped };
+}
+
+// Save one person's phone and nothing else: the "Laurie's phone" box beside a
+// caregiver choice on someone else's card (alpha feedback, 11 Nov 2026). A
+// separate action so the rest of that person's card is never touched.
+export async function setPersonPhone(personId, phone) {
+  const supabase = await createClient();
+  const { person, error: scopeError } = await myPerson(supabase, personId);
+  if (scopeError) return { ok: false, error: scopeError };
+  const value = clean(formatPhone(phone ?? ''));
+  if (!value) return { ok: true };
+  const { error } = await supabase
+    .from('people')
+    .update({ phone: value })
+    .eq('id', personId)
+    .eq('household_id', person.household_id);
+  if (error) return { ok: false, error: error.message };
   revalidatePath('/account/household');
   return { ok: true };
 }

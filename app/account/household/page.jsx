@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { todayInMorristown } from '@/lib/events';
+import { formatPhone } from '@/lib/format';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import HouseholdManager from './HouseholdManager';
@@ -169,7 +170,9 @@ export default async function ManageHouseholdPage() {
         </p>
 
         <HouseholdManager
-          household={household}
+          // Tidied when read (a number saved before tidying existed shows as
+          // bare digits); the household card saves it back tidy.
+          household={household ? { ...household, phone: formatPhone(household.phone ?? '') } : household}
           members={members}
           caregiversByPerson={caregiversByPerson}
           photoUrlByPerson={photoUrlByPerson}

@@ -20,15 +20,17 @@ import SaveButton from '@/components/SaveButton';
 import PhotoUpload from '@/components/PhotoUpload';
 import { formatPhone, formatZip, tidyCity, US_STATES } from '@/lib/format';
 import {
-  caregiverLinkProblem,
+  carerPhone,
   caregiverPhoneHint,
   caregiverPhoneProblem,
   hasPhone,
+  nameList,
 } from '@/lib/caregivers';
 import {
   updateHouseholdInfo,
   updatePersonInfo,
   setCaregivers,
+  setPersonPhone,
   addHouseholdPerson,
   removeHouseholdPerson,
 } from './actions';
@@ -96,6 +98,8 @@ export default function HouseholdManager({
         saved: !!res.ok,
         dirty: res.ok ? false : true,
         error: res.ok ? '' : res.error,
+        // Saved, with something still to do (a caregiver not linked yet).
+        warning: res.ok ? res.warning ?? '' : '',
       });
       router.refresh();
     });
@@ -116,7 +120,14 @@ export default function HouseholdManager({
   const revert = (key) => (ev) => {
     const form = ev.currentTarget.form;
     if (form) form.reset();
-    patch(key, { saved: false, dirty: false, error: '' });
+    // The selects are back to what was saved, so their tracked choices go too.
+    setCgChoice((c) => {
+      const next = { ...c };
+      delete next[`${key}:1`];
+      delete next[`${key}:2`];
+      return next;
+    });
+    patch(key, { saved: false, dirty: false, error: '', warning: '' });
   };
 
   // THE UNSAVED BAR.
@@ -144,6 +155,14 @@ export default function HouseholdManager({
     typeof document === 'undefined'
       ? null
       : document.querySelector(`form[data-card="${key}"]`);
+
+  // A card's name for the bar's "Not saved" list.
+  const cardName = (key) => {
+    if (key === 'hh') return 'Household contact info';
+    if (key === 'add') return 'Add a family member';
+    const who = members.find((x) => x.id === key);
+    return who ? `${who.first_name} ${who.last_name}`.trim() : 'a card';
+  };
 
   function saveAll() {
     for (const key of dirtyKeys) cardForm(key)?.requestSubmit();
@@ -230,7 +249,12 @@ Anything already saved is untouched.`
       (caresForByPerson[carerId] ??= []).push(dep.first_name);
     }
   }
-  const needsPhone = (m) => (caresForByPerson[m.id] ?? []).length > 0 && !hasPhone(m.phone);
+  // The household phone counts for the primary contact (carerPhone).
+  const phoneOf = (o) => carerPhone(o, household);
+  const needsPhone = (m) => (caresForByPerson[m.id] ?? []).length > 0 && !hasPhone(phoneOf(m));
+  // Which caregiver each slot shows right now (the selects are uncontrolled;
+  // this follows their changes so the phone box below can appear).
+  const [cgChoice, setCgChoice] = useState({});
   const isCardOpen = (m) => openCards[m.id] ?? needsPhone(m);
   const setAllCards = (value) =>
     setOpenCards((o) => ({ ...o, ...Object.fromEntries(members.map((m) => [m.id, value])) }));
@@ -292,7 +316,7 @@ Anything already saved is untouched.`
             </select>
             <span className="mt-1 block text-xs text-neutral-500">
               Whoever camp staff should call first. Only people in your household appear
-              here. To add someone, register them for an event.
+              here. To add someone, use Add a family member below.
             </span>
           </Field>
           <Field label="Main phone">
@@ -419,26 +443,51 @@ Anything already saved is untouched.`
               // ask the same lib/caregivers.js question and answer in the
               // same words.
               const name = String(f.first_name ?? '').trim() || m.first_name;
-              let problem = caregiverPhoneProblem({ name, phone: f.phone, caresFor });
-              if (!problem) {
-                const already = new Set(Object.values(saved).filter(Boolean));
-                for (const id of new Set([f.caregiver1, f.caregiver2].filter(Boolean))) {
-                  if (already.has(id)) continue;
-                  const carer = members.find((o) => o.id === id);
-                  if (!carer) continue;
-                  problem = caregiverLinkProblem({ name: carer.first_name, phone: carer.phone });
-                  if (problem) break;
-                }
-              }
+              // Only this person's OWN phone can hold up this card: they are
+              // already someone's linked caregiver (the household phone
+              // counts for the primary contact).
+              const problem = caregiverPhoneProblem({
+                name,
+                phone: phoneOf({ id: m.id, phone: f.phone }),
+                caresFor,
+              });
               if (problem) {
                 setOpen(m.id, true);
                 patch(m.id, { saved: false, error: problem });
                 return;
               }
+              // A caregiver choice never blocks the rest of the card (alpha
+              // feedback, 11 Nov 2026: a SUGGESTED caregiver with no phone
+              // stopped a mother saving her son's name). The name, birthday
+              // and the rest save; a caregiver's phone typed in the box
+              // beside the choice saves onto their own card; a link still
+              // waiting on a phone is not made, and the card says so.
               run(m.id, async () => {
                 const r1 = await updatePersonInfo(m.id, f);
                 if (!r1.ok) return r1;
-                return setCaregivers(m.id, f.caregiver1 || null, f.caregiver2 || null);
+                for (const [k, v] of Object.entries(f)) {
+                  if (!k.startsWith('carer_phone_') || !String(v).trim()) continue;
+                  const carerId = k.slice('carer_phone_'.length);
+                  const rp = await setPersonPhone(carerId, String(v));
+                  if (!rp.ok) {
+                    const who = members.find((o) => o.id === carerId)?.first_name ?? 'The caregiver';
+                    return {
+                      ok: false,
+                      error: `${name}'s details were saved, but ${who}'s phone was not: ${rp.error}`,
+                    };
+                  }
+                }
+                const r2 = await setCaregivers(m.id, f.caregiver1 || null, f.caregiver2 || null);
+                if (!r2.ok) {
+                  return { ok: false, error: `${name}'s details were saved, but the caregivers were not: ${r2.error}` };
+                }
+                const skipped = r2.skipped ?? [];
+                return {
+                  ok: true,
+                  warning: skipped.length
+                    ? `Saved. ${nameList(skipped)} ${skipped.length === 1 ? 'is' : 'are'} not linked as ${name}'s caregiver yet, because staff need a phone number to reach ${skipped.length === 1 ? 'them' : 'each of them'}. Type it in the box under "Linked caregivers" and save again.`
+                    : '',
+                };
               });
             }}
           >
@@ -540,7 +589,9 @@ Anything already saved is untouched.`
                     reachable (Lawrence, 26 Oct; lib/caregivers.js). No HTML
                     `required`: the browser's own bubble would speak before the
                     site's sentence, the same reason the DOB box carries no min. */}
-                <Field label={isCarer ? 'Phone' : 'Phone (optional)'}>
+                {/* Whose phone it is, in the label (alpha feedback, 11 Nov
+                    2026: parents typed their own number on a child's card). */}
+                <Field label={`${m.first_name}'s own phone${isCarer ? '' : ' (optional)'}`}>
                   <input
                     name="phone"
                     type="tel"
@@ -599,18 +650,51 @@ Anything already saved is untouched.`
                           // than being handed a guess to accept by accident.
                           isAdult && !hasSaved ? '' : slot === 1 ? cg1 : cg2
                         }
+                        onChange={(e) => setCgChoice((c) => ({ ...c, [`${m.id}:${slot}`]: e.target.value }))}
                         className={inputCls}
                       >
                         <option value="">— none —</option>
                         {others.map((o) => (
                           <option key={o.id} value={o.id}>
                             {o.first_name} {o.last_name}
-                            {hasPhone(o.phone) ? ` (${o.phone})` : ' (no phone yet)'}
+                            {hasPhone(phoneOf(o)) ? ` (${phoneOf(o)})` : ' (no phone yet)'}
                           </option>
                         ))}
                       </select>
                     ))}
                   </div>
+                  {/* A chosen caregiver with no phone: the box for THEIR
+                      number, right here, saved onto their own card with this
+                      one (alpha feedback, 11 Nov 2026: "Add a phone number for
+                      Laurie first" was a dead end, and the number went into
+                      the child's own phone box instead). */}
+                  {(() => {
+                    const pick = (slot) =>
+                      cgChoice[`${m.id}:${slot}`] ?? (isAdult && !hasSaved ? '' : slot === 1 ? cg1 : cg2);
+                    const already = new Set(Object.values(saved).filter(Boolean));
+                    const lacking = [...new Set([pick(1), pick(2)].filter(Boolean))]
+                      .map((id) => members.find((o) => o.id === id))
+                      .filter((o) => o && !already.has(o.id) && !hasPhone(phoneOf(o)));
+                    return lacking.map((o) => (
+                      <label key={o.id} className="mt-3 block">
+                        <span className="block text-sm font-semibold text-neutral-700">
+                          {o.first_name}&rsquo;s phone
+                        </span>
+                        <input
+                          name={`carer_phone_${o.id}`}
+                          type="tel"
+                          onBlur={tidyPhone}
+                          className={inputCls}
+                        />
+                        <span className="mt-1 block text-xs text-amber-800">
+                          {o.first_name} has no phone number on file, so staff couldn&rsquo;t reach
+                          them about {m.first_name} at camp. Type it here and it saves on{' '}
+                          {o.first_name}&rsquo;s own card. Without it, {m.first_name}&rsquo;s other
+                          details still save; {o.first_name} is linked once there&rsquo;s a number.
+                        </span>
+                      </label>
+                    ));
+                  })()}
                   <p className="text-xs text-neutral-500 mt-2">
                     Who staff contact first about this person at camp. A linked caregiver
                     needs a phone number on their own card, so staff can reach them during
@@ -634,6 +718,11 @@ Anything already saved is untouched.`
                   saved={state[m.id]?.saved}
                   className="py-2!"
                 />
+                {state[m.id]?.warning && (
+                  <p role="status" className="basis-full rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    {state[m.id].warning}
+                  </p>
+                )}
                 {(state[m.id]?.dirty || state[m.id]?.error) && (
                   <button
                     type="button"
@@ -793,6 +882,20 @@ Anything already saved is untouched.`
             <span className="text-sm font-semibold text-amber-900">
               {dirtyKeys.length} {dirtyKeys.length === 1 ? 'card has' : 'cards have'}{' '}
               unsaved changes
+              {/* After Save all: what could not be saved, card by card, in
+                  the card's own words (alpha feedback, 11 Nov 2026). Cards
+                  that saved have left this list already. */}
+              {dirtyKeys.some((k) => state[k]?.error) && (
+                <span className="mt-1 block font-normal">
+                  {dirtyKeys
+                    .filter((k) => state[k]?.error)
+                    .map((k) => (
+                      <span key={k} className="block">
+                        Not saved, {cardName(k)}: {state[k].error}
+                      </span>
+                    ))}
+                </span>
+              )}
             </span>
             <span className="flex items-center gap-3">
               <button

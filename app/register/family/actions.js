@@ -698,6 +698,13 @@ export async function submitFamilyRegistration(payload) {
           continue;
         }
         let phone = carer.phone;
+        // The primary contact's number is the household phone typed on this
+        // form (alpha feedback, 11 Nov 2026; carerPhone in lib/caregivers.js
+        // is the same rule on Manage Household).
+        const isContact =
+          (carer.first_name ?? '').trim().toLowerCase() === (family.contactFirst ?? '').trim().toLowerCase() &&
+          (carer.last_name ?? '').trim().toLowerCase() === (family.contactLast ?? '').trim().toLowerCase();
+        if (!hasPhone(phone) && isContact && hasPhone(family.phone)) phone = family.phone;
         if (!hasPhone(phone) && hasPhone(m.caregiverPhone)) {
           const { error: phoneError } = await supabase
             .from('people')

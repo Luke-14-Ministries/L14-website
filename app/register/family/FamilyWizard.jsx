@@ -1959,7 +1959,14 @@ export default function FamilyWizard({
                               key: memberKey(o),
                               first: (o.preferredName || '').trim() || o.firstName.trim(),
                               label: `${o.firstName.trim()} ${o.lastName.trim()}${o.role ? ` (${o.role})` : ''}`,
-                              phone: (o.phone || '').trim(),
+                              // The household phone counts for the primary
+                              // contact, as on Manage Household (carerPhone).
+                              phone:
+                                (o.phone || '').trim() ||
+                                (o.firstName.trim().toLowerCase() === family.contactFirst.trim().toLowerCase() &&
+                                o.lastName.trim().toLowerCase() === family.contactLast.trim().toLowerCase()
+                                  ? (family.phone || '').trim()
+                                  : ''),
                             }))}
                           value={m.caregiverKey}
                           onChange={(v) =>
