@@ -16,7 +16,7 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { coverFeeCents, dollars } from '@/lib/payments';
+import { BANK_SIGN_IN_NOTE, coverFeeCents, dollars } from '@/lib/payments';
 import { formatDueDateShort } from '@/lib/events';
 import { returnedFeeDisclosure } from '@/lib/plans';
 import { createCheckout } from '@/app/account/dashboard/pay/actions';
@@ -142,6 +142,7 @@ function PayWith({ method, setMethod, returnedFeeCents, coverFee, setCoverFee, b
           </span>
         </label>
       )}
+      {bank && <p className="text-sm text-neutral-600">{BANK_SIGN_IN_NOTE}</p>}
       {bank && (
         <p className="text-xs text-neutral-500">
           Bank payments may take a few days to clear, so yours will show as &ldquo;clearing&rdquo;

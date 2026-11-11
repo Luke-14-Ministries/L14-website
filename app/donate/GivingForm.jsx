@@ -7,7 +7,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { createDonationCheckout } from './actions';
-import { coverFeeCents, dollars } from '@/lib/payments';
+import { BANK_SIGN_IN_NOTE, coverFeeCents, dollars } from '@/lib/payments';
 import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
 import { DONATION_FUNDS } from '@/lib/funds';
 
@@ -174,6 +174,7 @@ export default function GivingForm({ signedInEmail }) {
           </label>
         ))}
       </div>
+      {method === 'bank' && <p className="-mt-2 mb-4 text-sm text-neutral-600">{BANK_SIGN_IN_NOTE}</p>}
 
       <label className="flex items-start gap-2 text-sm mb-5">
         <input

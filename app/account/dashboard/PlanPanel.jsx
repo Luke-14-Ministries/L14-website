@@ -6,7 +6,7 @@
 // 2026 the family can also cancel it (0135), from a link beside its status.
 
 import { useState, useTransition } from 'react';
-import { dollars } from '@/lib/payments';
+import { BANK_SIGN_IN_NOTE, dollars } from '@/lib/payments';
 import { formatDueDateShort } from '@/lib/events';
 import {
   SCHEDULE_LABEL,
@@ -198,6 +198,7 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
           <button type="button" onClick={() => setChanging(false)} className="text-sm underline">
             Cancel
           </button>
+          {method === 'bank' && <p className="w-full text-sm text-neutral-600">{BANK_SIGN_IN_NOTE}</p>}
         </div>
       )}
       {error && <p className="mt-1 text-red-700">{error}</p>}
