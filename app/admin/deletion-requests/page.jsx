@@ -1,3 +1,4 @@
+import { formatPhone } from '@/lib/format';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -33,7 +34,7 @@ export default async function DeletionRequestsPage({ searchParams }) {
       householdId: r.household_id,
       household: r.households?.display_name ?? 'Household',
       email: r.households?.email ?? '',
-      phone: r.households?.phone ?? '',
+      phone: formatPhone(r.households?.phone ?? ''),
       scope: r.scope,
       familyNote: r.family_note,
       status: r.status,

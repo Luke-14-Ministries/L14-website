@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { reviewVolunteerApplication, setVolunteerClearance } from './actions';
-import { clearancePill, CLEARANCE_VERDICT_LABEL, isMinor } from '@/lib/format';
+import { clearancePill, CLEARANCE_VERDICT_LABEL, isMinor, formatPhone } from '@/lib/format';
 import { dayInMorristown } from '@/lib/events';
 
 // One pill per volunteer (Lawrence, 4 Nov 2026). Since 0152 the place at
@@ -334,7 +334,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
             <p className="text-xs text-neutral-500">
               {person?.email}
               {person?.email && person?.phone && ' · '}
-              {person?.phone}
+              {person?.phone ? formatPhone(person.phone) : null}
             </p>
           )}
         </div>

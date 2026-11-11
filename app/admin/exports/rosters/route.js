@@ -1,6 +1,7 @@
 // GET /admin/exports/rosters — the full roster as a CSV download.
 // Registrar-gated; RLS is the backstop. Data is never trapped in the app.
 
+import { formatPhone } from '@/lib/format';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { csvCell } from '@/lib/csv';
@@ -89,7 +90,7 @@ export async function GET(request) {
         r.events?.name ?? '',
         r.households?.display_name ?? '',
         r.households?.email ?? '',
-        r.households?.phone ?? '',
+        formatPhone(r.households?.phone ?? ''),
         r.households?.address_line1 ?? '',
         r.households?.city ?? '',
         r.households?.state ?? '',

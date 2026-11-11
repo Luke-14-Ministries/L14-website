@@ -6,6 +6,7 @@
 // it. Every write goes through those actions, so RLS still governs what a
 // staff member can actually do -- this file only decides how it looks.
 
+import { formatPhone } from '@/lib/format';
 import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -1073,7 +1074,7 @@ function HouseholdEditor({ registrationId, household }) {
             <p className="font-bold">{household.display_name}</p>
             <p className="text-sm text-neutral-600">
               {household.email || 'no email'}
-              {household.phone ? ` · ${household.phone}` : ''}
+              {household.phone ? ` · ${formatPhone(household.phone)}` : ''}
             </p>
             {(household.address_line1 || household.city) && (
               <p className="text-sm text-neutral-500 mt-1">

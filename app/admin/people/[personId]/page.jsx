@@ -3,10 +3,12 @@ import BackLink from '@/components/BackLink';
 import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { allergyPill, statusPill, telHref } from '@/lib/format';
+import { allergyPill, statusPill, telHref, formatPhone } from '@/lib/format';
+import PersonDetails from './PersonDetails';
+import AddToRegistration from './AddToRegistration';
 import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/support';
 import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
-import { dayInMorristown, isCurrentEventRow } from '@/lib/events';
+import { dayInMorristown, isCurrentEventRow, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 import { isVolunteerRole } from '@/lib/roles';
 
@@ -308,7 +310,7 @@ function FormAnswers({ sensitive, support, name }) {
               <NotAnswered />
             ) : (
               <a href={telHref(s.emergency_contact_phone) ?? undefined} className="text-brand underline">
-                {s.emergency_contact_phone}
+                {formatPhone(s.emergency_contact_phone)}
               </a>
             )}
           </Answer>
@@ -679,6 +681,31 @@ export default async function PersonPage({ params }) {
   );
   const sibName = new Map((siblings ?? []).map((s) => [s.id, `${s.first_name} ${s.last_name}`.trim()]));
 
+  // Staff can edit this person and add household members to the household's
+  // current registrations (Lawrence, 11 Nov 2026) -- with Registration write,
+  // the grant the registration page's own edits ask.
+  const canWrite = can(staff, 'write:registration');
+  let householdRegs = [];
+  if (canWrite && person.household_id) {
+    const { data: hRegs, error: hRegsError } = await supabase
+      .from('registrations')
+      .select('id, events!inner ( id, name, ends_on, archived_at, event_options ( id, name, participant_role, fee_cents, sort_order ) )')
+      .eq('household_id', person.household_id)
+      .is('events.archived_at', null)
+      .gte('events.ends_on', todayInMorristown());
+    if (hRegsError) throw new Error(`Household registrations: ${hRegsError.message}`);
+    householdRegs = (hRegs ?? []).map((r) => ({
+      id: r.id,
+      eventId: r.events.id,
+      eventName: r.events.name,
+      options: [...(r.events.event_options ?? [])]
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((o) => ({ id: o.id, name: o.name, participant_role: o.participant_role, fee_cents: o.fee_cents })),
+    }));
+  }
+  // The household's current registrations a person is NOT on yet.
+  const regsMissing = (eventIdsOn) => householdRegs.filter((r) => !eventIdsOn.has(r.eventId));
+
   // Support detail. RLS would hide it anyway (can_view_person_support), but the
   // grant is checked explicitly so the page can SAY it is hidden rather than
   // rendering an empty section that reads as "nothing recorded" -- which on a
@@ -901,9 +928,21 @@ export default async function PersonPage({ params }) {
       )}
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <Section title="Their details" note={canWrite ? 'Edit to correct a name, birth date or contact.' : undefined}>
+          <PersonDetails person={person} canEdit={canWrite} />
+        </Section>
+
         <Section title="At camp" note="Current events this person is registered for.">
           {currentParts.length === 0 && (
-            <p className="text-neutral-500">Not registered for a current event.</p>
+            <div className="space-y-1">
+              <p className="text-neutral-500">Not registered for a current event.</p>
+              {canWrite && (
+                <AddToRegistration
+                  person={{ id: person.id, firstName: person.first_name ?? '', lastName: person.last_name ?? '' }}
+                  registrations={regsMissing(new Set((parts ?? []).map((p) => p.registrations?.event_id).filter(Boolean)))}
+                />
+              )}
+            </div>
           )}
           {currentParts.map((p) => renderPart(p))}
           {earlierParts.length > 0 && (
@@ -988,7 +1027,7 @@ export default async function PersonPage({ params }) {
         >
           <Row label="Household">{household?.display_name ?? '—'}</Row>
           <Row label="Contact">
-            {[household?.email, household?.phone].filter(Boolean).join(' · ') || '—'}
+            {[household?.email, household?.phone ? formatPhone(household.phone) : null].filter(Boolean).join(' · ') || '—'}
           </Row>
           {(siblings ?? []).length === 0 ? (
             <p className="mt-2 text-neutral-500">Nobody else in this household.</p>
@@ -1011,6 +1050,18 @@ export default async function PersonPage({ params }) {
                           ? 'no place assigned'
                           : places.join(' · ')}
                     </span>
+                    {canWrite && theirParts.length === 0 && (
+                      <span className="basis-full pl-3">
+                        <AddToRegistration
+                          person={{
+                            id: s.id,
+                            firstName: s.first_name ?? '',
+                            lastName: s.last_name ?? '',
+                          }}
+                          registrations={regsMissing(new Set())}
+                        />
+                      </span>
+                    )}
                   </li>
                 );
               })}
@@ -1076,7 +1127,7 @@ export default async function PersonPage({ params }) {
               <Row label="Phone">
                 {support.emergency_contact_phone ? (
                   <a href={telHref(support.emergency_contact_phone) ?? undefined} className="text-brand underline">
-                    {support.emergency_contact_phone}
+                    {formatPhone(support.emergency_contact_phone)}
                   </a>
                 ) : (
                   '—'

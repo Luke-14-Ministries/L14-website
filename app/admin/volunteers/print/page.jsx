@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { clearanceMark, isMinor } from '@/lib/format';
+import { clearanceMark, isMinor, formatPhone } from '@/lib/format';
 import { todayInMorristown, eventInScope, isEventScope } from '@/lib/events';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -170,7 +170,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
                       {v.household?.display_name}
                       <div className="text-xs text-neutral-500">
                         {v.person?.email ?? v.household?.email ?? ''}
-                        {(v.person?.phone ?? v.household?.phone) ? ` · ${v.person?.phone ?? v.household?.phone}` : ''}
+                        {(v.person?.phone ?? v.household?.phone) ? ` · ${formatPhone(v.person?.phone ?? v.household?.phone)}` : ''}
                       </div>
                     </td>
                     <td className="py-1 pr-2">

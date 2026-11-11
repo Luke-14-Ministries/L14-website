@@ -3,7 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow, eventInScope, isEventScope } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
-import { allergyPill } from '@/lib/format';
+import { allergyPill, formatPhone } from '@/lib/format';
 import { allergySummary } from '@/lib/support';
 import SeverityPicker from './SeverityPicker';
 
@@ -49,7 +49,7 @@ export default async function DietaryPage({ searchParams }) {
         name: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
         sortName: `${p.people?.last_name ?? ''} ${p.people?.first_name ?? ''}`,
         household: r.households?.display_name ?? '',
-        phone: r.households?.phone ?? '',
+        phone: formatPhone(r.households?.phone ?? ''),
         dietary: s.dietary_needs,
         // The ticked words, then the reaction (0097); a row from before the
         // tick list prints its free text as given.

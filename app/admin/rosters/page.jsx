@@ -1,3 +1,4 @@
+import { formatPhone } from '@/lib/format';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -99,7 +100,7 @@ export default async function RostersPage() {
         // existed; this one did not (25 Aug).
         participantId: p.id,
         household: r.households?.display_name ?? 'Household',
-        contact: [r.households?.email, r.households?.phone].filter(Boolean).join(' · '),
+        contact: [r.households?.email, r.households?.phone ? formatPhone(r.households.phone) : null].filter(Boolean).join(' · '),
         person: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
         // E04/E05: the person cell links to their own page.
         personId: pid ?? null,

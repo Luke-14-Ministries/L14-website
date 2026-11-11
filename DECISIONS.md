@@ -4456,3 +4456,29 @@ gaining `setup_intent.succeeded` and `setup_intent.setup_failed` the same day (e
 signing secret and test API key alongside the live ones, and the function choosing between them by
 mode (for example a `?mode=test` URL with separate `STRIPE_*_TEST` secrets). Re-enable a test endpoint
 only once that exists.
+
+## 11 November 2026 — Staff can edit a household member outside a registration
+
+Lawrence: staff could edit a person only through one of their registrations, so a household member on
+none (an alpha tester's son) could not be corrected or added by staff at all.
+
+- **The staff person page edits the person** ("Their details", Registration write only; read-only staff
+  see the facts and no Edit): name, preferred name, date of birth, sex, own phone and email. The rules
+  live in one place, `lib/staffPersonEdit.js` (`editPersonAsStaff`, `PERSON_FIELDS`), now used by the
+  registration page's `updatePerson` too, so the two cannot drift: first name required, `dobProblem`,
+  the phone tidied (`lib/phone.js`), clearing a linked caregiver's phone refused, and a name or birth
+  date change on someone with a live registration needs a deliberate "Change it anyway". Recent Changes
+  records it through 0046's trigger on `people`, whoever edits. Support details and caregivers are
+  unchanged here (the family's account or a registration page).
+- **"Add to <event>"** beside a household member on no registration (Their family) and on a person's
+  own page when they are on no current event: one per household registration at a current event. It
+  asks for the role (and the option when the event has more than one; it picks the option matching the
+  role), and adds the EXISTING person through `addParticipant(existing_person_id)`, so 0086 (one role
+  per person per event), the option's fee (0114) and the discount re-run all hold. With no current
+  registration it says so and offers nothing.
+- **Phones read tidy on staff pages** (display only; nothing stored changes): the person page, the
+  registration page, rosters and their print view, Medical & Support, Dietary, check-in's medical
+  contact, Volunteers and its print view, cancellations, deletion requests, and both CSV exports
+  (rosters, balances), which now carry "(423) 555-0123" rather than whatever was typed.
+- No new grant or migration: the writes are the same `people` update and `registration_participants`
+  insert the registration page already makes, under the same RLS.

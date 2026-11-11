@@ -3,6 +3,7 @@
 // spreadsheet; the payments CSV (one row per transaction) is its companion.
 // Registrar-gated; honors the same ?paystate filter as the page.
 
+import { formatPhone } from '@/lib/format';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { csvCell } from '@/lib/csv';
@@ -64,7 +65,7 @@ export async function GET(request) {
     rows.push([
       r?.households?.display_name ?? '',
       r?.households?.email ?? '',
-      r?.households?.phone ?? '',
+      formatPhone(r?.households?.phone ?? ''),
       r?.events?.name ?? '',
       d(b.fee_cents),
       d(b.discount_cents),

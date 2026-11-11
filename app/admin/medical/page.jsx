@@ -1,3 +1,4 @@
+import { formatPhone } from '@/lib/format';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -57,7 +58,7 @@ export default async function MedicalPage({ searchParams }) {
         name: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
         sortName: `${p.people?.last_name ?? ''} ${p.people?.first_name ?? ''}`,
         household: r.households?.display_name ?? '',
-        phone: r.households?.phone ?? '',
+        phone: formatPhone(r.households?.phone ?? ''),
         medications: s.medications,
         seizures: s.has_seizures,
         seizureDetail: s.seizure_detail,
@@ -65,7 +66,7 @@ export default async function MedicalPage({ searchParams }) {
         rescueDetail: s.rescue_medication_detail,
         buddy: s.buddy_required && assignsBuddies.has(r.event_id),
         ecName: s.emergency_contact_name,
-        ecPhone: s.emergency_contact_phone,
+        ecPhone: s.emergency_contact_phone ? formatPhone(s.emergency_contact_phone) : s.emergency_contact_phone,
         ecRel: s.emergency_contact_relationship,
       });
     }
@@ -249,5 +250,5 @@ export default async function MedicalPage({ searchParams }) {
 // the two names the page has always used.
 function withMedicalContact(ev) {
   const mc = Array.isArray(ev.event_medical_contacts) ? ev.event_medical_contacts[0] : ev.event_medical_contacts;
-  return { ...ev, medical_contact_name: mc?.name ?? null, medical_contact_phone: mc?.phone ?? null };
+  return { ...ev, medical_contact_name: mc?.name ?? null, medical_contact_phone: mc?.phone ? formatPhone(mc.phone) : null };
 }

@@ -1,3 +1,4 @@
+import { formatPhone } from '@/lib/format';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -220,5 +221,5 @@ export default async function CheckinPage({ searchParams }) {
 // the two names the page has always used.
 function withMedicalContact(ev) {
   const mc = Array.isArray(ev.event_medical_contacts) ? ev.event_medical_contacts[0] : ev.event_medical_contacts;
-  return { ...ev, medical_contact_name: mc?.name ?? null, medical_contact_phone: mc?.phone ?? null };
+  return { ...ev, medical_contact_name: mc?.name ?? null, medical_contact_phone: mc?.phone ? formatPhone(mc.phone) : null };
 }

@@ -1,3 +1,4 @@
+import { formatPhone } from '@/lib/format';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -61,7 +62,7 @@ export default async function CancellationsPage({ searchParams }) {
       id: r.id,
       registrationId: r.registration_id,
       household: r.registrations?.households?.display_name ?? 'Household',
-      phone: r.registrations?.households?.phone ?? '',
+      phone: formatPhone(r.registrations?.households?.phone ?? ''),
       email: r.registrations?.households?.email ?? '',
       eventName: r.registrations?.events?.name ?? '',
       // null means the whole registration; the list says so in words rather

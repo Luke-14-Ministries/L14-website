@@ -1,7 +1,6 @@
 'use server';
 
 import { dobProblem } from '@/lib/format';
-import { caregiverPhoneProblem, hasPhone } from '@/lib/caregivers';
 // Server actions for the staff registration-management screen.
 //
 // Every action re-checks that the caller is a registrar (or admin) before it
@@ -21,6 +20,7 @@ import { getStripe } from '@/lib/stripe/server';
 import { registrationDepositCents } from '@/lib/payments';
 import { planNoticeDays } from '@/lib/plans';
 import { withReason } from '@/lib/dbErrors';
+import { editPersonAsStaff } from '@/lib/staffPersonEdit';
 
 const STATUSES = ['draft', 'submitted', 'waitlisted', 'confirmed', 'cancelled'];
 const CAMP_ROLES = [
@@ -32,18 +32,9 @@ const CAMP_ROLES = [
   'volunteer_child',
 ];
 
-// Fields a staff member may edit on a person and on a household. Anything not
-// on these lists is ignored rather than trusted -- the client cannot widen the
-// write surface by sending extra keys.
-const PERSON_FIELDS = [
-  'first_name',
-  'last_name',
-  'preferred_name',
-  'date_of_birth',
-  'gender',
-  'email',
-  'phone',
-];
+// Fields a staff member may edit on a household (a person's: PERSON_FIELDS in
+// lib/staffPersonEdit.js). Anything not on the list is ignored rather than
+// trusted -- the client cannot widen the write surface by sending extra keys.
 const HOUSEHOLD_FIELDS = [
   'display_name',
   'email',
@@ -284,116 +275,16 @@ export async function setParticipantStatus(
   return { ok: true };
 }
 
-// #15 -- edit a camper's own details.
+// #15 -- edit a camper's own details. The rules live in lib/staffPersonEdit.js,
+// shared with the staff person page (11 Nov 2026), so the two cannot drift.
 export async function updatePerson(registrationId, personId, fields, options = {}) {
   const { error: authError } = await requireRegistrar();
   if (authError) return { ok: false, error: authError };
-
-  const patch = clean(fields || {}, PERSON_FIELDS);
-  if (!patch.first_name && 'first_name' in patch) {
-    return { ok: false, error: 'A first name is required.' };
-  }
-  {
-    const bad = dobProblem(patch.date_of_birth);
-    if (bad) return { ok: false, error: bad };
-  }
-
   const supabase = await createClient();
-
-  // A linked caregiver must have a phone (Lawrence, 26 Oct; lib/caregivers.js).
-  // Staff create no caregiver links -- families do, on Manage Household -- so
-  // the one way this screen could break the rule is CLEARING the number of
-  // someone already linked. That is refused, in the family page's words. A
-  // caregiver who never had a number is not blocked here: staff fixing a name
-  // over the phone should not be stopped by a gap they cannot fill.
-  if ('phone' in patch && !hasPhone(patch.phone)) {
-    const { data: before, error: beforeError } = await supabase
-      .from('people')
-      .select('first_name, phone')
-      .eq('id', personId)
-      .maybeSingle();
-    if (beforeError) return { ok: false, error: `This person could not be read: ${beforeError.message}` };
-    if (before && hasPhone(before.phone)) {
-      const { data: links, error: linkError } = await supabase
-        .from('person_caregivers')
-        .select('person_id')
-        .eq('caregiver_person_id', personId);
-      if (linkError) return { ok: false, error: `Caregiver links could not be read: ${linkError.message}` };
-      const ids = (links ?? []).map((l) => l.person_id);
-      if (ids.length > 0) {
-        const { data: deps, error: depError } = await supabase
-          .from('people')
-          .select('first_name')
-          .in('id', ids)
-          .order('created_at');
-        if (depError) return { ok: false, error: `Caregiver links could not be read: ${depError.message}` };
-        const bad = caregiverPhoneProblem({
-          name: patch.first_name ?? before.first_name,
-          phone: patch.phone,
-          caresFor: (deps ?? []).map((d) => d.first_name),
-        });
-        if (bad) return { ok: false, error: bad };
-      }
-    }
-  }
-
-  // ⭐ IDENTITY CHANGES ON A REGISTERED PERSON NEED A DELIBERATE YES.
-  //
-  // Families are blocked from this outright and told to ask staff (25 Aug).
-  // That advice was only honest if the staff path is safer than the family
-  // one, and it was not: this action had no check at all, and the change log
-  // deliberately skips staff, so a rename left no guard and no trace.
-  //
-  // Staff genuinely need to do it — correcting a typo is the common case, and
-  // blocking that would be worse than the problem. So it is allowed, but not
-  // by accident: the caller must pass confirmIdentityChange, and the reply
-  // below tells them exactly what is at stake so the confirmation is informed.
-  //
-  // Migration 0046 closed the other half: identity edits are now logged even
-  // when staff make them.
-  const identityKeys = ['first_name', 'last_name', 'date_of_birth'];
-  const touchingIdentity = identityKeys.some((k) => k in patch);
-
-  if (touchingIdentity && !options.confirmIdentityChange) {
-    const { data: before, error: beforeError } = await supabase
-      .from('people')
-      .select('first_name, last_name, date_of_birth')
-      .eq('id', personId)
-      .maybeSingle();
-    if (beforeError) return { ok: false, error: `Their current details could not be read: ${beforeError.message}` };
-
-    const changed = identityKeys.filter(
-      (k) => k in patch && (patch[k] ?? '') !== (before?.[k] ?? '')
-    );
-
-    if (changed.length > 0) {
-      const { count, error: countError } = await supabase
-        .from('registration_participants')
-        .select('id', { count: 'exact', head: true })
-        .eq('person_id', personId)
-        .neq('status', 'cancelled');
-      // A failed count must not skip the confirmation.
-      if (countError) return { ok: false, error: `Their registrations could not be counted: ${countError.message}` };
-
-      if ((count ?? 0) > 0) {
-        return {
-          ok: false,
-          needsConfirm: true,
-          error:
-            `${before?.first_name ?? 'This person'} ${before?.last_name ?? ''}`.trim() +
-            ' is on a live registration. Changing their name or date of birth changes ' +
-            'rosters and check-in lists, but agreements already signed keep the old name. ' +
-            'Returning families are matched by name and date of birth, so this could ' +
-            'create a duplicate person the next time they register. The change is logged ' +
-            'in Recent Changes.',
-        };
-      }
-    }
-  }
-
-  const { error } = await supabase.from('people').update(patch).eq('id', personId);
-  if (error) return { ok: false, error: error.message };
+  const res = await editPersonAsStaff(supabase, personId, fields, options);
+  if (!res.ok) return res;
   revalidateAll(registrationId);
+  revalidatePath(`/admin/people/${personId}`);
   return { ok: true };
 }
 

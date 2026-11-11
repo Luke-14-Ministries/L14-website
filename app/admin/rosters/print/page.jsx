@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
 import StatusMark from '@/components/StatusMark';
-import { STATUS_LABEL } from '@/lib/format';
+import { STATUS_LABEL, formatPhone } from '@/lib/format';
 import { eventInScope } from '@/lib/events';
 
 export const metadata = { title: 'Print Rosters — Staff Admin' };
@@ -72,7 +72,7 @@ export default async function PrintRostersPage({ searchParams }) {
         role: ROLE_LABEL[p.camp_role] ?? p.camp_role,
         status: p.status,
         household: r.households?.display_name ?? '',
-        phone: r.households?.phone ?? '',
+        phone: formatPhone(r.households?.phone ?? ''),
         tshirt: p.tshirt_size ?? '',
         // This is the copy that ends up in a pocket at camp. The photo
         // preference has to be ON it, or the person carrying it cannot honour
