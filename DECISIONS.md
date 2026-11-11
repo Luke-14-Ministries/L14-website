@@ -4345,3 +4345,25 @@ criminal history.
   `manual`. Someone who volunteers at any current event is listed as a volunteer and cannot be given
   a registry search.
 - **Not changed:** the sidebar's missing-check badge still counts volunteers only.
+
+---
+
+## 2026-11-10 — The registry search is a queue staff run, not an automatic search
+
+Lawrence asked for the adult-camper registry search to be automatic. It cannot be, from the free
+source: nsopw.gov's Conditions of Use have users agree not to perform automated searching or try to
+get around its security; it throttles and watches for that, disables accounts that do it, and its FAQ
+says the browser is the only way to search (no API). Scripting it would break those terms and risk the
+ministry's access, and getting past a CAPTCHA is not something this project will build.
+
+The fully automatic route is a paid registry API (a commercial service searching the state registries).
+Not taken: a company compiling records on people for screening may be a consumer reporting agency,
+which brings back the FCRA permissible-purpose question `0056` chose the free registry to avoid. That
+is a board-and-counsel decision with a new paid vendor and key, not a code change.
+
+Built instead, the same day: **Registry searches due** at the top of Background Checks (write grant
+only), listing every adult camper whose search is missing or out of date with date of birth, the
+household's city and state, and the event. **Copy name and search** puts the name on the clipboard and
+opens nsopw.gov; **No match** records today's date in one click; **Possible match** asks for follow-up
+or not-permitted and a note. It uses the same `recordRegistrySearch()` and its refusals. NSOPW also
+offers accounts that show the CAPTCHA only every five searches, which is worth having for a long queue.

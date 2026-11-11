@@ -23,6 +23,7 @@ import { isCamperRole, isVolunteerRole } from '@/lib/roles';
 import { depositInByPerson } from '@/lib/screeningDeposit';
 import CheckLengthForm from './CheckLengthForm';
 import RegistrySearchForm from './RegistrySearchForm';
+import RegistryQueue from './RegistryQueue';
 
 export const metadata = { title: 'Background Checks' };
 
@@ -93,7 +94,9 @@ export default async function BackgroundChecksPage({ searchParams }) {
   const { data: places, error: placesError } = eventIds.length
     ? await supabase
         .from('registration_participants')
-        .select('camp_role, status, people ( id, first_name, last_name, date_of_birth ), registrations!inner ( event_id )')
+        .select(
+          'camp_role, status, people ( id, first_name, last_name, date_of_birth, households!people_household_id_fkey ( city, state ) ), registrations!inner ( event_id )'
+        )
         .in('registrations.event_id', eventIds)
         .neq('status', 'cancelled')
     : { data: [], error: null };
@@ -179,6 +182,27 @@ export default async function BackgroundChecksPage({ searchParams }) {
       coveredByFullCheck: forCamper && onFile && !expired && !isRegistrySearch(c),
     };
   });
+  // The queue: adult campers whose registry search is missing or out of date
+  // (RegistryQueue.jsx). Not filtered by the buttons below -- it is the to-do
+  // list, whatever the table is showing.
+  const queue = canWrite
+    ? allRows
+        .filter((r) => r.role === 'camper' && !r.coveredByFullCheck && (r.bucket === 'missing' || r.bucket === 'expired'))
+        .map((r) => {
+          const person = byPerson.get(r.id).person;
+          const hh = person.households ?? null;
+          return {
+            id: r.id,
+            name: r.name,
+            searchName: `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim(),
+            dob: person.date_of_birth ?? null,
+            place: [hh?.city, hh?.state].filter(Boolean).join(', '),
+            events: r.events,
+            reason: r.bucket === 'expired' ? `last search expired ${fmtDate(r.expiresOn) || ''}`.trim() : '',
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
   const roleCounts = Object.fromEntries(ROLES.map((r) => [r.key, r.key ? allRows.filter((x) => x.role === r.key).length : allRows.length]));
   const rows = roleFilter ? allRows.filter((r) => r.role === roleFilter) : allRows;
   rows.sort((a, b) => a.lastName.localeCompare(b.lastName) || a.name.localeCompare(b.name));
@@ -208,6 +232,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
           {minors > 0 && ` ${minors} under 18 ${minors === 1 ? 'is' : 'are'} not screened and not listed.`}
         </p>
       </div>
+
+      {canWrite && <RegistryQueue rows={queue} today={today} />}
 
       <CheckLengthForm months={months} onFile={onFileCount ?? 0} canEdit={can(staff, 'write:background_checks')} />
 
