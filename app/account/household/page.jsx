@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { todayInMorristown } from '@/lib/events';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import HouseholdManager from './HouseholdManager';
@@ -131,6 +132,23 @@ export default async function ManageHouseholdPage() {
     }
   }
 
+  // This household's registrations at current events (not archived, not over),
+  // so adding someone here can say which camp they are NOT on yet (Lawrence,
+  // 11 Nov 2026: an alpha-tester added her son here and thought that
+  // registered him).
+  const { data: regRows, error: regError } = await supabase
+    .from('registrations')
+    .select('id, events!inner ( id, name, ends_on, archived_at )')
+    .eq('household_id', householdId)
+    .is('events.archived_at', null)
+    .gte('events.ends_on', todayInMorristown());
+  if (regError) throw new Error(`Your registrations could not be read: ${regError.message}`);
+  const currentRegistrations = (regRows ?? []).map((r) => ({
+    id: r.id,
+    eventId: r.events.id,
+    eventName: r.events.name,
+  }));
+
   const caregiversByPerson = {};
   for (const link of careLinks ?? []) {
     if (!caregiversByPerson[link.person_id]) caregiversByPerson[link.person_id] = {};
@@ -155,6 +173,7 @@ export default async function ManageHouseholdPage() {
           members={members}
           caregiversByPerson={caregiversByPerson}
           photoUrlByPerson={photoUrlByPerson}
+          currentRegistrations={currentRegistrations}
         />
         <BackBar />
       </div>

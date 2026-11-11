@@ -12,6 +12,7 @@
 // and there was no good answer. Now it matches the details form and the
 // staff editors. Errors still print beside the button in red.
 
+import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 import FoldArrow from '@/components/FoldArrow';
 import { useRouter } from 'next/navigation';
@@ -62,6 +63,9 @@ export default function HouseholdManager({
   members,
   caregiversByPerson,
   photoUrlByPerson = {},
+  // [{ id, eventId, eventName }]: this household's registrations at current
+  // events, for the note after someone is added.
+  currentRegistrations = [],
 }) {
   const router = useRouter();
   const [, start] = useTransition();
@@ -688,6 +692,8 @@ Anything already saved is untouched.`
           run('add', async () => {
             const res = await addHouseholdPerson(household.id, f);
             if (res.ok) formEl.reset();
+            // Kept for the "not registered for ..." note below.
+            if (res.ok) patch('add', { addedName: String(f.first_name ?? '').trim() });
             // The new person's card arrives unfolded -- they were just typed
             // in, and the next thing is usually their phone or caregivers.
             if (res.ok && res.personId) setOpen(res.personId, true);
@@ -696,10 +702,13 @@ Anything already saved is untouched.`
         }}
       >
         <h2 className="text-lg font-bold mb-1">Add a family member</h2>
+        {/* Household is not camp (Lawrence, 11 Nov 2026): an alpha-tester
+            added her son here and believed he was registered. */}
         <p className="text-sm text-neutral-600 mb-4">
-          Add anyone in your family here, whether or not they&rsquo;re attending
-          something. Then you can check their name when you register instead of
-          typing them in again.
+          Add anyone in your family here, whether or not they&rsquo;re coming to camp.{' '}
+          <strong>This adds them to your household. To bring them to camp, add them to a
+          registration.</strong> When you register, you can tick their name instead of typing it
+          again.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First name">
@@ -733,10 +742,36 @@ Anything already saved is untouched.`
             className="py-2!"
           />
           {state.add?.error && <span className="text-sm text-red-700">{state.add.error}</span>}
-          {state.add?.saved && (
+          {state.add?.saved && currentRegistrations.length === 0 && (
             <span className="text-sm text-green-700">Added. They&rsquo;re in the list above.</span>
           )}
         </div>
+        {/* Someone just added is on no registration yet, so every current
+            one is a camp they are not registered for. */}
+        {state.add?.saved && currentRegistrations.length > 0 && (
+          <div className="mt-3 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+            <p>
+              Added. <strong>{state.add.addedName || 'They'}</strong>{' '}
+              {state.add.addedName ? 'is' : 'are'} in your household but not registered for{' '}
+              {currentRegistrations.map((r, i) => (
+                <span key={r.id}>
+                  {i > 0 && (i === currentRegistrations.length - 1 ? ' or ' : ', ')}
+                  {r.eventName}
+                </span>
+              ))}
+              .
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {currentRegistrations.map((r) => (
+                <li key={r.id}>
+                  <Link href={`/register/family/?event=${r.eventId}`} className="font-semibold text-brand underline">
+                    Add {state.add.addedName || 'them'} to {r.eventName}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </form>
 
       <p className="text-sm text-neutral-500">
