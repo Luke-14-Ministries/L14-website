@@ -85,6 +85,20 @@ export async function submitFamilyRegistration(payload) {
     if (bad) return { ok: false, error: bad };
   }
 
+  // A row with one name but not the other was dropped here in silence (alpha
+  // feedback, 11 Nov 2026). The wizard now refuses it before submitting; this
+  // is the same rule on the server, in words, rather than a quiet skip.
+  const halfNamed = (members || []).find(
+    (m) => Boolean((m.firstName || '').trim()) !== Boolean((m.lastName || '').trim())
+  );
+  if (halfNamed) {
+    const who = (halfNamed.firstName || halfNamed.lastName || '').trim();
+    return {
+      ok: false,
+      error: `${who}: please give both a first and a last name in “Who's coming”, or remove the row.`,
+    };
+  }
+
   // Keep only members with a real name, and translate the role label to the enum
   // the database stores.
   const mapped = (members || [])

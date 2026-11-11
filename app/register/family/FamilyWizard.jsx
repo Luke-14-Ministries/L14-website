@@ -419,6 +419,20 @@ function familyNeeds({ family }) {
 function peopleNeeds({ members }) {
   const out = [];
   const named = members.filter(isNamed);
+  // HARD: a row with only a first name (or only a last name) was left out of
+  // the save without a word, and the success card then named only the people
+  // who were saved (alpha feedback, 11 Nov 2026: a son typed in "Who's coming"
+  // never reached the registration). Say so before submitting.
+  const halfNamed = members
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => Boolean(m.firstName.trim()) !== Boolean(m.lastName.trim()));
+  if (halfNamed.length > 0) {
+    const { m, i } = halfNamed[0];
+    out.push({
+      chip: `a first and last name for ${whoList(halfNamed.map((x) => shownName(x.m, x.i)))}`,
+      message: `${shownName(m, i)}: please give both a first and a last name in “Who's coming”, or remove the row. Someone with only one name can't be saved.`,
+    });
+  }
   // 0094: a two-digit year typed into a date box. The server refuses it too
   // (every row, named or not), in the same words.
   const badDob = members
