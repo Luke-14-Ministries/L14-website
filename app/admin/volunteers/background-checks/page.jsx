@@ -23,7 +23,7 @@ import { createClient } from '@/lib/supabase/server';
 import { CHECK_TONE, clearancePill, isRegistrySearch } from '@/lib/format';
 import { todayInMorristown } from '@/lib/events';
 import { depositInByPerson } from '@/lib/screeningDeposit';
-import { loadScreeningPeople, registryBucket, fullCheckCurrent } from '@/lib/backgroundChecks';
+import { loadScreeningPeople, registryBucket, volunteerBucket, fullCheckCurrent } from '@/lib/backgroundChecks';
 import CheckLengthForm from './CheckLengthForm';
 import RegistrySearchForm from './RegistrySearchForm';
 import RegistryQueue from './RegistryQueue';
@@ -39,6 +39,10 @@ const VOLUNTEER_FILTERS = [
   { key: 'missing', label: 'No check on file' },
   { key: 'waiting', label: 'Waiting on Checkr' },
   { key: 'expired', label: 'Out of date' },
+  // In date, but not marked OK to serve yet: follow-up or no verdict
+  // (Lawrence, 11 Nov 2026). Holds approval, so it is work, not "current".
+  { key: 'decision', label: 'Needs a decision' },
+  { key: 'not_permitted', label: 'Not permitted' },
   { key: 'soon', label: `Expiring within ${SOON_DAYS} days` },
   { key: 'current', label: 'Current' },
 ];
@@ -185,17 +189,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
       const c = clearanceBy.get(id) ?? null;
       // A registry search never clears a volunteer (0161).
       const onFile = Boolean(c?.background_check_on_file) && !isRegistrySearch(c);
-      const expired = onFile && c.expires_on && c.expires_on < today;
-      const waiting = !(onFile && !expired) && ['invited', 'pending', 'suspended'].includes(c?.checkr_status);
-      const bucket = waiting
-        ? 'waiting'
-        : !onFile
-          ? 'missing'
-          : expired
-            ? 'expired'
-            : c.expires_on && c.expires_on <= soon
-              ? 'soon'
-              : 'current';
+      // The gate's own rule (lib/backgroundChecks.js): current = in date AND OK.
+      const bucket = volunteerBucket(c, today, soon);
       return {
         ...base(id),
         checkDate: onFile ? c?.background_check_date ?? null : null,
@@ -271,15 +266,23 @@ export default async function BackgroundChecksPage({ searchParams }) {
     `${vCounts.missing} no check on file`,
     `${vCounts.waiting} waiting on Checkr`,
     `${vCounts.expired} out of date`,
+    `${vCounts.decision} ${vCounts.decision === 1 ? 'needs' : 'need'} a decision`,
+    ...(vCounts.not_permitted > 0 ? [`${vCounts.not_permitted} not permitted`] : []),
     `${vCounts.current + vCounts.soon} current`,
   ].join(' · ');
-  // Work due: someone with no check, or one out of date or about to be.
-  const volunteerWork = vCounts.missing + vCounts.expired + vCounts.soon;
+  // Work due: no check, one out of date or about to be, or one in date that
+  // nobody has marked OK to serve yet.
+  const volunteerWork = vCounts.missing + vCounts.expired + vCounts.decision + vCounts.soon;
   const volunteerPills = [
     vCounts.missing > 0 && { text: `${vCounts.missing} no check`, cls: RED },
     vCounts.expired > 0 && { text: `${vCounts.expired} out of date`, cls: RED },
+    vCounts.decision > 0 && {
+      text: `${vCounts.decision} ${vCounts.decision === 1 ? 'needs' : 'need'} a decision`,
+      cls: RED,
+    },
+    vCounts.not_permitted > 0 && { text: `${vCounts.not_permitted} not permitted`, cls: CHECK_TONE.blocked },
     vCounts.soon > 0 && { text: `${vCounts.soon} expiring soon`, cls: AMBER },
-    volunteerWork === 0 && vCounts[''] > 0 && { text: 'Nothing due', cls: QUIET },
+    volunteerWork === 0 && vCounts.not_permitted === 0 && vCounts[''] > 0 && { text: 'Nothing due', cls: QUIET },
   ].filter(Boolean);
   const registrySummary = [
     plural(rCounts[''], 'adult', 'adults'),
