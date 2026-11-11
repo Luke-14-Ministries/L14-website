@@ -572,13 +572,14 @@ export async function applySetupIntentToPlan(
   // A plan that stopped on failures starts again with the new method: its
   // failed charges get a fresh set of tries, starting tomorrow morning.
   if (plan.status === 'failed') update.status = 'active';
-  const { data: landed, error: upErr } = await admin
-    .from('payment_plans')
-    .update(update)
-    .eq('id', plan.id)
-    .eq('status', plan.status)
-    .or(`stripe_payment_method_id.is.null,stripe_payment_method_id.neq.${pm.id}`)
-    .select('id');
+  // Conditional on the method and status just read, so a second delivery
+  // racing this one finds nothing to update. No .or() here: PostgREST
+  // rejects an or= filter on an UPDATE (see recordInstallmentOutcome).
+  let q = admin.from('payment_plans').update(update).eq('id', plan.id).eq('status', plan.status);
+  q = plan.stripe_payment_method_id == null
+    ? q.is('stripe_payment_method_id', null)
+    : q.eq('stripe_payment_method_id', plan.stripe_payment_method_id);
+  const { data: landed, error: upErr } = await q.select('id');
   if (upErr) throw new Error(`plan-method: ${upErr.message}`);
   // Another delivery got there first: it did the restart, if one was due.
   if (!landed || landed.length === 0) return 'unchanged';
