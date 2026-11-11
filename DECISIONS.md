@@ -4420,3 +4420,39 @@ scholarship form, the person page, rosters, search and Background Checks. Their 
 Volunteers and get the full background check, the application and the Creed. This replaces the note in
 today's earlier entry that a registry search covered them.
 
+
+## 11 November 2026 — A plan switches to a new bank account only once Stripe has confirmed it
+
+A bank account typed in by hand (routing and account numbers, not a bank sign-in) is confirmed by two
+small deposits. The setup checkout behind "Change card or bank account" completes while that is still
+pending, and `applyNewPaymentMethod` used to put the unconfirmed account on the plan at once,
+restarting a stopped plan onto an account that could not be charged yet. Lawrence approved the fix and
+the redeploy (stripe-plans-webhook v25).
+
+- `applySetupIntentToPlan()` (`_shared/plans.ts`) applies the method only when the SetupIntent is
+  `succeeded`; otherwise the plan keeps its method, status and retries. It runs on the checkout and on
+  `setup_intent.succeeded`, so the switch happens when the family confirms the deposits.
+  `setup_intent.setup_failed` is logged and changes nothing.
+- The update is conditional on the method and status just read (eq/is, never or=, which PostgREST
+  refuses on an UPDATE), so two deliveries land once and only one restarts the plan or resets retries.
+- After saving a bank account the dashboard says a typed-in account switches once the deposits are
+  confirmed. A notice that stays until then would need a column; not added.
+- Every bank choice (Finish, plan change, Donate) now says families can type in their routing and
+  account numbers instead of signing in to their bank (`BANK_SIGN_IN_NOTE`, `lib/payments.js`). Nothing
+  may set `us_bank_account.verification_method` to `instant`, which would hide that choice.
+
+## 11 November 2026 — Test-mode Stripe webhook endpoints disabled
+
+Each of the three functions (`stripe-webhook`, `stripe-refund-webhook`, `stripe-plans-webhook`) had two
+Stripe endpoints, a test one and a live one, both pointing at the same function URL. A function holds
+one signing secret, and since Stage B (29 Oct) that is the live one, so every test-mode delivery failed
+its signature check with a 400 (Stripe showed two, both before the switch). At Lawrence's request the
+three test-mode endpoints were **disabled, not deleted**, through the Stripe connector on 11 Nov:
+`we_1U4nDGI6X3bKpNUr2lmAn1eX` (stripe-webhook), `we_1U8ZRRI6X3bKpNUrydvtTzXe` (refund),
+`we_1ULX4gI6X3bKpNUrxpF7TYiF` (plans). The live endpoints are unchanged, apart from the plans endpoint
+gaining `setup_intent.succeeded` and `setup_intent.setup_failed` the same day (entry above).
+
+**Don't just switch a test endpoint back on.** Test mode against a deployed function needs a test-mode
+signing secret and test API key alongside the live ones, and the function choosing between them by
+mode (for example a `?mode=test` URL with separate `STRIPE_*_TEST` secrets). Re-enable a test endpoint
+only once that exists.
