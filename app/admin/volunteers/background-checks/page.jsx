@@ -20,7 +20,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { clearancePill, isRegistrySearch } from '@/lib/format';
+import { CHECK_TONE, clearancePill, isRegistrySearch } from '@/lib/format';
 import { todayInMorristown } from '@/lib/events';
 import { depositInByPerson } from '@/lib/screeningDeposit';
 import { loadScreeningPeople, registryBucket, fullCheckCurrent } from '@/lib/backgroundChecks';
@@ -109,9 +109,6 @@ function FilterPills({ filters, counts, current, hrefFor, label }) {
 // and RegistryQueue use the same classes.
 const HOW_TO_BOX = 'rounded-lg border border-neutral-300 bg-white p-4';
 
-const RED = 'bg-red-100 text-red-800';
-const AMBER = 'bg-amber-100 text-amber-900';
-const QUIET = 'bg-white text-neutral-600 ring-1 ring-neutral-200';
 
 function StatusPill({ pill }) {
   return (
@@ -263,6 +260,11 @@ export default async function BackgroundChecksPage({ searchParams }) {
     : [];
 
   // ---- What each folded header says (Lawrence, 11 Nov 2026) ----
+  // In the same tones as the status pills (CHECK_TONE). Read here, not at
+  // module level, so the import order of lib/format.js never matters.
+  const RED = CHECK_TONE.hold;
+  const AMBER = CHECK_TONE.todo;
+  const QUIET = CHECK_TONE.na;
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   const volunteerSummary = [
     plural(vCounts[''], 'volunteer', 'volunteers'),
@@ -290,7 +292,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
   const registryPills = [
     rCounts.due > 0 && { text: plural(rCounts.due, 'search due', 'searches due'), cls: AMBER },
     rCounts.follow_up > 0 && { text: `${rCounts.follow_up} follow-up`, cls: AMBER },
-    rCounts.not_permitted > 0 && { text: `${rCounts.not_permitted} not permitted`, cls: RED },
+    rCounts.not_permitted > 0 && { text: `${rCounts.not_permitted} not permitted`, cls: CHECK_TONE.blocked },
     rCounts.soon > 0 && { text: `${rCounts.soon} expiring soon`, cls: AMBER },
     registryWork === 0 && rCounts.not_permitted === 0 && rCounts[''] > 0 && { text: 'Nothing due', cls: QUIET },
   ].filter(Boolean);
@@ -377,25 +379,25 @@ export default async function BackgroundChecksPage({ searchParams }) {
                       </td>
                       <td className="py-2 pr-3 text-neutral-600">{x.events.join(' · ')}</td>
                       <td className="py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>
-                      <td className={`py-2 pr-3 ${x.bucket === 'expired' ? 'font-semibold text-amber-800' : ''}`}>
+                      <td className={`py-2 pr-3 ${x.bucket === 'expired' ? 'font-semibold text-red-800' : ''}`}>
                         {fmtDate(x.expiresOn) || '—'}
                       </td>
                       <td className="py-2">
                         <span className="flex flex-wrap gap-1">
                           <StatusPill pill={x.pill} />
                           {x.bucket === 'waiting' && (
-                            <span className="whitespace-nowrap rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                            <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.waiting}`}>
                               Waiting on Checkr
                             </span>
                           )}
                           {x.bucket === 'soon' && (
-                            <span className="whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-300">
+                            <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.todo}`}>
                               Expires soon
                             </span>
                           )}
                           {x.heldForDeposit && (
                             <span
-                              className="whitespace-nowrap rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-700"
+                              className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.na}`}
                               title="Not ordered until their registration's deposit is paid, waived or covered by a scholarship."
                             >
                               Waiting on the deposit
@@ -484,7 +486,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
                         <span className="flex flex-wrap gap-1">
                           <StatusPill pill={x.pill} />
                           {x.bucket === 'soon' && (
-                            <span className="whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-300">
+                            <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.todo}`}>
                               Expires soon
                             </span>
                           )}
