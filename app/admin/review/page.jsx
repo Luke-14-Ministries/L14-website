@@ -1,13 +1,15 @@
 import Link from 'next/link';
 import EventFilter from '@/components/EventFilter';
+import ReviewGroup from './ReviewGroup';
+import ReviewRowBody from './ReviewRowBody';
+import { reviewRowNeedsStaff, reviewRowPills } from '@/lib/reviewRows';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel, planStoppedAt, planFailingSince, planFailingNext, PLAN_MAX_TRIES } from '@/lib/plans';
+import { planStoppedAt, planFailingSince, PLAN_MAX_TRIES } from '@/lib/plans';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { roleAgeFlags } from '@/lib/roles';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
-import { statusPill } from '@/lib/format';
 import { dayInMorristown, isCurrentEventRow, eventInScope, isEventScope } from '@/lib/events';
 
 export const metadata = { title: 'Awaiting Review — Staff Admin' };
@@ -28,7 +30,6 @@ export const metadata = { title: 'Awaiting Review — Staff Admin' };
 // reviewer who wants to see the whole picture rather than only what is
 // outstanding.
 
-const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
 export default async function ReviewQueuePage({ searchParams }) {
   const params = await searchParams;
@@ -272,6 +273,11 @@ export default async function ReviewQueuePage({ searchParams }) {
     (parts ?? []).map((p) => [`${p.registration_id}:${p.person_id}`, p.people?.first_name ?? ''])
   );
 
+  // ---- One family's row (Lawrence, 11 Nov 2026: rows fold, ReviewGroup.jsx) ----
+  //
+  const needsStaff = (r) => reviewRowNeedsStaff(r, show);
+  const pillsFor = (r) => reviewRowPills(r, { show, seesMoney });
+
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3 mb-1">
@@ -350,10 +356,11 @@ export default async function ReviewQueuePage({ searchParams }) {
         </div>
       </div>
       <p className="text-sm text-neutral-500 mb-4">
-        Every family with someone still <em>submitted</em>. Each row shows whether the deposit is
-        in or a scholarship was requested, and any flag that needs a conversation first. Open the
-        registration to approve or waitlist everyone at once on its Review card, or to ask the
-        family for more information.
+        Every family with someone still <em>submitted</em>. Each row says how many are left to
+        review, whether the deposit is in or a scholarship was requested, and how many flags need a
+        conversation first; open a row for the people and the flags. Open the registration to
+        approve or waitlist everyone at once on its Review card, or to ask the family for more
+        information.
         {' '}
         <strong>{totalPending}</strong> {totalPending === 1 ? 'person' : 'people'} waiting
         {totalFlags > 0 && (
@@ -445,176 +452,17 @@ export default async function ReviewQueuePage({ searchParams }) {
               {g.rows.length} {g.rows.length === 1 ? 'family' : 'families'}
             </span>
           </h3>
-          <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-            <table className="w-full text-sm">
-              <thead className="bg-neutral-50 text-neutral-500">
-                <tr className="border-b border-neutral-200">
-                  <th className="px-3 py-2 text-left font-semibold">Family</th>
-                  <th className="px-3 py-2 text-left font-semibold">People</th>
-                  <th className="px-3 py-2 text-left font-semibold">Money</th>
-                  <th className="px-3 py-2 text-left font-semibold">Flags</th>
-                  <th className="px-3 py-2 text-right font-semibold">Paid / balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {g.rows.map((r) => {
-                  const cls = r.review ? REVIEW_CLASS[r.review.review_class] : null;
-                  const flags = r.flags;
-                  return (
-                    <tr key={r.id} className="border-b border-neutral-100 align-top hover:bg-neutral-50">
-                      <td className="px-3 py-2.5">
-                        <Link
-                          href={`/admin/registrations/${r.id}/`}
-                          className="font-medium text-brand-dark hover:underline"
-                        >
-                          {r.household}
-                        </Link>
-                        <div className="text-xs text-neutral-500">
-                          registered {dayInMorristown(r.created)}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="font-medium">
-                          {r.pending.length} of {r.people.length} waiting
-                        </div>
-                        <ul className="mt-1 space-y-0.5">
-                          {r.people.map((p, i) => {
-                            const pill = statusPill(p.status);
-                            return (
-                              <li key={i} className="flex flex-wrap items-center gap-1.5 text-xs">
-                                <span>
-                                  {p.people?.first_name} {p.people?.last_name}
-                                </span>
-                                <span className="text-neutral-400">· {p.camp_role?.replace('_', '/')}</span>
-                                <span className={`rounded-sm px-1.5 py-0.5 font-semibold ${pill.cls}`}>
-                                  {pill.text}
-                                </span>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        {cls ? (
-                          <span
-                            title={cls.hint}
-                            className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
-                          >
-                            {reviewClassLabel(r.review)}
-                          </span>
-                        ) : (
-                          <span className="text-neutral-400">—</span>
-                        )}
-                        {r.review?.deposit_expected_cents > 0 && (
-                          <div className="mt-1 text-xs text-neutral-500">
-                            {money(r.review.confirmed_paid_cents)} of a{' '}
-                            {money(r.review.deposit_expected_cents)} deposit
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        {flags.length === 0 && !r.creed && r.ageFlags.length === 0 && !r.awaitingSince && r.owed.length === 0 && !r.planStopped && !r.planFailing && !r.familyReplied ? (
-                          <span className="text-neutral-400">—</span>
-                        ) : (
-                          <ul className="space-y-0.5">
-                            {r.familyReplied && (
-                              <li>
-                                {/* Straight to the conversation (Lawrence, 28 Oct 2026). */}
-                                <Link
-                                  href={`/admin/registrations/${r.id}/#family-messages`}
-                                  className="inline-block whitespace-nowrap rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-400 hover:bg-amber-200"
-                                >
-                                  ✉ Family replied
-                                  {r.familyRepliedAt ? ` ${dayInMorristown(r.familyRepliedAt)}` : ''}
-                                </Link>
-                              </li>
-                            )}
-                            {r.planStopped && (
-                              <li className="whitespace-nowrap text-xs font-semibold text-red-700">
-                                ⚑ Payment plan stopped
-                                {r.planStoppedAt ? ` ${dayInMorristown(r.planStoppedAt)}` : ''}
-                              </li>
-                            )}
-                            {r.planFailing && (
-                              <li className="whitespace-nowrap text-xs font-semibold text-amber-800">
-                                ⚑ Plan payment failed
-                                {r.planFailing.since ? ` ${dayInMorristown(r.planFailing.since)}` : ''}.{' '}
-                                {planFailingNext(r.planFailing)}
-                              </li>
-                            )}
-                            {r.ageFlags.map((f) => (
-                              <li key={f.text} className="text-xs font-semibold text-amber-800">
-                                ⚑ {f.text}
-                              </li>
-                            ))}
-                            {r.creed?.pending.length > 0 && (
-                              <li className="text-xs font-semibold text-amber-800">
-                                ⚑ {REVIEW_FLAG.creed_not_affirmed}: {r.creed.pending.map((p) => p.name).join(', ')}
-                              </li>
-                            )}
-                            {r.creed?.covered.length > 0 && (
-                              // Talked through with Larry (0130): informs, no longer alarms.
-                              <li className="text-xs text-neutral-600">
-                                ✓ {REVIEW_FLAG.creed_not_affirmed}: {r.creed.covered.map((c) => c.name).join(', ')},
-                                talked with Larry
-                              </li>
-                            )}
-                            {flags.map((f) => (
-                              <li key={f} className="whitespace-nowrap text-xs font-semibold text-amber-800">
-                                ⚑ {REVIEW_FLAG[f] ?? f}
-                              </li>
-                            ))}
-                            {r.owed.map((o) => (
-                              <li
-                                key={`${o.person_id}:${o.activity_name}:${o.kind}`}
-                                className="text-xs font-semibold text-amber-800"
-                              >
-                                ⚑ {o.activity_name}: {nameOf.get(`${r.id}:${o.person_id}`) || 'someone'}{' '}
-                                {o.kind === 'ours'
-                                  ? 'needs the waiver signed'
-                                  : o.upload_status === 'rejected'
-                                    ? "outfitter's confirmation rejected, needs a new upload"
-                                    : "needs the outfitter's confirmation"}
-                              </li>
-                            ))}
-                            {r.awaitingSince && (
-                              <li className="text-xs text-neutral-700" title={r.awaitingReason ?? ''}>
-                                <span className="font-semibold">Waiting on the family</span> since{' '}
-                                {dayInMorristown(r.awaitingSince)}
-                                {r.awaitingReason && (
-                                  <span className="block max-w-xs truncate text-neutral-500">
-                                    &ldquo;{r.awaitingReason}&rdquo;
-                                  </span>
-                                )}
-                              </li>
-                            )}
-                          </ul>
-                        )}
-                      </td>
-                      {/* The family name is the link to the registration; an
-                          "Open →" beside it was the same link twice (15 Oct). */}
-                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                        {seesMoney ? (
-                          <>
-                            <div>{money(r.balance?.paid_cents)}</div>
-                            <div className="text-xs text-neutral-500">
-                              {(r.balance?.balance_cents ?? 0) < 0
-                                ? `${money(-r.balance.balance_cents)} credit`
-                                : `${money(r.balance?.balance_cents)} owed`}
-                            </div>
-                          </>
-                        ) : (
-                          <span className="text-neutral-400" title="Payments read is needed to see money">
-                            &mdash;
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ReviewGroup
+            rows={g.rows.map((r) => ({
+              id: r.id,
+              household: r.household,
+              href: `/admin/registrations/${r.id}/`,
+              registered: dayInMorristown(r.created),
+              needsStaff: needsStaff(r),
+              pills: pillsFor(r),
+              body: <ReviewRowBody r={r} seesMoney={seesMoney} nameOf={nameOf} />,
+            }))}
+          />
         </section>
       ))}
     </div>
