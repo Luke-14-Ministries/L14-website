@@ -4311,3 +4311,37 @@ laptop screen. The preview banner no longer sticks at all; it scrolls away above
 
 **And:** the two buttons on the home page photo (camp, Donate) are gone (Lawrence: "distracting and
 redundant on that page"). Donate is in the pinned header and Camp Celebrate is the first program card.
+
+---
+
+## 2026-11-10 — Adult campers are screened by a registry search: a flag, not a hold (0161)
+
+Lawrence: campers 18 or older need a background check too. For campers, a search of the public
+sex-offender registry is enough, and a missing one is a **flag** on the registration, **not a
+block** on approval.
+
+This is the route `0056` laid the groundwork for in August and left undecided. A staff member
+searches **nsopw.gov** by hand and records the date and the result on Background Checks
+(`provider = 'registry_search'`, `screening_reason = 'adult_participant'`). No SSN, no Checkr, no
+consumer report, so the Fair Credit Reporting Act's permissible-purpose question `0056` raised for
+screening a paying participant never comes up. It is free. What it does **not** cover, said
+plainly: only registered sex offenders, by name, as the states publish them. It is no general
+criminal history.
+
+- **Who:** a camper 18 or older on the event's first day. Under 18 is not screened, in any role.
+- **Where it shows:** the Review card's *Before you decide* table (a Background check column for
+  adult campers) and an amber note naming them, linking to Background Checks. Approve works either
+  way. Background Checks lists adult campers beside volunteers, with a role filter and a *Record
+  registry search* form on each camper's row (date, No match / Possible match / Not permitted, a note
+  required unless it is no match).
+- **It repeats yearly.** It expires by the same setting as every check (`clearance_interval_months()`).
+- **A registry search never clears a volunteer.** `person_clearances` is one row per person, so the
+  two routes share a row. `0161`: the volunteer gate `volunteer_clearance_ok()` refuses a
+  `registry_search` row; `clearance_status` gains `provider` so every page can tell them apart
+  (`clearancePill()` reads a registry search as *Registry search only — no full background check*
+  unless called with `{ forCamper: true }`); a registry row switched to a Checkr order sheds its
+  facts (trigger `registry_search_not_carried()`), so it cannot read as a passed Checkr check before
+  Checkr has answered; and a check entered by hand on Volunteers turns the row's provider to
+  `manual`. Someone who volunteers at any current event is listed as a volunteer and cannot be given
+  a registry search.
+- **Not changed:** the sidebar's missing-check badge still counts volunteers only.

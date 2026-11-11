@@ -16,7 +16,7 @@ import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import EmailLog from '@/components/EmailLog';
 import ReminderPause from './ReminderPause';
 import Panel from './Panel';
-import { isVolunteerRole, roleAgeFlags } from '@/lib/roles';
+import { isCamperRole, isVolunteerRole, roleAgeFlags } from '@/lib/roles';
 import { loadFamilyScholarshipRows } from '@/lib/familyScholarships';
 
 export const metadata = { title: 'Registration — Staff Admin' };
@@ -467,7 +467,7 @@ export default async function RegistrationDetailPage({ params }) {
     { data: eventParts, error: eventPartsError },
   ] = await Promise.all([
     peopleIds.length
-      ? supabase.from('clearance_status').select('person_id, on_file, expires_on, is_current, verdict').in('person_id', peopleIds)
+      ? supabase.from('clearance_status').select('person_id, on_file, check_date, expires_on, is_current, verdict, provider').in('person_id', peopleIds)
       : Promise.resolve({ data: [], error: null }),
     // The event's own agreements; an activity's waiver is the Activity
     // waiver notice's business, not this list's.
@@ -521,15 +521,24 @@ export default async function RegistrationDetailPage({ params }) {
       const creedRow = creedOfPerson.get(pid);
       const app = [].concat(p.volunteer_applications ?? [])[0] ?? null;
       const media = consentOf.get(`${pid}:media`);
+      // An adult camper is screened by a registry search (0161, Lawrence
+      // 10 Nov 2026): shown, and flagged, but never a block. A camper under 18
+      // is not screened and gets a dash rather than a mark.
+      const adultCamper = isCamperRole(p.camp_role) && !(age != null && age < 18);
       const clearanceMarkOf = volunteer
         ? clearanceMark(age != null && age < 18 ? { minor: true } : clearanceOf.get(pid) ?? null)
-        : null;
+        : adultCamper
+          ? clearanceMark(clearanceOf.get(pid) ?? null, undefined, { forCamper: true })
+          : null;
       return {
         id: p.id,
         status: p.status,
         // 0152: a volunteer is approved only with a background check on file
         // marked OK to serve (under 18 is not screened).
         blocked: volunteer && !['yes', 'na'].includes(clearanceMarkOf?.state),
+        // 0161: an adult camper without a current, clear registry search.
+        // Informs; does not hold the Review card or the Approve button.
+        camperNeedsSearch: adultCamper && clearanceMarkOf?.state !== 'yes',
         name: `${p.people?.preferred_name || p.people?.first_name || ''} ${p.people?.last_name ?? ''}`.trim() || 'Person',
         volunteer,
         clearance: clearanceMarkOf,

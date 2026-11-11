@@ -82,7 +82,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
       : Promise.resolve({ data: [] }),
     // The three facts any staff member may know (clearance_status, 0091).
     personIds.length
-      ? supabase.from('clearance_status').select('person_id, on_file, expires_on, is_current, verdict').in('person_id', personIds)
+      ? supabase.from('clearance_status').select('person_id, on_file, expires_on, is_current, verdict, provider').in('person_id', personIds)
       : Promise.resolve({ data: [] }),
   ]);
   if (appsError) throw new Error(`Volunteer applications: ${appsError.message}`);

@@ -82,6 +82,17 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
   if (v && !isOn) return { ok: false, error: 'A verdict needs the paperwork on file first.' };
 
   const supabase = await createClient();
+  // A check entered here is a volunteer's full check. Over a camper's
+  // registry search (0161) the row must stop saying 'registry_search', or the
+  // approval gate would go on refusing a check that is really on file.
+  const { data: existing, error: existingError } = await supabase
+    .from('person_clearances')
+    .select('provider')
+    .eq('person_id', personId)
+    .maybeSingle();
+  if (existingError) return { ok: false, error: existingError.message || 'Could not read the record.' };
+  const fromRegistry = existing?.provider === 'registry_search';
+
   const { error } = await supabase.from('person_clearances').upsert(
     {
       person_id: personId,
@@ -90,6 +101,7 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
       verdict: v,
       verdict_note: (note ?? '').trim().slice(0, 500) || null,
       recorded_by: staff.userId,
+      ...(fromRegistry ? { provider: 'manual', screening_reason: 'volunteer' } : {}),
     },
     { onConflict: 'person_id' }
   );

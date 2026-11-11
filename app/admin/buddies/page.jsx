@@ -94,7 +94,7 @@ export default async function BuddiesPage({ searchParams }) {
   const { data: clearanceRows, error: clearanceError } = volunteerPersonIds.length
     ? await supabase
         .from('clearance_status')
-        .select('person_id, on_file, expires_on, is_current, verdict')
+        .select('person_id, on_file, expires_on, is_current, verdict, provider')
         .in('person_id', volunteerPersonIds)
     : { data: [], error: null };
   if (clearanceError) throw new Error(`Background checks: ${clearanceError.message}`);

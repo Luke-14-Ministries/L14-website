@@ -115,18 +115,21 @@ const APP_MARK = {
 // plain states; in this table the words are wanted.
 function clearanceWords(m) {
   if (!m) return null;
-  if (m.state === 'yes') return { ...m, label: 'On file' };
+  if (m.state === 'yes') return { ...m, label: m.label ?? 'On file' };
   if (m.state === 'no' && !m.label) return { ...m, label: 'None on file' };
   return m;
 }
 
 // Before you decide: one row per person, the facts an approval rests on
-// (Lawrence, 4 Nov 2026). Volunteers alone have a background check, the Creed
-// and an application; for anyone else those cells are a dash.
+// (Lawrence, 4 Nov 2026). Volunteers alone have the Creed and an application;
+// a background check is a volunteer's full check or, since 0161, an adult
+// camper's registry search. For anyone else those cells are a dash.
 function Checks({ checks, eventId }) {
   if (!checks?.length) return null;
   const anyVolunteer = checks.some((c) => c.volunteer);
+  const anyScreened = checks.some((c) => c.clearance);
   const dash = <StatusMark state="na" title="Volunteers only" />;
+  const notScreened = <StatusMark state="na" title="Not screened: under 18, or a role that is not checked" />;
   return (
     <div className="mb-3 overflow-x-auto">
       <table className="w-full text-left text-sm">
@@ -135,9 +138,9 @@ function Checks({ checks, eventId }) {
             <th className="py-1 pr-3 font-semibold">Before you decide</th>
             <th className="py-1 pr-3 font-semibold">Agreements</th>
             <th className="py-1 pr-3 font-semibold">Photos</th>
+            {anyScreened && <th className="py-1 pr-3 font-semibold">Background check</th>}
             {anyVolunteer && (
               <>
-                <th className="py-1 pr-3 font-semibold">Background check</th>
                 <th className="py-1 pr-3 font-semibold">Creed</th>
                 <th className="py-1 font-semibold">Application</th>
               </>
@@ -158,9 +161,11 @@ function Checks({ checks, eventId }) {
               <td className="py-1.5 pr-3">
                 <StatusMark {...PHOTO_MARK[c.photo]} />
               </td>
+              {anyScreened && (
+                <td className="py-1.5 pr-3">{c.clearance ? <StatusMark {...clearanceWords(c.clearance)} /> : notScreened}</td>
+              )}
               {anyVolunteer && (
                 <>
-                  <td className="py-1.5 pr-3">{c.volunteer ? <StatusMark {...clearanceWords(c.clearance)} /> : dash}</td>
                   <td className="py-1.5 pr-3">{c.creed ? <StatusMark {...CREED_MARK[c.creed]} /> : dash}</td>
                   <td className="py-1.5">
                     {!c.volunteer ? (
@@ -400,6 +405,26 @@ export default function ReviewCard({
             Record it on Volunteers
           </Link>
           . Approving a volunteer here also approves their application.
+        </p>
+      )}
+      {/* An adult camper's registry search (0161, Lawrence 10 Nov 2026): a
+          flag, never a hold -- Approve works either way. */}
+      {checks.some((c) => c.camperNeedsSearch && c.status !== 'cancelled') && (
+        <p className="mb-3 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Campers 18 or older need a sex-offender registry search:{' '}
+          {checks
+            .filter((c) => c.camperNeedsSearch && c.status !== 'cancelled')
+            .map((c, i) => (
+              <span key={c.id}>
+                {i > 0 && '; '}
+                <strong>{c.name}</strong> ({c.clearance?.label ?? c.clearance?.title})
+              </span>
+            ))}
+          .{' '}
+          <Link href="/admin/volunteers/background-checks/?role=camper" className="font-semibold underline">
+            Record it on Background Checks
+          </Link>
+          . This does not hold approval.
         </p>
       )}
       {(flags.length > 0 || creed || ageFlags.length > 0) && (

@@ -89,7 +89,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
             .in('person_id', personIds)
         : supabase
             .from('clearance_status')
-            .select('person_id, on_file, check_date, expires_on, is_current, verdict')
+            .select('person_id, on_file, check_date, expires_on, is_current, verdict, provider')
             .in('person_id', personIds)
       : Promise.resolve({ data: [] }),
   ]);

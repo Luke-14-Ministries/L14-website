@@ -47,7 +47,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0160`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0161`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -255,7 +255,7 @@ Staff idle logout is 60 minutes.
 are stamped by trigger, the check date is required once paperwork is on file, expiry follows from
 `clearance_interval_months()` (a setting since `0158`, changed on *Background Checks* under Volunteers, which recalculates every expiry; **12** = annual Basic Plus), and every change lands in
 `clearance_review_log`. The `clearance_status` definer view gives all staff three facts: on file,
-current, verdict. Adults only — under 18 shows "Under 18 — not screened". **A volunteer is approved only with a check on file, current and marked OK to serve, and the place and the application are one decision** (`0152`: `guard_volunteer_place()`, `guard_volunteer_application()`, `sync_volunteer_application()`). Screening reads the
+current, verdict, and `provider`. Adults only — under 18 shows "Under 18 — not screened". **Adult campers are screened too, by a staff search of the public sex-offender registry (nsopw.gov), recorded on Background Checks as `provider = 'registry_search'`** (`0161`, Lawrence 10 Nov 2026): a flag on the Review card, never a block. **A registry search never clears a volunteer** — the gate refuses it, and `clearancePill()` reads it as "Registry search only" unless called with `{ forCamper: true }`; any new reader of a volunteer's check must do the same. **A volunteer is approved only with a check on file, current and marked OK to serve, and the place and the application are one decision** (`0152`: `guard_volunteer_place()`, `guard_volunteer_application()`, `sync_volunteer_application()`). Screening reads the
 household's email and phone where the person has none. The Checkr bulk file's header is their
 "bulk order with SMS" template, verbatim; `0093` lets the invited email stand in for a candidate id.
 

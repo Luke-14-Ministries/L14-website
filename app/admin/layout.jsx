@@ -343,7 +343,7 @@ export default async function AdminLayout({ children }) {
       if (volIds.length) {
         const { data: statusRows, error: statusError } = await supabase
           .from('clearance_status')
-          .select('person_id, on_file, is_current, verdict')
+          .select('person_id, on_file, is_current, verdict, provider')
           .in('person_id', volIds);
         // No badge rather than a wrong one: an empty read would count every
         // volunteer as missing a check.
@@ -351,7 +351,10 @@ export default async function AdminLayout({ children }) {
           console.error('background-check badge:', statusError.message);
         } else {
           const ok = new Set(
-            (statusRows ?? []).filter((c) => c.on_file && c.is_current && c.verdict === 'ok').map((c) => c.person_id)
+            // A camper's registry search is not a volunteer's check (0161).
+            (statusRows ?? [])
+              .filter((c) => c.on_file && c.is_current && c.verdict === 'ok' && c.provider !== 'registry_search')
+              .map((c) => c.person_id)
           );
           volunteersMissingCheck = volIds.filter((id) => !ok.has(id)).length;
         }

@@ -97,7 +97,7 @@ export default async function ScreeningPage() {
     ? await supabase
         .from('person_clearances')
         .select(
-          'person_id, background_check_on_file, background_check_date, expires_on, checkr_status, invited_email, order_batch'
+          'person_id, background_check_on_file, background_check_date, expires_on, checkr_status, invited_email, order_batch, provider'
         )
         .in('person_id', personIds)
     : { data: [], error: null };
@@ -124,8 +124,10 @@ export default async function ScreeningPage() {
     const ownEmail = (person.email || '').trim();
     const email = ownEmail || householdEmail || '';
 
+    // A camper's registry search (0161) is not a volunteer's check: due.
+    const registryOnly = c?.provider === 'registry_search';
     // Already cleared and in date: not due, say nothing.
-    if (c?.background_check_on_file && (!c.expires_on || c.expires_on >= today)) continue;
+    if (!registryOnly && c?.background_check_on_file && (!c.expires_on || c.expires_on >= today)) continue;
     // Already out with Checkr: not due again, but worth seeing.
     const waiting = c && ['invited', 'pending', 'suspended'].includes(c.checkr_status);
 
@@ -160,7 +162,9 @@ export default async function ScreeningPage() {
       eventName: evNames.join(' · ') || 'No event',
       status: c?.checkr_status ?? 'not_started',
       batch: c?.order_batch ?? null,
-      reason: c?.expires_on && c.expires_on < today
+      reason: registryOnly
+        ? 'registry search only'
+        : c?.expires_on && c.expires_on < today
         ? `expired ${c.expires_on}`
         : c?.background_check_on_file
           ? 'on file but out of date'

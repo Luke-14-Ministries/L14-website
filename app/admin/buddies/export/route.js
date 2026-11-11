@@ -59,7 +59,7 @@ export async function GET(request) {
   const { data: clearances, error: clearancesError } = volunteerPersonIds.length
     ? await supabase
         .from('clearance_status')
-        .select('person_id, on_file, expires_on, is_current, verdict')
+        .select('person_id, on_file, expires_on, is_current, verdict, provider')
         .in('person_id', volunteerPersonIds)
     : { data: [], error: null };
   if (clearancesError) {

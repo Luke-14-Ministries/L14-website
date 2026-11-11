@@ -2,22 +2,27 @@
 // every adult volunteer's check on one list, ordering (Background screening,
 // linked from here), and how long a check lasts (0158).
 //
-// Who is listed: adult volunteers with a place on an upcoming, unarchived
-// event -- the people Background screening would order for. Under-18s are not
-// screened (0056) and are counted, not listed.
+// Who is listed: adult volunteers and adult campers with a place on an
+// upcoming, unarchived event. Under-18s are not screened (0056) and are
+// counted, not listed.
 //
-// The check itself is recorded on the Volunteers page (paperwork on file, the
-// check date, OK to serve) or by the Checkr import; this page reads it.
+// Two routes (0161, Lawrence 10 Nov 2026). A volunteer's full check is
+// recorded on the Volunteers page or by the Checkr import; this page reads it.
+// An adult camper's check is a staff search of the public sex-offender
+// registry (nsopw.gov), recorded HERE, on the camper's row. Someone who
+// volunteers at any listed event is listed as a volunteer, because they need
+// the full check, and a registry search does not count for them.
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { clearancePill, isMinor } from '@/lib/format';
+import { clearancePill, isMinor, isRegistrySearch } from '@/lib/format';
 import { todayInMorristown } from '@/lib/events';
-import { isVolunteerRole } from '@/lib/roles';
+import { isCamperRole, isVolunteerRole } from '@/lib/roles';
 import { depositInByPerson } from '@/lib/screeningDeposit';
 import CheckLengthForm from './CheckLengthForm';
+import RegistrySearchForm from './RegistrySearchForm';
 
 export const metadata = { title: 'Background Checks' };
 
@@ -31,6 +36,20 @@ const FILTERS = [
   { key: 'soon', label: `Expiring within ${SOON_DAYS} days` },
   { key: 'current', label: 'Current' },
 ];
+
+const ROLES = [
+  { key: '', label: 'Everyone' },
+  { key: 'volunteer', label: 'Volunteers' },
+  { key: 'camper', label: 'Campers 18+' },
+];
+
+function listHref(show, role) {
+  const q = new URLSearchParams();
+  if (show) q.set('show', show);
+  if (role) q.set('role', role);
+  const s = q.toString();
+  return `/admin/volunteers/background-checks/${s ? `?${s}` : ''}`;
+}
 
 // 'YYYY-MM-DD' as "Jan 15, 2027", read as a calendar date (no time zone).
 function fmtDate(iso) {
@@ -53,8 +72,10 @@ export default async function BackgroundChecksPage({ searchParams }) {
   if (!staff) await bounceNonStaff('/admin/volunteers/background-checks/');
   if (!can(staff, 'background_checks')) redirect('/admin/volunteers');
 
-  const { show = '' } = (await searchParams) ?? {};
+  const { show = '', role = '' } = (await searchParams) ?? {};
   const filter = FILTERS.some((f) => f.key === show) ? show : '';
+  const roleFilter = ROLES.some((r) => r.key === role) ? role : '';
+  const canWrite = can(staff, 'write:background_checks');
   const supabase = await createClient();
   const today = todayInMorristown();
   const soon = addDays(today, SOON_DAYS);
@@ -76,14 +97,15 @@ export default async function BackgroundChecksPage({ searchParams }) {
         .in('registrations.event_id', eventIds)
         .neq('status', 'cancelled')
     : { data: [], error: null };
-  if (placesError) throw new Error(`Volunteers: ${placesError.message}`);
+  if (placesError) throw new Error(`Volunteers and campers: ${placesError.message}`);
 
   // One row per PERSON: volunteering at both weeks is one check.
   const byPerson = new Map();
   let minors = 0;
   const minorSeen = new Set();
   for (const p of places ?? []) {
-    if (!isVolunteerRole(p.camp_role) || !p.people?.id) continue;
+    const volunteer = isVolunteerRole(p.camp_role);
+    if ((!volunteer && !isCamperRole(p.camp_role)) || !p.people?.id) continue;
     const person = p.people;
     if (isMinor(person.date_of_birth) === true) {
       if (!minorSeen.has(person.id)) minors += 1;
@@ -94,8 +116,9 @@ export default async function BackgroundChecksPage({ searchParams }) {
     const seen = byPerson.get(person.id);
     if (seen) {
       if (ev && !seen.events.includes(ev)) seen.events.push(ev);
+      seen.volunteer ||= volunteer;
     } else {
-      byPerson.set(person.id, { person, events: ev ? [ev] : [] });
+      byPerson.set(person.id, { person, events: ev ? [ev] : [], volunteer });
     }
   }
   const personIds = [...byPerson.keys()];
@@ -105,10 +128,11 @@ export default async function BackgroundChecksPage({ searchParams }) {
       personIds.length
         ? supabase
             .from('person_clearances')
-            .select('person_id, background_check_on_file, background_check_date, expires_on, verdict, checkr_status')
+            .select('person_id, background_check_on_file, background_check_date, expires_on, verdict, verdict_note, checkr_status, provider')
             .in('person_id', personIds)
         : Promise.resolve({ data: [], error: null }),
-      depositInByPerson(supabase, personIds),
+      // The deposit hold is a Checkr-ordering rule: volunteers only.
+      depositInByPerson(supabase, personIds.filter((id) => byPerson.get(id).volunteer)),
       supabase
         .from('person_clearances')
         .select('person_id', { count: 'exact', head: true })
@@ -118,12 +142,14 @@ export default async function BackgroundChecksPage({ searchParams }) {
   if (countError) throw new Error(`Background checks on file: ${countError.message}`);
   const clearanceBy = new Map((clearances ?? []).map((c) => [c.person_id, c]));
 
-  const rows = personIds.map((id) => {
-    const { person, events: evs } = byPerson.get(id);
+  const allRows = personIds.map((id) => {
+    const { person, events: evs, volunteer } = byPerson.get(id);
+    const forCamper = !volunteer;
     const c = clearanceBy.get(id) ?? null;
-    const onFile = Boolean(c?.background_check_on_file);
+    // A registry search clears a camper, never a volunteer (0161).
+    const onFile = Boolean(c?.background_check_on_file) && (forCamper || !isRegistrySearch(c));
     const expired = onFile && c.expires_on && c.expires_on < today;
-    const waiting = !(onFile && !expired) && ['invited', 'pending', 'suspended'].includes(c?.checkr_status);
+    const waiting = volunteer && !(onFile && !expired) && ['invited', 'pending', 'suspended'].includes(c?.checkr_status);
     const bucket = waiting
       ? 'waiting'
       : !onFile
@@ -138,14 +164,23 @@ export default async function BackgroundChecksPage({ searchParams }) {
       name: `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim() || 'Unnamed',
       lastName: person.last_name ?? '',
       events: evs,
-      checkDate: c?.background_check_date ?? null,
-      expiresOn: c?.expires_on ?? null,
-      pill: clearancePill(c, today),
+      role: volunteer ? 'volunteer' : 'camper',
+      checkDate: onFile ? c?.background_check_date ?? null : null,
+      expiresOn: onFile ? c?.expires_on ?? null : null,
+      pill: clearancePill(c, today, { forCamper }),
       bucket,
       // Held from ordering until the deposit is in (0157).
-      heldForDeposit: (bucket === 'missing' || bucket === 'expired') && depositIn.get(id) === false,
+      heldForDeposit: volunteer && (bucket === 'missing' || bucket === 'expired') && depositIn.get(id) === false,
+      // What the camper's registry form starts from, when one is on file.
+      registry: forCamper && isRegistrySearch(c)
+        ? { date: c.background_check_date ?? '', verdict: c.verdict ?? '', note: c.verdict_note ?? '' }
+        : null,
+      // A full check on file and current covers a camper too; the form is not offered.
+      coveredByFullCheck: forCamper && onFile && !expired && !isRegistrySearch(c),
     };
   });
+  const roleCounts = Object.fromEntries(ROLES.map((r) => [r.key, r.key ? allRows.filter((x) => x.role === r.key).length : allRows.length]));
+  const rows = roleFilter ? allRows.filter((r) => r.role === roleFilter) : allRows;
   rows.sort((a, b) => a.lastName.localeCompare(b.lastName) || a.name.localeCompare(b.name));
   const counts = Object.fromEntries(FILTERS.map((f) => [f.key, f.key ? rows.filter((r) => r.bucket === f.key).length : rows.length]));
   const shown = filter ? rows.filter((r) => r.bucket === filter) : rows;
@@ -160,9 +195,16 @@ export default async function BackgroundChecksPage({ searchParams }) {
           </Link>
         </div>
         <p className="mt-1 text-sm text-neutral-600">
-          Every adult volunteer signed up for an upcoming event, and where their background check
-          stands. Order checks makes the file you send to Checkr and brings Checkr&rsquo;s results
-          back in. To enter a check by hand, use the Volunteers page.
+          Every adult volunteer and adult camper signed up for an upcoming event, and where their
+          check stands. <strong>Volunteers</strong> need the full background check: Order checks makes
+          the file you send to Checkr and brings Checkr&rsquo;s results back in, and a check entered by
+          hand goes on the Volunteers page. <strong>Campers 18 or older</strong> need a search of the
+          public sex-offender registry at{' '}
+          <a href="https://www.nsopw.gov/" target="_blank" rel="noopener noreferrer" className="underline">
+            nsopw.gov
+          </a>
+          , recorded on their row below. A camper&rsquo;s search is a flag on their registration, not a
+          hold, and it does not count as a volunteer&rsquo;s check.
           {minors > 0 && ` ${minors} under 18 ${minors === 1 ? 'is' : 'are'} not screened and not listed.`}
         </p>
       </div>
@@ -170,11 +212,25 @@ export default async function BackgroundChecksPage({ searchParams }) {
       <CheckLengthForm months={months} onFile={onFileCount ?? 0} canEdit={can(staff, 'write:background_checks')} />
 
       <div className="rounded-lg border border-neutral-200 bg-white p-4">
+        <nav aria-label="Who" className="mb-2 flex flex-wrap gap-2 text-sm">
+          {ROLES.map((r) => (
+            <Link
+              key={r.key || 'everyone'}
+              href={listHref(filter, r.key)}
+              aria-current={roleFilter === r.key ? 'page' : undefined}
+              className={`rounded-full border px-3 py-1 ${
+                roleFilter === r.key ? 'border-brand bg-brand-light font-semibold text-brand-dark' : 'border-neutral-300'
+              }`}
+            >
+              {r.label} ({roleCounts[r.key]})
+            </Link>
+          ))}
+        </nav>
         <nav aria-label="Show" className="flex flex-wrap gap-2 text-sm">
           {FILTERS.map((f) => (
             <Link
               key={f.key || 'all'}
-              href={f.key ? `/admin/volunteers/background-checks/?show=${f.key}` : '/admin/volunteers/background-checks/'}
+              href={listHref(f.key, roleFilter)}
               aria-current={filter === f.key ? 'page' : undefined}
               className={`rounded-full border px-3 py-1 ${
                 filter === f.key ? 'border-brand bg-brand-light font-semibold text-brand-dark' : 'border-neutral-300'
@@ -187,7 +243,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
 
         {shown.length === 0 ? (
           <p className="mt-4 text-sm text-neutral-500">
-            {rows.length === 0 ? 'No adult volunteers on upcoming events.' : 'Nobody in this list.'}
+            {rows.length === 0 ? 'Nobody 18 or older to screen on upcoming events.' : 'Nobody in this list.'}
           </p>
         ) : (
           <div className="mt-4 overflow-x-auto">
@@ -195,6 +251,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
               <thead>
                 <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                   <th className="py-2 pr-3">Name</th>
+                  <th className="py-2 pr-3">Role</th>
                   <th className="py-2 pr-3">Event</th>
                   <th className="py-2 pr-3">Check date</th>
                   <th className="py-2 pr-3">Expires</th>
@@ -209,6 +266,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
                         {r.name}
                       </Link>
                     </td>
+                    <td className="py-2 pr-3 text-neutral-600">{r.role === 'camper' ? 'Camper' : 'Volunteer'}</td>
                     <td className="py-2 pr-3 text-neutral-600">{r.events.join(' · ')}</td>
                     <td className="py-2 pr-3">{fmtDate(r.checkDate) || '—'}</td>
                     <td className={`py-2 pr-3 ${r.bucket === 'expired' ? 'font-semibold text-amber-800' : ''}`}>
@@ -238,6 +296,9 @@ export default async function BackgroundChecksPage({ searchParams }) {
                           </span>
                         )}
                       </span>
+                      {r.role === 'camper' && canWrite && !r.coveredByFullCheck && (
+                        <RegistrySearchForm personId={r.id} name={r.name} today={today} initial={r.registry} />
+                      )}
                     </td>
                   </tr>
                 ))}
