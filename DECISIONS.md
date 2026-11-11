@@ -4367,3 +4367,44 @@ household's city and state, and the event. **Copy name and search** puts the nam
 opens nsopw.gov; **No match** records today's date in one click; **Possible match** asks for follow-up
 or not-permitted and a note. It uses the same `recordRegistrySearch()` and its refusals. NSOPW also
 offers accounts that show the CAPTCHA only every five searches, which is worth having for a long queue.
+
+## 11 November 2026 — Every adult is screened; "Not permitted" holds approval (0162)
+
+Lawrence, relayed, extending Larry's 0161 (adult campers' registry search): "everyone 18+ registered
+needs to be covered by one of the background check options". Built as `0162` plus the pages:
+
+- **Volunteers:** unchanged, the full Checkr check and the 0152 gate.
+- **Every other role** (camper, parent/guardian, sibling, caregiver, childcare, support team, and any
+  later non-volunteer role): a current, clear registry search or a current full check. `isCamperRole()`
+  became `isRegistryRole()` (anything that isn't a volunteer role); the queue, the record action, the
+  Review card flag and the page say "adults who aren't volunteers". Cancelled places don't count.
+- **Childcare and support team** are working roles, but Lawrence said any of the options covers them,
+  so a registry search does. Staff may later want Checkr for those two; it would be a one-line change
+  to `isRegistryRole()` plus the volunteer pages.
+- **One age rule: 18 or older on the event's first day** (the Review card's). `recordRegistrySearch` and
+  the Background Checks page asked "18 today", which refused someone who turns 18 before camp. The rule
+  is now in `record_registry_search()` and `adultOnFirstDay()`; the volunteer nav badge follows it too.
+  Background screening (Checkr ordering) still asks "18 today", because Checkr can't screen a minor and
+  0056 refuses the order.
+- **"Not permitted" holds approval** for anyone, in the database (`guard_not_permitted_place()`), like
+  0152. It does not expire: it stands until staff change it. follow_up and a missing search stay warnings.
+- **A Checkr order never erases "Not permitted".** 0161's trigger cleared the verdict when a registry row
+  became a Checkr order; it now refuses a new order (a switch to Checkr, or a fresh `ordered_at`) for
+  anyone marked not_permitted. Background screening shows them as "cannot be ordered" and
+  `markBatchOrdered()` skips them.
+- **Recording goes through `record_registry_search()`** (definer, background-checks write), so the rules
+  are the database's, not the page's.
+- **"No match" needs a search first** on the queue, and NSOPW's separate name boxes get two copy buttons
+  (last name with the search, first name on its own).
+- **No notice to the family** about a registry search: it is a search of a public registry (Lawrence's
+  call).
+- **Navigation:** Background Checks is its own item in the People section (the URL stays), in two parts,
+  "Volunteers: full background check (Checkr)" and "Campers & families: registry search", each with its
+  own counts and filters (`v=` and `r=`). An amber badge counts adults who aren't volunteers with a
+  search due, for holders of the background-checks grant. The colour key's red is "volunteers without a
+  background check". The Review card links to Background Checks only for grant holders; anyone else is
+  told to ask whoever handles background checks.
+- Tests: `registry_search_rules.sql` now 12 checks (a sibling and a parent recorded; under 18 on the first
+  day refused; the grant; not_permitted holds approval; a Checkr order keeps not_permitted; follow-up
+  doesn't hold). The RLS harness passes.
+

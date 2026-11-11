@@ -122,14 +122,14 @@ function clearanceWords(m) {
 
 // Before you decide: one row per person, the facts an approval rests on
 // (Lawrence, 4 Nov 2026). Volunteers alone have the Creed and an application;
-// a background check is a volunteer's full check or, since 0161, an adult
-// camper's registry search. For anyone else those cells are a dash.
+// a background check is a volunteer's full check or, for every other adult
+// (0161/0162), a registry search. Under 18 on the first day gets a dash.
 function Checks({ checks, eventId }) {
   if (!checks?.length) return null;
   const anyVolunteer = checks.some((c) => c.volunteer);
   const anyScreened = checks.some((c) => c.clearance);
   const dash = <StatusMark state="na" title="Volunteers only" />;
-  const notScreened = <StatusMark state="na" title="Not screened: under 18, or a role that is not checked" />;
+  const notScreened = <StatusMark state="na" title="Not screened: under 18 on the first day of camp" />;
   return (
     <div className="mb-3 overflow-x-auto">
       <table className="w-full text-left text-sm">
@@ -227,6 +227,9 @@ export default function ReviewCard({
   // card shows the state and offers nothing to press.
   canWrite = true,
   canDecide = true,
+  // Holds the background-checks grant (0162): gets the link to record a
+  // registry search; anyone else is told whom to ask.
+  canRecordChecks = false,
   // Open or folded when the page first draws (26 Oct 2026): the rule is
   // RegistrationManager's, beside the other cards'.
   defaultOpen = true,
@@ -407,13 +410,28 @@ export default function ReviewCard({
           . Approving a volunteer here also approves their application.
         </p>
       )}
-      {/* An adult camper's registry search (0161, Lawrence 10 Nov 2026): a
-          flag, never a hold -- Approve works either way. */}
-      {checks.some((c) => c.camperNeedsSearch && c.status !== 'cancelled') && (
+      {/* "Not permitted" (0162): the database refuses to confirm them, from
+          any button. Said before Approve is pressed. */}
+      {checks.some((c) => c.notPermitted && c.status !== 'cancelled' && c.status !== 'confirmed') && (
+        <p className="mb-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+          <strong>
+            {checks
+              .filter((c) => c.notPermitted && c.status !== 'cancelled' && c.status !== 'confirmed')
+              .map((c) => c.name)
+              .join(', ')}
+          </strong>{' '}
+          {checks.filter((c) => c.notPermitted && c.status !== 'cancelled' && c.status !== 'confirmed').length === 1 ? 'is' : 'are'}{' '}
+          marked <strong>Not permitted to attend</strong>, so they can&rsquo;t be approved.
+        </p>
+      )}
+      {/* Every adult who isn't a volunteer needs a registry search (0161/0162,
+          Lawrence 10-11 Nov 2026): a flag, never a hold -- Approve works
+          either way. */}
+      {checks.some((c) => c.needsSearch && c.status !== 'cancelled') && (
         <p className="mb-3 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Campers 18 or older need a sex-offender registry search:{' '}
+          Adults who aren&rsquo;t volunteers need a sex-offender registry search:{' '}
           {checks
-            .filter((c) => c.camperNeedsSearch && c.status !== 'cancelled')
+            .filter((c) => c.needsSearch && c.status !== 'cancelled')
             .map((c, i) => (
               <span key={c.id}>
                 {i > 0 && '; '}
@@ -421,10 +439,14 @@ export default function ReviewCard({
               </span>
             ))}
           .{' '}
-          <Link href="/admin/volunteers/background-checks/?role=camper" className="font-semibold underline">
-            Record it on Background Checks
-          </Link>
-          . This does not hold approval.
+          {canRecordChecks ? (
+            <Link href="/admin/volunteers/background-checks/?r=due#registry" className="font-semibold underline">
+              Record it on Background Checks
+            </Link>
+          ) : (
+            <>Ask whoever handles background checks</>
+          )}
+          . This doesn&rsquo;t hold approval.
         </p>
       )}
       {(flags.length > 0 || creed || ageFlags.length > 0) && (

@@ -1,4 +1,4 @@
--- Checks for migration 0161: an adult camper's registry search never clears a
+-- Checks for migrations 0161 and 0162: an adult camper's registry search never clears a
 -- volunteer, never carries into a Checkr order, and shows its provider to staff
 -- (and nothing to a family) through clearance_status.
 -- Run on a fresh database seeded with payment_plans_seed.sql (see README.md):
@@ -75,5 +75,98 @@ begin
   raise notice 'PASS 5 a family reads nothing from clearance_status';
 end $$;
 reset role;
+
+-- ---- 0162: every adult who isn't a volunteer, the age on the first day, Not permitted holds ----
+-- A background-checks writer, and two siblings either side of 18 on the event's
+-- first day (the seed event starts 2027-07-18).
+insert into auth.users (id, email) values ('16200000-0000-4000-8000-000000000001','bgc-writer@example.test');
+insert into public.staff (profile_id, role) values ('16200000-0000-4000-8000-000000000001','registrar');
+insert into public.staff_grants (profile_id, area, level) values ('16200000-0000-4000-8000-000000000001','background_checks','write');
+insert into public.people (id, household_id, first_name, last_name, date_of_birth) values
+ ('20000000-0000-0000-0000-000000000018','10000000-0000-0000-0000-000000000001','Sib','Eighteen','2009-07-18'),
+ ('20000000-0000-0000-0000-000000000017','10000000-0000-0000-0000-000000000001','Sib','Seventeen','2009-07-19');
+insert into public.registration_participants (id, registration_id, person_id, event_option_id, camp_role, status) values
+ ('60000000-0000-0000-0000-000000000018','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000018','40000000-0000-0000-0000-000000000001','sibling','submitted'),
+ ('60000000-0000-0000-0000-000000000017','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000017','40000000-0000-0000-0000-000000000001','sibling','submitted');
+delete from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '16200000-0000-4000-8000-000000000001', true) \g /dev/null
+select set_config('request.jwt.claims', '{"sub":"16200000-0000-4000-8000-000000000001","aal":"aal2"}', true) \g /dev/null
+do $$
+declare r record;
+begin
+  -- 6. A sibling who is 18 on the first day of camp (17 today) can be recorded.
+  perform public.record_registry_search('20000000-0000-0000-0000-000000000018', current_date, 'ok', null);
+  select * into r from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000018';
+  if r.provider <> 'registry_search' or not r.background_check_on_file or r.expires_on is null or r.verdict <> 'ok' then
+    raise exception 'FAIL 6: sibling search not recorded (%, %, %)', r.provider, r.expires_on, r.verdict;
+  end if;
+  raise notice 'PASS 6 a sibling 18 on the first day of camp is recorded (age on the first day, not today)';
+
+  -- 7. One who is 17 on the first day is not screened.
+  begin
+    perform public.record_registry_search('20000000-0000-0000-0000-000000000017', current_date, 'ok', null);
+    raise exception 'FAIL 7: a sibling 17 on the first day was recorded';
+  exception when check_violation then null;
+  end;
+  raise notice 'PASS 7 under 18 on the first day of camp is refused';
+
+  -- 8. A parent can be recorded, here as Not permitted (a note is required).
+  begin
+    perform public.record_registry_search('20000000-0000-0000-0000-000000000002', current_date, 'not_permitted', null);
+    raise exception 'FAIL 8a: not_permitted without a note was accepted';
+  exception when check_violation then null;
+  end;
+  perform public.record_registry_search('20000000-0000-0000-0000-000000000002', current_date, 'not_permitted', 'Match confirmed by phone.');
+  if (select verdict from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002') <> 'not_permitted' then
+    raise exception 'FAIL 8b: parent not recorded as not_permitted';
+  end if;
+  raise notice 'PASS 8 a parent can be recorded; a finding needs a note';
+end $$;
+
+-- 9. Without the write grant: refused.
+select set_config('request.jwt.claim.sub', '16100000-0000-4000-8000-000000000001', true) \g /dev/null
+select set_config('request.jwt.claims', '{"sub":"16100000-0000-4000-8000-000000000001","aal":"aal2"}', true) \g /dev/null
+do $$
+begin
+  begin
+    perform public.record_registry_search('20000000-0000-0000-0000-000000000018', current_date, 'ok', null);
+    raise exception 'FAIL 9: a staff member without the grant recorded a search';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'PASS 9 recording needs the background checks grant';
+end $$;
+reset role;
+
+do $$
+declare v text;
+begin
+  -- 10. Not permitted holds approval, from any button.
+  begin
+    update public.registration_participants set status = 'confirmed' where id = '60000000-0000-0000-0000-000000000002';
+    raise exception 'FAIL 10: a Not permitted parent was confirmed';
+  exception when raise_exception then null;
+  end;
+  raise notice 'PASS 10 Not permitted holds approval';
+
+  -- 11. A Checkr order does not erase Not permitted: it is refused.
+  begin
+    update public.person_clearances
+       set provider = 'checkr', checkr_status = 'invited', ordered_at = now(), invited_email = 'pa@example.test'
+     where person_id = '20000000-0000-0000-0000-000000000002';
+    raise exception 'FAIL 11a: a Checkr order went through over Not permitted';
+  exception when raise_exception then null;
+  end;
+  select verdict into v from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
+  if v is distinct from 'not_permitted' then raise exception 'FAIL 11b: verdict is now %', v; end if;
+  raise notice 'PASS 11 a Checkr order keeps Not permitted (refused)';
+
+  -- 12. Follow-up is a warning, not a hold.
+  update public.person_clearances set verdict = 'follow_up', verdict_note = 'Possible match'
+   where person_id = '20000000-0000-0000-0000-000000000018';
+  update public.registration_participants set status = 'confirmed' where id = '60000000-0000-0000-0000-000000000018';
+  raise notice 'PASS 12 follow-up does not hold approval';
+end $$;
 rollback;
 \echo ALL REGISTRY SEARCH CHECKS PASSED

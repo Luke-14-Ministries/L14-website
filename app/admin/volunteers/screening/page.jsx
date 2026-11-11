@@ -97,7 +97,7 @@ export default async function ScreeningPage() {
     ? await supabase
         .from('person_clearances')
         .select(
-          'person_id, background_check_on_file, background_check_date, expires_on, checkr_status, invited_email, order_batch, provider'
+          'person_id, background_check_on_file, background_check_date, expires_on, checkr_status, invited_email, order_batch, provider, verdict'
         )
         .in('person_id', personIds)
     : { data: [], error: null };
@@ -124,7 +124,7 @@ export default async function ScreeningPage() {
     const ownEmail = (person.email || '').trim();
     const email = ownEmail || householdEmail || '';
 
-    // A camper's registry search (0161) is not a volunteer's check: due.
+    // A registry search (0161) is not a volunteer's check: due.
     const registryOnly = c?.provider === 'registry_search';
     // Already cleared and in date: not due, say nothing.
     if (!registryOnly && c?.background_check_on_file && (!c.expires_on || c.expires_on >= today)) continue;
@@ -137,7 +137,11 @@ export default async function ScreeningPage() {
     if (adult === false) continue;
 
     let blockedBecause = null;
-    if (adult === null) {
+    // Marked Not permitted to attend (0162): never ordered; markBatchOrdered()
+    // and the database refuse it too.
+    if (c?.verdict === 'not_permitted') {
+      blockedBecause = 'marked Not permitted to attend, so no Checkr order is sent.';
+    } else if (adult === null) {
       blockedBecause =
         'no date of birth on file, so we can’t confirm they are 18. Add it on their details page.';
     } else if (!email) {
@@ -148,7 +152,7 @@ export default async function ScreeningPage() {
     }
     // The deposit hold comes first: until it is in, nothing else matters yet.
     // Anything else wrong is kept on the end so it can be fixed meanwhile.
-    if (!waiting && depositIn.get(personId) === false) {
+    if (!waiting && c?.verdict !== 'not_permitted' && depositIn.get(personId) === false) {
       blockedBecause = blockedBecause ? `${WAITING_ON_DEPOSIT}. Also: ${blockedBecause}` : WAITING_ON_DEPOSIT;
     }
 

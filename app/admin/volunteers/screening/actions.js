@@ -63,6 +63,15 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
   const skipped = [];
   const rows = [];
 
+  // Anyone marked Not permitted to attend is never sent to Checkr (0162): the
+  // database refuses the order too, and would fail the whole batch.
+  const { data: verdicts, error: verdictsError } = await supabase
+    .from('person_clearances')
+    .select('person_id, verdict')
+    .in('person_id', personIds);
+  if (verdictsError) return { ok: false, error: withReason('Nothing was ordered: their checks could not be read.', verdictsError) };
+  const notPermitted = new Set((verdicts ?? []).filter((v) => v.verdict === 'not_permitted').map((v) => v.person_id));
+
   // Volunteers wait for their registration's deposit (Ellen and Lawrence,
   // 9 Nov 2026) -- checked here too, so a stale page cannot order one.
   let depositIn = new Map();
@@ -79,6 +88,10 @@ export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
     // Checkr's bulk template makes email the one required column, so a person
     // without one cannot be ordered at all. Saying which person, by name, is
     // the difference between a fixable problem and a silent short batch.
+    if (notPermitted.has(p.id)) {
+      skipped.push(`${name}: marked Not permitted to attend, so no Checkr order is sent`);
+      continue;
+    }
     if (depositIn.get(p.id) === false) {
       skipped.push(`${name}: ${WAITING_ON_DEPOSIT}`);
       continue;

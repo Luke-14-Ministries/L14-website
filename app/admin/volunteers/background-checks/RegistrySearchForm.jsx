@@ -1,8 +1,9 @@
 'use client';
 
-// Recording an adult camper's sex-offender registry search (0161, Lawrence
-// 10 Nov 2026). Shown on a camper's row on Background Checks. The search itself
-// happens at nsopw.gov, by hand; this records only the date and what it found.
+// Recording a sex-offender registry search for an adult who isn't a volunteer
+// (0161/0162, Lawrence 10-11 Nov 2026). Shown on their row on Background
+// Checks. The search itself happens at nsopw.gov, by hand; this records only
+// the date and what it found.
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,7 +11,7 @@ import { recordRegistrySearch } from './actions';
 
 const RESULTS = [
   { value: 'ok', label: 'No match' },
-  { value: 'follow_up', label: 'Possible match — needs follow-up' },
+  { value: 'follow_up', label: 'Possible match: needs follow-up' },
   { value: 'not_permitted', label: 'Not permitted to attend' },
 ];
 
@@ -85,7 +86,7 @@ export default function RegistrySearchForm({ personId, name, today, initial }) {
       </fieldset>
       <label className="block">
         <span className="block text-xs font-semibold text-neutral-600">
-          Note {result === 'ok' ? '(optional)' : '(required — what was found, without copying the registry entry)'}
+          Note {result === 'ok' ? '(optional)' : '(required: what was found, without copying the registry entry)'}
         </span>
         <textarea
           value={note}

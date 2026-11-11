@@ -1,6 +1,7 @@
 'use client';
 
-// Registry searches due (Lawrence, 10 Nov 2026): every adult camper whose
+// Registry searches due (Lawrence, 10-11 Nov 2026): every adult who isn't a
+// volunteer (camper, parent, sibling, caregiver, childcare, support team) whose
 // sex-offender registry search is missing or out of date, as a queue staff can
 // work through quickly.
 //
@@ -10,6 +11,11 @@
 // What this does is everything around it: copy the name, open the site, and
 // record "No match" in one click (today's date). Only a possible match asks
 // for more. See DECISIONS, 10 Nov 2026.
+//
+// NSOPW's form has separate first-name and last-name boxes, so the last name
+// (the box it asks for first) is copied and the first name has its own copy
+// button. "No match" stays off until a search has been opened for that row
+// (11 Nov 2026): it records that someone searched.
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -27,19 +33,24 @@ function QueueRow({ row, today, onDone }) {
   const [result, setResult] = useState('follow_up');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(''); // '' | 'last' | 'first'
+  const [searched, setSearched] = useState(false);
   const [pending, start] = useTransition();
 
-  async function search() {
-    // The name goes on the clipboard so it can be pasted into NSOPW's form;
-    // NSOPW's own search page opens in a new tab. Nothing is sent to NSOPW
-    // from here.
+  async function copy(text, which) {
     try {
-      await navigator.clipboard.writeText(row.searchName);
-      setCopied(true);
+      await navigator.clipboard.writeText(text);
+      setCopied(which);
     } catch {
-      setCopied(false);
+      setCopied('');
     }
+  }
+
+  async function search() {
+    // The last name goes on the clipboard for NSOPW's last-name box; NSOPW's
+    // own search page opens in a new tab. Nothing is sent to NSOPW from here.
+    await copy(row.lastName, 'last');
+    setSearched(true);
     window.open(NSOPW, '_blank', 'noopener,noreferrer');
   }
 
@@ -63,20 +74,28 @@ function QueueRow({ row, today, onDone }) {
             {row.name}
           </a>
           <span className="block text-xs text-neutral-600">
-            Born {fmtDob(row.dob)}
+            {row.roleLabel ? `${row.roleLabel} · ` : ''}Born {fmtDob(row.dob)}
             {row.place ? ` · ${row.place}` : ''} · {row.events.join(' · ')}
             {row.reason ? ` · ${row.reason}` : ''}
           </span>
         </div>
         <button type="button" onClick={search} className="rounded-sm border border-neutral-300 px-2 py-1 text-sm">
-          {copied ? 'Name copied — search again ↗' : 'Copy name and search ↗'}
+          {searched ? 'Search again ↗' : 'Copy last name and search ↗'}
         </button>
         <button
           type="button"
-          disabled={pending}
+          onClick={() => copy(row.firstName, 'first')}
+          className="rounded-sm border border-neutral-300 px-2 py-1 text-sm"
+          title={`First name: ${row.firstName}`}
+        >
+          {copied === 'first' ? 'First name copied' : `Copy first name (${row.firstName})`}
+        </button>
+        <button
+          type="button"
+          disabled={pending || !searched}
           onClick={() => save('ok', '')}
-          className="rounded-sm bg-green-700 px-2 py-1 text-sm font-semibold text-white disabled:opacity-60"
-          title={`Records today (${today}): searched, no match.`}
+          className="rounded-sm bg-green-700 px-2 py-1 text-sm font-semibold text-white disabled:opacity-50"
+          title={searched ? `Records today (${today}): searched, no match.` : 'Search nsopw.gov first.'}
         >
           {pending && mode === 'idle' ? 'Saving…' : 'No match'}
         </button>
@@ -101,7 +120,7 @@ function QueueRow({ row, today, onDone }) {
             <legend className="text-xs font-semibold text-neutral-700">Record as</legend>
             <label className="mr-3 inline-flex items-center gap-1">
               <input type="radio" name={`q-${row.id}`} checked={result === 'follow_up'} onChange={() => setResult('follow_up')} />
-              Possible match — needs follow-up
+              Possible match: needs follow-up
             </label>
             <label className="inline-flex items-center gap-1">
               <input type="radio" name={`q-${row.id}`} checked={result === 'not_permitted'} onChange={() => setResult('not_permitted')} />
@@ -110,7 +129,7 @@ function QueueRow({ row, today, onDone }) {
           </fieldset>
           <label className="block">
             <span className="block text-xs font-semibold text-neutral-700">
-              Note (required — what was found, without copying the registry entry)
+              Note (required: what was found, without copying the registry entry)
             </span>
             <textarea
               value={note}
@@ -149,15 +168,16 @@ export default function RegistryQueue({ rows, today }) {
     <div className="rounded-lg border border-amber-300 bg-white p-4">
       <h2 className="font-bold">Registry searches due ({left.length})</h2>
       <p className="mt-1 text-sm text-neutral-600">
-        Campers 18 or older with no current search. For each one: <strong>Copy name and search</strong>{' '}
-        opens nsopw.gov with the name on your clipboard; check the date of birth and place against
-        any result, then press <strong>No match</strong> (recorded with today&rsquo;s date) or{' '}
-        <strong>Possible match</strong>. NSOPW does not allow automated searching, so each search is
-        run by a person.
+        Adults who aren&rsquo;t volunteers and have no current search. For each one:{' '}
+        <strong>Copy last name and search</strong> opens nsopw.gov with the last name on your
+        clipboard, and <strong>Copy first name</strong> copies the first. Check the date of birth and
+        place against any result, then press <strong>No match</strong> (recorded with today&rsquo;s
+        date) or <strong>Possible match</strong>. NSOPW doesn&rsquo;t allow automated searching, so a
+        person runs each search.
         {done.size > 0 && ` ${done.size} recorded this visit.`}
       </p>
       {left.length === 0 ? (
-        <p className="mt-3 text-sm text-green-800">Nothing due — every adult camper has a current search.</p>
+        <p className="mt-3 text-sm text-green-800">Nothing due. Every adult who isn&rsquo;t a volunteer has a current search.</p>
       ) : (
         <ul className="mt-2">
           {left.map((r) => (

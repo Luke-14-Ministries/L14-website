@@ -2020,6 +2020,9 @@ export default function RegistrationManager({
   // The Review card's person-by-person checks and the event's headcount
   // against capacity (page.jsx, 4 Nov 2026).
   reviewChecks = [],
+  // Holds the background-checks grant: the Review card links to Background
+  // Checks only for them (0162).
+  canRecordChecks = false,
   headcount = null,
   familyMessages = [],
   signatures = [],
@@ -2240,6 +2243,7 @@ export default function RegistrationManager({
           creed={creed}
           ageFlags={ageFlags}
           checks={reviewChecks}
+          canRecordChecks={canRecordChecks}
           headcount={headcount}
           eventId={eventId}
           depositWaived={depositWaived}

@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation';
 import { passwordIsStale, getStaff, can } from '@/lib/staff';
 import { getProgramLeadership } from '@/lib/programs';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { sinceISO, STAFF_ASSIGNED_TYPES, isCurrentEventRow } from '@/lib/events';
-import { isMinor } from '@/lib/format';
+import { sinceISO, STAFF_ASSIGNED_TYPES, isCurrentEventRow, todayInMorristown } from '@/lib/events';
 import AdminNav from './AdminNav';
 import { VOLUNTEER_ROLES } from '@/lib/roles';
+import { adultOnFirstDay, countRegistryDue } from '@/lib/backgroundChecks';
 
 export const metadata = { title: 'Staff Admin — Luke 14 Ministries' };
 
@@ -192,6 +192,8 @@ export default async function AdminLayout({ children }) {
   let unreviewedChanges = 0;
   let volunteersAwaiting = 0;
   let volunteersMissingCheck = 0;
+  // Adults who aren't volunteers with a registry search due (0162).
+  let registrySearchesDue = 0;
   let recentAccounts = 0;
   let recentPayments = 0;
   let openCancellations = 0;
@@ -326,17 +328,18 @@ export default async function AdminLayout({ children }) {
       const today = new Date().toISOString().slice(0, 10);
       const { data: volRows, error: volRowsError } = await supabase
         .from('registration_participants')
-        .select('person_id, people ( date_of_birth ), registrations!inner ( events!inner ( ends_on, archived_at ) )')
+        .select('person_id, people ( date_of_birth ), registrations!inner ( events!inner ( starts_on, ends_on, archived_at ) )')
         .in('camp_role', [...VOLUNTEER_ROLES])
         .neq('status', 'cancelled')
         .gte('registrations.events.ends_on', today)
         .is('registrations.events.archived_at', null);
       if (volRowsError) console.error('background-check badge:', volRowsError.message);
-      // Adults only: Checkr does not screen under-18s (Lawrence, 15 Oct 2026).
+      // Adults only: Checkr does not screen under-18s (Lawrence, 15 Oct 2026),
+      // counted on the event's first day, the one age rule (11 Nov 2026).
       const volIds = [
         ...new Set(
           (volRows ?? [])
-            .filter((r) => r.person_id && !isMinor(r.people?.date_of_birth))
+            .filter((r) => r.person_id && adultOnFirstDay(r.people?.date_of_birth, r.registrations?.events?.starts_on))
             .map((r) => r.person_id)
         ),
       ];
@@ -351,7 +354,7 @@ export default async function AdminLayout({ children }) {
           console.error('background-check badge:', statusError.message);
         } else {
           const ok = new Set(
-            // A camper's registry search is not a volunteer's check (0161).
+            // A registry search is not a volunteer's check (0161).
             (statusRows ?? [])
               .filter((c) => c.on_file && c.is_current && c.verdict === 'ok' && c.provider !== 'registry_search')
               .map((c) => c.person_id)
@@ -376,6 +379,18 @@ export default async function AdminLayout({ children }) {
       (familyScholRows ?? []).filter((f) => f.status === 'requested' || f.needs_review_since).length;
     awaitingReview = reviewCount ?? 0;
     unreadReplies = (repliedRows ?? []).length;
+  }
+
+  // Registry searches due (0162): every adult who isn't a volunteer with no
+  // current search, the same people as the queue on Background Checks. For
+  // holders of the background-checks grant, who are the ones who can do it.
+  if (staff && can(staff, 'background_checks')) {
+    try {
+      registrySearchesDue = await countRegistryDue(supabase, todayInMorristown());
+    } catch (err) {
+      // Logged, never thrown: a throw here would take down every staff page.
+      console.error('registry search badge:', err.message);
+    }
   }
 
   // Campers who asked for a one-to-one buddy and still have nobody. Asked for
@@ -618,6 +633,7 @@ export default async function AdminLayout({ children }) {
               '/admin/programs': unplacedPeople,
               '/admin/activities': waiversToCheck,
               '/admin/my-program': myProgramCount,
+              '/admin/volunteers/background-checks': registrySearchesDue,
             }}
             badgeTitles={{
               // [one, many]: AdminNav picks by the count.
@@ -631,6 +647,10 @@ export default async function AdminLayout({ children }) {
               '/admin/programs': ['person on a roster with no program yet', 'people on a roster with no program yet'],
               '/admin/activities': ['outside-provider confirmation waiting to be checked', 'outside-provider confirmations waiting to be checked'],
               '/admin/my-program': ['person in your program', 'people in your program'],
+              '/admin/volunteers/background-checks': [
+                'adult who isn’t a volunteer with a registry search due',
+                'adults who aren’t volunteers with a registry search due',
+              ],
             }}
             // The colour key is staff vocabulary ("waiting on staff",
             // background checks); a leader sees one blue number (26 Oct 2026).

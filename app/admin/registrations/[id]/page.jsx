@@ -16,7 +16,7 @@ import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import EmailLog from '@/components/EmailLog';
 import ReminderPause from './ReminderPause';
 import Panel from './Panel';
-import { isCamperRole, isVolunteerRole, roleAgeFlags } from '@/lib/roles';
+import { isRegistryRole, isVolunteerRole, roleAgeFlags } from '@/lib/roles';
 import { loadFamilyScholarshipRows } from '@/lib/familyScholarships';
 
 export const metadata = { title: 'Registration — Staff Admin' };
@@ -521,14 +521,16 @@ export default async function RegistrationDetailPage({ params }) {
       const creedRow = creedOfPerson.get(pid);
       const app = [].concat(p.volunteer_applications ?? [])[0] ?? null;
       const media = consentOf.get(`${pid}:media`);
-      // An adult camper is screened by a registry search (0161, Lawrence
-      // 10 Nov 2026): shown, and flagged, but never a block. A camper under 18
-      // is not screened and gets a dash rather than a mark.
-      const adultCamper = isCamperRole(p.camp_role) && !(age != null && age < 18);
+      // Every adult who isn't a volunteer is screened by a registry search
+      // (0161/0162, Lawrence 10-11 Nov 2026): shown, and flagged, but only
+      // "Not permitted" holds approval. Under 18 on the event's first day is
+      // not screened and gets a dash rather than a mark.
+      const registryAdult = isRegistryRole(p.camp_role) && !(age != null && age < 18);
+      const clearanceRow = clearanceOf.get(pid) ?? null;
       const clearanceMarkOf = volunteer
-        ? clearanceMark(age != null && age < 18 ? { minor: true } : clearanceOf.get(pid) ?? null)
-        : adultCamper
-          ? clearanceMark(clearanceOf.get(pid) ?? null, undefined, { forCamper: true })
+        ? clearanceMark(age != null && age < 18 ? { minor: true } : clearanceRow)
+        : registryAdult
+          ? clearanceMark(clearanceRow, undefined, { forRegistry: true })
           : null;
       return {
         id: p.id,
@@ -536,9 +538,12 @@ export default async function RegistrationDetailPage({ params }) {
         // 0152: a volunteer is approved only with a background check on file
         // marked OK to serve (under 18 is not screened).
         blocked: volunteer && !['yes', 'na'].includes(clearanceMarkOf?.state),
-        // 0161: an adult camper without a current, clear registry search.
-        // Informs; does not hold the Review card or the Approve button.
-        camperNeedsSearch: adultCamper && clearanceMarkOf?.state !== 'yes',
+        // 0161/0162: an adult who isn't a volunteer without a current, clear
+        // registry search (or full check). Informs; doesn't hold approval.
+        needsSearch: registryAdult && clearanceMarkOf?.state !== 'yes' && clearanceRow?.verdict !== 'not_permitted',
+        // 0162: marked Not permitted to attend. The database refuses to
+        // confirm them, from any button; the card says so first.
+        notPermitted: clearanceRow?.verdict === 'not_permitted',
         name: `${p.people?.preferred_name || p.people?.first_name || ''} ${p.people?.last_name ?? ''}`.trim() || 'Person',
         volunteer,
         clearance: clearanceMarkOf,
@@ -801,6 +806,7 @@ export default async function RegistrationDetailPage({ params }) {
       creed={creed}
       ageFlags={ageFlags}
       reviewChecks={reviewChecks}
+      canRecordChecks={can(staff, 'background_checks')}
       headcount={headcount}
       eventId={reg.events?.id ?? null}
       depositWaived={reg.deposit_waived_at ? { at: reg.deposit_waived_at, reason: reg.deposit_waived_reason ?? null } : null}

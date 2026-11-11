@@ -250,7 +250,7 @@ export default function AdminNav({
           <span className="inline-block rounded-full bg-red-100 px-1.5 font-semibold text-red-800">
             red
           </span>{' '}
-          adults without a background check ·{' '}
+          volunteers without a background check ·{' '}
           <span className="inline-block rounded-full bg-amber-100 px-1.5 font-semibold text-amber-800 ring-1 ring-amber-400">
             ✉
           </span>{' '}
