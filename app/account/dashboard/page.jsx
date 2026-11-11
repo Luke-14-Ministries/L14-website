@@ -135,6 +135,10 @@ export default async function DashboardPage({ searchParams }) {
   // Set when a signed-in family account opens a staff page (app/admin/layout,
   // bounceNonStaff in lib/staff.js).
   const noAccess = params?.noaccess === '1';
+  // Back from saving a new bank account for a plan (updatePlanPaymentMethod).
+  // A bank typed in by hand switches only after Stripe's small deposits are
+  // confirmed (11 Nov 2026), so say so rather than imply it's done.
+  const planBankSaved = params?.plan === 'updated' && params?.m === 'bank';
   const supabase = await createClient();
 
   const {
@@ -1000,6 +1004,18 @@ export default async function DashboardPage({ searchParams }) {
             <p className="mt-1 text-sm text-neutral-700">
               This account is a family account, so we brought you to your own page. If you
               think you should have staff access, check with Luke 14 staff.
+            </p>
+          </div>
+        )}
+
+        {planBankSaved && (
+          <div className="mb-8 rounded-lg border border-neutral-300 bg-white p-5" role="status">
+            <p className="font-semibold">Your new bank account is saved.</p>
+            <p className="mt-1 text-sm text-neutral-600">
+              If you signed in to your bank, your payment plan uses it now. If you typed in your
+              routing and account numbers, Stripe will send two small deposits to that account in a
+              day or two and email you how to confirm them. We&rsquo;ll switch your plan once you
+              do. Until then it keeps the card or bank account it had.
             </p>
           </div>
         )}

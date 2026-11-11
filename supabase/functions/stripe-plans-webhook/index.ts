@@ -9,7 +9,12 @@
 //                                    (stripe-webhook records the deposit
 //                                    itself, exactly like any other deposit)
 //       mode = setup, kind = plan_method_update
-//                                 -> swap in the family's new card/bank account
+//                                 -> swap in the family's new card/bank account,
+//                                    if Stripe says it is ready to charge
+//   setup_intent.succeeded, kind = plan_method_update
+//                                 -> the same swap, once a typed-in bank account
+//                                    is confirmed by micro-deposits (11 Nov 2026)
+//   setup_intent.setup_failed     -> logged; the plan keeps its old method
 //   payment_intent.succeeded / payment_intent.payment_failed
 //       kind = plan_installment   -> record the automatic charge's outcome
 //                                    (bank transfers settle days after the
@@ -24,6 +29,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import {
   activatePlanFromDeposit,
   applyNewPaymentMethod,
+  applySetupIntentToPlan,
   bankDebitReturned,
   recordInstallmentOutcome,
 } from '../_shared/plans.ts';
@@ -84,6 +90,22 @@ Deno.serve(async (req) => {
         return new Response('ok', { status: 200 });
       }
       return new Response('ignored', { status: 200 });
+    }
+
+    // A new card or bank account behind a plan (setup_intent_data carries the
+    // same metadata as the checkout). Needs these two events on the endpoint.
+    if (event.type === 'setup_intent.succeeded' || event.type === 'setup_intent.setup_failed') {
+      const si = event.data.object as Stripe.SetupIntent;
+      const md = si.metadata ?? {};
+      if (md.kind !== 'plan_method_update' || !md.plan_id) return new Response('ignored', { status: 200 });
+      if (event.type === 'setup_intent.setup_failed') {
+        console.log(
+          `[stripe-plans-webhook] plan ${md.plan_id}: new payment method failed (${si.last_setup_error?.code ?? 'no code'}); plan unchanged`
+        );
+        return new Response('ok', { status: 200 });
+      }
+      await applySetupIntentToPlan(admin, stripe, si.id, md.plan_id);
+      return new Response('ok', { status: 200 });
     }
 
     if (event.type === 'payment_intent.succeeded' || event.type === 'payment_intent.payment_failed') {

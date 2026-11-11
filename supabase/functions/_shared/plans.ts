@@ -514,24 +514,55 @@ export async function activatePlanFromDeposit(
 // A new card / bank account (webhook, setup-mode checkout, kind = plan_method_update)
 // ---------------------------------------------------------------------------
 
+// The method goes onto the plan only once Stripe says it is ready to charge
+// (Lawrence, 11 Nov 2026). A bank account typed in by hand is confirmed by two
+// small deposits: the setup-mode checkout completes with its SetupIntent still
+// at requires_action, and it reaches 'succeeded' only when the family confirms
+// the deposits -- days later, as setup_intent.succeeded. Until then the plan
+// keeps its old method and status, so a stopped plan is not restarted onto an
+// account that cannot be charged yet.
+//
+// Both events arrive for a method that is ready at once (a card, a bank the
+// family signed in to), so applying is compare-and-set: the update only lands
+// on a plan that does not already carry this payment method, and only the
+// call that lands it restarts the plan and resets its retries.
+export type MethodApplied = 'applied' | 'unchanged' | 'pending' | 'skipped';
+
 export async function applyNewPaymentMethod(
   admin: SupabaseClient,
   stripe: Stripe,
   s: Stripe.Checkout.Session
-) {
+): Promise<MethodApplied> {
   const md = s.metadata ?? {};
   const siId = typeof s.setup_intent === 'string' ? s.setup_intent : s.setup_intent?.id;
-  if (!siId || !md.plan_id) return;
-  const si = await stripe.setupIntents.retrieve(siId, { expand: ['payment_method'] });
-  const pm = (typeof si.payment_method === 'object' ? si.payment_method : null) as Stripe.PaymentMethod | null;
-  if (!pm) return;
+  if (!siId || !md.plan_id) return 'skipped';
+  return applySetupIntentToPlan(admin, stripe, siId, md.plan_id);
+}
 
-  const { data: plan } = await admin
+// setup_intent.succeeded (and the checkout above). Reads the SetupIntent
+// fresh from Stripe rather than trusting the event's copy.
+export async function applySetupIntentToPlan(
+  admin: SupabaseClient,
+  stripe: Stripe,
+  siId: string,
+  planId: string
+): Promise<MethodApplied> {
+  const si = await stripe.setupIntents.retrieve(siId, { expand: ['payment_method'] });
+  if (si.status !== 'succeeded') {
+    console.log(`[plans] plan ${planId}: new payment method not ready (${si.status}); plan unchanged`);
+    return 'pending';
+  }
+  const pm = (typeof si.payment_method === 'object' ? si.payment_method : null) as Stripe.PaymentMethod | null;
+  if (!pm) return 'skipped';
+
+  const { data: plan, error: planErr } = await admin
     .from('payment_plans')
-    .select('id, status')
-    .eq('id', md.plan_id)
+    .select('id, status, stripe_payment_method_id')
+    .eq('id', planId)
     .maybeSingle();
-  if (!plan) return;
+  if (planErr) throw new Error(`plan-read: ${planErr.message}`);
+  if (!plan) return 'skipped';
+  if (plan.stripe_payment_method_id === pm.id) return 'unchanged';
 
   const update: Record<string, unknown> = {
     stripe_payment_method_id: pm.id,
@@ -541,15 +572,26 @@ export async function applyNewPaymentMethod(
   // A plan that stopped on failures starts again with the new method: its
   // failed charges get a fresh set of tries, starting tomorrow morning.
   if (plan.status === 'failed') update.status = 'active';
-  await admin.from('payment_plans').update(update).eq('id', plan.id);
+  const { data: landed, error: upErr } = await admin
+    .from('payment_plans')
+    .update(update)
+    .eq('id', plan.id)
+    .eq('status', plan.status)
+    .or(`stripe_payment_method_id.is.null,stripe_payment_method_id.neq.${pm.id}`)
+    .select('id');
+  if (upErr) throw new Error(`plan-method: ${upErr.message}`);
+  // Another delivery got there first: it did the restart, if one was due.
+  if (!landed || landed.length === 0) return 'unchanged';
   if (plan.status === 'failed') {
-    await admin
+    const { error: instErr } = await admin
       .from('payment_installments')
       .update({ attempts: 0, next_attempt_on: ministryToday() })
       .eq('payment_plan_id', plan.id)
       .eq('status', 'failed');
+    if (instErr) throw new Error(`plan-retries: ${instErr.message}`);
   }
   console.log(`[plans] plan ${plan.id} payment method updated`);
+  return 'applied';
 }
 
 // What is owed once money still clearing the bank is set aside. The balance

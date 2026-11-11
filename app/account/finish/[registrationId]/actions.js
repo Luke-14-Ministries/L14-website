@@ -208,7 +208,9 @@ export async function updatePlanPaymentMethod({ registrationId, method }) {
       customer: plan.stripe_customer_id,
       metadata,
       setup_intent_data: { metadata },
-      success_url: `${origin}/account/dashboard/?plan=updated`,
+      // `m=bank`: the dashboard says a typed-in account waits for Stripe's
+      // small deposits before the plan switches (applySetupIntentToPlan).
+      success_url: `${origin}/account/dashboard/?plan=updated${method === 'bank' ? '&m=bank' : ''}`,
       cancel_url: `${origin}/account/dashboard/`,
     });
     return { ok: true, url: session.url };

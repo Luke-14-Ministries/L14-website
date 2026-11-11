@@ -1,7 +1,7 @@
 // Scratch-database test of the payment-plan code paths, with a stand-in for
 // Stripe. Not deployed; lives only in the test rig.
 import { PostgrestClient } from 'npm:@supabase/postgrest-js@1';
-import { activatePlanFromDeposit, applyNewPaymentMethod, recordInstallmentOutcome } from '../functions/_shared/plans.ts';
+import { activatePlanFromDeposit, applyNewPaymentMethod, applySetupIntentToPlan, recordInstallmentOutcome } from '../functions/_shared/plans.ts';
 import { chargeDuePlans } from '../functions/_shared/charger.ts';
 
 const token = (await Deno.readTextFile('/var/tmp/srv.jwt')).trim();
@@ -30,6 +30,9 @@ async function plan() {
 
 // ---- fake Stripe ------------------------------------------------------------
 let nextOutcome: 'succeeded' | 'processing' | 'decline' = 'succeeded';
+// The SetupIntent behind a new card / bank account: 'requires_action' is a
+// typed-in bank account waiting on Stripe's micro-deposits.
+let setupStatus = 'succeeded';
 let piCount = 0;
 const created: any[] = [];
 const fakeStripe: any = {
@@ -47,7 +50,7 @@ const fakeStripe: any = {
     },
   },
   customers: { retrieve: async () => ({ id: 'cus_1', email: 'fam@example.org' }) },
-  setupIntents: { retrieve: async () => ({ payment_method: { id: 'pm_new', type: 'us_bank_account', us_bank_account: { bank_name: 'Test Bank', last4: '6789' } } }) },
+  setupIntents: { retrieve: async (id: string) => ({ id, status: setupStatus, payment_method: { id: 'pm_new', type: 'us_bank_account', us_bank_account: { bank_name: 'Test Bank', last4: '6789' } } }) },
 };
 
 // ---- setup: early date, $50/person -------------------------------------------
@@ -125,11 +128,29 @@ expect('C7 a failed plan is not charged', out.results.length, 0);
 expect('C8 discount kept while staff decide', (await bal()).early_discount_cents, 10000);
 
 // ---- D. family saves a new bank account -> plan restarts --------------------------
-await applyNewPaymentMethod(admin, fakeStripe, { setup_intent: 'seti_1', metadata: { kind: 'plan_method_update', plan_id: p.id } } as any);
+// D0: typed-in account numbers. The checkout completes while Stripe's small
+// deposits are still unconfirmed: nothing changes on the plan (11 Nov 2026).
+const methodCheckout: any = { setup_intent: 'seti_1', metadata: { kind: 'plan_method_update', plan_id: p.id } };
+setupStatus = 'requires_action';
+expect('D0 pending SetupIntent is not applied', await applyNewPaymentMethod(admin, fakeStripe, methodCheckout), 'pending');
 p = await plan();
-expect('D1 plan active again with new method', [p.status, p.payment_method_label, p.payment_method_kind], ['active', 'Test Bank ending 6789', 'us_bank_account']);
+expect('D0b plan keeps its old method and stays stopped', [p.status, p.payment_method_label], ['failed', 'Visa ending 4242']);
+list = await insts();
+expect('D0c retries not reset while pending', list[1].attempts, 3);
+// D1: the family confirms the deposits -> setup_intent.succeeded.
+setupStatus = 'succeeded';
+expect('D1 setup_intent.succeeded applies', await applySetupIntentToPlan(admin, fakeStripe, 'seti_1', p.id), 'applied');
+p = await plan();
+expect('D1b plan active again with new method', [p.status, p.payment_method_label, p.payment_method_kind], ['active', 'Test Bank ending 6789', 'us_bank_account']);
 list = await insts();
 expect('D2 failed charge gets fresh tries', list[1].attempts, 0);
+// D3: a second delivery (the checkout event for an instantly verified
+// account, or a Stripe retry) is a no-op: no second restart or retry reset.
+await admin.from('payment_installments').update({ attempts: 1 }).eq('id', list[1].id);
+expect('D3 checkout event after the swap is a no-op', await applyNewPaymentMethod(admin, fakeStripe, methodCheckout), 'unchanged');
+expect('D3b setup_intent.succeeded again is a no-op', await applySetupIntentToPlan(admin, fakeStripe, 'seti_1', p.id), 'unchanged');
+expect('D3c retries left alone', (await insts())[1].attempts, 1);
+await admin.from('payment_installments').update({ attempts: 0 }).eq('id', list[1].id);
 
 // ---- E. bank transfer: processing, then settles via webhook ------------------------
 nextOutcome = 'processing';
