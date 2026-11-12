@@ -32,6 +32,7 @@ export default async function MedicalPage({ searchParams }) {
          registration_participants ( camp_role, status,
            people ( first_name, last_name,
              person_support ( medications, has_seizures, has_rescue_medication,
+               has_allergies, allergens, allergy_medications,
                seizure_detail, rescue_medication_detail, buddy_required,
                emergency_contact_name, emergency_contact_phone, emergency_contact_relationship ) ) )`
       ),
@@ -49,9 +50,15 @@ export default async function MedicalPage({ searchParams }) {
       if (p.status === 'cancelled') continue;
       const s = p.people?.person_support;
       if (!s) continue;
+      // A medication allergy sits beside the medications (0164, 12 Nov 2026):
+      // the one allergy that changes what the nurse gives.
+      const medAllergy =
+        s.has_allergies && Array.isArray(s.allergens) && s.allergens.includes('medications')
+          ? (s.allergy_medications ?? '').trim() || 'medications not named'
+          : '';
       const hasMedical =
         s.medications || s.has_seizures || s.has_rescue_medication ||
-        s.rescue_medication_detail || s.seizure_detail;
+        s.rescue_medication_detail || s.seizure_detail || medAllergy;
       if (!hasMedical && !s.emergency_contact_name) continue;
       if (!byEvent.has(r.event_id)) byEvent.set(r.event_id, []);
       byEvent.get(r.event_id).push({
@@ -60,6 +67,7 @@ export default async function MedicalPage({ searchParams }) {
         household: r.households?.display_name ?? '',
         phone: formatPhone(r.households?.phone ?? ''),
         medications: s.medications,
+        medAllergy,
         seizures: s.has_seizures,
         seizureDetail: s.seizure_detail,
         rescue: s.has_rescue_medication,
@@ -102,7 +110,7 @@ export default async function MedicalPage({ searchParams }) {
     <div>
       <h2 className="text-xl font-bold mb-1">Medical &amp; Support</h2>
       <p className="text-sm text-neutral-500 mb-6">
-        Medications, seizure and rescue-medication details, and emergency contacts, per event.
+        Medications (with any medication allergy), seizure and rescue-medication details, and emergency contacts, per event.
         This is the most sensitive page on the site. It needs its own permission, so take the same
         care with printouts as with the screen.
       </p>
@@ -196,7 +204,14 @@ export default async function MedicalPage({ searchParams }) {
                             {r.buddy && <Flag tone="amber">no buddy assigned</Flag>}
                           </div>
                         </td>
-                        <td className="px-4 py-2 whitespace-pre-wrap">{r.medications || '—'}</td>
+                        <td className="px-4 py-2 whitespace-pre-wrap">
+                          {r.medAllergy && (
+                            <span className="block mb-1 font-semibold text-red-800">
+                              Allergic to: {r.medAllergy}
+                            </span>
+                          )}
+                          {r.medications || (r.medAllergy ? '' : '—')}
+                        </td>
                         {/* Seizure plan and rescue medication are shown as
                             SEPARATE lines. They answer different questions --
                             "what do I do right now" versus "what is kept where"

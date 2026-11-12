@@ -82,9 +82,9 @@ end $$;
 \echo == 5 activity_safety_flags (0139): flags only, for Activities read, never for a family
 insert into public.activities (id, event_id, name) values ('a0000000-0000-0000-0000-000000000001', (select event_id from public.registrations where id = '50000000-0000-0000-0000-000000000001'), 'Swimming');
 insert into public.activity_signups (registration_participant_id, activity_id) values ('60000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001');
-insert into public.person_support (person_id, has_allergies, allergy_severity, allergens, allergy_detail, details_saved_at)
-values ('20000000-0000-0000-0000-000000000001', true, 'severe', array['peanut'], 'hives and swelling', now())
-on conflict (person_id) do update set has_allergies = true, allergy_severity = 'severe', allergens = array['peanut'], allergy_detail = 'hives and swelling', details_saved_at = now();
+insert into public.person_support (person_id, has_allergies, allergy_severity, allergens, allergy_medications, allergy_detail, details_saved_at)
+values ('20000000-0000-0000-0000-000000000001', true, 'severe', array['peanut','medications'], 'penicillin', 'hives and swelling', now())
+on conflict (person_id) do update set has_allergies = true, allergy_severity = 'severe', allergens = array['peanut','medications'], allergy_medications = 'penicillin', allergy_detail = 'hives and swelling', details_saved_at = now();
 begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true),
@@ -93,7 +93,8 @@ do $$
 declare r record;
 begin
   select * into r from public.activity_safety_flags(array['20000000-0000-0000-0000-000000000001'::uuid, '20000000-0000-0000-0000-000000000002'::uuid]);
-  if r.person_id is null or not r.has_allergies or r.allergy_severity <> 'severe' or r.allergens <> array['peanut'] then
+  if r.person_id is null or not r.has_allergies or r.allergy_severity <> 'severe' or r.allergens <> array['peanut','medications']
+     or r.allergy_medications is distinct from 'penicillin' then
     raise exception 'FAIL 5: flags read %', row_to_json(r);
   end if;
   raise notice 'PASS 5 Activities read gets the flags and allergen names (and only people with a signup)';
@@ -126,7 +127,7 @@ declare r record; n int;
 begin
   select * into r from public.buddy_sheet_support(array['60000000-0000-0000-0000-000000000001'::uuid]);
   if r.participant_id is null or not r.details_saved or r.communication <> 'Uses a few signs'
-     or r.allergy_detail <> 'hives and swelling' then
+     or r.allergy_detail <> 'hives and swelling' or r.allergy_medications is distinct from 'penicillin' then
     raise exception 'FAIL 6: support read %', row_to_json(r);
   end if;
   select count(*) into n from public.buddy_sheet_support(array['60000000-0000-0000-0000-000000000002'::uuid]);

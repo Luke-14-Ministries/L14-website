@@ -719,7 +719,7 @@ export default async function PersonPage({ params }) {
     const { data, error } = await supabase
       .from('person_support')
       .select(
-        `has_allergies, allergy_severity, allergens, allergy_other, allergy_detail, dietary_needs,
+        `has_allergies, allergy_severity, allergens, allergy_other, allergy_medications, allergy_detail, dietary_needs,
          has_seizures, seizure_detail, has_rescue_medication, rescue_medication_detail, medications,
          disabilities, communication, mobility, personal_care, daily_living_supports,
          behaviour_triggers, redirection_strategies, likes_dislikes,

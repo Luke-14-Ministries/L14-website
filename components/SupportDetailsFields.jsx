@@ -262,6 +262,22 @@ export default function SupportDetailsFields({
             </label>
           ))}
         </div>
+        {/* Which medications (0164; alpha feedback, 12 Nov 2026). Required
+            once Medications is ticked, like "Other" below (supportProblems). */}
+        {allergens.includes('medications') && (
+          <>
+            <label className={label} htmlFor={`${idPrefix}allergy-medications`}>
+              Which medications?
+            </label>
+            <input
+              id={`${idPrefix}allergy-medications`}
+              className={input}
+              value={f.allergy_medications ?? ''}
+              onChange={set('allergy_medications')}
+              placeholder="e.g. penicillin, ibuprofen"
+            />
+          </>
+        )}
         {allergens.includes('other') && (
           <>
             <label className={label}>What is the other allergy?</label>

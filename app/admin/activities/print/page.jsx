@@ -39,7 +39,12 @@ function safetyFlags(f) {
   const out = [];
   if (f.has_allergies) {
     // allergenWords() names the ticked allergens; allergy_detail is not read.
-    const names = allergenWords({ has_allergies: true, allergens: f.allergens ?? [], allergy_other: f.allergy_other }).join(', ');
+    const names = allergenWords({
+      has_allergies: true,
+      allergens: f.allergens ?? [],
+      allergy_other: f.allergy_other,
+      allergy_medications: f.allergy_medications,
+    }).join(', ');
     const sev = SEVERITY_WORD[f.allergy_severity] ? ` (${SEVERITY_WORD[f.allergy_severity]})` : '';
     out.push(`Allergy${sev}${names ? `: ${names}` : ''}`);
   }

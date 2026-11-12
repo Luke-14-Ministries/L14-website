@@ -26,7 +26,7 @@ export default async function KitchenListPage({ searchParams }) {
       .select(
         `id, event_id,
          registration_participants ( status,
-           people ( person_support ( dietary_needs, allergens, allergy_other, allergy_detail, has_allergies, allergy_severity ) ) )`
+           people ( person_support ( dietary_needs, allergens, allergy_other, allergy_medications, allergy_detail, has_allergies, allergy_severity ) ) )`
       ),
   ]);
   // CLAUDE.md: never turn a query error into an empty list -- the kitchen

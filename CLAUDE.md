@@ -47,7 +47,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0163`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0164`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -423,7 +423,7 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
 (card 4) and are a condition of submitting (`0097`; `submitFamilyRegistration` writes
 `person_support` and stamps `details_saved_at`); `components/SupportDetailsFields.jsx` serves the
 wizard and the dashboard form. Allergens are a tick list (`person_support.allergens`, fixed
-vocabulary, `allergy_other`; `allergy_detail` means "what happens"); rows saved before `0097` show
+vocabulary, `allergy_other`, and `allergy_medications` behind the Medications tick, `0164`; `allergy_detail` means "what happens"); rows saved before `0097` show
 "Other: …" until re-saved. Outside-provider waivers need an uploaded confirmation (`0087`, private
 bucket `waiver-confirmations`), **and staff review it** (`0124`): each upload is *awaiting check*
 (`review_status` pending), *accepted*, or *rejected* with a reason the family reads — rejected is

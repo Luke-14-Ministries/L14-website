@@ -35,6 +35,7 @@ export const SAFETY_FIELDS = new Set([
   'has_allergies',
   'allergens',
   'allergy_other',
+  'allergy_medications',
   'allergy_detail',
   'medications',
 ]);
@@ -66,6 +67,7 @@ const FIELD_LABEL = {
   dietary_needs: 'Dietary needs',
   allergens: 'Allergens',
   allergy_other: 'Other allergy',
+  allergy_medications: 'Medication allergy',
   allergy_detail: 'Allergy — what happens',
   seizure_detail: 'Seizure plan',
   // The rest of person_support's logged columns (log_family_change, 0097).

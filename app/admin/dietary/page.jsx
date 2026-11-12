@@ -28,7 +28,7 @@ export default async function DietaryPage({ searchParams }) {
          households ( display_name, phone ),
          registration_participants ( camp_role, status,
            people ( id, first_name, last_name,
-             person_support ( dietary_needs, allergens, allergy_other, allergy_detail, has_allergies, allergy_severity ) ) )`
+             person_support ( dietary_needs, allergens, allergy_other, allergy_medications, allergy_detail, has_allergies, allergy_severity ) ) )`
       ),
   ]);
   // CLAUDE.md: never turn a query error into an empty list -- the kitchen

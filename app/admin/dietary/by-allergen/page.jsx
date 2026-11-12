@@ -49,7 +49,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
          households ( display_name ),
          registration_participants ( status, camp_role,
            people ( id, first_name, last_name, preferred_name,
-             person_support ( has_allergies, allergens, allergy_other, allergy_detail, allergy_severity ) ) )`
+             person_support ( has_allergies, allergens, allergy_other, allergy_medications, allergy_detail, allergy_severity ) ) )`
       ),
   ]);
   if (eventsError) throw new Error(`Events: ${eventsError.message}`);
