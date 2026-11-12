@@ -21,6 +21,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { balanceDueOn, registrationOpen, OPEN_EVENT_COLUMNS } from '@/lib/events';
 import { requiresPaymentChoice } from '@/lib/plans';
 import { hasPhone, caregiverLinkProblem } from '@/lib/caregivers';
+import { duplicatePeople } from '@/lib/wizardPeople';
 
 // What an HTML email said, as plain text for message_log.body_text.
 const htmlToText = (html) =>
@@ -96,6 +97,26 @@ export async function submitFamilyRegistration(payload) {
     return {
       ok: false,
       error: `${who}: please give both a first and a last name in “Who's coming”, or remove the row.`,
+    };
+  }
+
+  // The wizard's own two checks, again here (12 Nov 2026): someone listed
+  // twice, and someone with no role. A missing role used to become "camper"
+  // below without a word, which is the most sensitive answer on the form.
+  const twice = duplicatePeople(members || []);
+  if (twice.length > 0) {
+    return {
+      ok: false,
+      error: `${twice[0].name} is listed twice in “Who's coming”. Remove the extra card.`,
+    };
+  }
+  const noRole = (members || []).find(
+    (m) => (m.firstName || '').trim() && (m.lastName || '').trim() && !ROLE_MAP[m.role]
+  );
+  if (noRole) {
+    return {
+      ok: false,
+      error: `Please choose a role for ${noRole.firstName.trim()} ${noRole.lastName.trim()} in “Who's coming”.`,
     };
   }
 

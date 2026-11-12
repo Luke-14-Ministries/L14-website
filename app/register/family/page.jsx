@@ -182,6 +182,9 @@ export default async function FamilyRegisterPage({ searchParams }) {
   let signedAlready = null;
   // Everyone saved in this household, offered as pick-and-add in the wizard.
   let householdPeople = [];
+  // The household's primary contact, so the wizard knows their card by who it
+  // is ("I'm coming too"), not only by name (12 Nov 2026).
+  let contactPersonId = null;
   let existingEvents = [];
   // "How did you hear about us?" is a first-contact question, so it is asked
   // once per family and never again. CampSite asks it on every enrolment, which
@@ -457,6 +460,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
     // save worked, the read threw it away. The profile stays as the fallback
     // for a household that has never named one.
     let contactPerson = null;
+    contactPersonId = household?.primary_contact_person_id ?? null;
     if (household?.primary_contact_person_id) {
       const { data: pc, error: pcError } = await supabase
         .from('people')
@@ -565,6 +569,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
             agreements={requiredAgreements}
             signedAlready={signedAlready}
             householdPeople={householdPeople}
+            contactPersonId={contactPersonId}
             existingEvents={existingEvents}
           />
         )}

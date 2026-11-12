@@ -24,7 +24,7 @@
 // rule for what a camper must answer is supportProblems() in lib/support.js,
 // both shared with that form.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Confetti from '@/components/Confetti';
 import FoldArrow from '@/components/FoldArrow';
 import Link from 'next/link';
@@ -43,6 +43,7 @@ import SupportDetailsFields from '@/components/SupportDetailsFields';
 import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 import { hasPhone } from '@/lib/caregivers';
 import { VOLUNTEER_CHILD_UNDER } from '@/lib/roles';
+import { selfRowIndex, sameName, duplicatePeople } from '@/lib/wizardPeople';
 
 // The emergency contact carried across the household (Lawrence, 6 Nov 2026):
 // see setSupport. A person added to the form starts with the contact the
@@ -419,6 +420,16 @@ function familyNeeds({ family }) {
 function peopleNeeds({ members }) {
   const out = [];
   const named = members.filter(isNamed);
+  // HARD: someone on the form twice (alpha feedback, 12 Nov 2026). The second
+  // card was an empty copy, so the chip kept asking for a role the card on
+  // screen already had. lib/wizardPeople.js says how "the same person" is told.
+  const twice = duplicatePeople(members);
+  if (twice.length > 0) {
+    out.push({
+      chip: `${whoList(twice.map((g) => g.name))} listed twice`,
+      message: `${twice[0].name} is listed twice in “Who's coming”. Remove the extra card (the one without their answers).`,
+    });
+  }
   // HARD: a row with only a first name (or only a last name) was left out of
   // the save without a word, and the success card then named only the people
   // who were saved (alpha feedback, 11 Nov 2026: a son typed in "Who's coming"
@@ -696,6 +707,9 @@ export default function FamilyWizard({
   // registered. Offered as one-click adds so a family keeps its roster once
   // and picks from it, rather than retyping the same children every year.
   householdPeople = [],
+  // The household's primary contact (households.primary_contact_person_id),
+  // so "I'm coming too" knows their card by who it is, not only by name.
+  contactPersonId = null,
   // Weeks this household already has a registration for. Used only to warn:
   // starting a NEW registration no longer inherits another week's people
   // (25 Aug), so the family needs telling when the week they just picked is
@@ -816,6 +830,8 @@ export default function FamilyWizard({
   // those that still need something.
   const shownCards = CARD_KEYS.filter((k) => k !== 'agreements' || agreements.length > 0);
   const needing = shownCards.filter((k) => needs[k].length > 0);
+  // How many things the bar says are left (the phone row, 12 Nov 2026).
+  const thingsLeft = needing.reduce((n, k) => n + needs[k].length, 0);
   // Support details with nothing required (no camper) and nothing answered
   // read "Optional", not "Complete ✓" (Lawrence, 4 Nov 2026: complete before
   // anything is entered). A camper's required boxes still say "Needs: ...".
@@ -841,6 +857,28 @@ export default function FamilyWizard({
   // card's header button, so a keyboard or screen-reader user lands there too.
   // The card (and, for support details, the person) a refusal is about.
   const [errorAt, setErrorAt] = useState(null);
+  // The bottom bar on a phone (alpha feedback, 12 Nov 2026: with the keyboard
+  // open it filled everything between the field and the keyboard). Below sm
+  // it is one short row, its "things left" list folded behind a toggle, and
+  // it steps aside while a text box, list or dropdown has focus.
+  const [typing, setTyping] = useState(false);
+  const [barListOpen, setBarListOpen] = useState(false);
+  const isTypingField = (el) => {
+    if (!el || !el.tagName) return false;
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') return true;
+    if (el.tagName !== 'INPUT') return false;
+    return !['checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'image', 'range', 'color'].includes(
+      (el.type || 'text').toLowerCase()
+    );
+  };
+  const onFormFocus = (e) => {
+    if (isTypingField(e.target)) setTyping(true);
+  };
+  // Focus moving straight to another box keeps the bar away; anywhere else
+  // (a button, a tap on the page) brings it back.
+  const onFormBlur = (e) => {
+    if (!isTypingField(e.relatedTarget)) setTyping(false);
+  };
   // The refusal stays true to the form as it is now (Lawrence, 4 Nov 2026: it
   // still said "read and agree to" after every box was ticked). A refusal
   // about a card shows that card's CURRENT first problem, and goes once the
@@ -898,7 +936,12 @@ export default function FamilyWizard({
   const namedCount = named.length;
   const total = (week?.feeCents ?? 0) * namedCount;
 
-  const setF = (k) => (e) => setFamily({ ...family, [k]: e.target.value });
+  // Functional updates throughout (12 Nov 2026): a setter that wrote back the
+  // array from its own render could put back an older copy of the form.
+  const setF = (k) => (e) => {
+    const v = e.target.value;
+    setFamily((f) => ({ ...f, [k]: v }));
+  };
   // One person's support profile. Functional update, because the fields
   // component calls this many times between renders (a blur that tidies a
   // phone number right after the keystroke that typed it).
@@ -933,8 +976,8 @@ export default function FamilyWizard({
       });
     });
   const setM = (i, k) => (e) => {
-    const next = members.map((m, j) => (j === i ? { ...m, [k]: e.target.value } : m));
-    setMembers(next);
+    const v = e.target.value;
+    setMembers((prev) => prev.map((m, j) => (j === i ? { ...m, [k]: v } : m)));
   };
 
   // Permission checkboxes. Turning one ON is instant; turning one OFF asks
@@ -945,13 +988,17 @@ export default function FamilyWizard({
   // unticking removes their row only while it is still otherwise empty --
   // once a t-shirt size or role has been chosen, removing quietly would
   // throw away real answers, so the row stays and the Remove button governs.
-  const norm = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  const selfIncluded = members.some(
-    (m) =>
-      norm(m.firstName) === norm(family.contactFirst) &&
-      norm(m.lastName) === norm(family.contactLast) &&
-      norm(m.firstName) !== ''
-  );
+  //
+  // Since 12 Nov 2026 the card is found by the saved person first, then by
+  // name (selfRowIndex, lib/wizardPeople.js). Matching by name alone unticked
+  // the box whenever the contact's name in "Your family" and the card's name
+  // differed, and ticking it again added a second, empty card (alpha feedback:
+  // "the role didn't stick").
+  const selfIdx = selfRowIndex(members, family, contactPersonId);
+  const selfIncluded = selfIdx >= 0;
+  // The card "I'm coming too" last took off, so ticking it again puts back
+  // their answers rather than an empty card.
+  const removedSelf = useRef(null);
 
   function toggleSelf(e) {
     if (e.target.checked) {
@@ -970,36 +1017,38 @@ export default function FamilyWizard({
       // fields -- so the two ways of adding yourself now behave identically.
       // It also carries personId, which is what removes your own chip from
       // that list instead of offering to add you twice.
-      const known = householdPeople.find(
-        (h) =>
-          norm(h.firstName) === norm(family.contactFirst) &&
-          norm(h.lastName) === norm(family.contactLast) &&
-          norm(h.firstName) !== ''
-      );
-      const self = withHouseholdContact(
-        known
-          ? { ...emptyMember, ...known }
-          : {
-              ...emptyMember,
-              firstName: family.contactFirst.trim(),
-              lastName: family.contactLast.trim(),
-            },
-        members
-      );
+      if (selfIncluded) return;
+      const asContact = { firstName: family.contactFirst, lastName: family.contactLast };
+      const known =
+        (contactPersonId && householdPeople.find((h) => h.personId === contactPersonId)) ||
+        householdPeople.find((h) => sameName(h, asContact));
+      // Already on the form under the household record (a household chip, or
+      // the contact's name changed since): never a second card.
+      if (known && members.some((m) => m.personId === known.personId)) return;
+      const self = removedSelf.current
+        ? { ...removedSelf.current, isContact: true }
+        : withHouseholdContact(
+            known
+              ? { ...emptyMember, ...known }
+              : {
+                  ...emptyMember,
+                  firstName: family.contactFirst.trim(),
+                  lastName: family.contactLast.trim(),
+                },
+            members
+          );
+      self.isContact = true;
+      removedSelf.current = null;
       // Fill the first still-blank row rather than stacking a new card under
       // an untouched "Person 1".
-      const blankIdx = members.findIndex((m) => !m.firstName.trim() && !m.lastName.trim());
-      if (blankIdx >= 0) {
-        setMembers(members.map((m, j) => (j === blankIdx ? { ...m, ...self } : m)));
-      } else {
-        setMembers([self, ...members]);
-      }
+      setMembers((prev) => {
+        const blankIdx = prev.findIndex((m) => !m.firstName.trim() && !m.lastName.trim() && !m.personId);
+        return blankIdx >= 0
+          ? prev.map((m, j) => (j === blankIdx ? { ...m, ...self } : m))
+          : [self, ...prev];
+      });
     } else {
-      const idx = members.findIndex(
-        (m) =>
-          norm(m.firstName) === norm(family.contactFirst) &&
-          norm(m.lastName) === norm(family.contactLast)
-      );
+      const idx = selfIdx;
       if (idx === -1) return;
       const m = members[idx];
       const untouched = !m.role && !m.tshirt && !m.firstTime && !m.dob && !m.sex;
@@ -1009,12 +1058,15 @@ export default function FamilyWizard({
       // without a word was not. Ask, then honour the answer either way.
       if (!untouched) {
         const ok = window.confirm(
-          `${m.firstName || 'This person'} already has answers filled in on this registration.\n\nRemove them anyway? Their answers on this form will be lost.`
+          `${m.firstName || 'This person'} already has answers filled in on this registration.\n\nTake them off this registration? Tick the box again to put them back with their answers.`
         );
         if (!ok) return;
       }
-      const next = members.filter((_, j) => j !== idx);
-      setMembers(next.length ? next : [{ ...emptyMember }]);
+      removedSelf.current = m;
+      setMembers((prev) => {
+        const next = prev.filter((x) => x !== m);
+        return next.length ? next : [{ ...emptyMember }];
+      });
     }
   }
 
@@ -1023,12 +1075,12 @@ export default function FamilyWizard({
     if (!on) {
       const who = members[i]?.firstName?.trim() || 'this person';
       if (!window.confirm(RECONSIDER[k](who))) {
-        setMembers(members.map((m, j) => (j === i ? { ...m, [k]: 'false' } : m)));
+        setMembers((prev) => prev.map((m, j) => (j === i ? { ...m, [k]: 'false' } : m)));
       }
       // Confirmed = they reconsidered and are keeping it on, so nothing to do.
       return;
     }
-    setMembers(members.map((m, j) => (j === i ? { ...m, [k]: 'true' } : m)));
+    setMembers((prev) => prev.map((m, j) => (j === i ? { ...m, [k]: 'true' } : m)));
   };
 
   async function handleSubmit() {
@@ -1265,7 +1317,7 @@ export default function FamilyWizard({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onFocus={onFormFocus} onBlur={onFormBlur}>
       {/* Editing a saved registration: the complete cards start folded, so
           what still needs doing is what shows. */}
       {isUpdate && (
@@ -1581,7 +1633,7 @@ export default function FamilyWizard({
                   <button
                     type="button"
                     className="text-red-600 text-sm underline"
-                    onClick={() => setMembers(members.filter((_, j) => j !== i))}
+                    onClick={() => setMembers((prev) => prev.filter((_, j) => j !== i))}
                   >
                     Remove
                   </button>
@@ -1672,8 +1724,17 @@ export default function FamilyWizard({
                 {/* Two columns wide (26 Oct 2026): "Camper with disability" was
                     cut off in a one-column box with room beside it. */}
                 <div className="sm:col-span-2">
-                  <label className={label}>Role</label>
-                  <select className={`${input} sm:max-w-md`} value={m.role} onChange={setM(i, 'role')}>
+                  {/* The name in the label (12 Nov 2026): on a phone the card's
+                      heading is off the screen by the time you reach this box. */}
+                  <label className={label} htmlFor={`fw-p${i}-role`}>
+                    {m.firstName.trim() ? `Role for ${m.firstName.trim()}` : 'Role'}
+                  </label>
+                  <select
+                    id={`fw-p${i}-role`}
+                    className={`${input} sm:max-w-md`}
+                    value={m.role}
+                    onChange={setM(i, 'role')}
+                  >
                     <option value="" disabled>
                       Choose a role…
                     </option>
@@ -1833,7 +1894,11 @@ export default function FamilyWizard({
             const onForm = new Set(
               members.map((m) => m.personId).filter(Boolean)
             );
-            const available = householdPeople.filter((p) => !onForm.has(p.personId));
+            // Not someone already on the form under the same name, either
+            // (typed in by hand): tapping them would list them twice.
+            const available = householdPeople.filter(
+              (p) => !onForm.has(p.personId) && !members.some((m) => sameName(m, p))
+            );
             if (available.length === 0) return null;
             return (
               <div className="rounded-sm border border-neutral-200 bg-neutral-50 p-4">
@@ -1849,14 +1914,18 @@ export default function FamilyWizard({
                       key={p.personId}
                       type="button"
                       onClick={() =>
-                        setMembers([
-                          ...members.filter(
-                            // Drop a still-blank row so adding someone doesn't
-                            // leave an empty card stranded above them.
-                            (m) => m.firstName.trim() || m.lastName.trim() || m.personId
-                          ),
-                          withHouseholdContact({ ...emptyMember, ...p }, members),
-                        ])
+                        setMembers((prev) =>
+                          prev.some((m) => m.personId === p.personId)
+                            ? prev
+                            : [
+                                ...prev.filter(
+                                  // Drop a still-blank row so adding someone doesn't
+                                  // leave an empty card stranded above them.
+                                  (m) => m.firstName.trim() || m.lastName.trim() || m.personId
+                                ),
+                                withHouseholdContact({ ...emptyMember, ...p }, prev),
+                              ]
+                        )
                       }
                       className="rounded-full border border-brand bg-white px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand-light"
                     >
@@ -1872,7 +1941,7 @@ export default function FamilyWizard({
             <button
               type="button"
               className="btn-outline py-2!"
-              onClick={() => setMembers([...members, withHouseholdContact({ ...emptyMember }, members)])}
+              onClick={() => setMembers((prev) => [...prev, withHouseholdContact({ ...emptyMember }, prev)])}
             >
               + Add someone new
             </button>
@@ -1970,11 +2039,11 @@ export default function FamilyWizard({
                             }))}
                           value={m.caregiverKey}
                           onChange={(v) =>
-                            setMembers(members.map((x, j) => (j === i ? { ...x, caregiverKey: v } : x)))
+                            setMembers((prev) => prev.map((x, j) => (j === i ? { ...x, caregiverKey: v } : x)))
                           }
                           phone={m.caregiverPhone}
                           onPhone={(v) =>
-                            setMembers(members.map((x, j) => (j === i ? { ...x, caregiverPhone: v } : x)))
+                            setMembers((prev) => prev.map((x, j) => (j === i ? { ...x, caregiverPhone: v } : x)))
                           }
                           idPrefix={`p${i}-`}
                         />
@@ -2198,7 +2267,13 @@ export default function FamilyWizard({
 
       {/* The running total and the way out, pinned to the bottom of the
           viewport so a long scroll never hides either. */}
-      <div className="sticky bottom-0 z-20 -mx-4 sm:mx-0 border-t border-neutral-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] sm:rounded-lg sm:border">
+      {/* Below sm (12 Nov 2026): hidden while a box has focus, one short row,
+          the list behind "N things left". From sm up it is as it was. */}
+      <div
+        className={`sticky bottom-0 z-20 -mx-4 sm:mx-0 border-t border-neutral-200 bg-white/95 backdrop-blur-sm px-4 py-2 sm:py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] sm:rounded-lg sm:border ${
+          typing ? 'max-sm:hidden' : ''
+        }`}
+      >
         {/* The ONLY copy of this message (25 Aug). It lives here because this
             is where the person is looking when they press the button; the
             standalone copy that used to sit above showed the same sentence
@@ -2206,11 +2281,12 @@ export default function FamilyWizard({
         {shownError && (
           <p
             role="alert"
-            className="mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+            className="mb-2 sm:mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
           >
-            {shownError}
+            {/* Two lines at most on a phone; the button goes to the whole story. */}
+            <span className="max-sm:line-clamp-2">{shownError}</span>
             {errorAt && (
-              <button type="button" onClick={goToError} className="ml-2 font-semibold underline">
+              <button type="button" onClick={goToError} className="max-sm:mt-1 max-sm:block sm:ml-2 font-semibold underline">
                 {errorAt.card === 'support' && errorAt.personName
                   ? `Open ${errorAt.personName}’s support and medical details`
                   : `Go to “${CARD_TITLE[errorAt.card] ?? 'that section'}”`}
@@ -2218,52 +2294,74 @@ export default function FamilyWizard({
             )}
           </p>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-bold">
+        <div className="flex items-center justify-between gap-2 sm:flex-wrap sm:gap-3">
+          <div className="min-w-0">
+            <p className="font-bold max-sm:text-sm">
               {namedCount === 0
                 ? 'No one added yet'
                 : `${namedCount} ${namedCount === 1 ? 'person' : 'people'} · ${money(total)}`}
             </p>
-            <p className="text-xs text-neutral-500">
+            <p className="hidden text-xs text-neutral-500 sm:block">
               {week ? fmtWeek(week) : 'Choose a session above'} · you pay from your
               dashboard afterwards
             </p>
             {/* What each card still needs, said here, each a way to it
                 (Lawrence, 4 Nov 2026: "1 card needs something" meant
-                scrolling up to find out what). */}
+                scrolling up to find out what). On a phone it folds behind
+                "N things left" (12 Nov 2026). */}
             {namedCount > 0 && needing.length > 0 && (
-              <ul className="mt-1 space-y-0.5">
-                {needing.map((k) => (
-                  <li key={k}>
-                    <button
-                      type="button"
-                      className="text-left text-xs font-semibold text-amber-700 underline"
-                      onClick={() => showNeeding(k)}
-                    >
-                      {CARD_TITLE[k]}: {needs[k].map((x) => x.chip).join(', ')}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <button
+                  type="button"
+                  className="text-left text-xs font-semibold text-amber-700 underline sm:hidden"
+                  aria-expanded={barListOpen}
+                  aria-controls="fw-bar-left"
+                  onClick={() => setBarListOpen((o) => !o)}
+                >
+                  {thingsLeft} {thingsLeft === 1 ? 'thing' : 'things'} left
+                </button>
+                <ul id="fw-bar-left" className={`mt-1 space-y-0.5 ${barListOpen ? '' : 'max-sm:hidden'}`}>
+                  {needing.map((k) => (
+                    <li key={k}>
+                      <button
+                        type="button"
+                        className="text-left text-xs font-semibold text-amber-700 underline"
+                        onClick={() => {
+                          setBarListOpen(false);
+                          showNeeding(k);
+                        }}
+                      >
+                        {CARD_TITLE[k]}: {needs[k].map((x) => x.chip).join(', ')}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4">
             <Link
               href="/account/dashboard/"
               title="Leave without saving changes"
-              className="text-neutral-500 font-semibold hover:text-neutral-700 hover:underline"
+              className="text-neutral-500 font-semibold hover:text-neutral-700 hover:underline max-sm:text-sm"
             >
               Cancel
             </Link>
             <button
               type="button"
-              className="btn-gold py-2! disabled:opacity-50"
+              className="btn-gold py-2! disabled:opacity-50 max-sm:px-4! max-sm:text-sm"
               disabled={busy || namedCount === 0}
               title={namedCount === 0 ? 'Add at least one person first' : undefined}
               onClick={handleSubmit}
             >
-              {busy ? 'Saving…' : isUpdate ? 'Update Registration' : 'Submit Registration'}
+              {busy ? (
+                'Saving…'
+              ) : (
+                <>
+                  <span className="sm:hidden">{isUpdate ? 'Update' : 'Submit'}</span>
+                  <span className="max-sm:hidden">{isUpdate ? 'Update Registration' : 'Submit Registration'}</span>
+                </>
+              )}
             </button>
           </div>
         </div>
