@@ -132,7 +132,7 @@ export async function prepareVolunteerBadgeBatch(personIds) {
           refused.push({
             personId: r.personId,
             name: r.name,
-            why: 'VolunteerBadge already has this email address for someone else. Give them their own email on their details page first.',
+            why: 'VolunteerBadge already has this email address under a different first name (or none). Check the person there, or give them their own email on their details page.',
           });
         } else {
           sendable.push(r);

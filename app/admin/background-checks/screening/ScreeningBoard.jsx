@@ -7,6 +7,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import StatusMark from '@/components/StatusMark';
+import CreditLine from '../CreditLine';
 import { dayInMorristown, whenInMorristown } from '@/lib/events';
 import {
   prepareVolunteerBadgeBatch,
@@ -252,21 +253,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       )}
       {mode === 'live' && !connectionProblem && (
         <p className="text-sm text-neutral-600">
-          Connected to VolunteerBadge
-          {credits != null ? (
-            <>
-              {' '}· <strong>{credits}</strong> {credits === 1 ? 'credit' : 'credits'}
-              {outstanding > 0 && (
-                <>
-                  {' '}· {outstanding} {outstanding === 1 ? 'invite' : 'invites'} out, not yet charged ·{' '}
-                  <strong>{free}</strong> free
-                </>
-              )}
-            </>
-          ) : (
-            ' · credit balance unknown'
-          )}
-          .
+          Connected to VolunteerBadge. <CreditLine mode={mode} credits={credits} outstanding={outstanding} />
         </p>
       )}
 
@@ -327,6 +314,14 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                         ? ` · last invite ${dayInMorristown(c.lastVb.sentAt)}: ${VB_WORDS[c.lastVb.status][1].toLowerCase()}`
                         : ''}
                     </span>
+                    {c.alreadyInVb && (
+                    <span className="mt-0.5 block text-xs font-semibold text-amber-800">
+                      Already in VolunteerBadge
+                      {typeof c.alreadyInVb === 'string' ? ` since ${dayInMorristown(c.alreadyInVb)}` : ''}. Look there
+                      first: if a check has already run, record it by hand on their Volunteers entry instead of
+                      sending (that would use a second credit).
+                    </span>
+                  )}
                   </label>
                 </li>
               ))}
@@ -371,6 +366,14 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                   <strong>{c.name}</strong>
                   {c.reason ? ` (${c.reason === 'never checked' ? 'no check on file' : `check ${c.reason}`})` : ''}:{' '}
                   {c.blockedBecause}
+                  {c.alreadyInVb && (
+                    <span className="mt-0.5 block text-xs font-semibold text-amber-800">
+                      Already in VolunteerBadge
+                      {typeof c.alreadyInVb === 'string' ? ` since ${dayInMorristown(c.alreadyInVb)}` : ''}. Look there
+                      first: if a check has already run, record it by hand on their Volunteers entry instead of
+                      sending (that would use a second credit).
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

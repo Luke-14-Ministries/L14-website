@@ -4565,3 +4565,11 @@ Background Checks to `/admin/background-checks/` and Background screening to
 links and the Review card's old links still land. The VolunteerBadge balance and invites already out
 now show on Background Checks too, and its button reads **Choose who to invite →**, with a line saying
 the next page lists who is due and nothing is sent until Send is pressed there.
+- **Records already in VolunteerBadge** (13 Nov 2026: Lawrence's test check and Ellen's submitted
+  application were made in VB's dashboard). The site never pulls in a check it didn't ask for: matching
+  needs an invite sent from here and a check started after it. Background screening now says, beside
+  anyone due whose address VB already holds under the same first name, to look there first and, if a
+  check has run, record it by hand on their Volunteers entry instead of sending (a second credit).
+  Background Checks has a **Record by hand** link per volunteer that opens that record; on Volunteers the
+  background-check pill opens it. The balance reads "One check uses one credit. We have N credits",
+  coloured, with a link to VolunteerBadge to buy more.

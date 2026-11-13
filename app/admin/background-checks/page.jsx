@@ -33,6 +33,7 @@ import CheckLengthForm from './CheckLengthForm';
 import RegistrySearchForm from './RegistrySearchForm';
 import RegistryQueue from './RegistryQueue';
 import CheckCard from './CheckCard';
+import CreditLine from './CreditLine';
 
 export const metadata = { title: 'Background Checks' };
 
@@ -365,21 +366,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
             <h3 className="font-bold">How to run a check</h3>
             {/* The VolunteerBadge balance, in view before anyone is ready. */}
             <p className="mt-1 text-sm text-neutral-700">
-              {vbMode === 'off' ? (
-                <>VolunteerBadge isn&rsquo;t connected yet.</>
-              ) : vbProblem ? (
-                <span className="text-red-800">{vbProblem}</span>
-              ) : (
-                <>
-                  VolunteerBadge{vbMode === 'test' ? ' (test mode)' : ''}:{' '}
-                  <strong>
-                    {vbCredits == null ? 'balance unknown' : `${vbCredits} ${vbCredits === 1 ? 'credit' : 'credits'}`}
-                  </strong>
-                  {vbOutstanding > 0 &&
-                    `, ${vbOutstanding} ${vbOutstanding === 1 ? 'invite' : 'invites'} out and not yet charged`}
-                  . Each check uses one credit; buy them in VolunteerBadge.
-                </>
-              )}
+              <CreditLine mode={vbMode} credits={vbCredits} outstanding={vbOutstanding} problem={vbProblem} />
             </p>
             <p className="mt-2 text-sm text-neutral-700">
               {readyToInvite > 0
@@ -387,11 +374,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
                 : 'No volunteer needs a check right now'}
               {heldCount > 0 ? ` (${heldCount} more waiting on a deposit)` : ''}. The next page lists them:
               you choose who to invite and see the credits it will use. Nothing is sent until you press
-              Send there. To enter a check by hand, use the{' '}
-              <Link href="/admin/volunteers/" className="font-semibold text-brand underline">
-                Volunteers page
-              </Link>
-              .
+              Send there. A check done another way (on paper, or straight in VolunteerBadge) is recorded
+              by hand: use <strong>Record by hand</strong> beside the person below.
             </p>
             <Link href="/admin/background-checks/screening/" className="btn-primary mt-3 inline-block py-2!">
               Choose who to invite →
@@ -429,6 +413,14 @@ export default async function BackgroundChecksPage({ searchParams }) {
                     <tr key={x.id} className="border-b border-neutral-100 align-top">
                       <td className="py-2 pr-3">
                         <PersonLink row={x} />
+                        {/* Straight to this person's check record on Volunteers
+                            (Lawrence, 13 Nov 2026), opened and scrolled to. */}
+                        <Link
+                          href={`/admin/volunteers/#check-${x.id}`}
+                          className="ml-2 whitespace-nowrap text-xs text-brand underline"
+                        >
+                          Record by hand
+                        </Link>
                       </td>
                       <td className="py-2 pr-3 text-neutral-600">{x.events.join(' · ')}</td>
                       <td className="py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>

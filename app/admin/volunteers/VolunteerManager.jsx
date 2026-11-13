@@ -236,17 +236,42 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
   // among thirty others is barely better than not linking at all, so the
   // target opens itself and says which one it is.
   const anchorId = `v-${row.participantId}`;
+  // The background check record inside the opened row. #check-<person id>
+  // (Background Checks' "Record by hand", 13 Nov 2026) opens the row and goes
+  // straight to it; so does pressing the background-check pill.
+  const checkId = `check-${anchorId}`;
+  const personId = row.person?.id;
+  const goToCheck = () => {
+    setOpen(true);
+    // A timer, not requestAnimationFrame: a background tab never runs that.
+    setTimeout(() => {
+      const el = document.getElementById(checkId);
+      if (!el) return;
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      el.focus({ preventScroll: true });
+    }, 0);
+  };
   const [linked, setLinked] = useState(false);
   useEffect(() => {
     const check = () => {
       const hit = window.location.hash === `#${anchorId}`;
-      setLinked(hit);
+      const toCheck = Boolean(personId) && window.location.hash === `#check-${personId}`;
+      setLinked(hit || toCheck);
       if (hit) setOpen(true);
+      if (toCheck) {
+        setOpen(true);
+        setTimeout(() => {
+          const el = document.getElementById(checkId);
+          if (!el) return;
+          el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          el.focus({ preventScroll: true });
+        }, 0);
+      }
     };
     check();
     window.addEventListener('hashchange', check);
     return () => window.removeEventListener('hashchange', check);
-  }, [anchorId]);
+  }, [anchorId, checkId, personId]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const { person, household, app, clearance } = row;
@@ -374,9 +399,22 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
               verdict -- from clearance_status (0091). Until 15 Oct this read
               "hidden" without the grant; the grant still gates the record
               itself (dates, Checkr's words, the log), not the pill. */}
-          <span title={pill.title} className={`rounded-full px-2.5 py-0.5 font-semibold ${pill.cls}`}>
-            {pill.text}
-          </span>
+          {maySeeChecks ? (
+            // Opens the row at the background check record (Lawrence, 13 Nov
+            // 2026: the pill looked like the place to start, and wasn't).
+            <button
+              type="button"
+              onClick={goToCheck}
+              title={`${pill.title} Open the background check record.`}
+              className={`rounded-full px-2.5 py-0.5 font-semibold hover:underline ${pill.cls}`}
+            >
+              {pill.text} <span aria-hidden>▸</span>
+            </button>
+          ) : (
+            <span title={pill.title} className={`rounded-full px-2.5 py-0.5 font-semibold ${pill.cls}`}>
+              {pill.text}
+            </span>
+          )}
         </span>
       </div>
 
@@ -509,17 +547,19 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
           {error && <p className="mt-2 text-red-700 text-sm">{error}</p>}
 
           {maySeeChecks ? (
-            <ClearanceEditor
-              personId={person?.id}
-              clearance={clearance}
-              vb={row.vb}
-              email={person?.email || household?.email}
-            />
+            <div id={checkId} tabIndex={-1} className="scroll-mt-4 outline-none">
+              <ClearanceEditor
+                personId={person?.id}
+                clearance={clearance}
+                vb={row.vb}
+                email={person?.email || household?.email}
+              />
+            </div>
           ) : (
             <p className="mt-4 rounded-sm border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
-              You can see the pill above: on file, current, and the verdict. Administrators keep the
-              full record (dates, Checkr&rsquo;s result, who decided). Ask one if something looks
-              wrong.
+              You can see the pill above: on file, current, and the verdict. Staff with Background
+              checks access keep the full record (dates, the result, who decided). Ask one if something
+              looks wrong.
             </p>
           )}
         </div>
@@ -574,9 +614,10 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Everyone registered as a Volunteer, with their application and background check status.
-        The paperwork is kept in the restricted SharePoint folder. Administrators keep the record
-        here: ordering checks from Checkr, importing results, the check date and the verdict. Other
-        staff see whether a check is on file, whether it&rsquo;s current, and the verdict.
+        The paperwork is kept in the restricted SharePoint folder. With Background checks access,
+        press a person&rsquo;s background check pill to record a check done by hand (its date and the
+        verdict); invites go out through VolunteerBadge from Background Checks. Other staff see
+        whether a check is on file, whether it&rsquo;s current, and the verdict.
       </p>
 
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
