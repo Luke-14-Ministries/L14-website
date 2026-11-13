@@ -23,9 +23,9 @@ skipped, because nothing in the site changed — `scripts/vercel-ignore.sh` carr
 because that is how a changed environment variable reaches the site. Vercel keeps
 every build's output for a while so it can roll back, and a documentation edit does not need one.
 
-The preview serves at <https://luke14-ministries.vercel.app>. The ministry's own
-domain, `luke14ministries.net`, still points at the ministry's existing Squarespace site and will keep
-doing so until the board approves the switch.
+The site serves at <https://luke14ministries.net> (since 12 November 2026), so **a push to `main`
+reaches families within minutes.** The old preview address, <https://luke14-ministries.vercel.app>,
+serves the same deployment until it is redirected to the real domain (DO-THIS-NEXT C8).
 
 **If you find a note anywhere describing this site as a "static export," it predates
 5 August 2026.** Until then the site was compiled to plain HTML files and published by
@@ -234,9 +234,9 @@ mismatch, not work: `git diff --ignore-cr-at-eol --stat` shows what actually cha
 your browser may not ask for it. After a deploy, use `Ctrl+F5` or a private window
 before concluding a change did not land.
 
-**The preview banner is deliberate.** `components/PreviewBanner.jsx` marks every page
-as a test build so camp administrators are not confused by it. It comes out of
-`app/layout.jsx` only when the board approves going live on the ministry's domain.
+**There is no preview banner any more.** `components/PreviewBanner.jsx` and the noindex settings
+came out together at go-live (12 Nov 2026, C9, `dc36479`). Do not add either back to the live site;
+the planned test site (DO-THIS-NEXT Stage D) needs its own, set for that deployment only.
 
 ---
 

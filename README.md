@@ -1,10 +1,10 @@
-# Luke 14 Ministries — website and registration platform (preview)
+# Luke 14 Ministries — website and registration platform
 
-The ministry's public website (a rebuild of [luke14ministries.net](https://luke14ministries.net))
-and its own camp registration, family-account, giving and staff-admin platform. Every page shows a
-red **PREVIEW / TEST BUILD** banner until launch, so nobody mistakes it for the official site.
+The ministry's public website and its own camp registration, family-account, giving and
+staff-admin platform. It replaced the Squarespace site at luke14ministries.net on 12 November 2026.
 
-**Live preview:** <https://luke14-ministries.vercel.app>
+**Live site:** <https://luke14ministries.net> (the old preview address,
+<https://luke14-ministries.vercel.app>, serves the same deployment until it is redirected there).
 
 ## Run locally
 
@@ -67,16 +67,15 @@ automatic reminder emails (`0138`) and the prayer email list. Migrations run thr
 
 **Payments:** Stripe's nonprofit rate (2.2% + 30¢ on domestic cards) was granted account-wide on
 18 August 2026 — registration included; it holds while at least 80% of the account's volume is
-gifts, so giving stays on the same account (`DECISIONS.md`, 2026-08-18). Test keys only until launch.
+gifts, so giving stays on the same account (`DECISIONS.md`, 2026-08-18). Live keys in Production
+since 29 Oct 2026; Preview deployments use test keys.
 
-**Before launch (Phase 4, in three sittings; board approval required for the last two):** Stage A
-(done 28 Oct 2026: server keys, Stripe live mode prepared with its **three** live webhook endpoints,
-the Cloudflare copy of the domain); then purge all test data and a security audit; Stage B, live
-Stripe keys with staff-only real payments at the preview address; Stage C, the domain pointed and
-transferred to Cloudflare, and all four preview switches reversed together —
-`components/PreviewBanner.jsx`, `public/robots.txt`, the `robots: { index: false }` block in
-`app/layout.jsx`, and the "(Preview Build)" title suffix. Missing one fails silently. Vercel is on
-Pro since 20 Oct 2026. The steps are DO-THIS-NEXT *Go live*.
+**Launch (Phase 4, in three sittings, board-approved 29 Oct 2026):** Stage A, 28 Oct (server keys,
+Stripe live mode prepared, the Cloudflare copy of the domain); the purge and a security audit,
+29 Oct; Stage B, live Stripe keys, 29 Oct – 4 Nov; **Stage C, the domain pointed at this site,
+12 Nov 2026**, with the preview banner, the noindex settings and the "(Preview Build)" title suffix
+removed together (`dc36479`). The transfer to Cloudflare Registrar and the after-checks are in
+DO-THIS-NEXT *Go live*. Vercel is on Pro since 20 Oct 2026.
 
 **Where to read more:** `CLAUDE.md` (the standing brief — what is true now and what not to break),
 `DECISIONS.md` (why), `CONTRIBUTING.md` (how to work), `supabase/PAYMENT-PLANS-SETUP.md`. The

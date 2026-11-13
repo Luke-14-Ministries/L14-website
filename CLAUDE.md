@@ -28,14 +28,16 @@ Two constraints shape every decision:
 
 ---
 
-## Where things stand — 4 November 2026
+## Where things stand — 12 November 2026
 
-**Phase 3 done; Stage B done (29 Oct – 4 Nov):** the preview site takes real money on Stripe's live
-keys, and every real-money test passed (DO-THIS-NEXT B4). Stage A and the gate G1–G4 were done
-28–29 Oct. **`REMINDERS_MODE=live`** since 4 Nov, ahead of Stage C, and `0148` made the automatic
-emails able to run at all. **Next: Stage C, the address**, held only by DO-THIS-NEXT **H1–H3**
-(Larry and Ellen check next summer's camp on Setup; the alpha testers register for real; one whole
-registration on a phone). **Testing Script 7** (SharePoint, `01 Plans and Decisions`) holds the
+**Live at <https://luke14ministries.net> since the evening of 12 Nov 2026 (Stage C).** The
+nameservers moved to Cloudflare, Supabase's Site URL and `SITE_URL` (Vercel Production and the
+function secrets) name the real domain, and the four preview switches were reversed together
+(`dc36479`). Stripe has been live since 29 Oct (Stage B) and `REMINDERS_MODE=live` since 4 Nov.
+**A push to `main` now reaches families within minutes.** Left of Stage C: C6's email check, C7 the
+transfer to Cloudflare Registrar, C10 the phone checks, C11 the records, and a few days after C10 a
+308 redirect from `luke14-ministries.vercel.app` to the real domain. H3 (a card payment on a phone)
+was still open at the swap and is still worth doing. **Testing Script 7** (SharePoint, `01 Plans and Decisions`) holds the
 checks for after go-live. The working checklist is `DO-THIS-NEXT.md` (its *Go live* section, A1–C11);
 open policy questions are in `Luke14-Staff-Questions.md` §1.
 
@@ -96,10 +98,10 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
    a refund, a check and a plan by staff (B4). The three live endpoints already exist (A2); a missed
    refund webhook fails silently (migration `0054`). Stripe payouts are automatic, daily, no minimum
    balance (W44, 20 Oct).
-6. **Stage C — the address**, one DNS session with a second person watching: nameservers to
-   Cloudflare (C5), the transfer to Cloudflare Registrar (C7), Site URL and `SITE_URL` and
-   `REMINDERS_MODE=live` (C8), the four preview switches reversed together and **the 2026 Retreat
-   archived on Setup** (C9), a phone check (C10), the records (C11). Then Microsoft DKIM signing on.
+6. **Stage C — the address** — *done 12 Nov 2026*: C2–C5 (nameservers to Cloudflare at 8:32 PM ET),
+   C8 (Site URL and `SITE_URL`), C9 (`dc36479`; the 2026 Retreat was archived 2 Nov). **Left:** C6's
+   email check, C7 the transfer to Cloudflare Registrar, C10 a phone check, C11 the records, then
+   the preview-address redirect and Microsoft DKIM signing on.
 
 ---
 
@@ -493,29 +495,32 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
 - **`NEXT_PUBLIC_BASE_PATH` must stay unset on Vercel.** Setting it breaks every link and image and
   looks like a CSS problem. `asset()` in `lib/site.js` still reads it and returns paths unchanged —
   known dead weight in 16 files, not a bug to fix.
-- **The site is deliberately hidden from search engines — do not "fix" this.** Four switches:
-  `public/robots.txt` (`Disallow: /`); `app/layout.jsx` `robots: { index: false, follow: false }`;
-  the `"(Preview Build)"` title suffix in `app/layout.jsx`; `components/PreviewBanner.jsx`.
-  **All four are reversed together in Phase 4, at launch, and only with board approval.** One early
-  publishes a mock-up; one forgotten fails silently for months. Treat them as one checklist item.
+- **Search engines are welcome since 12 Nov 2026 (C9, `dc36479`).** `public/robots.txt` allows `/`
+  and keeps `/admin/`, `/account/`, `/auth/` and `/api/` out; `app/layout.jsx` has no `robots`
+  noindex and no `"(Preview Build)"` title suffix; `components/PreviewBanner.jsx` is deleted. Do not
+  bring any of them back on the live site. The planned test site (DO-THIS-NEXT Stage D) needs its own
+  noindex and banner, set for that deployment only.
 
-### What is in DNS *(verified 28 October 2026)*
+### What is in DNS *(verified 12 November 2026)*
 
 `luke14ministries.net`:
 
-- **Nameservers: eight** — four NSONE and four Squarespace (`ns01`–`ns04.squarespacedns.com`); C5
-  deletes all eight and sets Cloudflare's two (`christina` and `jakub.ns.cloudflare.com`). The public
-  site is **Squarespace, not WordPress** (older documents are wrong). **DNSSEC is off** (no DS record),
-  so nothing blocks the nameserver change.
-- **The Cloudflare copy of the zone exists** (A5, 28 Oct): the zone is added on the Free plan, pending,
-  every record DNS only, checked record for record against the live zone. It also holds two records the
-  live zone does not: Microsoft 365's DKIM CNAMEs `selector1._domainkey` and `selector2._domainkey`
-  (A7); signing is switched on only after C6.
+- **Nameservers: Cloudflare's two** (`christina` and `jakub.ns.cloudflare.com`) since 12 Nov 2026,
+  8:32 PM ET. The zone is managed in Cloudflare (Free plan, the admin@ account), **every record DNS
+  only** (grey cloud): orange-clouding a record in front of Vercel breaks its certificates.
+  **DNSSEC is off.**
+- **The website:** `@` A `216.150.1.1` and `www` CNAME `782fe78bad88eaba.vercel-dns-017.com`, the
+  values Vercel gave. In Vercel, the bare domain is the Production domain and `www` 308-redirects to
+  it. The Squarespace site is retired from the address (it stays in the Squarespace account until that
+  plan ends).
+- **Microsoft 365's DKIM CNAMEs** `selector1._domainkey` and `selector2._domainkey` are in the zone
+  (A7); signing in Microsoft 365 is switched on only after C6's email check.
 - **Microsoft 365 also has `autodiscover`, `lyncdiscover` and `sip` CNAMEs** (Outlook and Teams
   sign-in); keep them.
-- **The registrar is Squarespace until launch day**, when the domain transfers to Cloudflare
-  Registrar in the same DNS session that points it at Vercel. Until then nobody edits the registrant
-  contact at Squarespace (60-day transfer lock). Steps: DO-THIS-NEXT *Go live*, stage C.
+- **The registrar is still Squarespace** until the transfer to Cloudflare Registrar (C7) completes.
+  The registrant contact is a personal email address, not the ministry's (DO-THIS-NEXT has who), so
+  the transfer's approval may go there. Change the registrant to the ministry (admin@) only after the
+  transfer: a registrant change can lock the domain against transfer for 60 days.
 - **Mail is Microsoft 365** — MX `luke14ministries-net.mail.protection.outlook.com`, plus an `MS=`
   verification token.
 - **SPF is `v=spf1 include:spf.protection.outlook.com ~all`** — a *soft* fail (`~all`, seen 28 Oct 2026; it was `-all` on 7 Aug). Adding a sender means
@@ -534,8 +539,8 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   comment, not "temporarily." Keys live in Vercel's environment variables plus the shared
   password vault. `.env.local` is gitignored; `.env.example` is the committed template and
   contains names only, never values.
-- **Test keys only until launch.** Fake money, throwaway data. Live Stripe keys appear once, at
-  go-live, and only in Vercel's environment settings.
+- **Live Stripe keys live only in Vercel Production and the Supabase function secrets** (since
+  29 Oct 2026). Preview deployments and local work use test keys and fake money.
 - **The Supabase `service_role` / secret key bypasses row-level security entirely.** It never
   goes in the browser, in this repository, in SharePoint, or in a chat transcript. Server-side
   only, from an environment variable, and only where genuinely required. **The site uses it through one
@@ -583,9 +588,9 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
 - **Ownership is the ministry's, not a person's.** Production accounts are created under
   `admin@luke14ministries.net`. Never bind a ministry account to a personal GitHub login, and
   never add `admin@` as a verified email on a personal GitHub account.
-- **Do not point the domain.** `luke14ministries.net` serves the ministry's **Squarespace** site;
-  pointing it retires that site — a board decision, Phase 4, and on that day the registration moves
-  to Cloudflare in the same session (DO-THIS-NEXT *Go live*, stage C).
+- **The domain is live (12 Nov 2026).** Any DNS change now changes the live site or the ministry's
+  email. Make it in Cloudflare, DNS only, with someone watching, never as the last task of a session,
+  and keep the mail records exactly as *What is in DNS* lists them.
 - **Record decisions in `DECISIONS.md`** — one short entry per real choice, written when it is made,
   newest at the bottom. Dated narrative goes there, not here.
 - **Check this file's numbers before trusting them, and fix any that are wrong in the same
@@ -626,11 +631,13 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
 - **Phase 0** — accounts, ownership, vault, register, governance. Done except printed recovery codes.
 - **Phases 1–2** — the core (schema with RLS, sign-up, wizard, Stripe test mode) and the full staff
   admin. **Complete.**
-- **Phase 3 — now.** Review by real people on the preview URL. Test keys, no real families.
+- **Phase 3** — review by real people on the preview URL. Done October 2026.
 - **Phase 4 — launch, in three sittings** (DO-THIS-NEXT *Go live*). Stage A (ready ahead) done
-  28 Oct; the gate G1–G4; Stage B live Stripe keys with staff-only real payments at the preview
-  address; Stage C the domain pointed and transferred, all four preview switches reversed together.
-  Board approval for B and C: given by Larry, 29 Oct 2026 (`DECISIONS.md`). (Vercel Pro: done 20 Oct.)
+  28 Oct; the gate G1–G4 29 Oct; Stage B live Stripe keys 29 Oct – 4 Nov; **Stage C, the domain,
+  12 Nov 2026** (the transfer and the after-checks still open). Board approval for B and C: given by
+  Larry, 29 Oct 2026 (`DECISIONS.md`). (Vercel Pro: done 20 Oct.)
+- **Now: live.** Small fixes go straight to `main` and reach families in minutes; medium and large
+  changes are meant to go through the test site first (DO-THIS-NEXT Stage D, once C has settled).
 
 ---
 
