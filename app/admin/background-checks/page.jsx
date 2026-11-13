@@ -26,7 +26,9 @@ import { todayInMorristown } from '@/lib/events';
 import { depositInByPerson } from '@/lib/screeningDeposit';
 import { loadScreeningPeople, registryBucket, volunteerBucket, fullCheckCurrent } from '@/lib/backgroundChecks';
 import { latestVbRequests } from '@/lib/screeningCandidates';
-import { volunteerBadgeMode } from '@/lib/volunteerBadge';
+import { volunteerBadge, volunteerBadgeMode } from '@/lib/volunteerBadge';
+import { VolunteerBadgeError } from '@/lib/volunteerBadgeApi';
+import { creditPicture } from '@/lib/volunteerBadgeCredits';
 import CheckLengthForm from './CheckLengthForm';
 import RegistrySearchForm from './RegistrySearchForm';
 import RegistryQueue from './RegistryQueue';
@@ -35,7 +37,7 @@ import CheckCard from './CheckCard';
 export const metadata = { title: 'Background Checks' };
 
 const SOON_DAYS = 60;
-const BASE = '/admin/volunteers/background-checks/';
+const BASE = '/admin/background-checks/';
 
 const VOLUNTEER_FILTERS = [
   { key: '', label: 'All' },
@@ -262,6 +264,24 @@ export default async function BackgroundChecksPage({ searchParams }) {
         .sort((a, b) => a.name.localeCompare(b.name))
     : [];
 
+  // ---- VolunteerBadge, shown here as well as on Background screening
+  // (Lawrence, 13 Nov 2026: the balance should be in view before anyone is
+  // ready to send). Asked of VB each time; a failure is said, not hidden.
+  const vbMode = volunteerBadgeMode();
+  let vbCredits = null;
+  let vbOutstanding = 0;
+  let vbProblem = null;
+  if (vbMode !== 'off') {
+    try {
+      ({ credits: vbCredits, outstanding: vbOutstanding } = await creditPicture(supabase, volunteerBadge()));
+    } catch (err) {
+      vbProblem = err instanceof VolunteerBadgeError ? err.message : err?.message ?? 'VolunteerBadge couldn’t be reached.';
+    }
+  }
+  // Who an invite would go to now: no check, or one out of date, deposit in.
+  const readyToInvite = volunteerRows.filter((x) => (x.bucket === 'missing' || x.bucket === 'expired') && !x.heldForDeposit).length;
+  const heldCount = volunteerRows.filter((x) => x.heldForDeposit).length;
+
   // ---- What each folded header says (Lawrence, 11 Nov 2026) ----
   // In the same tones as the status pills (CHECK_TONE). Read here, not at
   // module level, so the import order of lib/format.js never matters.
@@ -343,16 +363,38 @@ export default async function BackgroundChecksPage({ searchParams }) {
         <div className="grid gap-4 md:grid-cols-2">
           <div className={HOW_TO_BOX}>
             <h3 className="font-bold">How to run a check</h3>
+            {/* The VolunteerBadge balance, in view before anyone is ready. */}
             <p className="mt-1 text-sm text-neutral-700">
-              <strong>Send checks</strong> sends VolunteerBadge invites and brings the results
-              back in. To enter a check by hand, use the{' '}
+              {vbMode === 'off' ? (
+                <>VolunteerBadge isn&rsquo;t connected yet.</>
+              ) : vbProblem ? (
+                <span className="text-red-800">{vbProblem}</span>
+              ) : (
+                <>
+                  VolunteerBadge{vbMode === 'test' ? ' (test mode)' : ''}:{' '}
+                  <strong>
+                    {vbCredits == null ? 'balance unknown' : `${vbCredits} ${vbCredits === 1 ? 'credit' : 'credits'}`}
+                  </strong>
+                  {vbOutstanding > 0 &&
+                    `, ${vbOutstanding} ${vbOutstanding === 1 ? 'invite' : 'invites'} out and not yet charged`}
+                  . Each check uses one credit; buy them in VolunteerBadge.
+                </>
+              )}
+            </p>
+            <p className="mt-2 text-sm text-neutral-700">
+              {readyToInvite > 0
+                ? `${readyToInvite} ${readyToInvite === 1 ? 'volunteer needs' : 'volunteers need'} a check now`
+                : 'No volunteer needs a check right now'}
+              {heldCount > 0 ? ` (${heldCount} more waiting on a deposit)` : ''}. The next page lists them:
+              you choose who to invite and see the credits it will use. Nothing is sent until you press
+              Send there. To enter a check by hand, use the{' '}
               <Link href="/admin/volunteers/" className="font-semibold text-brand underline">
                 Volunteers page
               </Link>
               .
             </p>
-            <Link href="/admin/volunteers/screening/" className="btn-primary mt-3 inline-block py-2!">
-              Send checks
+            <Link href="/admin/background-checks/screening/" className="btn-primary mt-3 inline-block py-2!">
+              Choose who to invite →
             </Link>
           </div>
           <CheckLengthForm months={months} onFile={onFileCount ?? 0} canEdit={canWrite} />
@@ -403,7 +445,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
                           )}
                           {x.bucket === 'decision' && (x.vbStatus === 'clear' || x.vbStatus === 'consider') && (
                             <Link
-                              href="/admin/volunteers/screening/"
+                              href="/admin/background-checks/screening/"
                               className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold underline ${x.vbStatus === 'clear' ? CHECK_TONE.done : CHECK_TONE.hold}`}
                             >
                               {x.vbStatus === 'clear' ? 'VolunteerBadge: clear, confirm it' : 'VolunteerBadge: needs review'}

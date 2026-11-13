@@ -51,6 +51,10 @@ const SECURITY_HEADERS = [
 // with `next start`, 28 Oct). Destinations end in a slash so there is no
 // third. The /s/*.pdf sources are files, which Next leaves slashless: one hop.
 const OLD_PAGES = [
+  // Staff pages moved 13 Nov 2026: Background Checks and Background screening
+  // left /admin/volunteers/ for their own address (it lit Volunteers too).
+  ['/admin/volunteers/background-checks/:path*', '/admin/background-checks/:path*'],
+  ['/admin/volunteers/screening/:path*', '/admin/background-checks/screening/:path*'],
   ['/adultadventureretreat', '/adult-adventure-retreat/'],
   ['/young-adults-adventure', '/adult-adventure-retreat/'],
   ['/general-2', '/volunteer-information/'],

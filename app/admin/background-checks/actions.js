@@ -45,6 +45,7 @@ export async function recordRegistrySearch({ personId, date, result, note }) {
   if (error) return { ok: false, error: withReason('The registry search could not be saved.', error) };
 
   revalidatePath('/admin/volunteers', 'layout');
+  revalidatePath('/admin/background-checks', 'layout');
   revalidatePath('/admin/registrations', 'layout');
   return { ok: true };
 }
@@ -64,5 +65,6 @@ export async function setCheckLength(months) {
   if (error) return { ok: false, error: withReason('The length could not be changed.', error) };
 
   revalidatePath('/admin/volunteers', 'layout');
+  revalidatePath('/admin/background-checks', 'layout');
   return { ok: true, recalculated: data ?? 0 };
 }

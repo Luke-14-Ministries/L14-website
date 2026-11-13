@@ -591,7 +591,7 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   their SSN and date of birth into Checkr's own form, and we receive only pass/fail. It cannot
   leak from us because we never have it. **`0029` was a placeholder and no longer is** — corrected
   30 August, having said "nothing writes them yet" for four days after it stopped being true.
-  `0056`–`0060` built the flow out and `app/admin/volunteers/screening/actions.js` writes
+  `0056`–`0060` built the flow out and `app/admin/background-checks/screening/actions.js` writes
   `person_clearances` today: `provider`, `checkr_status`, `checkr_report_id`,
   `checkr_candidate_id`, `checkr_package`, and a `screening_results` jsonb holding one verdict
   WORD per screening. The guarantee is unchanged and is the reason the file-based flow was chosen

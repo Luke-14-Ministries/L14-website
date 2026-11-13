@@ -44,7 +44,7 @@ const ROLE_INFO = {
 const SECTIONS = [
   // Search is the box in the header, not a sidebar item (Lawrence, 15 Oct
   // 2026); /admin/search is only where a search lands.
-  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/volunteers/background-checks', '/admin/changes'] },
+  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/background-checks', '/admin/changes'] },
   {
     key: 'camp',
     label: 'Camp Week',
@@ -633,7 +633,7 @@ export default async function AdminLayout({ children }) {
               '/admin/programs': unplacedPeople,
               '/admin/activities': waiversToCheck,
               '/admin/my-program': myProgramCount,
-              '/admin/volunteers/background-checks': registrySearchesDue,
+              '/admin/background-checks': registrySearchesDue,
             }}
             badgeTitles={{
               // [one, many]: AdminNav picks by the count.
@@ -647,7 +647,7 @@ export default async function AdminLayout({ children }) {
               '/admin/programs': ['person on a roster with no program yet', 'people on a roster with no program yet'],
               '/admin/activities': ['outside-provider confirmation waiting to be checked', 'outside-provider confirmations waiting to be checked'],
               '/admin/my-program': ['person in your program', 'people in your program'],
-              '/admin/volunteers/background-checks': [
+              '/admin/background-checks': [
                 'adult who isn’t a volunteer with a registry search due',
                 'adults who aren’t volunteers with a registry search due',
               ],

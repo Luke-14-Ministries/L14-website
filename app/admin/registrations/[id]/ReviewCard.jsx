@@ -440,7 +440,7 @@ export default function ReviewCard({
             ))}
           .{' '}
           {canRecordChecks ? (
-            <Link href="/admin/volunteers/background-checks/?r=due#registry" className="font-semibold underline">
+            <Link href="/admin/background-checks/?r=due#registry" className="font-semibold underline">
               Record it on Background Checks
             </Link>
           ) : (

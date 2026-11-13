@@ -34,6 +34,7 @@ export async function reviewVolunteerApplication(participantId, decision, { over
     const res = await setParticipantStatus(part.registration_id, participantId, 'confirmed', { override });
     if (!res.ok) return res;
     revalidatePath('/admin/volunteers');
+    revalidatePath('/admin/background-checks');
     return { ok: true };
   }
 
@@ -56,6 +57,7 @@ export async function reviewVolunteerApplication(participantId, decision, { over
   }
 
   revalidatePath('/admin/volunteers');
+  revalidatePath('/admin/background-checks');
   revalidatePath(`/admin/registrations/${part.registration_id}`);
   return { ok: true };
 }
@@ -111,5 +113,6 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
     return { ok: false, error: error.message || 'Could not save the record.' };
   }
   revalidatePath('/admin/volunteers');
+  revalidatePath('/admin/background-checks');
   return { ok: true };
 }

@@ -44,8 +44,8 @@ async function gate() {
 }
 
 function revalidateScreening() {
-  revalidatePath('/admin/volunteers/screening');
-  revalidatePath('/admin/volunteers/background-checks');
+  revalidatePath('/admin/background-checks/screening');
+  revalidatePath('/admin/background-checks');
   revalidatePath('/admin/volunteers');
 }
 

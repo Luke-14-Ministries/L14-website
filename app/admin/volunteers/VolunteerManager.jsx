@@ -178,7 +178,7 @@ function ScreeningPanel({ clearance, vb, email }) {
   const checkrStatus = clearance?.checkr_status ?? 'not_started';
   const checkrOut = ['invited', 'pending', 'suspended'].includes(checkrStatus);
   const screening = (
-    <Link href="/admin/volunteers/screening/" className="text-brand underline">
+    <Link href="/admin/background-checks/screening/" className="text-brand underline">
       Background screening
     </Link>
   );
@@ -567,7 +567,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
             bulk upload takes a whole list at once -- so it gets its own screen
             rather than a button on every row. */}
         {maySeeChecks && (
-          <Link href="/admin/volunteers/screening" className="btn-outline py-2! shrink-0">
+          <Link href="/admin/background-checks/screening" className="btn-outline py-2! shrink-0">
             Background screening
           </Link>
         )}

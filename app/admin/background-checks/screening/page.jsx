@@ -18,7 +18,7 @@ export const maxDuration = 60;
 // is lib/screeningCandidates.js, shared with the send action.
 export default async function ScreeningPage() {
   const staff = await getStaff();
-  if (!staff) await bounceNonStaff('/admin/volunteers/screening/');
+  if (!staff) await bounceNonStaff('/admin/background-checks/screening/');
   if (!can(staff, 'write:background_checks')) redirect('/admin');
   // Ordering a check is at least as sensitive as reading the result (0058).
   if (!can(staff, 'background_checks')) redirect('/admin/volunteers');
@@ -83,7 +83,7 @@ export default async function ScreeningPage() {
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
         <h1 className="text-xl font-bold">Background Screening</h1>
-        <BackLink href="/admin/volunteers/background-checks" label="Back to Background Checks" />
+        <BackLink href="/admin/background-checks" label="Back to Background Checks" />
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         VolunteerBadge emails each person an invite. They sign the consent and type their own

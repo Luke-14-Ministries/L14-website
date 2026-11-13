@@ -4555,3 +4555,13 @@ to VB's API. The ministry buys credits; staff send invites in batches from Backg
   it back. The credit balance is checked before a batch.
 - With no `VOLUNTEERBADGE_API_KEY`, the screen says "VolunteerBadge isn't connected yet" and nothing
   else changes: dormant on the live site until the live key is added.
+
+## 13 November 2026 — Background Checks gets its own address
+
+Lawrence: on Background Checks the sidebar lit Volunteers as well, because the page lived at
+`/admin/volunteers/background-checks/`. Rather than teach the menu around it, the pages moved:
+Background Checks to `/admin/background-checks/` and Background screening to
+`/admin/background-checks/screening/`. `next.config.mjs` redirects the old addresses (308), so saved
+links and the Review card's old links still land. The VolunteerBadge balance and invites already out
+now show on Background Checks too, and its button reads **Choose who to invite →**, with a line saying
+the next page lists who is due and nothing is sent until Send is pressed there.
