@@ -4573,3 +4573,20 @@ the next page lists who is due and nothing is sent until Send is pressed there.
   Background Checks has a **Record by hand** link per volunteer that opens that record; on Volunteers the
   background-check pill opens it. The balance reads "One check uses one credit. We have N credits",
   coloured, with a link to VolunteerBadge to buy more.
+
+## 13 November 2026 — Adult volunteers give their own email; possible VB matches by name
+
+Lawrence: his own record had no email, so a background-check invite would have gone to the household's
+address while VolunteerBadge holds him at another. Two rules:
+
+- **The registration form asks every adult volunteer for an email of their own** (role Volunteer, 18 or
+  older on the event's first day; an unknown birth date counts as an adult and is asked for first).
+  Volunteer children and 16–17-year-olds aren't asked; neither are adult campers, parents or caregivers
+  (registry searches need no email). Two adult volunteers on one form can't share an address
+  (VolunteerBadge keeps one record per address). The primary contact gets "Use <household email>". The
+  rule is `lib/wizardPeople.js` (`needsOwnEmail`, `ownEmailProblems`), the same in the browser and the
+  server action, which writes `people.email`; a failed write is said on the success card.
+- **Background screening flags a possible match on name**: VolunteerBadge has someone with the same last
+  name (suffixes and punctuation aside) and an agreeing first name at a different email. A note telling
+  staff to look there and, if it is them and a check has run, record it by hand; never a link or a block.
+  Roster last names are now kept from VB for it (a name only; CLAUDE.md's allow-list line says so).

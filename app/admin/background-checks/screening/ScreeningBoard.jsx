@@ -322,6 +322,14 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                       sending (that would use a second credit).
                     </span>
                   )}
+                  {c.possibleVbMatch && (
+                    <span className="mt-0.5 block text-xs font-semibold text-amber-800">
+                      Possible match: VolunteerBadge has someone with this name at a different email
+                      {typeof c.possibleVbMatch === 'string' ? ` (since ${dayInMorristown(c.possibleVbMatch)})` : ''}. Look
+                      in VolunteerBadge to confirm. If it is them and a check has run, record it by hand; if
+                      you send here, VolunteerBadge makes a second record and uses another credit.
+                    </span>
+                  )}
                   </label>
                 </li>
               ))}
@@ -372,6 +380,14 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                       {typeof c.alreadyInVb === 'string' ? ` since ${dayInMorristown(c.alreadyInVb)}` : ''}. Look there
                       first: if a check has already run, record it by hand on their Volunteers entry instead of
                       sending (that would use a second credit).
+                    </span>
+                  )}
+                  {c.possibleVbMatch && (
+                    <span className="mt-0.5 block text-xs font-semibold text-amber-800">
+                      Possible match: VolunteerBadge has someone with this name at a different email
+                      {typeof c.possibleVbMatch === 'string' ? ` (since ${dayInMorristown(c.possibleVbMatch)})` : ''}. Look
+                      in VolunteerBadge to confirm. If it is them and a check has run, record it by hand; if
+                      you send here, VolunteerBadge makes a second record and uses another credit.
                     </span>
                   )}
                 </li>

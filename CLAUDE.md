@@ -580,8 +580,9 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   allow-list the moment it is parsed (`pickVolunteer`, `pickCheck`, `pickRosterRow`), and strips
   report links from everything, so none of it is stored, logged, shown or passed on; it exists only
   in that one function's memory for an instant. Lawrence is asking VB for a slimmer answer; switch
-  to it if offered. Never widen those allow-lists, log a raw VB answer, or put VB's own error text
-  about a person in a message. `volunteerbadge_requests` holds pointers, status words and dates only. What is actually stored has grown: alongside
+  to it if offered. Never widen those allow-lists beyond names (roster last names were added
+  13 Nov 2026 at Lawrence's request, for the possible-match note on Background screening), log a raw
+  VB answer, or put VB's own error text about a person in a message. `volunteerbadge_requests` holds pointers, status words and dates only. What is actually stored has grown: alongside
   `background_check_on_file`, `background_check_date` and `expires_on`, migration `0029` added a
   `volunteer_clearances` table with Checkr integration columns — `provider`,
   `checkr_candidate_id`, `checkr_invitation_id`, `checkr_report_id`, `checkr_package`,

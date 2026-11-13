@@ -218,7 +218,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
         .select(
           `id, event_id, family_notes, created_at,
            registration_participants ( camp_role, status, tshirt_size, first_time_attending,
-             people ( id, first_name, last_name, preferred_name, date_of_birth, gender ) )`
+             people ( id, first_name, last_name, preferred_name, date_of_birth, gender, email ) )`
         )
         .eq('household_id', householdId)
         .order('created_at', { ascending: false }),
@@ -345,6 +345,8 @@ export default async function FamilyRegisterPage({ searchParams }) {
         // Carried like the name: reopening a registration showed a blank
         // preferred-name box for everyone already on it (29 Sep, §20.1).
         preferredName: p.people?.preferred_name ?? '',
+        // Their own email, asked of an adult volunteer (13 Nov 2026).
+        email: p.people?.email ?? '',
         dob: p.people?.date_of_birth ?? '',
         sex: p.people?.gender ?? '',
         // No fallback label: an unrecognised role must be re-chosen, not
@@ -375,7 +377,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
     // instead of making a family retype the same children each year (24 Aug).
     const { data: allPeople, error: allPeopleError } = await supabase
       .from('people')
-      .select('id, first_name, last_name, preferred_name, date_of_birth, gender, phone')
+      .select('id, first_name, last_name, preferred_name, date_of_birth, gender, phone, email')
       .eq('household_id', householdId)
       .order('created_at');
     if (allPeopleError) throw new Error(`Household members: ${allPeopleError.message}`);
@@ -384,6 +386,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
       firstName: p.first_name ?? '',
       preferredName: p.preferred_name ?? '',
       lastName: p.last_name ?? '',
+      email: p.email ?? '',
       dob: p.date_of_birth ?? '',
       sex: p.gender ?? '',
       phone: p.phone ?? '',

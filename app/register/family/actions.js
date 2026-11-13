@@ -21,7 +21,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { balanceDueOn, registrationOpen, OPEN_EVENT_COLUMNS } from '@/lib/events';
 import { requiresPaymentChoice } from '@/lib/plans';
 import { hasPhone, caregiverLinkProblem } from '@/lib/caregivers';
-import { duplicatePeople } from '@/lib/wizardPeople';
+import { duplicatePeople, needsOwnEmail, ownEmailProblems, ownEmailMessage, tidyEmail } from '@/lib/wizardPeople';
 
 // What an HTML email said, as plain text for message_log.body_text.
 const htmlToText = (html) =>
@@ -226,6 +226,7 @@ export async function submitFamilyRegistration(payload) {
   }
 
   const supabase = await createClient();
+  let eventStartsOn = null;
 
   // A NEW registration needs the event open (published, inside its window,
   // not archived). The page already hides closed events; this is the check a
@@ -245,7 +246,12 @@ export async function submitFamilyRegistration(payload) {
     if (!existingReg?.length && !registrationOpen(ev)) {
       return { ok: false, error: 'Registration for that event is not open.' };
     }
+    eventStartsOn = ev?.starts_on ?? null;
   }
+
+  // An adult volunteer's own email, the form's rule again (13 Nov 2026).
+  const emailProblems = ownEmailProblems(members || [], eventStartsOn);
+  if (emailProblems.length > 0) return { ok: false, error: ownEmailMessage(emailProblems[0]) };
 
   const { data, error } = await supabase.rpc('submit_family_registration', {
     payload: {
@@ -396,6 +402,11 @@ export async function submitFamilyRegistration(payload) {
   //
   // Never fatal. The registration is already saved; a missing second role is a
   // thing staff can add, where a failed submit is a family with no place.
+  // An adult volunteer's email that couldn't be saved is said, not swallowed
+  // (review, 13 Nov 2026): the background check would otherwise go to the
+  // household's address and the box would come back blank.
+  const emailNotSaved = [];
+  let emailWanted = 0;
   try {
     const wantVolunteer = new Set(
       mapped
@@ -407,6 +418,14 @@ export async function submitFamilyRegistration(payload) {
         .filter((m) => m.preferredName)
         .map((m) => [`${m.firstName}|${m.lastName}`.toLowerCase(), m.preferredName])
     );
+    // Only an adult volunteer is asked, so only theirs is written; the age
+    // is on the event's first day, read above.
+    const wantEmail = new Map(
+      (members || [])
+        .filter((m) => needsOwnEmail(m, eventStartsOn) && tidyEmail(m.email))
+        .map((m) => [`${String(m.firstName).trim()}|${String(m.lastName).trim()}`.toLowerCase(), tidyEmail(m.email)])
+    );
+    emailWanted = wantEmail.size;
     const regId2 = data?.registrationId;
 
     // ONE read-back serving both jobs below. Deliberately NOT nested inside the
@@ -414,10 +433,10 @@ export async function submitFamilyRegistration(payload) {
     // ticked "also volunteering", and putting this inside that `if` meant they
     // were saved only for families who happened to have a volunteer — caught
     // before it shipped, but it is exactly the shape of bug that hides.
-    if (regId2 && (wantVolunteer.size > 0 || wantPreferred.size > 0)) {
+    if (regId2 && (wantVolunteer.size > 0 || wantPreferred.size > 0 || wantEmail.size > 0)) {
       const { data: saved, error: savedError } = await supabase
         .from('registration_participants')
-        .select('person_id, event_option_id, people ( first_name, last_name )')
+        .select('person_id, event_option_id, people ( first_name, last_name, email )')
         .eq('registration_id', regId2);
       if (savedError) throw new Error(savedError.message);
 
@@ -442,6 +461,23 @@ export async function submitFamilyRegistration(payload) {
             .update({ preferred_name: want })
             .eq('id', r.person_id);
           if (prefError) console.error('preferred name:', prefError.message);
+        }
+      }
+
+      // An adult volunteer's own email (13 Nov 2026), off the same read-back.
+      if (wantEmail.size > 0) {
+        const seen = new Set();
+        for (const r of saved ?? []) {
+          const key = `${r.people?.first_name ?? ''}|${r.people?.last_name ?? ''}`.toLowerCase();
+          const want = wantEmail.get(key);
+          if (!want || !r.person_id || seen.has(r.person_id)) continue;
+          seen.add(r.person_id);
+          if (tidyEmail(r.people?.email) === want) continue;
+          const { error: emailError } = await supabase.from('people').update({ email: want }).eq('id', r.person_id);
+          if (emailError) {
+            console.error('own email:', emailError.message);
+            emailNotSaved.push(`${r.people?.first_name ?? ''} ${r.people?.last_name ?? ''}`.trim());
+          }
         }
       }
 
@@ -471,7 +507,12 @@ export async function submitFamilyRegistration(payload) {
     }
   } catch (e) {
     console.error('second volunteer role:', e?.message);
+    // The read-back failed, so no email was written.
+    if (emailWanted > 0 && emailNotSaved.length === 0) emailNotSaved.push('the adult volunteers');
   }
+  const emailNotice = emailNotSaved.length
+    ? `Your registration was saved, but the email for ${emailNotSaved.join(', ')} wasn’t. Open the registration again and add it, or tell the office: the background check is sent there.`
+    : null;
 
   try {
     // Read the people back off the saved registration rather than trusting the
@@ -859,6 +900,7 @@ export async function submitFamilyRegistration(payload) {
     signatureError,
     supportError,
     caregiverNotice,
+    emailNotice,
     depositDue,
     depositCents,
     depositPerPersonCents,

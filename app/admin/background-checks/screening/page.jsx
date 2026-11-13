@@ -5,7 +5,7 @@ import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
 import { loadScreeningCandidates } from '@/lib/screeningCandidates';
 import { volunteerBadge, volunteerBadgeMode } from '@/lib/volunteerBadge';
-import { VolunteerBadgeError, VB_DASHBOARD, loadRoster, namesAgree } from '@/lib/volunteerBadgeApi';
+import { VolunteerBadgeError, VB_DASHBOARD, loadRoster, namesAgree, possibleNameMatches } from '@/lib/volunteerBadgeApi';
 import { creditPicture } from '@/lib/volunteerBadgeCredits';
 
 export const metadata = { title: 'Background Screening — Staff Admin' };
@@ -84,12 +84,12 @@ export default async function ScreeningPage() {
   // Ellen, 13 Nov 2026). The site never pulls in a check it didn't ask for, so
   // the row says so: look there first, and if a check already ran, record it
   // by hand rather than spending a second credit. A note, not a block.
-  if (mode === 'live' && !connectionProblem && candidates.some((c) => c.email)) {
+  if (mode === 'live' && !connectionProblem && candidates.length > 0) {
     try {
       const roster = await loadRoster(volunteerBadge());
       const { data: names, error: namesError } = await supabase
         .from('people')
-        .select('id, first_name, preferred_name')
+        .select('id, first_name, preferred_name, last_name')
         .in('id', candidates.map((c) => c.personId));
       if (namesError) throw new Error(namesError.message);
       const nameBy = new Map((names ?? []).map((p) => [p.id, p]));
@@ -97,7 +97,15 @@ export default async function ScreeningPage() {
         const there = c.email ? roster.find(c.email) : [];
         if (there.length === 1 && namesAgree(there[0], nameBy.get(c.personId)) === true) {
           c.alreadyInVb = there[0].created_at ?? there[0].createdAt ?? true;
+          continue;
         }
+        // Not at this address, but someone with their name is (Lawrence,
+        // 13 Nov 2026): a hint to look before sending, never a link.
+        const named = possibleNameMatches(
+          roster.rows.filter((v) => !c.email || String(v.email ?? '').trim().toLowerCase() !== c.email),
+          nameBy.get(c.personId)
+        );
+        if (named.length > 0) c.possibleVbMatch = named[0].created_at ?? named[0].createdAt ?? true;
       }
     } catch {
       // The note is a courtesy; without it the page still works.

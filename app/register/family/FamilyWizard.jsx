@@ -43,7 +43,7 @@ import SupportDetailsFields from '@/components/SupportDetailsFields';
 import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 import { hasPhone } from '@/lib/caregivers';
 import { VOLUNTEER_CHILD_UNDER } from '@/lib/roles';
-import { selfRowIndex, sameName, duplicatePeople } from '@/lib/wizardPeople';
+import { selfRowIndex, sameName, duplicatePeople, needsOwnEmail, ownEmailProblems, ownEmailMessage } from '@/lib/wizardPeople';
 
 // The emergency contact carried across the household (Lawrence, 6 Nov 2026):
 // see setSupport. A person added to the form starts with the contact the
@@ -68,6 +68,9 @@ const emptyMember = {
   lastName: '',
   dob: '',
   sex: '',
+  // Their own email: asked only of an adult volunteer (the background check
+  // goes there; lib/wizardPeople.js needsOwnEmail, 13 Nov 2026).
+  email: '',
   // Deliberately blank: role is a choice the family must make, not a default
   // we make for them -- especially since the old default ("Camper with
   // disability") was also the most sensitive answer on the form, and it stuck
@@ -417,8 +420,21 @@ function familyNeeds({ family }) {
   return out;
 }
 
-function peopleNeeds({ members }) {
+function peopleNeeds({ members, week }) {
   const out = [];
+  // HARD: an adult volunteer's own email (13 Nov 2026). VolunteerBadge sends
+  // the background check's consent form there, one record per address.
+  for (const p of ownEmailProblems(members, week?.startsOn)) {
+    out.push({
+      chip:
+        p.kind === 'missing'
+          ? `an email for ${p.name.split(' ')[0]}`
+          : p.kind === 'invalid'
+            ? `a complete email for ${p.name.split(' ')[0]}`
+            : `a different email for ${p.name.split(' ')[0]}`,
+      message: ownEmailMessage(p),
+    });
+  }
   const named = members.filter(isNamed);
   // HARD: someone on the form twice (alpha feedback, 12 Nov 2026). The second
   // card was an empty copy, so the chip kept asking for a role the card on
@@ -1188,6 +1204,11 @@ export default function FamilyWizard({
             {result.supportError}
           </p>
         )}
+        {result.emailNotice && (
+          <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900">
+            {result.emailNotice}
+          </p>
+        )}
         {result.caregiverNotice && (
           <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900">
             {result.caregiverNotice}
@@ -1772,6 +1793,41 @@ export default function FamilyWizard({
                       hint = 'A volunteer child serves alongside an adult. Add the volunteering parent or adult to this registration too.';
                     }
                     return hint ? <p className="mt-1 text-sm text-amber-800">{hint}</p> : null;
+                  })()}
+                  {needsOwnEmail(m, week?.startsOn) && (() => {
+                    const who = m.firstName.trim() || 'This person';
+                    const isContact = i === selfIdx;
+                    const household = (family.email || '').trim();
+                    return (
+                      <div className="mt-3 sm:max-w-md">
+                        <label className={label} htmlFor={`fw-p${i}-email`}>
+                          {who}&rsquo;s own email (for the background check)
+                        </label>
+                        <input
+                          id={`fw-p${i}-email`}
+                          name={`person-${i}-email`}
+                          type="email"
+                          inputMode="email"
+                          autoComplete={isContact ? 'email' : 'off'}
+                          className={input}
+                          value={m.email ?? ''}
+                          onChange={setM(i, 'email')}
+                        />
+                        <p className="mt-1 text-sm text-neutral-600">
+                          VolunteerBadge, the company that runs our background checks, emails {who} the
+                          consent form here. Each adult volunteer needs their own address.
+                        </p>
+                        {isContact && household && !(m.email ?? '').trim() && (
+                          <button
+                            type="button"
+                            onClick={() => setMembers((prev) => prev.map((x, j) => (j === i ? { ...x, email: household } : x)))}
+                            className="mt-1 text-sm text-brand underline"
+                          >
+                            Use {household}
+                          </button>
+                        )}
+                      </div>
+                    );
                   })()}
 
                   {/* "Also volunteering" was offered here from 29 Aug to
