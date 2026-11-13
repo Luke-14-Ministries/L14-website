@@ -102,19 +102,23 @@ export default function AdminNav({
     writeOpen(!open);
   }
 
-  // A sub-item (Background Checks under Volunteers) owns its pages, so the
-  // parent does not light as well. Read from the items passed in.
-  const subItems = [...top, ...sections.flatMap((sec) => sec.items), ...loose].filter((n) => n.sub);
+  // A more specific item owns its pages, so the item whose address it sits
+  // under does not light as well: Background Checks (/admin/volunteers/
+  // background-checks, its own item since 11 Nov 2026) lights alone, not
+  // with Volunteers too (Lawrence, 13 Nov 2026). This used to look only at
+  // items marked `sub`, so it stopped working when Background Checks stopped
+  // being one. Read from the items passed in.
+  const allItems = [...top, ...sections.flatMap((sec) => sec.items), ...loose];
   const under = (path, href) => path === href || path === `${href}/` || path?.startsWith(`${href}/`);
-  const ownedBySub = (href) =>
-    subItems.some(
+  const ownedByMoreSpecific = (href) =>
+    allItems.some(
       (n) => n.href !== href && n.href.startsWith(`${href}/`) &&
         [n.href, ...(n.alsoActive ?? [])].some((h) => under(pathname, h))
     );
   const isActive = (href) => {
-    const sub = subItems.find((n) => n.href === href);
-    if (sub && (sub.alsoActive ?? []).some((h) => under(pathname, h))) return true;
-    if (ownedBySub(href)) return false;
+    const item = allItems.find((n) => n.href === href);
+    if (item && (item.alsoActive ?? []).some((h) => under(pathname, h))) return true;
+    if (ownedByMoreSpecific(href)) return false;
     return isActiveBase(href);
   };
   const isActiveBase = (href) =>
