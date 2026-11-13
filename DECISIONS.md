@@ -4482,3 +4482,7 @@ none (an alpha tester's son) could not be corrected or added by staff at all.
   (rosters, balances), which now carry "(423) 555-0123" rather than whatever was typed.
 - No new grant or migration: the writes are the same `people` update and `registration_participants`
   insert the registration page already makes, under the same RLS.
+
+## 12 November 2026 — Stage C
+
+12 Nov 2026: Stage C. The site moved to luke14ministries.net; preview switches reversed (C9).

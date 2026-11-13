@@ -1,7 +1,6 @@
 import './globals.css';
 // After globals.css; inert unless a signed-in person chose Dark (ThemeSwitch).
 import './theme-dark.css';
-import PreviewBanner from '@/components/PreviewBanner';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import IdleTimeout from '@/components/IdleTimeout';
@@ -10,15 +9,14 @@ import { THEME_SCRIPT } from '@/lib/theme';
 
 export const metadata = {
   title: {
-    default: 'Luke 14 Ministries (Preview Build)',
-    template: '%s — Luke 14 Ministries (Preview Build)',
+    default: 'Luke 14 Ministries',
+    template: '%s — Luke 14 Ministries',
   },
   description:
     'Luke 14 Ministries helps families and individuals affected by disability find community and connection to Jesus through His church.',
-  robots: {
-    index: false,
-    follow: false,
-  },
+  // Search engines welcome since 12 Nov 2026 (go-live C9): the four preview
+  // switches (robots.txt, this robots setting, the "(Preview Build)" title
+  // suffix, the preview banner) were reversed together.
 };
 
 export default function RootLayout({ children }) {
@@ -37,7 +35,6 @@ export default function RootLayout({ children }) {
         {/* contents: the wrapper draws no box, so the header can stay in view
             as you scroll (sticky to the page, not to this div; 10 Nov 2026). */}
         <div className="print:hidden contents">
-          <PreviewBanner />
           <Header />
         </div>
         <main>{children}</main>
