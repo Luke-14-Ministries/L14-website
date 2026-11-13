@@ -49,7 +49,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0164`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0165`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -547,7 +547,9 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   client**: `lib/supabase/admin.js`, for the automatic emails (a daily job has no signed-in person) and
   the prayer list's sign-up, confirm and unsubscribe (`0141`; they work through a secret token no
   signed-in or anonymous role may read; the staff pages that reach it, the prayer send and removal and
-  Email Families' 7-day preview, check Prayer list write or Registration write first); `server-only` fails the build if it is ever imported into
+  Email Families' 7-day preview, check Prayer list write or Registration write first), and the daily
+  VolunteerBadge check (`0165`, `app/api/cron/volunteerbadge/`, Lawrence 13 Nov 2026: it reads and
+  updates `volunteerbadge_requests` only, never confirms or sends); `server-only` fails the build if it is ever imported into
   browser code. Nothing else may use it. The key in Vercel is a dedicated Supabase secret key made for
   Vercel on 28 Oct (A1), Production only.
 - **Row-level security is enforced at the database level**, not in application code. Every table

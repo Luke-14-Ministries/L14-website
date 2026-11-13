@@ -41,8 +41,10 @@ export default async function VolunteerPage() {
               </li>
               <li>
                 <span className="font-semibold">Fill out the volunteer application</span> on this
-                page: where you&rsquo;d like to serve and a little about you. Our team reviews it
-                and follows up about the background check.
+                page: where you&rsquo;d like to serve and a little about you. Our team reviews it.
+                {/* The background check's consent is VolunteerBadge's own form (0165,
+                    13 Nov 2026); we say it is coming and collect none here. */}
+                {' '}If you&rsquo;re 18 or older, after our team reviews your application you&rsquo;ll get an email from VolunteerBadge, the company that runs our background checks. It asks for your permission and your details on their secure site; the check runs only after you agree there. We never see your Social Security number.
               </li>
             </ol>
           </div>
@@ -261,7 +263,7 @@ export default async function VolunteerPage() {
         </div>
         <p className="text-neutral-600 mt-2 mb-8">
           Tell us where you&rsquo;d like to serve and a little about yourself. Our team reviews
-          every application and will contact you about the background check.
+          every application. If you&rsquo;re 18 or older, after our team reviews your application you&rsquo;ll get an email from VolunteerBadge, the company that runs our background checks. It asks for your permission and your details on their secure site; the check runs only after you agree there. We never see your Social Security number.
         </p>
         <div className="space-y-6">
           {volunteers.map(({ participant, event }) => (

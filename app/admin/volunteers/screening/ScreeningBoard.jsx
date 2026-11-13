@@ -1,171 +1,303 @@
 'use client';
 
-// The bulk-screening screen. Three things, in the order they happen:
-// who is due, send the batch, bring the results back.
+// Background screening through VolunteerBadge (0165, 13 Nov 2026): who is due,
+// send the invites, then the invites and their results. Replaced the Checkr
+// batch file (download, upload, import).
 
-import { useMemo, useState, useTransition } from 'react';
-import { markBatchOrdered, importCheckrResults, rebuildBatchCsv, unsendBatch } from './actions';
-import { dayInMorristown } from '@/lib/events';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import StatusMark from '@/components/StatusMark';
+import { dayInMorristown, whenInMorristown } from '@/lib/events';
+import {
+  prepareVolunteerBadgeBatch,
+  sendVolunteerBadgeInvite,
+  refreshVolunteerBadge,
+  confirmVolunteerBadgeClear,
+  cancelVolunteerBadgeRequest,
+  resendWithoutIdStep,
+} from './actions';
 
-// Hand a CSV to the browser. The file never goes near a server we control,
-// which is the point: it holds email addresses. The link is put in the page
-// and the object URL released a moment later -- revoking it in the same tick
-// as the click is a known way to get no download at all in some browsers.
-function saveCsv(csv, filename) {
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-    a.remove();
-  }, 1000);
-}
-
-const money = (n) => `$${n.toFixed(2)}`;
-const PER_CHECK = 26.5; // Basic Plus $25.49 plus the passthrough fees actually invoiced.
-
-const STATUS_PILL = {
-  clear: ['Cleared', 'bg-green-100 text-green-800'],
-  invited: ['Invited, waiting', 'bg-amber-100 text-amber-800'],
-  pending: ['Running at Checkr', 'bg-amber-100 text-amber-800'],
-  consider: ['Needs review', 'bg-red-100 text-red-800'],
-  suspended: ['Checkr needs more from them', 'bg-amber-100 text-amber-800'],
-  dispute: ['Disputed', 'bg-red-100 text-red-800'],
-  canceled: ['Cancelled', 'bg-neutral-200 text-neutral-600'],
-  not_started: ['Never checked', 'bg-neutral-200 text-neutral-700'],
+// Each request's status, as a mark and plain words.
+const VB_WORDS = {
+  sending: ['warn', 'Sending didn’t finish'],
+  invited: ['na', 'Invited'],
+  applied: ['na', 'Applied, check not started'],
+  processing: ['na', 'Check in progress'],
+  in_review: ['na', 'VolunteerBadge is reviewing'],
+  clear: ['yes', 'Clear'],
+  consider: ['warn', 'Needs review in VolunteerBadge'],
+  error: ['no', 'Not completed'],
+  expired: ['no', 'Invite expired'],
+  not_sent: ['no', 'Not sent'],
+  cancelled: ['na', 'Taken back'],
+  superseded: ['na', 'Replaced by a resend'],
 };
 
-export default function ScreeningBoard({ candidates }) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function detail(r) {
+  switch (r.status) {
+    case 'sending':
+      return r.problem ?? 'No answer came back from VolunteerBadge. Look in its Applications list: if it isn’t there, take this back and send again.';
+    case 'invited':
+      return `Emailed to ${r.email} on ${dayInMorristown(r.sentAt)}${r.expiresAt ? `; the link works until ${dayInMorristown(r.expiresAt)}` : ''}. Waiting for them to apply.`;
+    case 'applied':
+      return 'They applied. The check hasn’t started yet.';
+    case 'processing':
+      return 'VolunteerBadge is running the check.';
+    case 'in_review':
+      return 'Possible records found. VolunteerBadge’s reviewer is checking them, usually within 3 business days.';
+    case 'clear':
+      return r.confirmedAt
+        ? `OK to serve recorded ${dayInMorristown(r.confirmedAt)}.`
+        : `Clear${r.completedAt ? ` on ${dayInMorristown(r.completedAt)}` : ''}. Record it as OK to serve.`;
+    case 'consider':
+      return 'Records were released on the report. Read it in VolunteerBadge, then record the ministry’s verdict on their Volunteers entry.';
+    case 'error':
+    case 'not_sent':
+      return `${r.problem ?? 'It didn’t go through.'} They are back on the list to send again.`;
+    case 'expired':
+      return 'They didn’t apply before the link ran out. They are back on the list to send again.';
+    case 'cancelled':
+      return 'Taken back here. (It isn’t cancelled in VolunteerBadge.)';
+    case 'superseded':
+      return 'Replaced by a resend without the ID step.';
+    default:
+      return '';
+  }
+}
+
+export default function ScreeningBoard({ candidates, requests, mode, credits, outstanding = 0, connectionProblem, dashboardUrl }) {
+  const router = useRouter();
   const [picked, setPicked] = useState(() => new Set());
-  const [busy, start] = useTransition();
-  const [result, setResult] = useState(null);
-  const [csvText, setCsvText] = useState('');
-  const [preview, setPreview] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [log, setLog] = useState([]);
+  const [note, setNote] = useState(null);
+  // The person whose "Resend without the ID step" form is open, and its reason.
+  const [resendFor, setResendFor] = useState(null);
+  const [resendWhy, setResendWhy] = useState('');
+  // How many more invites the balance covers (live). The server asks VB again
+  // on every send; this only shapes the button.
+  const free = mode === 'live' && credits != null ? Math.max(0, credits - outstanding) : null;
+  const creditsBlock =
+    mode !== 'live'
+      ? null
+      : credits == null
+        ? 'VolunteerBadge didn’t say how many credits are left.'
+        : picked.size > free
+          ? `VolunteerBadge has ${credits} ${credits === 1 ? 'credit' : 'credits'}. Buy credits in VolunteerBadge before sending invites (this ${picked.size === 1 ? 'invite needs 1' : `batch needs ${picked.size}`}${outstanding ? `, and ${outstanding} ${outstanding === 1 ? 'invite is' : 'invites are'} already out and not yet charged` : ''}).`
+          : null;
 
-  // Anyone the site cannot order is shown but cannot be selected. Hiding them
-  // would be worse: "why is Sarah not on the list" is a question with an
-  // answer, and the answer is a missing field somebody can go and fill in.
-  const orderable = useMemo(
-    () => candidates.filter((c) => !c.blockedBecause),
-    [candidates]
-  );
-  const blocked = useMemo(
-    () => candidates.filter((c) => c.blockedBecause),
-    [candidates]
-  );
-  // Batches already sent, newest first: the people still 'invited', grouped
-  // by the batch they went out in, so the file can be downloaded again or
-  // the batch taken back (15 Oct 2026).
-  const batches = useMemo(() => {
-    const m = new Map();
-    for (const c of candidates) {
-      if (c.status !== 'invited' || !c.batch) continue;
-      if (!m.has(c.batch)) m.set(c.batch, []);
-      m.get(c.batch).push(c);
-    }
-    return [...m.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  }, [candidates]);
-  const [batchNote, setBatchNote] = useState(null);
-
-  function downloadAgain(batch) {
-    setBatchNote(null);
-    start(async () => {
-      const r = await rebuildBatchCsv(batch);
-      if (r.ok) saveCsv(r.csv, r.filename);
-      setBatchNote(r.ok ? `${r.filename} is in your downloads.` : r.error);
-    });
-  }
-  function unsend(batch, n) {
-    if (!window.confirm(`${n === 1 ? 'Mark this 1 person' : `Mark these ${n}`} as NOT sent? They go back to never checked and will be offered for the next batch. Do this only if the file never reached Checkr.`)) return;
-    setBatchNote(null);
-    start(async () => {
-      const r = await unsendBatch(batch);
-      setBatchNote(r.ok ? `${r.undone} taken back.` : r.error);
-    });
-  }
-
+  const connected = mode !== 'off' && !connectionProblem;
+  const orderable = useMemo(() => candidates.filter((c) => !c.blockedBecause), [candidates]);
+  const blocked = useMemo(() => candidates.filter((c) => c.blockedBecause), [candidates]);
+  const allPicked = orderable.length > 0 && picked.size === orderable.length;
   const toggle = (id) =>
     setPicked((s) => {
       const n = new Set(s);
-      if (n.has(id)) n.delete(id); else n.add(id);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
       return n;
     });
+  const add = (line) => setLog((l) => [...l, line]);
 
-  const allPicked = orderable.length > 0 && picked.size === orderable.length;
-
-  function orderBatch() {
-    setResult(null);
-    start(async () => {
-      const batch = new Date().toISOString();
-      const r = await markBatchOrdered([...picked], batch, 'volunteer');
-      setResult(r);
-      if (r.ok && r.csv) {
-        saveCsv(r.csv, r.filename);
-        setPicked(new Set());
+  async function sendBatch() {
+    const ids = [...picked];
+    const n = ids.length;
+    const words =
+      mode === 'test'
+        ? `Send ${n} test ${n === 1 ? 'invite' : 'invites'}? Test mode uses no credits and runs no real check, but VolunteerBadge still emails a test invite.`
+        : `Send ${n} VolunteerBadge ${n === 1 ? 'invite' : 'invites'}? Each uses one credit. VolunteerBadge emails each person now.`;
+    if (!window.confirm(words)) return;
+    setBusy(true);
+    setLog([]);
+    setNote(null);
+    try {
+      const prep = await prepareVolunteerBadgeBatch(ids);
+      if (!prep.ok) {
+        add({ tone: 'no', text: prep.error });
+        return;
       }
-    });
+      for (const r of prep.refused) add({ tone: 'no', text: `${r.name}: not sent, ${r.why}` });
+      for (let i = 0; i < prep.ready.length; i += 1) {
+        const p = prep.ready[i];
+        add({ tone: 'na', text: `${p.name}: sending…`, key: p.personId });
+        const r = await sendVolunteerBadgeInvite(p.personId);
+        setLog((l) =>
+          l.map((x) =>
+            x.key === p.personId
+              ? r.ok
+                ? { tone: 'yes', text: `${p.name}: invite sent${r.email ? ` to ${r.email}` : ''}.${r.warning ? ` ${r.warning}` : ''}` }
+                : { tone: 'no', text: `${p.name}: ${r.error}` }
+              : x
+          )
+        );
+        if (r.stop) {
+          const left = prep.ready.length - i - 1;
+          if (left > 0) add({ tone: 'warn', text: `Stopped. ${left} not sent; they are still on the list.` });
+          break;
+        }
+        // VolunteerBadge allows 100 calls a minute, and each send makes two (the
+        // balance, then the invite); stay well under.
+        if (i < prep.ready.length - 1) await sleep(1500);
+      }
+      setPicked(new Set());
+    } finally {
+      setBusy(false);
+      router.refresh();
+    }
   }
 
-  function doPreview() {
-    setPreview(null);
-    start(async () => setPreview(await importCheckrResults(csvText, { dryRun: true })));
+  async function refresh() {
+    setBusy(true);
+    setNote(null);
+    try {
+      const r = await refreshVolunteerBadge();
+      if (r.checked === undefined) setNote({ tone: 'no', text: r.error });
+      else
+        setNote({
+          tone: r.ok ? 'yes' : 'warn',
+          text: `Checked ${r.checked} ${r.checked === 1 ? 'invite' : 'invites'}; ${r.changed} changed.${r.more ? ' There are more: press again.' : ''}${r.error ? ` ${r.error}` : ''}`,
+        });
+    } finally {
+      setBusy(false);
+      router.refresh();
+    }
   }
 
-  function doImport() {
-    start(async () => {
-      const r = await importCheckrResults(csvText, { dryRun: false });
-      setPreview(r);
-      if (r.ok) setCsvText('');
-    });
+  async function confirmClear(r) {
+    if (!window.confirm(`Record ${r.name}'s VolunteerBadge result (clear${r.completedAt ? `, ${dayInMorristown(r.completedAt)}` : ''}) as OK to serve?`)) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const res = await confirmVolunteerBadgeClear(r.id);
+      setNote(res.ok ? { tone: 'yes', text: `${r.name}: OK to serve recorded.` } : { tone: 'no', text: res.error });
+    } finally {
+      setBusy(false);
+      router.refresh();
+    }
   }
+
+  async function resend(r) {
+    const why = resendWhy.replace(/\s+/g, ' ').trim();
+    if (why.length < 10) {
+      setNote({ tone: 'no', text: 'Give a reason of at least 10 characters.' });
+      return;
+    }
+    const words =
+      mode === 'test'
+        ? `Send ${r.name} a test invite without the ID step?`
+        : `Send ${r.name} a new invite without VolunteerBadge's photo ID step? It replaces their open invite and uses one credit when the check runs.`;
+    if (!window.confirm(words)) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const res = await resendWithoutIdStep(r.personId, why);
+      setNote(
+        res.ok
+          ? { tone: 'yes', text: `${r.name}: sent again without the ID step.${res.warning ? ` ${res.warning}` : ''}` }
+          : { tone: 'no', text: res.error }
+      );
+      if (res.ok) {
+        setResendFor(null);
+        setResendWhy('');
+      }
+    } finally {
+      setBusy(false);
+      router.refresh();
+    }
+  }
+
+  async function takeBack(r) {
+    const words =
+      r.status === 'sending'
+        ? `Take back ${r.name}'s invite? Do this only if it isn't in VolunteerBadge's Applications list. They go back on the list to send again.`
+        : `Take back ${r.name}'s invite here? It is NOT cancelled in VolunteerBadge: if they still apply, the check runs and uses a credit.`;
+    if (!window.confirm(words)) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const res = await cancelVolunteerBadgeRequest(r.id);
+      setNote(res.ok ? { tone: 'yes', text: `${r.name}: taken back.` } : { tone: 'no', text: res.error });
+    } finally {
+      setBusy(false);
+      router.refresh();
+    }
+  }
+
+  const open = requests.filter((r) => ['sending', 'invited', 'applied', 'processing', 'in_review'].includes(r.status));
+  const waitingOnYou = requests.filter((r) => !r.confirmedAt && (r.status === 'clear' || r.status === 'consider'));
+  const lastChecked = requests.map((r) => r.lastCheckedAt).filter(Boolean).sort().pop();
 
   return (
     <div className="space-y-8">
+      {/* Connection: off, test, live, or a problem. */}
+      {mode === 'off' && (
+        <p className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+          <strong>VolunteerBadge isn&rsquo;t connected yet.</strong> Once its key is added to the site,
+          invites are sent from here. Who is due is listed below meanwhile.
+        </p>
+      )}
+      {mode === 'test' && (
+        <p className="rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900">
+          <strong>Test mode</strong> (a VolunteerBadge sandbox key): no credits are used and no real
+          checks run, but VolunteerBadge still emails a test invite, so only @luke14ministries.net
+          addresses can be sent. Test results never clear anyone, and test invites don&rsquo;t show on
+          the live site. VolunteerBadge keeps no applicants in test mode, so a test invite stays
+          &ldquo;Invited&rdquo;.
+        </p>
+      )}
+      {mode !== 'off' && connectionProblem && (
+        <p className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">{connectionProblem}</p>
+      )}
+      {mode === 'live' && !connectionProblem && (
+        <p className="text-sm text-neutral-600">
+          Connected to VolunteerBadge
+          {credits != null ? (
+            <>
+              {' '}· <strong>{credits}</strong> {credits === 1 ? 'credit' : 'credits'}
+              {outstanding > 0 && (
+                <>
+                  {' '}· {outstanding} {outstanding === 1 ? 'invite' : 'invites'} out, not yet charged ·{' '}
+                  <strong>{free}</strong> free
+                </>
+              )}
+            </>
+          ) : (
+            ' · credit balance unknown'
+          )}
+          .
+        </p>
+      )}
+
       <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h2 className="text-xl font-bold">1 · Who is due</h2>
         <p className="mt-1 mb-4 max-w-4xl text-sm text-neutral-500">
-          Adult volunteers with no background check on file, or whose check has expired. Nothing
-          here has been ordered yet. Nothing is charged until you upload the file to Checkr.
+          Adult volunteers with no background check on file, or one out of date. Nothing here has been
+          sent yet.
         </p>
 
-        {/* Two different empty states (15 Oct 2026): nobody due because
-            everyone is cleared is good news; nobody orderable because every
-            due person is missing an email or a date of birth is a to-do list,
-            and the page said the first when it meant the second. */}
         {orderable.length === 0 && blocked.length === 0 ? (
           <p className="rounded-sm border border-green-200 bg-green-50 px-4 py-3 text-green-900">
-            Nobody is due. Every adult volunteer has a current background check on file.
+            Nobody is due. Every adult volunteer has a current background check on file, or an invite out.
           </p>
         ) : orderable.length === 0 ? (
           <p className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
             {blocked.length} {blocked.length === 1 ? 'person is' : 'people are'} due a background check,
-            but none can be ordered yet. Each one is missing something listed below.
+            but none can be sent yet. Each one is listed below with the reason.
           </p>
         ) : (
           <>
             <div className="mb-3 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={() =>
-                  setPicked(allPicked ? new Set() : new Set(orderable.map((c) => c.personId)))
-                }
+                onClick={() => setPicked(allPicked ? new Set() : new Set(orderable.map((c) => c.personId)))}
                 className="btn-outline py-1.5! text-sm"
               >
                 {allPicked ? 'Select none' : `Select all ${orderable.length}`}
               </button>
-              <span className="text-sm text-neutral-600">
-                {picked.size} selected
-                {picked.size > 0 && (
-                  <>
-                    {' '}· about <strong>{money(picked.size * PER_CHECK)}</strong> at Basic Plus
-                  </>
-                )}
-              </span>
+              <span className="text-sm text-neutral-600">{picked.size} selected</span>
             </div>
-
             <ul className="divide-y divide-neutral-100 border-y border-neutral-100">
               {orderable.map((c) => (
                 <li key={c.personId} className="flex flex-wrap items-center gap-3 py-2.5">
@@ -176,7 +308,7 @@ export default function ScreeningBoard({ candidates }) {
                     onChange={() => toggle(c.personId)}
                     className="h-4 w-4"
                   />
-                  <label htmlFor={`p-${c.personId}`} className="flex-1 min-w-0">
+                  <label htmlFor={`p-${c.personId}`} className="min-w-0 flex-1">
                     <span className="font-semibold">{c.name}</span>
                     <span className="text-neutral-500">
                       {' '}· {c.email}
@@ -184,321 +316,193 @@ export default function ScreeningBoard({ candidates }) {
                     </span>
                     {c.sharesEmailWith?.length > 0 && (
                       <span className="ml-2 rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
-                        same inbox as {c.sharesEmailWith.join(' and ')}: two invitations, each person opens their own
+                        same email as {c.sharesEmailWith.join(' and ')}: send one at a time
                       </span>
                     )}
                     <span className="block text-xs text-neutral-500">
                       {c.eventName}
                       {c.reason ? ` · ${c.reason}` : ''}
+                      {c.checkrOut ? ' · an old Checkr order is still marked as out' : ''}
+                      {c.lastVb && ['error', 'expired', 'not_sent', 'cancelled'].includes(c.lastVb.status)
+                        ? ` · last invite ${dayInMorristown(c.lastVb.sentAt)}: ${VB_WORDS[c.lastVb.status][1].toLowerCase()}`
+                        : ''}
                     </span>
                   </label>
-                  {(() => {
-                    const [label, cls] = STATUS_PILL[c.status] ?? STATUS_PILL.not_started;
-                    return (
-                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>
-                        {label}
-                      </span>
-                    );
-                  })()}
                 </li>
               ))}
             </ul>
-
             <button
               type="button"
-              onClick={orderBatch}
-              disabled={busy || picked.size === 0}
+              onClick={sendBatch}
+              disabled={busy || picked.size === 0 || !connected || Boolean(creditsBlock)}
               className="btn-primary mt-4 disabled:opacity-50"
             >
-              {busy ? 'Working…' : `Download CSV for ${picked.size} and mark as sent`}
+              {busy
+                ? 'Working…'
+                : mode === 'test'
+                  ? `Send ${picked.size} test ${picked.size === 1 ? 'invite' : 'invites'} (no credits)`
+                  : `Send ${picked.size} VolunteerBadge ${picked.size === 1 ? 'invite' : 'invites'} (uses ${picked.size} ${picked.size === 1 ? 'credit' : 'credits'}${free != null ? `, ${free} free` : ''})`}
             </button>
-            <p className="mt-1.5 text-xs text-neutral-500">
-              This one button downloads the file and records it as sent. Otherwise the next batch
-              would invite these people again, at about {money(PER_CHECK)} each.
-            </p>
+            {creditsBlock && picked.size > 0 && <p className="mt-1.5 text-sm text-red-800">{creditsBlock}</p>}
+            {!connected && mode !== 'off' && (
+              <p className="mt-1.5 text-xs text-red-700">Sending is off until VolunteerBadge answers.</p>
+            )}
           </>
+        )}
+
+        {log.length > 0 && (
+          <ul className="mt-4 space-y-1 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm" aria-live="polite">
+            {log.map((l, i) => (
+              <li key={l.key ?? i}>
+                <StatusMark state={l.tone} className="mr-1" /> {l.text}
+              </li>
+            ))}
+          </ul>
         )}
 
         {blocked.length > 0 && (
           <div className="mt-5 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3">
             <p className="font-semibold text-amber-900">
-              {blocked.length} {blocked.length === 1 ? 'person cannot' : 'people cannot'} be ordered yet
+              {blocked.length} {blocked.length === 1 ? 'person can’t' : 'people can’t'} be sent yet
             </p>
             <ul className="mt-1.5 space-y-1 text-sm text-amber-900">
               {blocked.map((c) => (
                 <li key={c.personId}>
                   <strong>{c.name}</strong>
-                  {/* Missing or out of date, said even while held (Lawrence, 9 Nov 2026). */}
-                  {c.reason ? ` (${c.reason === 'never checked' ? 'no check on file' : `check ${c.reason}`})` : ''}: {c.blockedBecause}
+                  {c.reason ? ` (${c.reason === 'never checked' ? 'no check on file' : `check ${c.reason}`})` : ''}:{' '}
+                  {c.blockedBecause}
                 </li>
               ))}
-            </ul>
-          </div>
-        )}
-
-        {batches.length > 0 && (
-          <div className="mt-5 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">
-            <p className="font-semibold text-neutral-800">Batches sent, still waiting on Checkr</p>
-            <ul className="mt-1.5 space-y-2">
-              {batches.map(([batch, people]) => (
-                <li key={batch} className="flex flex-wrap items-center gap-3">
-                  <span>
-                    <strong>{dayInMorristown(batch)}</strong> · {people.length}{' '}
-                    {people.length === 1 ? 'person' : 'people'}
-                    <span className="text-neutral-500">: {people.map((p) => p.name).join(', ')}</span>
-                  </span>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => downloadAgain(batch)}
-                    className="btn-outline py-1! px-3! text-xs"
-                  >
-                    Download the file again
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => unsend(batch, people.length)}
-                    className="text-xs text-red-700 underline"
-                  >
-                    Mark as not sent
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {batchNote && <p className="mt-2 text-neutral-700">{batchNote}</p>}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
-        <h2 className="text-xl font-bold">2 · Upload it to Checkr</h2>
-        <ol className="mt-2 max-w-prose list-decimal space-y-1 pl-5 text-sm text-neutral-700">
-          <li>
-            Open{' '}
-            <a
-              href="https://dashboard.checkr.com/order-background-check"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand underline"
-            >
-              Order background check
-            </a>{' '}
-            at Checkr and choose the bulk option.
-          </li>
-          <li>Upload the file you just downloaded and pick the <strong>Basic Plus</strong> package.</li>
-          <li>
-            Checkr emails each person a link. They type their own Social Security
-            number into <em>Checkr&rsquo;s</em> form, so it never reaches us.
-          </li>
-        </ol>
-        {result?.ok && (
-          <p className="mt-3 rounded-sm border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-900">
-            {result.ordered} recorded as sent. The file is in your downloads.
-          </p>
-        )}
-        {result && !result.ok && (
-          <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
-            {result.error}
-          </p>
-        )}
-        {result?.skipped?.length > 0 && (
-          <div className="mt-3 rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-            <p className="font-semibold">Left out of the file:</p>
-            <ul className="mt-1 space-y-0.5">
-              {result.skipped.map((s, i) => <li key={i}>{s}</li>)}
             </ul>
           </div>
         )}
       </section>
 
       <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
-        <h2 className="text-xl font-bold">3 · Bring the results back</h2>
-        <p className="mt-1 mb-3 max-w-4xl text-sm text-neutral-500">
-          Export the reports from Checkr and choose the file here, or paste its contents.
-          Batches sent from this screen match on the email we invited, even if the person has
-          changed their email since. Checks ordered by hand at Checkr carry
-          the <em>orderer&rsquo;s</em> email instead, so those match on name. The preview shows which
-          rows matched on name before anything is saved.
-        </p>
-        {/* A file picker as well as the box (Lawrence, 15 Oct 2026: "why paste
-            and not upload a CSV?"). The file is read in the browser and lands
-            in the same box -- nothing is uploaded or stored anywhere; the
-            preview and the import work from the text exactly as before. */}
-        <label className="mb-2 flex flex-wrap items-center gap-3 text-sm">
-          <span className="font-semibold">Checkr export (.csv)</span>
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            className="text-sm file:mr-3 file:rounded-sm file:border file:border-neutral-300 file:bg-neutral-100 file:px-2 file:py-0.5 file:text-sm file:font-semibold"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = () => setCsvText(String(reader.result ?? ''));
-              reader.readAsText(file);
-            }}
-          />
-        </label>
-        <textarea
-          value={csvText}
-          onChange={(e) => setCsvText(e.target.value)}
-          rows={5}
-          placeholder="…or paste the whole CSV here, heading row and all"
-          className="w-full rounded-sm border border-neutral-300 px-3 py-2 font-mono text-xs"
-        />
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="text-xl font-bold">2 · Invites and results</h2>
           <button
             type="button"
-            onClick={doPreview}
-            disabled={busy || !csvText.trim()}
-            className="btn-outline py-2! disabled:opacity-50"
+            onClick={refresh}
+            disabled={busy || !connected || open.length === 0}
+            className="btn-outline py-1.5! text-sm disabled:opacity-50"
           >
-            Check the file first
+            Check VolunteerBadge for updates
           </button>
-          {preview?.ok && preview.dryRun && preview.willUpdate > 0 && (
-            <button type="button" onClick={doImport} disabled={busy} className="btn-primary py-2!">
-              Apply {preview.willUpdate} {preview.willUpdate === 1 ? 'result' : 'results'}
-            </button>
-          )}
         </div>
-
-        {preview && !preview.ok && (
-          <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
-            {preview.error}
+        <p className="mt-1 mb-4 max-w-4xl text-sm text-neutral-500">
+          {open.length} open
+          {waitingOnYou.length > 0 ? ` · ${waitingOnYou.length} waiting on you` : ''}
+          {lastChecked ? ` · last checked ${whenInMorristown(lastChecked)}` : ''}. A clear result counts
+          only once you press <strong>OK to serve</strong>. A result that needs review is read in{' '}
+          <a href={dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-brand underline">
+            VolunteerBadge
+          </a>{' '}
+          and decided on the person&rsquo;s Volunteers entry.
+        </p>
+        {note && (
+          <p className={`mb-3 text-sm ${note.tone === 'no' ? 'text-red-800' : note.tone === 'warn' ? 'text-amber-800' : 'text-green-800'}`}>
+            {note.text}
           </p>
         )}
-
-        {preview?.ok && (
-          <div className="mt-4 space-y-3 text-sm">
-            {!preview.dryRun && (
-              <p className="rounded-sm border border-green-200 bg-green-50 px-4 py-2 text-green-900">
-                {preview.updated} updated.
-              </p>
-            )}
-            <div>
-              <p className="font-semibold">
-                Matched {preview.matched.length}
-                {preview.dryRun ? ' (nothing saved yet)' : ''}
-                {preview.willClear != null && (
-                  <span className="font-normal text-neutral-600">
-                    {' '}· {preview.willClear} would be marked cleared
-                  </span>
-                )}
-                {preview.willCreate > 0 && (
-                  <span className="font-normal text-neutral-600">
-                    {' '}· {preview.willCreate} would start a new screening record
-                  </span>
-                )}
-              </p>
-              {/* The arithmetic has to close. "Matched 2, applied 1" with no
-                  explanation is exactly the kind of quiet gap that makes
-                  somebody stop trusting the screen. */}
-              {/* A verdict word this importer has never seen is filed as
-                  "needs a person to look", which is the safe direction --
-                  but silently absorbing a word we do not understand is how a
-                  future Checkr change gets missed. Say it. */}
-              {preview.unrecognised?.length > 0 && (
-                <p className="mt-1 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
-                  Checkr used {preview.unrecognised.length === 1 ? 'a verdict' : 'verdicts'} this
-                  screen hasn&rsquo;t seen before:{' '}
-                  <strong>{preview.unrecognised.join(', ')}</strong>. Those rows are marked
-                  as <strong>needing review</strong>, so nobody is cleared by mistake. Please tell
-                  whoever maintains the site.
-                </p>
-              )}
-              {preview.superseded > 0 && (
-                <p className="mt-1 rounded-sm border border-blue-200 bg-blue-50 px-3 py-2 text-blue-900">
-                  <strong>{preview.superseded}</strong>{' '}
-                  {preview.superseded === 1 ? 'row is' : 'rows are'} an{' '}
-                  <strong>older report</strong> for somebody who also has a newer one in this
-                  file. Checkr keeps every report, so a repeat check appears twice. Only the most
-                  recent completed report counts, even if the older one was better.
-                </p>
-              )}
-              {preview.byName > 0 && (
-                <p className="mt-1 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
-                  <strong>{preview.byName}</strong> matched on <strong>name</strong>, not on the
-                  email we sent. Checkr&rsquo;s export puts the email of whoever ordered the check in
-                  the email column, so a check ordered by hand can only match by name. Read those
-                  rows before applying.
-                </p>
-              )}
-              <ul className="mt-1 space-y-0.5 text-neutral-700">
-                {preview.matched.map((m, i) => (
-                  <li key={i} className={m.superseded ? 'text-neutral-400' : undefined}>
-                    {m.name}:{' '}
-                    <span
-                      className={
-                        m.superseded
-                          ? 'line-through'
-                          : m.cleared
-                            ? 'text-green-800'
-                            : 'text-red-800 font-semibold'
-                      }
-                    >
-                      {m.verdict}
-                    </span>
-                    {m.completedOn && (
-                      <span className="text-xs text-neutral-500"> · {m.completedOn}</span>
-                    )}
-                    {m.superseded && (
-                      <span className="ml-1 rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-semibold text-neutral-700">
-                        superseded by a newer report
-                      </span>
-                    )}
-                    {m.reportState && m.reportState !== 'complete' && (
-                      <span className="text-neutral-500"> · report {m.reportState}</span>
-                    )}
-                    {/* Every search that did not come back clear, named. An
-                        overall "consider" does not say which one, and the
-                        ministry wants all of them -- sexual offences first,
-                        but drink-driving or possession too, because those are
-                        things they may want to talk to somebody about. */}
-                    {m.flagged?.length > 0 && (
-                      <span
-                        className={`block pl-4 text-xs ${m.superseded ? 'text-neutral-400' : 'text-red-800'}`}
-                      >
-                        {m.flagged.join(' · ')}
-                      </span>
-                    )}
-                    {!m.superseded && m.flagged?.length === 0 && m.sexOffender === 'clear' && (
-                      <span className="block pl-4 text-xs text-neutral-500">
-                        all searches clear
-                      </span>
-                    )}
-                    {m.how === 'name' && (
-                      <span className="ml-1 rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-900">
-                        by name
-                      </span>
-                    )}
-                    {!m.cleared && !m.superseded && ' · left for a person to look at'}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {preview.unmatched.length > 0 && (
-              <div className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 text-amber-900">
-                <p className="font-semibold">{preview.unmatched.length} row(s) matched nobody</p>
-                <p className="mt-0.5 text-xs">
-                  Usually these are checks ordered before this screen existed.
-                </p>
-                <ul className="mt-1 space-y-0.5">
-                  {preview.unmatched.map((m, i) => (
-                    <li key={i}>
-                      {m.name} <span className="text-xs">({m.email})</span>: {m.why}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <p className="text-xs text-neutral-500">
-              Only a <strong>finished</strong> report with a <strong>clear</strong> assessment
-              marks somebody cleared. Checkr&rsquo;s “Status” column says whether the report
-              finished, not what it found. A report that came back “consider” still reads
-              “complete” there. Anything other than a clear verdict is left for a person to
-              decide.
-            </p>
+        {requests.length === 0 ? (
+          <p className="text-sm text-neutral-500">No invites in the last 90 days.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[40rem] text-sm">
+              <thead className="bg-neutral-50 text-left text-neutral-500">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">Person</th>
+                  <th className="px-3 py-2 font-semibold">Status</th>
+                  <th className="px-3 py-2 font-semibold">What it means</th>
+                  <th className="px-3 py-2 font-semibold"><span className="sr-only">Action</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((r) => {
+                  const [state, words] = VB_WORDS[r.status] ?? ['na', r.status];
+                  return (
+                    <tr key={r.id} className="border-t border-neutral-100 align-top">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="font-semibold">{r.name}</span>
+                        <span className="block text-xs text-neutral-500">sent {dayInMorristown(r.sentAt)}</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <StatusMark
+                          state={r.status === 'clear' && r.confirmedAt ? 'yes' : state}
+                          label={r.status === 'clear' && r.confirmedAt ? 'OK to serve' : words}
+                          title={detail(r)}
+                        />
+                        {/* So it is plain later that this check ran without ID
+                            verification (Lawrence, 13 Nov 2026). */}
+                        {r.idWaived && (
+                          <span className="mt-1 block w-fit rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
+                            ID step waived
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-neutral-700">{detail(r)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {r.status === 'clear' && !r.confirmedAt && mode === 'live' && (
+                          <button type="button" disabled={busy} onClick={() => confirmClear(r)} className="btn-primary py-1! px-3! text-xs">
+                            OK to serve
+                          </button>
+                        )}
+                        {r.status === 'consider' && (
+                          <a href={dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-brand underline">
+                            Open VolunteerBadge
+                          </a>
+                        )}
+                        {((r.status === 'sending' && r.stuck) || r.status === 'invited') && (
+                          <button type="button" disabled={busy} onClick={() => takeBack(r)} className="block text-xs text-red-700 underline">
+                            Take back
+                          </button>
+                        )}
+                        {r.resendable && connected && resendFor !== r.id && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                              setResendFor(r.id);
+                              setResendWhy('');
+                            }}
+                            className="mt-1 block text-xs text-brand underline"
+                          >
+                            Resend without ID step
+                          </button>
+                        )}
+                        {r.resendable && resendFor === r.id && (
+                          <div className="mt-1 w-64 whitespace-normal rounded-sm border border-neutral-200 bg-neutral-50 p-2">
+                            <label htmlFor={`why-${r.id}`} className="block text-xs font-semibold text-neutral-700">
+                              Why skip the ID step?
+                            </label>
+                            <input
+                              id={`why-${r.id}`}
+                              value={resendWhy}
+                              onChange={(e) => setResendWhy(e.target.value)}
+                              maxLength={300}
+                              placeholder="e.g. Volunteer declined the photo ID step; approved by Larry"
+                              className="mt-1 w-full rounded-sm border border-neutral-300 px-2 py-1 text-xs"
+                            />
+                            <p className="mt-1 text-xs text-neutral-500">
+                              Goes to VolunteerBadge with the invite. At least 10 characters, no personal details.
+                            </p>
+                            <div className="mt-1.5 flex gap-2">
+                              <button type="button" disabled={busy} onClick={() => resend(r)} className="btn-primary py-1! px-2! text-xs">
+                                Resend
+                              </button>
+                              <button type="button" onClick={() => setResendFor(null)} className="text-xs text-neutral-600 underline">
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </section>

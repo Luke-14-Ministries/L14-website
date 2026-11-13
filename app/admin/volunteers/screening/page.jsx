@@ -1,199 +1,83 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
-import { depositInByPerson, WAITING_ON_DEPOSIT } from '@/lib/screeningDeposit';
 import { createClient } from '@/lib/supabase/server';
 import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
-import { dayInMorristown } from '@/lib/events';
-import { isVolunteerRole } from '@/lib/roles';
+import { loadScreeningCandidates } from '@/lib/screeningCandidates';
+import { volunteerBadge, volunteerBadgeMode } from '@/lib/volunteerBadge';
+import { VolunteerBadgeError, VB_DASHBOARD } from '@/lib/volunteerBadgeApi';
+import { creditPicture } from '@/lib/volunteerBadgeCredits';
 
 export const metadata = { title: 'Background Screening — Staff Admin' };
+// A batch is sent one person at a time from the browser; Refresh asks
+// VolunteerBadge about up to 20 invites in one press.
+export const maxDuration = 60;
 
-// Who is due a background check, and the two file moves that get them one.
-//
-// "Due" is deliberately narrow. It is adult volunteers on a registration for an
-// event that has not finished, with no background check on file or one that has expired.
-// A wider net would be easy and wrong: every extra name is about $26.50 and a
-// real person being asked for their Social Security number.
+// Who is due a background check, and the VolunteerBadge invites that get them
+// one (0165, 13 Nov 2026; it replaced Checkr's batch file). Who counts as due
+// is lib/screeningCandidates.js, shared with the send action.
 export default async function ScreeningPage() {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/volunteers/screening/');
   if (!can(staff, 'write:background_checks')) redirect('/admin');
-  // Ordering a check is at least as sensitive as reading the result, so it
-  // takes the same grant (migration 0058).
+  // Ordering a check is at least as sensitive as reading the result (0058).
   if (!can(staff, 'background_checks')) redirect('/admin/volunteers');
 
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const mode = volunteerBadgeMode();
+  const sandbox = mode === 'test';
 
-  // Events that have not finished. Screening someone for a week that is over
-  // spends money to learn nothing.
-  const { data: events, error: eventsError } = await supabase
-    .from('events')
-    .select('id, name, starts_on, ends_on')
-    .gte('ends_on', today)
-    // Not an archived event (Lawrence, 4 Nov 2026), as on the nav badge.
-    .is('archived_at', null);
-  // CLAUDE.md: never turn a query error into an empty list -- here it would
-  // read as "no upcoming events" or "no check on file", and someone already
-  // checked could be sent (and paid for) again.
-  if (eventsError) throw new Error(`Events: ${eventsError.message}`);
-  const eventById = new Map((events ?? []).map((e) => [e.id, e]));
-  const liveEventIds = [...eventById.keys()];
+  const { noEvents, candidates } = await loadScreeningCandidates(supabase, { sandbox });
 
-  if (liveEventIds.length === 0) {
-    return (
-      <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
-          <h1 className="text-xl font-bold">Background Screening</h1>
-          <BackLink href="/admin/volunteers/background-checks" label="Back to Background Checks" />
-        </div>
-        <p className="text-neutral-600">
-          No upcoming events, so nobody is due a background check for one.
-        </p>
-      </div>
-    );
-  }
-
-  const { data: regs, error: regsError } = await supabase
-    .from('registrations')
+  // Invites and results: open ones, results waiting on staff, and the last 90
+  // days of everything else, in this mode only.
+  const now = new Date();
+  const since = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: requests, error: requestsError } = await supabase
+    .from('volunteerbadge_requests')
     .select(
-      `id, event_id,
-       households ( email ),
-       registration_participants ( id, camp_role, status,
-         people ( id, first_name, last_name, email, phone, date_of_birth ) )`
+      'id, person_id, invited_email, status, vb_check_status, vb_result, apply_expires_at, completed_at, problem, sent_at, last_checked_at, confirmed_at, id_verification_waived, people ( first_name, last_name )'
     )
-    .in('event_id', liveEventIds);
-  if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+    .eq('sandbox', sandbox)
+    .or(`sent_at.gte."${since}",status.in.(sending,invited,applied,processing,in_review,clear,consider)`)
+    .order('sent_at', { ascending: false });
+  if (requestsError) throw new Error(`VolunteerBadge requests: ${requestsError.message}`);
+  // "Resend without the ID step" sits on the person's latest invite.
+  const resendOn = new Set(candidates.filter((c) => c.resendable && c.lastVb).map((c) => c.lastVb.id));
+  const rows = (requests ?? [])
+    // A confirmed clear stays on the list for 90 days, then drops off.
+    .filter((r) => !(r.confirmed_at && r.sent_at < since))
+    .map((r) => ({
+      id: r.id,
+      personId: r.person_id,
+      name: `${r.people?.first_name ?? ''} ${r.people?.last_name ?? ''}`.trim() || 'Unnamed',
+      email: r.invited_email,
+      status: r.status,
+      vbStatus: r.vb_check_status,
+      expiresAt: r.apply_expires_at,
+      completedAt: r.completed_at,
+      problem: r.problem,
+      sentAt: r.sent_at,
+      // A send with no answer for two minutes is stuck, not still going.
+      stuck: r.status === 'sending' && now.getTime() - new Date(r.sent_at).getTime() > 2 * 60 * 1000,
+      lastCheckedAt: r.last_checked_at,
+      confirmedAt: r.confirmed_at,
+      idWaived: r.id_verification_waived === true,
+      resendable: resendOn.has(r.id),
+    }));
 
-  // One entry per PERSON, not per registration. Somebody volunteering at both
-  // camp weeks needs one check, not two.
-  const byPerson = new Map();
-  for (const r of regs ?? []) {
-    for (const p of r.registration_participants ?? []) {
-      if (!isVolunteerRole(p.camp_role) || p.status === 'cancelled') continue;
-      const person = p.people;
-      if (!person?.id) continue;
-      const ev = eventById.get(r.event_id);
-      const seen = byPerson.get(person.id);
-      if (seen) {
-        if (ev?.name && !seen.events.includes(ev.name)) seen.events.push(ev.name);
-        continue;
-      }
-      byPerson.set(person.id, {
-        person,
-        events: ev?.name ? [ev.name] : [],
-        // The address the family registered with. Most people carry no email
-        // of their own (every one of the 15 volunteers on 15 Oct 2026 had none,
-        // and every one of their households had one), so this is the address
-        // Checkr's invitation actually goes to unless the person has their own.
-        householdEmail: (r.households?.email ?? '').trim() || null,
-      });
+  // The balance and the invites already out, asked each time the page opens
+  // (the send actions ask again; this is for the button). A failure is said.
+  let credits = null;
+  let outstanding = 0;
+  let connectionProblem = null;
+  if (mode !== 'off') {
+    try {
+      ({ credits, outstanding } = await creditPicture(supabase, volunteerBadge()));
+    } catch (err) {
+      connectionProblem = err instanceof VolunteerBadgeError ? err.message : err?.message ?? 'VolunteerBadge couldn’t be reached.';
     }
   }
-
-  const personIds = [...byPerson.keys()];
-  const { data: clearances, error: clearancesError } = personIds.length
-    ? await supabase
-        .from('person_clearances')
-        .select(
-          'person_id, background_check_on_file, background_check_date, expires_on, checkr_status, invited_email, order_batch, provider, verdict'
-        )
-        .in('person_id', personIds)
-    : { data: [], error: null };
-  if (clearancesError) throw new Error(`Background checks: ${clearancesError.message}`);
-  const clearanceBy = new Map((clearances ?? []).map((c) => [c.person_id, c]));
-
-  // Held until the deposit is in (Ellen and Lawrence, 9 Nov 2026). Still
-  // listed, with the check missing or out of date, under "cannot be ordered
-  // yet"; markBatchOrdered() refuses them too.
-  const depositIn = await depositInByPerson(supabase, personIds);
-
-  const isAdult = (dob) => {
-    if (!dob) return null;                       // null = unknown, not false
-    const d = new Date(`${dob}T00:00:00Z`);
-    const eighteen = new Date(d);
-    eighteen.setUTCFullYear(eighteen.getUTCFullYear() + 18);
-    return eighteen <= new Date();
-  };
-
-  const candidates = [];
-  for (const [personId, { person, events: evNames, householdEmail }] of byPerson) {
-    const c = clearanceBy.get(personId);
-    const adult = isAdult(person.date_of_birth);
-    const ownEmail = (person.email || '').trim();
-    const email = ownEmail || householdEmail || '';
-
-    // A registry search (0161) is not a volunteer's check: due.
-    const registryOnly = c?.provider === 'registry_search';
-    // Already cleared and in date: not due, say nothing.
-    if (!registryOnly && c?.background_check_on_file && (!c.expires_on || c.expires_on >= today)) continue;
-    // Already out with Checkr: not due again, but worth seeing.
-    const waiting = c && ['invited', 'pending', 'suspended'].includes(c.checkr_status);
-
-    // A minor is not "blocked", they are simply not screened -- Checkr will not
-    // screen under-18s at all. Leave them out entirely rather than showing a
-    // row a coordinator can do nothing about.
-    if (adult === false) continue;
-
-    let blockedBecause = null;
-    // Marked Not permitted to attend (0162): never ordered; markBatchOrdered()
-    // and the database refuse it too.
-    if (c?.verdict === 'not_permitted') {
-      blockedBecause = 'marked Not permitted to attend, so no Checkr order is sent.';
-    } else if (adult === null) {
-      blockedBecause =
-        'no date of birth on file, so we can’t confirm they are 18. Add it on their details page.';
-    } else if (!email) {
-      blockedBecause =
-        'no email on file for them or their household. Checkr needs one to send the invitation.';
-    } else if (waiting) {
-      blockedBecause = `already invited${c.order_batch ? ` on ${dayInMorristown(c.order_batch)}` : ''}, waiting on Checkr`;
-    }
-    // The deposit hold comes first: until it is in, nothing else matters yet.
-    // Anything else wrong is kept on the end so it can be fixed meanwhile.
-    if (!waiting && c?.verdict !== 'not_permitted' && depositIn.get(personId) === false) {
-      blockedBecause = blockedBecause ? `${WAITING_ON_DEPOSIT}. Also: ${blockedBecause}` : WAITING_ON_DEPOSIT;
-    }
-
-    candidates.push({
-      personId,
-      name: `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim() || 'Unnamed',
-      email: email || '—',
-      // Said on the row, so a coordinator knows the invitation lands in the
-      // family's inbox rather than the volunteer's own.
-      emailIsHousehold: Boolean(email) && !ownEmail,
-      eventName: evNames.join(' · ') || 'No event',
-      status: c?.checkr_status ?? 'not_started',
-      batch: c?.order_batch ?? null,
-      reason: registryOnly
-        ? 'registry search only'
-        : c?.expires_on && c.expires_on < today
-        ? `expired ${c.expires_on}`
-        : c?.background_check_on_file
-          ? 'on file but out of date'
-          : 'never checked',
-      blockedBecause,
-    });
-  }
-
-  // Two people at one address (a couple, a parent and an adult child) each
-  // get their own row in Checkr's file and their own invitation -- to the
-  // same inbox. The row says so, so whoever opens the mail knows there are
-  // two links and each person must use their own (Lawrence, 15 Oct 2026).
-  const emailUse = new Map();
-  for (const c of candidates) {
-    if (c.email === '—') continue;
-    const k = c.email.toLowerCase();
-    if (!emailUse.has(k)) emailUse.set(k, []);
-    emailUse.get(k).push(c.name);
-  }
-  for (const c of candidates) {
-    const others = c.email === '—' ? [] : emailUse.get(c.email.toLowerCase()).filter((n) => n !== c.name);
-    c.sharesEmailWith = others;
-  }
-
-  candidates.sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
@@ -202,11 +86,22 @@ export default async function ScreeningPage() {
         <BackLink href="/admin/volunteers/background-checks" label="Back to Background Checks" />
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        Checkr&rsquo;s bulk upload takes a list of email addresses and invites each
-        person to fill in their own details. We never see or keep a Social Security
-        number.
+        VolunteerBadge emails each person an invite. They sign the consent and type their own
+        details, including their Social Security number, on VolunteerBadge&rsquo;s site. We never
+        see or keep it, or the report: only the result word comes back here.
       </p>
-      <ScreeningBoard candidates={candidates} />
+      {noEvents ? (
+        <p className="text-neutral-600">No upcoming events, so nobody is due a background check for one.</p>
+      ) : null}
+      <ScreeningBoard
+        candidates={candidates}
+        requests={rows}
+        mode={mode}
+        credits={credits}
+        outstanding={outstanding}
+        connectionProblem={connectionProblem}
+        dashboardUrl={VB_DASHBOARD}
+      />
     </div>
   );
 }

@@ -3,6 +3,10 @@
   "ignoreCommand": "bash scripts/vercel-ignore.sh",
   "crons": [
     {
+      "path": "/api/cron/volunteerbadge/",
+      "schedule": "30 12 * * *"
+    },
+    {
       "path": "/api/cron/reminders/",
       "schedule": "0 13 * * *"
     }

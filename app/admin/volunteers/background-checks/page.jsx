@@ -3,8 +3,9 @@
 // one of two routes (0161/0162, lib/backgroundChecks.js), and the page is in
 // two parts to match:
 //
-//   1. Volunteers: the full background check (Checkr). Ordering is Background
-//      screening, linked from here; a check entered by hand goes on the
+//   1. Volunteers: the full background check (VolunteerBadge since 0165;
+//      Checkr checks on file count until they expire). Sending invites is
+//      Background screening, linked from here; a check entered by hand goes on the
 //      Volunteers page; how long a check lasts is set here (0158).
 //   2. Campers & families: every other adult (camper, parent/guardian,
 //      sibling, caregiver) gets a search of the public
@@ -24,6 +25,8 @@ import { CHECK_TONE, clearancePill, isRegistrySearch } from '@/lib/format';
 import { todayInMorristown } from '@/lib/events';
 import { depositInByPerson } from '@/lib/screeningDeposit';
 import { loadScreeningPeople, registryBucket, volunteerBucket, fullCheckCurrent } from '@/lib/backgroundChecks';
+import { latestVbRequests } from '@/lib/screeningCandidates';
+import { volunteerBadgeMode } from '@/lib/volunteerBadge';
 import CheckLengthForm from './CheckLengthForm';
 import RegistrySearchForm from './RegistrySearchForm';
 import RegistryQueue from './RegistryQueue';
@@ -37,7 +40,7 @@ const BASE = '/admin/volunteers/background-checks/';
 const VOLUNTEER_FILTERS = [
   { key: '', label: 'All' },
   { key: 'missing', label: 'No check on file' },
-  { key: 'waiting', label: 'Waiting on Checkr' },
+  { key: 'waiting', label: 'Waiting on the check' },
   { key: 'expired', label: 'Out of date' },
   // In date, but not marked OK to serve yet: follow-up or no verdict
   // (Lawrence, 11 Nov 2026). Holds approval, so it is work, not "current".
@@ -171,6 +174,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
   if (clearError) throw new Error(`Background checks: ${clearError.message}`);
   if (countError) throw new Error(`Background checks on file: ${countError.message}`);
   const clearanceBy = new Map((clearances ?? []).map((c) => [c.person_id, c]));
+  // Each volunteer's latest VolunteerBadge invite, in the site's mode (0165).
+  const vbBy = await latestVbRequests(supabase, volunteerIds, volunteerBadgeMode() === 'test');
 
   const base = (id) => {
     const { person, events } = byId.get(id);
@@ -190,13 +195,16 @@ export default async function BackgroundChecksPage({ searchParams }) {
       // A registry search never clears a volunteer (0161).
       const onFile = Boolean(c?.background_check_on_file) && !isRegistrySearch(c);
       // The gate's own rule (lib/backgroundChecks.js): current = in date AND OK.
-      const bucket = volunteerBucket(c, today, soon);
+      const vb = vbBy.get(id) ?? null;
+      const bucket = volunteerBucket(c, today, soon, vb);
       return {
         ...base(id),
         checkDate: onFile ? c?.background_check_date ?? null : null,
         expiresOn: onFile ? c?.expires_on ?? null : null,
         pill: clearancePill(c, today),
         bucket,
+        // Which service it is waiting on, or what VolunteerBadge said.
+        vbStatus: vb && !vb.confirmed_at ? vb.status : null,
         // Held from ordering until the deposit is in (0157).
         heldForDeposit: (bucket === 'missing' || bucket === 'expired') && depositIn.get(id) === false,
       };
@@ -264,7 +272,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
   const volunteerSummary = [
     plural(vCounts[''], 'volunteer', 'volunteers'),
     `${vCounts.missing} no check on file`,
-    `${vCounts.waiting} waiting on Checkr`,
+    `${vCounts.waiting} waiting on the check`,
     `${vCounts.expired} out of date`,
     `${vCounts.decision} ${vCounts.decision === 1 ? 'needs' : 'need'} a decision`,
     ...(vCounts.not_permitted > 0 ? [`${vCounts.not_permitted} not permitted`] : []),
@@ -309,7 +317,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
           <a href="#volunteers" className="font-semibold text-brand underline">
             Volunteers
           </a>{' '}
-          need the full background check through Checkr.{' '}
+          need the full background check through VolunteerBadge.{' '}
           <a href="#registry" className="font-semibold text-brand underline">
             Campers and families
           </a>{' '}
@@ -322,7 +330,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
       {/* ---- Part 1 ---- */}
       <CheckCard
         id="volunteers"
-        title="Volunteers: full background check (Checkr)"
+        title="Volunteers: full background check"
         summary={volunteerSummary}
         pills={volunteerPills}
         defaultOpen={volunteerWork > 0 || Boolean(vFilter)}
@@ -336,15 +344,15 @@ export default async function BackgroundChecksPage({ searchParams }) {
           <div className={HOW_TO_BOX}>
             <h3 className="font-bold">How to run a check</h3>
             <p className="mt-1 text-sm text-neutral-700">
-              <strong>Order checks</strong> makes the file you send to Checkr and brings
-              Checkr&rsquo;s results back in. To enter a check by hand, use the{' '}
+              <strong>Send checks</strong> sends VolunteerBadge invites and brings the results
+              back in. To enter a check by hand, use the{' '}
               <Link href="/admin/volunteers/" className="font-semibold text-brand underline">
                 Volunteers page
               </Link>
               .
             </p>
             <Link href="/admin/volunteers/screening/" className="btn-primary mt-3 inline-block py-2!">
-              Order checks
+              Send checks
             </Link>
           </div>
           <CheckLengthForm months={months} onFile={onFileCount ?? 0} canEdit={canWrite} />
@@ -390,8 +398,16 @@ export default async function BackgroundChecksPage({ searchParams }) {
                           <StatusPill pill={x.pill} />
                           {x.bucket === 'waiting' && (
                             <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.waiting}`}>
-                              Waiting on Checkr
+                              {x.vbStatus ? 'Waiting on VolunteerBadge' : 'Waiting on Checkr'}
                             </span>
+                          )}
+                          {x.bucket === 'decision' && (x.vbStatus === 'clear' || x.vbStatus === 'consider') && (
+                            <Link
+                              href="/admin/volunteers/screening/"
+                              className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold underline ${x.vbStatus === 'clear' ? CHECK_TONE.done : CHECK_TONE.hold}`}
+                            >
+                              {x.vbStatus === 'clear' ? 'VolunteerBadge: clear, confirm it' : 'VolunteerBadge: needs review'}
+                            </Link>
                           )}
                           {x.bucket === 'soon' && (
                             <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.todo}`}>

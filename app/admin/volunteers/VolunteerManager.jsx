@@ -29,27 +29,6 @@ function volunteerState(app, placeStatus) {
   return ['Volunteer: needs your decision', 'bg-amber-100 text-amber-800', true];
 }
 
-// Checkr report states, mirrored into volunteer_clearances.checkr_status by the
-// webhook handler once that exists. Nothing writes these today -- the columns
-// and this display are the placeholder, so the shape of the finished feature is
-// visible (and reviewable) before any key is issued.
-const CHECKR_CHIP = {
-  not_started: ['Not started', 'bg-neutral-100 text-neutral-500'],
-  invited: ['Invited, waiting on volunteer', 'bg-amber-100 text-amber-800'],
-  pending: ['Running at Checkr', 'bg-blue-100 text-blue-800'],
-  clear: ['Clear', 'bg-green-100 text-green-800'],
-  consider: ['Consider: needs a decision', 'bg-red-100 text-red-800'],
-  suspended: ['Suspended at Checkr', 'bg-red-100 text-red-800'],
-  dispute: ['Disputed by volunteer', 'bg-amber-100 text-amber-800'],
-  canceled: ['Cancelled', 'bg-neutral-200 text-neutral-600'],
-};
-
-const ADJUDICATION_LABEL = {
-  engaged: 'Engaged: going ahead despite the result',
-  pre_adverse_action: 'Pre-adverse action notice sent',
-  post_adverse_action: 'Post-adverse action: declined',
-};
-
 const fmtAge = (dob) => {
   if (!dob) return null;
   const age = Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 86400000));
@@ -76,7 +55,7 @@ const whenLocal = (iso) =>
 // The record (0091, 15 Oct 2026): paperwork on file, the check date (the
 // expiry follows by policy), and the ministry's verdict -- with who did each
 // and when, stamped by the database, and the log underneath.
-function ClearanceEditor({ personId, clearance, email, onDone }) {
+function ClearanceEditor({ personId, clearance, vb, email, onDone }) {
   const router = useRouter();
   const [onFile, setOnFile] = useState(Boolean(clearance?.background_check_on_file));
   const [date, setDate] = useState(clearance?.background_check_date ?? '');
@@ -99,7 +78,7 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
 
   return (
     <div className="mt-2 rounded-sm border border-neutral-200 bg-neutral-50 p-3 text-sm">
-      <CheckrPanel clearance={clearance} email={email} />
+      <ScreeningPanel clearance={clearance} vb={vb} email={email} />
       <p className="font-semibold text-neutral-700 mb-2">Background check record</p>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex items-center gap-2">
@@ -174,64 +153,76 @@ function ClearanceEditor({ personId, clearance, email, onDone }) {
   );
 }
 
-// Where this person is in Checkr's process (Lawrence, 4 Nov 2026). The
-// ministry's way is the bulk file, not the API: names and emails go to Checkr
-// in a batch from Background screening, Checkr emails each person, they fill
-// in their own details on Checkr's form, and the results file comes back and
-// is uploaded there. This card says which of those steps this person is at;
-// the ministry's verdict is recorded underneath. No Social Security number is
-// ever sent to, or held by, Luke 14.
-function CheckrPanel({ clearance, email }) {
-  const status = clearance?.checkr_status ?? 'not_started';
-  const [label, tone] = CHECKR_CHIP[status] ?? CHECKR_CHIP.not_started;
-  const sent = Boolean(clearance?.order_batch) || status !== 'not_started';
-  const resultIn = ['clear', 'consider', 'dispute', 'suspended', 'canceled'].includes(status);
+// Where this person's background check is (0165, 13 Nov 2026: VolunteerBadge
+// replaced Checkr's batch file). Invites go out from Background screening;
+// VolunteerBadge emails the person, who signs the consent and types their own
+// details on its site; the result word comes back there, and a clear result
+// becomes OK to serve only when staff confirm it. A Checkr order still out is
+// shown as such. No Social Security number is ever sent to, or held by, Luke 14.
+const VB_PANEL = {
+  sending: ['Sending didn’t finish', 'bg-amber-100 text-amber-800'],
+  invited: ['Invited, waiting on them', 'bg-blue-50 text-blue-700'],
+  applied: ['Applied, check not started', 'bg-blue-50 text-blue-700'],
+  processing: ['Check in progress', 'bg-blue-50 text-blue-700'],
+  in_review: ['VolunteerBadge is reviewing', 'bg-blue-50 text-blue-700'],
+  clear: ['Clear', 'bg-green-100 text-green-800'],
+  consider: ['Needs review in VolunteerBadge', 'bg-red-100 text-red-800'],
+  error: ['Not completed', 'bg-neutral-100 text-neutral-600'],
+  expired: ['Invite expired', 'bg-neutral-100 text-neutral-600'],
+  not_sent: ['Not sent', 'bg-neutral-100 text-neutral-600'],
+  cancelled: ['Taken back', 'bg-neutral-100 text-neutral-600'],
+  superseded: ['Replaced by a resend', 'bg-neutral-100 text-neutral-600'],
+};
 
+function ScreeningPanel({ clearance, vb, email }) {
+  const checkrStatus = clearance?.checkr_status ?? 'not_started';
+  const checkrOut = ['invited', 'pending', 'suspended'].includes(checkrStatus);
+  const screening = (
+    <Link href="/admin/volunteers/screening/" className="text-brand underline">
+      Background screening
+    </Link>
+  );
+  let title = 'VolunteerBadge';
+  let chip = null;
+  let words;
+  if (vb) {
+    const [label, tone] = VB_PANEL[vb.status] ?? [vb.status, 'bg-neutral-100 text-neutral-600'];
+    chip = vb.status === 'clear' && vb.confirmedAt ? ['OK to serve recorded', 'bg-green-100 text-green-800'] : [label, tone];
+    if (vb.status === 'clear' && !vb.confirmedAt) {
+      words = <>Clear. Confirm it as OK to serve on {screening}.</>;
+    } else if (vb.status === 'clear') {
+      words = <>Clear, and recorded as OK to serve {dayInMorristown(vb.confirmedAt)}.</>;
+    } else if (vb.status === 'consider') {
+      words = <>Records were released on the report. Read it in VolunteerBadge, then record the ministry&rsquo;s verdict below.</>;
+    } else if (['error', 'expired', 'not_sent', 'cancelled'].includes(vb.status)) {
+      words = <>{vb.problem ? `${vb.problem} ` : ''}It can be sent again from {screening}.</>;
+    } else {
+      words = <>Invite sent {dayInMorristown(vb.sentAt)} to {vb.email}. Updates show on {screening}.</>;
+    }
+  } else if (checkrOut) {
+    title = 'Checkr';
+    chip = [checkrStatus === 'suspended' ? 'Suspended at Checkr' : 'Waiting on Checkr', 'bg-blue-50 text-blue-700'];
+    words = <>Sent to Checkr{clearance?.invited_email ? ` at ${clearance.invited_email}` : ''}. Its result comes in by hand.</>;
+  } else {
+    words = (
+      <>
+        No invite out. Send one from {screening}. It will go to{' '}
+        {email || <strong>no email on file (add one first)</strong>}.
+      </>
+    );
+  }
   return (
     <div className="mb-3 rounded-sm border border-neutral-200 bg-white p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-semibold text-neutral-700">Checkr</p>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>{label}</span>
+        <p className="font-semibold text-neutral-700">{title}</p>
+        {chip && <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${chip[1]}`}>{chip[0]}</span>}
       </div>
-      <ol className="mt-2 grid gap-1 text-xs sm:grid-cols-3">
-        <li className={sent ? 'text-green-800' : 'font-semibold text-neutral-800'}>
-          {sent ? '✓' : '1.'} Name and email sent to Checkr in a batch
-        </li>
-        <li className={resultIn ? 'text-green-800' : sent ? 'font-semibold text-neutral-800' : 'text-neutral-500'}>
-          {resultIn ? '✓' : '2.'} Checkr emails them, and they fill in their own details
-        </li>
-        <li className={resultIn ? 'font-semibold text-neutral-800' : 'text-neutral-500'}>
-          3. Result uploaded here, then record the verdict below
-        </li>
-      </ol>
-      <p className="mt-2 text-sm">
-        {!sent ? (
-          <>
-            Not sent yet. It goes in the next batch from{' '}
-            <Link href="/admin/volunteers/screening/" className="text-brand underline">
-              Background screening
-            </Link>
-            . It will go to {email || <strong>no email on file (add one first)</strong>}.
-          </>
-        ) : !resultIn ? (
-          <>
-            Sent{clearance?.order_batch ? ` in the batch of ${dayInMorristown(clearance.order_batch)}` : ''}
-            {clearance?.invited_email ? ` to ${clearance.invited_email}` : ''}. Waiting on Checkr. When the
-            results file comes back, upload it on{' '}
-            <Link href="/admin/volunteers/screening/" className="text-brand underline">
-              Background screening
-            </Link>
-            .
-          </>
-        ) : (
-          <>
-            Result uploaded{clearance?.report_completed_at ? ` ${clearance.report_completed_at.slice(0, 10)}` : ''}:{' '}
-            <strong>{label}</strong>. Record the ministry&rsquo;s verdict below. A volunteer can be approved
-            only once it reads OK to serve.
-            {clearance?.adjudication && <> ({ADJUDICATION_LABEL[clearance.adjudication] ?? clearance.adjudication})</>}
-          </>
-        )}
-      </p>
+      <p className="mt-2 text-sm">{words}</p>
+      {vb?.idWaived && (
+        <p className="mt-1 text-xs font-semibold text-amber-900">
+          Sent without VolunteerBadge&rsquo;s photo ID step (staff waived it for this invite).
+        </p>
+      )}
     </div>
   );
 }
@@ -521,6 +512,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
             <ClearanceEditor
               personId={person?.id}
               clearance={clearance}
+              vb={row.vb}
               email={person?.email || household?.email}
             />
           ) : (

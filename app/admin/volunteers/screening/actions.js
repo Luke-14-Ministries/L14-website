@@ -1,645 +1,427 @@
 'use server';
 
-// Bulk background screening, without an API.
+// Background screening through VolunteerBadge (0165, 13 Nov 2026; Lawrence,
+// with Larry's approval of VolunteerBadge). It replaces the Checkr batch file:
+// the CSV download, "mark as sent" and the results import were removed in the
+// same commit (git history has them). Checkr results already on file stay and
+// count until they expire.
 //
-// Checkr sells API access behind a $500 certification course. It buys
-// automation and nothing else: their dashboard's bulk upload takes a CSV of
-// "email, first name, phone" and sends every person the same hosted invitation
-// the API would, so the Social Security number is typed into Checkr's form and
-// never touches us either way. At twenty to forty checks a year the course
-// cost cannot be recovered in saved minutes, so the flow here is deliberately
-// file-based:
+//   1. prepareVolunteerBadgeBatch: who in the selection can be sent, the
+//      template, and the credit guard (below), BEFORE anything is sent.
+//   2. sendVolunteerBadgeInvite: one person at a time, called in turn by the
+//      screen so each result shows as it happens and VB's 100-a-minute limit
+//      holds. The row is written BEFORE VB is called, so a retry or a double
+//      click can't invite twice (one open invite per person, per address).
+//      The credit guard runs again, here, on every send.
+//   3. resendWithoutIdStep: one person's invite again with VB's photo-ID step
+//      skipped, for a reason staff give (Lawrence, 13 Nov 2026). It replaces
+//      their open invite (marked superseded). Never in a batch.
+//   4. refreshVolunteerBadge: the site asks VB (no webhook; VB never calls us).
+//   5. confirmVolunteerBadgeClear: a clear result becomes OK to serve only when
+//      staff press the button (confirm_volunteerbadge_clear, 0165).
 //
-//   1. The site works out who is due and writes Checkr's exact CSV.
-//   2. A coordinator uploads that file at dashboard.checkr.com.
-//   3. Checkr's results CSV comes back and the site reconciles it.
-//
-// Two file moves per batch, no API key to protect, no webhook to go silently
-// wrong -- and the same privacy guarantee.
+// All of it needs Background checks write AND read (0058): sending an invite
+// spends the ministry's credits and asks a real person for their SSN, which
+// is at least as sensitive as reading a result.
 
 import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { csvPlainText } from '@/lib/csv';
-import { dayInMorristown, todayInMorristown } from '@/lib/events';
-import { depositInByPerson, WAITING_ON_DEPOSIT } from '@/lib/screeningDeposit';
 import { withReason } from '@/lib/dbErrors';
+import { volunteerBadge, volunteerBadgeTemplateId } from '@/lib/volunteerBadge';
+import { VolunteerBadgeError, loadRoster, namesAgree } from '@/lib/volunteerBadgeApi';
+import { refreshOne, refreshOpenRequests } from '@/lib/volunteerBadgeSync';
+import { loadScreeningCandidates } from '@/lib/screeningCandidates';
+import { creditPicture, creditShortfall } from '@/lib/volunteerBadgeCredits';
 
-// How long a check stands before the person is due again.
-//
-// HOW LONG A CHECK LASTS is a setting since 0158 (Lawrence, 9 Nov 2026), set
-// on the Background Checks page. The importer writes the check date only; the
-// database fills the expiry from it by that setting (clearance_review_stamp),
-// so an import and a hand-recorded check can never disagree.
+const NOT_CONNECTED = 'VolunteerBadge isn’t connected yet (no VOLUNTEERBADGE_API_KEY on this site).';
+const MAX_BATCH = 50;
 
-const normEmail = (v) => (v || '').trim().toLowerCase();
-
-// ---------------------------------------------------------------------------
-// Record that a batch has been sent.
-//
-// Called when the coordinator downloads the CSV -- NOT when Checkr confirms
-// anything, because Checkr has no way to tell us. That is an honest weakness
-// of a file-based flow and the status name says so: 'invited' means "we put
-// them on a list and sent it", not "Checkr has them". The reconcile step is
-// what turns a claim into a fact.
-export async function markBatchOrdered(personIds, batch, reason = 'volunteer') {
+async function gate() {
   const staff = await getStaff();
-  if (!can(staff, 'write:background_checks')) return { ok: false, error: 'Not permitted.' };
-  if (!Array.isArray(personIds) || personIds.length === 0) {
-    return { ok: false, error: 'Nobody was selected.' };
-  }
-
-  const supabase = await createClient();
-
-  // The household's address stands in where the person has none -- the same
-  // rule the screening page applies, so what it lists is what gets ordered.
-  const { data: people, error: peopleError } = await supabase
-    .from('people')
-    .select('id, first_name, last_name, email, phone, date_of_birth, households!people_household_id_fkey ( email, phone )')
-    .in('id', personIds);
-  if (peopleError) return { ok: false, error: withReason('Could not read those people.', peopleError) };
-
-  const now = new Date().toISOString();
-  const skipped = [];
-  const rows = [];
-
-  // Anyone marked Not permitted to attend is never sent to Checkr (0162): the
-  // database refuses the order too, and would fail the whole batch.
-  const { data: verdicts, error: verdictsError } = await supabase
-    .from('person_clearances')
-    .select('person_id, verdict')
-    .in('person_id', personIds);
-  if (verdictsError) return { ok: false, error: withReason('Nothing was ordered: their checks could not be read.', verdictsError) };
-  const notPermitted = new Set((verdicts ?? []).filter((v) => v.verdict === 'not_permitted').map((v) => v.person_id));
-
-  // Volunteers wait for their registration's deposit (Ellen and Lawrence,
-  // 9 Nov 2026) -- checked here too, so a stale page cannot order one.
-  let depositIn = new Map();
-  if (reason === 'volunteer') {
-    try {
-      depositIn = await depositInByPerson(supabase, personIds);
-    } catch (err) {
-      return { ok: false, error: `Nothing was ordered: the deposits could not be checked. ${err.message}` };
-    }
-  }
-
-  for (const p of people ?? []) {
-    const name = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Someone';
-    // Checkr's bulk template makes email the one required column, so a person
-    // without one cannot be ordered at all. Saying which person, by name, is
-    // the difference between a fixable problem and a silent short batch.
-    if (notPermitted.has(p.id)) {
-      skipped.push(`${name}: marked Not permitted to attend, so no Checkr order is sent`);
-      continue;
-    }
-    if (depositIn.get(p.id) === false) {
-      skipped.push(`${name}: ${WAITING_ON_DEPOSIT}`);
-      continue;
-    }
-    const sendTo = normEmail(p.email) || normEmail(p.households?.email);
-    if (!sendTo) {
-      skipped.push(`${name}: no email on file for them or their household`);
-      continue;
-    }
-    // The database refuses a Checkr order for a minor or for anyone whose age
-    // we do not know (migration 0056). Catching it here too means the
-    // coordinator is told before the file is built rather than after.
-    if (!p.date_of_birth) {
-      skipped.push(`${name}: no date of birth on file, so we can’t confirm they are 18`);
-      continue;
-    }
-    rows.push({
-      person_id: p.id,
-      provider: 'checkr',
-      checkr_status: 'invited',
-      screening_reason: reason,
-      invited_email: sendTo,
-      order_batch: batch,
-      ordered_by: staff.userId,
-      ordered_at: now,
-      invitation_sent_at: now,
-    });
-  }
-
-  if (rows.length === 0) {
-    return { ok: false, error: 'Nobody in that selection could be ordered.', skipped };
-  }
-
-  const { error } = await supabase
-    .from('person_clearances')
-    .upsert(rows, { onConflict: 'person_id' });
-  if (error) return { ok: false, error: error.message, skipped };
-
-  // The file is built HERE, in the same action that records the batch, and
-  // handed back with it. Downloading and marking must not be two buttons: a
-  // coordinator who downloads and forgets to mark leaves the site believing
-  // nobody was ordered, and the next batch invites all of them again -- at
-  // about $26.50 each. One click, one record, one file.
-  const byId = new Map((people ?? []).map((p) => [p.id, p]));
-  const csv = buildCheckrCsv(rows, byId);
-
-  revalidatePath('/admin/volunteers');
-  return {
-    ok: true,
-    ordered: rows.length,
-    skipped,
-    csv,
-    filename: batchFilename(batch, rows.length),
-  };
+  if (!can(staff, 'write:background_checks') || !can(staff, 'background_checks')) return null;
+  return staff;
 }
 
-// Checkr's bulk file, from the rows of a batch and the people they belong to.
-// One function, so the first download and a re-download are the same bytes.
-function buildCheckrCsv(rows, byId) {
-  return [
-    // Checkr's own template header, reproduced exactly. Their parser reads
-    // these strings; "first name" is not "First Name" to it.
-    'email (required),first name (optional),phone number (optional)',
-    ...rows.map((r) => {
-      const p = byId.get(r.person_id);
-      // Digits only. Checkr's example is a bare 10-digit number, and
-      // "(423) 748-4954" is the kind of thing a strict parser rejects for the
-      // whole row rather than the one field. The household's phone stands in
-      // where the person has none (1 of 15 volunteers had their own on
-      // 15 Oct 2026; every household did), the same way the email does --
-      // Ellen's template is the "with SMS" one, which texts the invitation
-      // to this number as well as emailing it. A leading country 1 is
-      // dropped so the number is the 10 digits Checkr's example shows.
-      const rawPhone = (p?.phone ?? '').trim() || (p?.households?.phone ?? '').trim();
-      let phone = rawPhone.replace(/\D/g, '');
-      if (phone.length === 11 && phone.startsWith('1')) phone = phone.slice(1);
-      // No quoting in Checkr's format; formula characters dropped (lib/csv.js).
-      const first = csvPlainText(p?.first_name);
-      return `${r.invited_email},${first},${phone}`;
-    }),
-  ].join('\r\n');
-}
-const batchFilename = (batch, n) => `luke14-checkr-${dayInMorristown(batch)}-${n}.csv`;
-
-// The same file again, for a batch already recorded as sent (Lawrence,
-// 15 Oct 2026: "the ability to re-download should be possible"). Reads only;
-// the batch stays exactly as recorded. The addresses are the ones invited,
-// not whatever the people carry now, so the file is the one Checkr got.
-export async function rebuildBatchCsv(batch) {
-  const staff = await getStaff();
-  if (!can(staff, 'background_checks')) return { ok: false, error: 'Not permitted.' };
-  if (!batch) return { ok: false, error: 'Which batch?' };
-
-  const supabase = await createClient();
-  const { data: rows, error } = await supabase
-    .from('person_clearances')
-    .select('person_id, invited_email')
-    .eq('order_batch', batch)
-    .not('invited_email', 'is', null);
-  if (error) return { ok: false, error: error.message };
-  if (!rows?.length) return { ok: false, error: 'That batch has no invitations left on it.' };
-
-  const { data: people, error: peopleError } = await supabase
-    .from('people')
-    .select('id, first_name, phone, households!people_household_id_fkey ( phone )')
-    .in('id', rows.map((r) => r.person_id));
-  if (peopleError) return { ok: false, error: `The people on the batch could not be read: ${peopleError.message}` };
-  const byId = new Map((people ?? []).map((p) => [p.id, p]));
-  return { ok: true, csv: buildCheckrCsv(rows, byId), filename: batchFilename(batch, rows.length) };
-}
-
-// Take a batch back (Lawrence, 15 Oct 2026): a press on the wrong day, or a
-// file that never reached Checkr. Only rows still 'invited' are touched --
-// anything Checkr has already moved along stays as it is -- and they go
-// back to never-checked, so the people are due again. The log trigger
-// records each status change with who did it.
-export async function unsendBatch(batch) {
-  const staff = await getStaff();
-  if (!can(staff, 'background_checks')) return { ok: false, error: 'Not permitted.' };
-  if (!batch) return { ok: false, error: 'Which batch?' };
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('person_clearances')
-    .update({
-      checkr_status: 'not_started',
-      invited_email: null,
-      order_batch: null,
-      ordered_by: null,
-      ordered_at: null,
-      invitation_sent_at: null,
-    })
-    .eq('order_batch', batch)
-    .eq('checkr_status', 'invited')
-    .select('person_id');
-  if (error) return { ok: false, error: error.message };
-  revalidatePath('/admin/volunteers');
+function revalidateScreening() {
   revalidatePath('/admin/volunteers/screening');
-  return { ok: true, undone: data?.length ?? 0 };
+  revalidatePath('/admin/volunteers/background-checks');
+  revalidatePath('/admin/volunteers');
 }
 
-// ---------------------------------------------------------------------------
-// Reconcile Checkr's results export.
-//
-// Written against a REAL export (27 Aug), not a guess, and two things in that
-// file would have caused real harm if this had shipped on assumptions.
-//
-// 1. STATUS IS NOT THE RESULT. Checkr's export has both `Status` and
-//    `Assessment`. `Status` says whether the report FINISHED -- it reads
-//    "complete" on every finished report, including one that came back
-//    "consider". `Assessment` is the verdict. Reading Status as the result
-//    would have marked a volunteer with a criminal-record hit as CLEARED, on a
-//    safeguarding record, silently. So: Status decides whether we have an
-//    answer yet; Assessment decides what the answer is.
-//
-// 2. "Candidate email" IS NOT ALWAYS THE CANDIDATE'S. In the sample export,
-//    two reports for a person named Steve Wayne Gillespie both carry
-//    ellen@luke14ministries.net -- the staff member who ordered them by hand.
-//    Matching on email alone would have tied someone else's background check
-//    to Ellen's record. Anything ordered through THIS screen carries the right
-//    address (invited_email, migration 0057), so email matching is exact for
-//    our own batches; older hand-ordered checks fall back to an exact
-//    full-name match, and the preview says which method was used so a person
-//    decides before anything is written.
-// 3. CHECKR'S WORDS ARE NOT OUR WORDS. checkr_status has been a constrained
-//    column since 0029 -- eight values the site chose. The real export's
-//    Assessment reads "review", which is not one of them, so writing it
-//    through would have failed the check constraint at the moment of import,
-//    with a message about a constraint, AFTER a preview that said the row was
-//    fine. So the verdict is mapped into our vocabulary here and Checkr's own
-//    word is kept verbatim in `assessment` (migration 0060).
-//
-//    Everything that means "a person must look at this" collapses to
-//    'consider'. That is not a loss: nothing about how the site behaves turns
-//    on the difference between "review" and "consider", and both mean nobody
-//    is cleared.
-const VERDICT_TO_STATUS = new Map([
-  ['clear', 'clear'],
-  ['consider', 'consider'],
-  ['review', 'consider'],
-  ['escalated', 'consider'],
-  ['pending', 'pending'],
-  ['processing', 'pending'],
-  ['in progress', 'pending'],
-  ['suspended', 'suspended'],
-  ['dispute', 'dispute'],
-  ['disputed', 'dispute'],
-  ['canceled', 'canceled'],
-  ['cancelled', 'canceled'],
-]);
+const vbWords = (err) => (err instanceof VolunteerBadgeError ? err.message : 'VolunteerBadge couldn’t be reached.');
 
-function parseCsv(text) {
-  const rows = [];
-  let row = [], field = '', quoted = false;
-  for (let i = 0; i < text.length; i += 1) {
-    const c = text[i];
-    if (quoted) {
-      if (c === '"' && text[i + 1] === '"') { field += '"'; i += 1; }
-      else if (c === '"') quoted = false;
-      else field += c;
-    } else if (c === '"') quoted = true;
-    else if (c === ',') { row.push(field); field = ''; }
-    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-    else if (c !== '\r') field += c;
-  }
-  if (field !== '' || row.length) { row.push(field); rows.push(row); }
-  return rows.filter((r) => r.some((c) => c.trim() !== ''));
+async function defaultTemplateId(api) {
+  const set = volunteerBadgeTemplateId();
+  if (set) return set;
+  const templates = await api.templates();
+  return (templates.find((t) => t.isDefault) ?? templates[0])?.id ?? null;
 }
 
-const norm = (v) => (v || '').trim().toLowerCase();
-const normName = (v) => (v || '').trim().toLowerCase().replace(/\s+/g, ' ');
+// THE CREDIT GUARD (Lawrence, 13 Nov 2026), asked of VB on the server every
+// time, never taken from the page: the balance must cover the people in this
+// send plus every invite already out and not yet charged
+// (lib/volunteerBadgeCredits.js). Returns refusal words, or null to go ahead.
+async function guardCredits(supabase, api, sending, { replacing = null } = {}) {
+  if (api.sandbox) return null; // test mode spends nothing
+  const picture = await creditPicture(supabase, api, { replacing });
+  return creditShortfall(picture, sending);
+}
 
-export async function importCheckrResults(csvText, { dryRun = true } = {}) {
-  const staff = await getStaff();
-  if (!can(staff, 'write:background_checks')) return { ok: false, error: 'Not permitted.' };
-  if (!can(staff, 'background_checks')) return { ok: false, error: 'Not permitted.' };
-
-  const rows = parseCsv(csvText || '');
-  if (rows.length < 2) return { ok: false, error: 'That file has no rows in it.' };
-
-  // Column names are matched loosely so a change of case or spacing in
-  // Checkr's export does not break this -- but the columns themselves are
-  // named explicitly, because guessing which column meant "result" is the
-  // mistake this whole comment block exists to prevent.
-  const header = rows[0].map((h) => norm(h));
-  const at = (...names) => {
-    for (const n of names) {
-      const i = header.indexOf(n);
-      if (i !== -1) return i;
-    }
-    return -1;
-  };
-  const iEmail = at('candidate email', 'email');
-  const iName = at('candidate full name', 'candidate name');
-  const iAssess = at('assessment');
-  const iStatus = at('status', 'report status');
-  const iDone = at('completed at');
-  const iReport = at('report id');
-  const iCand = at('candidate id');
-  const iPackage = at('package');
-  const iAdj = at('adjudication');
-  const iOrderedBy = at('report ordered by');
-  const iSex = at('sex_offender_search', 'sex offender search');
-
-  // EVERY screening column, not just the sex-offender one. The ministry wants
-  // all flags (27 Aug): sexual offences are priority one, but a drink-driving
-  // or possession conviction is something they want the chance to address, and
-  // an overall "consider" does not say which search produced it.
-  //
-  // Found by shape rather than by a fixed list, because Checkr's screening set
-  // varies by package -- the two sample rows carry different ones. Anything
-  // ending in _search or _trace is a screening; the administrative columns are
-  // named explicitly above and skipped here.
-  const ADMIN_COLS = new Set([
-    'report id', 'candidate id', 'custom id', 'completed at', 'created at',
-    'estimated completion', 'candidate full name', 'candidate email',
-    'dl state', 'dl number', 'adjudicated at', 'adjudication',
-    'adjudicator email', 'assessment', 'assessment_status', 'package',
-    'status', 'geos', 'report ordered by', 'cost center',
-  ]);
-  const screeningCols = header
-    .map((h, i) => ({ h, i }))
-    .filter(({ h }) => h && !ADMIN_COLS.has(h) && (h.endsWith('_search') || h.endsWith('_trace')));
-
-  if (iEmail === -1 && iName === -1) {
-    return {
-      ok: false,
-      error:
-        'This file has neither a candidate email nor a candidate name column, so results cannot ' +
-        `be matched to anyone. Headings found: ${header.join(', ')}`,
-    };
-  }
-  // A clearance row with provider 'checkr' and any status other than
-  // 'not_started' must carry a Checkr candidate id -- a constraint from 0029,
-  // and a good one: it is what makes a record traceable back to a report. A
-  // billing or usage export has no such column, and pasting one here would
-  // fail at the write with a constraint name rather than an explanation.
-  if (iCand === -1) {
-    return {
-      ok: false,
-      error:
-        'No "Candidate ID" column. This looks like a billing or usage export rather than the ' +
-        'Reports export. Without a candidate ID, a result can\u2019t be tied to its report. ' +
-        'Export from Checkr\u2019s Reports screen instead.',
-    };
-  }
-  if (iAssess === -1) {
-    return {
-      ok: false,
-      error:
-        'No "Assessment" column. That column holds the verdict (clear / consider); "Status" only ' +
-        'says whether the report finished. Refusing to import rather than guess which is which.',
-    };
-  }
+export async function prepareVolunteerBadgeBatch(personIds) {
+  if (!(await gate())) return { ok: false, error: 'Not permitted.' };
+  const api = volunteerBadge();
+  if (!api) return { ok: false, error: NOT_CONNECTED };
+  if (!Array.isArray(personIds) || personIds.length === 0) return { ok: false, error: 'Nobody was selected.' };
+  if (personIds.length > MAX_BATCH) return { ok: false, error: `Send at most ${MAX_BATCH} at a time.` };
 
   const supabase = await createClient();
-  const { data: existing, error: existingError } = await supabase
-    .from('person_clearances')
-    .select('person_id, invited_email');
-  if (existingError) return { ok: false, error: `The invitations on file could not be read: ${existingError.message}` };
-  const { data: people, error: peopleError } = await supabase
-    .from('people')
-    .select('id, first_name, last_name');
-  // Read as empty, either failure would report every row as unmatched.
-  if (peopleError) return { ok: false, error: `The people could not be read: ${peopleError.message}` };
-
-  // An address may have been invited for MORE than one person -- a couple on
-  // one household email. byEmail therefore holds a set, and a row whose
-  // address is shared is settled by the name on the row, or not at all
-  // (Lawrence, 15 Oct 2026: "how to treat two people with the same email?").
-  const byEmail = new Map();
-  const haveRow = new Set();
-  for (const r of existing ?? []) {
-    haveRow.add(r.person_id);
-    if (r.invited_email) {
-      const k = norm(r.invited_email);
-      if (!byEmail.has(k)) byEmail.set(k, new Set());
-      byEmail.get(k).add(r.person_id);
+  let candidates;
+  try {
+    ({ candidates } = await loadScreeningCandidates(supabase, { sandbox: api.sandbox }));
+  } catch (err) {
+    return { ok: false, error: `Nothing was sent: ${err.message}` };
+  }
+  const byId = new Map(candidates.map((c) => [c.personId, c]));
+  const ready = [];
+  const refused = [];
+  const emailInBatch = new Map();
+  for (const id of personIds) {
+    const c = byId.get(id);
+    if (!c) {
+      refused.push({ personId: id, name: 'Someone', why: 'no longer due a background check.' });
+    } else if (c.blockedBecause) {
+      refused.push({ personId: id, name: c.name, why: c.blockedBecause });
+    } else if (emailInBatch.has(c.email)) {
+      refused.push({
+        personId: id,
+        name: c.name,
+        why: `same email as ${emailInBatch.get(c.email)} in this batch. VolunteerBadge keeps one record per address, so give one of them their own email first.`,
+      });
+    } else {
+      emailInBatch.set(c.email, c.name);
+      ready.push({ personId: id, name: c.name });
     }
   }
-  // Exact full-name match only, and only where the name is UNIQUE in the
-  // database. Two Steve Gillespies means no match and a line in the report --
-  // far better than tying a background check to the wrong person.
-  const nameCount = new Map();
-  const byName = new Map();
-  for (const p of people ?? []) {
-    const key = normName(`${p.first_name ?? ''} ${p.last_name ?? ''}`);
-    if (!key.trim()) continue;
-    nameCount.set(key, (nameCount.get(key) ?? 0) + 1);
-    byName.set(key, p.id);
-  }
 
-  // A word in the Assessment column that this importer has never seen is
-  // treated as "consider" -- the cautious direction -- but it is NOT treated
-  // silently. Checkr can add a verdict, and a new word quietly filed as
-  // "needs review" is fine; a new word quietly filed as "cleared" would not
-  // be, and the only way to keep that distinction honest is to say out loud
-  // which words were not recognised.
-  const unrecognised = new Set();
-  const matched = [], unmatched = [], updates = [];
-  for (const r of rows.slice(1)) {
-    const email = iEmail === -1 ? '' : norm(r[iEmail]);
-    const orderedBy = iOrderedBy === -1 ? '' : norm(r[iOrderedBy]);
-    const fullName = iName === -1 ? '' : (r[iName] || '').trim();
-    const verdict = norm(r[iAssess]);
-    const reportState = iStatus === -1 ? 'complete' : norm(r[iStatus]);
-
-    // WHOSE ADDRESS IS IN THE EMAIL COLUMN?
-    //
-    // On a check ordered by hand at Checkr, "Candidate email" holds the staff
-    // member who placed the order, not the person being screened. Both sample
-    // rows for Steve Wayne Gillespie carry ellen@luke14ministries.net, and
-    // "Report Ordered By" carries the same address. That equality is the tell,
-    // and it is worth acting on: Ellen is herself a volunteer, so matching on
-    // that address would have filed a stranger's criminal-record hit against
-    // HER safeguarding record -- a wrong answer that reads as a right one.
-    //
-    // Anything ordered through this screen carries the candidate's own address
-    // (invited_email, migration 0057), and the orderer is different, so real
-    // batches are unaffected.
-    const emailIsOrderers = !!email && email === orderedBy;
-    const nameKey = normName(fullName);
-    const nameId = nameKey && nameCount.get(nameKey) === 1 ? byName.get(nameKey) : undefined;
-
-    const emailIds = emailIsOrderers || !email ? null : byEmail.get(email);
-    let personId;
-    let how = null;
-    if (emailIds && emailIds.size === 1) {
-      personId = [...emailIds][0];
-      how = 'email';
-    } else if (emailIds && emailIds.size > 1) {
-      // Shared address: the name decides, and only if it names one of them.
-      if (nameId && emailIds.has(nameId)) {
-        personId = nameId;
-        how = 'name';
-      } else {
-        unmatched.push({
-          name: fullName || '(no name)',
-          email: email || '(no email)',
-          verdict,
-          why: `${emailIds.size} people were invited at this email and the name doesn’t say which one. Match it by hand.`,
-        });
-        continue;
+  try {
+    const templateId = await defaultTemplateId(api);
+    if (!templateId) {
+      return { ok: false, error: 'VolunteerBadge has no application template yet. Make one under Recruit → Applications.' };
+    }
+    // Live only: VolunteerBadge keeps one record per address. An address it
+    // already has under someone else's first name (or none to compare) would
+    // tie that record's checks to this person, so it is refused; and a roster
+    // with no addresses at all means no result could ever be matched.
+    let sendable = ready;
+    if (!api.sandbox && ready.length) {
+      const roster = await loadRoster(api);
+      if (!roster.hasEmails) {
+        return { ok: false, error: 'VolunteerBadge’s volunteer list shows no email addresses, so results couldn’t be matched. Nothing was sent; ask VolunteerBadge.' };
+      }
+      const { data: people, error: peopleError } = await supabase
+        .from('people')
+        .select('id, first_name, preferred_name')
+        .in('id', ready.map((r) => r.personId));
+      if (peopleError) return { ok: false, error: withReason('Nothing was sent: the people couldn’t be read.', peopleError) };
+      const personBy = new Map((people ?? []).map((p) => [p.id, p]));
+      sendable = [];
+      for (const r of ready) {
+        const there = roster.find(byId.get(r.personId).email);
+        if (there.length > 1 || (there.length === 1 && namesAgree(there[0], personBy.get(r.personId)) !== true)) {
+          refused.push({
+            personId: r.personId,
+            name: r.name,
+            why: 'VolunteerBadge already has this email address for someone else. Give them their own email on their details page first.',
+          });
+        } else {
+          sendable.push(r);
+        }
       }
     }
-
-    // Email says one person, name says another. There is no safe way to prefer
-    // one over the other, so neither wins -- the row is listed for a human.
-    if (personId && nameId && nameId !== personId) {
-      unmatched.push({
-        name: fullName || '(no name)',
-        email: email || '(no email)',
-        verdict,
-        why: 'the email on this row belongs to one person and the name to another. Match it by hand.',
-      });
-      continue;
-    }
-    if (!personId && nameId) { personId = nameId; how = 'name'; }
-
-    if (!personId) {
-      unmatched.push({
-        name: fullName || '(no name)',
-        email: email || '(no email)',
-        verdict,
-        why: nameKey && nameCount.get(nameKey) > 1
-          ? 'more than one person has that name. Match it by hand.'
-          : emailIsOrderers
-            ? 'the email on this row is the staff member who ordered it, not the candidate, and no unique person has that name'
-            : 'nobody on the site matches this name or email',
-      });
-      continue;
-    }
-
-    // Finished? Then the verdict counts. Not finished? Still pending, whatever
-    // the Assessment column happens to say.
-    const finished = reportState === 'complete' || reportState === 'completed';
-    const mapped = VERDICT_TO_STATUS.get(verdict);
-    if (finished && mapped === undefined) unrecognised.add(verdict || '(blank)');
-    const cleared = finished && mapped === 'clear';
-    const status = finished ? mapped ?? 'consider' : 'pending';
-    const completedOn =
-      (iDone !== -1 && (r[iDone] || '').trim().slice(0, 10)) ||
-      todayInMorristown();
-
-    // Verdict words only. What was found stays in the report in SharePoint.
-    const screenings = {};
-    for (const { h, i } of screeningCols) {
-      const v = norm(r[i]);
-      if (v) screenings[h] = v;
-    }
-    // Anything that is not a plain "clear" or an administrative "complete" is
-    // worth a person's eye, whichever search produced it.
-    const flagged = Object.entries(screenings)
-      .filter(([, v]) => v !== 'clear' && v !== 'complete')
-      .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`);
-
-    matched.push({
-      name: fullName || email,
-      verdict: verdict || '(blank)',
-      reportState,
-      completedOn,
-      cleared,
-      how,
-      sexOffender: iSex === -1 ? '' : norm(r[iSex]),
-      screenings,
-      flagged,
-    });
-
-    updates.push({
-      _completedOn: completedOn,
-      _cleared: cleared,
-      person_id: personId,
-      provider: 'checkr',
-      checkr_status: status,
-      // Checkr's own word, unmapped. See 0060.
-      ...(verdict ? { assessment: verdict } : {}),
-      matched_by: how,
-      ...(iReport !== -1 && (r[iReport] || '').trim()
-        ? { checkr_report_id: (r[iReport] || '').trim() } : {}),
-      ...(iCand !== -1 && (r[iCand] || '').trim()
-        ? { checkr_candidate_id: (r[iCand] || '').trim() } : {}),
-      ...(iPackage !== -1 && (r[iPackage] || '').trim()
-        ? { checkr_package: (r[iPackage] || '').trim() } : {}),
-      ...(iAdj !== -1 && norm(r[iAdj]) ? { adjudication: norm(r[iAdj]) } : {}),
-      ...(iSex !== -1 && norm(r[iSex]) ? { sex_offender_result: norm(r[iSex]) } : {}),
-      ...(Object.keys(screenings).length ? { screening_results: screenings } : {}),
-      // ONLY a finished report with a clear assessment sets the flag staff act
-      // on. "consider", a dispute, a blank -- all leave it alone for a person
-      // to decide. Software must not adjudicate a background check.
-      ...(cleared
-        ? {
-            background_check_on_file: true,
-            background_check_date: completedOn,
-            // Cleared so the database refills it from the date by the setting,
-            // even when the date is unchanged (0158).
-            expires_on: null,
-            report_completed_at: new Date(`${completedOn}T00:00:00Z`).toISOString(),
-          }
-        : {}),
-      last_synced_at: new Date().toISOString(),
-    });
+    const short = sendable.length ? await guardCredits(supabase, api, sendable.length) : null;
+    if (short) return { ok: false, error: short };
+    return { ok: true, ready: sendable, refused, sandbox: api.sandbox };
+  } catch (err) {
+    return { ok: false, error: vbWords(err) };
   }
+}
 
-  // ONE REPORT PER PERSON, AND IT MUST BE THE CURRENT ONE.
-  //
-  // A person can appear more than once: Checkr keeps every report, and a
-  // re-check produces a second row. The sample export (27 Aug) has exactly
-  // this -- two reports for one candidate, the NEWER one "consider" and the
-  // older one "clear" -- and the newer one is listed FIRST. Applying updates in
-  // file order would have written the older clear report last and marked him
-  // cleared on the strength of a superseded result.
-  //
-  // So: the most recently COMPLETED report wins, whatever order the file is in.
-  // Where two share a completion date, the more cautious verdict wins -- a tie
-  // is not a reason to clear somebody.
-  const latest = new Map();
-  for (const u of updates) {
-    const prev = latest.get(u.person_id);
-    if (!prev) { latest.set(u.person_id, u); continue; }
-    const newer = u._completedOn > prev._completedOn;
-    const sameDayButStricter =
-      u._completedOn === prev._completedOn && prev._cleared && !u._cleared;
-    if (newer || sameDayButStricter) latest.set(u.person_id, u);
-  }
-  const finalUpdates = [...latest.values()];
-
-  // Say which rows lost, not just how many. `matched` and `updates` are built
-  // in the same pass and stay index-for-index, so the winning update objects
-  // identify the winning rows by reference. A count on its own ("2 matched,
-  // 1 applied") is the silent discrepancy this screen exists to prevent --
-  // the coordinator needs to see that the 12 Aug "clear" was set aside in
-  // favour of the 13 Aug "consider", and not wonder where a row went.
-  const keep = new Set(finalUpdates);
-  for (let i = 0; i < matched.length; i += 1) {
-    if (!keep.has(updates[i])) matched[i].superseded = true;
-  }
-  const superseded = matched.filter((m) => m.superseded).length;
-
-  if (dryRun) {
+// The row is already written ('sending'); call VB and record the answer.
+async function deliver(supabase, api, rowId, { templateId, email, waiveIdReason = null }) {
+  try {
+    const sent = await api.sendApplication({ templateId, email, waiveIdReason });
+    if (sent.sandbox && !api.sandbox) {
+      // VB answered in test mode to a key this site reads as live: nothing
+      // real happened, and nothing more should be sent until that is sorted.
+      await supabase
+        .from('volunteerbadge_requests')
+        .update({ status: 'cancelled', problem: 'VolunteerBadge answered in test mode, though the key here looks live. Check the key.' })
+        .eq('id', rowId);
+      return { ok: false, error: 'VolunteerBadge answered in test mode, though the key here looks live. Nothing real was sent; check the key.', stop: true };
+    }
+    const { error: updateError } = await supabase
+      .from('volunteerbadge_requests')
+      .update({ status: 'invited', vb_application_id: sent.applicationId, apply_expires_at: sent.expiresAt, problem: null })
+      .eq('id', rowId);
+    if (updateError) {
+      return {
+        ok: true,
+        warning: withReason('Sent, but the site couldn’t note it as sent. It shows as "sending"; don’t send again.', updateError),
+      };
+    }
+    return { ok: true, email };
+  } catch (err) {
+    const vbErr = err instanceof VolunteerBadgeError ? err : new VolunteerBadgeError('Something went wrong sending it.', { uncertain: true });
+    if (!vbErr.uncertain) {
+      // VolunteerBadge said no: nothing went out, so the person can be sent again.
+      const { error: markError } = await supabase
+        .from('volunteerbadge_requests')
+        .update({ status: 'not_sent', problem: vbErr.message.slice(0, 300) })
+        .eq('id', rowId);
+      return {
+        ok: false,
+        error: `Not sent: ${vbErr.message}${markError ? ` (The site couldn’t note that: ${markError.message}. It shows as "sending"; take it back once you’ve checked.)` : ''}`,
+        stop: [401, 402, 403, 429].includes(vbErr.status) || Boolean(markError),
+        definite: !markError,
+      };
+    }
+    // No clean answer: VolunteerBadge may have sent it. Leave it "sending" so
+    // nobody re-sends blind; staff check VB and take it back if it didn't go.
+    const { error: noteError } = await supabase
+      .from('volunteerbadge_requests')
+      .update({ problem: 'No clear answer from VolunteerBadge. Look in its Applications list before sending again.' })
+      .eq('id', rowId);
     return {
-      ok: true, dryRun: true, matched, unmatched, superseded,
-      unrecognised: [...unrecognised],
-      willUpdate: finalUpdates.length,
-      willClear: finalUpdates.filter((u) => u._cleared).length,
-      willCreate: finalUpdates.filter((u) => !haveRow.has(u.person_id)).length,
-      byName: matched.filter((m) => m.how === 'name').length,
+      ok: false,
+      error: `Not sure it was sent: ${vbErr.message}${noteError ? ` (and the site couldn’t note it: ${noteError.message})` : ''}`,
+      stop: true,
+    };
+  }
+}
+
+// The template is resolved here, on the server (review, 13 Nov 2026): the
+// screen passes nothing that VolunteerBadge is told.
+export async function sendVolunteerBadgeInvite(personId) {
+  if (!(await gate())) return { ok: false, error: 'Not permitted.', stop: true };
+  const api = volunteerBadge();
+  if (!api) return { ok: false, error: NOT_CONNECTED, stop: true };
+
+  const supabase = await createClient();
+  // The page's own rule, read again now: a stale screen can't send.
+  let c;
+  try {
+    const { candidates } = await loadScreeningCandidates(supabase, { sandbox: api.sandbox });
+    c = candidates.find((x) => x.personId === personId);
+  } catch (err) {
+    return { ok: false, error: `Not sent: ${err.message}`, stop: true };
+  }
+  if (!c) return { ok: false, error: 'Not sent: no longer due a background check.' };
+  if (c.blockedBecause) return { ok: false, error: `Not sent: ${c.blockedBecause}` };
+
+  let templateId;
+  try {
+    const short = await guardCredits(supabase, api, 1);
+    if (short) return { ok: false, error: `Not sent: ${short}`, stop: true };
+    templateId = await defaultTemplateId(api);
+  } catch (err) {
+    return { ok: false, error: `Not sent: ${vbWords(err)}`, stop: true };
+  }
+  if (!templateId) return { ok: false, error: 'Not sent: VolunteerBadge has no application template yet.', stop: true };
+
+  // 1. The record first.
+  const { data: row, error: insertError } = await supabase
+    .from('volunteerbadge_requests')
+    .insert({ person_id: personId, invited_email: c.email, sandbox: api.sandbox })
+    .select('id')
+    .single();
+  if (insertError) {
+    if (insertError.code === '23505') {
+      return { ok: false, error: 'Not sent: they, or someone at the same email address, already have an open invite.' };
+    }
+    return { ok: false, error: withReason('Not sent: the invite couldn’t be recorded.', insertError) };
+  }
+  // 2. Then VolunteerBadge.
+  return deliver(supabase, api, row.id, { templateId, email: c.email });
+}
+
+// One person's invite again, with VolunteerBadge's photo-ID-and-selfie step
+// skipped (Lawrence, 13 Nov 2026: some volunteers balk at it and call Larry).
+// The reason goes to VB as idVerificationReason and stays on our row, with who
+// sent it and when, so it is visible later that this check ran without ID
+// verification. The person's open invite (one nobody has started a check on)
+// is marked superseded; VB's old link may still work, and that is fine.
+export async function resendWithoutIdStep(personId, reason) {
+  if (!(await gate())) return { ok: false, error: 'Not permitted.' };
+  const api = volunteerBadge();
+  if (!api) return { ok: false, error: NOT_CONNECTED };
+  const why = String(reason ?? '').replace(/\s+/g, ' ').trim();
+  if (why.length < 10) return { ok: false, error: 'Give a reason of at least 10 characters (it goes to VolunteerBadge).' };
+  if (why.length > 300) return { ok: false, error: 'Keep the reason under 300 characters.' };
+
+  const supabase = await createClient();
+  let c;
+  try {
+    const { candidates } = await loadScreeningCandidates(supabase, { sandbox: api.sandbox });
+    c = candidates.find((x) => x.personId === personId);
+  } catch (err) {
+    return { ok: false, error: `Not sent: ${err.message}` };
+  }
+  if (!c?.resendable) {
+    return {
+      ok: false,
+      error: c?.blockedBecause
+        ? `Not sent: ${c.blockedBecause}`
+        : 'Not sent: only someone already invited, whose check hasn’t started, can be sent again this way.',
     };
   }
 
-  // UPSERT, NOT UPDATE.
-  //
-  // A check ordered by hand at Checkr, before this screen existed, has no row
-  // here to update -- and an UPDATE that matches nothing is not an error. The
-  // import would have reported "3 updated" and written one. Upserting means a
-  // result always lands somewhere, and if the row is new the adult-only
-  // trigger (migration 0056) gets its say, loudly, instead of nothing
-  // happening quietly.
-  for (const u of finalUpdates) {
-    const { _completedOn, _cleared, ...row } = u;
-    const { error } = await supabase
-      .from('person_clearances')
-      .upsert(row, { onConflict: 'person_id' });
-    if (error) return { ok: false, error: `${error.message} (stopped part-way)` };
+  let templateId;
+  try {
+    const short = await guardCredits(supabase, api, 1, { replacing: c.openRequestId });
+    if (short) return { ok: false, error: `Not sent: ${short}` };
+    templateId = await defaultTemplateId(api);
+  } catch (err) {
+    return { ok: false, error: `Not sent: ${vbWords(err)}` };
   }
+  if (!templateId) return { ok: false, error: 'VolunteerBadge has no application template yet.' };
 
-  revalidatePath('/admin/volunteers');
+  // 1. Ask VB about the open invite now: our saved status may be a day old,
+  //    and replacing an invite they have already used would orphan its check.
+  let replaced = null;
+  if (c.openRequestId) {
+    let now;
+    try {
+      const fresh = await refreshOne(supabase, api, c.openRequestId);
+      if (fresh.problem && fresh.status !== 'invited') {
+        revalidateScreening();
+        return { ok: false, error: `Not sent: ${fresh.problem}` };
+      }
+      now = fresh.status;
+    } catch (err) {
+      return { ok: false, error: `Not sent: ${vbWords(err)}` };
+    }
+    if (now !== 'invited' && now !== 'applied') {
+      revalidateScreening();
+      return { ok: false, error: 'Not sent: they have used their invite since this page was loaded (the check has started). Reload the page.' };
+    }
+    const { data: old, error: oldError } = await supabase
+      .from('volunteerbadge_requests')
+      .update({ status: 'superseded' })
+      .eq('id', c.openRequestId)
+      .in('status', ['invited', 'applied'])
+      .select('id, status');
+    if (oldError) return { ok: false, error: withReason('Not sent: the open invite couldn’t be replaced.', oldError) };
+    if (!old?.length) return { ok: false, error: 'Not sent: their invite changed meanwhile. Reload the page.' };
+    replaced = { id: c.openRequestId, status: now };
+  }
+  const { data: row, error: insertError } = await supabase
+    .from('volunteerbadge_requests')
+    .insert({
+      person_id: personId,
+      invited_email: c.email,
+      sandbox: api.sandbox,
+      id_verification_waived: true,
+      id_verification_reason: why,
+    })
+    .select('id')
+    .single();
+  if (insertError) {
+    // Put the old invite back as it was, so the person isn't left with none.
+    if (replaced) {
+      await supabase.from('volunteerbadge_requests').update({ status: replaced.status }).eq('id', replaced.id).eq('status', 'superseded');
+    }
+    return { ok: false, error: withReason('Not sent: the new invite couldn’t be recorded.', insertError) };
+  }
+  const r = await deliver(supabase, api, row.id, { templateId, email: c.email, waiveIdReason: why });
+  // VB said no to the new invite: the old one is still theirs, so put it back.
+  if (!r.ok && r.definite && replaced) {
+    const { error: restoreError } = await supabase
+      .from('volunteerbadge_requests')
+      .update({ status: replaced.status })
+      .eq('id', replaced.id)
+      .eq('status', 'superseded');
+    if (restoreError) {
+      r.error += ` Their earlier invite couldn’t be put back (${restoreError.message}); it shows as replaced, though VolunteerBadge’s link still works.`;
+    }
+  }
+  revalidateScreening();
+  return r;
+}
+
+// Ask VolunteerBadge about the open invites in this mode (lib/volunteerBadgeSync.js;
+// the daily job runs the same routine). How an invite is tied to its result
+// is refreshRequest() in lib/volunteerBadgeApi.js.
+export async function refreshVolunteerBadge() {
+  if (!(await gate())) return { ok: false, error: 'Not permitted.' };
+  const api = volunteerBadge();
+  if (!api) return { ok: false, error: NOT_CONNECTED };
+  const supabase = await createClient();
+  const r = await refreshOpenRequests(supabase, api);
+  revalidateScreening();
   return {
-    ok: true, dryRun: false, updated: finalUpdates.length, superseded, matched, unmatched,
-    unrecognised: [...unrecognised],
+    ok: r.problems.length === 0,
+    checked: r.checked,
+    changed: r.changed,
+    more: r.more,
+    error: r.problems.length ? r.problems.join(' ') : null,
   };
+}
+
+export async function confirmVolunteerBadgeClear(requestId) {
+  if (!(await gate())) return { ok: false, error: 'Not permitted.' };
+  const api = volunteerBadge();
+  if (!api) return { ok: false, error: NOT_CONNECTED };
+  const supabase = await createClient();
+  // Read the check again first: a result VB has since reopened is not clear.
+  try {
+    const fresh = await refreshOne(supabase, api, requestId);
+    if (fresh.status !== 'clear' || fresh.problem) {
+      revalidateScreening();
+      return {
+        ok: false,
+        error: fresh.problem
+          ? `Not recorded: ${fresh.problem}`
+          : 'Not recorded: VolunteerBadge no longer shows this result as clear. Reload the page.',
+      };
+    }
+  } catch (err) {
+    return { ok: false, error: `Not recorded: ${vbWords(err)}` };
+  }
+  const { error } = await supabase.rpc('confirm_volunteerbadge_clear', { p_request_id: requestId });
+  if (error) return { ok: false, error: withReason('Not recorded.', error) };
+  revalidateScreening();
+  revalidatePath('/admin', 'layout');
+  return { ok: true };
+}
+
+// Take back an invite HERE (it is not cancelled in VolunteerBadge, which has
+// no call for that): a send that never got a clear answer and didn't reach VB,
+// or an invite staff no longer want answered. Only before anyone has applied.
+export async function cancelVolunteerBadgeRequest(requestId) {
+  if (!(await gate())) return { ok: false, error: 'Not permitted.' };
+  const supabase = await createClient();
+  // An invite that has been used since the page loaded is not taken back.
+  const api = volunteerBadge();
+  if (api) {
+    try {
+      const { status: now } = await refreshOne(supabase, api, requestId);
+      if (now !== 'invited' && now !== 'sending') {
+        revalidateScreening();
+        return { ok: false, error: 'Not taken back: they have used their invite since this page was loaded. Reload the page.' };
+      }
+    } catch (err) {
+      return { ok: false, error: `Not taken back: ${vbWords(err)}` };
+    }
+  }
+  const { data, error } = await supabase
+    .from('volunteerbadge_requests')
+    .update({ status: 'cancelled' })
+    .eq('id', requestId)
+    .in('status', ['sending', 'invited'])
+    .select('id');
+  if (error) return { ok: false, error: withReason('Not taken back.', error) };
+  if (!data?.length) return { ok: false, error: 'Only an invite nobody has applied to yet can be taken back.' };
+  revalidateScreening();
+  return { ok: true };
 }

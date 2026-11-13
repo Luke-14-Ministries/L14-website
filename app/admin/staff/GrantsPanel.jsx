@@ -8,7 +8,7 @@
 // person grant anything.
 
 import { useState } from 'react';
-import { AREAS, PRESETS, PRESET_LEAVES, grantsForPreset, matchingPreset, nearestPreset } from '@/lib/grants';
+import { AREAS, PRESETS, PRESET_LEAVES, BACKGROUND_WRITE_WARNING, grantsForPreset, matchingPreset, nearestPreset } from '@/lib/grants';
 
 const LEVELS = [
   ['', '—'],
@@ -24,13 +24,18 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
   const nearest = matches ? null : nearestPreset(member.grants ?? {});
   const level = (v) => (v === 'write' ? 'W' : v === 'read' ? 'R' : '—');
 
-  const set = (area, level) =>
+  // Giving Background checks write orders paid checks: asked first.
+  const set = (area, level) => {
+    if (area === 'background_checks' && level === 'write' && grants.background_checks !== 'write') {
+      if (!window.confirm(`${member.name}: ${BACKGROUND_WRITE_WARNING}`)) return;
+    }
     setGrants((prev) => {
       const next = { ...prev };
       if (level) next[area] = level;
       else delete next[area];
       return next;
     });
+  };
 
   return (
     <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-sm">
@@ -73,9 +78,11 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
             disabled={busy}
             title={p.note}
             onClick={() => {
+              const addsOrdering =
+                p.grants.background_checks === 'write' && (member.grants ?? {}).background_checks !== 'write';
               if (
                 window.confirm(
-                  `Apply the ${p.label} preset to ${member.name}?\n\n${p.note}\n\nThis sets every area to the preset (Giving is left as it is). The Administrator tick is not touched.`
+                  `Apply the ${p.label} preset to ${member.name}?\n\n${p.note}\n\nThis sets every area to the preset (Giving is left as it is). The Administrator tick is not touched.${addsOrdering ? `\n\n${BACKGROUND_WRITE_WARNING}` : ''}`
                 )
               ) {
                 onApplyPreset(member.profileId, key);

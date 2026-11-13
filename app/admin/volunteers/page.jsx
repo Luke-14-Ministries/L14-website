@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import VolunteerManager from './VolunteerManager';
 import EventFilter from '@/components/EventFilter';
 import { isVolunteerRole } from '@/lib/roles';
+import { latestVbRequests } from '@/lib/screeningCandidates';
+import { volunteerBadgeMode } from '@/lib/volunteerBadge';
 
 export const metadata = { title: 'Volunteers — Staff Admin' };
 
@@ -174,6 +176,10 @@ export default async function AdminVolunteersPage({ searchParams }) {
 
   const appByPart = new Map((apps ?? []).map((a) => [a.registration_participant_id, a]));
   const clearanceByPerson = new Map((clearances ?? []).map((c) => [c.person_id, c]));
+  // Each person's latest VolunteerBadge invite (0165), with the grant only.
+  const vbByPerson = maySeeChecks
+    ? await latestVbRequests(supabase, personIds, volunteerBadgeMode() === 'test')
+    : new Map();
 
   const rows = vols.map((v) => {
     const app = appByPart.get(v.participantId) ?? null;
@@ -182,6 +188,12 @@ export default async function AdminVolunteersPage({ searchParams }) {
       app: app
         ? { ...app, accompanyingAdultName: adultName.get(app.accompanying_adult_person_id) ?? null }
         : null,
+      vb: (() => {
+        const r = vbByPerson.get(v.person?.id);
+        return r
+          ? { status: r.status, sentAt: r.sent_at, email: r.invited_email, completedAt: r.completed_at, confirmedAt: r.confirmed_at, problem: r.problem, idWaived: r.id_verification_waived === true }
+          : null;
+      })(),
       clearance: (() => {
         const c = clearanceByPerson.get(v.person?.id) ?? null;
         if (!c) return null;

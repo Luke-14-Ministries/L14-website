@@ -4486,3 +4486,72 @@ none (an alpha tester's son) could not be corrected or added by staff at all.
 ## 12 November 2026 — Stage C
 
 12 Nov 2026: Stage C. The site moved to luke14ministries.net; preview switches reversed (C9).
+
+## 13 November 2026 — Volunteer background checks through VolunteerBadge (0165)
+
+Lawrence, with Larry's approval of VolunteerBadge (VB): volunteer checks move from Checkr's batch file
+to VB's API. The ministry buys credits; staff send invites in batches from Background screening.
+
+- **The volunteer types their own details on VB's site.** We send `POST /applications` (template and
+  address only, `volunteerPays: false`); VB emails the invite, the person signs VB's FCRA consent and
+  enters their ID and Social Security number there. `lib/volunteerBadgeApi.js` can call only
+  `GET /templates`, `POST /applications`, `GET /credits`, `GET /volunteers[/id]` and
+  `GET /checks/{id}`: never `POST /checks`, `/checks/instant` or `/volunteers`, which take an SSN or a
+  date of birth from us. VB's `reportUrl` / `reportDownloadUrl` are stripped from every answer before
+  anything sees them. Stored: pointers and words only (`volunteerbadge_requests`).
+- **Only allow-listed fields leave the VB client.** VB's single-volunteer record (`GET /volunteers/{id}`,
+  the one way to find a person's check without a webhook) also returns their date of birth, the last
+  four digits of their SSN and their address, and the roster carries phone numbers (found 13 Nov 2026
+  with a sandbox call that printed field names only). Each answer is cut to id, email, first name,
+  dates and the checks' ids, status and result words the moment it is parsed (`pickVolunteer`,
+  `pickRosterRow`, `pickCheck`), so nothing else can store, log or show them. Asking VB for a slimmer
+  record, or a webhook (which would avoid the read), is an open question.
+- **Results come back by the site asking** (decision 1): a Refresh button on Background screening, and a
+  daily run (`app/api/cron/volunteerbadge/`, 12:30 UTC). No webhook; VB never calls us. The daily run
+  has nobody signed in, so it uses the service-role client: Lawrence's yes, 13 Nov 2026, as a third
+  named use beside the reminders and the prayer list. It reads and updates `volunteerbadge_requests`
+  only; it never confirms a result or sends an invite.
+- **How an invite is tied to its result.** VB has no call tying an application to the volunteer it
+  creates (only the webhook), so the volunteer is found on VB's roster **by the address invited**
+  (frozen on the row, the 0057 lesson), and nothing is saved until a **full** check started after the
+  invite is on that record **and** the record's first name agrees with the person's. A record that was
+  already there is never read as "they applied". An address one person was invited at is theirs:
+  anyone else needs their own email (VB keeps one record per address), and a live batch refuses an
+  address VB already holds under another first name. One VB check can belong to one invite (unique
+  index). An invite expires only after a full read of VB's roster; a roster with no addresses stops
+  matching and says so rather than expiring anything.
+- **Clear is not OK to serve by itself** (decision 2): `confirm_volunteerbadge_clear()` writes the check
+  (provider `volunteerbadge`, VB's completion day in ministry time, verdict OK, expiry by the setting)
+  only when someone with Background checks write presses **OK to serve**. "Consider" is read in VB's
+  dashboard and decided with the existing verdict controls.
+- **VB replaces the Checkr steps on the screen** (decision 3): the CSV download, "mark as sent" and the
+  results import are removed (git history keeps them; no Checkr order was outstanding, 13 Nov). Checkr
+  checks on file count until they expire; the Checkr columns and readers stay.
+- **Test mode can't clear anyone, or email a family.** Vercel Preview runs a `vb_test_` key against the
+  live database, so every request records `sandbox`; the screen shows only its own mode's rows and the
+  database refuses to confirm a sandbox result. A test key still makes VB email a (test) invite, so test
+  mode sends only to @luke14ministries.net addresses.
+- **The credit guard** (Lawrence, 13 Nov 2026). Before any send (a batch, each invite in it, and a
+  resend) the server asks VB for the balance and refuses unless it covers the people in this send plus
+  every invite already out and not yet charged (sending, invited, or applied with no check started; a
+  running check has spent its credit; an invite taken back or replaced still counts until its link
+  expires, because VB can still charge it). Never the page's number; unknown is refused.
+- **Before a resend, a take back or OK to serve acts, the site asks VB about that invite again**, so a
+  day-old saved status can't orphan a check or confirm a result VB has since reopened. A refresh never
+  rewrites an invite that was taken back or replaced meanwhile. A check is tied to an invite only if it
+  is that volunteer's and (when VB says the kind) an application's check.
+- **Resend without the ID step** (Lawrence, 13 Nov 2026): per person only, never a batch. Staff give a
+  reason (10 characters or more, no personal details) that goes to VB as `idVerificationReason` with
+  `requireIdVerification: false`; the row keeps `id_verification_waived`, the reason, who and when, and
+  the screen and the Volunteers entry say "ID step waived". It replaces the person's open invite (marked
+  `superseded`) when no check has started on it. Every other invite leaves the field out, so VB's
+  account setting (ID step on) applies.
+- **Ordering is the Background checks write grant**, no new area. Staff & Access asks before that grant
+  is given, by a tick or a preset, and its description says it orders paid checks.
+- **Consent is VB's standalone FCRA form**; the site collects none, and the volunteer pages say an email
+  from VolunteerBadge will ask for permission and details on its site.
+- **Every invite is written before VB is called**, and sent one at a time from the browser (under VB's
+  100 a minute). A send with no clear answer stays "Sending didn't finish" until staff check VB and take
+  it back. The credit balance is checked before a batch.
+- With no `VOLUNTEERBADGE_API_KEY`, the screen says "VolunteerBadge isn't connected yet" and nothing
+  else changes: dormant on the live site until the live key is added.
