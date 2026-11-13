@@ -261,9 +261,25 @@ Staff idle logout is 60 minutes.
 are stamped by trigger, the check date is required once paperwork is on file, expiry follows from
 `clearance_interval_months()` (a setting since `0158`, changed on *Background Checks*, its own item in the People section, which recalculates every expiry; **12** = annual Basic Plus), and every change lands in
 `clearance_review_log`. The `clearance_status` definer view gives all staff three facts: on file,
-current, verdict, and `provider`. Adults only — under 18 shows "Under 18 — not screened". **Everyone 18 or older on the event's first day is screened** (`0161`/`0162`, Lawrence 10–11 Nov 2026): volunteers by the full Checkr check and the gate below; **every other role** (camper, parent/guardian, sibling, caregiver, any later non-volunteer role — `isRegistryRole()` in `lib/roles.js`) by a staff search of the public sex-offender registry (nsopw.gov), `provider = 'registry_search'`, or a current full check. A registry search is recorded only through `record_registry_search()` (`0162`: the background-checks write grant, a place at an upcoming event where they are 18+ on its first day, no volunteer place, never over a current full check). A missing search is a flag on the Review card; **`not_permitted` holds approval for anyone, from any button** (`guard_not_permitted_place()`, `0162`), and a Checkr order is refused for someone marked `not_permitted` (`registry_search_not_carried()`). The queue, counts and nav badge share `lib/backgroundChecks.js` (`loadScreeningPeople`, `registryBucket`, `countRegistryDue`). **A registry search never clears a volunteer** — the gate refuses it, and `clearancePill()` reads it as "Registry search only" unless called with `{ forRegistry: true }`; any new reader of a volunteer's check must do the same. **A volunteer is approved only with a check on file, current and marked OK to serve, and the place and the application are one decision** (`0152`: `guard_volunteer_place()`, `guard_volunteer_application()`, `sync_volunteer_application()`). Screening reads the
-household's email and phone where the person has none. The Checkr bulk file's header is their
-"bulk order with SMS" template, verbatim; `0093` lets the invited email stand in for a candidate id.
+current, verdict, and `provider`. Adults only — under 18 shows "Under 18 — not screened". **Everyone 18 or older on the event's first day is screened** (`0161`/`0162`, Lawrence 10–11 Nov 2026): volunteers by a full VolunteerBadge check (since `0165`; Checkr checks already on file count until they expire) and the gate below; **every other role** (camper, parent/guardian, sibling, caregiver, any later non-volunteer role — `isRegistryRole()` in `lib/roles.js`) by a staff search of the public sex-offender registry (nsopw.gov), `provider = 'registry_search'`, or a current full check. A registry search is recorded only through `record_registry_search()` (`0162`: the background-checks write grant, a place at an upcoming event where they are 18+ on its first day, no volunteer place, never over a current full check). A missing search is a flag on the Review card; **`not_permitted` holds approval for anyone, from any button** (`guard_not_permitted_place()`, `0162`), and a background-check invite is refused for someone marked `not_permitted` (`person_not_permitted()` in `0165`'s triggers; `registry_search_not_carried()` for the retired Checkr order). The queue, counts and nav badge share `lib/backgroundChecks.js` (`loadScreeningPeople`, `registryBucket`, `countRegistryDue`). **A registry search never clears a volunteer** — the gate refuses it, and `clearancePill()` reads it as "Registry search only" unless called with `{ forRegistry: true }`; any new reader of a volunteer's check must do the same. **A volunteer is approved only with a check on file, current and marked OK to serve, and the place and the application are one decision** (`0152`: `guard_volunteer_place()`, `guard_volunteer_application()`, `sync_volunteer_application()`). Screening reads the
+household's email and phone where the person has none.
+
+**Volunteers are screened through VolunteerBadge (VB) since `0165` (13 Nov 2026; Larry approved VB).**
+Background Screening sends VB invites in batches (`POST /applications`); VB emails the volunteer, whose
+own form on VB's site takes the FCRA disclosure and authorization, their ID and their SSN. The check
+runs only after they sign there; that signature is the consent, and our pages only say it is coming.
+`lib/volunteerBadgeApi.js` may call only `GET /templates`, `POST /applications`, `GET /credits`,
+`GET /volunteers[/id]` and `GET /checks/{id}` (never `POST /checks`, `/checks/instant` or
+`/volunteers`, which take an SSN or a date of birth from us). There is no webhook: Refresh and the
+daily cron (`app/api/cron/volunteerbadge/`, 12:30 UTC) find the volunteer by the address invited,
+require first-name agreement and a full check started after the invite. **Every send is refused unless
+VB's credit balance covers it plus invites already out and not yet charged** (rechecked on the server;
+unknown counts as refused). A clear result counts only through `confirm_volunteerbadge_clear()`
+(staff's OK to serve); sandbox rows never clear anyone, and a `vb_test_` key emails only
+`@luke14ministries.net`. "Resend without ID step" (a reason of 10+ characters, sent to VB) is per person
+and recorded on the row. Ordering is the Background checks **write** grant, and Staff & Access asks
+before giving it. The live key is only in Vercel Production; local and Preview use `vb_test_`.
+Checkr's bulk-file flow is retired; its columns and checks on file stay.
 
 ### Program leaders are not staff — a second kind of person reaches `/admin`
 
@@ -557,7 +573,15 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   that row" is not secured.
 - **No real family data in the preview.** It is a mock-up, and mock-ups leak.
 - **No Social Security number, and no report content, ever enters this system.** That is the
-  principle, and it holds. What is actually stored has grown: alongside
+  principle, and it holds. **One known edge (VolunteerBadge, `0165`, Lawrence's decision 13 Nov
+  2026):** VB's single-volunteer record (`GET /volunteers/{id}`), the only way to find a check
+  without a webhook, arrives with the date of birth, the SSN's last four digits and the home
+  address, and roster rows carry phone numbers. `lib/volunteerBadgeApi.js` cuts every answer to an
+  allow-list the moment it is parsed (`pickVolunteer`, `pickCheck`, `pickRosterRow`), and strips
+  report links from everything, so none of it is stored, logged, shown or passed on; it exists only
+  in that one function's memory for an instant. Lawrence is asking VB for a slimmer answer; switch
+  to it if offered. Never widen those allow-lists, log a raw VB answer, or put VB's own error text
+  about a person in a message. `volunteerbadge_requests` holds pointers, status words and dates only. What is actually stored has grown: alongside
   `background_check_on_file`, `background_check_date` and `expires_on`, migration `0029` added a
   `volunteer_clearances` table with Checkr integration columns — `provider`,
   `checkr_candidate_id`, `checkr_invitation_id`, `checkr_report_id`, `checkr_package`,
@@ -571,10 +595,12 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   `person_clearances` today: `provider`, `checkr_status`, `checkr_report_id`,
   `checkr_candidate_id`, `checkr_package`, and a `screening_results` jsonb holding one verdict
   WORD per screening. The guarantee is unchanged and is the reason the file-based flow was chosen
-  over the API — verdict words and pointers, never report content, and no SSN at any point. The
+  over Checkr's API — verdict words and pointers, never report content, and no SSN at any point. The
   underlying paperwork still lives in a
-  permission-restricted SharePoint folder. Never in email, never in the app. A future flow that
-  would collect PII into this table is a board decision, not a pull request.
+  permission-restricted SharePoint folder. Never in email, never in the app. (Checkr's flow is
+  retired since `0165`; the VolunteerBadge flow keeps the same rule, with the edge described
+  above.) A future flow that would collect PII into this table is a board decision, not a pull
+  request.
 - **Never paste a key, token, or camper's personal information into a Claude conversation.** A
   secret that appears in a transcript is compromised and must be rotated.
 - **Two-factor authentication on every account** — GitHub, Vercel, Supabase, Stripe, Microsoft.
