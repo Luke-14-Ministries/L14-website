@@ -49,7 +49,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0166`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0167`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -275,7 +275,8 @@ daily cron (`app/api/cron/volunteerbadge/`, 12:30 UTC) find the volunteer by the
 require first-name agreement, last-name agreement (suffixes aside) and, when both sides have one, an agreeing date of birth, and a full check started after the invite. **Every send is refused unless
 VB's credit balance covers it plus invites already out and not yet charged** (rechecked on the server;
 unknown counts as refused). A clear result counts only through `confirm_volunteerbadge_clear()`
-(staff's OK to serve); sandbox rows never clear anyone, and a `vb_test_` key emails only
+(staff's OK to serve), which refuses a completion date that doesn't fit the invite and keeps a
+newer current ok check already on file (`0167`); sandbox rows never clear anyone, and a `vb_test_` key emails only
 `@luke14ministries.net`. "Resend without ID step" (a reason of 10+ characters, sent to VB) is per person
 and recorded on the row. Ordering is the Background checks **write** grant, and Staff & Access asks
 before giving it. The live key is only in Vercel Production; local and Preview use `vb_test_`.
