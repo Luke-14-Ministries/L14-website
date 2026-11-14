@@ -1878,7 +1878,7 @@ export default function FamilyWizard({
                         />
                         <p className="mt-1 text-sm text-neutral-600">
                           VolunteerBadge, the company that runs our background checks, emails {who} the
-                          consent form here. Each adult volunteer needs their own address.
+                          consent form here. Each adult needs their own address.
                         </p>
                         {isContact && household && !(m.email ?? '').trim() && (
                           <button

@@ -36,6 +36,12 @@ const VB_WORDS = {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// The two groups on this page (the board, 14 Nov 2026).
+const GROUPS = [
+  ['volunteer', 'Volunteers', 'Volunteer template'],
+  ['family', 'Family adults', 'Parents, siblings and caregivers 18+ · family template · a registry search is the fallback on Background Checks'],
+];
+
 function detail(r) {
   switch (r.status) {
     case 'sending':
@@ -283,13 +289,14 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h2 className="text-xl font-bold">1 · Who is due</h2>
         <p className="mt-1 mb-4 max-w-4xl text-sm text-neutral-500">
-          Adult volunteers with no background check on file, or one out of date. Nothing here has been
-          sent yet.
+          Adults with no background check on file, or one out of date: volunteers, and family adults
+          (parents, siblings and caregivers). Adult campers stay on the registry search for now. Nothing
+          here has been sent yet.
         </p>
 
         {orderable.length === 0 && blocked.length === 0 ? (
           <p className="rounded-sm border border-green-200 bg-green-50 px-4 py-3 text-green-900">
-            Nobody is due. Every adult volunteer has a current background check on file, or an invite out.
+            Nobody is due. Every adult has a current background check on file, or an invite out.
           </p>
         ) : orderable.length === 0 ? (
           <p className="rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
@@ -298,65 +305,92 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
           </p>
         ) : (
           <>
-            <div className="mb-3 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setPicked(allPicked ? new Set() : new Set(orderable.map((c) => c.personId)))}
-                className="btn-outline py-1.5! text-sm"
-              >
-                {allPicked ? 'Select none' : `Select all ${orderable.length}`}
-              </button>
-              <span className="text-sm text-neutral-600">{picked.size} selected</span>
-            </div>
-            <ul className="divide-y divide-neutral-100 border-y border-neutral-100">
-              {orderable.map((c) => (
-                <li key={c.personId} className="flex flex-wrap items-center gap-3 py-2.5">
-                  <input
-                    type="checkbox"
-                    id={`p-${c.personId}`}
-                    checked={picked.has(c.personId)}
-                    onChange={() => toggle(c.personId)}
-                    className="h-4 w-4"
-                  />
-                  <label htmlFor={`p-${c.personId}`} className="min-w-0 flex-1">
-                    <span className="font-semibold">{c.name}</span>
-                    <span className="text-neutral-500">
-                      {' '}· {c.email}
-                      {c.emailIsHousehold && ' (household address)'}
+            {/* Two groups, kept apart (the board, 14 Nov 2026): volunteers and
+                family adults, each with its own VolunteerBadge template. */}
+            {GROUPS.map(([g, title, hint]) => {
+              const list = orderable.filter((c) => (c.group ?? 'volunteer') === g);
+              if (list.length === 0) return null;
+              const ids = list.map((c) => c.personId);
+              const allIn = ids.every((id) => picked.has(id));
+              return (
+                <div key={g} className="mb-5">
+                  <div className="mb-2 flex flex-wrap items-baseline gap-3">
+                    <h3 className="font-bold">{title}</h3>
+                    <span className="text-xs text-neutral-500">{hint}</span>
+                  </div>
+                  <div className="mb-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPicked((prev) => {
+                          const n = new Set(prev);
+                          for (const id of ids) {
+                            if (allIn) n.delete(id);
+                            else n.add(id);
+                          }
+                          return n;
+                        })
+                      }
+                      className="btn-outline py-1.5! text-sm"
+                    >
+                      {allIn ? 'Select none' : `Select all ${list.length}`}
+                    </button>
+                    <span className="text-sm text-neutral-600">
+                      {ids.filter((id) => picked.has(id)).length} selected
                     </span>
-                    {c.sharesEmailWith?.length > 0 && (
-                      <span className="ml-2 rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
-                        same email as {c.sharesEmailWith.join(' and ')}: send one at a time
-                      </span>
-                    )}
-                    <span className="block text-xs text-neutral-500">
-                      {c.eventName}
-                      {c.reason ? ` · ${c.reason}` : ''}
-                      {c.checkrOut ? ' · an old Checkr order is still marked as out' : ''}
-                      {c.lastVb && ['error', 'expired', 'not_sent', 'cancelled'].includes(c.lastVb.status)
-                        ? ` · last invite ${dayInMorristown(c.lastVb.sentAt)}: ${VB_WORDS[c.lastVb.status][1].toLowerCase()}`
-                        : ''}
-                    </span>
-                    {c.alreadyInVb && (
-                    <span className="mt-0.5 block text-xs font-semibold text-amber-800">
-                      Already in VolunteerBadge
-                      {typeof c.alreadyInVb === 'string' ? ` since ${dayInMorristown(c.alreadyInVb)}` : ''}. Look there
-                      first: if a check has already run, record it by hand on their Volunteers entry instead of
-                      sending (that would use a second credit).
-                    </span>
-                  )}
-                  {c.possibleVbMatch && (
-                    <span className="mt-0.5 block text-xs font-semibold text-amber-800">
-                      Possible match: VolunteerBadge has someone with this name at a different email
-                      {typeof c.possibleVbMatch === 'string' ? ` (since ${dayInMorristown(c.possibleVbMatch)})` : ''}. Look
-                      in VolunteerBadge to confirm. If it is them and a check has run, record it by hand; if
-                      you send here, VolunteerBadge makes a second record and uses another credit.
-                    </span>
-                  )}
-                  </label>
-                </li>
-              ))}
-            </ul>
+                  </div>
+                  <ul className="divide-y divide-neutral-100 border-y border-neutral-100">
+                    {list.map((c) => (
+                      <li key={c.personId} className="flex flex-wrap items-center gap-3 py-2.5">
+                          <input
+                            type="checkbox"
+                            id={`p-${c.personId}`}
+                            checked={picked.has(c.personId)}
+                            onChange={() => toggle(c.personId)}
+                            className="h-4 w-4"
+                          />
+                          <label htmlFor={`p-${c.personId}`} className="min-w-0 flex-1">
+                            <span className="font-semibold">{c.name}</span>
+                            <span className="text-neutral-500">
+                              {' '}· {c.email}
+                              {c.emailIsHousehold && ' (household address)'}
+                            </span>
+                            {c.sharesEmailWith?.length > 0 && (
+                              <span className="ml-2 rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
+                                same email as {c.sharesEmailWith.join(' and ')}: send one at a time
+                              </span>
+                            )}
+                            <span className="block text-xs text-neutral-500">
+                              {c.eventName}
+                              {c.reason ? ` · ${c.reason}` : ''}
+                              {c.checkrOut ? ' · an old Checkr order is still marked as out' : ''}
+                              {c.lastVb && ['error', 'expired', 'not_sent', 'cancelled'].includes(c.lastVb.status)
+                                ? ` · last invite ${dayInMorristown(c.lastVb.sentAt)}: ${VB_WORDS[c.lastVb.status][1].toLowerCase()}`
+                                : ''}
+                            </span>
+                            {c.alreadyInVb && (
+                            <span className="mt-0.5 block text-xs font-semibold text-amber-800">
+                              Already in VolunteerBadge
+                              {typeof c.alreadyInVb === 'string' ? ` since ${dayInMorristown(c.alreadyInVb)}` : ''}. Look there
+                              first: if a check has already run, record it by hand on their Volunteers entry instead of
+                              sending (that would use a second credit).
+                            </span>
+                          )}
+                          {c.possibleVbMatch && (
+                            <span className="mt-0.5 block text-xs font-semibold text-amber-800">
+                              Possible match: VolunteerBadge has someone with this name at a different email
+                              {typeof c.possibleVbMatch === 'string' ? ` (since ${dayInMorristown(c.possibleVbMatch)})` : ''}. Look
+                              in VolunteerBadge to confirm. If it is them and a check has run, record it by hand; if
+                              you send here, VolunteerBadge makes a second record and uses another credit.
+                            </span>
+                          )}
+                          </label>
+                        </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
             <button
               type="button"
               onClick={sendBatch}
@@ -395,6 +429,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
               {blocked.map((c) => (
                 <li key={c.personId}>
                   <strong>{c.name}</strong>
+                  <span className="text-xs text-amber-800"> ({c.group === 'family' ? 'family adult' : 'volunteer'})</span>
                   {c.reason ? ` (${c.reason === 'never checked' ? 'no check on file' : `check ${c.reason}`})` : ''}:{' '}
                   {c.blockedBecause}
                   {c.alreadyInVb && (

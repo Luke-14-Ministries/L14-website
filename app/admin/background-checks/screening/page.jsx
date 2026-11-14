@@ -3,6 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
+import TemplatePicker from './TemplatePicker';
 import { loadScreeningCandidates } from '@/lib/screeningCandidates';
 import { volunteerBadge, volunteerBadgeMode } from '@/lib/volunteerBadge';
 import { VolunteerBadgeError, VB_DASHBOARD, loadRoster, namesAgree, possibleNameMatches, namesDiffer, canTakeBack } from '@/lib/volunteerBadgeApi';
@@ -89,6 +90,22 @@ export default async function ScreeningPage() {
     }
   }
 
+  // Each group's template (0170): VolunteerBadge's list and what was chosen.
+  let templates = null;
+  let templateChoice = { volunteer: '', family: '' };
+  if (mode !== 'off' && !connectionProblem) {
+    try {
+      templates = await volunteerBadge().templates();
+    } catch {
+      templates = null; // the picker just doesn't show; sending still uses the saved ids
+    }
+    const { data: settings } = await supabase
+      .from('background_check_settings')
+      .select('vb_template_volunteer, vb_template_family')
+      .maybeSingle();
+    templateChoice = { volunteer: settings?.vb_template_volunteer ?? '', family: settings?.vb_template_family ?? '' };
+  }
+
   // Someone due who is ALREADY on VolunteerBadge's roster (live only): put in
   // or screened there by hand, before or outside this screen (Lawrence and
   // Ellen, 13 Nov 2026). The site never pulls in a check it didn't ask for, so
@@ -141,6 +158,11 @@ export default async function ScreeningPage() {
       {noEvents ? (
         <p className="text-neutral-600">No upcoming events, so nobody is due a background check for one.</p>
       ) : null}
+      {templates && templates.length > 0 && (
+        <div className="mb-6">
+          <TemplatePicker templates={templates} volunteer={templateChoice.volunteer} family={templateChoice.family} />
+        </div>
+      )}
       <ScreeningBoard
         candidates={candidates}
         requests={rows}

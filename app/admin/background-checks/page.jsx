@@ -53,6 +53,17 @@ const VOLUNTEER_FILTERS = [
   { key: 'current', label: 'Current' },
 ];
 
+// A family adult's VolunteerBadge invite, in a few words.
+const VB_STATUS_WORDS = {
+  sending: 'sending didn’t finish',
+  invited: 'invited',
+  applied: 'applied, check not started',
+  processing: 'check in progress',
+  in_review: 'VolunteerBadge is reviewing',
+  clear: 'clear, confirm OK to serve on Background Screening',
+  consider: 'needs review in VolunteerBadge',
+};
+
 const REGISTRY_FILTERS = [
   { key: '', label: 'All' },
   { key: 'due', label: 'Search due' },
@@ -167,8 +178,9 @@ export default async function BackgroundChecksPage({ searchParams }) {
             .select('person_id, background_check_on_file, background_check_date, expires_on, verdict, verdict_note, checkr_status, provider')
             .in('person_id', personIds)
         : Promise.resolve({ data: [], error: null }),
-      // The deposit hold is a Checkr-ordering rule: volunteers only.
-      depositInByPerson(supabase, volunteerIds),
+      // The deposit hold, per person, for every adult sent to VolunteerBadge
+      // (volunteers and family adults: the board, 14 Nov 2026).
+      depositInByPerson(supabase, personIds, { allRoles: true }),
       supabase
         .from('person_clearances')
         .select('person_id', { count: 'exact', head: true })
@@ -177,8 +189,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
   if (clearError) throw new Error(`Background checks: ${clearError.message}`);
   if (countError) throw new Error(`Background checks on file: ${countError.message}`);
   const clearanceBy = new Map((clearances ?? []).map((c) => [c.person_id, c]));
-  // Each volunteer's latest VolunteerBadge invite, in the site's mode (0165).
-  const vbBy = await latestVbRequests(supabase, volunteerIds, volunteerBadgeMode() === 'test');
+  // Each adult's latest VolunteerBadge invite, in the site's mode (0165).
+  const vbBy = await latestVbRequests(supabase, personIds, volunteerBadgeMode() === 'test');
 
   const base = (id) => {
     const { person, events } = byId.get(id);
@@ -226,6 +238,11 @@ export default async function BackgroundChecksPage({ searchParams }) {
       const { person, roles } = byId.get(id);
       const covered = fullCheckCurrent(c, today);
       const registry = isRegistrySearch(c);
+      // Family adults go through VolunteerBadge by default (the board, 14 Nov
+      // 2026); adult campers keep the registry search for now.
+      const adultCamper = roles.has('camper');
+      const vb = vbBy.get(id) ?? null;
+      const bucket = registryBucket(c, today, soon);
       return {
         ...base(id),
         firstName: person.first_name ?? '',
@@ -235,7 +252,11 @@ export default async function BackgroundChecksPage({ searchParams }) {
         checkDate: c?.background_check_on_file ? c?.background_check_date ?? null : null,
         expiresOn: c?.background_check_on_file ? c?.expires_on ?? null : null,
         pill: clearancePill(c, today, { forRegistry: true }),
-        bucket: registryBucket(c, today, soon),
+        bucket,
+        adultCamper,
+        // A family adult's VolunteerBadge invite, while it is out or waiting on staff.
+        vbStatus: !adultCamper && vb && !vb.confirmed_at ? vb.status : null,
+        heldForDeposit: !adultCamper && bucket === 'due' && depositIn.get(id) === false,
         // What the form starts from, when a search is on file.
         initial: registry ? { date: c.background_check_date ?? '', verdict: c.verdict ?? '', note: c.verdict_note ?? '' } : null,
         // A current full check covers them; no search is recorded over it.
@@ -247,10 +268,11 @@ export default async function BackgroundChecksPage({ searchParams }) {
     REGISTRY_FILTERS.map((f) => [f.key, f.key ? registryRows.filter((x) => x.bucket === f.key).length : registryRows.length])
   );
   const rShown = rFilter ? registryRows.filter((x) => x.bucket === rFilter) : registryRows;
-  // The queue: everyone in part 2 with a search due, whatever the table shows.
+  // The queue: adult campers with a search due (family adults go to
+  // VolunteerBadge; a registry search is their fallback, under their row).
   const queue = canWrite
     ? registryRows
-        .filter((x) => x.bucket === 'due')
+        .filter((x) => x.bucket === 'due' && x.adultCamper)
         .map((x) => ({
           id: x.id,
           name: x.name,
@@ -280,8 +302,12 @@ export default async function BackgroundChecksPage({ searchParams }) {
     }
   }
   // Who an invite would go to now: no check, or one out of date, deposit in.
-  const readyToInvite = volunteerRows.filter((x) => (x.bucket === 'missing' || x.bucket === 'expired') && !x.heldForDeposit).length;
-  const heldCount = volunteerRows.filter((x) => x.heldForDeposit).length;
+  const OPEN_VB = ['sending', 'invited', 'applied', 'processing', 'in_review', 'clear', 'consider'];
+  const familyDue = registryRows.filter((x) => !x.adultCamper && x.bucket === 'due' && !OPEN_VB.includes(x.vbStatus));
+  const readyToInvite =
+    volunteerRows.filter((x) => (x.bucket === 'missing' || x.bucket === 'expired') && !x.heldForDeposit).length +
+    familyDue.filter((x) => !x.heldForDeposit).length;
+  const heldCount = volunteerRows.filter((x) => x.heldForDeposit).length + familyDue.filter((x) => x.heldForDeposit).length;
 
   // ---- What each folded header says (Lawrence, 11 Nov 2026) ----
   // In the same tones as the status pills (CHECK_TONE). Read here, not at
@@ -334,15 +360,17 @@ export default async function BackgroundChecksPage({ searchParams }) {
       <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
         <h1 className="text-xl font-bold">Background Checks</h1>
         <p className="mt-1 text-sm text-neutral-600">
-          Everyone 18 or older on an upcoming event needs one of two checks.{' '}
+          Everyone 18 or older on an upcoming event gets the full background check through
+          VolunteerBadge (the board, 14 Nov 2026), listed in two groups:{' '}
           <a href="#volunteers" className="font-semibold text-brand underline">
             Volunteers
           </a>{' '}
-          need the full background check through VolunteerBadge.{' '}
+          and{' '}
           <a href="#registry" className="font-semibold text-brand underline">
-            Campers and families
-          </a>{' '}
-          (everyone else) need a search of the public sex-offender registry, or a current full check.
+            campers and families
+          </a>
+          . A search of the public sex-offender registry is the fallback for a family adult who
+          declines, and for now covers adult campers.
           Age is counted on the first day of camp.
           {minors > 0 && ` ${minors} under 18 ${minors === 1 ? 'is' : 'are'} not screened and not listed.`}
         </p>
@@ -372,10 +400,10 @@ export default async function BackgroundChecksPage({ searchParams }) {
               {/* The two counts stand out like the credits (Lawrence, 14 Nov 2026). */}
               {readyToInvite > 0 ? (
                 <strong className="text-red-700">
-                  {readyToInvite} {readyToInvite === 1 ? 'volunteer needs' : 'volunteers need'} a check now
+                  {readyToInvite} {readyToInvite === 1 ? 'adult needs' : 'adults need'} a check now
                 </strong>
               ) : (
-                'No volunteer needs a check right now'
+                'Nobody needs a check right now'
               )}
               {heldCount > 0 && (
                 <>
@@ -480,21 +508,25 @@ export default async function BackgroundChecksPage({ searchParams }) {
       {/* ---- Part 2 ---- */}
       <CheckCard
         id="registry"
-        title="Campers & families: registry search"
+        title="Campers & families"
         summary={registrySummary}
         pills={registryPills}
         defaultOpen={registryWork > 0 || Boolean(rFilter)}
       >
         <p className="text-sm text-neutral-600">
-          {registryRows.length} {registryRows.length === 1 ? 'adult' : 'adults'} who aren&rsquo;t volunteers:
-          campers, parents and guardians, siblings and caregivers. Each needs
-          a search of the public sex-offender registry at{' '}
+          {registryRows.length} {registryRows.length === 1 ? 'adult' : 'adults'} who aren&rsquo;t volunteers.{' '}
+          <strong>Parents, siblings and caregivers</strong> get the full check through VolunteerBadge, sent
+          from{' '}
+          <Link href="/admin/background-checks/screening/" className="font-semibold text-brand underline">
+            Background Screening
+          </Link>
+          . If someone declines it, record a search of the public sex-offender registry at{' '}
           <a href="https://www.nsopw.gov/" target="_blank" rel="noopener noreferrer" className="underline">
             nsopw.gov
           </a>{' '}
-          once a year, or a current full background check. A missing search is a flag on their
-          registration, not a hold. <strong>Not permitted</strong> holds approval. A registry search
-          doesn&rsquo;t count as a volunteer&rsquo;s check.
+          instead, under their row. <strong>Adult campers</strong> keep the registry search for now. A missing
+          check is a flag on their registration, not a hold. <strong>Not permitted</strong> holds approval. A
+          registry search doesn&rsquo;t count as a volunteer&rsquo;s check.
         </p>
 
         {canWrite ? (
@@ -554,8 +586,31 @@ export default async function BackgroundChecksPage({ searchParams }) {
                             </span>
                           )}
                         </span>
-                        {canWrite && !x.coveredByFullCheck && (
+                        {!x.adultCamper && !x.coveredByFullCheck && x.bucket === 'due' && (
+                          <span className="mt-1 block text-xs">
+                            {x.vbStatus ? (
+                              <>VolunteerBadge: {VB_STATUS_WORDS[x.vbStatus] ?? x.vbStatus}</>
+                            ) : x.heldForDeposit ? (
+                              <span className="text-amber-800">VolunteerBadge check waiting on their deposit</span>
+                            ) : (
+                              <Link href="/admin/background-checks/screening/" className="font-semibold text-brand underline">
+                                Send a VolunteerBadge invite
+                              </Link>
+                            )}
+                          </span>
+                        )}
+                        {canWrite && !x.coveredByFullCheck && x.adultCamper && (
                           <RegistrySearchForm personId={x.id} name={x.name} today={today} initial={x.initial} />
+                        )}
+                        {/* The registry search, kept as the fallback for a family
+                            adult who declines VolunteerBadge (the board, 14 Nov 2026). */}
+                        {canWrite && !x.coveredByFullCheck && !x.adultCamper && (
+                          <details className="mt-1 text-xs" open={Boolean(x.initial)}>
+                            <summary className="cursor-pointer text-neutral-500">
+                              Use a registry search instead (if they decline VolunteerBadge)
+                            </summary>
+                            <RegistrySearchForm personId={x.id} name={x.name} today={today} initial={x.initial} />
+                          </details>
                         )}
                       </td>
                     </tr>

@@ -58,6 +58,40 @@ async function defaultTemplateId(api) {
   return (templates.find((t) => t.isDefault) ?? templates[0])?.id ?? null;
 }
 
+// The template for a group (0170; the board, 14 Nov 2026): what staff chose on
+// this page for volunteers or family adults, else VB's default.
+async function templateFor(supabase, api, group) {
+  const { data, error } = await supabase
+    .from('background_check_settings')
+    .select('vb_template_volunteer, vb_template_family')
+    .maybeSingle();
+  if (error) throw new Error(`The template settings couldn’t be read: ${error.message}`);
+  const chosen = group === 'family' ? data?.vb_template_family : data?.vb_template_volunteer;
+  return chosen || defaultTemplateId(api);
+}
+
+// Choose each group's VolunteerBadge template (0170). Checked against VB's own
+// list, so only a template that exists can be saved.
+export async function saveVbTemplates({ volunteer = '', family = '' } = {}) {
+  if (!(await gate())) return { ok: false, error: 'Not permitted.' };
+  const api = volunteerBadge();
+  if (!api) return { ok: false, error: NOT_CONNECTED };
+  let ids;
+  try {
+    ids = new Set((await api.templates()).map((t) => t.id));
+  } catch (err) {
+    return { ok: false, error: `Not saved: ${vbWords(err)}` };
+  }
+  for (const v of [volunteer, family]) {
+    if (v && !ids.has(v)) return { ok: false, error: 'Not saved: that template isn’t in VolunteerBadge any more. Reload the page.' };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('set_vb_templates', { p_volunteer: volunteer || null, p_family: family || null });
+  if (error) return { ok: false, error: withReason('Not saved.', error) };
+  revalidateScreening();
+  return { ok: true };
+}
+
 // THE CREDIT GUARD (Lawrence, 13 Nov 2026), asked of VB on the server every
 // time, never taken from the page: the balance must cover the people in this
 // send plus every invite already out and not yet charged
@@ -105,9 +139,10 @@ export async function prepareVolunteerBadgeBatch(personIds) {
   }
 
   try {
-    const templateId = await defaultTemplateId(api);
-    if (!templateId) {
-      return { ok: false, error: 'VolunteerBadge has no application template yet. Make one under Recruit → Applications.' };
+    for (const g of new Set(ready.map((r) => byId.get(r.personId).group))) {
+      if (!(await templateFor(supabase, api, g))) {
+        return { ok: false, error: 'VolunteerBadge has no application template yet. Make one under Recruit → Applications.' };
+      }
     }
     // Live only: VolunteerBadge keeps one record per address. An address it
     // already has under someone else's first name (or none to compare) would
@@ -223,7 +258,7 @@ export async function sendVolunteerBadgeInvite(personId) {
   try {
     const short = await guardCredits(supabase, api, 1);
     if (short) return { ok: false, error: `Not sent: ${short}`, stop: true };
-    templateId = await defaultTemplateId(api);
+    templateId = await templateFor(supabase, api, c.group);
   } catch (err) {
     return { ok: false, error: `Not sent: ${vbWords(err)}`, stop: true };
   }
@@ -280,7 +315,7 @@ export async function resendWithoutIdStep(personId, reason) {
   try {
     const short = await guardCredits(supabase, api, 1, { replacing: c.openRequestId });
     if (short) return { ok: false, error: `Not sent: ${short}` };
-    templateId = await defaultTemplateId(api);
+    templateId = await templateFor(supabase, api, c.group);
   } catch (err) {
     return { ok: false, error: `Not sent: ${vbWords(err)}` };
   }

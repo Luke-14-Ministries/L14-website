@@ -1,4 +1,4 @@
--- Checks for migrations 0165 and 0167: VolunteerBadge requests. Who may send and read them,
+-- Checks for migrations 0165, 0167 and 0170: VolunteerBadge requests. Who may send and read them,
 -- one open invite per person and per address, the adult / Not permitted guard,
 -- the frozen columns, and OK to serve from a clear result (never from a sandbox one;
 -- 0167: a completion date that fits the invite, and a newer check on file wins).
@@ -386,6 +386,76 @@ begin
     raise exception 'FAIL 6f: the older check was not replaced: %', row_to_json(r);
   end if;
   raise notice 'PASS 6f an older check is replaced by the VolunteerBadge result';
+end $$;
+rollback;
+
+\echo == 7 (0170) templates per group, and a family adult's check is recorded as theirs
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare t record;
+begin
+  perform public.set_vb_templates('tpl_volunteer_1', 'tpl_family_1');
+  select vb_template_volunteer, vb_template_family into t from public.background_check_settings;
+  if t.vb_template_volunteer <> 'tpl_volunteer_1' or t.vb_template_family <> 'tpl_family_1' then
+    raise exception 'FAIL 7a: templates read % / %', t.vb_template_volunteer, t.vb_template_family;
+  end if;
+  begin
+    perform public.set_vb_templates('bad id!', null);
+    raise exception 'FAIL 7b: a malformed template id was saved';
+  exception when check_violation then raise notice 'PASS 7b a malformed template id is refused';
+  end;
+  raise notice 'PASS 7a a checks writer sets each group''s template';
+end $$;
+rollback;
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+begin
+  begin
+    perform public.set_vb_templates('tpl_x', 'tpl_y');
+    raise exception 'FAIL 7c: background_checks read set the templates';
+  exception when insufficient_privilege then raise notice 'PASS 7c read-only staff cannot set the templates';
+  end;
+end $$;
+rollback;
+
+-- Pa (a parent, no volunteer place): an adult participant's check.
+begin;
+update public.volunteerbadge_requests set completed_at = now() - interval '1 day' where id = '65000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare r record;
+begin
+  perform public.confirm_volunteerbadge_clear('65000000-0000-0000-0000-000000000001');
+  select * into r from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
+  if r.provider <> 'volunteerbadge' or r.screening_reason <> 'adult_participant' then
+    raise exception 'FAIL 7d: % / %', r.provider, r.screening_reason;
+  end if;
+  raise notice 'PASS 7d a family adult''s VolunteerBadge check is recorded as an adult participant''s';
+end $$;
+rollback;
+
+-- The same person as a volunteer: a volunteer's check.
+begin;
+update public.volunteerbadge_requests set completed_at = now() - interval '1 day' where id = '65000000-0000-0000-0000-000000000001';
+update public.registration_participants set camp_role = 'volunteer' where id = '60000000-0000-0000-0000-000000000002';
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare r record;
+begin
+  perform public.confirm_volunteerbadge_clear('65000000-0000-0000-0000-000000000001');
+  select * into r from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
+  if r.screening_reason <> 'volunteer' then raise exception 'FAIL 7e: %', r.screening_reason; end if;
+  raise notice 'PASS 7e a volunteer''s check is recorded as a volunteer''s';
 end $$;
 rollback;
 

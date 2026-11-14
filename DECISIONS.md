@@ -4726,3 +4726,27 @@ deposit, never more than they owe; 0 with no fee) covered by their own granted s
 paid money reaching them (shared out smallest need first, then by person, so a family of two that paid $50
 releases one). `lib/screeningDeposit.js` uses it (and takes `allRoles` for family adults, next).
 `registration_deposit_in()` stays for the family answer. Tests: deposit_scholarship_rules.sql §7–9.
+
+## 14 November 2026 — Every adult 18+ through VolunteerBadge; families and volunteers kept apart (0170)
+
+The board, via Lawrence: "run all adults 18+ through volunteer badge by default. Keep families and
+volunteers segregated, but replace the sex offender registry search flow with the VB flow we've designed
+for volunteers; if anyone (eg camper parents) balk, then we can switch to sex registry search manually, so
+keep that flow (just deprecated/collapsed)." Decisions with it: family adults wait on the deposit like
+volunteers (their own share, 0169); templates chosen on the screening page; adult campers stay on the
+registry search until VolunteerBadge says whether a guardian can complete one at the guardian's email
+(one open invite per address, and VB keys volunteers by email).
+
+- `lib/screeningCandidates.js`: candidates carry `group` ('volunteer' or 'family'). Family adults are
+  parents, siblings and caregivers 18+; a current registry search still covers them (the fallback).
+- Background Screening lists the two groups apart, each with its own Select all; one Send button. The
+  template pickers (TemplatePicker.jsx) list VolunteerBadge's templates; `set_vb_templates()` saves them
+  (`background_check_settings.vb_template_volunteer` / `vb_template_family`, 0170); unset = VB's default.
+- Background Checks: "Campers & families" shows a family adult's VolunteerBadge state (or "Send a
+  VolunteerBadge invite"), with the registry search folded under "Use a registry search instead (if they
+  decline VolunteerBadge)"; adult campers keep the registry form and the queue. The counts on "How to run a
+  check" include family adults.
+- `confirm_volunteerbadge_clear()` (0170) records `screening_reason` 'volunteer' for someone with a
+  volunteer place on an upcoming event, else 'adult_participant'.
+- The family form asks every adult 18+ (not adult campers) for their own email (`needsOwnEmail`).
+- Tests: volunteerbadge_rules.sql §7; wizardPeople.test.mjs.
