@@ -369,10 +369,20 @@ export default async function BackgroundChecksPage({ searchParams }) {
               <CreditLine mode={vbMode} credits={vbCredits} outstanding={vbOutstanding} problem={vbProblem} />
             </p>
             <p className="mt-2 text-sm text-neutral-700">
-              {readyToInvite > 0
-                ? `${readyToInvite} ${readyToInvite === 1 ? 'volunteer needs' : 'volunteers need'} a check now`
-                : 'No volunteer needs a check right now'}
-              {heldCount > 0 ? ` (${heldCount} more waiting on a deposit)` : ''}. The next page lists them:
+              {/* The two counts stand out like the credits (Lawrence, 14 Nov 2026). */}
+              {readyToInvite > 0 ? (
+                <strong className="text-red-700">
+                  {readyToInvite} {readyToInvite === 1 ? 'volunteer needs' : 'volunteers need'} a check now
+                </strong>
+              ) : (
+                'No volunteer needs a check right now'
+              )}
+              {heldCount > 0 && (
+                <>
+                  {' '}(<strong className="text-amber-700">{heldCount} more waiting on a deposit</strong>)
+                </>
+              )}
+              . The next page lists them:
               you choose who to invite and see the credits it will use. Nothing is sent until you press
               Send there. A check done another way (on paper, or straight in VolunteerBadge) is recorded
               by hand: use <strong>Record by hand</strong> beside the person below.

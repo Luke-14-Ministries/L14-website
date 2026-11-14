@@ -141,11 +141,11 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
       )}
       {/* A finished plan is not "paid in full" if someone was added since
           (29 Oct 2026): the charger skips completed plans, so say what is
-          owed and where to pay it (the Ways to pay button below). */}
+          owed and where to pay it (the Ways to pay button above). */}
       {plan.status === 'completed' && (balanceCents ?? 0) > 0 && (
         <p className="mt-1 text-amber-800">
           The plan&rsquo;s payments are finished, but {dollars(balanceCents)} is still owed (added
-          since the last payment). Pay it from &ldquo;Ways to pay&rdquo; below.
+          since the last payment). Pay it from &ldquo;Ways to pay&rdquo; above.
         </p>
       )}
       {/* Paid off another way (a check, a scholarship) while the plan runs:

@@ -1580,6 +1580,7 @@ export default async function DashboardPage({ searchParams }) {
                       )}
 
                       {(() => {
+                        const moneyBox = (() => {
                         const b = balByReg.get(r.id);
                         if (!b) return null;
                         const reductions =
@@ -1588,7 +1589,7 @@ export default async function DashboardPage({ searchParams }) {
                         if (reductions === 0 && fees.length === 0) return null;
                         const bal = b.balance_cents ?? 0;
                         return (
-                          <div className="mt-3 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm max-w-xs">
+                          <div className="w-full max-w-xs shrink-0 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm">
                             <div className="flex justify-between py-0.5">
                               <span className="text-neutral-500">Fees</span>
                               <span>{dollars(b.fee_cents)}</span>
@@ -1646,6 +1647,81 @@ export default async function DashboardPage({ searchParams }) {
                                 {bal < 0 ? `−${dollars(-bal)}` : dollars(bal)}
                               </span>
                             </div>
+                          </div>
+                        );
+                      })();
+                        const hasMoneyBox = Boolean(moneyBox);
+                        return (
+                          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
+                            {moneyBox}
+                      {/* Money buttons: beside the money box, stacked (Lawrence,
+                          14 Nov 2026), or in a row when there is no box. The
+                          registration's own buttons are the next row: two
+                          different errands (flagged 26 Aug). Money first, then
+                          the registration itself: who is coming, what they will
+                          do, what has been signed.
+                          One way in to paying (Lawrence, 27 Oct 2026: the
+                          dashboard's Pay deposit / Payment plan / Request help
+                          buttons were "redundant with the next page"). Every
+                          way to pay -- the deposit, any amount, in full, a
+                          plan, a scholarship request -- is on Ways to pay,
+                          which also links the statement. */}
+                      <div className={hasMoneyBox ? 'flex flex-col items-start gap-2 text-center sm:items-stretch' : 'flex flex-wrap items-center gap-3'}>
+                        {(() => {
+                          const owing = balanceByReg.get(r.id) ?? 0;
+                          const clearingNow = pendingByReg.get(r.id) ?? 0;
+                          // Solid only while a payment is needed NOW -- the
+                          // deposit, a plan problem, a past-due balance (the
+                          // same Needs as the pills). A running plan, or a
+                          // balance not yet due, gets the quiet outline: still
+                          // there for an extra payment (27 Oct 2026).
+                          const payNow = needsByReg
+                            .get(r.id)
+                            .needs.some((n) => MONEY_NEEDS.has(n));
+                          // Two different truths, two different badges: money
+                          // still clearing the bank is NOT the same as paid.
+                          if (owing <= 0) {
+                            return clearingNow > 0 ? (
+                              <span
+                                className={`inline-flex items-center rounded-full ${CLEARING_PILL} px-3 py-1 text-sm font-semibold`}
+                                title="A bank transfer may take a few days to clear. Nothing more to do."
+                              >
+                                Paid · {dollars(clearingNow)} clearing the bank
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 px-3 py-1 text-sm font-semibold">
+                                Paid in full ✓
+                              </span>
+                            );
+                          }
+                          return (
+                            <>
+                              <Link
+                                href={`/account/finish/${r.id}/`}
+                                title="Pay the deposit, any amount or in full, set up a payment plan, or request help with the fee."
+                                className={payNow ? 'btn-primary py-2!' : 'btn-outline py-2!'}
+                              >
+                                Ways to pay
+                              </Link>
+                              {clearingNow > 0 && (
+                                <span
+                                  className={`rounded-full ${CLEARING_PILL} px-2.5 py-0.5 text-xs font-semibold`}
+                                  title="A bank transfer may take a few days to clear. Nothing more to do."
+                                >
+                                  {dollars(clearingNow)} clearing the bank
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
+                        <Link
+                          href={`/account/statement/${r.id}`}
+                          title="A printable statement: fees, scholarships, payments, and balance."
+                          className="btn-outline py-2!"
+                        >
+                          Statement
+                        </Link>
+                      </div>
                           </div>
                         );
                       })()}
@@ -1708,7 +1784,7 @@ export default async function DashboardPage({ searchParams }) {
                             </p>
                             <p className="mt-1">
                               If you&rsquo;d like to request a full scholarship instead, choose it under
-                              &ldquo;Ways to pay&rdquo; below. No deposit is needed then, and staff will be
+                              &ldquo;Ways to pay&rdquo; above. No deposit is needed then, and staff will be
                               in touch.
                             </p>
                             <p className="mt-1">
@@ -1727,73 +1803,6 @@ export default async function DashboardPage({ searchParams }) {
                           </div>
                         );
                       })()}
-
-                      {/* Two rows, not one wrapping row, because these are two
-                          different errands (flagged 26 Aug). Money first, then
-                          the registration itself: who is coming, what they will
-                          do, what has been signed.
-                          One way in to paying (Lawrence, 27 Oct 2026: the
-                          dashboard's Pay deposit / Payment plan / Request help
-                          buttons were "redundant with the next page"). Every
-                          way to pay -- the deposit, any amount, in full, a
-                          plan, a scholarship request -- is on Ways to pay,
-                          which also links the statement. */}
-                      <div className="mt-4 flex flex-wrap items-center gap-3">
-                        {(() => {
-                          const owing = balanceByReg.get(r.id) ?? 0;
-                          const clearingNow = pendingByReg.get(r.id) ?? 0;
-                          // Solid only while a payment is needed NOW -- the
-                          // deposit, a plan problem, a past-due balance (the
-                          // same Needs as the pills). A running plan, or a
-                          // balance not yet due, gets the quiet outline: still
-                          // there for an extra payment (27 Oct 2026).
-                          const payNow = needsByReg
-                            .get(r.id)
-                            .needs.some((n) => MONEY_NEEDS.has(n));
-                          // Two different truths, two different badges: money
-                          // still clearing the bank is NOT the same as paid.
-                          if (owing <= 0) {
-                            return clearingNow > 0 ? (
-                              <span
-                                className={`inline-flex items-center rounded-full ${CLEARING_PILL} px-3 py-1 text-sm font-semibold`}
-                                title="A bank transfer may take a few days to clear. Nothing more to do."
-                              >
-                                Paid · {dollars(clearingNow)} clearing the bank
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 px-3 py-1 text-sm font-semibold">
-                                Paid in full ✓
-                              </span>
-                            );
-                          }
-                          return (
-                            <>
-                              <Link
-                                href={`/account/finish/${r.id}/`}
-                                title="Pay the deposit, any amount or in full, set up a payment plan, or request help with the fee."
-                                className={payNow ? 'btn-primary py-2!' : 'btn-outline py-2!'}
-                              >
-                                Ways to pay
-                              </Link>
-                              {clearingNow > 0 && (
-                                <span
-                                  className={`rounded-full ${CLEARING_PILL} px-2.5 py-0.5 text-xs font-semibold`}
-                                  title="A bank transfer may take a few days to clear. Nothing more to do."
-                                >
-                                  {dollars(clearingNow)} clearing the bank
-                                </span>
-                              )}
-                            </>
-                          );
-                        })()}
-                        <Link
-                          href={`/account/statement/${r.id}`}
-                          title="A printable statement: fees, scholarships, payments, and balance."
-                          className="btn-outline py-2!"
-                        >
-                          Statement
-                        </Link>
-                      </div>
 
                       <div className="mt-2 flex flex-wrap items-center gap-3">
                         <Link
