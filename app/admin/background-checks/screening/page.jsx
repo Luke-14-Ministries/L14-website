@@ -5,7 +5,7 @@ import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
 import { loadScreeningCandidates } from '@/lib/screeningCandidates';
 import { volunteerBadge, volunteerBadgeMode } from '@/lib/volunteerBadge';
-import { VolunteerBadgeError, VB_DASHBOARD, loadRoster, namesAgree, possibleNameMatches, namesDiffer } from '@/lib/volunteerBadgeApi';
+import { VolunteerBadgeError, VB_DASHBOARD, loadRoster, namesAgree, possibleNameMatches, namesDiffer, canTakeBack } from '@/lib/volunteerBadgeApi';
 import { creditPicture } from '@/lib/volunteerBadgeCredits';
 
 export const metadata = { title: 'Background Screening — Staff Admin' };
@@ -69,6 +69,10 @@ export default async function ScreeningPage() {
       vbDobAgrees: r.vb_dob_agrees,
       namesDiffer: namesDiffer(r.vb_first_name, r.vb_last_name, r.people?.first_name, r.people?.last_name),
       vbNameKept: Boolean(r.vb_first_name && r.vb_last_name),
+      // No yes on the date of birth (VB's missing or unreadable, or tied
+      // before 0166): OK to serve asks twice (Fable review, 14 Nov 2026).
+      dobUnchecked: r.vb_dob_agrees !== true,
+      canTakeBack: canTakeBack(r.status, r.problem),
       resendable: resendOn.has(r.id),
     }));
 

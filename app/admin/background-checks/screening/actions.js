@@ -29,7 +29,7 @@ import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { withReason } from '@/lib/dbErrors';
 import { volunteerBadge, volunteerBadgeTemplateId } from '@/lib/volunteerBadge';
-import { VolunteerBadgeError, loadRoster, namesAgree, namesDiffer } from '@/lib/volunteerBadgeApi';
+import { VolunteerBadgeError, loadRoster, namesAgree, namesDiffer, canTakeBack } from '@/lib/volunteerBadgeApi';
 import { refreshOne, refreshOpenRequests } from '@/lib/volunteerBadgeSync';
 import { loadScreeningCandidates } from '@/lib/screeningCandidates';
 import { creditPicture, creditShortfall } from '@/lib/volunteerBadgeCredits';
@@ -368,24 +368,31 @@ export async function refreshVolunteerBadge() {
   };
 }
 
-export async function confirmVolunteerBadgeClear(requestId, { namesDifferAcknowledged = false } = {}) {
+export async function confirmVolunteerBadgeClear(requestId, { secondLookAcknowledged = false } = {}) {
   if (!(await gate())) return { ok: false, error: 'Not permitted.' };
   const api = volunteerBadge();
   if (!api) return { ok: false, error: NOT_CONNECTED };
   const supabase = await createClient();
-  // Names on VB's record that differ from ours in any way need the second
-  // confirm (Lawrence, 13 Nov 2026), checked here as well as on the screen.
+  // Names on VB's record that differ from ours in any way (Lawrence, 13 Nov
+  // 2026), or a date of birth that couldn't be compared (Fable review, 14
+  // Nov), need the second confirm, checked here as well as on the screen.
   {
     const { data: row, error: rowError } = await supabase
       .from('volunteerbadge_requests')
-      .select('vb_first_name, vb_last_name, people ( first_name, last_name )')
+      .select('vb_first_name, vb_last_name, vb_dob_agrees, people ( first_name, last_name )')
       .eq('id', requestId)
       .maybeSingle();
     if (rowError) return { ok: false, error: withReason('Not recorded.', rowError) };
     if (!row) return { ok: false, error: 'Not recorded: that invite wasn’t found.' };
-    if (namesDiffer(row.vb_first_name, row.vb_last_name, row.people?.first_name, row.people?.last_name) && !namesDifferAcknowledged) {
+    const secondLook =
+      namesDiffer(row.vb_first_name, row.vb_last_name, row.people?.first_name, row.people?.last_name) || row.vb_dob_agrees !== true;
+    if (secondLook && !secondLookAcknowledged) {
       revalidateScreening();
-      return { ok: false, error: 'Not recorded: the names on VolunteerBadge’s record differ from ours. Reload the page and confirm both questions.' };
+      return {
+        ok: false,
+        error:
+          'Not recorded: VolunteerBadge’s record needs a second look (the names differ, or the date of birth couldn’t be compared). Reload the page and confirm both questions.',
+      };
     }
   }
   // Read the check again first: a result VB has since reopened is not clear.
@@ -413,19 +420,31 @@ export async function confirmVolunteerBadgeClear(requestId, { namesDifferAcknowl
 
 // Take back an invite HERE (it is not cancelled in VolunteerBadge, which has
 // no call for that): a send that never got a clear answer and didn't reach VB,
-// or an invite staff no longer want answered. Only before anyone has applied.
+// an invite staff no longer want answered, an applied invite with no check,
+// or an open invite the site couldn't match to VB's record (a problem on the
+// row), so nothing is stuck open (Fable review, 14 Nov 2026). Never a check
+// that is running and matched (canTakeBack, lib/volunteerBadgeApi.js).
 export async function cancelVolunteerBadgeRequest(requestId) {
   if (!(await gate())) return { ok: false, error: 'Not permitted.' };
   const supabase = await createClient();
-  // An invite that has been used since the page loaded is not taken back.
+  // Ask VB first: an invite used since the page loaded may now be a running,
+  // matched check, which is not taken back.
   const api = volunteerBadge();
+  let now;
   if (api) {
     try {
-      const { status: now } = await refreshOne(supabase, api, requestId);
-      if (now !== 'invited' && now !== 'sending') {
+      const fresh = await refreshOne(supabase, api, requestId);
+      if (!canTakeBack(fresh.status, fresh.problem)) {
         revalidateScreening();
-        return { ok: false, error: 'Not taken back: they have used their invite since this page was loaded. Reload the page.' };
+        return {
+          ok: false,
+          error:
+            fresh.status === 'expired'
+              ? 'Nothing to take back: the invite has expired. Reload the page.'
+              : 'Not taken back: their check has started since this page was loaded. Reload the page.',
+        };
       }
+      now = fresh.status;
     } catch (err) {
       return { ok: false, error: `Not taken back: ${vbWords(err)}` };
     }
@@ -434,10 +453,10 @@ export async function cancelVolunteerBadgeRequest(requestId) {
     .from('volunteerbadge_requests')
     .update({ status: 'cancelled' })
     .eq('id', requestId)
-    .in('status', ['sending', 'invited'])
+    .in('status', now ? [now] : ['sending', 'invited'])
     .select('id');
   if (error) return { ok: false, error: withReason('Not taken back.', error) };
-  if (!data?.length) return { ok: false, error: 'Only an invite nobody has applied to yet can be taken back.' };
+  if (!data?.length) return { ok: false, error: 'Not taken back: it changed meanwhile. Reload the page.' };
   revalidateScreening();
   return { ok: true };
 }

@@ -4625,3 +4625,23 @@ keeping everything 0165 refused, and now returns words for staff (text, null whe
   ours to decide). An older or same-day check, an expired one, or a registry search is replaced as before.
 - Tests: `supabase/tests/volunteerbadge_rules.sql` section 6 (before the invite, a day ahead, newer ok kept,
   newer Follow up refused, newer undecided refused, older replaced).
+
+## 14 November 2026 — VolunteerBadge invites can't get stuck; late results still link; unknown birth date asks twice
+
+Lawrence ("yes, do 1-4"), from a review of the VolunteerBadge plan against the code:
+
+1. **Nothing stays open with no way out.** Take back now works on an applied invite (no check yet) and on a
+   running row the site couldn't match to VB's record (a problem on it), besides sending and invited
+   (`canTakeBack`, lib/volunteerBadgeApi.js). A running, matched check is never taken back. An applied
+   invite with still no check expires 14 days after its link ran out (`APPLIED_GRACE_DAYS`), so it stops
+   blocking a new invite and holding a credit.
+2. **An expired invite still catches a late check.** For 30 days after the link ran out
+   (`LATE_RESULT_DAYS`) Refresh and the daily job keep looking; a full check started after the invite, on a
+   record that passes the same name and birth-date rules, is tied to it, so a returning volunteer who
+   finished near the deadline isn't paid for twice. Nothing else changes on an expired row, and it is
+   skipped once the person has been sent a newer invite.
+3. **OK to serve asks twice when VB's date of birth couldn't be compared** (`vb_dob_agrees` not yes: VB's
+   missing or unreadable, or tied before 0166), as it does for names that differ; checked in the server
+   action too (`secondLookAcknowledged`).
+4. **Refresh stops when VolunteerBadge doesn't answer or fails on its side** (no reply, a 5xx), as it did for
+   a refused key or "slow down", instead of waiting out every row's timeout.

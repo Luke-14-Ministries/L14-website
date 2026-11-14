@@ -58,7 +58,7 @@ function detail(r) {
     case 'not_sent':
       return `${r.problem ?? 'It didn’t go through.'} They are back on the list to send again.`;
     case 'expired':
-      return 'They didn’t apply before the link ran out. They are back on the list to send again.';
+      return 'The link ran out before a check started. They are back on the list to send again. For 30 days the site still looks for a late check and ties it here if one turns up.';
     case 'cancelled':
       return 'Taken back here. (It isn’t cancelled in VolunteerBadge.)';
     case 'superseded':
@@ -168,12 +168,19 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
 
   async function confirmClear(r) {
     if (!window.confirm(`Record ${r.name}'s VolunteerBadge result (clear${r.completedAt ? `, ${dayInMorristown(r.completedAt)}` : ''}) as OK to serve?`)) return;
-    // Names that differ in any way: said plainly, and asked a second time.
-    if (r.namesDiffer) {
+    // Names that differ in any way, or a date of birth that couldn't be
+    // compared: said plainly, and asked a second time.
+    if (r.namesDiffer || r.dobUnchecked) {
       const theirs = r.vbName ?? 'no name';
+      const why = [
+        r.namesDiffer && (r.vbNameKept ? 'The names differ.' : "VolunteerBadge's name wasn't kept for this one."),
+        r.dobUnchecked && "VolunteerBadge's date of birth couldn't be compared with ours.",
+      ]
+        .filter(Boolean)
+        .join(' ');
       if (
         !window.confirm(
-          `${r.vbNameKept ? 'The names differ.' : "VolunteerBadge's name wasn't kept for this one."} Our record: ${r.name}. VolunteerBadge's record: ${theirs}.\n\nAre you sure this result is ${r.name}'s? Check it in VolunteerBadge if you're not.`
+          `${why} Our record: ${r.name}. VolunteerBadge's record: ${theirs}.\n\nAre you sure this result is ${r.name}'s? Check it in VolunteerBadge if you're not.`
         )
       )
         return;
@@ -181,7 +188,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
     setBusy(true);
     setNote(null);
     try {
-      const res = await confirmVolunteerBadgeClear(r.id, { namesDifferAcknowledged: r.namesDiffer === true });
+      const res = await confirmVolunteerBadgeClear(r.id, { secondLookAcknowledged: r.namesDiffer === true || r.dobUnchecked === true });
       setNote(
         res.ok
           ? { tone: 'yes', text: res.note ? `${r.name}: OK to serve recorded. ${res.note}` : `${r.name}: OK to serve recorded.` }
@@ -227,7 +234,9 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
     const words =
       r.status === 'sending'
         ? `Take back ${r.name}'s invite? Do this only if it isn't in VolunteerBadge's Applications list. They go back on the list to send again.`
-        : `Take back ${r.name}'s invite here? It is NOT cancelled in VolunteerBadge: if they still apply, the check runs and uses a credit.`;
+        : r.status === 'processing' || r.status === 'in_review'
+          ? `Stop following ${r.name}'s invite here? The site couldn't match it to VolunteerBadge's check (see the note). Look at their check in VolunteerBadge and record the result by hand on their Volunteers entry. They go back on the list to send again.`
+          : `Take back ${r.name}'s invite here? It is NOT cancelled in VolunteerBadge: if they still finish applying, the check runs and uses a credit. They go back on the list to send again.`;
     if (!window.confirm(words)) return;
     setBusy(true);
     setNote(null);
@@ -482,11 +491,13 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                           <span className="mt-1 block text-xs">
                             VolunteerBadge&rsquo;s record: <strong>{r.vbName ?? 'no name'}</strong> · invited at {r.email}
                             {r.vbDobAgrees === true && <> · <span className="font-semibold text-green-800">Date of birth matches</span></>}
-                            {r.namesDiffer && (
+                            {(r.namesDiffer || r.dobUnchecked) && (
                               <span className="mt-0.5 block font-semibold text-red-800">
-                                {r.vbNameKept
-                                  ? `The names differ from ours (${r.name}).`
-                                  : 'VolunteerBadge’s name wasn’t kept for this one.'}{' '}
+                                {r.namesDiffer &&
+                                  (r.vbNameKept
+                                    ? `The names differ from ours (${r.name}). `
+                                    : 'VolunteerBadge’s name wasn’t kept for this one. ')}
+                                {r.dobUnchecked && 'VolunteerBadge’s date of birth couldn’t be compared with ours. '}
                                 OK to serve asks you twice.
                               </span>
                             )}
@@ -504,7 +515,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                             Open VolunteerBadge
                           </a>
                         )}
-                        {((r.status === 'sending' && r.stuck) || r.status === 'invited') && (
+                        {((r.status === 'sending' && r.stuck) || (r.status !== 'sending' && r.canTakeBack)) && (
                           <button type="button" disabled={busy} onClick={() => takeBack(r)} className="block text-xs text-red-700 underline">
                             Take back
                           </button>
