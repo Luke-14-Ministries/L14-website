@@ -37,6 +37,9 @@ export default async function AdminPaymentsPage({ searchParams }) {
   const params = await searchParams;
   const paystate = typeof params?.paystate === 'string' ? params.paystate : '';
   const eventFilter = typeof params?.event === 'string' ? params.event : '';
+  // Search the balances table (Lawrence, 14 Nov 2026): a family's name, a
+  // person on the registration, or the event.
+  const q = typeof params?.q === 'string' ? params.q.trim().slice(0, 100) : '';
 
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/payments/');
@@ -69,7 +72,11 @@ export default async function AdminPaymentsPage({ searchParams }) {
     supabase.from('registration_review').select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents'),
     // How many are registered on each family's registration, for the
     // "3 registered" line under the name (Lawrence, 26 Oct 2026).
-    supabase.from('registration_participants').select('registration_id').neq('status', 'cancelled'),
+    // Their names too, so the search finds a family by anyone on it.
+    supabase
+      .from('registration_participants')
+      .select('registration_id, people ( first_name, last_name, preferred_name )')
+      .neq('status', 'cancelled'),
     // Refunds still pending, for the stale-refund strip (lib/payments.js).
     supabase
       .from('payment_refunds')
@@ -88,7 +95,17 @@ export default async function AdminPaymentsPage({ searchParams }) {
   // is money the page may be counting wrongly (Lawrence, 26 Oct 2026).
   const staleRefunds = (pendingRefunds ?? []).filter((r) => isStaleRefund(r));
   const countByReg = new Map();
-  for (const x of people ?? []) countByReg.set(x.registration_id, (countByReg.get(x.registration_id) ?? 0) + 1);
+  const namesByReg = new Map();
+  for (const x of people ?? []) {
+    countByReg.set(x.registration_id, (countByReg.get(x.registration_id) ?? 0) + 1);
+    const p = x.people;
+    if (p) {
+      namesByReg.set(
+        x.registration_id,
+        `${namesByReg.get(x.registration_id) ?? ''} ${p.first_name ?? ''} ${p.preferred_name ?? ''} ${p.last_name ?? ''}`
+      );
+    }
+  }
   // The 15 payments Recent activity lists, counted by status for its title.
   const recentCounts = [
     ...(pays ?? []).slice(0, 15).reduce((m, p) => m.set(p.status, (m.get(p.status) ?? 0) + 1), new Map()),
@@ -221,8 +238,24 @@ export default async function AdminPaymentsPage({ searchParams }) {
         return true;
     }
   };
+  // Every word typed must appear in the family's name, a person's name on
+  // the registration, or the event's name (case and accents aside).
+  const fold = (s) =>
+    String(s ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  const words = fold(q).split(/\s+/).filter(Boolean);
+  const matchesSearch = (b) => {
+    if (words.length === 0) return true;
+    const r = regById.get(b.registration_id);
+    const hay = fold(
+      `${r?.households?.display_name ?? ''} ${namesByReg.get(b.registration_id) ?? ''} ${r?.events ? eventNameWithYear(r.events) : ''}`
+    );
+    return words.every((w) => hay.includes(w));
+  };
   const filteredBalances = (balances ?? []).filter(
-    (b) => matchesPaystate(b) && inScope(regById.get(b.registration_id)?.events)
+    (b) => matchesPaystate(b) && inScope(regById.get(b.registration_id)?.events) && matchesSearch(b)
   );
   const PAYSTATES = [
     ['', 'All'],
@@ -242,8 +275,10 @@ export default async function AdminPaymentsPage({ searchParams }) {
     const p = new URLSearchParams();
     const ps = 'paystate' in over ? over.paystate : paystate;
     const ev = 'event' in over ? over.event : eventFilter;
+    const qq = 'q' in over ? over.q : q;
     if (ps) p.set('paystate', ps);
     if (ev) p.set('event', ev);
+    if (qq) p.set('q', qq);
     const s = p.toString();
     return s ? `?${s}` : '';
   };
@@ -415,6 +450,31 @@ export default async function AdminPaymentsPage({ searchParams }) {
           </Link>
         </nav>
       </div>
+      {/* Search (a plain form: works without JavaScript, and the address
+          keeps the search with the event and the chip chosen). */}
+      <form method="get" action="/admin/payments/" className="flex flex-wrap items-center gap-2 mb-3">
+        {paystate && <input type="hidden" name="paystate" value={paystate} />}
+        {eventFilter && <input type="hidden" name="event" value={eventFilter} />}
+        <label htmlFor="balances-q" className="sr-only">
+          Search families
+        </label>
+        <input
+          id="balances-q"
+          name="q"
+          type="search"
+          defaultValue={q}
+          placeholder="Search by family, person or event"
+          className="w-full sm:w-80 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
+        />
+        <button type="submit" className="btn-outline py-1.5! px-3! text-sm">
+          Search
+        </button>
+        {q && (
+          <Link href={`/admin/payments/${qs({ q: '' })}`} className="text-sm text-brand underline">
+            Clear search
+          </Link>
+        )}
+      </form>
       <div className="flex flex-wrap items-center gap-2 mb-3">
         {PAYSTATES.map(([v, label]) => (
           <Link
@@ -431,6 +491,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
         ))}
         <span className="text-sm text-neutral-500 self-center">
           {filteredBalances.length} {filteredBalances.length === 1 ? 'family' : 'families'}
+          {q ? ` matching “${q}”` : ''}
         </span>
       </div>
       {/* Planned global actions — visible placeholders so staff can see
@@ -632,6 +693,13 @@ export default async function AdminPaymentsPage({ searchParams }) {
                 </tr>
               );
             })}
+            {filteredBalances.length === 0 && (
+              <tr>
+                <td colSpan={10} className="px-4 py-6 text-center text-neutral-500">
+                  {q ? `No families match “${q}” with these filters.` : 'No families with these filters.'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
