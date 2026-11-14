@@ -1,3 +1,4 @@
+import { namesSelf } from '@/lib/wizardPeople';
 import Link from 'next/link';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import {
@@ -185,6 +186,10 @@ export default async function FamilyRegisterPage({ searchParams }) {
   // The household's primary contact, so the wizard knows their card by who it
   // is ("I'm coming too"), not only by name (12 Nov 2026).
   let contactPersonId = null;
+  // Who is signed in, when that is NOT the household's primary contact (a
+  // second login on the household, e.g. a spouse; Larry, 14 Nov 2026): "I'm
+  // coming too" then adds them, and they sign for themselves.
+  let selfLogin = null;
   let existingEvents = [];
   // "How did you hear about us?" is a first-contact question, so it is asked
   // once per family and never again. CampSite asks it on every enrolment, which
@@ -193,7 +198,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
   const [{ data: memberRows, error: memberError }, { data: profile, error: profileError }] = await Promise.all([
     supabase
       .from('household_members')
-      .select('household_id')
+      .select('household_id, role')
       .eq('profile_id', user.id)
       .limit(1),
     supabase
@@ -425,6 +430,8 @@ export default async function FamilyRegisterPage({ searchParams }) {
       if (from) {
         for (const x of [...members, ...householdPeople]) {
           if ((x.support?.emergency_contact_name ?? '').trim()) continue;
+          // Never the person's own name as their emergency contact.
+          if (namesSelf(x, from.support.emergency_contact_name)) continue;
           for (const k of keys) x.support[k] = from.support[k] ?? '';
           // A copy: follows the original until changed (FamilyWizard setSupport).
           x.support.emergencyCopied = true;
@@ -464,6 +471,32 @@ export default async function FamilyRegisterPage({ searchParams }) {
     // for a household that has never named one.
     let contactPerson = null;
     contactPersonId = household?.primary_contact_person_id ?? null;
+    // The signed-in login's own person, if it has been linked (0074).
+    const { data: ownRows, error: ownError } = await supabase
+      .from('people')
+      .select('id, first_name, last_name')
+      .eq('profile_id', user.id)
+      .eq('household_id', householdId)
+      .limit(1);
+    if (ownError) throw new Error(`Your own details: ${ownError.message}`);
+    const own = ownRows?.[0] ?? null;
+    // The contact is this login when it is their own person, or (nobody
+    // linked yet) when they are the household's owner, which is what 0074
+    // and the form have always assumed.
+    const loginIsContact = !contactPersonId
+      ? true
+      : own
+        ? own.id === contactPersonId
+        : memberRows?.[0]?.role === 'owner';
+    if (!loginIsContact) {
+      selfLogin = {
+        isContact: false,
+        personId: own?.id ?? null,
+        firstName: own?.first_name ?? profile?.first_name ?? '',
+        lastName: own?.last_name ?? profile?.last_name ?? '',
+        email: user.email ?? '',
+      };
+    }
     if (household?.primary_contact_person_id) {
       const { data: pc, error: pcError } = await supabase
         .from('people')
@@ -573,6 +606,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
             signedAlready={signedAlready}
             householdPeople={householdPeople}
             contactPersonId={contactPersonId}
+            selfLogin={selfLogin}
             existingEvents={existingEvents}
           />
         )}

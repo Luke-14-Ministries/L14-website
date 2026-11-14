@@ -43,7 +43,7 @@ import SupportDetailsFields from '@/components/SupportDetailsFields';
 import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 import { hasPhone } from '@/lib/caregivers';
 import { VOLUNTEER_CHILD_UNDER } from '@/lib/roles';
-import { selfRowIndex, sameName, duplicatePeople, needsOwnEmail, ownEmailProblems, ownEmailMessage } from '@/lib/wizardPeople';
+import { selfRowIndex, sameName, duplicatePeople, needsOwnEmail, ownEmailProblems, ownEmailMessage, namesSelf } from '@/lib/wizardPeople';
 
 // The emergency contact carried across the household (Lawrence, 6 Nov 2026):
 // see setSupport. A person added to the form starts with the contact the
@@ -52,7 +52,10 @@ const EMERGENCY_FIELDS = ['emergency_contact_name', 'emergency_contact_phone', '
 function withHouseholdContact(member, others) {
   const sup = member.support ?? emptySupport(null);
   if ((sup.emergency_contact_name ?? '').trim()) return member;
-  const from = others.find((o) => (o.support?.emergency_contact_name ?? '').trim());
+  // Never the person's own name as their emergency contact (namesSelf).
+  const from = others.find(
+    (o) => (o.support?.emergency_contact_name ?? '').trim() && !namesSelf(member, o.support.emergency_contact_name)
+  );
   if (!from) return member;
   const copy = Object.fromEntries(EMERGENCY_FIELDS.map((k) => [k, from.support[k] ?? '']));
   // emergencyCopied: this person's contact is a copy, so it follows the
@@ -312,7 +315,7 @@ const normName = (v) => (v || '').trim().toLowerCase().replace(/\s+/g, ' ');
 // ---- Who is signed for, and how -------------------------------------------------
 // Used by the Agreements card, its status chip and the submit, so all three
 // read the same answer.
-function signingFacts({ members, family, week, signedAlready, existing, capacityFor }) {
+function signingFacts({ members, family, week, signedAlready, existing, capacityFor, signer = null }) {
   // A signature belongs to the registration it was given for, and therefore
   // to that EVENT. Reported 25 Aug: switching the event selection left the
   // "already signed" panel in place, so a signature given for Camp Celebrate
@@ -327,9 +330,10 @@ function signingFacts({ members, family, week, signedAlready, existing, capacity
   // on this registration -- so a person added later is signed for then.
   const toSign = named.filter((m) => !signedNames.has(personKey(m)));
   const alreadySigned = signedThisEvent && toSign.length === 0;
-  const isSigner = (m) =>
-    normName(`${m.firstName} ${m.lastName}`) ===
-    normName(`${family.contactFirst} ${family.contactLast}`);
+  // Who is signing: the primary contact, or (signer.selfOnly) the signed-in
+  // person who isn't the contact, signing only for themselves (14 Nov 2026).
+  const signerFull = signer?.full ?? `${family.contactFirst} ${family.contactLast}`;
+  const isSigner = (m) => normName(`${m.firstName} ${m.lastName}`) === normName(signerFull);
   // Who is a minor is decided per person, at the START OF CAMP, not today: a
   // seventeen-year-old who turns eighteen in June is an adult at camp in
   // July, and the release covers the week, not the day the form was filled
@@ -344,8 +348,11 @@ function signingFacts({ members, family, week, signedAlready, existing, capacity
   };
   const capacityOf = (m) =>
     isSigner(m) ? 'self' : isMinor(m) ? 'parent_guardian' : capacityFor[personKey(m)] ?? '';
-  const otherAdults = toSign.filter((m) => !isSigner(m) && !isMinor(m));
+  // Signing only for yourself: nobody else is signed for here, so nobody
+  // else is asked about (agreementNeeds says who still needs the contact).
+  const otherAdults = signer?.selfOnly ? [] : toSign.filter((m) => !isSigner(m) && !isMinor(m));
   const needsAffirmation = otherAdults.some((m) => capacityOf(m) === 'authorized_adult');
+  const othersForContact = signer?.selfOnly ? toSign.filter((m) => !isSigner(m)) : [];
   return {
     named,
     signedNames,
@@ -356,6 +363,7 @@ function signingFacts({ members, family, week, signedAlready, existing, capacity
     capacityOf,
     otherAdults,
     needsAffirmation,
+    othersForContact,
   };
 }
 
@@ -555,7 +563,7 @@ function supportNeeds({ members }) {
   ];
 }
 
-function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, facts }) {
+function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, facts, signer = null }) {
   // HARD requirement: the agreements. These are conditions of attending, not
   // preferences -- so unlike the two permissions, an unanswered one stops the
   // submit rather than saving as null.
@@ -595,6 +603,26 @@ function agreementNeeds({ agreements, agreed, signerName, affirmOthers, family, 
   // need: "Alberto Gonzales" signed for a family containing no such person. A
   // guardian with a different name corrects the contact fields, which sit
   // one card up and are theirs to edit.
+  if (signer?.selfOnly) {
+    // The signed-in person isn't the primary contact: they sign for
+    // themselves, in their own name, and only for themselves (14 Nov 2026).
+    if (signerName.trim() && normName(signerName) !== normName(signer.full)) {
+      out.push({
+        chip: 'a signature in your own name',
+        message: `Sign with your own name, "${signer.full}", as on your account.`,
+      });
+    }
+    if (facts.othersForContact.length > 0) {
+      const contact = family.contactFirst.trim() || 'the primary contact';
+      out.push({
+        chip: 'only yourself to sign for',
+        message: `You can sign only for yourself. ${whoList(
+          facts.othersForContact.map((m) => m.firstName.trim())
+        )} need${facts.othersForContact.length === 1 ? 's' : ''} ${contact}'s signature as the primary contact: ${contact} can add them from their own account, or you can make yourself the primary contact in "Your family or group".`,
+      });
+    }
+    return out;
+  }
   if (
     signerName.trim() &&
     normName(signerName) !== normName(`${family.contactFirst} ${family.contactLast}`)
@@ -726,6 +754,9 @@ export default function FamilyWizard({
   // The household's primary contact (households.primary_contact_person_id),
   // so "I'm coming too" knows their card by who it is, not only by name.
   contactPersonId = null,
+  // The signed-in login when it isn't the primary contact (page.jsx; 14 Nov
+  // 2026): { personId, firstName, lastName, email }. null otherwise.
+  selfLogin = null,
   // Weeks this household already has a registration for. Used only to warn:
   // starting a NEW registration no longer inherits another week's people
   // (25 Aug), so the family needs telling when the week they just picked is
@@ -817,6 +848,16 @@ export default function FamilyWizard({
       ? existingEvents.find((e) => e.eventId === week.eventId) ?? null
       : null;
 
+  // Who signs: the primary contact, unless the signed-in login isn't the
+  // contact (selfLogin) and the contact is still someone else; then they sign
+  // for themselves, in the name on their account (14 Nov 2026).
+  const asOther = Boolean(selfLogin) && selfLogin.isContact === false;
+  const loginFull = asOther ? `${selfLogin.firstName} ${selfLogin.lastName}`.trim() : '';
+  const signer =
+    asOther && loginFull && normName(loginFull) !== normName(`${family.contactFirst} ${family.contactLast}`)
+      ? { full: loginFull, selfOnly: true }
+      : null;
+
   // Who is signed for and how (signingFacts), and what each card still
   // needs -- worked out on every render from the same rules the submit uses.
   const { facts, needs, notStarted } = cardNeeds({
@@ -830,6 +871,7 @@ export default function FamilyWizard({
     capacityFor,
     signedAlready,
     existing,
+    signer,
   });
   const {
     named,
@@ -841,6 +883,7 @@ export default function FamilyWizard({
     capacityOf,
     otherAdults,
     needsAffirmation,
+    othersForContact,
   } = facts;
   // The cards on this page (Agreements only when the event has any), and
   // those that still need something.
@@ -1010,7 +1053,17 @@ export default function FamilyWizard({
   // the box whenever the contact's name in "Your family" and the card's name
   // differed, and ticking it again added a second, empty card (alpha feedback:
   // "the role didn't stick").
-  const selfIdx = selfRowIndex(members, family, contactPersonId);
+  // A login that isn't the contact: their own card, by their person, the
+  // isSelf mark, or their account's name.
+  const selfIdx = asOther
+    ? (() => {
+        const byId = selfLogin.personId ? members.findIndex((m) => m.personId === selfLogin.personId) : -1;
+        if (byId >= 0) return byId;
+        const marked = members.findIndex((m) => m.isSelf === true);
+        if (marked >= 0) return marked;
+        return members.findIndex((m) => sameName(m, { firstName: selfLogin.firstName, lastName: selfLogin.lastName }));
+      })()
+    : selfRowIndex(members, family, contactPersonId);
   const selfIncluded = selfIdx >= 0;
   // The card "I'm coming too" last took off, so ticking it again puts back
   // their answers rather than an empty card.
@@ -1034,26 +1087,31 @@ export default function FamilyWizard({
       // It also carries personId, which is what removes your own chip from
       // that list instead of offering to add you twice.
       if (selfIncluded) return;
-      const asContact = { firstName: family.contactFirst, lastName: family.contactLast };
+      // Who "I" am: the primary contact, or the signed-in login that isn't.
+      const asContact = asOther
+        ? { firstName: selfLogin.firstName, lastName: selfLogin.lastName }
+        : { firstName: family.contactFirst, lastName: family.contactLast };
+      const myId = asOther ? selfLogin.personId : contactPersonId;
       const known =
-        (contactPersonId && householdPeople.find((h) => h.personId === contactPersonId)) ||
+        (myId && householdPeople.find((h) => h.personId === myId)) ||
         householdPeople.find((h) => sameName(h, asContact));
+      const mark = asOther ? 'isSelf' : 'isContact';
       // Already on the form under the household record (a household chip, or
       // the contact's name changed since): never a second card.
       if (known && members.some((m) => m.personId === known.personId)) return;
       const self = removedSelf.current
-        ? { ...removedSelf.current, isContact: true }
+        ? { ...removedSelf.current, [mark]: true }
         : withHouseholdContact(
             known
               ? { ...emptyMember, ...known }
               : {
                   ...emptyMember,
-                  firstName: family.contactFirst.trim(),
-                  lastName: family.contactLast.trim(),
+                  firstName: asContact.firstName.trim(),
+                  lastName: asContact.lastName.trim(),
                 },
             members
           );
-      self.isContact = true;
+      self[mark] = true;
       removedSelf.current = null;
       // Fill the first still-blank row rather than stacking a new card under
       // an untouched "Person 1".
@@ -1639,7 +1697,10 @@ export default function FamilyWizard({
             />
             <span className="text-sm">
               <span className="font-semibold">I&rsquo;m coming too.</span> Adds{' '}
-              {family.contactFirst.trim() || 'the primary contact'} to the people attending.
+              {asOther
+                ? selfLogin.firstName.trim() || 'you'
+                : family.contactFirst.trim() || 'the primary contact'}{' '}
+              to the people attending.
             </span>
           </label>
           {members.map((m, i) => (
@@ -1797,7 +1858,9 @@ export default function FamilyWizard({
                   {needsOwnEmail(m, week?.startsOn) && (() => {
                     const who = m.firstName.trim() || 'This person';
                     const isContact = i === selfIdx;
-                    const household = (family.email || '').trim();
+                    // On a non-contact login's own card, their account's
+                    // address, not the household's (the contact's).
+                    const household = asOther ? (selfLogin.email || '').trim() : (family.email || '').trim();
                     return (
                       <div className="mt-3 sm:max-w-md">
                         <label className={label} htmlFor={`fw-p${i}-email`}>
@@ -2240,6 +2303,10 @@ export default function FamilyWizard({
                         <span className="font-semibold">{name}</span>
                         {isSigner(m) ? (
                           <span className="text-neutral-600">Yourself</span>
+                        ) : signer?.selfOnly ? (
+                          <span className="text-amber-800">
+                            Needs {family.contactFirst.trim() || 'the primary contact'}&rsquo;s signature
+                          </span>
                         ) : isMinor(m) ? (
                           <span className="text-neutral-600">As their parent or legal guardian</span>
                         ) : (
@@ -2285,11 +2352,17 @@ export default function FamilyWizard({
                   <label className={label}>
                     Type your name to sign{' '}
                     <span className="font-normal text-neutral-500">
-                      (must match the primary contact
-                      {`${family.contactFirst} ${family.contactLast}`.trim()
-                        ? `: ${`${family.contactFirst} ${family.contactLast}`.trim()}`
-                        : ''}
-                      )
+                      {signer?.selfOnly ? (
+                        <>(your own name, as on your account: {signer.full})</>
+                      ) : (
+                        <>
+                          (must match the primary contact
+                          {`${family.contactFirst} ${family.contactLast}`.trim()
+                            ? `: ${`${family.contactFirst} ${family.contactLast}`.trim()}`
+                            : ''}
+                          )
+                        </>
+                      )}
                     </span>
                   </label>
                   <input

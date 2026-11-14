@@ -200,16 +200,37 @@ export async function submitFamilyRegistration(payload) {
   const CAPACITIES = new Set(['self', 'parent_guardian', 'legal_guardian', 'authorized_adult']);
   let signature = null;
   if (agreements && (agreements.signerName || '').trim() && Array.isArray(agreements.keys)) {
-    // The signature must name the primary contact -- the accountable adult.
-    if (norm(agreements.signerName) !== norm(`${family.contactFirst} ${family.contactLast}`)) {
-      return { ok: false, error: "The signature must match the primary contact's name." };
-    }
     const people = (Array.isArray(agreements.people) ? agreements.people : [])
       .filter((p) => CAPACITIES.has(p?.capacity) && (p.firstName || '').trim() && (p.lastName || '').trim())
       .map((p) => ({
         key: `${p.firstName.trim()}|${p.lastName.trim()}`.toLowerCase(),
         capacity: p.capacity,
       }));
+    // The signature names the primary contact -- the accountable adult -- or
+    // (14 Nov 2026) the signed-in person signing ONLY for themselves, in the
+    // name on their account or their own linked person. The database checks
+    // a self signature against the person it is for (0073).
+    if (norm(agreements.signerName) !== norm(`${family.contactFirst} ${family.contactLast}`)) {
+      const signer = norm(agreements.signerName);
+      const { data: me } = await (await createClient())
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      const { data: mine } = await (await createClient())
+        .from('people')
+        .select('first_name, last_name')
+        .eq('profile_id', user.id)
+        .limit(1);
+      const myNames = [me, mine?.[0]].filter(Boolean).map((x) => norm(`${x.first_name ?? ''} ${x.last_name ?? ''}`));
+      const onlyMe = people.length > 0 && people.every((p) => p.capacity === 'self' && norm(p.key.replace('|', ' ')) === signer);
+      if (!myNames.includes(signer) || !onlyMe) {
+        return {
+          ok: false,
+          error: "The signature must match the primary contact's name, or your own name if you are signing only for yourself.",
+        };
+      }
+    }
     if (people.some((p) => p.capacity === 'authorized_adult') && agreements.affirmOtherAdults !== true) {
       return {
         ok: false,

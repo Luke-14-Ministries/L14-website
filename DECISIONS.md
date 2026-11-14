@@ -4675,3 +4675,24 @@ which closes the gap where a volunteer types a different email on VB's form.
   /applications returns. The sandbox's volunteer id is not a saved record (GET answers 404), so a webhook
   volunteer VB doesn't have now puts a plain problem on the row and the invite still expires on time,
   instead of failing every refresh. The test row was marked cancelled afterward.
+
+## 14 November 2026 — A second login on a household registers and signs for themselves
+
+Larry (a second login on Darlene's household, with no person record of his own) found two things on the
+family form: "I'm coming too" added Darlene, and his own signature was refused because it had to match
+the primary contact. Lawrence: "yes, build the fix".
+
+- The page works out whether the signed-in login IS the primary contact (their own linked person is the
+  contact, or with nobody linked, they are the household's owner, as 0074 assumes). When not, the form
+  gets `selfLogin` (their own person if linked, else their account's name and email).
+- "I'm coming too" then adds the signed-in person ("Adds Larry"), found by their person, an `isSelf`
+  mark or their account's name; their own-email box offers their account's address, not the household's.
+- They sign for **themselves only**, in their own name ("your own name, as on your account"). Anyone else
+  on the form shows "Needs Darlene's signature", and the form says how: Darlene adds them from her own
+  account, or they make themselves the primary contact. The server accepts a non-contact signature only
+  when it is the signed-in person's account or linked-person name and every person signed for is that
+  person, as self; the database already checks a self signature against the person (0073).
+- The household's emergency contact is no longer copied onto the person it names (`namesSelf`), in the
+  form and on the page.
+- Not done: tying the new person record to Larry's login (people.profile_id), which only program-leader
+  naming uses.
