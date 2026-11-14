@@ -168,10 +168,20 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
 
   async function confirmClear(r) {
     if (!window.confirm(`Record ${r.name}'s VolunteerBadge result (clear${r.completedAt ? `, ${dayInMorristown(r.completedAt)}` : ''}) as OK to serve?`)) return;
+    // Names that differ in any way: said plainly, and asked a second time.
+    if (r.namesDiffer) {
+      const theirs = r.vbName ?? 'no name';
+      if (
+        !window.confirm(
+          `${r.vbNameKept ? 'The names differ.' : "VolunteerBadge's name wasn't kept for this one."} Our record: ${r.name}. VolunteerBadge's record: ${theirs}.\n\nAre you sure this result is ${r.name}'s? Check it in VolunteerBadge if you're not.`
+        )
+      )
+        return;
+    }
     setBusy(true);
     setNote(null);
     try {
-      const res = await confirmVolunteerBadgeClear(r.id);
+      const res = await confirmVolunteerBadgeClear(r.id, { namesDifferAcknowledged: r.namesDiffer === true });
       setNote(res.ok ? { tone: 'yes', text: `${r.name}: OK to serve recorded.` } : { tone: 'no', text: res.error });
     } finally {
       setBusy(false);
@@ -460,7 +470,25 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-neutral-700">{detail(r)}</td>
+                      <td className="px-3 py-2 text-neutral-700">
+                        {detail(r)}
+                        {/* Before OK to serve: whose record VolunteerBadge says it is
+                            (0166), beside ours. The date of birth is a yes only. */}
+                        {r.status === 'clear' && !r.confirmedAt && (
+                          <span className="mt-1 block text-xs">
+                            VolunteerBadge&rsquo;s record: <strong>{r.vbName ?? 'no name'}</strong> · invited at {r.email}
+                            {r.vbDobAgrees === true && <> · <span className="font-semibold text-green-800">Date of birth matches</span></>}
+                            {r.namesDiffer && (
+                              <span className="mt-0.5 block font-semibold text-red-800">
+                                {r.vbNameKept
+                                  ? `The names differ from ours (${r.name}).`
+                                  : 'VolunteerBadge’s name wasn’t kept for this one.'}{' '}
+                                OK to serve asks you twice.
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         {r.status === 'clear' && !r.confirmedAt && mode === 'live' && (
                           <button type="button" disabled={busy} onClick={() => confirmClear(r)} className="btn-primary py-1! px-3! text-xs">

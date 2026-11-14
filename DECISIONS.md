@@ -4590,3 +4590,22 @@ address while VolunteerBadge holds him at another. Two rules:
   name (suffixes and punctuation aside) and an agreeing first name at a different email. A note telling
   staff to look there and, if it is them and a check has run, record it by hand; never a link or a block.
   Roster last names are now kept from VB for it (a name only; CLAUDE.md's allow-list line says so).
+
+## 13 November 2026 — Stronger same-person checks on a VolunteerBadge result (0166)
+
+Lawrence ("Yes, all four"): before the site ties an invite to a VolunteerBadge record, and before OK to
+serve, it now also checks:
+
+- **The last name agrees** (`lastNamesAgree`: suffixes such as Jr. or III, case, accents, punctuation and
+  spaces set aside). VB with no last name falls back to the first-name and date rules.
+- **The date of birth agrees, compared in memory** inside `lib/volunteerBadgeApi.js`
+  (`volunteer(id, { birthdate })` returns `dobAgrees` yes / no / unknown; the date never leaves the
+  module). A mismatch refuses the link with a fixed message; unknown falls back to the name rules.
+  A placeholder or impossible date reads as unknown.
+- **OK to serve shows whose record it is**: VB's first and last name and the invited address beside ours,
+  and "Date of birth matches" when it did (`vb_first_name`, `vb_last_name`, `vb_dob_agrees`, 0166:
+  names and a yes/no only). Names that differ in any way, or weren't kept (invites tied before 0166),
+  need a second confirm, checked in the server action too.
+- The possible-match notes stay name-based: checking their date of birth would read each matching
+  person's whole VB record before anyone is invited (review, 13 Nov 2026).
+- Item 4 (asking VB whether an invite can carry our own reference back) is a question for VB, not code.

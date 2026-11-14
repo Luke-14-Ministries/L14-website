@@ -5,7 +5,7 @@ import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
 import { loadScreeningCandidates } from '@/lib/screeningCandidates';
 import { volunteerBadge, volunteerBadgeMode } from '@/lib/volunteerBadge';
-import { VolunteerBadgeError, VB_DASHBOARD, loadRoster, namesAgree, possibleNameMatches } from '@/lib/volunteerBadgeApi';
+import { VolunteerBadgeError, VB_DASHBOARD, loadRoster, namesAgree, possibleNameMatches, namesDiffer } from '@/lib/volunteerBadgeApi';
 import { creditPicture } from '@/lib/volunteerBadgeCredits';
 
 export const metadata = { title: 'Background Screening — Staff Admin' };
@@ -36,7 +36,7 @@ export default async function ScreeningPage() {
   const { data: requests, error: requestsError } = await supabase
     .from('volunteerbadge_requests')
     .select(
-      'id, person_id, invited_email, status, vb_check_status, vb_result, apply_expires_at, completed_at, problem, sent_at, last_checked_at, confirmed_at, id_verification_waived, people ( first_name, last_name )'
+      'id, person_id, invited_email, status, vb_check_status, vb_result, apply_expires_at, completed_at, problem, sent_at, last_checked_at, confirmed_at, id_verification_waived, vb_first_name, vb_last_name, vb_dob_agrees, people ( first_name, last_name )'
     )
     .eq('sandbox', sandbox)
     .or(`sent_at.gte."${since}",status.in.(sending,invited,applied,processing,in_review,clear,consider)`)
@@ -63,6 +63,12 @@ export default async function ScreeningPage() {
       lastCheckedAt: r.last_checked_at,
       confirmedAt: r.confirmed_at,
       idWaived: r.id_verification_waived === true,
+      // What VolunteerBadge's record says, for OK to serve to show beside
+      // ours (0166): its names, and whether its date of birth matched.
+      vbName: [r.vb_first_name, r.vb_last_name].filter(Boolean).join(' ') || null,
+      vbDobAgrees: r.vb_dob_agrees,
+      namesDiffer: namesDiffer(r.vb_first_name, r.vb_last_name, r.people?.first_name, r.people?.last_name),
+      vbNameKept: Boolean(r.vb_first_name && r.vb_last_name),
       resendable: resendOn.has(r.id),
     }));
 
@@ -107,6 +113,11 @@ export default async function ScreeningPage() {
         );
         if (named.length > 0) c.possibleVbMatch = named[0].created_at ?? named[0].createdAt ?? true;
       }
+      // No date-of-birth check here (review, 13 Nov 2026): it would read each
+      // matching person's whole VB record (date of birth, SSN digits,
+      // address) for people not yet invited, and slow every page load. The
+      // notes stay a name-based hint; the date of birth is compared when an
+      // invite is tied to its result (refreshRequest).
     } catch {
       // The note is a courtesy; without it the page still works.
     }

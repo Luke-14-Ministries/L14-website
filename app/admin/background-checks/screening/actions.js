@@ -29,7 +29,7 @@ import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { withReason } from '@/lib/dbErrors';
 import { volunteerBadge, volunteerBadgeTemplateId } from '@/lib/volunteerBadge';
-import { VolunteerBadgeError, loadRoster, namesAgree } from '@/lib/volunteerBadgeApi';
+import { VolunteerBadgeError, loadRoster, namesAgree, namesDiffer } from '@/lib/volunteerBadgeApi';
 import { refreshOne, refreshOpenRequests } from '@/lib/volunteerBadgeSync';
 import { loadScreeningCandidates } from '@/lib/screeningCandidates';
 import { creditPicture, creditShortfall } from '@/lib/volunteerBadgeCredits';
@@ -368,11 +368,26 @@ export async function refreshVolunteerBadge() {
   };
 }
 
-export async function confirmVolunteerBadgeClear(requestId) {
+export async function confirmVolunteerBadgeClear(requestId, { namesDifferAcknowledged = false } = {}) {
   if (!(await gate())) return { ok: false, error: 'Not permitted.' };
   const api = volunteerBadge();
   if (!api) return { ok: false, error: NOT_CONNECTED };
   const supabase = await createClient();
+  // Names on VB's record that differ from ours in any way need the second
+  // confirm (Lawrence, 13 Nov 2026), checked here as well as on the screen.
+  {
+    const { data: row, error: rowError } = await supabase
+      .from('volunteerbadge_requests')
+      .select('vb_first_name, vb_last_name, people ( first_name, last_name )')
+      .eq('id', requestId)
+      .maybeSingle();
+    if (rowError) return { ok: false, error: withReason('Not recorded.', rowError) };
+    if (!row) return { ok: false, error: 'Not recorded: that invite wasn’t found.' };
+    if (namesDiffer(row.vb_first_name, row.vb_last_name, row.people?.first_name, row.people?.last_name) && !namesDifferAcknowledged) {
+      revalidateScreening();
+      return { ok: false, error: 'Not recorded: the names on VolunteerBadge’s record differ from ours. Reload the page and confirm both questions.' };
+    }
+  }
   // Read the check again first: a result VB has since reopened is not clear.
   try {
     const fresh = await refreshOne(supabase, api, requestId);
