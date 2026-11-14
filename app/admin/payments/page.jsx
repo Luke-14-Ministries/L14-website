@@ -131,28 +131,42 @@ export default async function AdminPaymentsPage({ searchParams }) {
   const scopeLabel =
     eventScopeLabel(eventFilter) ?? SCOPE_LABEL[eventFilter] ?? evById.get(eventFilter)?.name ?? 'Selected event';
 
+  // One card per event, keyed by its id (two events may share a name);
+  // registrations with no event share one Unassigned card.
+  const UNASSIGNED = 'unassigned';
   const events = new Map();
   for (const b of balances ?? []) {
     const ev = regById.get(b.registration_id)?.events;
     if (!inScope(ev)) continue;
-    const evName = ev?.name ?? 'Unassigned';
+    const key = ev?.id ?? UNASSIGNED;
     // starts_on kept for the card order below; null for Unassigned.
-    const cur = events.get(evName) ?? { fees: 0, assist: 0, paid: 0, outstanding: 0, startsOn: ev?.starts_on ?? null };
+    const cur = events.get(key) ?? {
+      name: ev?.id ? ev.name ?? 'Unnamed event' : 'Unassigned',
+      startsOn: ev?.starts_on ?? null,
+      fees: 0,
+      assist: 0,
+      paid: 0,
+      outstanding: 0,
+    };
     // 0123: returned-payment and staff-added fees are owed, so they count here.
     cur.fees += (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0) + (b.fees_cents ?? 0);
     cur.assist += (b.scholarship_cents ?? 0) + (b.discount_cents ?? 0) + (b.coupon_cents ?? 0);
     cur.paid += b.paid_cents ?? 0;
     cur.outstanding += Math.max(0, b.balance_cents ?? 0);
-    events.set(evName, cur);
+    events.set(key, cur);
   }
   // Cards by start date, earliest first; the name breaks a tie, and
   // Unassigned (or an event with no date) comes last.
-  const eventCards = [...events.entries()].sort(([an, a], [bn, b]) => {
-    const aLast = an === 'Unassigned' || !a.startsOn;
-    const bLast = bn === 'Unassigned' || !b.startsOn;
+  const eventCards = [...events.entries()].sort(([ak, a], [bk, b]) => {
+    const aLast = ak === UNASSIGNED || !a.startsOn;
+    const bLast = bk === UNASSIGNED || !b.startsOn;
     if (aLast !== bLast) return aLast ? 1 : -1;
-    return (a.startsOn ?? '').localeCompare(b.startsOn ?? '') || an.localeCompare(bn);
+    return (a.startsOn ?? '').localeCompare(b.startsOn ?? '') || a.name.localeCompare(b.name);
   });
+  // Two cards with the same name: each heading also gets its start date.
+  const nameCount = new Map();
+  for (const [, e] of eventCards) nameCount.set(e.name, (nameCount.get(e.name) ?? 0) + 1);
+  const cardHeading = (e) => (nameCount.get(e.name) > 1 && e.startsOn ? `${e.name} (${formatDueDateShort(e.startsOn)})` : e.name);
   const feeCoverTotal = (pays ?? []).reduce(
     (s, p) =>
       s +
@@ -311,9 +325,9 @@ export default async function AdminPaymentsPage({ searchParams }) {
         </p>
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-        {eventCards.map(([name, e]) => (
-          <div key={name} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
-            <h4 className="font-bold mb-2">{name}</h4>
+        {eventCards.map(([key, e]) => (
+          <div key={key} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
+            <h4 className="font-bold mb-2">{cardHeading(e)}</h4>
             <dl className="text-sm space-y-1">
               <div className="flex justify-between"><dt className="text-neutral-500">Fees (net of assistance)</dt><dd className="font-semibold">{money(e.fees)}</dd></div>
               {e.assist > 0 && (
