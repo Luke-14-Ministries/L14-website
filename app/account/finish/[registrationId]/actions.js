@@ -13,7 +13,7 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
-import { registrationDepositCents } from '@/lib/payments';
+import { firstPaymentCents } from '@/lib/payments';
 import { balanceDueOn, formatDueDate } from '@/lib/events';
 import {
   planAvailable,
@@ -77,7 +77,7 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
     { data: existing, error: existingError },
     { data: full, error: fullError },
   ] = await Promise.all([
-    supabase.from('registration_balances').select('balance_cents').eq('registration_id', reg.id).maybeSingle(),
+    supabase.from('registration_balances').select('balance_cents, scholarship_cents').eq('registration_id', reg.id).maybeSingle(),
     supabase.from('payment_plans').select('id, status').eq('registration_id', reg.id).maybeSingle(),
     supabase.rpc('pay_in_full_amount', { p_registration_id: reg.id }),
   ]);
@@ -98,10 +98,11 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
   // The deposit is the plan's first payment (Larry, 30 Sep): per person, as
   // everywhere else, and never more than the discounted total.
   const deposit = Math.min(
-    registrationDepositCents({
+    firstPaymentCents({
       perPersonCents: ev.deposit_cents,
       participants: reg.registration_participants,
       balanceCents: balance,
+      scholarshipCents: bal?.scholarship_cents,
     }),
     full ?? balance
   );

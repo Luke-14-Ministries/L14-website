@@ -8,7 +8,7 @@ import RegistrationsPanel from './RegistrationsPanel';
 import CancelRequest from './CancelRequest';
 import SupportDetailsCard from './SupportDetailsCard';
 import {
-  registrationDepositCents,
+  depositOwedCents,
   registrationHeads,
   participantMoney,
   dollars,
@@ -782,10 +782,12 @@ export default async function DashboardPage({ searchParams }) {
       registration: r,
       balance: bal,
       clearingCents: pendingByReg.get(r.id) ?? 0,
-      depositCents: registrationDepositCents({
+      // A granted scholarship counts toward the deposit first (0168).
+      depositCents: depositOwedCents({
         perPersonCents: r.events?.deposit_cents,
         participants: r.registration_participants,
         balanceCents: bal?.balance_cents,
+        scholarshipCents: bal?.scholarship_cents,
       }),
       fullScholarship: fullScholarshipRequested(live, scholarshipsByPart),
     });
@@ -1202,10 +1204,11 @@ export default async function DashboardPage({ searchParams }) {
                   const bal = balByReg.get(r.id);
                   const clearing = pendingByReg.get(r.id) ?? 0;
                   // Per PERSON (31 Aug). See registrationDepositCents.
-                  const depositCents = registrationDepositCents({
+                  const depositCents = depositOwedCents({
                     perPersonCents: r.events?.deposit_cents,
                     participants: r.registration_participants,
                     balanceCents: bal?.balance_cents,
+                    scholarshipCents: bal?.scholarship_cents,
                   });
                   // One rule for the pill, the banner and the Needs chip.
                   const { needs, todo, depositDue } = needsByReg.get(r.id);
@@ -1759,10 +1762,11 @@ export default async function DashboardPage({ searchParams }) {
                           only while NOTHING has been paid or is clearing. */}
                       {(() => {
                         const b = balByReg.get(r.id);
-                        const dep = registrationDepositCents({
+                        const dep = depositOwedCents({
                           perPersonCents: r.events?.deposit_cents,
                           participants: r.registration_participants,
                           balanceCents: b?.balance_cents,
+                          scholarshipCents: b?.scholarship_cents,
                         });
                         // Distinct people, not participant rows -- a parent who is
                         // also volunteering is one head (§14.3, 29 Sep).
@@ -1778,9 +1782,10 @@ export default async function DashboardPage({ searchParams }) {
                           <div className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                             <p className="font-semibold">
                               Please pay the {dollars(dep)} deposit so staff can approve this registration.
-                              {heads > 1
+                              {heads > 1 && dep === (r.events?.deposit_cents ?? 0) * heads
                                 ? ` That is ${dollars(r.events?.deposit_cents ?? 0)} for each of the ${heads} people on it.`
                                 : ''}
+                              {(b?.scholarship_cents ?? 0) > 0 ? ' Your scholarship has already paid part of it.' : ''}
                             </p>
                             <p className="mt-1">
                               If you&rsquo;d like to request a full scholarship instead, choose it under

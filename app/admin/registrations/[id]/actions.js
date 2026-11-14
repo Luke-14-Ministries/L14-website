@@ -17,7 +17,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { getStripe } from '@/lib/stripe/server';
-import { registrationDepositCents } from '@/lib/payments';
+import { depositOwedCents } from '@/lib/payments';
 import { planNoticeDays } from '@/lib/plans';
 import { withReason } from '@/lib/dbErrors';
 import { editPersonAsStaff } from '@/lib/staffPersonEdit';
@@ -167,7 +167,7 @@ export async function setParticipantStatus(
         .maybeSingle(),
       supabaseCheck
         .from('registration_balances')
-        .select('paid_cents, balance_cents')
+        .select('paid_cents, balance_cents, scholarship_cents')
         .eq('registration_id', registrationId)
         .maybeSingle(),
       supabaseCheck.rpc('registration_paid_cents', { p_registration_id: registrationId }),
@@ -183,10 +183,12 @@ export async function setParticipantStatus(
     // zero (which would make the deposit "nothing due" and wave the family
     // through) -- the full per-person deposit is asked for instead.
     const owed = bal ? (bal.balance_cents ?? 0) + (bal.paid_cents ?? 0) - paid : Number.POSITIVE_INFINITY;
-    const due = registrationDepositCents({
+    // A granted scholarship counts toward the deposit first (0168).
+    const due = depositOwedCents({
       perPersonCents: reg?.events?.deposit_cents,
       participants: reg?.registration_participants,
       balanceCents: owed,
+      scholarshipCents: bal?.scholarship_cents ?? 0,
     });
 
     // A waived deposit (0096) is not short: the registrar has already decided.

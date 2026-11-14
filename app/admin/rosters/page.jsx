@@ -57,7 +57,7 @@ export default async function RostersPage() {
     // is owed, so a full scholarship or a waiver is never "short" (Lawrence,
     // 4 Nov 2026: Darlene's fully funded week read "Deposit short — $0.00 of
     // $50.00"). Payments read only; others see no rows and no flag.
-    supabase.from('registration_review').select('registration_id, flags, confirmed_paid_cents, deposit_expected_cents'),
+    supabase.from('registration_review').select('registration_id, flags, confirmed_paid_cents, deposit_expected_cents, deposit_scholarship_cents'),
     // E21. The roster knew everything about a person except which program they
     // are in — the one thing a program leader's week is organised around. Read
     // as a small lookup rather than a nested join: PostgREST joins through two
@@ -86,7 +86,8 @@ export default async function RostersPage() {
     // Per REGISTRATION: the deposit holds places, $50 a person, capped at
     // what is owed -- registration_review's arithmetic, read not re-derived.
     const review = reviewByReg.get(r.id) ?? null;
-    const paid = review?.confirmed_paid_cents ?? 0;
+    // A granted scholarship counts toward the deposit (0168).
+    const paid = (review?.confirmed_paid_cents ?? 0) + (review?.deposit_scholarship_cents ?? 0);
     const due = review?.deposit_expected_cents ?? 0;
     const depositShort = seesMoney && (review?.flags ?? []).includes('deposit_short');
 

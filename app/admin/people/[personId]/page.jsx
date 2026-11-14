@@ -513,7 +513,7 @@ export default async function PersonPage({ params }) {
     { data: consents, error: consentsError },
   ] = await Promise.all([
       regIds.length
-        ? supabase.from('registration_review').select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents').in('registration_id', regIds)
+        ? supabase.from('registration_review').select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents, deposit_scholarship_cents').in('registration_id', regIds)
         : Promise.resolve({ data: [] }),
       supabase
         .from('agreement_signatures')

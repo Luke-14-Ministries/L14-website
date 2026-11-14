@@ -217,14 +217,16 @@ exception when others then
   raise notice 'PASS 14 a reason is required (%)', sqlerrm;
 end $$;
 select public.undo_deposit_waiver('50000000-0000-0000-0000-000000000001', 'waived in error') as undone_expect_2;
--- Review reads the real deposit again: $100 paid of a $150 deposit.
+-- Review reads the real deposit again: $100 paid of a $150 deposit, plus the
+-- parent's $70 granted scholarship, which since 0168 counts toward the deposit
+-- first, so it is covered -- and the waiver is gone.
 do $$ declare v record; begin
-  select review_class, flags into v from public.registration_review where registration_id='50000000-0000-0000-0000-000000000001';
-  if v.review_class is null or v.review_class = 'deposit_paid' or 'deposit_waived' = any(v.flags)
-     or not ('deposit_short' = any(v.flags)) then
-    raise exception 'FAIL 14: review after the undo reads % %', v.review_class, v.flags;
+  select review_class, flags, deposit_scholarship_cents as sch into v from public.registration_review where registration_id='50000000-0000-0000-0000-000000000001';
+  if v.review_class is distinct from 'deposit_paid' or 'deposit_waived' = any(v.flags)
+     or 'deposit_short' = any(v.flags) or coalesce(v.sch, 0) < 5000 then
+    raise exception 'FAIL 14: review after the undo reads % % (scholarship %)', v.review_class, v.flags, v.sch;
   end if;
-  raise notice 'PASS 14 review reads the real deposit again (%, %)', v.review_class, v.flags;
+  raise notice 'PASS 14 review reads the real deposit again, the granted scholarship counted (%, %, %)', v.review_class, v.flags, v.sch;
 end $$;
 reset role;
 do $$ declare r record; begin

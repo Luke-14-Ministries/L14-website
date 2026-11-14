@@ -51,7 +51,8 @@ export default function ReviewRowBody({ r, seesMoney, nameOf }) {
         )}
         {r.review?.deposit_expected_cents > 0 && (
           <div className="mt-1 text-xs text-neutral-500">
-            {money(r.review.confirmed_paid_cents)} of a{' '}
+            {money(r.review.confirmed_paid_cents)}
+            {(r.review.deposit_scholarship_cents ?? 0) > 0 && <> plus {money(r.review.deposit_scholarship_cents)} scholarship</>} of a{' '}
             {money(r.review.deposit_expected_cents)} deposit
           </div>
         )}

@@ -11,7 +11,7 @@
 import { headers } from 'next/headers';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
-import { coverFeeCents, registrationDepositCents, dollars } from '@/lib/payments';
+import { coverFeeCents, firstPaymentCents, dollars } from '@/lib/payments';
 
 export async function createCheckout({ registrationId, kind, method, coverFee, customCents }) {
   const user = await getCurrentUser();
@@ -33,7 +33,7 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
   // What is owed, scoped to this family by RLS on the underlying tables.
   const { data: bal, error: balError } = await supabase
     .from('registration_balances')
-    .select('balance_cents, event_id')
+    .select('balance_cents, scholarship_cents, event_id')
     .eq('registration_id', registrationId)
     .maybeSingle();
   // Each read below is checked before money is worked out: a failed read must
@@ -74,10 +74,11 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
       console.error('startCheckout participants:', partsError.message);
       return { ok: false, error: 'We could not load who is registered. Please try again.' };
     }
-    const deposit = registrationDepositCents({
+    const deposit = firstPaymentCents({
       perPersonCents: ev?.deposit_cents,
       participants: parts,
       balanceCents: balance,
+      scholarshipCents: bal.scholarship_cents,
     });
     if (deposit <= 0) return { ok: false, error: 'No deposit amount is set for this camp yet.' };
     base = deposit;

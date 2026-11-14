@@ -377,7 +377,9 @@ export default function ReviewCard({
             {hint}
             {review.deposit_expected_cents > 0 && (
               <>
-                {' '}· received {money(review.confirmed_paid_cents)} of a {money(review.deposit_expected_cents)} deposit
+                {' '}· received {money(review.confirmed_paid_cents)}
+                {(review.deposit_scholarship_cents ?? 0) > 0 && <> plus {money(review.deposit_scholarship_cents)} scholarship</>} of a{' '}
+                {money(review.deposit_expected_cents)} deposit
               </>
             )}
             {clearingCents > 0 && (

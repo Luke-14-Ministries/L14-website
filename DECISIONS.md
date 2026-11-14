@@ -4696,3 +4696,23 @@ the primary contact. Lawrence: "yes, build the fix".
   form and on the page.
 - Not done: tying the new person record to Larry's login (people.profile_id), which only program-leader
   naming uses.
+
+## 14 November 2026 — A granted scholarship pays toward the deposit first (0168)
+
+Lawrence: Ellen had a $50 scholarship granted and was still held on Background screening for the deposit;
+"my expectation is a $50 scholarship goes towards dep first". Scope: everywhere; granted scholarships only.
+
+- 0168 restates `registration_deposit_in()` (the background-check hold) and `registration_review` (the
+  deposit class and the `deposit_short` flag): money paid plus the granted scholarship
+  (participant_money.scholarship_cents, per person up to what each owes) is compared with the deposit
+  expected. The view gains `deposit_scholarship_cents` at the end; a full scholarship keeps its own class.
+  A requested partial scholarship counts nothing until granted.
+- `lib/payments.js` `depositOwedCents()` is the same rule for the family's deposit banner and pill, the
+  reminder emails, Ways to pay's "deposit due" and the staff confirm check. `firstPaymentCents()` is the
+  plan's first payment and "Pay the deposit": the deposit still owed, or the usual per-person deposit when a
+  scholarship has covered it, so a plan can still start.
+- "Deposit short — $x of $y", the review card and queue, and the roster count the granted scholarship.
+- Tests: `supabase/tests/deposit_scholarship_rules.sql` (6 cases); `payment_plans_rules.sql` §14 now
+  expects deposit_paid ($100 paid + $70 granted covers $150); `lib/payments.test.mjs`.
+- The deposit is still per registration: a family of two owes $100, so a $50 scholarship on one person
+  covers half (Ellen's case; question to Lawrence whether a volunteer's own check should wait on the rest).

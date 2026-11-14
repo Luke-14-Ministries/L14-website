@@ -69,7 +69,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     // How each registration is being paid (0080).
     supabase.from('registration_payment_routes').select('registration_id, route, plan_status, plan_schedule'),
     // The three review classes and the flags (0081, Lawrence 30 Sep 2026).
-    supabase.from('registration_review').select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents'),
+    supabase.from('registration_review').select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents, deposit_scholarship_cents'),
     // How many are registered on each family's registration, for the
     // "3 registered" line under the name (Lawrence, 26 Oct 2026).
     // Their names too, so the search finds a family by anyone on it.

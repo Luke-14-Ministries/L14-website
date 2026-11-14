@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { balanceDueOn, formatDueDate, formatDueDateShort, dateISO, campKey } from '@/lib/events';
-import { dollars, registrationDepositCents, CLEARING_PILL } from '@/lib/payments';
+import { dollars, depositOwedCents, firstPaymentCents, CLEARING_PILL } from '@/lib/payments';
 import { planAvailable, planConsentText, planHasProblem } from '@/lib/plans';
 import FinishChoices from './FinishChoices';
 import Link from 'next/link';
@@ -70,7 +70,7 @@ export default async function FinishPage({ params, searchParams }) {
   ] = await Promise.all([
     supabase
       .from('registration_balances')
-      .select('balance_cents, paid_cents, fee_cents, early_discount_cents')
+      .select('balance_cents, paid_cents, fee_cents, early_discount_cents, scholarship_cents')
       .eq('registration_id', registrationId)
       .maybeSingle(),
     supabase
@@ -119,11 +119,17 @@ export default async function FinishPage({ params, searchParams }) {
   const due = balanceDueOn(ev);
   const today = dateISO(0);
   const canPlan = planAvailable(ev) && balance > 0;
-  const deposit = registrationDepositCents({
+  // A granted scholarship counts toward the deposit first (0168): what is
+  // still owed decides "deposit due"; the plan's first payment falls back to
+  // the usual deposit when the scholarship covered it.
+  const depositArgs = {
     perPersonCents: ev.deposit_cents,
     participants: reg.registration_participants,
     balanceCents: balance,
-  });
+    scholarshipCents: bal?.scholarship_cents,
+  };
+  const depositOwed = depositOwedCents(depositArgs);
+  const deposit = firstPaymentCents(depositArgs);
 
   // The plan's charge dates for both schedules, from the database's own rule,
   // so the preview is exactly what the charger will do.
@@ -202,7 +208,7 @@ export default async function FinishPage({ params, searchParams }) {
   // The deposit is what is asked for now while nothing is paid or clearing
   // (the dashboard pill's rule, depositDueNow; waived by staff, nothing is
   // asked; a scholarship request is a route, so done).
-  const depositDue = !done && !reg.deposit_waived_at && deposit > 0 && (bal?.paid_cents ?? 0) === 0 && clearing === 0;
+  const depositDue = !done && !reg.deposit_waived_at && depositOwed > 0 && (bal?.paid_cents ?? 0) === 0 && clearing === 0;
 
   return (
     <section className="section">

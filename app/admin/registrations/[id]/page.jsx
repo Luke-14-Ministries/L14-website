@@ -666,7 +666,7 @@ export default async function RegistrationDetailPage({ params }) {
     // marker). No rows at all without Payments read (0103).
     supabase
       .from('registration_review')
-      .select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents')
+      .select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents, deposit_scholarship_cents')
       .in('registration_id', familyRegIds),
   ]);
   if (routeError || planError || reviewError) {

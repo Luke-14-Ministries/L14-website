@@ -101,7 +101,7 @@ export default async function ReviewQueuePage({ searchParams }) {
         .select('registration_id, person_id, status, camp_role, people ( first_name, last_name, date_of_birth )'),
       supabase
         .from('registration_review')
-        .select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents'),
+        .select('registration_id, review_class, flags, confirmed_paid_cents, deposit_expected_cents, deposit_scholarship_cents'),
       seesMoney
         ? supabase.from('registration_balances').select('registration_id, paid_cents, balance_cents, fee_cents')
         : Promise.resolve({ data: [] }),
