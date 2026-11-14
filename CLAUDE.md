@@ -270,9 +270,12 @@ own form on VB's site takes the FCRA disclosure and authorization, their ID and 
 runs only after they sign there; that signature is the consent, and our pages only say it is coming.
 `lib/volunteerBadgeApi.js` may call only `GET /templates`, `POST /applications`, `GET /credits`,
 `GET /volunteers[/id]` and `GET /checks/{id}` (never `POST /checks`, `/checks/instant` or
-`/volunteers`, which take an SSN or a date of birth from us). There is no webhook: Refresh and the
-daily cron (`app/api/cron/volunteerbadge/`, 12:30 UTC) find the volunteer by the address invited,
-require first-name agreement, last-name agreement (suffixes aside) and, when both sides have one, an agreeing date of birth, and a full check started after the invite. **Every send is refused unless
+`/volunteers`, which take an SSN or a date of birth from us). **One webhook** (Lawrence 14 Nov 2026):
+`app/api/webhooks/volunteerbadge/` takes only a signed `application.submitted`
+(`VOLUNTEERBADGE_WEBHOOK_SECRET`; `lib/volunteerBadgeWebhook.js`) and writes VB's volunteer id on
+the invite whose `vb_application_id` it names, nothing else. Refresh and the daily cron
+(`app/api/cron/volunteerbadge/`, 12:30 UTC) use that volunteer, or else find one by the address
+invited (VB never retries a webhook), then require first-name agreement, last-name agreement (suffixes aside) and, when both sides have one, an agreeing date of birth, and a full check started after the invite. **Every send is refused unless
 VB's credit balance covers it plus invites already out and not yet charged** (rechecked on the server;
 unknown counts as refused). A clear result counts only through `confirm_volunteerbadge_clear()`
 (staff's OK to serve), which refuses a completion date that doesn't fit the invite and keeps a
@@ -566,7 +569,9 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   signed-in or anonymous role may read; the staff pages that reach it, the prayer send and removal and
   Email Families' 7-day preview, check Prayer list write or Registration write first), and the daily
   VolunteerBadge check (`0165`, `app/api/cron/volunteerbadge/`, Lawrence 13 Nov 2026: it reads and
-  updates `volunteerbadge_requests` only, never confirms or sends); `server-only` fails the build if it is ever imported into
+  updates `volunteerbadge_requests` only, never confirms or sends), and VB's signed
+  `application.submitted` webhook (`app/api/webhooks/volunteerbadge/`, Lawrence 14 Nov 2026: it
+  writes VB's volunteer id on one invite and refreshes it, nothing else); `server-only` fails the build if it is ever imported into
   browser code. Nothing else may use it. The key in Vercel is a dedicated Supabase secret key made for
   Vercel on 28 Oct (A1), Production only.
 - **Row-level security is enforced at the database level**, not in application code. Every table

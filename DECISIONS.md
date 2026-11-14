@@ -4645,3 +4645,27 @@ Lawrence ("yes, do 1-4"), from a review of the VolunteerBadge plan against the c
    action too (`secondLookAcknowledged`).
 4. **Refresh stops when VolunteerBadge doesn't answer or fails on its side** (no reply, a 5xx), as it did for
    a refused key or "slow down", instead of waiting out every row's timeout.
+
+## 14 November 2026 — VolunteerBadge's application.submitted webhook
+
+Lawrence ("lets build now"), reversing 0165's decision 1 ("VB never calls us") and allowing a fourth use
+of the service-role client. VB has no field for our own reference on an invite, and its
+`application.submitted` event carries the application id we already save at sending
+(`vb_application_id`) plus the volunteer's id. So the webhook ties an invite to the exact VB volunteer,
+which closes the gap where a volunteer types a different email on VB's form.
+
+- `app/api/webhooks/volunteerbadge/` (register it in VB with the final slash: the site's trailingSlash
+  setting would answer the bare address with a redirect). Only a delivery signed with
+  `VOLUNTEERBADGE_WEBHOOK_SECRET` (hex HMAC-SHA256 of the raw body, `lib/volunteerBadgeWebhook.js`) is
+  read; without the secret every call is refused. Only `application.submitted` with both ids is used;
+  every other event is answered and ignored (`volunteer.created` carries a phone number, and check
+  results are still read with GET /checks/{id}).
+- It writes `vb_volunteer_id` (and invited -> applied) on an invited, applied or expired invite with no
+  volunteer or check yet, never over one already set, then refreshes that invite after answering (VB
+  waits 5 seconds). Repeats change nothing (VB has no replay window).
+- `refreshRequest()` uses that volunteer without the roster, with the same first-name, last-name and
+  birth-date rules and the same "full check after the invite" rule; an older record is trusted then
+  (a returning volunteer). Without a webhook call (VB never retries), the address matching works as before.
+- VB's support (Victor, 14 Nov) confirmed checks start only when something orders them; with "Run check
+  when a volunteer applies" on, each check is the application's own full check, which is what the site
+  counts. The sandbox fires the real webhooks, so the handler can be tested there.
