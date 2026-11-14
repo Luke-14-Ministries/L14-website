@@ -4716,3 +4716,13 @@ Lawrence: Ellen had a $50 scholarship granted and was still held on Background s
   expects deposit_paid ($100 paid + $70 granted covers $150); `lib/payments.test.mjs`.
 - The deposit is still per registration: a family of two owes $100, so a $50 scholarship on one person
   covers half (Ellen's case; question to Lawrence whether a volunteer's own check should wait on the rest).
+
+## 14 November 2026 — A background check waits for the person's own deposit share (0169)
+
+Lawrence ("Their own share"): Ellen's registration has her and a camper, $50 each; her own $50 is covered by
+her granted scholarship (0168) and she was still held for the camper's. `person_deposit_in()` answers per
+person: in when the deposit is waived or none is owed, a full scholarship, their own share (the per-person
+deposit, never more than they owe; 0 with no fee) covered by their own granted scholarship, or the family's
+paid money reaching them (shared out smallest need first, then by person, so a family of two that paid $50
+releases one). `lib/screeningDeposit.js` uses it (and takes `allRoles` for family adults, next).
+`registration_deposit_in()` stays for the family answer. Tests: deposit_scholarship_rules.sql §7–9.
