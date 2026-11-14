@@ -136,7 +136,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
     const ev = regById.get(b.registration_id)?.events;
     if (!inScope(ev)) continue;
     const evName = ev?.name ?? 'Unassigned';
-    const cur = events.get(evName) ?? { fees: 0, assist: 0, paid: 0, outstanding: 0 };
+    // starts_on kept for the card order below; null for Unassigned.
+    const cur = events.get(evName) ?? { fees: 0, assist: 0, paid: 0, outstanding: 0, startsOn: ev?.starts_on ?? null };
     // 0123: returned-payment and staff-added fees are owed, so they count here.
     cur.fees += (b.fee_cents ?? 0) - (b.discount_cents ?? 0) - (b.scholarship_cents ?? 0) - (b.coupon_cents ?? 0) + (b.fees_cents ?? 0);
     cur.assist += (b.scholarship_cents ?? 0) + (b.discount_cents ?? 0) + (b.coupon_cents ?? 0);
@@ -144,6 +145,14 @@ export default async function AdminPaymentsPage({ searchParams }) {
     cur.outstanding += Math.max(0, b.balance_cents ?? 0);
     events.set(evName, cur);
   }
+  // Cards by start date, earliest first; the name breaks a tie, and
+  // Unassigned (or an event with no date) comes last.
+  const eventCards = [...events.entries()].sort(([an, a], [bn, b]) => {
+    const aLast = an === 'Unassigned' || !a.startsOn;
+    const bLast = bn === 'Unassigned' || !b.startsOn;
+    if (aLast !== bLast) return aLast ? 1 : -1;
+    return (a.startsOn ?? '').localeCompare(b.startsOn ?? '') || an.localeCompare(bn);
+  });
   const feeCoverTotal = (pays ?? []).reduce(
     (s, p) =>
       s +
@@ -302,7 +311,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
         </p>
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-        {[...events.entries()].map(([name, e]) => (
+        {eventCards.map(([name, e]) => (
           <div key={name} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
             <h4 className="font-bold mb-2">{name}</h4>
             <dl className="text-sm space-y-1">
