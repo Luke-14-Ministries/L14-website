@@ -272,7 +272,7 @@ runs only after they sign there; that signature is the consent, and our pages on
 `GET /volunteers[/id]` and `GET /checks/{id}` (never `POST /checks`, `/checks/instant` or
 `/volunteers`, which take an SSN or a date of birth from us). There is no webhook: Refresh and the
 daily cron (`app/api/cron/volunteerbadge/`, 12:30 UTC) find the volunteer by the address invited,
-require first-name agreement and a full check started after the invite. **Every send is refused unless
+require first-name agreement, last-name agreement (suffixes aside) and, when both sides have one, an agreeing date of birth, and a full check started after the invite. **Every send is refused unless
 VB's credit balance covers it plus invites already out and not yet charged** (rechecked on the server;
 unknown counts as refused). A clear result counts only through `confirm_volunteerbadge_clear()`
 (staff's OK to serve); sandbox rows never clear anyone, and a `vb_test_` key emails only
@@ -579,10 +579,13 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   address, and roster rows carry phone numbers. `lib/volunteerBadgeApi.js` cuts every answer to an
   allow-list the moment it is parsed (`pickVolunteer`, `pickCheck`, `pickRosterRow`), and strips
   report links from everything, so none of it is stored, logged, shown or passed on; it exists only
-  in that one function's memory for an instant. Lawrence is asking VB for a slimmer answer; switch
+  in that one function's memory for an instant. Since `0166` the client also compares VB's date of
+  birth with ours there (`volunteer(id, { birthdate })`), and only the answer leaves it, as `dobAgrees`
+  yes / no / unknown; a no refuses the link. The possible-match notes on Background screening never
+  read a person's VB record. Lawrence is asking VB for a slimmer answer; switch
   to it if offered. Never widen those allow-lists beyond names (roster last names were added
   13 Nov 2026 at Lawrence's request, for the possible-match note on Background screening), log a raw
-  VB answer, or put VB's own error text about a person in a message. `volunteerbadge_requests` holds pointers, status words and dates only. What is actually stored has grown: alongside
+  VB answer, or put VB's own error text about a person in a message. `volunteerbadge_requests` holds pointers, status words, dates, and VB's first and last name on the record an invite was tied to with a yes/no for the date of birth (`0166`); never the date itself. What is actually stored has grown: alongside
   `background_check_on_file`, `background_check_date` and `expires_on`, migration `0029` added a
   `volunteer_clearances` table with Checkr integration columns — `provider`,
   `checkr_candidate_id`, `checkr_invitation_id`, `checkr_report_id`, `checkr_package`,
