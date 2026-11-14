@@ -4669,3 +4669,9 @@ which closes the gap where a volunteer types a different email on VB's form.
 - VB's support (Victor, 14 Nov) confirmed checks start only when something orders them; with "Run check
   when a volunteer applies" on, each check is the application's own full check, which is what the site
   counts. The sandbox fires the real webhooks, so the handler can be tested there.
+- Sandbox test, 14 Nov 2026: a test invite sent with our test key, a sandbox row carrying its application id,
+  and Lawrence's test submission. VB's webhook reached the live site, passed the signature check, and the
+  row moved to applied with VB's volunteer id: the application id in the event is the one POST
+  /applications returns. The sandbox's volunteer id is not a saved record (GET answers 404), so a webhook
+  volunteer VB doesn't have now puts a plain problem on the row and the invite still expires on time,
+  instead of failing every refresh. The test row was marked cancelled afterward.
