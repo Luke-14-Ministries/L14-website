@@ -1,6 +1,7 @@
--- Checks for migration 0165: VolunteerBadge requests. Who may send and read them,
+-- Checks for migrations 0165 and 0167: VolunteerBadge requests. Who may send and read them,
 -- one open invite per person and per address, the adult / Not permitted guard,
--- the frozen columns, and OK to serve from a clear result (never from a sandbox one).
+-- the frozen columns, and OK to serve from a clear result (never from a sandbox one;
+-- 0167: a completion date that fits the invite, and a newer check on file wins).
 -- Run on a fresh database seeded with payment_plans_seed.sql (see README.md):
 --   L14_DB=l14_vb bash supabase/tests/run_rls_local.sh supabase/tests/payment_plans_seed.sql
 --   "/c/Program Files/PostgreSQL/16/bin/psql.exe" -h localhost -U postgres -d l14_vb -f supabase/tests/volunteerbadge_rules.sql
@@ -165,6 +166,13 @@ begin
 end $$;
 rollback;
 
+-- 0167 refuses a completion date before the invite was sent, and sent_at is
+-- frozen by the guard: date this invite 1 Nov 2026 with the guard off, so the
+-- fixed completion times below come after it.
+alter table public.volunteerbadge_requests disable trigger volunteerbadge_requests_guard;
+update public.volunteerbadge_requests set sent_at = '2026-11-01 12:00+00' where id = '65000000-0000-0000-0000-000000000001';
+alter table public.volunteerbadge_requests enable trigger volunteerbadge_requests_guard;
+
 \echo == 4 OK to serve: only a clear, live result, and it clears the volunteer
 begin;
 set local role authenticated;
@@ -240,6 +248,144 @@ begin
     raise exception 'FAIL 5: Not permitted was overwritten by a clear result';
   exception when raise_exception then raise notice 'PASS 5 Not permitted is not overwritten by a clear result';
   end;
+end $$;
+rollback;
+
+\echo == 6 (0167) the completion date must fit the invite, and a newer check on file wins
+delete from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
+
+-- 6a a completion date before the invite was sent
+begin;
+update public.volunteerbadge_requests set completed_at = '2026-10-30 12:00+00' where id = '65000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+begin
+  begin
+    perform public.confirm_volunteerbadge_clear('65000000-0000-0000-0000-000000000001');
+    raise exception 'FAIL 6a: a completion date before the invite was accepted';
+  exception when raise_exception then
+    if sqlerrm not like '%doesn''t fit this invite%' then raise exception 'FAIL 6a: wrong words: %', sqlerrm; end if;
+  end;
+end $$;
+\echo PASS 6a a completion date before the invite is refused
+rollback;
+
+-- 6b a completion date more than a day ahead
+begin;
+update public.volunteerbadge_requests set completed_at = now() + interval '2 days' where id = '65000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+begin
+  begin
+    perform public.confirm_volunteerbadge_clear('65000000-0000-0000-0000-000000000001');
+    raise exception 'FAIL 6b: a completion date in the future was accepted';
+  exception when raise_exception then
+    if sqlerrm not like '%doesn''t fit this invite%' then raise exception 'FAIL 6b: wrong words: %', sqlerrm; end if;
+  end;
+end $$;
+\echo PASS 6b a completion date more than a day ahead is refused
+rollback;
+
+-- 6c a newer, current, ok check on file is kept; the request is still confirmed
+begin;
+update public.volunteerbadge_requests set completed_at = now() - interval '3 days' where id = '65000000-0000-0000-0000-000000000001';
+insert into public.person_clearances (person_id, provider, screening_reason, background_check_on_file, background_check_date, verdict)
+values ('20000000-0000-0000-0000-000000000002', 'checkr', 'volunteer', true, (now() at time zone 'America/New_York')::date - 1, 'ok');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare words text; r record; q record;
+begin
+  words := public.confirm_volunteerbadge_clear('65000000-0000-0000-0000-000000000001');
+  if words is null or words not like 'A newer check (%) is already on file, so its date was kept.' then
+    raise exception 'FAIL 6c: the function said %', coalesce(words, 'nothing');
+  end if;
+  select * into r from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
+  if r.provider <> 'checkr' or r.background_check_date <> (now() at time zone 'America/New_York')::date - 1 or r.verdict <> 'ok' or r.expires_on is null then
+    raise exception 'FAIL 6c: the newer check was changed: %', row_to_json(r);
+  end if;
+  select * into q from public.volunteerbadge_requests where id = '65000000-0000-0000-0000-000000000001';
+  if q.confirmed_at is null then raise exception 'FAIL 6c: the request was not stamped confirmed'; end if;
+  raise notice 'PASS 6c a newer current ok check is kept, the request is confirmed, and staff are told: %', words;
+end $$;
+rollback;
+
+-- 6d a newer Follow up check is refused and left as it was
+begin;
+update public.volunteerbadge_requests set completed_at = now() - interval '3 days' where id = '65000000-0000-0000-0000-000000000001';
+insert into public.person_clearances (person_id, provider, screening_reason, background_check_on_file, background_check_date, verdict)
+values ('20000000-0000-0000-0000-000000000002', 'checkr', 'volunteer', true, (now() at time zone 'America/New_York')::date - 1, 'follow_up');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare r record; q record;
+begin
+  begin
+    perform public.confirm_volunteerbadge_clear('65000000-0000-0000-0000-000000000001');
+    raise exception 'FAIL 6d: a newer Follow up check was overwritten';
+  exception when raise_exception then
+    if sqlerrm not like '%marked Follow up%' then raise exception 'FAIL 6d: wrong words: %', sqlerrm; end if;
+  end;
+  select * into r from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
+  select * into q from public.volunteerbadge_requests where id = '65000000-0000-0000-0000-000000000001';
+  if r.verdict is distinct from 'follow_up' or r.provider <> 'checkr' or q.confirmed_at is not null then
+    raise exception 'FAIL 6d: % / confirmed %', row_to_json(r), q.confirmed_at;
+  end if;
+  raise notice 'PASS 6d a newer Follow up check is refused and left as it was';
+end $$;
+rollback;
+
+-- 6e a newer check with no decision is refused and left as it was
+begin;
+update public.volunteerbadge_requests set completed_at = now() - interval '3 days' where id = '65000000-0000-0000-0000-000000000001';
+insert into public.person_clearances (person_id, provider, screening_reason, background_check_on_file, background_check_date, verdict)
+values ('20000000-0000-0000-0000-000000000002', 'checkr', 'volunteer', true, (now() at time zone 'America/New_York')::date - 1, null);
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare r record; q record;
+begin
+  begin
+    perform public.confirm_volunteerbadge_clear('65000000-0000-0000-0000-000000000001');
+    raise exception 'FAIL 6e: a newer check with no decision was overwritten';
+  exception when raise_exception then
+    if sqlerrm not like '%no decision yet%' then raise exception 'FAIL 6e: wrong words: %', sqlerrm; end if;
+  end;
+  select * into r from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
+  select * into q from public.volunteerbadge_requests where id = '65000000-0000-0000-0000-000000000001';
+  if r.verdict is distinct from null or r.provider <> 'checkr' or q.confirmed_at is not null then
+    raise exception 'FAIL 6e: % / confirmed %', row_to_json(r), q.confirmed_at;
+  end if;
+  raise notice 'PASS 6e a newer check with no decision is refused and left as it was';
+end $$;
+rollback;
+
+-- 6f an older check on file is replaced, as before
+begin;
+update public.volunteerbadge_requests set completed_at = now() - interval '3 days' where id = '65000000-0000-0000-0000-000000000001';
+insert into public.person_clearances (person_id, provider, screening_reason, background_check_on_file, background_check_date, verdict)
+values ('20000000-0000-0000-0000-000000000002', 'checkr', 'volunteer', true, (now() at time zone 'America/New_York')::date - 40, 'follow_up');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare words text; r record;
+begin
+  words := public.confirm_volunteerbadge_clear('65000000-0000-0000-0000-000000000001');
+  if words is not null then raise exception 'FAIL 6f: the function said %', words; end if;
+  select * into r from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
+  if r.provider <> 'volunteerbadge' or r.verdict <> 'ok'
+     or r.background_check_date <> ((now() - interval '3 days') at time zone 'America/New_York')::date then
+    raise exception 'FAIL 6f: the older check was not replaced: %', row_to_json(r);
+  end if;
+  raise notice 'PASS 6f an older check is replaced by the VolunteerBadge result';
 end $$;
 rollback;
 

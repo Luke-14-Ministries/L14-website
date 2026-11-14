@@ -182,7 +182,11 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
     setNote(null);
     try {
       const res = await confirmVolunteerBadgeClear(r.id, { namesDifferAcknowledged: r.namesDiffer === true });
-      setNote(res.ok ? { tone: 'yes', text: `${r.name}: OK to serve recorded.` } : { tone: 'no', text: res.error });
+      setNote(
+        res.ok
+          ? { tone: 'yes', text: res.note ? `${r.name}: OK to serve recorded. ${res.note}` : `${r.name}: OK to serve recorded.` }
+          : { tone: 'no', text: res.error }
+      );
     } finally {
       setBusy(false);
       router.refresh();

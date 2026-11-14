@@ -4609,3 +4609,19 @@ serve, it now also checks:
 - The possible-match notes stay name-based: checking their date of birth would read each matching
   person's whole VB record before anyone is invited (review, 13 Nov 2026).
 - Item 4 (asking VB whether an invite can carry our own reference back) is a question for VB, not code.
+
+## 14 November 2026 — OK to serve checks VolunteerBadge's completion date and keeps a newer check (0167)
+
+Lawrence ("Yes, have the website session do 0167"): `confirm_volunteerbadge_clear()` is restated in full,
+keeping everything 0165 refused, and now returns words for staff (text, null when there is nothing to say).
+
+- **The completion date must fit the invite**: no earlier than the invite was sent less 10 minutes (the
+  same grace as `GRACE_MS`), and no later than a day from now. Otherwise it refuses and says to record the
+  result by hand.
+- **A newer check on file wins** (its date later than VB's completion day in Morristown time): a current
+  ok full check is left alone, the request is still stamped confirmed, and staff are told "A newer check
+  (date) is already on file, so its date was kept." A newer check marked Follow up is refused and never
+  turned into ok. A newer check on file with no decision yet is refused the same way (added here: it isn't
+  ours to decide). An older or same-day check, an expired one, or a registry search is replaced as before.
+- Tests: `supabase/tests/volunteerbadge_rules.sql` section 6 (before the invite, a day ahead, newer ok kept,
+  newer Follow up refused, newer undecided refused, older replaced).

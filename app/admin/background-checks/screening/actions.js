@@ -403,11 +403,12 @@ export async function confirmVolunteerBadgeClear(requestId, { namesDifferAcknowl
   } catch (err) {
     return { ok: false, error: `Not recorded: ${vbWords(err)}` };
   }
-  const { error } = await supabase.rpc('confirm_volunteerbadge_clear', { p_request_id: requestId });
+  // Words back when a newer check already on file was kept (0167).
+  const { data: kept, error } = await supabase.rpc('confirm_volunteerbadge_clear', { p_request_id: requestId });
   if (error) return { ok: false, error: withReason('Not recorded.', error) };
   revalidateScreening();
   revalidatePath('/admin', 'layout');
-  return { ok: true };
+  return { ok: true, note: typeof kept === 'string' && kept ? kept : null };
 }
 
 // Take back an invite HERE (it is not cancelled in VolunteerBadge, which has
