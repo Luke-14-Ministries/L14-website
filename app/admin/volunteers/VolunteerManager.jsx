@@ -335,8 +335,14 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
   const [linked, setLinked] = useState(false);
   useEffect(() => {
     const check = () => {
-      const hit = window.location.hash === `#${anchorId}`;
-      const toCheck = Boolean(personId) && window.location.hash === `#check-${personId}`;
+      // Read the first #check-<id> / #v-<id> even if the address carries it
+      // twice (a doubled hash from client navigation, 14 Nov 2026), and tidy
+      // the address back to one.
+      const raw = window.location.hash;
+      const first = raw.match(/#[^#]+/)?.[0] ?? '';
+      if (first && first !== raw) window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${first}`);
+      const hit = first === `#${anchorId}`;
+      const toCheck = Boolean(personId) && first === `#check-${personId}`;
       setLinked(hit || toCheck);
       if (hit) setOpen(true);
       if (toCheck) {

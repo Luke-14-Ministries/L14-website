@@ -453,12 +453,15 @@ export default async function BackgroundChecksPage({ searchParams }) {
                         <PersonLink row={x} />
                         {/* Straight to this person's check record on Volunteers
                             (Lawrence, 13 Nov 2026), opened and scrolled to. */}
-                        <Link
+                        {/* A plain link, not next/link: its client navigation
+                            doubled the #check- part with trailingSlash (14 Nov
+                            2026), so the record never opened. */}
+                        <a
                           href={`/admin/volunteers/#check-${x.id}`}
                           className="ml-2 whitespace-nowrap text-xs text-brand underline"
                         >
                           Record by hand
-                        </Link>
+                        </a>
                       </td>
                       <td className="py-2 pr-3 text-neutral-600">{x.events.join(' · ')}</td>
                       <td className="py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>
