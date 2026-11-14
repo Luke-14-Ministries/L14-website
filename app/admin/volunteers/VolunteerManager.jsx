@@ -52,10 +52,90 @@ const LOG_FIELD = {
 const whenLocal = (iso) =>
   iso ? new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' }) : '';
 
+// A check recorded by hand (Lawrence, 14 Nov 2026): the note to type and the
+// file name for the report in the restricted SharePoint folder, both made from
+// the form, each with a Copy button, so every report is named the same way.
+// The file name has the check date first so a folder sorts by date, then the
+// name and who ran it; nothing else about the person.
+const PROVIDERS = [
+  ['VolunteerBadge', 'VolunteerBadge'],
+  ['other', 'Another way (paper, another company)'],
+];
+const RESULT_WORDS = {
+  ok: 'clear, OK to serve',
+  follow_up: 'needs a follow-up conversation',
+  not_permitted: 'not permitted to attend',
+};
+const fileSafe = (s) => String(s ?? '').replace(/["*:<>?/\\|#%{}~&]/g, '').replace(/\s+/g, ' ').trim();
+const longDate = (iso) =>
+  iso ? new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+function CopyLine({ label, text, onUse }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  }
+  return (
+    <div className="mt-1.5">
+      <span className="block text-xs font-semibold text-neutral-500">{label}</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <code className="rounded-sm border border-neutral-200 bg-white px-2 py-1 text-xs break-all">{text}</code>
+        <button type="button" onClick={copy} className="btn-outline py-0.5! px-2! text-xs">
+          {copied ? 'Copied ✓' : 'Copy'}
+        </button>
+        {onUse && (
+          <button type="button" onClick={onUse} className="text-xs text-brand underline">
+            Put in the note box
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RecordHelper({ firstName, lastName, date, verdict, onUseNote }) {
+  const [provider, setProvider] = useState('VolunteerBadge');
+  if (!date) {
+    return (
+      <p className="mt-2 text-xs text-neutral-500">
+        Recording a check done elsewhere? Enter its date and verdict, and the note and the report&rsquo;s file
+        name appear here to copy.
+      </p>
+    );
+  }
+  const who = `${fileSafe(lastName) || 'Lastname'}, ${fileSafe(firstName) || 'Firstname'}`;
+  const by = provider === 'other' ? 'other' : 'VolunteerBadge';
+  const fileName = `${date} ${who} - Background check (${by}).pdf`;
+  const checkWords = provider === 'other' ? 'Background check' : 'VolunteerBadge check';
+  const result = verdict ? RESULT_WORDS[verdict] : 'verdict not decided yet';
+  const note = `${checkWords} dated ${longDate(date)}: ${result}. Recorded by hand. Report filed as: ${fileName}`;
+  return (
+    <div className="mt-3 rounded-sm border border-blue-200 bg-blue-50 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-3 text-xs">
+        <span className="font-semibold text-blue-900">Recorded by hand: copy these</span>
+        {PROVIDERS.map(([v, label]) => (
+          <label key={v} className="flex items-center gap-1">
+            <input type="radio" checked={provider === v} onChange={() => setProvider(v)} />
+            {label}
+          </label>
+        ))}
+      </div>
+      <CopyLine label="Note" text={note} onUse={() => onUseNote(note)} />
+      <CopyLine label={`Report file name (restricted SharePoint folder; year folder ${date.slice(0, 4)})`} text={fileName} />
+    </div>
+  );
+}
+
 // The record (0091, 15 Oct 2026): paperwork on file, the check date (the
 // expiry follows by policy), and the ministry's verdict -- with who did each
 // and when, stamped by the database, and the log underneath.
-function ClearanceEditor({ personId, clearance, vb, email, onDone }) {
+function ClearanceEditor({ personId, clearance, vb, email, firstName, lastName, onDone }) {
   const router = useRouter();
   const [onFile, setOnFile] = useState(Boolean(clearance?.background_check_on_file));
   const [date, setDate] = useState(clearance?.background_check_date ?? '');
@@ -98,7 +178,7 @@ function ClearanceEditor({ personId, clearance, vb, email, onDone }) {
         </span>
       </div>
       <div className="mt-3">
-        <span className="block text-xs font-semibold text-neutral-500 mb-1">Verdict (the ministry&rsquo;s decision, not Checkr&rsquo;s)</span>
+        <span className="block text-xs font-semibold text-neutral-500 mb-1">Verdict (the ministry&rsquo;s decision)</span>
         <div className="flex flex-wrap gap-4">
           <label className="flex items-center gap-1.5">
             <input type="radio" name={`verdict-${personId}`} checked={verdict === ''} onChange={() => setVerdict('')} />
@@ -118,6 +198,7 @@ function ClearanceEditor({ personId, clearance, vb, email, onDone }) {
           placeholder="Note (optional), e.g. Spoke with Larry 14 Oct. Cleared to serve with a buddy."
           className="mt-2 w-full rounded-sm border border-neutral-300 px-2 py-1"
         />
+        <RecordHelper firstName={firstName} lastName={lastName} date={date} verdict={verdict} onUseNote={(t) => setNote(t.slice(0, 500))} />
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <button onClick={save} disabled={pending} className="btn-primary py-1.5! text-sm">
             {pending ? 'Saving…' : 'Save record'}
@@ -553,6 +634,8 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 clearance={clearance}
                 vb={row.vb}
                 email={person?.email || household?.email}
+                firstName={person?.first_name}
+                lastName={person?.last_name}
               />
             </div>
           ) : (

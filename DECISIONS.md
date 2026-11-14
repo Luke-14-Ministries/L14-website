@@ -4750,3 +4750,14 @@ registry search until VolunteerBadge says whether a guardian can complete one at
   volunteer place on an upcoming event, else 'adult_participant'.
 - The family form asks every adult 18+ (not adult campers) for their own email (`needsOwnEmail`).
 - Tests: volunteerbadge_rules.sql §7; wizardPeople.test.mjs.
+
+## 14 November 2026 — A hand-recorded check suggests its note and the report's file name
+
+Lawrence: "prompt for the text to enter for the note AND propose what the file name should be (with quick
+copy button), so staff can just copy and paste it as the file name. Probably will utilize folders with year
+it was run, but will need to check with staff." On the Volunteers entry's Background check record, once a
+check date is entered: a choice of VolunteerBadge or another way, then a Note and a Report file name, each
+with Copy (the note also "Put in the note box"). File name: `YYYY-MM-DD Lastname, Firstname - Background
+check (VolunteerBadge|other).pdf`: date first so a folder sorts by date; characters SharePoint refuses are
+dropped; nothing else about the person. The label shows the year folder (to confirm with staff). The
+verdict label no longer mentions Checkr.
