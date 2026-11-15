@@ -38,6 +38,7 @@ import ClearanceEditor from '@/components/ClearanceEditor';
 import { loadClearanceRecords, vbSummary } from '@/lib/clearanceRecords';
 import CheckCard from './CheckCard';
 import CreditLine from './CreditLine';
+import ResizableTable from '@/components/ResizableTable';
 
 export const metadata = { title: 'Background Checks' };
 
@@ -411,10 +412,12 @@ export default async function BackgroundChecksPage({ searchParams }) {
     );
   };
 
-  // One table for every card.
+  // One table for every card, one set of adjustable widths shared by all
+  // three so their columns line up (Lawrence, 15 Nov 2026).
   const table = (rows) => (
     <div className="mt-4 overflow-x-auto">
-      <table className="w-full min-w-[40rem] text-sm">
+      <ResizableTable storageKey="background-checks-columns" defaults={[190, 110, 230, 125, 125, 380]}>
+      <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
             <th className="py-2 pr-3">Name</th>
@@ -442,8 +445,10 @@ export default async function BackgroundChecksPage({ searchParams }) {
                 </td>
                 <td className="py-2 pr-3 text-neutral-600">{x.roleLabel}</td>
                 <td className="py-2 pr-3 text-neutral-600">{x.events.join(' · ')}</td>
-                <td className="py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>
-                <td className={`py-2 pr-3 ${x.bucket === 'expired' ? 'font-semibold text-red-800' : ''}`}>{fmtDate(x.expiresOn) || '—'}</td>
+                <td className="whitespace-nowrap py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>
+                <td className={`whitespace-nowrap py-2 pr-3 ${x.bucket === 'expired' ? 'font-semibold text-red-800' : ''}`}>
+                  {fmtDate(x.expiresOn) || '—'}
+                </td>
                 <td className="py-2">{statusCell(x)}</td>
               </tr>
               {recordFold(x, 6)}
@@ -451,6 +456,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
           ))}
         </tbody>
       </table>
+      </ResizableTable>
     </div>
   );
 

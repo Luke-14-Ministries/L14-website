@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import StatusMark from '@/components/StatusMark';
 import CreditLine from '../CreditLine';
 import { dayInMorristown, whenInMorristown } from '@/lib/events';
+import ResizableTable from '@/components/ResizableTable';
 import {
   prepareVolunteerBadgeBatch,
   sendVolunteerBadgeInvite,
@@ -559,7 +560,8 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
   function table(rows) {
     return (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[40rem] text-sm">
+            <ResizableTable storageKey="screening-invites-columns" defaults={[190, 190, 520, 190]}>
+            <table className="w-full text-sm">
               <thead className="bg-neutral-50 text-left text-neutral-500">
                 <tr>
                   <th className="px-3 py-2 font-semibold">Person</th>
@@ -678,6 +680,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                 })}
               </tbody>
             </table>
+            </ResizableTable>
           </div>
     );
   }

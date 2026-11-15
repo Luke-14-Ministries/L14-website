@@ -4975,3 +4975,14 @@ admin portal. From a Fable review:
   change (`afterApprovalFilter()` in lib/changesAfterApproval.js, using `status_changed_at`, 0128).
 - The page lists "After approval" first (what the badge counts) and folds "Before approval" below,
   still there to mark reviewed.
+
+## 15 November 2026 — Adjustable column widths on Background Checks and Screening
+
+- Lawrence: "set consistent width and/or make widths adjustable (I thought this was supposed to be
+  possible for all tables like this as a rule across the site?)". It wasn't: `components/DataTable.jsx`
+  (26 Oct, sorts, resizes, searches) is used only by My Program and the Prayer list, and it builds its
+  own rows, so it can't carry Background Checks' record fold under each row.
+- New `components/ResizableTable.jsx` wraps any existing table: fixed default widths, a drag handle
+  on each header (arrow keys too; double-click resets), widths remembered in the browser. Tables that
+  share a key share widths, so the three Background Checks cards line up. Dates no longer wrap. Used on
+  Background Checks and Screening's invites; other staff tables can take it one by one.
