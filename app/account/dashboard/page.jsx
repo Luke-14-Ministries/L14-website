@@ -100,7 +100,7 @@ const STATUS = {
   submitted: ['Submitted, awaiting review', 'bg-amber-100 text-amber-800'],
   waitlisted: ['Waitlisted', 'bg-orange-100 text-orange-800'],
   confirmed: ['Confirmed', 'bg-green-100 text-green-800'],
-  cancelled: ['Cancelled', 'bg-neutral-200 text-neutral-500'],
+  cancelled: ['Canceled', 'bg-neutral-200 text-neutral-500'],
 };
 
 const STAFF_ROLE_LABEL = {

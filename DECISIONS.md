@@ -4899,3 +4899,13 @@ admin portal. From a Fable review:
   grants table scrolls on a phone.
 - A styled "page not found" (app/not-found.jsx).
 - Not done yet: one family h1 size, pill/tone utilities, "canceled" spelling in labels, loading states.
+
+## 15 November 2026 — Cosmetic pass, second batch
+
+- Account and registration page titles are one size (text-3xl); public pages keep their larger titles.
+- One amber for "needs doing" pills (CHECK_TONE.todo is amber-800 like the rest); the bolder amber-200
+  chips on scholarships and Programs match it. Pills in sentence case ("Mild allergy", "Accepted ✓",
+  "Awaiting staff review", now amber like a registration awaiting review, not blue).
+- "Canceled" and "canceling" (American spelling) in every label and sentence people read; the stored status
+  word `cancelled` and identifiers are unchanged.
+- Loading screens: app/admin/loading.jsx (the sidebar stays) and app/account/loading.jsx.

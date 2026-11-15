@@ -10,7 +10,7 @@ export default function ResetPasswordPage() {
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-md mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8">New Password</h1>
+        <h1 className="text-3xl font-bold text-center mb-8">New Password</h1>
         {/* The form reads ?reason=annual, which needs a Suspense boundary. */}
         <Suspense fallback={null}>
           <ResetPasswordForm />

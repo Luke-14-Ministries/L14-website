@@ -70,7 +70,7 @@ export default function CancelRequest({ registrationId, people = [], openRequest
       <div className="mt-4 rounded-sm border border-neutral-300 bg-neutral-50 px-4 py-3 text-sm">
         <p className="font-semibold">Cancellation requested for {who}</p>
         <p className="mt-1 text-neutral-700">
-          Camp staff have your request and will be in touch. Nothing is cancelled yet, and
+          Camp staff have your request and will be in touch. Nothing is canceled yet, and
           any money already paid stays as it is until they have talked with you.
         </p>
         {error && <p className="mt-2 text-red-700">{error}</p>}
@@ -108,7 +108,7 @@ export default function CancelRequest({ registrationId, people = [], openRequest
         <fieldset className="mt-3">
           <legend className="text-sm font-semibold">Who is cancelling?</legend>
           <p className="text-xs text-neutral-500 mb-1">
-            Leave them all unchecked if the whole family is cancelling.
+            Leave them all unchecked if the whole family is canceling.
           </p>
           <div className="space-y-1">
             {people.map((p) => (

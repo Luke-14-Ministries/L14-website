@@ -431,7 +431,7 @@ function ParticipantRow({
   function cancel() {
     if (
       !confirm(
-        `Remove ${p.first_name} ${p.last_name} from this week?\n\nTheir status changes to Cancelled. You can restore them at any time. Nothing is deleted.`
+        `Remove ${p.first_name} ${p.last_name} from this week?\n\nTheir status changes to Canceled. You can restore them at any time. Nothing is deleted.`
       )
     )
       return;
@@ -1360,7 +1360,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                   >
                     {/* "Refund…" read as unfinished rather than as "opens a
                         form" (flagged twice, 25 Aug), and "Cancel" beside a
-                        registration is worse — it looks like cancelling the
+                        registration is worse — it looks like canceling the
                         PLACE. Two plain words, and a button rather than a
                         cramped link. */}
                     {openFor === p.id ? 'Close' : 'Refund'}

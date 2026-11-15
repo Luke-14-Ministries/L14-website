@@ -29,7 +29,7 @@ export default async function DonateThankYouPage({ searchParams }) {
       <div className="container-site max-w-md mx-auto">
         <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8 text-center">
           <div className="text-4xl mb-2">💛</div>
-          <h1 className="text-2xl font-bold mb-3">Thank you for your gift!</h1>
+          <h1 className="text-3xl font-bold mb-3">Thank you for your gift!</h1>
           <p className="text-neutral-700">
             {amount != null ? (
               <>

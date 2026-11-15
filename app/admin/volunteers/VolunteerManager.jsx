@@ -19,7 +19,7 @@ import { clearancePill, isMinor, formatPhone } from '@/lib/format';
 // your decision". The pill opens the application, where Approve and Decline
 // are. [label, colours, still to decide]
 function volunteerState(app, placeStatus) {
-  if (placeStatus === 'cancelled') return ['Volunteer: cancelled', 'bg-neutral-200 text-neutral-600', false];
+  if (placeStatus === 'cancelled') return ['Volunteer: canceled', 'bg-neutral-200 text-neutral-600', false];
   if (placeStatus === 'draft') return ['Volunteer: registration not submitted', 'bg-neutral-100 text-neutral-500', false];
   if (!app) return ['Volunteer: no application yet', 'bg-neutral-100 text-neutral-500', false];
   if (app.status === 'withdrawn') return ['Volunteer: application withdrawn', 'bg-neutral-200 text-neutral-600', false];

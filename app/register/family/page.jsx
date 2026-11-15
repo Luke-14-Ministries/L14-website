@@ -59,7 +59,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
     return (
       <section className="bg-neutral-50 py-12">
         <div className="container-site max-w-xl mx-auto text-center">
-          <h1 className="text-4xl font-bold">Registration</h1>
+          <h1 className="text-3xl font-bold">Registration</h1>
           <p className="mt-4 text-neutral-700">
             Please log in or create an account first. Your registration is saved to
             your account, so you can leave and come back to it. Only you and camp

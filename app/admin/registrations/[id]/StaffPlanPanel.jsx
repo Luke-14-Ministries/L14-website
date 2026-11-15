@@ -26,7 +26,7 @@ const INST_LABEL = {
   failed: 'Failed',
   paid: 'Paid',
   waived: 'Not needed',
-  cancelled: 'Cancelled',
+  cancelled: 'Canceled',
   sent: 'Sent',
 };
 

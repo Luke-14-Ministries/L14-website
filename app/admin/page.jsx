@@ -493,7 +493,7 @@ export default async function AdminOverview({ searchParams }) {
         {(cancelled > 0 || draft > 0) && (
           <p className="mt-3 text-xs text-neutral-400">
             Not counted above:
-            {cancelled > 0 ? ` ${cancelled} cancelled` : ''}
+            {cancelled > 0 ? ` ${cancelled} canceled` : ''}
             {cancelled > 0 && draft > 0 ? ' ·' : ''}
             {draft > 0 ? ` ${draft} unfinished (draft)` : ''}
             .

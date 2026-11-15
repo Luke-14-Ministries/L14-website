@@ -69,7 +69,7 @@ export default async function RegisterPage() {
             <BackLink />
           </div>
         ) : (
-          <h1 className="text-4xl font-bold text-center">Register</h1>
+          <h1 className="text-3xl font-bold text-center">Register</h1>
         )}
         <p className={`${user ? 'mt-2' : 'text-center mt-3'} text-neutral-600 mb-8`}>
           Choose what you&rsquo;re registering for. One account covers your

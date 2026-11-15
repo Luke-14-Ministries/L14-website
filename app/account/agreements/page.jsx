@@ -173,7 +173,7 @@ export default async function AgreementsPage() {
             alt="Luke 14 Ministries"
             className="h-14 w-auto mb-3"
           />
-          <h1 className="text-2xl font-bold">Signed Agreements</h1>
+          <h1 className="text-3xl font-bold">Signed Agreements</h1>
           <p className="text-sm text-neutral-600">
             Account: {user.email} · Printed{' '}
             {new Date().toLocaleDateString('en-US', {

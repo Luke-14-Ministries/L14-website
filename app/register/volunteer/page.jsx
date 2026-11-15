@@ -22,7 +22,7 @@ export default async function VolunteerPage() {
     return (
       <section className="bg-neutral-50 py-12">
         <div className="container-site max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold text-center">Volunteer with Us</h1>
+          <h1 className="text-3xl font-bold text-center">Volunteer with Us</h1>
           <p className="text-center text-neutral-600 mt-3 mb-8">
             Camp Celebrate volunteers: $495 per week, and worth every minute.
           </p>

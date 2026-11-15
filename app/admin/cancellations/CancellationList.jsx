@@ -9,7 +9,7 @@ import { dayInMorristown } from '@/lib/events';
 const STATUS = {
   open: ['Open', 'bg-amber-100 text-amber-800'],
   actioned: ['Cancelled', 'bg-neutral-200 text-neutral-700'],
-  declined: ['Not cancelled', 'bg-neutral-200 text-neutral-700'],
+  declined: ['Not canceled', 'bg-neutral-200 text-neutral-700'],
   withdrawn: ['Withdrawn by family', 'bg-neutral-100 text-neutral-500'],
 };
 
@@ -94,7 +94,7 @@ function Row({ row }) {
             id={`note-${row.id}`}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Spoke to Dana; cancelled both places, refunded the deposit."
+            placeholder="Spoke to Dana; canceled both places, refunded the deposit."
             className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
           />
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
@@ -104,7 +104,7 @@ function Row({ row }) {
               disabled={pending}
               className="btn-primary py-1.5! text-sm"
             >
-              {pending ? 'Saving…' : 'Handled: places cancelled'}
+              {pending ? 'Saving…' : 'Handled: places canceled'}
             </button>
             <button
               onClick={() => settle('declined')}

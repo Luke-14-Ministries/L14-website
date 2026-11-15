@@ -242,7 +242,7 @@ export async function cancelPaymentPlan({ registrationId } = {}) {
       error:
         error.code === '42501' || error.code === '22023'
           ? error.message
-          : 'The payment plan could not be cancelled. Please try again.',
+          : 'The payment plan could not be canceled. Please try again.',
     };
   }
   revalidatePath('/account/dashboard');

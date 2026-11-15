@@ -124,7 +124,7 @@ function FamilyDashboardChoice({ e }) {
       hide &&
       !window.confirm(
         `Clear "${e.name}" from every family's dashboard?\n\n` +
-          'Use this only for a test event, or one cancelled before it took place. A real event ' +
+          'Use this only for a test event, or one canceled before it took place. A real event ' +
           'should stay archived, so families can look back at their registration and payments.' +
           '\n\nNothing is deleted. Registrations, payments and refunds stay for staff and in every ' +
           'export, and you can undo this here.'

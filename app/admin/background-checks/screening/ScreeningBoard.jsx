@@ -66,7 +66,7 @@ function detail(r) {
     case 'expired':
       return 'The link ran out before a background check started. They are back on the list to send again. For 30 days the site still looks for a late background check and ties it here if one turns up.';
     case 'cancelled':
-      return 'Taken back here. (It isn’t cancelled in VolunteerBadge.)';
+      return 'Taken back here. (It isn’t canceled in VolunteerBadge.)';
     case 'superseded':
       return 'Replaced by a resend without the ID step.';
     default:
@@ -242,7 +242,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
         ? `Take back ${r.name}'s invite? Do this only if it isn't in VolunteerBadge's Applications list. They go back on the list to send again.`
         : r.status === 'processing' || r.status === 'in_review'
           ? `Stop following ${r.name}'s invite here? The site couldn't match it to VolunteerBadge's background check (see the note). Look at their background check in VolunteerBadge and record the result by hand on Background Checks. They go back on the list to send again.`
-          : `Take back ${r.name}'s invite here? It is NOT cancelled in VolunteerBadge: if they still finish applying, the background check runs and uses a credit. They go back on the list to send again.`;
+          : `Take back ${r.name}'s invite here? It is NOT canceled in VolunteerBadge: if they still finish applying, the background check runs and uses a credit. They go back on the list to send again.`;
     if (!window.confirm(words)) return;
     setBusy(true);
     setNote(null);

@@ -1251,7 +1251,7 @@ export async function setPlanStatus(registrationId, { action, keepsEarlyDiscount
       .update({ status: 'cancelled' })
       .eq('payment_plan_id', plan.id)
       .in('status', ['scheduled', 'failed']);
-    if (instError) return { ok: false, error: `The plan is cancelled, but its schedule was not: ${instError.message}` };
+    if (instError) return { ok: false, error: `The plan is canceled, but its schedule was not: ${instError.message}` };
   }
   if (action === 'resume') {
     // Charges that fell due while it was stopped are not all taken at once:

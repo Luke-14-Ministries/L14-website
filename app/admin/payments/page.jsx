@@ -632,7 +632,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                           )}
                           {credit > 0 && (
                             <span
-                              title="Paid more than is owed, from a refund due, a later scholarship, or a cancelled person. Refund it, or carry it as a credit."
+                              title="Paid more than is owed, from a refund due, a later scholarship, or a canceled person. Refund it, or carry it as a credit."
                               className="block text-xs font-semibold text-amber-800"
                             >
                               ⚑ Credit of {money(credit)}, paid more than owed
