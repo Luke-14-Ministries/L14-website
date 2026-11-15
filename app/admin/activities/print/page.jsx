@@ -54,7 +54,7 @@ function safetyFlags(f) {
   return out;
 }
 
-export const metadata = { title: 'Activity Sheets — Staff Admin' };
+export const metadata = { title: 'Activity Sheets · Staff Admin' };
 
 // E51: one printable sheet per activity, for the area leader.
 //

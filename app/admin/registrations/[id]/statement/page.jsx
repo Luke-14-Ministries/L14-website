@@ -6,7 +6,7 @@ import PrintButton from './PrintButton';
 import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
 import FeeLines from '@/components/FeeLines';
 
-export const metadata = { title: 'Family Statement — Staff Admin' };
+export const metadata = { title: 'Family Statement · Staff Admin' };
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 

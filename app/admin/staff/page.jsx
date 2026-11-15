@@ -6,7 +6,7 @@ import StaffManager from './StaffManager';
 // The site's fold arrow on the left (fold-summary in globals.css, 26 Oct 2026).
 const SUMMARY = 'fold-summary flex items-center gap-1';
 
-export const metadata = { title: 'Staff & Access — Staff Admin' };
+export const metadata = { title: 'Staff & Access · Staff Admin' };
 
 // Who is on staff, wearing which hat, holding which grants. Admin-only; the
 // staff_write RLS policy is the real gate. One login, many hats: roles say what

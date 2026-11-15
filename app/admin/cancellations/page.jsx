@@ -5,7 +5,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import CancellationList from './CancellationList';
 
-export const metadata = { title: 'Cancellation Requests — Staff Admin' };
+export const metadata = { title: 'Cancellation Requests · Staff Admin' };
 
 // Families asking to cancel. A real queue, because a request with nobody
 // watching it is worse than no request at all -- the family believes they have

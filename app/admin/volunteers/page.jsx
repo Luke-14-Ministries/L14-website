@@ -8,7 +8,7 @@ import { isVolunteerRole } from '@/lib/roles';
 import { latestVbRequests } from '@/lib/screeningCandidates';
 import { volunteerBadgeMode } from '@/lib/volunteerBadge';
 
-export const metadata = { title: 'Volunteers — Staff Admin' };
+export const metadata = { title: 'Volunteers · Staff Admin' };
 
 // Every registered volunteer, by event: application status, the application
 // itself, and the background-check record. Registrar-gated; RLS is the

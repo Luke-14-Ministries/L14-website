@@ -6,7 +6,7 @@ import BackBar from '@/components/BackBar';
 import BackLink from '@/components/BackLink';
 import { isVolunteerRole } from '@/lib/roles';
 
-export const metadata = { title: 'Volunteer — Luke 14 Ministries' };
+export const metadata = { title: 'Volunteer' };
 
 // The volunteer application, for real. The sequence is: create an account,
 // register (choosing the role "Volunteer" — solo volunteers are simply a

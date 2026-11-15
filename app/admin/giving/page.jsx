@@ -6,7 +6,7 @@ import { dayInMorristown } from '@/lib/events';
 import GivingExportBar from './GivingExportBar';
 import { CLEARING_PILL } from '@/lib/payments';
 
-export const metadata = { title: 'Giving — Staff Admin' };
+export const metadata = { title: 'Giving · Staff Admin' };
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 

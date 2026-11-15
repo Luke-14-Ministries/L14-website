@@ -5,7 +5,7 @@ import ScholarshipForm from './ScholarshipForm';
 import BackBar from '@/components/BackBar';
 import { participantMoney } from '@/lib/payments';
 
-export const metadata = { title: 'Scholarship Request — Luke 14 Ministries' };
+export const metadata = { title: 'Scholarship Request' };
 
 // Families ask for help with the fee here. Everything behind it already
 // existed: the scholarships table, its policies, and the staff review screen

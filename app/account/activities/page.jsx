@@ -10,7 +10,7 @@ import { agreementText, isCurrentEventRow } from '@/lib/events';
 import { CHOOSES_ACTIVITIES } from '@/lib/activityRoles';
 import { isVolunteerRole } from '@/lib/roles';
 
-export const metadata = { title: 'Activities — Luke 14 Ministries' };
+export const metadata = { title: 'Activities' };
 
 // Activity choices, one card per event, one card per attending person inside it.
 //

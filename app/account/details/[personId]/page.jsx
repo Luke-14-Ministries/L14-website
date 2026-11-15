@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import DetailsForm from './DetailsForm';
 
-export const metadata = { title: 'Support Details — Luke 14 Ministries' };
+export const metadata = { title: 'Support Details' };
 
 // The per-person support profile promised at the end of registration:
 // "a fuller form — medications, allergy detail, what helps on a hard day,

@@ -14,7 +14,7 @@ import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport } from '@/lib/support';
 import BackLink from '@/components/BackLink';
 
-export const metadata = { title: 'Registration — Luke 14 Ministries' };
+export const metadata = { title: 'Registration' };
 
 // The database's camp_role values -> the wizard's human-readable labels.
 const ROLE_LABEL = {

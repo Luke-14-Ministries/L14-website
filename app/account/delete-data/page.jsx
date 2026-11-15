@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import DeleteDataForm from './DeleteDataForm';
 
-export const metadata = { title: 'Delete my data — Luke 14 Ministries' };
+export const metadata = { title: 'Delete my data' };
 
 const SCOPE = {
   medical: 'Medical information',

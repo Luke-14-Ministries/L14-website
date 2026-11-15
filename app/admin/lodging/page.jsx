@@ -6,7 +6,7 @@ import LodgingBoard from './LodgingBoard';
 import LodgingSetup from './LodgingSetup';
 import EventFilter from '@/components/EventFilter';
 
-export const metadata = { title: 'Rooms & Cabins — Staff Admin' };
+export const metadata = { title: 'Rooms & Cabins · Staff Admin' };
 
 // Who sleeps where.
 //

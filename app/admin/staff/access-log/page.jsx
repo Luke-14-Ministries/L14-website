@@ -5,7 +5,7 @@ import BackLink from '@/components/BackLink';
 import { AREA_LABEL } from '@/lib/grants';
 import { whenInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Access Changes — Staff Admin' };
+export const metadata = { title: 'Access Changes · Staff Admin' };
 
 // Who gained what, when, and who gave it to them.
 //
@@ -74,7 +74,7 @@ export default async function AccessLogPage() {
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
-        <h1 className="text-xl font-bold">Access Changes</h1>
+        <h2 className="text-xl font-bold">Access Changes</h2>
         <BackLink href="/admin/staff" label="Back to Staff &amp; Access" />
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">

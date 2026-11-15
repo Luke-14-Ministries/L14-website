@@ -9,7 +9,7 @@ import CheckinList from './CheckinList';
 import MedicalContact from './MedicalContact';
 import EventFilter from '@/components/EventFilter';
 
-export const metadata = { title: 'Check-In — Staff Admin' };
+export const metadata = { title: 'Check-In · Staff Admin' };
 
 // Day-of arrivals, built for a phone at the door. Registrars, coordinators and
 // admins can mark people in (the set_check_in RPC is the real gate). Medical

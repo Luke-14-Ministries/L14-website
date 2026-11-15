@@ -6,7 +6,7 @@ import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events'
 import { participantMoney, dollars } from '@/lib/payments';
 import FeeLines from '@/components/FeeLines';
 
-export const metadata = { title: 'My Statement — Luke 14 Ministries' };
+export const metadata = { title: 'My Statement' };
 
 // The site's one money formatter (lib/payments.js).
 const money = dollars;
@@ -112,7 +112,7 @@ export default async function MyStatementPage({ params }) {
   });
 
   return (
-    <div className="print-sheet mx-auto max-w-2xl p-8 bg-white print:text-[12px] text-neutral-900">
+    <div className="print-sheet mx-auto max-w-2xl p-4 sm:p-8 bg-white print:text-[12px] text-neutral-900">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6 print:hidden">
         <h1 className="text-3xl font-bold">My statement</h1>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}
@@ -168,7 +168,7 @@ export default async function MyStatementPage({ params }) {
       </div>
 
       {/* Charges */}
-      <table className="w-full text-sm border-collapse mb-4">
+      <div className="overflow-x-auto print:overflow-visible"><table className="w-full text-sm border-collapse mb-4">
         <thead>
           <tr className="text-left border-b border-neutral-400">
             <th className="py-1 pr-3">Person</th>
@@ -223,14 +223,14 @@ export default async function MyStatementPage({ params }) {
             );
           })}
         </tbody>
-      </table>
+      </table></div>
 
       {/* Payments */}
       <p className="font-bold text-sm mb-1">Payments received</p>
       {goodPays.length === 0 ? (
         <p className="text-sm text-neutral-500 mb-4">No payments yet.</p>
       ) : (
-        <table className="w-full text-sm border-collapse mb-4">
+        <div className="overflow-x-auto print:overflow-visible"><table className="w-full text-sm border-collapse mb-4">
           <thead>
             <tr className="text-left border-b border-neutral-400">
               <th className="py-1 pr-3">Date</th>
@@ -251,7 +251,7 @@ export default async function MyStatementPage({ params }) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
 
       {/* Totals */}

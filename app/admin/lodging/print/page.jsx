@@ -5,7 +5,7 @@ import { isCurrentEventRow } from '@/lib/events';
 import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
 
-export const metadata = { title: 'Room List — Staff Admin' };
+export const metadata = { title: 'Room List · Staff Admin' };
 
 // The room list on paper: one section per building, every room with the
 // venue's bed description and who is in it, then whoever has no place yet.

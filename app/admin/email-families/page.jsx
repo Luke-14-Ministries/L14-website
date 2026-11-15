@@ -12,7 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { upcomingReminders, reminderMode } from '@/lib/reminders/run';
 import { todayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Email Registrants — Staff Admin' };
+export const metadata = { title: 'Email Registrants · Staff Admin' };
 
 // A long list is sent one email at a time, with a pause between (actions.js),
 // so the Send can take a minute; the default function time would cut it off.

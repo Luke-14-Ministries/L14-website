@@ -296,7 +296,7 @@ function PersonEditor({ registrationId, person, onDone }) {
         <div>
           <label className={labelCls}>Sex</label>
           <select className={inputCls} value={f.gender} onChange={set('gender')}>
-            <option value="">— select —</option>
+            <option value="">Choose…</option>
             <option>Male</option>
             <option>Female</option>
             {/* Preserve any nonstandard value already on the record. */}
@@ -954,7 +954,7 @@ function AddPerson({ registrationId, options }) {
         <div>
           <label className={labelCls}>Sex</label>
           <select className={inputCls} value={f.gender} onChange={set('gender')}>
-            <option value="">— select —</option>
+            <option value="">Choose…</option>
             <option>Male</option>
             <option>Female</option>
           </select>
@@ -1816,9 +1816,9 @@ function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true, f
     <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-xs">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">
+          <h2 className="text-xl font-bold">
             {registration.household?.display_name ?? 'Registration'}
-          </h1>
+          </h2>
           <p className="mt-1 text-sm">
             <PeopleLine participants={registration.participants ?? []} />
           </p>

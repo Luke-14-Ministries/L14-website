@@ -96,7 +96,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
         ))}
       </div>
 
-      <table className="mt-3 w-full text-left text-sm">
+      <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm">
         <thead className="text-xs text-neutral-500">
           <tr>
             <th className="py-1 pr-3 font-semibold">Area</th>
@@ -136,7 +136,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button

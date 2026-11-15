@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import AdminMfaReset from './AdminMfaReset';
 
-export const metadata = { title: 'Two-Factor Resets — Staff Admin' };
+export const metadata = { title: 'Two-Factor Resets · Staff Admin' };
 
 // Admin-only. The /admin layout already requires staff + two-factor; this adds
 // the admin check for this particular tool.

@@ -8,7 +8,7 @@ import Link from 'next/link';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { isVolunteerRole, VOLUNTEER_ROLES } from '@/lib/roles';
 
-export const metadata = { title: 'Finish Registering — Luke 14 Ministries' };
+export const metadata = { title: 'Finish Registering' };
 
 // The last step of registering for a camp week (Larry, 30 Sep 2026): the
 // family chooses how the balance will be paid, and the registration is not

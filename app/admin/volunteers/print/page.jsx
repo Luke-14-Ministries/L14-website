@@ -8,7 +8,7 @@ import BackLink from '@/components/BackLink';
 import StatusMark, { StatusLegend } from '@/components/StatusMark';
 import { isVolunteerRole } from '@/lib/roles';
 
-export const metadata = { title: 'Volunteer List — Staff Admin' };
+export const metadata = { title: 'Volunteer List · Staff Admin' };
 
 // The volunteer list on paper (Ellen, 14 Oct 2026): who is volunteering at
 // which event, where they want to serve, whether they are new, and where the

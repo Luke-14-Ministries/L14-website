@@ -579,7 +579,7 @@ Anything already saved is untouched.`
                 </Field>
                 <Field label="Sex">
                   <select name="gender" defaultValue={m.gender ?? ''} className={inputCls}>
-                    <option value="">— select —</option>
+                    <option value="">Choose…</option>
                     <option>Male</option>
                     <option>Female</option>
                     {m.gender && !['Male', 'Female'].includes(m.gender) && <option>{m.gender}</option>}
@@ -816,7 +816,7 @@ Anything already saved is untouched.`
           </Field>
           <Field label="Sex">
             <select name="gender" className={inputCls} defaultValue="">
-              <option value="">— select —</option>
+              <option value="">Choose…</option>
               <option>Male</option>
               <option>Female</option>
             </select>

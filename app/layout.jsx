@@ -10,7 +10,7 @@ import { THEME_SCRIPT } from '@/lib/theme';
 export const metadata = {
   title: {
     default: 'Luke 14 Ministries',
-    template: '%s — Luke 14 Ministries',
+    template: '%s | Luke 14 Ministries',
   },
   description:
     'Luke 14 Ministries helps families and individuals affected by disability find community and connection to Jesus through His church.',

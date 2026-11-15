@@ -4,7 +4,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
 import { agreementText } from '@/lib/events';
 
-export const metadata = { title: 'My Agreements — Luke 14 Ministries' };
+export const metadata = { title: 'My Agreements' };
 
 // A family's copy of what they signed.
 //
@@ -193,7 +193,7 @@ export default async function AgreementsPage() {
         {!householdId || signatures.length === 0 ? (
           <p className="mt-6 text-neutral-600">
             You haven&rsquo;t signed anything yet. Agreements are presented as part of
-            registration, and your signed copy appears here afterwards.
+            registration, and your signed copy appears here afterward.
           </p>
         ) : (
           <div className="space-y-8">

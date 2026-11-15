@@ -1024,7 +1024,7 @@ function NewEventPanel({ events }) {
               ) : (
                 <>
                   A blank event gets the standard agreements and nothing else. Add activities
-                  {isCamp ? ' and rooms (Rooms & Cabins can copy them from another event)' : ''} afterwards.{' '}
+                  {isCamp ? ' and rooms (Rooms & Cabins can copy them from another event)' : ''} afterward.{' '}
                 </>
               )}
               {isCamp && 'Volunteers are set to arrive the day before. '}

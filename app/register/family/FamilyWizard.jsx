@@ -1375,7 +1375,7 @@ export default function FamilyWizard({
             is a staff decision (Staff Questions §1); this wording is honest
             either way. */}
         {/* Since 16 Oct 2026 the details are saved WITH the registration; the
-            one thing still asked for afterwards is a photo of each person. */}
+            one thing still asked for afterward is a photo of each person. */}
         <p className="mt-3 text-neutral-700">
           {/* Reworded 29 Oct 2026 (Lawrence). The {' '} keeps "details" and
               "for" apart: JSX drops the line break after a closing tag. */}
@@ -1642,7 +1642,7 @@ export default function FamilyWizard({
           <>
             <label className={label}>How did you hear about Luke 14 Ministries?</label>
             <select className={input} value={family.heardAbout} onChange={setF('heardAbout')}>
-              <option value="">— select —</option>
+              <option value="">Choose…</option>
               {HEARD_ABOUT.map((h) => (
                 <option key={h}>{h}</option>
               ))}
@@ -1710,7 +1710,7 @@ export default function FamilyWizard({
                 info@luke14ministries.net
               </a>
               . You can still {isUpdate ? 'update' : 'submit'} without an adult&rsquo;s email and talk it over
-              with us afterwards.
+              with us afterward.
             </p>
           </div>
 
@@ -1808,7 +1808,7 @@ export default function FamilyWizard({
                 <div>
                   <label className={label} htmlFor={`fw-p${i}-sex`}>Sex</label>
                   <select id={`fw-p${i}-sex`} className={input} value={m.sex} onChange={setM(i, 'sex')}>
-                    <option value="">— select —</option>
+                    <option value="">Choose…</option>
                     <option>Male</option>
                     <option>Female</option>
                   </select>
@@ -1937,7 +1937,7 @@ export default function FamilyWizard({
                 <div>
                   <label className={label}>T-shirt size</label>
                   <select className={input} value={m.tshirt} onChange={setM(i, 'tshirt')}>
-                    <option value="">— select —</option>
+                    <option value="">Choose…</option>
                     {TSHIRT_SIZES.map((s) => (
                       <option key={s}>{s}</option>
                     ))}
@@ -1946,7 +1946,7 @@ export default function FamilyWizard({
                 <div>
                   <label className={label}>First time at a Luke 14 event?</label>
                   <select className={input} value={m.firstTime} onChange={setM(i, 'firstTime')}>
-                    <option value="">— select —</option>
+                    <option value="">Choose…</option>
                     <option value="true">Yes, first time</option>
                     <option value="false">No, I&rsquo;ve been before</option>
                   </select>
@@ -2347,7 +2347,7 @@ export default function FamilyWizard({
                             value={capacityFor[k] ?? ''}
                             onChange={(e) => setCapacityFor({ ...capacityFor, [k]: e.target.value })}
                           >
-                            <option value="">— how are you signing? —</option>
+                            <option value="">How are you signing?</option>
                             <option value="legal_guardian">I am their legal guardian</option>
                             <option value="authorized_adult">They have given me permission</option>
                           </select>
@@ -2413,7 +2413,7 @@ export default function FamilyWizard({
                   })}
                   . Typing your name here counts the same as signing on paper. Your
                   signature is recorded for each person above, with the version of each
-                  agreement you saw. You&rsquo;ll find a copy on your dashboard afterwards.
+                  agreement you saw. You&rsquo;ll find a copy on your dashboard afterward.
                 </p>
               </div>
             </>
@@ -2464,7 +2464,7 @@ export default function FamilyWizard({
             </p>
             <p className="hidden text-xs text-neutral-500 sm:block">
               {week ? fmtWeek(week) : 'Choose a session above'} · you pay from your
-              dashboard afterwards
+              dashboard afterward
             </p>
             {/* What each card still needs, said here, each a way to it
                 (Lawrence, 4 Nov 2026: "1 card needs something" meant

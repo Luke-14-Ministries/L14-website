@@ -7,7 +7,7 @@ import { site } from '@/lib/site';
 import PrayerComposer from './PrayerComposer';
 import PrayerPeopleTable from './PrayerPeopleTable';
 
-export const metadata = { title: 'Prayer List — Staff Admin' };
+export const metadata = { title: 'Prayer List · Staff Admin' };
 
 // The prayer list (0141, Lawrence 28 Oct 2026). People join on the Pray page
 // and confirm by email; the prayer team writes here and the site sends one

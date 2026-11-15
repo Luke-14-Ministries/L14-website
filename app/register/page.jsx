@@ -3,7 +3,7 @@ import BackLink from '@/components/BackLink';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { programOf, campKey, registrationOpen, OPEN_EVENT_COLUMNS, enrollmentOption } from '@/lib/events';
 
-export const metadata = { title: 'Register — Luke 14 Ministries' };
+export const metadata = { title: 'Register' };
 
 // The neutral front door to registration. Program pages still deep-link
 // straight into the right flow -- this page exists for everyone who arrives

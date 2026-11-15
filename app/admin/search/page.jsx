@@ -6,7 +6,7 @@ import { shortEventName } from '@/lib/events';
 import { statusPill } from '@/lib/format';
 import { searchWords, ilikeContains } from '@/lib/search';
 
-export const metadata = { title: 'Search — Staff Admin' };
+export const metadata = { title: 'Search · Staff Admin' };
 
 // Find a person or a family by name or email and get to their page in one
 // step (Ellen's "search tab"; Lawrence, 14 Oct 2026). The box lives in the

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sinceISO } from '@/lib/events';
 import AccountsManager from './AccountsManager';
 
-export const metadata = { title: 'Accounts — Staff Admin' };
+export const metadata = { title: 'Accounts · Staff Admin' };
 
 // Every login on the platform -- families and staff alike -- with the account
 // facts that do not live anywhere else: when it was created, when it last
@@ -59,7 +59,7 @@ export default async function AccountsPage() {
 
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
-      <h1 className="text-xl font-bold mb-1">Accounts</h1>
+      <h2 className="text-xl font-bold mb-1">Accounts</h2>
       {/* max-w-prose caps this at a 65-character measure, as everywhere else
           in the staff pages: text run to the full width of this card is hard
           to read back. At five lines it looked like a wrapping fault rather

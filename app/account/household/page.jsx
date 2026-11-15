@@ -8,7 +8,7 @@ import SetUpHousehold from './SetUpHousehold';
 import BackBar from '@/components/BackBar';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
-export const metadata = { title: 'Manage Household — Luke 14 Ministries' };
+export const metadata = { title: 'Manage Household' };
 
 const ageFrom = (dob) => {
   if (!dob) return null;

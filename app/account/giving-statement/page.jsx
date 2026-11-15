@@ -6,7 +6,7 @@ import GivingStatementSheet, { statementTitle } from '@/components/GivingStateme
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { dayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'My Giving Statement — Luke 14 Ministries' };
+export const metadata = { title: 'My Giving Statement' };
 
 // A donor's own giving statement, one calendar year at a time (Lawrence,
 // 27 Oct 2026: the dashboard's "Download Giving Statement" was a coming-soon

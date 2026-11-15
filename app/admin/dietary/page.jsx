@@ -7,7 +7,7 @@ import { allergyPill, formatPhone } from '@/lib/format';
 import { allergySummary } from '@/lib/support';
 import SeverityPicker from './SeverityPicker';
 
-export const metadata = { title: 'Dietary & Allergies — Staff Admin' };
+export const metadata = { title: 'Dietary & Allergies · Staff Admin' };
 
 // The kitchen view: who needs what at mealtimes, per event. Gated by the
 // sensitive permission; can_view_person_support RLS is the real gate, so

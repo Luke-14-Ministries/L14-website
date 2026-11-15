@@ -4,7 +4,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import ContactManager from './ContactManager';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
-export const metadata = { title: 'My Contact Info & Preferences — Luke 14 Ministries' };
+export const metadata = { title: 'My Contact Info & Preferences' };
 
 // The person's own account details: name, personal phone, login email, and
 // email preferences. Family/household contact info (the address and phone camp

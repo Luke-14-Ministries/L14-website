@@ -12,7 +12,7 @@ import { dayInMorristown, isCurrentEventRow, todayInMorristown } from '@/lib/eve
 import { signedPhotoUrls } from '@/lib/photos';
 import { isVolunteerRole } from '@/lib/roles';
 
-export const metadata = { title: 'Person — Staff Admin' };
+export const metadata = { title: 'Person · Staff Admin' };
 
 // E05: one screen per person, for STAFF.
 //
@@ -915,14 +915,14 @@ export default async function PersonPage({ params }) {
       )}
       <div className="min-w-0">
       <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Person</p>
-      <h1 className="text-xl font-bold">
+      <h2 className="text-xl font-bold">
         {displayName}
         {person.preferred_name && person.preferred_name !== person.first_name && (
           <span className="ml-2 text-lg font-normal text-neutral-500">
             goes by &ldquo;{person.preferred_name}&rdquo;
           </span>
         )}
-      </h1>
+      </h2>
       <p className="mt-1 text-sm text-neutral-500">
         {household?.display_name ?? 'No household'}
         {' · '}

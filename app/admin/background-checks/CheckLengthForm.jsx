@@ -28,7 +28,7 @@ export default function CheckLengthForm({ months, onFile, canEdit }) {
     if (
       !confirm(
         `Change how long a background check lasts from ${months} to ${n} months?\n\n` +
-          `The expiry date of every check on file (${onFile}) is worked out again from its check date. ` +
+          `The expiry date of every background check on file (${onFile}) is worked out again from its date. ` +
           'Each change is kept in that person’s history.'
       )
     )
@@ -49,7 +49,7 @@ export default function CheckLengthForm({ months, onFile, canEdit }) {
 
   return (
     <div className="rounded-lg border border-neutral-300 bg-white p-4">
-      <h3 className="font-bold">How long a check lasts</h3>
+      <h3 className="font-bold">How long a background check lasts</h3>
       {editing ? (
         <form onSubmit={save} className="mt-2 flex flex-wrap items-end gap-2">
           <label className="text-sm">
@@ -78,7 +78,7 @@ export default function CheckLengthForm({ months, onFile, canEdit }) {
         </form>
       ) : (
         <p className="mt-1 text-sm text-neutral-700">
-          A check is current for <strong>{months} months</strong> from the date it was done. After
+          A background check is current for <strong>{months} months</strong> from the date it was done. After
           that it shows as out of date and a new one is due.{' '}
           {canEdit && (
             <button type="button" onClick={() => setEditing(true)} className="font-semibold text-brand underline">
@@ -88,7 +88,7 @@ export default function CheckLengthForm({ months, onFile, canEdit }) {
         </p>
       )}
       <p className="mt-1 text-xs text-neutral-500">
-        Changing it works out every expiry date on file again from its check date.
+        Changing it works out every expiry date on file again from its background check date.
       </p>
       {error && (
         <p role="alert" className="mt-2 text-sm text-red-700">

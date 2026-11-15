@@ -6,7 +6,7 @@ import { isCurrentEventRow, eventInScope, eventScopeHeading } from '@/lib/events
 import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
 
-export const metadata = { title: 'Kitchen List — Staff Admin' };
+export const metadata = { title: 'Kitchen List · Staff Admin' };
 
 // The KITCHEN copy: dietary needs and allergies tallied per event, with NO
 // names. Safe to pin up in the kitchen — it says "gluten-free × 3", never who.

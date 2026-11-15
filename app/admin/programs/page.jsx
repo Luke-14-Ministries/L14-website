@@ -6,7 +6,7 @@ import EventFilter from '@/components/EventFilter';
 import ProgramBoard from './ProgramBoard';
 import { isVolunteerRole } from '@/lib/roles';
 
-export const metadata = { title: 'Programs — Staff Admin' };
+export const metadata = { title: 'Programs · Staff Admin' };
 
 // The assignment portal: who is in which program, for one event.
 //

@@ -7,7 +7,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { planFailingSince, planFailingNext } from '@/lib/plans';
 
-export const metadata = { title: 'Overview — Staff Admin' };
+export const metadata = { title: 'Overview · Staff Admin' };
 
 // The Overview reads in plain language: how many FAMILIES have signed up, how
 // many PEOPLE are coming, and what needs staff attention. One per-event table

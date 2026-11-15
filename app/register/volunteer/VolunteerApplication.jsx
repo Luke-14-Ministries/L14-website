@@ -291,7 +291,7 @@ export default function VolunteerApplication({
             <>
               <label className={label}>Accompanying adult (required for volunteers under 18)</label>
               <select className={input} value={adultId} onChange={(e) => setAdultId(e.target.value)}>
-                <option value="">— choose an adult —</option>
+                <option value="">Choose…</option>
                 {adults
                   .filter((a) => a.id !== personId)
                   .map((a) => (

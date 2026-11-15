@@ -12,7 +12,7 @@ import { roleAgeFlags } from '@/lib/roles';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { dayInMorristown, isCurrentEventRow, eventInScope, isEventScope } from '@/lib/events';
 
-export const metadata = { title: 'Awaiting Review — Staff Admin' };
+export const metadata = { title: 'Awaiting Review · Staff Admin' };
 
 // The review queue, as one page (14 Oct 2026, Lawrence).
 //

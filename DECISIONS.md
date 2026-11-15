@@ -4881,3 +4881,21 @@ admin portal. From a Fable review:
 - The background check record (components/ClearanceEditor.jsx) takes `canEdit`: on Volunteers it is the
   Background checks WRITE grant; read-only holders see the record with "Changing this record needs the
   Background checks write grant" and no Save. Background Checks shows the fold only with write.
+
+## 15 November 2026 — Cosmetic pass (Fable review), first batch
+
+- Browser tab titles: the template is "%s | Luke 14 Ministries" and pages no longer repeat the suffix (16
+  family pages read "… — Luke 14 Ministries — Luke 14 Ministries"); separators inside titles are "·".
+- Admin page titles are h2 (eleven pages had a second h1 under the staff header).
+- Em dashes out of pills and status words ("Under 18, not screened", "Deposit short: $x of $y", "buddy
+  needed, not paired yet", allergy detail in parentheses, and others).
+- "Background check", never "check" alone, on the background check length card and Background
+  Screening's blocked list.
+- Select placeholders read "Choose…" ("— none —" and "— not set —" left, since they are real choices).
+- "Afterward" (American spelling).
+- btn-primary and btn-gold carry a transparent 2px border, so they are the same height as btn-outline
+  beside them.
+- The family statement fits a phone (p-4 on small screens, tables scroll sideways); the Staff & Access
+  grants table scrolls on a phone.
+- A styled "page not found" (app/not-found.jsx).
+- Not done yet: one family h1 size, pill/tone utilities, "canceled" spelling in labels, loading states.

@@ -4,7 +4,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import RosterTable from './RosterTable';
 
-export const metadata = { title: 'Rosters — Staff Admin' };
+export const metadata = { title: 'Rosters · Staff Admin' };
 
 // Server side just loads the data; RosterTable (client) owns filtering,
 // sorting, and building the CSV/print links so the download always matches

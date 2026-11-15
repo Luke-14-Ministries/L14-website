@@ -15,7 +15,7 @@ const WAIVER_MARK = {
   checking: { state: 'warn', title: 'Waiver uploaded, not yet checked' },
 };
 
-export const metadata = { title: 'Activity Groups — Print — Staff Admin' };
+export const metadata = { title: 'Activity Groups · Print · Staff Admin' };
 
 // The groups on paper (0125): one block per group -- each unit on one line,
 // the buddy beside their camper, with age, the Under-8 pill and a waiver

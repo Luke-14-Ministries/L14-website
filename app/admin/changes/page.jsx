@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import ChangesList from './ChangesList';
 import { whenInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Recent Changes — Staff Admin' };
+export const metadata = { title: 'Recent Changes · Staff Admin' };
 
 // Tracked changes: every edit a FAMILY makes (Manage Household, wizard
 // resubmits) is logged field-by-field by database triggers (migration 0013),

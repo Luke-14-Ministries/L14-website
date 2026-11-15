@@ -7,7 +7,7 @@ import { programForCaller } from '../access';
 import FlagsNote from '../FlagsNote';
 import StatusMark, { StatusLegend } from '@/components/StatusMark';
 
-export const metadata = { title: 'My Program — print — Luke 14 Ministries' };
+export const metadata = { title: 'My Program · print' };
 
 // A program leader's roster on paper, or as a PDF through the browser's own
 // "Save as PDF" (Lawrence, 26 Oct 2026). No PDF library: the print dialog

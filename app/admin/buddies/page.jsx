@@ -6,7 +6,7 @@ import { isMinor } from '@/lib/format';
 import BuddyBoard from './BuddyBoard';
 import EventFilter from '@/components/EventFilter';
 
-export const metadata = { title: 'Buddy Assignments — Staff Admin' };
+export const metadata = { title: 'Buddy Assignments · Staff Admin' };
 
 // Pairing campers who asked for a one-to-one buddy with the volunteers who
 // can be one.

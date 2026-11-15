@@ -11,7 +11,7 @@ import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIE
 import { isStaleRefund, STALE_REFUND_DAYS, CLEARING_PILL } from '@/lib/payments';
 import RecheckRefund from './RecheckRefund';
 
-export const metadata = { title: 'Event Payments — Staff Admin' };
+export const metadata = { title: 'Event Payments · Staff Admin' };
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 

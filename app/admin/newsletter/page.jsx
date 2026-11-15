@@ -3,7 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { sinceISO, dayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Newsletter — Staff Admin' };
+export const metadata = { title: 'Newsletter · Staff Admin' };
 
 // The newsletter list, as staff see it (14 Oct 2026, Lawrence).
 //

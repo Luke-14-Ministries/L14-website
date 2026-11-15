@@ -439,7 +439,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                 <li key={c.personId}>
                   <strong>{c.name}</strong>
                   <span className="text-xs text-amber-800"> ({c.group === 'family' ? 'family adult' : 'volunteer'})</span>
-                  {c.reason ? ` (${c.reason === 'never checked' ? 'no check on file' : `check ${c.reason}`})` : ''}:{' '}
+                  {c.reason ? ` (${c.reason === 'never checked' ? 'no background check on file' : `background check ${c.reason}`})` : ''}:{' '}
                   {c.blockedBecause}
                   {c.alreadyInVb && (
                     <span className="mt-0.5 block text-xs font-semibold text-amber-800">

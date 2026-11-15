@@ -19,7 +19,7 @@ import Panel from './Panel';
 import { isRegistryRole, isVolunteerRole, roleAgeFlags } from '@/lib/roles';
 import { loadFamilyScholarshipRows } from '@/lib/familyScholarships';
 
-export const metadata = { title: 'Registration — Staff Admin' };
+export const metadata = { title: 'Registration · Staff Admin' };
 
 // What a registration is waiting on staff for, as short phrases -- the amber
 // marker on its week tab and the tab's tooltip (26 Oct 2026). The same rule

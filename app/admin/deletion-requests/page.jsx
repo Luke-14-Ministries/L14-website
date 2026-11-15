@@ -5,7 +5,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import DeletionList from './DeletionList';
 
-export const metadata = { title: 'Deletion Requests — Staff Admin' };
+export const metadata = { title: 'Deletion Requests · Staff Admin' };
 
 // Families asking for their medical information, or their whole account, to
 // be deleted (Lawrence, 30 Sep 2026). A queue, like cancellations: closing a
@@ -44,7 +44,7 @@ export default async function DeletionRequestsPage({ searchParams }) {
 
   return (
     <div>
-      <h1 className="text-xl font-bold">Deletion Requests</h1>
+      <h2 className="text-xl font-bold">Deletion Requests</h2>
       <p className="mt-1 mb-4 text-sm text-neutral-600">
         Families asking us to delete their medical information or their account. Contact the
         family, delete what can go, and note what was kept and why. Payments, signed releases and

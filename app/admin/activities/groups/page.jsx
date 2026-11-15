@@ -7,7 +7,7 @@ import { groupNoun } from '@/lib/activityGroups';
 import { loadActivityGroups } from './load';
 import GroupsBoard from './GroupsBoard';
 
-export const metadata = { title: 'Activity Groups — Staff Admin' };
+export const metadata = { title: 'Activity Groups · Staff Admin' };
 
 // Rafts for white water rafting, boats for the pontoon (0125). Who is going
 // is who signed up, plus each signed-up camper's paired buddy, who goes with

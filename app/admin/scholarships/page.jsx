@@ -8,7 +8,7 @@ import { loadFamilyScholarshipRows, familyRequestOpen } from '@/lib/familySchola
 import EventFilter from '@/components/EventFilter';
 import { eventInScope, isEventScope } from '@/lib/events';
 
-export const metadata = { title: 'Scholarship Requests — Staff Admin' };
+export const metadata = { title: 'Scholarship Requests · Staff Admin' };
 
 const ROLE_LABEL = {
   camper: 'Camper',

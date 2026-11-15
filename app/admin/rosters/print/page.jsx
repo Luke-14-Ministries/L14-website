@@ -7,7 +7,7 @@ import StatusMark from '@/components/StatusMark';
 import { STATUS_LABEL, formatPhone } from '@/lib/format';
 import { eventInScope } from '@/lib/events';
 
-export const metadata = { title: 'Print Rosters — Staff Admin' };
+export const metadata = { title: 'Print Rosters · Staff Admin' };
 
 const ROLE_LABEL = {
   camper: 'Camper',

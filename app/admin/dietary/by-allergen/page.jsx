@@ -6,7 +6,7 @@ import { isCurrentEventRow, eventInScope, eventScopeHeading } from '@/lib/events
 import { allergenWords } from '@/lib/support';
 import PrintButton from '@/components/PrintButton';
 
-export const metadata = { title: 'Allergies by allergen — Luke 14 Ministries' };
+export const metadata = { title: 'Allergies by allergen' };
 
 // The kitchen list WITH names (Ellen's ink, 15 Oct 2026; build plan item 9):
 // grouped by allergen, each person named with their severity, anaphylaxis
@@ -93,7 +93,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
   return (
     <div className="mx-auto max-w-3xl p-8 print-sheet bg-white print:text-[12px]">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-2 print:hidden">
-        <h1 className="text-xl font-bold">Allergies by allergen, with names</h1>
+        <h2 className="text-xl font-bold">Allergies by allergen, with names</h2>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}
         <span className="flex flex-col items-end gap-2">
           <BackLink href={`/admin/dietary/${eventFilter ? `?event=${eventFilter}` : ""}`} label="Back to Dietary" />

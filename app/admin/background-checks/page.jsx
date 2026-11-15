@@ -389,7 +389,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
   return (
     <div className="space-y-5">
       <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
-        <h1 className="text-xl font-bold">Background Checks</h1>
+        <h2 className="text-xl font-bold">Background Checks</h2>
         <p className="mt-1 text-sm text-neutral-600">
           Everyone 18 or older on an upcoming event gets the full background check through
           VolunteerBadge (the board, 14 Nov 2026), listed in two groups:{' '}

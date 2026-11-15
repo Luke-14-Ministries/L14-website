@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow, eventInScope, staffAssigns } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 
-export const metadata = { title: 'Medical & Support — Staff Admin' };
+export const metadata = { title: 'Medical & Support · Staff Admin' };
 
 // The nurse/support-team view: medications, seizure and rescue-med details, and
 // emergency contacts, per event. Gated by the sensitive permission; the

@@ -7,7 +7,7 @@ import BackLink from '@/components/BackLink';
 import { SearchSelectLinks } from '@/components/SearchSelect';
 import { todayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Buddy Sheets — Staff Admin' };
+export const metadata = { title: 'Buddy Sheets · Staff Admin' };
 
 // One sheet per buddy, to hand out at orientation (asked for 14 Oct 2026).
 //

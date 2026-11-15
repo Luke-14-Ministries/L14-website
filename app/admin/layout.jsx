@@ -11,7 +11,7 @@ import { adultOnFirstDay } from '@/lib/backgroundChecks';
 import { backgroundCheckWork } from '@/lib/backgroundCheckWork';
 import { volunteerBadgeMode } from '@/lib/volunteerBadge';
 
-export const metadata = { title: 'Staff Admin — Luke 14 Ministries' };
+export const metadata = { title: 'Staff Admin' };
 
 // The full planned admin structure, gated by role. `ready: false` items show as
 // greyed placeholders so the shape of the system (and the access model) is visible

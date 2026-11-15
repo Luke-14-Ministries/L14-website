@@ -10,7 +10,7 @@ import {
 import FlagsNote from './FlagsNote';
 import ProgramRosterTable from './ProgramRosterTable';
 
-export const metadata = { title: 'My Program — Luke 14 Ministries' };
+export const metadata = { title: 'My Program' };
 
 // The program leader's whole view of the system: who is in their program.
 //

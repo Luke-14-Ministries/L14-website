@@ -9,7 +9,7 @@ import ReviewActions, { WaiverStatusPill, WaiverFileLink } from './WaiverReview'
 import { checkAnchor } from '@/lib/waiverAnchors';
 import { groupNoun } from '@/lib/activityGroups';
 
-export const metadata = { title: 'Activities — Staff Admin' };
+export const metadata = { title: 'Activities · Staff Admin' };
 
 // A person's role, short, for the queue and for a volunteer or buddy who
 // joins an activity's list through their upload rather than a signup.
