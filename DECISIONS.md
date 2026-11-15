@@ -5009,3 +5009,7 @@ admin portal. From a Fable review:
   count is part of the saved key, so a table with a column more or less (one shown only with a
   permission) never takes another's widths. Background Checks drops its Role column (each card is one
   kind of person); parents, siblings and caregivers show their role under the name.
+- Background Screening's "1 · Who is due" and "2 · Invites and results" fold like the Background
+  Checks cards (CheckCard), with pills in the header: ready to send, can't be sent yet, already invited;
+  waiting on you, open, finished. Each starts open when it has something in it to act on. The "Check
+  VolunteerBadge for updates" button moved from the header into the card.

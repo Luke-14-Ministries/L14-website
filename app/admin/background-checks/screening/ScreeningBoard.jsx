@@ -10,6 +10,8 @@ import StatusMark from '@/components/StatusMark';
 import CreditLine from '../CreditLine';
 import { dayInMorristown, whenInMorristown } from '@/lib/events';
 import ResizableTable from '@/components/ResizableTable';
+import { CHECK_TONE } from '@/lib/format';
+import CheckCard from '../CheckCard';
 import {
   prepareVolunteerBadgeBatch,
   sendVolunteerBadgeInvite,
@@ -296,9 +298,21 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
         </p>
       )}
 
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
-        <h2 className="text-xl font-bold">1 · Who is due</h2>
-        <p className="mt-1 mb-4 max-w-4xl text-sm text-neutral-500">
+      {/* Both parts fold, with counts in the header (Lawrence, 15 Nov 2026),
+          like the cards on Background Checks. */}
+      <CheckCard
+        id="due"
+        title="1 · Who is due"
+        summary={`${orderable.length} ready to send · ${blocked.length} can’t be sent yet · ${underWay.length} already invited`}
+        pills={[
+          orderable.length > 0 && { text: `${orderable.length} ready to send`, cls: CHECK_TONE.hold },
+          blocked.length > 0 && { text: `${blocked.length} can’t be sent yet`, cls: CHECK_TONE.todo },
+          underWay.length > 0 && { text: `${underWay.length} already invited`, cls: CHECK_TONE.waiting },
+          orderable.length + blocked.length + underWay.length === 0 && { text: 'Nobody due', cls: CHECK_TONE.na },
+        ].filter(Boolean)}
+        defaultOpen={orderable.length > 0 || blocked.length > 0}
+      >
+        <p className="max-w-4xl text-sm text-neutral-500">
           Adults with no background check on file, or one out of date: volunteers, and family adults
           (parents, siblings and caregivers). Adult campers stay on the registry search for now. Nothing
           here has been sent yet.
@@ -502,21 +516,28 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
             </ul>
           </div>
         )}
-      </section>
+      </CheckCard>
 
-      <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-xl font-bold">2 · Invites and results</h2>
-          <button
-            type="button"
-            onClick={refresh}
-            disabled={busy || !connected || open.length === 0}
-            className="btn-outline py-1.5! text-sm disabled:opacity-50"
-          >
-            Check VolunteerBadge for updates
-          </button>
-        </div>
-        <p className="mt-1 mb-4 max-w-4xl text-sm text-neutral-500">
+      <CheckCard
+        id="results"
+        title="2 · Invites and results"
+        summary={`${open.length} open · ${waitingOnYou.length} waiting on you · ${finished.length} finished${lastChecked ? ` · last checked ${whenInMorristown(lastChecked)}` : ''}`}
+        pills={[
+          waitingOnYou.length > 0 && { text: `${waitingOnYou.length} waiting on you`, cls: CHECK_TONE.todo },
+          open.length > 0 && { text: `${open.length} open`, cls: CHECK_TONE.waiting },
+          finished.length > 0 && { text: `${finished.length} finished`, cls: CHECK_TONE.na },
+        ].filter(Boolean)}
+        defaultOpen={waitingOnYou.length > 0 || open.length > 0}
+      >
+        <button
+          type="button"
+          onClick={refresh}
+          disabled={busy || !connected || open.length === 0}
+          className="btn-outline py-1.5! text-sm disabled:opacity-50"
+        >
+          Check VolunteerBadge for updates
+        </button>
+        <p className="max-w-4xl text-sm text-neutral-500">
           {open.length} open
           {waitingOnYou.length > 0 ? ` · ${waitingOnYou.length} waiting on you` : ''}
           {lastChecked ? ` · last checked ${whenInMorristown(lastChecked)}` : ''}. A clear result counts
@@ -553,7 +574,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
           )}
           </>
         )}
-      </section>
+      </CheckCard>
     </div>
   );
 
