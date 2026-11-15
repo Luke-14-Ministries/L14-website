@@ -29,7 +29,8 @@ export default function RecordFold({ personId, label = 'Background check record'
       className="scroll-mt-4 text-xs"
     >
       <summary className="cursor-pointer font-semibold text-brand">
-        {label} {open ? '▴' : '▾'}
+        {/* The browser's own marker shows open or closed; no second arrow. */}
+        {label}
       </summary>
       <div className="mt-1 max-w-4xl text-sm">{children}</div>
     </details>
