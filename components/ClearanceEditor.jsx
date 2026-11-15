@@ -122,7 +122,8 @@ function RecordHelper({ firstName, lastName, date, verdict, note: current = '', 
 // and when, stamped by the database, and the log underneath.
 // canEdit: the Background checks WRITE grant (14 Nov 2026). Read-only
 // holders see the record but can't change it (the database refuses anyway).
-export default function ClearanceEditor({ personId, clearance, vb, email, firstName, lastName, onDone, canEdit = true }) {
+// showVb false: an adult camper, who isn't sent to VolunteerBadge (15 Nov 2026).
+export default function ClearanceEditor({ personId, clearance, vb, email, firstName, lastName, onDone, canEdit = true, showVb = true }) {
   const router = useRouter();
   const [onFile, setOnFile] = useState(Boolean(clearance?.background_check_on_file));
   const [date, setDate] = useState(clearance?.background_check_date ?? '');
@@ -145,7 +146,7 @@ export default function ClearanceEditor({ personId, clearance, vb, email, firstN
 
   return (
     <div className="mt-2 rounded-sm border border-neutral-200 bg-neutral-50 p-3 text-sm">
-      <ScreeningPanel clearance={clearance} vb={vb} email={email} />
+      {showVb && <ScreeningPanel clearance={clearance} vb={vb} email={email} />}
       <p className="font-semibold text-neutral-700 mb-2">Background check record</p>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex items-center gap-2">

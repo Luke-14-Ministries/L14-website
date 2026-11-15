@@ -1,9 +1,8 @@
 'use client';
 
-// Registry searches due (Lawrence, 10-11 Nov 2026): every adult who isn't a
-// volunteer (camper, parent, sibling, caregiver) whose
-// sex-offender registry search is missing or out of date, as a queue staff can
-// work through quickly.
+// The quick registry search on an adult camper's row (Lawrence, 10-11 Nov
+// 2026; a queue box of its own until 15 Nov 2026, when it moved into each row
+// so the Adult campers card matches the other two).
 //
 // It is a queue and not an automatic search ON PURPOSE. nsopw.gov's Conditions
 // of Use forbid automated searching, it uses CAPTCHAs and throttles, and its FAQ
@@ -23,12 +22,8 @@ import { recordRegistrySearch } from './actions';
 
 const NSOPW = 'https://www.nsopw.gov/';
 
-function fmtDob(iso) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
-  return m ? `${Number(m[2])}/${Number(m[3])}/${m[1]}` : 'Unknown';
-}
-
-function QueueRow({ row, today, onDone }) {
+export function RegistryQuickSearch({ row, today }) {
+  const router = useRouter();
   const [mode, setMode] = useState('idle'); // idle | match
   const [result, setResult] = useState('follow_up');
   const [note, setNote] = useState('');
@@ -62,30 +57,20 @@ function QueueRow({ row, today, onDone }) {
         setError(res.error);
         return;
       }
-      onDone(row.id);
+      router.refresh();
     });
   }
 
   return (
-    <li className="border-b border-neutral-100 py-2">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <div className="min-w-48 flex-1">
-          <a href={`/admin/people/${row.id}/`} className="font-medium text-brand underline">
-            {row.name}
-          </a>
-          <span className="block text-xs text-neutral-600">
-            {row.roleLabel ? `${row.roleLabel} · ` : ''}Born {fmtDob(row.dob)}
-            {row.place ? ` · ${row.place}` : ''} · {row.events.join(' · ')}
-            {row.reason ? ` · ${row.reason}` : ''}
-          </span>
-        </div>
-        <button type="button" onClick={search} className="rounded-sm border border-neutral-300 px-2 py-1 text-sm">
+    <div className="mt-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button type="button" onClick={search} className="rounded-sm border border-neutral-300 px-2 py-1 text-xs">
           {searched ? 'Search again ↗' : 'Copy last name and search ↗'}
         </button>
         <button
           type="button"
           onClick={() => copy(row.firstName, 'first')}
-          className="rounded-sm border border-neutral-300 px-2 py-1 text-sm"
+          className="rounded-sm border border-neutral-300 px-2 py-1 text-xs"
           title={`First name: ${row.firstName}`}
         >
           {copied === 'first' ? 'First name copied' : `Copy first name (${row.firstName})`}
@@ -94,7 +79,7 @@ function QueueRow({ row, today, onDone }) {
           type="button"
           disabled={pending || !searched}
           onClick={() => save('ok', '')}
-          className="rounded-sm bg-green-700 px-2 py-1 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-sm bg-green-700 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
           title={searched ? `Records today (${today}): searched, no match.` : 'Search nsopw.gov first.'}
         >
           {pending && mode === 'idle' ? 'Saving…' : 'No match'}
@@ -103,7 +88,7 @@ function QueueRow({ row, today, onDone }) {
           type="button"
           disabled={pending}
           onClick={() => setMode(mode === 'match' ? 'idle' : 'match')}
-          className="rounded-sm border border-amber-400 bg-amber-50 px-2 py-1 text-sm font-semibold text-amber-900"
+          className="rounded-sm border border-amber-400 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-900"
         >
           Possible match…
         </button>
@@ -150,43 +135,6 @@ function QueueRow({ row, today, onDone }) {
         </form>
       )}
       {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
-    </li>
-  );
-}
-
-export default function RegistryQueue({ rows, today }) {
-  const router = useRouter();
-  const [done, setDone] = useState(() => new Set());
-  const left = rows.filter((r) => !done.has(r.id));
-
-  function onDone(id) {
-    setDone((d) => new Set(d).add(id));
-    router.refresh();
-  }
-
-  return (
-    // Same box as the volunteer part's "How to run a check" (HOW_TO_BOX on
-    // the page; Lawrence, 11 Nov 2026).
-    <div className="rounded-lg border border-neutral-300 bg-white p-4">
-      <h3 className="font-bold">Registry searches due ({left.length})</h3>
-      <p className="mt-1 text-sm text-neutral-600">
-        Adults who aren&rsquo;t volunteers and have no current search. For each one:{' '}
-        <strong>Copy last name and search</strong> opens nsopw.gov with the last name on your
-        clipboard, and <strong>Copy first name</strong> copies the first. Check the date of birth and
-        place against any result, then press <strong>No match</strong> (recorded with today&rsquo;s
-        date) or <strong>Possible match</strong>. NSOPW doesn&rsquo;t allow automated searching, so a
-        person runs each search.
-        {done.size > 0 && ` ${done.size} recorded this visit.`}
-      </p>
-      {left.length === 0 ? (
-        <p className="mt-3 text-sm text-green-800">Nothing due. Every adult who isn&rsquo;t a volunteer has a current search.</p>
-      ) : (
-        <ul className="mt-2">
-          {left.map((r) => (
-            <QueueRow key={r.id} row={r} today={today} onDone={onDone} />
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

@@ -4934,3 +4934,19 @@ admin portal. From a Fable review:
   "can't be approved yet" number.
 - Background Screening's Invites and results: rows marked OK to serve, taken back or replaced fold
   under "Finished", so the card shows what is still open.
+
+## 15 November 2026 — Background Checks in three matching cards
+
+- Lawrence: "how to and how long should be outside/above volunteer, and then the volunteer and adult
+  camper sections should look nearly identical", and names were different sizes from card to card.
+- The page is now: the intro; "How to run a background check" and "How long a background check
+  lasts", for everyone; then three cards built the same way: **Volunteers**, **Parents, siblings
+  and caregivers**, **Adult campers**. Each has the same filter pills (one vocabulary: no background
+  check on file, waiting, out of date, needs a decision, not permitted, expiring, current; a registry
+  search's due and follow-up are mapped onto it), the same columns (Name, Role, Event, Date checked,
+  Expires, Status), the same status pills and the Background check record under each row. Filters are
+  `v=`, `f=`, `c=` in the address; the old `r=` still works, and `#registry` opens the parents card.
+- Adult campers' quick registry search (copy names, No match, Possible match) moved from its own
+  queue box into each due camper's row, with the date of birth and place under the name; their record
+  fold leaves out the VolunteerBadge line, since campers aren't sent there.
+- Header pills are red for volunteers (it holds approval) and amber for the other two (a flag).

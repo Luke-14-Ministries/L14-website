@@ -1,17 +1,17 @@
 'use client';
 
-// One of the two parts of Background Checks, folding (Lawrence, 11 Nov 2026).
+// One of the three cards on Background Checks, folding (Lawrence, 11 Nov 2026).
 // Folded, the header still says where things stand: a summary line and pills
 // for anything that needs doing. The body is mounted only when open, as on
 // Awaiting Review.
 //
 // It starts open when the page says the part has work due (or a filter for it
 // is chosen), and also when the address points at it (#volunteers or
-// #registry, as the Review card's link does).
+// #registry, an alias of the parents card that the Review card's link used).
 
 import { useEffect, useState } from 'react';
 
-export default function CheckCard({ id, title, summary, pills = [], defaultOpen = false, children }) {
+export default function CheckCard({ id, aliases = [], title, summary, pills = [], defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
   // Opened by the address too: on arrival, and when a link on the page (the
   // intro's "Volunteers" / "Campers and families") points at this part.
@@ -19,7 +19,7 @@ export default function CheckCard({ id, title, summary, pills = [], defaultOpen 
     const check = () => {
       // Its own anchor, or a person's record inside it (#check-<id>, 14 Nov 2026).
       const h = window.location.hash.match(/#[^#]+/)?.[0] ?? '';
-      if (h === `#${id}` || h.startsWith('#check-')) setOpen(true);
+      if (h === `#${id}` || aliases.some((a) => h === `#${a}`) || h.startsWith('#check-')) setOpen(true);
     };
     // A timer, not requestAnimationFrame: a background tab never fires the
     // latter, and a link opened in a new tab is exactly that.
@@ -29,7 +29,8 @@ export default function CheckCard({ id, title, summary, pills = [], defaultOpen 
       clearTimeout(timer);
       window.removeEventListener('hashchange', check);
     };
-  }, [id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, aliases.join(',')]);
   const bodyId = `${id}-body`;
 
   return (
