@@ -88,18 +88,58 @@ export default async function ProgramsPage({ searchParams }) {
     : { data: [], error: null };
   if (leaderError) throw new Error(`Program leaders: ${leaderError.message}`);
 
+  // A buddy goes wherever their camper goes (Lawrence, 14 Nov 2026, as for
+  // rafting: lib/activityGroups.js). A volunteer in a live pairing
+  // (buddy_assignments, ended_at null) follows their camper's program and is
+  // not placed by hand; only someone with no camper (often a volunteer child
+  // not paired) is placed here.
+  const { data: pairRows, error: pairError } = selectedId
+    ? await supabase
+        .from('buddy_assignments')
+        .select('buddy_participant_id, camper_participant_id')
+        .eq('event_id', selectedId)
+        .is('ended_at', null)
+    : { data: [], error: null };
+  if (pairError) throw new Error(`Buddy pairings: ${pairError.message}`);
+  const byPart = new Map((participantRows ?? []).map((r) => [r.id, r]));
+  const campersOf = new Map();
+  // And each camper's buddies, for the Buddy column (Lawrence, 14 Nov 2026).
+  const buddiesOf = new Map();
+  for (const pr of pairRows ?? []) {
+    const camper = byPart.get(pr.camper_participant_id);
+    const buddy = byPart.get(pr.buddy_participant_id);
+    if (!camper || !buddy) continue;
+    if (!buddiesOf.has(pr.camper_participant_id)) buddiesOf.set(pr.camper_participant_id, []);
+    buddiesOf.get(pr.camper_participant_id).push(
+      `${buddy.people?.preferred_name || buddy.people?.first_name || ''} ${buddy.people?.last_name ?? ''}`.trim() || 'a buddy'
+    );
+    if (!campersOf.has(pr.buddy_participant_id)) campersOf.set(pr.buddy_participant_id, []);
+    campersOf.get(pr.buddy_participant_id).push({
+      name: (camper.people?.preferred_name || camper.people?.first_name || 'their camper').trim(),
+      programId: camper.program_id ?? null,
+    });
+  }
+
   const people = (participantRows ?? [])
-    .map((r) => ({
-      participantId: r.id,
-      personId: r.people?.id,
-      name: `${r.people?.first_name ?? ''} ${r.people?.last_name ?? ''}`.trim(),
-      preferred: r.people?.preferred_name || null,
-      dob: r.people?.date_of_birth ?? null,
-      household: r.registrations?.households?.display_name ?? '',
-      role: r.camp_role,
-      status: r.status,
-      programId: r.program_id ?? null,
-    }))
+    .map((r) => {
+      const follows = campersOf.get(r.id) ?? null;
+      // Following: their camper's program (the first camper's, if paired with
+      // two in different programs, which the row then says).
+      const followed = follows ? follows.find((c) => c.programId)?.programId ?? null : null;
+      return {
+        participantId: r.id,
+        personId: r.people?.id,
+        name: `${r.people?.first_name ?? ''} ${r.people?.last_name ?? ''}`.trim(),
+        preferred: r.people?.preferred_name || null,
+        dob: r.people?.date_of_birth ?? null,
+        household: r.registrations?.households?.display_name ?? '',
+        role: r.camp_role,
+        status: r.status,
+        programId: follows ? followed : r.program_id ?? null,
+        follows,
+        buddies: buddiesOf.get(r.id) ?? [],
+      };
+    })
     .sort((a, b) => a.name.localeCompare(b.name));
 
   // Who can be named a leader (Lawrence, 4 Nov 2026): EVERY account, found

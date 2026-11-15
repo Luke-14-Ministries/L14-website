@@ -4833,3 +4833,18 @@ email info@ to talk it over or ask about a waiver; then allow the submit, and fl
   registration, or staff agree another way and record it under Background check record). Background
   Screening already blocks them, naming the household or person they would share an address with.
 - No family-side waiver switch: staff decide, by recording the background check another way.
+
+## 14 November 2026 — On Programs, a buddy goes where their camper goes
+
+Lawrence: "volunteer buddies will just go where their camper is placed ... (similar to rafting)"; "should
+include a buddy column, campers"; "buddy will show there when camper placed, they both go; and volunteers
+paired as buddies are not stand-alone on this list waiting to be placed".
+
+- A participant in a live buddy pairing (buddy_assignments, ended_at null) on the event follows their
+  camper's program: their row has no dropdown or tick box, and says "Goes with Cam (Youth)" (or "not placed
+  yet"). They are never in "Not yet placed", and the Programs nav badge leaves them out. They count under
+  their camper's program. Their own program_id is ignored while paired; if the pairing ends, they are
+  placed by hand again.
+- A Buddy column: a camper's row names their buddy or buddies; a buddy's row says whose buddy they are.
+- Only volunteers with no camper (often a volunteer child not paired) are placed by hand.
+- Program leaders' lists are unchanged: a camper's row already names their buddy (buddyWords).

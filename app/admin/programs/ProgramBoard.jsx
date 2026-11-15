@@ -62,8 +62,10 @@ export default function ProgramBoard({
     const c = { unplaced: 0 };
     for (const p of programs) c[p.id] = 0;
     for (const person of people) {
-      if (!person.programId) c.unplaced += 1;
-      else if (c[person.programId] !== undefined) c[person.programId] += 1;
+      // A buddy follows their camper (14 Nov 2026): never "not yet placed".
+      if (!person.programId) {
+        if (!person.follows) c.unplaced += 1;
+      } else if (c[person.programId] !== undefined) c[person.programId] += 1;
     }
     return c;
   }, [people, programs]);
@@ -71,7 +73,7 @@ export default function ProgramBoard({
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return people.filter((p) => {
-      if (filter === 'unplaced' && p.programId) return false;
+      if (filter === 'unplaced' && (p.programId || p.follows)) return false;
       if (filter !== 'unplaced' && filter !== 'all' && p.programId !== filter) return false;
       if (!q) return true;
       return (
@@ -93,7 +95,8 @@ export default function ProgramBoard({
 
   function toggleAllShown() {
     setSelected((prev) => {
-      const shown = rows.map((r) => r.participantId);
+      // A buddy is placed by their camper, not ticked here.
+      const shown = rows.filter((r) => !r.follows).map((r) => r.participantId);
       const allOn = shown.every((id) => prev.has(id));
       const next = new Set(prev);
       for (const id of shown) {
@@ -322,13 +325,14 @@ export default function ProgramBoard({
               <th className="px-3 py-2 font-semibold">Age</th>
               <th className="px-3 py-2 font-semibold">Role</th>
               <th className="px-3 py-2 font-semibold">Family</th>
+              <th className="px-3 py-2 font-semibold">Buddy</th>
               <th className="px-3 py-2 font-semibold">Program</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-neutral-500">
+                <td colSpan={7} className="px-3 py-6 text-center text-neutral-500">
                   {filter === 'unplaced'
                     ? 'Everybody on this roster has been placed.'
                     : 'Nobody matches that.'}
@@ -338,12 +342,14 @@ export default function ProgramBoard({
             {rows.map((p) => (
               <tr key={p.participantId} className="border-t border-neutral-100">
                 <td className="px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(p.participantId)}
-                    onChange={() => toggle(p.participantId)}
-                    aria-label={`Select ${p.name}`}
-                  />
+                  {!p.follows && (
+                    <input
+                      type="checkbox"
+                      checked={selected.has(p.participantId)}
+                      onChange={() => toggle(p.participantId)}
+                      aria-label={`Select ${p.name}`}
+                    />
+                  )}
                 </td>
                 <td className="px-3 py-2">
                   <span className="font-medium">{p.name}</span>
@@ -354,7 +360,27 @@ export default function ProgramBoard({
                 <td className="px-3 py-2">{ageAt(p.dob, eventStartsOn) ?? '—'}</td>
                 <td className="px-3 py-2">{ROLE_LABEL[p.role] ?? p.role}</td>
                 <td className="px-3 py-2 text-neutral-600">{p.household}</td>
+                <td className="px-3 py-2 text-neutral-700">
+                  {p.buddies?.length
+                    ? p.buddies.join(', ')
+                    : p.follows
+                      ? `Buddy to ${p.follows.map((c) => c.name).join(' and ')}`
+                      : <span className="text-neutral-400">—</span>}
+                </td>
                 <td className="px-3 py-2">
+                  {p.follows ? (
+                    // A buddy goes where their camper goes (14 Nov 2026).
+                    <span className="text-sm text-neutral-700">
+                      Goes with{' '}
+                      {p.follows.map((c, i) => (
+                        <span key={i}>
+                          {i > 0 ? ' and ' : ''}
+                          <strong>{c.name}</strong>
+                          {' '}({c.programId ? programById.get(c.programId)?.name ?? 'placed' : 'not placed yet'})
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
                   <select
                     value={p.programId ?? ''}
                     onChange={(e) => placeOne(p.participantId, e.target.value)}
@@ -370,6 +396,7 @@ export default function ProgramBoard({
                       </option>
                     ))}
                   </select>
+                  )}
                 </td>
               </tr>
             ))}

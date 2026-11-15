@@ -468,19 +468,29 @@ export default async function AdminLayout({ children }) {
   let unplacedPeople = 0;
   if (staff && can(staff, 'read:programs')) {
     const today = new Date().toISOString().slice(0, 10);
-    const { count, error } = await supabase
+    const { data: unplaced, error } = await supabase
       .from('registration_participants')
-      .select('id, registrations!inner ( events!inner ( ends_on, event_type ) )', {
-        count: 'exact',
-        head: true,
-      })
+      .select('id, registrations!inner ( events!inner ( ends_on, event_type ) )')
       .is('program_id', null)
       .neq('status', 'cancelled')
       .gte('registrations.events.ends_on', today)
       // Camps only: other events have no programs to place people in (2-3 Oct 2026).
       .in('registrations.events.event_type', STAFF_ASSIGNED_TYPES);
     if (error) console.error('programs badge:', error.message);
-    unplacedPeople = count ?? 0;
+    // A buddy in a live pairing goes with their camper (14 Nov 2026), so is
+    // never waiting to be placed.
+    const ids = (unplaced ?? []).map((r) => r.id);
+    let following = new Set();
+    if (ids.length) {
+      const { data: pairs, error: pairsError } = await supabase
+        .from('buddy_assignments')
+        .select('buddy_participant_id')
+        .in('buddy_participant_id', ids)
+        .is('ended_at', null);
+      if (pairsError) console.error('programs badge pairings:', pairsError.message);
+      following = new Set((pairs ?? []).map((p) => p.buddy_participant_id));
+    }
+    unplacedPeople = ids.filter((id) => !following.has(id)).length;
   }
 
   // Outside-provider confirmations awaiting a staff check (0124), at current
