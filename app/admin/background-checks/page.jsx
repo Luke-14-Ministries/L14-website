@@ -416,12 +416,11 @@ export default async function BackgroundChecksPage({ searchParams }) {
   // three so their columns line up (Lawrence, 15 Nov 2026).
   const table = (rows) => (
     <div className="mt-4 overflow-x-auto">
-      <ResizableTable storageKey="background-checks-columns" defaults={[190, 110, 230, 125, 125, 380]}>
+      <ResizableTable storageKey="background-checks-columns-v2" defaults={[210, 240, 125, 125, 380]}>
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
             <th className="py-2 pr-3">Name</th>
-            <th className="py-2 pr-3">Role</th>
             <th className="py-2 pr-3">Event</th>
             <th className="py-2 pr-3">Date checked</th>
             <th className="py-2 pr-3">Expires</th>
@@ -434,6 +433,12 @@ export default async function BackgroundChecksPage({ searchParams }) {
               <tr className={`${canWrite ? '' : 'border-b border-neutral-100 '}align-top`}>
                 <td className="py-2 pr-3">
                   <PersonLink row={x} />
+                  {/* No Role column (Lawrence, 15 Nov 2026: "these are all
+                      volunteers"); only this card mixes roles, so it says
+                      which under the name. */}
+                  {x.kind === 'families' && x.roleLabel && (
+                    <span className="block text-xs text-neutral-500">{x.roleLabel}</span>
+                  )}
                   {/* What a registry result is checked against. */}
                   {x.kind === 'campers' && (
                     <span className="block text-xs text-neutral-500">
@@ -443,7 +448,6 @@ export default async function BackgroundChecksPage({ searchParams }) {
                     </span>
                   )}
                 </td>
-                <td className="py-2 pr-3 text-neutral-600">{x.roleLabel}</td>
                 <td className="py-2 pr-3 text-neutral-600">{x.events.join(' · ')}</td>
                 <td className="whitespace-nowrap py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>
                 <td className={`whitespace-nowrap py-2 pr-3 ${x.bucket === 'expired' ? 'font-semibold text-red-800' : ''}`}>
@@ -451,7 +455,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
                 </td>
                 <td className="py-2">{statusCell(x)}</td>
               </tr>
-              {recordFold(x, 6)}
+              {recordFold(x, 5)}
             </Fragment>
           ))}
         </tbody>
