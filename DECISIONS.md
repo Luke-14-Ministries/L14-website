@@ -4872,3 +4872,12 @@ admin portal. From a Fable review:
   Volunteers with a note saying so; the person page's back link reads "Rosters".
 - Not done yet: one age rule ("18 on the first day") and Morristown's date in screeningCandidates and the
   red badge; moving the record editor off Volunteers cards; heading levels.
+
+## 15 November 2026 — Invites wait for an 18th birthday; the record is read-only without write
+
+- Background Screening now lists someone who is 18 by the first day of camp but not yet today (Background
+  Checks already counted them as due), blocked with "turns 18 on <date>. A background check can't be run
+  before then, so the invite can go from that day." Anyone still under 18 at camp isn't screened.
+- The background check record (components/ClearanceEditor.jsx) takes `canEdit`: on Volunteers it is the
+  Background checks WRITE grant; read-only holders see the record with "Changing this record needs the
+  Background checks write grant" and no Save. Background Checks shows the fold only with write.

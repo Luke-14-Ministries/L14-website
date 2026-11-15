@@ -36,7 +36,7 @@ const fmtAge = (dob) => {
 };
 
 
-function VolunteerRow({ row, maySeeChecks, canReview = true }) {
+function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = true }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   // Arriving from the roster (25 Aug). A staff member looking at a volunteer
@@ -379,6 +379,7 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
                 vb={row.vb}
                 email={person?.email || household?.email}
                 firstName={person?.first_name}
+                canEdit={mayEditChecks}
                 lastName={person?.last_name}
               />
             </div>
@@ -405,7 +406,7 @@ const SHOWS = {
   check: (r) => Boolean(r.person?.id) && !isMinor(r.person?.date_of_birth) && clearancePill(r.clearance).key !== 'ok',
 };
 
-export default function VolunteerManager({ groups, maySeeChecks = false, canReview = true }) {
+export default function VolunteerManager({ groups, maySeeChecks = false, mayEditChecks = false, canReview = true }) {
   const [show, setShow] = useState('all');
   const total = groups.reduce((s, g) => s + g.rows.length, 0);
   const needsReview = groups.reduce(
@@ -504,7 +505,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
           </h3>
           <div>
             {g.rows.map((r) => (
-              <VolunteerRow key={r.participantId} row={r} maySeeChecks={maySeeChecks} canReview={canReview} />
+              <VolunteerRow key={r.participantId} row={r} maySeeChecks={maySeeChecks} mayEditChecks={mayEditChecks} canReview={canReview} />
             ))}
           </div>
         </div>

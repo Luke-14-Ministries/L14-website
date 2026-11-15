@@ -26,6 +26,8 @@ export default async function AdminVolunteersPage({ searchParams }) {
   // and simply does not see clearance state. The rows are not fetched at all
   // rather than fetched and hidden, so there is nothing to leak.
   const maySeeChecks = can(staff, 'background_checks');
+  // Changing the record needs write (14 Nov 2026); read shows it.
+  const mayEditChecks = can(staff, 'write:background_checks');
 
   const supabase = await createClient();
 
@@ -265,7 +267,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
         </p>
       )}
       <VolunteerManager
-          canReview={can(staff, 'write:registration')} groups={shownGroups} maySeeChecks={maySeeChecks} />
+          canReview={can(staff, 'write:registration')} groups={shownGroups} maySeeChecks={maySeeChecks} mayEditChecks={mayEditChecks} />
     </div>
   );
 }

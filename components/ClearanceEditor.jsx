@@ -120,7 +120,9 @@ function RecordHelper({ firstName, lastName, date, verdict, note: current = '', 
 // The record (0091, 15 Oct 2026): paperwork on file, the check date (the
 // expiry follows by policy), and the ministry's verdict -- with who did each
 // and when, stamped by the database, and the log underneath.
-export default function ClearanceEditor({ personId, clearance, vb, email, firstName, lastName, onDone }) {
+// canEdit: the Background checks WRITE grant (14 Nov 2026). Read-only
+// holders see the record but can't change it (the database refuses anyway).
+export default function ClearanceEditor({ personId, clearance, vb, email, firstName, lastName, onDone, canEdit = true }) {
   const router = useRouter();
   const [onFile, setOnFile] = useState(Boolean(clearance?.background_check_on_file));
   const [date, setDate] = useState(clearance?.background_check_date ?? '');
@@ -185,9 +187,14 @@ export default function ClearanceEditor({ personId, clearance, vb, email, firstN
         />
         <RecordHelper firstName={firstName} lastName={lastName} date={date} verdict={verdict} note={note} onUseNote={(t) => setNote(t.slice(0, 500))} />
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <button onClick={save} disabled={pending} className="btn-primary py-1.5! text-sm">
+          {!canEdit && (
+            <span className="text-xs text-neutral-600">
+              Changing this record needs the Background checks write grant.
+            </span>
+          )}
+          {canEdit && <button onClick={save} disabled={pending} className="btn-primary py-1.5! text-sm">
             {pending ? 'Saving…' : 'Save record'}
-          </button>
+          </button>}
           {clearance?.paperwork_marked_at && (
             <span className="text-xs text-neutral-500">
               Paperwork marked by {clearance.paperworkByName ?? 'staff'} · {whenLocal(clearance.paperwork_marked_at)}
