@@ -104,7 +104,6 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
   const connected = mode !== 'off' && !connectionProblem;
   const orderable = useMemo(() => candidates.filter((c) => !c.blockedBecause), [candidates]);
   const blocked = useMemo(() => candidates.filter((c) => c.blockedBecause && !c.inProgress), [candidates]);
-  const underWay = useMemo(() => candidates.filter((c) => c.inProgress), [candidates]);
   // Done rows fold away under the open ones (Lawrence, 15 Nov 2026).
   const isFinished = (r) =>
     (r.status === 'clear' && r.confirmedAt) || r.recordedByHand || r.status === 'cancelled' || r.status === 'superseded';
@@ -303,37 +302,16 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       <CheckCard
         id="due"
         title="1 · Who is due"
-        summary={`${orderable.length} ready to send · ${blocked.length} can’t be sent yet · ${underWay.length} already invited`}
+        // The line under the title says what the pills don't (Lawrence, 15 Nov
+        // 2026: "subtitle and pills are redundant").
+        summary="Volunteers and family adults with no background check on file, or one out of date. Adult campers stay on the registry search for now."
         pills={[
           orderable.length > 0 && { text: `${orderable.length} ready to send`, cls: CHECK_TONE.hold },
           blocked.length > 0 && { text: `${blocked.length} can’t be sent yet`, cls: CHECK_TONE.todo },
-          underWay.length > 0 && { text: `${underWay.length} already invited`, cls: CHECK_TONE.waiting },
-          orderable.length + blocked.length + underWay.length === 0 && { text: 'Nobody due', cls: CHECK_TONE.na },
+          orderable.length + blocked.length === 0 && { text: 'Nobody due', cls: CHECK_TONE.na },
         ].filter(Boolean)}
         defaultOpen={orderable.length > 0 || blocked.length > 0}
       >
-        <p className="max-w-4xl text-sm text-neutral-500">
-          Adults with no background check on file, or one out of date: volunteers, and family adults
-          (parents, siblings and caregivers). Adult campers stay on the registry search for now. Nothing
-          here has been sent yet.
-        </p>
-
-        {underWay.length > 0 && (
-          <p className="mb-4 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-            <strong>Already invited ({underWay.length}):</strong>{' '}
-            {underWay.map((c, i) => (
-              <span key={c.personId}>
-                {i > 0 && '; '}
-                {c.name}{' '}
-                <span className="text-neutral-500">
-                  ({c.openRequestId ? `invited ${dayInMorristown(c.lastVb?.sentAt)}` : c.lastVb?.status === 'clear' ? 'clear, waiting on your OK to serve' : 'result needs review'})
-                </span>
-              </span>
-            ))}
-            . Their progress and results are under <strong>Invites and results</strong> below.
-          </p>
-        )}
-
         {orderable.length === 0 && blocked.length === 0 ? (
           <p className="rounded-sm border border-green-200 bg-green-50 px-4 py-3 text-green-900">
             Nobody is due. Every adult has a current background check on file, or an invite out.
@@ -521,7 +499,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       <CheckCard
         id="results"
         title="2 · Invites and results"
-        summary={`${open.length} open · ${waitingOnYou.length} waiting on you · ${finished.length} finished${lastChecked ? ` · last checked ${whenInMorristown(lastChecked)}` : ''}`}
+        summary={`Invites from the last 90 days and what came back.${lastChecked ? ` Last checked with VolunteerBadge ${whenInMorristown(lastChecked)}.` : ''}`}
         pills={[
           waitingOnYou.length > 0 && { text: `${waitingOnYou.length} waiting on you`, cls: CHECK_TONE.todo },
           open.length > 0 && { text: `${open.length} open`, cls: CHECK_TONE.waiting },
@@ -538,10 +516,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
           Check VolunteerBadge for updates
         </button>
         <p className="max-w-4xl text-sm text-neutral-500">
-          {open.length} open
-          {waitingOnYou.length > 0 ? ` · ${waitingOnYou.length} waiting on you` : ''}
-          {lastChecked ? ` · last checked ${whenInMorristown(lastChecked)}` : ''}. A clear result counts
-          only once you press <strong>OK to serve</strong>. A result that needs review is read in{' '}
+          A clear result counts only once you press <strong>OK to serve</strong>. A result that needs review is read in{' '}
           <a href={dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-brand underline">
             VolunteerBadge
           </a>{' '}
