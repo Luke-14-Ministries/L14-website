@@ -4950,3 +4950,14 @@ admin portal. From a Fable review:
   queue box into each due camper's row, with the date of birth and place under the name; their record
   fold leaves out the VolunteerBadge line, since campers aren't sent there.
 - Header pills are red for volunteers (it holds approval) and amber for the other two (a flag).
+
+## 15 November 2026 — A record entered by hand settles a VolunteerBadge result
+
+- Larry's VolunteerBadge result came back clear, and his background check record was then saved by
+  hand on Background Checks (OK to serve) instead of pressing OK to serve on Screening. Screening went
+  on showing him as "waiting on you". Now a clear or needs-review result whose person has a current
+  full background check on file with a verdict of OK or Not permitted (`settledByRecord()` in
+  lib/backgroundChecks.js) reads "Recorded by hand", has no OK to serve button, folds under Finished,
+  and isn't counted as a result to confirm (Screening's "waiting on you", the badge's results).
+- Screening's "can't be sent yet" list shows each hold as a bold label (Waiting on the deposit, Turns
+  18 on…, Shared email, No email…) with the explanation after it (`holds` beside `blockedBecause`).

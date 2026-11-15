@@ -8,6 +8,8 @@ import { loadScreeningCandidates } from '@/lib/screeningCandidates';
 import { volunteerBadge, volunteerBadgeMode } from '@/lib/volunteerBadge';
 import { VolunteerBadgeError, VB_DASHBOARD, loadRoster, namesAgree, possibleNameMatches, namesDiffer, canTakeBack } from '@/lib/volunteerBadgeApi';
 import { creditPicture } from '@/lib/volunteerBadgeCredits';
+import { settledByRecord } from '@/lib/backgroundChecks';
+import { todayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Background Screening · Staff Admin' };
 // A batch is sent one person at a time from the browser; Refresh asks
@@ -45,6 +47,19 @@ export default async function ScreeningPage() {
     .or(`sent_at.gte."${since}",status.in.(sending,invited,applied,processing,in_review,clear,consider)`)
     .order('sent_at', { ascending: false });
   if (requestsError) throw new Error(`VolunteerBadge requests: ${requestsError.message}`);
+  // A clear or needs-review result already settled by a record entered by
+  // hand on Background Checks: shown as such, not as waiting on staff.
+  const waitingIds = [...new Set((requests ?? []).filter((r) => !r.confirmed_at && ['clear', 'consider'].includes(r.status)).map((r) => r.person_id))];
+  let settledIds = new Set();
+  if (waitingIds.length) {
+    const { data: recs, error: recError } = await supabase
+      .from('person_clearances')
+      .select('person_id, background_check_on_file, expires_on, verdict, provider')
+      .in('person_id', waitingIds);
+    if (recError) throw new Error(`Background check records: ${recError.message}`);
+    const today = todayInMorristown();
+    settledIds = new Set((recs ?? []).filter((c) => settledByRecord(c, today)).map((c) => c.person_id));
+  }
   // "Resend without the ID step" sits on the person's latest invite.
   const resendOn = new Set(candidates.filter((c) => c.resendable && c.lastVb).map((c) => c.lastVb.id));
   const rows = (requests ?? [])
@@ -65,6 +80,7 @@ export default async function ScreeningPage() {
       stuck: r.status === 'sending' && now.getTime() - new Date(r.sent_at).getTime() > 2 * 60 * 1000,
       lastCheckedAt: r.last_checked_at,
       confirmedAt: r.confirmed_at,
+      recordedByHand: !r.confirmed_at && ['clear', 'consider'].includes(r.status) && settledIds.has(r.person_id),
       idWaived: r.id_verification_waived === true,
       // What VolunteerBadge's record says, for OK to serve to show beside
       // ours (0166): its names, and whether its date of birth matched.

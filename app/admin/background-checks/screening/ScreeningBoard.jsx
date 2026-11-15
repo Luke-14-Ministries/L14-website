@@ -55,10 +55,12 @@ function detail(r) {
     case 'in_review':
       return 'Possible records found. VolunteerBadge’s reviewer is checking them, usually within 3 business days.';
     case 'clear':
+      if (r.recordedByHand) return 'Clear. Already recorded on their background check record (Background Checks), so nothing to do here.';
       return r.confirmedAt
         ? `OK to serve recorded ${dayInMorristown(r.confirmedAt)}.`
         : `Clear${r.completedAt ? ` on ${dayInMorristown(r.completedAt)}` : ''}. Record it as OK to serve.`;
     case 'consider':
+      if (r.recordedByHand) return 'The ministry’s verdict is already on their background check record (Background Checks).';
       return 'Records were released on the report. Read it in VolunteerBadge, then record the ministry’s verdict on their background check record (Background Checks).';
     case 'error':
     case 'not_sent':
@@ -100,7 +102,8 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
   const blocked = useMemo(() => candidates.filter((c) => c.blockedBecause && !c.inProgress), [candidates]);
   const underWay = useMemo(() => candidates.filter((c) => c.inProgress), [candidates]);
   // Done rows fold away under the open ones (Lawrence, 15 Nov 2026).
-  const isFinished = (r) => (r.status === 'clear' && r.confirmedAt) || r.status === 'cancelled' || r.status === 'superseded';
+  const isFinished = (r) =>
+    (r.status === 'clear' && r.confirmedAt) || r.recordedByHand || r.status === 'cancelled' || r.status === 'superseded';
   const active = requests.filter((r) => !isFinished(r));
   const finished = requests.filter(isFinished);
   const allPicked = orderable.length > 0 && picked.size === orderable.length;
@@ -261,7 +264,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
   }
 
   const open = requests.filter((r) => ['sending', 'invited', 'applied', 'processing', 'in_review'].includes(r.status));
-  const waitingOnYou = requests.filter((r) => !r.confirmedAt && (r.status === 'clear' || r.status === 'consider'));
+  const waitingOnYou = requests.filter((r) => !r.confirmedAt && !r.recordedByHand && (r.status === 'clear' || r.status === 'consider'));
   const lastChecked = requests.map((r) => r.lastCheckedAt).filter(Boolean).sort().pop();
 
   return (
@@ -460,8 +463,19 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                 <li key={c.personId}>
                   <strong>{c.name}</strong>
                   <span className="text-xs text-amber-800"> ({c.group === 'family' ? 'family adult' : 'volunteer'})</span>
-                  {c.reason ? ` (${c.reason === 'never checked' ? 'no background check on file' : `background check ${c.reason}`})` : ''}:{' '}
-                  {c.blockedBecause}
+                  {c.reason ? ` (${c.reason === 'never checked' ? 'no background check on file' : `background check ${c.reason}`})` : ''}:
+                  {/* Each hold as a bold label, then why (Lawrence, 15 Nov 2026). */}
+                  {(c.holds?.length ? c.holds : [{ label: '', text: c.blockedBecause }]).map((h, i) => (
+                    <span key={i}>
+                      {' '}
+                      {h.label && (
+                        <span className="whitespace-nowrap rounded-sm bg-amber-200 px-1.5 py-0.5 text-xs font-bold text-amber-950">
+                          {h.label}
+                        </span>
+                      )}{' '}
+                      {h.text}
+                    </span>
+                  ))}
                   {c.alreadyInVb && (
                     <span className="mt-0.5 block text-xs font-semibold text-amber-800">
                       Already in VolunteerBadge
@@ -527,7 +541,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
             rows.length === 0 ? null : which === 'finished' ? (
               <details key={which} className="mt-4">
                 <summary className="cursor-pointer text-sm font-semibold text-neutral-600">
-                  Finished ({rows.length}): marked OK to serve, taken back or replaced
+                  Finished ({rows.length}): marked OK to serve, recorded by hand, taken back or replaced
                 </summary>
                 {table(rows)}
               </details>
@@ -564,8 +578,8 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                       </td>
                       <td className="px-3 py-2">
                         <StatusMark
-                          state={r.status === 'clear' && r.confirmedAt ? 'yes' : state}
-                          label={r.status === 'clear' && r.confirmedAt ? 'OK to serve' : words}
+                          state={(r.status === 'clear' && r.confirmedAt) || r.recordedByHand ? 'yes' : state}
+                          label={r.status === 'clear' && r.confirmedAt ? 'OK to serve' : r.recordedByHand ? 'Recorded by hand' : words}
                           title={detail(r)}
                         />
                         {/* So it is plain later that this check ran without ID
@@ -580,7 +594,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                         {detail(r)}
                         {/* Before OK to serve: whose record VolunteerBadge says it is
                             (0166), beside ours. The date of birth is a yes only. */}
-                        {r.status === 'clear' && !r.confirmedAt && (
+                        {r.status === 'clear' && !r.confirmedAt && !r.recordedByHand && (
                           <span className="mt-1 block text-xs">
                             VolunteerBadge&rsquo;s record: <strong>{r.vbName ?? 'no name'}</strong> · invited at {r.email}
                             {r.vbDobAgrees === true && <> · <span className="font-semibold text-green-800">Date of birth matches</span></>}
@@ -598,12 +612,12 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                         )}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        {r.status === 'clear' && !r.confirmedAt && mode === 'live' && (
+                        {r.status === 'clear' && !r.confirmedAt && !r.recordedByHand && mode === 'live' && (
                           <button type="button" disabled={busy} onClick={() => confirmClear(r)} className="btn-primary py-1! px-3! text-xs">
                             OK to serve
                           </button>
                         )}
-                        {r.status === 'consider' && (
+                        {r.status === 'consider' && !r.recordedByHand && (
                           <>
                             <a href={dashboardUrl} target="_blank" rel="noopener noreferrer" className="block text-brand underline">
                               Open VolunteerBadge
