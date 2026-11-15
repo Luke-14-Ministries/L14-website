@@ -4990,3 +4990,11 @@ admin portal. From a Fable review:
   archive/hide." The page now shows only changes after approval; the "Before approval" fold is gone.
   Reviewed rows leave the list at once, and if row-level security skips one (a support or medical
   change without Sensitive access), the page says so instead of looking saved.
+
+## 15 November 2026 — Programs table: adjustable, sortable, filter by role
+
+- Lawrence: "table needs to be adjustable (as other tables); sortable; need to filter by role, not
+  just program." The Programs board's table now has adjustable widths (components/ResizableTable.jsx),
+  headings that sort (once ascending, again descending, a third time back to the list's order; blanks
+  last), and a Role dropdown beside the search with a count per role in the current program filter.
+  Select-all ticks only the rows shown, so "Volunteer child" plus "Not yet placed" places a run at once.

@@ -12,6 +12,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import SearchSelect from '@/components/SearchSelect';
+import ResizableTable from '@/components/ResizableTable';
 import { setParticipantProgram, setManyParticipantPrograms, grantProgramLeader, revokeProgramLeader, setProgramLead } from './actions';
 
 const ROLE_LABEL = {
@@ -22,6 +23,30 @@ const ROLE_LABEL = {
   volunteer: 'Volunteer',
   volunteer_child: 'Volunteer child (under 16)',
 };
+
+// Natural order ("Cabin 2" before "Cabin 10"), case and accents ignored.
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+// A sortable column heading (Lawrence, 15 Nov 2026: "sortable; need to filter
+// by role"). Click once ascending, again descending, a third time back to the
+// list's own order.
+function SortHeading({ label, col, sort, setSort }) {
+  const on = sort.key === col;
+  return (
+    <th className="px-3 py-2 font-semibold" aria-sort={on ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
+      <button
+        type="button"
+        onClick={() => setSort(on ? (sort.dir === 1 ? { key: col, dir: -1 } : { key: '', dir: 1 }) : { key: col, dir: 1 })}
+        className="inline-flex items-center gap-1 text-left font-semibold hover:text-brand"
+      >
+        {label}
+        <span aria-hidden className={`text-xs ${on ? 'text-brand' : 'text-neutral-400'}`}>
+          {on ? (sort.dir === 1 ? '▲' : '▼') : '↕'}
+        </span>
+      </button>
+    </th>
+  );
+}
 
 function ageAt(dob, onDate) {
   if (!dob) return null;
@@ -48,6 +73,8 @@ export default function ProgramBoard({
 }) {
   const [filter, setFilter] = useState('unplaced');
   const [search, setSearch] = useState('');
+  const [role, setRole] = useState('');
+  const [sort, setSort] = useState({ key: '', dir: 1 });
   const [selected, setSelected] = useState(() => new Set());
   const [bulkProgram, setBulkProgram] = useState('');
   const [message, setMessage] = useState(null);
@@ -70,11 +97,27 @@ export default function ProgramBoard({
     return c;
   }, [people, programs]);
 
+  // The roles on this event, with how many in the current program filter.
+  const roleCounts = useMemo(() => {
+    const c = new Map();
+    for (const p of people) {
+      if (filter === 'unplaced' && (p.programId || p.follows)) continue;
+      if (filter !== 'unplaced' && filter !== 'all' && p.programId !== filter) continue;
+      c.set(p.role, (c.get(p.role) ?? 0) + 1);
+    }
+    return c;
+  }, [people, filter]);
+  const roleOptions = useMemo(
+    () => [...new Set(people.map((p) => p.role))].sort((a, b) => collator.compare(ROLE_LABEL[a] ?? a, ROLE_LABEL[b] ?? b)),
+    [people]
+  );
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return people.filter((p) => {
+    const list = people.filter((p) => {
       if (filter === 'unplaced' && (p.programId || p.follows)) return false;
       if (filter !== 'unplaced' && filter !== 'all' && p.programId !== filter) return false;
+      if (role && p.role !== role) return false;
       if (!q) return true;
       return (
         p.name.toLowerCase().includes(q) ||
@@ -82,7 +125,32 @@ export default function ProgramBoard({
         p.household.toLowerCase().includes(q)
       );
     });
-  }, [people, filter, search]);
+    if (!sort.key) return list;
+    const value = (p) => {
+      switch (sort.key) {
+        case 'age':
+          return ageAt(p.dob, eventStartsOn);
+        case 'role':
+          return ROLE_LABEL[p.role] ?? p.role;
+        case 'family':
+          return p.household;
+        case 'buddy':
+          return p.buddies?.length ? p.buddies.join(', ') : p.follows ? p.follows.map((c) => c.name).join(', ') : null;
+        case 'program':
+          return p.follows ? null : p.programId ? programById.get(p.programId)?.name ?? '' : null;
+        default:
+          return p.name;
+      }
+    };
+    // Blanks last either way.
+    return [...list].sort((a, b) => {
+      const va = value(a);
+      const vb = value(b);
+      if (va == null || va === '') return vb == null || vb === '' ? 0 : 1;
+      if (vb == null || vb === '') return -1;
+      return (typeof va === 'number' && typeof vb === 'number' ? va - vb : collator.compare(String(va), String(vb))) * sort.dir;
+    });
+  }, [people, filter, search, role, sort, eventStartsOn, programById]);
 
   function toggle(id) {
     setSelected((prev) => {
@@ -246,6 +314,21 @@ export default function ProgramBoard({
           placeholder="Search a name or family…"
           className="rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
         />
+        <label className="flex items-center gap-1.5 text-sm">
+          <span className="text-neutral-600">Role</span>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className={`rounded-sm border px-2 py-1.5 text-sm ${role ? 'border-brand font-semibold' : 'border-neutral-300'}`}
+          >
+            <option value="">All roles</option>
+            {roleOptions.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABEL[r] ?? r} ({roleCounts.get(r) ?? 0})
+              </option>
+            ))}
+          </select>
+        </label>
         <span className="text-sm text-neutral-500">
           {rows.length} shown · {selected.size} selected
         </span>
@@ -310,6 +393,8 @@ export default function ProgramBoard({
       )}
 
       <div className="overflow-x-auto rounded-sm border border-neutral-200 bg-white">
+        {/* Adjustable widths, remembered in this browser (15 Nov 2026). */}
+        <ResizableTable storageKey="programs-columns" defaults={[44, 220, 80, 200, 220, 220, 220]}>
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left">
             <tr>
@@ -321,12 +406,12 @@ export default function ProgramBoard({
                   aria-label="Select everyone shown"
                 />
               </th>
-              <th className="px-3 py-2 font-semibold">Name</th>
-              <th className="px-3 py-2 font-semibold">Age</th>
-              <th className="px-3 py-2 font-semibold">Role</th>
-              <th className="px-3 py-2 font-semibold">Family</th>
-              <th className="px-3 py-2 font-semibold">Buddy</th>
-              <th className="px-3 py-2 font-semibold">Program</th>
+              <SortHeading label="Name" col="name" sort={sort} setSort={setSort} />
+              <SortHeading label="Age" col="age" sort={sort} setSort={setSort} />
+              <SortHeading label="Role" col="role" sort={sort} setSort={setSort} />
+              <SortHeading label="Family" col="family" sort={sort} setSort={setSort} />
+              <SortHeading label="Buddy" col="buddy" sort={sort} setSort={setSort} />
+              <SortHeading label="Program" col="program" sort={sort} setSort={setSort} />
             </tr>
           </thead>
           <tbody>
@@ -402,6 +487,7 @@ export default function ProgramBoard({
             ))}
           </tbody>
         </table>
+        </ResizableTable>
       </div>
 
       {/* "N/A (e.g. staff)" (0150) is a placement, not a program: nobody
