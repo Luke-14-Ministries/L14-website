@@ -17,12 +17,24 @@ export async function markChangesReviewed(ids) {
   if (!Array.isArray(ids) || ids.length === 0) return { ok: true };
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: done, error } = await supabase
     .from('family_change_log')
     .update({ reviewed_at: new Date().toISOString(), reviewed_by: staff.userId })
     .in('id', ids)
-    .is('reviewed_at', null);
+    .is('reviewed_at', null)
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  // Row-level security skips a row it won't let you change without an error
+  // (a support or medical change needs Sensitive access): say so, rather than
+  // leave it looking saved.
+  if ((done ?? []).length < ids.length) {
+    const { data: still, error: stillError } = await supabase.from('family_change_log').select('id').in('id', ids).is('reviewed_at', null);
+    if (stillError) return { ok: false, error: stillError.message };
+    if ((still ?? []).length > 0) {
+      revalidatePath('/admin/changes');
+      return { ok: false, error: `${still.length} of these couldn’t be marked reviewed. Support and medical changes need Sensitive access.` };
+    }
+  }
   revalidatePath('/admin/changes');
   return { ok: true };
 }

@@ -4986,3 +4986,7 @@ admin portal. From a Fable review:
   on each header (arrow keys too; double-click resets), widths remembered in the browser. Tables that
   share a key share widths, so the three Background Checks cards line up. Dates no longer wrap. Used on
   Background Checks and Screening's invites; other staff tables can take it one by one.
+- Then (same day): "should not show changes here if application not accepted", and "reviewed should
+  archive/hide." The page now shows only changes after approval; the "Before approval" fold is gone.
+  Reviewed rows leave the list at once, and if row-level security skips one (a support or medical
+  change without Sensitive access), the page says so instead of looking saved.

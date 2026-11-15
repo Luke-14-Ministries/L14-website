@@ -134,7 +134,13 @@ function Value({ v }) {
   return <span>{v}</span>;
 }
 
-export default function ChangesList({ groups }) {
+export default function ChangesList({ groups: given }) {
+  // Marked reviewed this visit: gone at once, before the page reloads
+  // (Lawrence, 15 Nov 2026: "reviewed should archive/hide").
+  const [gone, setGone] = useState(() => new Set());
+  const groups = given
+    .map((g) => ({ ...g, changes: g.changes.filter((c) => !gone.has(c.id)) }))
+    .filter((g) => g.changes.length > 0);
   const router = useRouter();
   const [, start] = useTransition();
   const [busy, setBusy] = useState(null);
@@ -180,9 +186,14 @@ export default function ChangesList({ groups }) {
   function review(key, ids) {
     setError('');
     setBusy(key);
+    setGone((prev) => new Set([...prev, ...ids]));
     start(async () => {
       const res = await markChangesReviewed(ids);
-      if (!res.ok) setError(res.error);
+      if (!res.ok) {
+        setError(res.error);
+        // Not saved: put them back.
+        setGone((prev) => new Set([...prev].filter((id) => !ids.includes(id))));
+      }
       setBusy(null);
       router.refresh();
     });

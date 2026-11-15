@@ -76,8 +76,9 @@ export default async function RecentChangesPage() {
     (actors ?? []).map((p) => [p.id, `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim()])
   );
 
-  // After approval first (what the nav badge counts); changes made before
-  // approval are folded below (Lawrence, 15 Nov 2026).
+  // Only changes made after approval (Lawrence, 15 Nov 2026: "should not
+  // show changes here if application not accepted"). Before approval, staff
+  // see the current details when they review the registration.
   const afterApproval = list.length ? await afterApprovalFilter(supabase) : () => false;
   const after = new Map();
   const before = new Map();
@@ -108,8 +109,9 @@ export default async function RecentChangesPage() {
     <div>
       <h2 className="text-xl font-bold mb-1">Recent Changes</h2>
       <p className="text-sm text-neutral-500 mb-1">
-        Every edit a family makes to their own information, and staff edits to names, dates of
-        birth and safety details, shown old → new with who made each.
+        Changes made after someone was approved for a current event: every edit a family makes to their
+        own information, and staff edits to names, dates of birth and safety details, shown old → new with
+        who made each. Marking one reviewed takes it off this list.
       </p>
       {/* The nuance lives behind a labeled disclosure: visible enough for the
           volunteer who's here twice a season, collapsed to one line for the
@@ -137,24 +139,7 @@ export default async function RecentChangesPage() {
         </p>
       )}
 
-      <h3 className="mb-2 text-lg font-bold">After approval ({after.size})</h3>
-      <p className="mb-3 text-sm text-neutral-500">
-        Changes from people already approved for a current event. These are the ones the menu counts.
-      </p>
       <ChangesList groups={[...after.values()]} />
-
-      {before.size > 0 && (
-        <details className="mt-8">
-          <summary className="fold-summary cursor-pointer text-lg font-bold select-none">
-            Before approval ({before.size} {before.size === 1 ? 'family' : 'families'})
-          </summary>
-          <p className="mt-1 mb-3 text-sm text-neutral-500">
-            Changes made before the person was approved, or by people not approved yet. Their current details show
-            when the registration is reviewed, so these aren&rsquo;t counted.
-          </p>
-          <ChangesList groups={[...before.values()]} />
-        </details>
-      )}
     </div>
   );
 }
