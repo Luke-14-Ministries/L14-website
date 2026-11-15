@@ -20,9 +20,11 @@ export const maxDuration = 60;
 export default async function ScreeningPage() {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/background-checks/screening/');
-  if (!can(staff, 'write:background_checks')) redirect('/admin');
-  // Ordering a check is at least as sensitive as reading the result (0058).
-  if (!can(staff, 'background_checks')) redirect('/admin/volunteers');
+  // Sending needs the Background checks write grant (0058); without it, say
+  // so on the Volunteers page rather than bouncing silently.
+  if (!can(staff, 'write:background_checks') || !can(staff, 'background_checks')) {
+    redirect('/admin/volunteers/?need=background_checks');
+  }
 
   const supabase = await createClient();
   const mode = volunteerBadgeMode();

@@ -70,7 +70,7 @@ const VB_STATUS_WORDS = {
 
 const REGISTRY_FILTERS = [
   { key: '', label: 'All' },
-  { key: 'due', label: 'Search due' },
+  { key: 'due', label: 'Background check due' },
   { key: 'follow_up', label: 'Needs follow-up' },
   { key: 'not_permitted', label: 'Not permitted' },
   { key: 'soon', label: `Expiring within ${SOON_DAYS} days` },
@@ -154,7 +154,7 @@ function PersonLink({ row }) {
 export default async function BackgroundChecksPage({ searchParams }) {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff(BASE);
-  if (!can(staff, 'background_checks')) redirect('/admin/volunteers');
+  if (!can(staff, 'background_checks')) redirect('/admin/volunteers/?need=background_checks');
 
   const { v = '', r = '' } = (await searchParams) ?? {};
   const vFilter = VOLUNTEER_FILTERS.some((f) => f.key === v) ? v : '';
@@ -371,14 +371,14 @@ export default async function BackgroundChecksPage({ searchParams }) {
   ].filter(Boolean);
   const registrySummary = [
     plural(rCounts[''], 'adult', 'adults'),
-    plural(rCounts.due, 'search due', 'searches due'),
+    `${rCounts.due} background ${rCounts.due === 1 ? 'check' : 'checks'} due`,
     `${rCounts.follow_up} ${rCounts.follow_up === 1 ? 'needs' : 'need'} follow-up`,
     `${rCounts.not_permitted} not permitted`,
     `${rCounts.current + rCounts.soon} current`,
   ].join(' · ');
   const registryWork = rCounts.due + rCounts.follow_up;
   const registryPills = [
-    rCounts.due > 0 && { text: plural(rCounts.due, 'search due', 'searches due'), cls: AMBER },
+    rCounts.due > 0 && { text: `${rCounts.due} background ${rCounts.due === 1 ? 'check' : 'checks'} due`, cls: AMBER },
     rCounts.follow_up > 0 && { text: `${rCounts.follow_up} follow-up`, cls: AMBER },
     rCounts.not_permitted > 0 && { text: `${rCounts.not_permitted} not permitted`, cls: CHECK_TONE.blocked },
     rCounts.soon > 0 && { text: `${rCounts.soon} expiring soon`, cls: AMBER },
@@ -443,7 +443,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
               . The next page lists them:
               you choose who to invite and see the credits it will use. Nothing is sent until you press
               Send there. A background check done another way (on paper, or straight in VolunteerBadge) is recorded
-              by hand: use <strong>Record by hand</strong> beside the person below.
+              by hand: open <strong>Background check record</strong> under the person&rsquo;s row below.
             </p>
             <Link href="/admin/background-checks/screening/" className="btn-primary mt-3 inline-block py-2!">
               Choose who to invite →
@@ -493,7 +493,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
                           <StatusPill pill={x.pill} />
                           {x.bucket === 'waiting' && (
                             <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.waiting}`}>
-                              {x.vbStatus ? 'Waiting on VolunteerBadge' : 'Waiting on Checkr'}
+                              {x.vbStatus ? 'Waiting on VolunteerBadge' : 'Waiting on an earlier background check order'}
                             </span>
                           )}
                           {x.bucket === 'decision' && (x.vbStatus === 'clear' || x.vbStatus === 'consider') && (
@@ -566,7 +566,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
           <RegistryQueue rows={queue} today={today} />
         ) : (
           <div className={HOW_TO_BOX}>
-            <h3 className="font-bold">Registry searches due ({rCounts.due})</h3>
+            <h3 className="font-bold">Background checks due ({rCounts.due})</h3>
             <p className="mt-1 text-sm text-neutral-700">
               Searches are run and recorded here by staff who can edit background checks.
             </p>

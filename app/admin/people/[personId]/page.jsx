@@ -945,7 +945,7 @@ export default async function PersonPage({ params }) {
       </p>
       </div>
       </div>
-      <BackLink href="/admin/rosters/" label="Back to rosters" />
+      <BackLink href="/admin/rosters/" label="Rosters" />
       </div>
 
       {!sensitive && (

@@ -17,7 +17,9 @@ export default function CheckCard({ id, title, summary, pills = [], defaultOpen 
   // intro's "Volunteers" / "Campers and families") points at this part.
   useEffect(() => {
     const check = () => {
-      if (window.location.hash === `#${id}`) setOpen(true);
+      // Its own anchor, or a person's record inside it (#check-<id>, 14 Nov 2026).
+      const h = window.location.hash.match(/#[^#]+/)?.[0] ?? '';
+      if (h === `#${id}` || h.startsWith('#check-')) setOpen(true);
     };
     // A timer, not requestAnimationFrame: a background tab never fires the
     // latter, and a link opened in a new tab is exactly that.

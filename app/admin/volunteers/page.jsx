@@ -256,6 +256,14 @@ export default async function AdminVolunteersPage({ searchParams }) {
           Print volunteer list
         </a>
       </div>
+      {/* Sent here from Background Checks or Background Screening without the
+          grant (14 Nov 2026): said, not a silent bounce. */}
+      {params?.need === 'background_checks' && (
+        <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+          Background Checks and Background Screening need the <strong>Background checks</strong> grant
+          (sending invites needs it with write). An administrator can give it on Staff &amp; Access.
+        </p>
+      )}
       <VolunteerManager
           canReview={can(staff, 'write:registration')} groups={shownGroups} maySeeChecks={maySeeChecks} />
     </div>

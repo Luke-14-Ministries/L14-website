@@ -117,8 +117,8 @@ export default async function RecentChangesPage() {
           Marking a change &ldquo;reviewed&rdquo; doesn&rsquo;t change anyone&rsquo;s status. It
           only shows that staff have seen it. New people added to a registration don&rsquo;t appear
           here. They go to the{' '}
-          <Link href="/admin#awaiting-review" className="text-brand underline font-semibold">
-            &ldquo;Awaiting Review&rdquo; queue on the Overview
+          <Link href="/admin/review/" className="text-brand underline font-semibold">
+            Awaiting Review
           </Link>
           , where they
           can be confirmed or waitlisted.
