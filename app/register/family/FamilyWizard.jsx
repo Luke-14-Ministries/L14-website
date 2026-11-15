@@ -1698,11 +1698,11 @@ export default function FamilyWizard({
               Social Security numbers.
             </p>
             <p className="mt-1">
-              Questions or concerns? Email{' '}
+              Questions or concerns before you {isUpdate ? 'update' : 'submit'}? Email{' '}
               <a href="mailto:info@luke14ministries.net" className="font-semibold underline">
                 info@luke14ministries.net
-              </a>{' '}
-              or write to camp staff from your dashboard after you {isUpdate ? 'update' : 'submit'}.
+              </a>
+              .
             </p>
           </div>
 

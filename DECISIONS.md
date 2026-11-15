@@ -4806,3 +4806,14 @@ email too (`needsOwnEmail` includes them); theirs may be a parent's or guardian'
 never counts as shared, and its label and help say so. Their VolunteerBadge invite still waits on
 VolunteerBadge's answer about guardians; until then staff can use the registry search or record a
 background check by hand.
+
+## 14 November 2026 — Background Screening checks an address against everyone on the site
+
+Lawrence: "need to be checking for duplicate email addresses ... for ANYONE else on the site, and flag who
+that is, since it will cause a potential conflict for VB." `loadScreeningCandidates` now looks up every
+other person whose own email is the address, and every other adult in a household with that address and no
+email of their own (they would fall back to it). Anyone found blocks the invite, named in the reason
+("… is also Pat Smith (household address)’s email on the site …"); under-18s don't count, and an adult
+camper (who may use a guardian's address) is named on the row as allowed. The family form's notice now
+says "Questions or concerns before you submit? Email info@…": the form can't be submitted without each
+adult's email, so "after you submit" didn't hold.

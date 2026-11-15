@@ -355,6 +355,12 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                               {' '}· {c.email}
                               {c.emailIsHousehold && ' (household address)'}
                             </span>
+                            {c.emailConflicts?.some((o) => o.camper) && (
+                              <span className="ml-2 rounded-sm bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-700">
+                                also the address of adult camper{' '}
+                                {c.emailConflicts.filter((o) => o.camper).map((o) => o.name).join(' and ')} (allowed)
+                              </span>
+                            )}
                             {c.sharesEmailWith?.length > 0 && (
                               <span className="ml-2 rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
                                 same email as {c.sharesEmailWith.join(' and ')}: send one at a time
