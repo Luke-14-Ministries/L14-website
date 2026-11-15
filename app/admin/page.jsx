@@ -7,6 +7,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { planFailingSince, planFailingNext } from '@/lib/plans';
 
+import ResizableTable from '@/components/ResizableTable';
 export const metadata = { title: 'Overview · Staff Admin' };
 
 // The Overview reads in plain language: how many FAMILIES have signed up, how
@@ -451,6 +452,7 @@ export default async function AdminOverview({ searchParams }) {
                 </p>
               ) : (
           <div className="overflow-x-auto">
+            <ResizableTable storageKey="overview">
             <table className="w-full text-left text-sm">
               <thead className="text-neutral-500">
                 <tr>
@@ -485,6 +487,7 @@ export default async function AdminOverview({ searchParams }) {
                 ))}
               </tbody>
             </table>
+            </ResizableTable>
           </div>
               )}
             </>

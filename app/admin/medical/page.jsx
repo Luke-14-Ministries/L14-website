@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow, eventInScope, staffAssigns } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 
+import ResizableTable from '@/components/ResizableTable';
 export const metadata = { title: 'Medical & Support · Staff Admin' };
 
 // The nurse/support-team view: medications, seizure and rescue-med details, and
@@ -180,6 +181,7 @@ export default async function MedicalPage({ searchParams }) {
               <p className="text-neutral-500 text-sm">No medical or support details recorded.</p>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+                <ResizableTable storageKey="medical">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-neutral-50 text-neutral-500">
                     <tr>
@@ -251,6 +253,7 @@ export default async function MedicalPage({ searchParams }) {
                     ))}
                   </tbody>
                 </table>
+                </ResizableTable>
               </div>
             )}
           </div>

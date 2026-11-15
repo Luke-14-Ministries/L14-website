@@ -4998,3 +4998,14 @@ admin portal. From a Fable review:
   headings that sort (once ascending, again descending, a third time back to the list's order; blanks
   last), and a Role dropdown beside the search with a count per role in the current program filter.
   Select-all ticks only the rows shown, so "Volunteer child" plus "Not yet placed" places a run at once.
+
+## 15 November 2026 — Adjustable column widths on every staff list table
+
+- Lawrence: "add that adjustment to all those tables." components/ResizableTable.jsx now wraps the
+  tables on Overview, Accounts, Activities (waiver review), Dietary & Allergies, Medical & Support,
+  Newsletter, Event Payments, Rosters, Search, Staff & Access (staff list, grants, access log), and
+  the Review card, payment plan and family scholarship tables on a registration. Print sheets and
+  statements keep their paper layout. Each table remembers its own widths in the browser; the column
+  count is part of the saved key, so a table with a column more or less (one shown only with a
+  permission) never takes another's widths. Background Checks drops its Role column (each card is one
+  kind of person); parents, siblings and caregivers show their role under the name.

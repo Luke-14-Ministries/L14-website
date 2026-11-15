@@ -3,6 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { sinceISO, dayInMorristown } from '@/lib/events';
 
+import ResizableTable from '@/components/ResizableTable';
 export const metadata = { title: 'Newsletter · Staff Admin' };
 
 // The newsletter list, as staff see it (14 Oct 2026, Lawrence).
@@ -92,6 +93,7 @@ export default async function NewsletterPage() {
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+          <ResizableTable storageKey="newsletter">
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-neutral-500">
               <tr className="border-b border-neutral-200">
@@ -117,6 +119,7 @@ export default async function NewsletterPage() {
               ))}
             </tbody>
           </table>
+          </ResizableTable>
         </div>
 
         <div className="rounded-lg border border-neutral-200 bg-white p-4">

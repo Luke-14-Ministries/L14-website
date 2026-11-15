@@ -21,6 +21,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import SearchSelect from '@/components/SearchSelect';
+import ResizableTable from '@/components/ResizableTable';
 import {
   removeLogins,
   purgeHousehold,
@@ -281,6 +282,7 @@ export default function AccountsManager({
       )}
 
       <div className="overflow-x-auto lg:overflow-visible rounded-lg border border-neutral-200">
+        <ResizableTable storageKey="accounts">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-neutral-500">
             <tr className="border-b border-neutral-200">
@@ -468,6 +470,7 @@ export default function AccountsManager({
             )}
           </tbody>
         </table>
+        </ResizableTable>
       </div>
 
       {/* Remove-login confirmation: safe, but say plainly what stays behind. */}

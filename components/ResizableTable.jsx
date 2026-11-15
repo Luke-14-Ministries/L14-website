@@ -47,6 +47,9 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
     const table = ref.current?.querySelector('table');
     const ths = table ? [...table.querySelectorAll(':scope > thead > tr > th')] : [];
     if (!ths.length) return undefined;
+    // The column count is part of the key: the same table with a column more
+    // or less (one shown only with a permission) keeps its own widths.
+    const key = `${storageKey}:${ths.length}`;
 
     const apply = (widths) => {
       ths.forEach((th, i) => {
@@ -58,7 +61,7 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
     };
     const fallback = () => ths.map((th, i) => defaults[i] ?? Math.max(MIN, Math.round(th.getBoundingClientRect().width)));
     const current = () => {
-      const saved = load(storageKey);
+      const saved = load(key);
       return saved && saved.length === ths.length ? saved : fallback();
     };
     let widths = current();
@@ -85,7 +88,7 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
         const up = () => {
           window.removeEventListener('pointermove', move);
           window.removeEventListener('pointerup', up);
-          save(storageKey, widths);
+          save(key, widths);
         };
         window.addEventListener('pointermove', move);
         window.addEventListener('pointerup', up);
@@ -94,10 +97,10 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         e.preventDefault();
         set(widths[i] + (e.key === 'ArrowRight' ? STEP : -STEP));
-        save(storageKey, widths);
+        save(key, widths);
       };
       const onReset = () => {
-        save(storageKey, null);
+        save(key, null);
       };
       h.addEventListener('pointerdown', onDown);
       h.addEventListener('keydown', onKey);
@@ -108,7 +111,7 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
 
     // Another table with this key (or a reset) changed the widths.
     const follow = (e) => {
-      if (e.detail !== storageKey) return;
+      if (e.detail !== key) return;
       ths.forEach((th) => {
         th.style.width = '';
       });

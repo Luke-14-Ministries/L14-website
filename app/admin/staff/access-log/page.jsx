@@ -5,6 +5,7 @@ import BackLink from '@/components/BackLink';
 import { AREA_LABEL } from '@/lib/grants';
 import { whenInMorristown } from '@/lib/events';
 
+import ResizableTable from '@/components/ResizableTable';
 export const metadata = { title: 'Access Changes · Staff Admin' };
 
 // Who gained what, when, and who gave it to them.
@@ -107,6 +108,7 @@ export default async function AccessLogPage() {
         </p>
       ) : (
         <div className="overflow-x-auto">
+          <ResizableTable storageKey="staff-access-log">
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-neutral-500">
               <tr className="text-left">
@@ -157,6 +159,7 @@ export default async function AccessLogPage() {
               })}
             </tbody>
           </table>
+          </ResizableTable>
         </div>
       )}
     </div>

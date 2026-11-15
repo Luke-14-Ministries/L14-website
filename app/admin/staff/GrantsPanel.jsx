@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { AREAS, PRESETS, PRESET_LEAVES, BACKGROUND_WRITE_WARNING, grantsForPreset, matchingPreset, nearestPreset } from '@/lib/grants';
 
+import ResizableTable from '@/components/ResizableTable';
 const LEVELS = [
   ['', '—'],
   ['read', 'R'],
@@ -96,7 +97,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
         ))}
       </div>
 
-      <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm">
+      <div className="mt-3 overflow-x-auto"><ResizableTable storageKey="staff-grants"><table className="w-full text-left text-sm">
         <thead className="text-xs text-neutral-500">
           <tr>
             <th className="py-1 pr-3 font-semibold">Area</th>
@@ -136,7 +137,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
             </tr>
           ))}
         </tbody>
-      </table></div>
+      </table></ResizableTable></div>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button

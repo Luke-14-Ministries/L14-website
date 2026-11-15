@@ -10,6 +10,7 @@ import EventFilter from '@/components/EventFilter';
 import { STATUS_LABEL, statusPill } from '@/lib/format';
 import { depositShortWords } from '@/lib/plans';
 
+import ResizableTable from '@/components/ResizableTable';
 const ROLE_LABEL = {
   camper: 'Camper',
   parent_guardian: 'Parent/Guardian',
@@ -348,6 +349,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
           CSV both include every column.
         </p>
         <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+          <ResizableTable storageKey="rosters">
           <table className="w-full text-left text-sm">
             <thead className="bg-neutral-50 text-neutral-500">
               <tr>
@@ -537,6 +539,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
               })}
             </tbody>
           </table>
+          </ResizableTable>
         </div>
         </>
       )}

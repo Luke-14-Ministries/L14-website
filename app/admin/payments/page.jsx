@@ -11,6 +11,7 @@ import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIE
 import { isStaleRefund, STALE_REFUND_DAYS, CLEARING_PILL } from '@/lib/payments';
 import RecheckRefund from './RecheckRefund';
 
+import ResizableTable from '@/components/ResizableTable';
 export const metadata = { title: 'Event Payments · Staff Admin' };
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -515,6 +516,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       {/* lg:overflow-visible lets the row-actions menu overlay the table
           edge on desktop; small screens keep horizontal scrolling. */}
       <div className="overflow-x-auto lg:overflow-visible rounded-lg border border-neutral-200 bg-white mb-8">
+        <ResizableTable storageKey="event-payments">
         <table className="w-full text-left text-sm">
           <thead className="bg-neutral-50 text-neutral-500">
             <tr>
@@ -702,6 +704,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
             )}
           </tbody>
         </table>
+        </ResizableTable>
       </div>
 
     </div>

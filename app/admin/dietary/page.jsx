@@ -7,6 +7,7 @@ import { allergyPill, formatPhone } from '@/lib/format';
 import { allergySummary } from '@/lib/support';
 import SeverityPicker from './SeverityPicker';
 
+import ResizableTable from '@/components/ResizableTable';
 export const metadata = { title: 'Dietary & Allergies · Staff Admin' };
 
 // The kitchen view: who needs what at mealtimes, per event. Gated by the
@@ -170,6 +171,7 @@ export default async function DietaryPage({ searchParams }) {
               <p className="text-neutral-500 text-sm">No dietary needs or allergies recorded.</p>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+                <ResizableTable storageKey="dietary">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-neutral-50 text-neutral-500">
                     <tr>
@@ -217,6 +219,7 @@ export default async function DietaryPage({ searchParams }) {
                     ))}
                   </tbody>
                 </table>
+                </ResizableTable>
               </div>
             )}
           </div>

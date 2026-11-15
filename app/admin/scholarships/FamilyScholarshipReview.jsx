@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { decideFamilyScholarship, declineFamilyScholarship } from './actions';
 import { dayInMorristown } from '@/lib/events';
 
+import ResizableTable from '@/components/ResizableTable';
 const money = (c) => (typeof c === 'number' ? `$${(c / 100).toFixed(2)}` : '—');
 
 const SETTLED = {
@@ -199,6 +200,7 @@ export default function FamilyScholarshipReview({ row, showRegistrationLink = fa
         <p className="mt-2 text-sm italic text-neutral-500">They did not write anything.</p>
       )}
 
+      <ResizableTable storageKey="family-scholarship-shares">
       <table className="mt-3 w-full text-sm">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wide text-neutral-500">
@@ -233,6 +235,7 @@ export default function FamilyScholarshipReview({ row, showRegistrationLink = fa
           ))}
         </tbody>
       </table>
+      </ResizableTable>
 
       <p className="mt-2 text-xs text-neutral-500">
         {row.requestedAt && <>Asked {dayInMorristown(row.requestedAt)}</>}

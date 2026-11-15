@@ -13,6 +13,7 @@ import { updateStaffMember, addStaffMember, removeStaffMember, setStaffGrants, a
 import { AREA_LABEL } from '@/lib/grants';
 import GrantsPanel from './GrantsPanel';
 
+import ResizableTable from '@/components/ResizableTable';
 // The role column means one thing since 0101: 'admin'. Other values are labels nothing reads.
 
 // The table and its parts live at MODULE level, with everything they need
@@ -207,6 +208,7 @@ function Table({
   const rowProps = { selfId, busyId, onPatch, onRemove, openId, onToggleGrants };
   return (
     <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+      <ResizableTable storageKey="staff-list">
       <table className="w-full text-left text-sm">
         <thead className="bg-neutral-50 text-neutral-500">
                     <tr>
@@ -240,6 +242,7 @@ function Table({
           ))}
         </tbody>
       </table>
+      </ResizableTable>
     </div>
   );
 }

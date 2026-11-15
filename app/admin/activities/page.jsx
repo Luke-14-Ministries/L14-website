@@ -9,6 +9,7 @@ import ReviewActions, { WaiverStatusPill, WaiverFileLink } from './WaiverReview'
 import { checkAnchor } from '@/lib/waiverAnchors';
 import { groupNoun } from '@/lib/activityGroups';
 
+import ResizableTable from '@/components/ResizableTable';
 export const metadata = { title: 'Activities · Staff Admin' };
 
 // A person's role, short, for the queue and for a volunteer or buddy who
@@ -350,6 +351,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                   : ' Someone with Registration write accepts or rejects each one.'}
               </p>
               <div className="mt-2 overflow-x-auto">
+                <ResizableTable storageKey="activities-review">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-neutral-200 text-left text-xs text-neutral-500">
@@ -383,6 +385,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                     ))}
                   </tbody>
                 </table>
+                </ResizableTable>
               </div>
             </>
           )}

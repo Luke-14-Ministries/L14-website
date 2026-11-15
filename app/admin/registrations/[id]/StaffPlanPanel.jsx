@@ -19,6 +19,7 @@ import {
 } from '@/lib/plans';
 import { dayInMorristown } from '@/lib/events';
 
+import ResizableTable from '@/components/ResizableTable';
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 const INST_LABEL = {
   scheduled: 'Scheduled',
@@ -130,6 +131,7 @@ export default function StaffPlanPanel({
             </details>
           )}
 
+          <ResizableTable storageKey="plan-installments">
           <table className="mt-3 w-full text-left text-sm">
             <thead className="text-neutral-500">
               <tr>
@@ -160,6 +162,7 @@ export default function StaffPlanPanel({
               ))}
             </tbody>
           </table>
+          </ResizableTable>
           <p className="text-xs text-neutral-500 mt-1">
             Amounts marked ≈ are estimates. Each charge is figured on the day from the balance still
             owed, so the last one brings the balance to $0.

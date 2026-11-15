@@ -60,6 +60,7 @@ import { whenInMorristown } from '@/lib/events';
 import { CLEARING_PILL } from '@/lib/payments';
 import StatusMark from '@/components/StatusMark';
 
+import ResizableTable from '@/components/ResizableTable';
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 const when = (iso) =>
   iso ? new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric' }) : '';
@@ -132,6 +133,7 @@ function Checks({ checks, eventId }) {
   const notScreened = <StatusMark state="na" title="Not screened: under 18 on the first day of camp" />;
   return (
     <div className="mb-3 overflow-x-auto">
+      <ResizableTable storageKey="review-card-people">
       <table className="w-full text-left text-sm">
         <thead className="text-xs text-neutral-500">
           <tr>
@@ -189,6 +191,7 @@ function Checks({ checks, eventId }) {
           ))}
         </tbody>
       </table>
+      </ResizableTable>
     </div>
   );
 }

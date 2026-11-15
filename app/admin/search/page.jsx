@@ -6,6 +6,7 @@ import { shortEventName } from '@/lib/events';
 import { statusPill } from '@/lib/format';
 import { searchWords, ilikeContains } from '@/lib/search';
 
+import ResizableTable from '@/components/ResizableTable';
 export const metadata = { title: 'Search · Staff Admin' };
 
 // Find a person or a family by name or email and get to their page in one
@@ -128,6 +129,7 @@ export default async function SearchPage({ searchParams }) {
 
       {sorted.length > 0 && (
         <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white mb-6">
+          <ResizableTable storageKey="search-results">
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-neutral-500">
               <tr className="border-b border-neutral-200">
@@ -186,6 +188,7 @@ export default async function SearchPage({ searchParams }) {
               })}
             </tbody>
           </table>
+          </ResizableTable>
         </div>
       )}
 
