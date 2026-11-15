@@ -430,17 +430,24 @@ function familyNeeds({ family }) {
 
 function peopleNeeds({ members, week }) {
   const out = [];
-  // HARD: an adult volunteer's own email (13 Nov 2026). VolunteerBadge sends
-  // the background check's consent form there, one record per address.
-  for (const p of ownEmailProblems(members, week?.startsOn)) {
+  // Each adult's email for the background check (13-14 Nov 2026). An address
+  // that isn't one is HARD. A missing or shared one is SOFT (Lawrence, 14 Nov
+  // 2026): asked once at submit, then allowed, so a family with concerns can
+  // register and talk it over; staff see the person can't be sent a
+  // background check invite until an email is added.
+  const emailProblems = ownEmailProblems(members, week?.startsOn);
+  for (const p of emailProblems.filter((x) => x.kind === 'invalid')) {
+    out.push({ chip: `a complete email for ${p.name.split(' ')[0]}`, message: ownEmailMessage(p) });
+  }
+  const soft = emailProblems.filter((x) => x.kind !== 'invalid');
+  if (soft.length > 0) {
+    const names = soft.map((p) => p.name);
+    const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
     out.push({
-      chip:
-        p.kind === 'missing'
-          ? `an email for ${p.name.split(' ')[0]}`
-          : p.kind === 'invalid'
-            ? `a complete email for ${p.name.split(' ')[0]}`
-            : `a different email for ${p.name.split(' ')[0]}`,
-      message: ownEmailMessage(p),
+      chip: `an email for ${whoList(soft.map((p) => p.name.split(' ')[0]))}`,
+      confirm:
+        `A background check is required for nearly every adult coming to camp. ${list} ${names.length === 1 ? 'doesn’t have' : 'don’t have'} an email address of ${names.length === 1 ? 'their' : 'their'} own here, so camp staff can’t send the background check yet.\n\n` +
+        'If you have concerns, you can submit now and email info@luke14ministries.net to talk it over or ask about a waiver. Otherwise, press Cancel and add the email in “Who’s coming”.\n\nSubmit without it?',
     });
   }
   const named = members.filter(isNamed);
@@ -1698,11 +1705,12 @@ export default function FamilyWizard({
               Social Security numbers.
             </p>
             <p className="mt-1">
-              Questions or concerns before you {isUpdate ? 'update' : 'submit'}? Email{' '}
+              Questions or concerns? Email{' '}
               <a href="mailto:info@luke14ministries.net" className="font-semibold underline">
                 info@luke14ministries.net
               </a>
-              .
+              . You can still {isUpdate ? 'update' : 'submit'} without an adult&rsquo;s email and talk it over
+              with us afterwards.
             </p>
           </div>
 

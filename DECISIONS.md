@@ -4817,3 +4817,19 @@ email of their own (they would fall back to it). Anyone found blocks the invite,
 camper (who may use a guardian's address) is named on the row as allowed. The family form's notice now
 says "Questions or concerns before you submit? Email info@…": the form can't be submitted without each
 adult's email, so "after you submit" didn't hold.
+
+## 14 November 2026 — A missing adult email is asked about, not refused; staff see who has none
+
+Lawrence turned down a family-side "we've talked with staff" tick ("anyone could just click it") and chose:
+a pop-up at submit saying a background check is required for nearly everyone, and that they can submit and
+email info@ to talk it over or ask about a waiver; then allow the submit, and flag the person to staff.
+
+- Family form: a missing or shared adult email is now a SOFT confirm (the same mechanism as a missing birth
+  date): one pop-up at submit, then allowed. An address that isn't one is still refused. The server action
+  refuses only the invalid kind. The notice in "Who's coming" says they can submit without an adult's email
+  and talk it over afterwards.
+- Staff: Background Checks shows "No email of their own" on a volunteer or family adult who is due and
+  has no email of their own (hover says what to do: write to the family; they add one on their
+  registration, or staff agree another way and record it under Background check record). Background
+  Screening already blocks them, naming the household or person they would share an address with.
+- No family-side waiver switch: staff decide, by recording the background check another way.

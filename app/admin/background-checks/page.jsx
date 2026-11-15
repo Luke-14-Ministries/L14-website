@@ -208,6 +208,9 @@ export default async function BackgroundChecksPage({ searchParams }) {
       lastName: person.last_name ?? '',
       events,
       email: (person.email || person.households?.email || '').trim() || null,
+      // No email of their own: the family may have registered without one
+      // (allowed since 14 Nov 2026) and needs a word from staff.
+      noOwnEmail: !(person.email || '').trim(),
     };
   };
   // The fold under a row: the record editor (components/ClearanceEditor.jsx).
@@ -514,6 +517,14 @@ export default async function BackgroundChecksPage({ searchParams }) {
                               Waiting on the deposit
                             </span>
                           )}
+                          {x.noOwnEmail && (x.bucket === 'missing' || x.bucket === 'expired') && (
+                            <span
+                              className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.todo}`}
+                              title="No email of their own, so no VolunteerBadge invite can be sent. Write to the family: they add one on their registration, or you agree another way and record it under Background check record."
+                            >
+                              No email of their own
+                            </span>
+                          )}
                         </span>
                       </td>
                     </tr>
@@ -609,6 +620,12 @@ export default async function BackgroundChecksPage({ searchParams }) {
                             </span>
                           )}
                         </span>
+                        {!x.coveredByFullCheck && x.bucket === 'due' && x.noOwnEmail && (
+                          <span className={`mt-1 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.todo}`}
+                            title="No email of their own, so no VolunteerBadge invite can be sent. Write to the family: they add one on their registration, or you agree another way and record it under Background check record.">
+                            No email of their own
+                          </span>
+                        )}
                         {!x.adultCamper && !x.coveredByFullCheck && x.bucket === 'due' && (
                           <span className="mt-1 block text-xs">
                             {x.vbStatus ? (

@@ -271,7 +271,10 @@ export async function submitFamilyRegistration(payload) {
   }
 
   // An adult volunteer's own email, the form's rule again (13 Nov 2026).
-  const emailProblems = ownEmailProblems(members || [], eventStartsOn);
+  // Only an address that isn't one is refused here. A missing or shared one
+  // was asked about at submit and allowed (Lawrence, 14 Nov 2026): staff see
+  // the person can't be sent a background check invite until one is added.
+  const emailProblems = ownEmailProblems(members || [], eventStartsOn).filter((p) => p.kind === 'invalid');
   if (emailProblems.length > 0) return { ok: false, error: ownEmailMessage(emailProblems[0]) };
 
   const { data, error } = await supabase.rpc('submit_family_registration', {
