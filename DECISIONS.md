@@ -4761,3 +4761,27 @@ with Copy (the note also "Put in the note box"). File name: `YYYY-MM-DD Lastname
 check (VolunteerBadge|other).pdf`: date first so a folder sorts by date; characters SharePoint refuses are
 dropped; nothing else about the person. The label shows the year folder (to confirm with staff). The
 verdict label no longer mentions Checkr.
+
+## 14 November 2026 — Navigation around volunteers and background checks made consistent
+
+Lawrence: "broadly, how to navigate around here is not clear/sensible/consistent", then "All of them" to a
+Fable review's changes. The rules now:
+
+- **Where each job lives.** Volunteers decides applications. Background Checks holds every check record:
+  each row there (volunteers and campers & families) has a "Check record ▾" fold with the record editor,
+  so recording a check by hand stays on that page and works for family adults too. Background Screening
+  is the send-and-confirm step. The record also still shows under each Volunteers card.
+- **Pills are status.** A clickable pill opens the card at its part and never closes it; no arrows on
+  pills. The one Open ▾ / Close ▴ button opens and closes a card. The teal highlight shows only while the
+  card is open.
+- **Links say where they go and land on the person**, via plain `<a href>` (next/link doubled the `#`
+  part with trailingSlash): `/admin/background-checks/#check-<person>` opens and scrolls to that row's
+  record (RecordFold.jsx). Used from the registration's Review card (each blocked volunteer), Background
+  Screening ("record it by hand on Background Checks", "Record the verdict →" on a needs-review result)
+  and the person page.
+- **One name:** "Background Screening". The Volunteers intro says where things happen.
+- **Person pages** show the background check pill (clearance_status) with a link to the record.
+- The record editor moved to `components/ClearanceEditor.jsx`; `lib/clearanceRecords.js` loads it.
+  `setVolunteerClearance` records a hand check over a registry search as 'adult_participant' for someone
+  with no volunteer place. A family adult's missing check reads "No check on file" (was "No registry
+  search on file").

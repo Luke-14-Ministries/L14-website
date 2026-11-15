@@ -18,6 +18,7 @@
 // the full check and a registry search doesn't count for them.
 
 import Link from 'next/link';
+import { Fragment } from 'react';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -32,6 +33,9 @@ import { creditPicture } from '@/lib/volunteerBadgeCredits';
 import CheckLengthForm from './CheckLengthForm';
 import RegistrySearchForm from './RegistrySearchForm';
 import RegistryQueue from './RegistryQueue';
+import RecordFold from './RecordFold';
+import ClearanceEditor from '@/components/ClearanceEditor';
+import { loadClearanceRecords, vbSummary } from '@/lib/clearanceRecords';
 import CheckCard from './CheckCard';
 import CreditLine from './CreditLine';
 
@@ -191,16 +195,39 @@ export default async function BackgroundChecksPage({ searchParams }) {
   const clearanceBy = new Map((clearances ?? []).map((c) => [c.person_id, c]));
   // Each adult's latest VolunteerBadge invite, in the site's mode (0165).
   const vbBy = await latestVbRequests(supabase, personIds, volunteerBadgeMode() === 'test');
+  // The record itself, folded under each row for staff who can edit it
+  // (Fable navigation review, 14 Nov 2026: recording by hand stays here).
+  const records = canWrite ? await loadClearanceRecords(supabase, personIds) : new Map();
 
   const base = (id) => {
     const { person, events } = byId.get(id);
     return {
       id,
       name: `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim() || 'Unnamed',
+      firstName: person.first_name ?? '',
       lastName: person.last_name ?? '',
       events,
+      email: (person.email || person.households?.email || '').trim() || null,
     };
   };
+  // The fold under a row: the record editor (components/ClearanceEditor.jsx).
+  const recordFold = (x, cols) =>
+    canWrite ? (
+      <tr className="border-b border-neutral-100">
+        <td colSpan={cols} className="pb-2">
+          <RecordFold personId={x.id}>
+            <ClearanceEditor
+              personId={x.id}
+              clearance={records.get(x.id) ?? null}
+              vb={vbSummary(vbBy.get(x.id))}
+              email={x.email}
+              firstName={x.firstName}
+              lastName={x.lastName}
+            />
+          </RecordFold>
+        </td>
+      </tr>
+    ) : null;
   const byName = (a, b) => a.lastName.localeCompare(b.lastName) || a.name.localeCompare(b.name);
 
   // ---- Part 1: volunteers ----
@@ -448,20 +475,10 @@ export default async function BackgroundChecksPage({ searchParams }) {
                 </thead>
                 <tbody>
                   {vShown.map((x) => (
-                    <tr key={x.id} className="border-b border-neutral-100 align-top">
+                    <Fragment key={x.id}>
+                    <tr className={`${canWrite ? '' : 'border-b border-neutral-100 '}align-top`}>
                       <td className="py-2 pr-3">
                         <PersonLink row={x} />
-                        {/* Straight to this person's check record on Volunteers
-                            (Lawrence, 13 Nov 2026), opened and scrolled to. */}
-                        {/* A plain link, not next/link: its client navigation
-                            doubled the #check- part with trailingSlash (14 Nov
-                            2026), so the record never opened. */}
-                        <a
-                          href={`/admin/volunteers/#check-${x.id}`}
-                          className="ml-2 whitespace-nowrap text-xs text-brand underline"
-                        >
-                          Record by hand
-                        </a>
                       </td>
                       <td className="py-2 pr-3 text-neutral-600">{x.events.join(' · ')}</td>
                       <td className="py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>
@@ -481,7 +498,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
                               href="/admin/background-checks/screening/"
                               className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold underline ${x.vbStatus === 'clear' ? CHECK_TONE.done : CHECK_TONE.hold}`}
                             >
-                              {x.vbStatus === 'clear' ? 'VolunteerBadge: clear, confirm it' : 'VolunteerBadge: needs review'}
+                              {x.vbStatus === 'clear' ? 'VolunteerBadge: clear, confirm on Background Screening →' : 'VolunteerBadge: needs review →'}
                             </Link>
                           )}
                           {x.bucket === 'soon' && (
@@ -500,6 +517,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
                         </span>
                       </td>
                     </tr>
+                    {recordFold(x, 5)}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -570,7 +589,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
                 </thead>
                 <tbody>
                   {rShown.map((x) => (
-                    <tr key={x.id} className="border-b border-neutral-100 align-top">
+                    <Fragment key={x.id}>
+                    <tr className={`${canWrite ? '' : 'border-b border-neutral-100 '}align-top`}>
                       <td className="py-2 pr-3">
                         <PersonLink row={x} />
                       </td>
@@ -617,6 +637,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
                         )}
                       </td>
                     </tr>
+                    {recordFold(x, 6)}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

@@ -172,12 +172,13 @@ function Checks({ checks, eventId }) {
                       dash
                     ) : c.application === 'applied' ? (
                       // Reviewed on Volunteers, where the row opens itself.
-                      <Link
+                      // A plain link: next/link doubled the # part (14 Nov 2026).
+                      <a
                         href={`/admin/volunteers/${eventId ? `?event=${eventId}` : ''}#v-${c.id}`}
                         className="underline"
                       >
                         <StatusMark {...APP_MARK.applied} label="Needs your decision →" />
-                      </Link>
+                      </a>
                     ) : (
                       <StatusMark {...(APP_MARK[c.application] ?? APP_MARK.none)} />
                     )}
@@ -399,16 +400,27 @@ export default function ReviewCard({
           (0152, Lawrence 4 Nov 2026): say so before Approve is pressed. */}
       {checks.some((c) => c.blocked && c.status === 'submitted') && (
         <p className="mb-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
-          <strong>
-            {checks
-              .filter((c) => c.blocked && c.status === 'submitted')
-              .map((c) => c.name)
-              .join(', ')}
-          </strong>{' '}
-          can&rsquo;t be approved until a background check marked OK to serve is on file.{' '}
-          <Link href={`/admin/volunteers/${eventId ? `?event=${eventId}` : ''}`} className="font-semibold underline">
-            Record it on Volunteers
-          </Link>
+          {checks
+            .filter((c) => c.blocked && c.status === 'submitted')
+            .map((c, i, all) => (
+              <span key={c.personId ?? c.name}>
+                {i > 0 ? (i === all.length - 1 ? ' and ' : ', ') : ''}
+                <strong>{c.name}</strong>
+              </span>
+            ))}{' '}
+          can&rsquo;t be approved until a background check marked OK to serve is on file. Record it on
+          Background Checks:{' '}
+          {checks
+            .filter((c) => c.blocked && c.status === 'submitted')
+            .map((c, i) => (
+              <span key={`r-${c.personId ?? c.name}`}>
+                {i > 0 ? ' · ' : ''}
+                {/* A plain link: next/link doubled the #check- part (14 Nov 2026). */}
+                <a href={`/admin/background-checks/#check-${c.personId}`} className="font-semibold underline">
+                  {c.name}&rsquo;s check record →
+                </a>
+              </span>
+            ))}
           . Approving a volunteer here also approves their application.
         </p>
       )}

@@ -94,6 +94,23 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
     .maybeSingle();
   if (existingError) return { ok: false, error: existingError.message || 'Could not read the record.' };
   const fromRegistry = existing?.provider === 'registry_search';
+  // Since 14 Nov 2026 this record is kept from Background Checks for family
+  // adults too: a volunteer's check, or an adult participant's.
+  let reason = 'volunteer';
+  if (fromRegistry) {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: places, error: placesError } = await supabase
+      .from('registration_participants')
+      .select('camp_role, registrations!inner ( events!inner ( ends_on, archived_at ) )')
+      .eq('person_id', personId)
+      .neq('status', 'cancelled')
+      .in('camp_role', ['volunteer', 'volunteer_child'])
+      .gte('registrations.events.ends_on', today)
+      .is('registrations.events.archived_at', null)
+      .limit(1);
+    if (placesError) return { ok: false, error: placesError.message || 'Could not read their places.' };
+    if (!(places ?? []).length) reason = 'adult_participant';
+  }
 
   const { error } = await supabase.from('person_clearances').upsert(
     {
@@ -103,7 +120,7 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
       verdict: v,
       verdict_note: (note ?? '').trim().slice(0, 500) || null,
       recorded_by: staff.userId,
-      ...(fromRegistry ? { provider: 'manual', screening_reason: 'volunteer' } : {}),
+      ...(fromRegistry ? { provider: 'manual', screening_reason: reason } : {}),
     },
     { onConflict: 'person_id' }
   );

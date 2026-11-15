@@ -59,7 +59,7 @@ function detail(r) {
         ? `OK to serve recorded ${dayInMorristown(r.confirmedAt)}.`
         : `Clear${r.completedAt ? ` on ${dayInMorristown(r.completedAt)}` : ''}. Record it as OK to serve.`;
     case 'consider':
-      return 'Records were released on the report. Read it in VolunteerBadge, then record the ministry’s verdict on their Volunteers entry.';
+      return 'Records were released on the report. Read it in VolunteerBadge, then record the ministry’s verdict on their check record (Background Checks).';
     case 'error':
     case 'not_sent':
       return `${r.problem ?? 'It didn’t go through.'} They are back on the list to send again.`;
@@ -241,7 +241,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       r.status === 'sending'
         ? `Take back ${r.name}'s invite? Do this only if it isn't in VolunteerBadge's Applications list. They go back on the list to send again.`
         : r.status === 'processing' || r.status === 'in_review'
-          ? `Stop following ${r.name}'s invite here? The site couldn't match it to VolunteerBadge's check (see the note). Look at their check in VolunteerBadge and record the result by hand on their Volunteers entry. They go back on the list to send again.`
+          ? `Stop following ${r.name}'s invite here? The site couldn't match it to VolunteerBadge's check (see the note). Look at their check in VolunteerBadge and record the result by hand on Background Checks. They go back on the list to send again.`
           : `Take back ${r.name}'s invite here? It is NOT cancelled in VolunteerBadge: if they still finish applying, the check runs and uses a credit. They go back on the list to send again.`;
     if (!window.confirm(words)) return;
     setBusy(true);
@@ -372,8 +372,11 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                             <span className="mt-0.5 block text-xs font-semibold text-amber-800">
                               Already in VolunteerBadge
                               {typeof c.alreadyInVb === 'string' ? ` since ${dayInMorristown(c.alreadyInVb)}` : ''}. Look there
-                              first: if a check has already run, record it by hand on their Volunteers entry instead of
-                              sending (that would use a second credit).
+                              first: if a check has already run,{' '}
+                              <a href={`/admin/background-checks/#check-${c.personId}`} className="underline">
+                                record it by hand on Background Checks
+                              </a>{' '}
+                              instead of sending (that would use a second credit).
                             </span>
                           )}
                           {c.possibleVbMatch && (
@@ -436,8 +439,11 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                     <span className="mt-0.5 block text-xs font-semibold text-amber-800">
                       Already in VolunteerBadge
                       {typeof c.alreadyInVb === 'string' ? ` since ${dayInMorristown(c.alreadyInVb)}` : ''}. Look there
-                      first: if a check has already run, record it by hand on their Volunteers entry instead of
-                      sending (that would use a second credit).
+                      first: if a check has already run,{' '}
+                      <a href={`/admin/background-checks/#check-${c.personId}`} className="underline">
+                        record it by hand on Background Checks
+                      </a>{' '}
+                      instead of sending (that would use a second credit).
                     </span>
                   )}
                   {c.possibleVbMatch && (
@@ -475,7 +481,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
           <a href={dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-brand underline">
             VolunteerBadge
           </a>{' '}
-          and decided on the person&rsquo;s Volunteers entry.
+          and decided on the person&rsquo;s check record on Background Checks.
         </p>
         {note && (
           <p className={`mb-3 text-sm ${note.tone === 'no' ? 'text-red-800' : note.tone === 'warn' ? 'text-amber-800' : 'text-green-800'}`}>
@@ -546,9 +552,14 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                           </button>
                         )}
                         {r.status === 'consider' && (
-                          <a href={dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-brand underline">
-                            Open VolunteerBadge
-                          </a>
+                          <>
+                            <a href={dashboardUrl} target="_blank" rel="noopener noreferrer" className="block text-brand underline">
+                              Open VolunteerBadge
+                            </a>
+                            <a href={`/admin/background-checks/#check-${r.personId}`} className="block text-xs text-brand underline">
+                              Record the verdict →
+                            </a>
+                          </>
                         )}
                         {((r.status === 'sending' && r.stuck) || (r.status !== 'sending' && r.canTakeBack)) && (
                           <button type="button" disabled={busy} onClick={() => takeBack(r)} className="block text-xs text-red-700 underline">

@@ -3,7 +3,7 @@ import BackLink from '@/components/BackLink';
 import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { allergyPill, statusPill, telHref, formatPhone } from '@/lib/format';
+import { allergyPill, statusPill, telHref, formatPhone, clearancePill } from '@/lib/format';
 import PersonDetails from './PersonDetails';
 import AddToRegistration from './AddToRegistration';
 import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/support';
@@ -882,6 +882,23 @@ export default async function PersonPage({ params }) {
               );
   };
 
+  // Their background check, as every staff member may see it (clearance_status,
+  // 0091): on file, current, the verdict (Fable navigation review, 14 Nov
+  // 2026: every name on Background Checks links here, and this page said
+  // nothing about it). The record itself is on Background Checks.
+  const { data: chk, error: chkError } = await supabase
+    .from('clearance_status')
+    .select('person_id, on_file, check_date, expires_on, is_current, verdict, provider')
+    .eq('person_id', person.id)
+    .maybeSingle();
+  if (chkError) throw new Error(`Background check: ${chkError.message}`);
+  const ageAtCamp = ageAt(person.date_of_birth, soonest);
+  const volunteerNow = currentParts.some((p) => isVolunteerRole(p.camp_role));
+  const checkPill =
+    ageAtCamp != null && ageAtCamp < 18
+      ? clearancePill({ minor: true })
+      : clearancePill(chk ?? null, todayInMorristown(), { forRegistry: !volunteerNow });
+
   return (
     <div>
       {/* An admin sub-page's header (26 Oct 2026): the person left, the back
@@ -913,6 +930,18 @@ export default async function PersonPage({ params }) {
           ? `${ageAt(person.date_of_birth, soonest)}${soonest ? ' at camp' : ''}`
           : 'age not recorded'}
         {person.gender ? ` · ${person.gender}` : ''}
+      </p>
+      <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-neutral-500">Background check:</span>
+        <span title={checkPill.title} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${checkPill.cls}`}>
+          {checkPill.text}
+        </span>
+        {can(staff, 'background_checks') && checkPill.key !== 'minor' && (
+          // A plain link: next/link doubled the # part (14 Nov 2026).
+          <a href={`/admin/background-checks/#check-${person.id}`} className="text-xs text-brand underline">
+            Check record on Background Checks →
+          </a>
+        )}
       </p>
       </div>
       </div>
