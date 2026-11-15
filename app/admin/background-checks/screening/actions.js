@@ -307,7 +307,7 @@ export async function resendWithoutIdStep(personId, reason) {
       ok: false,
       error: c?.blockedBecause
         ? `Not sent: ${c.blockedBecause}`
-        : 'Not sent: only someone already invited, whose check hasn’t started, can be sent again this way.',
+        : 'Not sent: only someone already invited, whose background check hasn’t started, can be sent again this way.',
     };
   }
 
@@ -338,7 +338,7 @@ export async function resendWithoutIdStep(personId, reason) {
     }
     if (now !== 'invited' && now !== 'applied') {
       revalidateScreening();
-      return { ok: false, error: 'Not sent: they have used their invite since this page was loaded (the check has started). Reload the page.' };
+      return { ok: false, error: 'Not sent: they have used their invite since this page was loaded (the background check has started). Reload the page.' };
     }
     const { data: old, error: oldError } = await supabase
       .from('volunteerbadge_requests')
@@ -476,7 +476,7 @@ export async function cancelVolunteerBadgeRequest(requestId) {
           error:
             fresh.status === 'expired'
               ? 'Nothing to take back: the invite has expired. Reload the page.'
-              : 'Not taken back: their check has started since this page was loaded. Reload the page.',
+              : 'Not taken back: their background check has started since this page was loaded. Reload the page.',
         };
       }
       now = fresh.status;

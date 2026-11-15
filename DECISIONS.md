@@ -4785,3 +4785,13 @@ Fable review's changes. The rules now:
   `setVolunteerClearance` records a hand check over a registry search as 'adult_participant' for someone
   with no volunteer place. A family adult's missing check reads "No check on file" (was "No registry
   search on file").
+
+## 14 November 2026 — "Background check", never "check" alone
+
+Lawrence: "No check needs to be no background check (never leave check hanging alone when referring to
+background check)". Every staff and family string that meant a background check now says so: pills and
+filters ("No background check on file", "Waiting on the background check"), the counts, "How to run a
+background check", the screening page's status words and confirms, the record fold ("Background check
+record"), the note helper ("VolunteerBadge background check dated …"), the VolunteerBadge problem words,
+the deposit-hold words, and the family form's email message. "Check" as a verb stays. Rule added to
+WRITING.md.

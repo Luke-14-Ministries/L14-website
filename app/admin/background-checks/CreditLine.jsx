@@ -20,7 +20,7 @@ export default function CreditLine({ mode, credits, outstanding = 0, problem = n
   return (
     <>
       {mode === 'test' && <strong>Test mode: no credits are used. </strong>}
-      One check uses one credit. We have{' '}
+      One background check uses one credit. We have{' '}
       <strong className={tone(free)}>
         {credits == null ? 'an unknown number of credits' : `${credits} ${credits === 1 ? 'credit' : 'credits'}`}
       </strong>

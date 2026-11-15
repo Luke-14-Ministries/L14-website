@@ -46,8 +46,8 @@ const BASE = '/admin/background-checks/';
 
 const VOLUNTEER_FILTERS = [
   { key: '', label: 'All' },
-  { key: 'missing', label: 'No check on file' },
-  { key: 'waiting', label: 'Waiting on the check' },
+  { key: 'missing', label: 'No background check on file' },
+  { key: 'waiting', label: 'Waiting on the background check' },
   { key: 'expired', label: 'Out of date' },
   // In date, but not marked OK to serve yet: follow-up or no verdict
   // (Lawrence, 11 Nov 2026). Holds approval, so it is work, not "current".
@@ -61,8 +61,8 @@ const VOLUNTEER_FILTERS = [
 const VB_STATUS_WORDS = {
   sending: 'sending didn’t finish',
   invited: 'invited',
-  applied: 'applied, check not started',
-  processing: 'check in progress',
+  applied: 'applied, background check not started',
+  processing: 'background check in progress',
   in_review: 'VolunteerBadge is reviewing',
   clear: 'clear, confirm OK to serve on Background Screening',
   consider: 'needs review in VolunteerBadge',
@@ -345,8 +345,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   const volunteerSummary = [
     plural(vCounts[''], 'volunteer', 'volunteers'),
-    `${vCounts.missing} no check on file`,
-    `${vCounts.waiting} waiting on the check`,
+    `${vCounts.missing} no background check on file`,
+    `${vCounts.waiting} waiting on the background check`,
     `${vCounts.expired} out of date`,
     `${vCounts.decision} ${vCounts.decision === 1 ? 'needs' : 'need'} a decision`,
     ...(vCounts.not_permitted > 0 ? [`${vCounts.not_permitted} not permitted`] : []),
@@ -356,7 +356,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
   // nobody has marked OK to serve yet.
   const volunteerWork = vCounts.missing + vCounts.expired + vCounts.decision + vCounts.soon;
   const volunteerPills = [
-    vCounts.missing > 0 && { text: `${vCounts.missing} no check`, cls: RED },
+    vCounts.missing > 0 && { text: `${vCounts.missing} no background check`, cls: RED },
     vCounts.expired > 0 && { text: `${vCounts.expired} out of date`, cls: RED },
     vCounts.decision > 0 && {
       text: `${vCounts.decision} ${vCounts.decision === 1 ? 'needs' : 'need'} a decision`,
@@ -413,12 +413,12 @@ export default async function BackgroundChecksPage({ searchParams }) {
       >
         <p className="text-sm text-neutral-600">
           {volunteerRows.length} adult {volunteerRows.length === 1 ? 'volunteer' : 'volunteers'} on upcoming
-          events. A volunteer can&rsquo;t be approved without a current check marked OK to serve.
+          events. A volunteer can&rsquo;t be approved without a current background check marked OK to serve.
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className={HOW_TO_BOX}>
-            <h3 className="font-bold">How to run a check</h3>
+            <h3 className="font-bold">How to run a background check</h3>
             {/* The VolunteerBadge balance, in view before anyone is ready. */}
             <p className="mt-1 text-sm text-neutral-700">
               <CreditLine mode={vbMode} credits={vbCredits} outstanding={vbOutstanding} problem={vbProblem} />
@@ -427,10 +427,10 @@ export default async function BackgroundChecksPage({ searchParams }) {
               {/* The two counts stand out like the credits (Lawrence, 14 Nov 2026). */}
               {readyToInvite > 0 ? (
                 <strong className="text-red-700">
-                  {readyToInvite} {readyToInvite === 1 ? 'adult needs' : 'adults need'} a check now
+                  {readyToInvite} {readyToInvite === 1 ? 'adult needs' : 'adults need'} a background check now
                 </strong>
               ) : (
-                'Nobody needs a check right now'
+                'Nobody needs a background check right now'
               )}
               {heldCount > 0 && (
                 <>
@@ -439,7 +439,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
               )}
               . The next page lists them:
               you choose who to invite and see the credits it will use. Nothing is sent until you press
-              Send there. A check done another way (on paper, or straight in VolunteerBadge) is recorded
+              Send there. A background check done another way (on paper, or straight in VolunteerBadge) is recorded
               by hand: use <strong>Record by hand</strong> beside the person below.
             </p>
             <Link href="/admin/background-checks/screening/" className="btn-primary mt-3 inline-block py-2!">
@@ -537,7 +537,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
       >
         <p className="text-sm text-neutral-600">
           {registryRows.length} {registryRows.length === 1 ? 'adult' : 'adults'} who aren&rsquo;t volunteers.{' '}
-          <strong>Parents, siblings and caregivers</strong> get the full check through VolunteerBadge, sent
+          <strong>Parents, siblings and caregivers</strong> get the full background check through VolunteerBadge, sent
           from{' '}
           <Link href="/admin/background-checks/screening/" className="font-semibold text-brand underline">
             Background Screening
@@ -547,8 +547,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
             nsopw.gov
           </a>{' '}
           instead, under their row. <strong>Adult campers</strong> keep the registry search for now. A missing
-          check is a flag on their registration, not a hold. <strong>Not permitted</strong> holds approval. A
-          registry search doesn&rsquo;t count as a volunteer&rsquo;s check.
+          background check is a flag on their registration, not a hold. <strong>Not permitted</strong> holds approval. A
+          registry search doesn&rsquo;t count as a volunteer&rsquo;s background check.
         </p>
 
         {canWrite ? (
@@ -614,7 +614,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
                             {x.vbStatus ? (
                               <>VolunteerBadge: {VB_STATUS_WORDS[x.vbStatus] ?? x.vbStatus}</>
                             ) : x.heldForDeposit ? (
-                              <span className="text-amber-800">VolunteerBadge check waiting on their deposit</span>
+                              <span className="text-amber-800">VolunteerBadge background check waiting on their deposit</span>
                             ) : (
                               <Link href="/admin/background-checks/screening/" className="font-semibold text-brand underline">
                                 Send a VolunteerBadge invite

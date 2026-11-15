@@ -442,9 +442,9 @@ export default function VolunteerManager({ groups, maySeeChecks = false, canRevi
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Everyone registered as a Volunteer: decide each application here (press Open, or the
         volunteer pill). Background checks are sent from Background Screening and kept on Background
-        Checks, where a check done another way is recorded by hand; the record also shows here under
+        Checks, where a background check done another way is recorded by hand; the record also shows here under
         each card. The paperwork is kept in the restricted SharePoint folder. Other staff see whether a
-        check is on file, whether it&rsquo;s current, and the verdict.
+        background check is on file, whether it&rsquo;s current, and the verdict.
       </p>
 
       <div className="flex flex-wrap gap-4 mb-6 text-sm">

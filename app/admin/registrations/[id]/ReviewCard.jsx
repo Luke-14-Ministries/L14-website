@@ -417,7 +417,7 @@ export default function ReviewCard({
                 {i > 0 ? ' · ' : ''}
                 {/* A plain link: next/link doubled the #check- part (14 Nov 2026). */}
                 <a href={`/admin/background-checks/#check-${c.personId}`} className="font-semibold underline">
-                  {c.name}&rsquo;s check record →
+                  {c.name}&rsquo;s background check record →
                 </a>
               </span>
             ))}

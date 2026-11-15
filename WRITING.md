@@ -21,6 +21,9 @@ honest or careful.
 - **Use "you", "we" and contractions:** you'll, we'll, don't.
 - **Name things the way families do:** "camp", "the week", "your family", "your dashboard". Avoid
   "registration participant", "record", "submission" and "the system".
+- **Say "background check", never "check" on its own,** when that is what you mean (Lawrence,
+  14 Nov 2026): "No background check on file", "a background check now", "Background check record".
+  "Check" as a verb ("Check it in VolunteerBadge") is fine.
 
 ## What gives it away as AI. Don't write:
 

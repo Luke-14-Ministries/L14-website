@@ -22,8 +22,8 @@ import {
 const VB_WORDS = {
   sending: ['warn', 'Sending didn’t finish'],
   invited: ['na', 'Invited'],
-  applied: ['na', 'Applied, check not started'],
-  processing: ['na', 'Check in progress'],
+  applied: ['na', 'Applied, background check not started'],
+  processing: ['na', 'Background check in progress'],
   in_review: ['na', 'VolunteerBadge is reviewing'],
   clear: ['yes', 'Clear'],
   consider: ['warn', 'Needs review in VolunteerBadge'],
@@ -49,9 +49,9 @@ function detail(r) {
     case 'invited':
       return `Emailed to ${r.email} on ${dayInMorristown(r.sentAt)}${r.expiresAt ? `; the link works until ${dayInMorristown(r.expiresAt)}` : ''}. Waiting for them to apply.`;
     case 'applied':
-      return 'They applied. The check hasn’t started yet.';
+      return 'They applied. The background check hasn’t started yet.';
     case 'processing':
-      return 'VolunteerBadge is running the check.';
+      return 'VolunteerBadge is running the background check.';
     case 'in_review':
       return 'Possible records found. VolunteerBadge’s reviewer is checking them, usually within 3 business days.';
     case 'clear':
@@ -59,12 +59,12 @@ function detail(r) {
         ? `OK to serve recorded ${dayInMorristown(r.confirmedAt)}.`
         : `Clear${r.completedAt ? ` on ${dayInMorristown(r.completedAt)}` : ''}. Record it as OK to serve.`;
     case 'consider':
-      return 'Records were released on the report. Read it in VolunteerBadge, then record the ministry’s verdict on their check record (Background Checks).';
+      return 'Records were released on the report. Read it in VolunteerBadge, then record the ministry’s verdict on their background check record (Background Checks).';
     case 'error':
     case 'not_sent':
       return `${r.problem ?? 'It didn’t go through.'} They are back on the list to send again.`;
     case 'expired':
-      return 'The link ran out before a check started. They are back on the list to send again. For 30 days the site still looks for a late check and ties it here if one turns up.';
+      return 'The link ran out before a background check started. They are back on the list to send again. For 30 days the site still looks for a late background check and ties it here if one turns up.';
     case 'cancelled':
       return 'Taken back here. (It isn’t cancelled in VolunteerBadge.)';
     case 'superseded':
@@ -113,7 +113,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
     const n = ids.length;
     const words =
       mode === 'test'
-        ? `Send ${n} test ${n === 1 ? 'invite' : 'invites'}? Test mode uses no credits and runs no real check, but VolunteerBadge still emails a test invite.`
+        ? `Send ${n} test ${n === 1 ? 'invite' : 'invites'}? Test mode uses no credits and runs no real background check, but VolunteerBadge still emails a test invite.`
         : `Send ${n} VolunteerBadge ${n === 1 ? 'invite' : 'invites'}? Each uses one credit. VolunteerBadge emails each person now.`;
     if (!window.confirm(words)) return;
     setBusy(true);
@@ -215,7 +215,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
     const words =
       mode === 'test'
         ? `Send ${r.name} a test invite without the ID step?`
-        : `Send ${r.name} a new invite without VolunteerBadge's photo ID step? It replaces their open invite and uses one credit when the check runs.`;
+        : `Send ${r.name} a new invite without VolunteerBadge's photo ID step? It replaces their open invite and uses one credit when the background check runs.`;
     if (!window.confirm(words)) return;
     setBusy(true);
     setNote(null);
@@ -241,8 +241,8 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       r.status === 'sending'
         ? `Take back ${r.name}'s invite? Do this only if it isn't in VolunteerBadge's Applications list. They go back on the list to send again.`
         : r.status === 'processing' || r.status === 'in_review'
-          ? `Stop following ${r.name}'s invite here? The site couldn't match it to VolunteerBadge's check (see the note). Look at their check in VolunteerBadge and record the result by hand on Background Checks. They go back on the list to send again.`
-          : `Take back ${r.name}'s invite here? It is NOT cancelled in VolunteerBadge: if they still finish applying, the check runs and uses a credit. They go back on the list to send again.`;
+          ? `Stop following ${r.name}'s invite here? The site couldn't match it to VolunteerBadge's background check (see the note). Look at their background check in VolunteerBadge and record the result by hand on Background Checks. They go back on the list to send again.`
+          : `Take back ${r.name}'s invite here? It is NOT cancelled in VolunteerBadge: if they still finish applying, the background check runs and uses a credit. They go back on the list to send again.`;
     if (!window.confirm(words)) return;
     setBusy(true);
     setNote(null);
@@ -271,7 +271,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       {mode === 'test' && (
         <p className="rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900">
           <strong>Test mode</strong> (a VolunteerBadge sandbox key): no credits are used and no real
-          checks run, but VolunteerBadge still emails a test invite, so only @luke14ministries.net
+          background checks run, but VolunteerBadge still emails a test invite, so only @luke14ministries.net
           addresses can be sent. Test results never clear anyone, and test invites don&rsquo;t show on
           the live site. VolunteerBadge keeps no applicants in test mode, so a test invite stays
           &ldquo;Invited&rdquo;.
@@ -372,7 +372,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                             <span className="mt-0.5 block text-xs font-semibold text-amber-800">
                               Already in VolunteerBadge
                               {typeof c.alreadyInVb === 'string' ? ` since ${dayInMorristown(c.alreadyInVb)}` : ''}. Look there
-                              first: if a check has already run,{' '}
+                              first: if a background check has already run,{' '}
                               <a href={`/admin/background-checks/#check-${c.personId}`} className="underline">
                                 record it by hand on Background Checks
                               </a>{' '}
@@ -383,7 +383,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                             <span className="mt-0.5 block text-xs font-semibold text-amber-800">
                               Possible match: VolunteerBadge has someone with this name at a different email
                               {typeof c.possibleVbMatch === 'string' ? ` (since ${dayInMorristown(c.possibleVbMatch)})` : ''}. Look
-                              in VolunteerBadge to confirm. If it is them and a check has run, record it by hand; if
+                              in VolunteerBadge to confirm. If it is them and a background check has run, record it by hand; if
                               you send here, VolunteerBadge makes a second record and uses another credit.
                             </span>
                           )}
@@ -439,7 +439,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                     <span className="mt-0.5 block text-xs font-semibold text-amber-800">
                       Already in VolunteerBadge
                       {typeof c.alreadyInVb === 'string' ? ` since ${dayInMorristown(c.alreadyInVb)}` : ''}. Look there
-                      first: if a check has already run,{' '}
+                      first: if a background check has already run,{' '}
                       <a href={`/admin/background-checks/#check-${c.personId}`} className="underline">
                         record it by hand on Background Checks
                       </a>{' '}
@@ -450,7 +450,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                     <span className="mt-0.5 block text-xs font-semibold text-amber-800">
                       Possible match: VolunteerBadge has someone with this name at a different email
                       {typeof c.possibleVbMatch === 'string' ? ` (since ${dayInMorristown(c.possibleVbMatch)})` : ''}. Look
-                      in VolunteerBadge to confirm. If it is them and a check has run, record it by hand; if
+                      in VolunteerBadge to confirm. If it is them and a background check has run, record it by hand; if
                       you send here, VolunteerBadge makes a second record and uses another credit.
                     </span>
                   )}
@@ -481,7 +481,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
           <a href={dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-brand underline">
             VolunteerBadge
           </a>{' '}
-          and decided on the person&rsquo;s check record on Background Checks.
+          and decided on the person&rsquo;s background check record on Background Checks.
         </p>
         {note && (
           <p className={`mb-3 text-sm ${note.tone === 'no' ? 'text-red-800' : note.tone === 'warn' ? 'text-amber-800' : 'text-green-800'}`}>

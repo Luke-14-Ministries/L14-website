@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 
-export default function RecordFold({ personId, label = 'Check record', children }) {
+export default function RecordFold({ personId, label = 'Background check record', children }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const look = () => {

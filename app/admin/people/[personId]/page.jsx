@@ -939,7 +939,7 @@ export default async function PersonPage({ params }) {
         {can(staff, 'background_checks') && checkPill.key !== 'minor' && (
           // A plain link: next/link doubled the # part (14 Nov 2026).
           <a href={`/admin/background-checks/#check-${person.id}`} className="text-xs text-brand underline">
-            Check record on Background Checks →
+            Background check record →
           </a>
         )}
       </p>

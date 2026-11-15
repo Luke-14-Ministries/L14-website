@@ -83,7 +83,7 @@ function RecordHelper({ firstName, lastName, date, verdict, note: current = '', 
   if (!date) {
     return (
       <p className="mt-2 text-xs text-neutral-500">
-        Recording a check done elsewhere? Enter its date and verdict, and the note and the report&rsquo;s file
+        Recording a background check done elsewhere? Enter its date and verdict, and the note and the report&rsquo;s file
         name appear here to copy.
       </p>
     );
@@ -91,14 +91,14 @@ function RecordHelper({ firstName, lastName, date, verdict, note: current = '', 
   const who = `${fileSafe(lastName) || 'Lastname'}, ${fileSafe(firstName) || 'Firstname'}`;
   const by = provider === 'other' ? 'other' : 'VolunteerBadge';
   const fileName = `${date} ${who} - Background check (${by}).pdf`;
-  const checkWords = provider === 'other' ? 'Background check' : 'VolunteerBadge check';
+  const checkWords = provider === 'other' ? 'Background check' : 'VolunteerBadge background check';
   const result = verdict ? RESULT_WORDS[verdict] : 'verdict not decided yet';
   const note = `${checkWords} dated ${longDate(date)}: ${result}. Recorded by hand. Report filed as: ${fileName}`;
   return (
     <div className="mt-3 rounded-sm border border-blue-200 bg-blue-50 px-3 py-2">
       <div className="flex flex-wrap items-center gap-3 text-xs">
         <span className="font-semibold text-blue-900">
-          Suggestions for a check recorded by hand (not saved; only the note box above is saved)
+          Suggestions for a background check recorded by hand (not saved; only the note box above is saved)
         </span>
         {PROVIDERS.map(([v, label]) => (
           <label key={v} className="flex items-center gap-1">
@@ -228,8 +228,8 @@ export default function ClearanceEditor({ personId, clearance, vb, email, firstN
 const VB_PANEL = {
   sending: ['Sending didn’t finish', 'bg-amber-100 text-amber-800'],
   invited: ['Invited, waiting on them', 'bg-blue-50 text-blue-700'],
-  applied: ['Applied, check not started', 'bg-blue-50 text-blue-700'],
-  processing: ['Check in progress', 'bg-blue-50 text-blue-700'],
+  applied: ['Applied, background check not started', 'bg-blue-50 text-blue-700'],
+  processing: ['Background check in progress', 'bg-blue-50 text-blue-700'],
   in_review: ['VolunteerBadge is reviewing', 'bg-blue-50 text-blue-700'],
   clear: ['Clear', 'bg-green-100 text-green-800'],
   consider: ['Needs review in VolunteerBadge', 'bg-red-100 text-red-800'],
