@@ -552,8 +552,10 @@ export default async function BackgroundChecksPage({ searchParams }) {
               Send there. A background check done another way (on paper, or straight in VolunteerBadge) is recorded
               by hand: open <strong>Background check record</strong> under the person&rsquo;s row below.
             </p>
+            {/* Named for both halves of that page: "Choose who to invite" hid the
+                results and the update button there (Lawrence, 15 Nov 2026). */}
             <Link href="/admin/background-checks/screening/" className="btn-primary mt-3 inline-block py-2!">
-              Choose who to invite →
+              Background Screening: send invites, see results →
             </Link>
           </div>
           <CheckLengthForm months={months} onFile={onFileCount ?? 0} canEdit={canWrite} />
