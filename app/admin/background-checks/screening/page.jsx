@@ -123,6 +123,7 @@ export default async function ScreeningPage() {
       if (namesError) throw new Error(namesError.message);
       const nameBy = new Map((names ?? []).map((p) => [p.id, p]));
       for (const c of candidates) {
+        if (c.inProgress) continue; // on VB's roster because of our own invite
         const there = c.email ? roster.find(c.email) : [];
         if (there.length === 1 && namesAgree(there[0], nameBy.get(c.personId)) === true) {
           c.alreadyInVb = there[0].created_at ?? there[0].createdAt ?? true;

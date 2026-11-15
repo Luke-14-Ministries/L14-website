@@ -97,7 +97,8 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
 
   const connected = mode !== 'off' && !connectionProblem;
   const orderable = useMemo(() => candidates.filter((c) => !c.blockedBecause), [candidates]);
-  const blocked = useMemo(() => candidates.filter((c) => c.blockedBecause), [candidates]);
+  const blocked = useMemo(() => candidates.filter((c) => c.blockedBecause && !c.inProgress), [candidates]);
+  const underWay = useMemo(() => candidates.filter((c) => c.inProgress), [candidates]);
   const allPicked = orderable.length > 0 && picked.size === orderable.length;
   const toggle = (id) =>
     setPicked((s) => {
@@ -293,6 +294,22 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
           (parents, siblings and caregivers). Adult campers stay on the registry search for now. Nothing
           here has been sent yet.
         </p>
+
+        {underWay.length > 0 && (
+          <p className="mb-4 rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+            <strong>Already invited ({underWay.length}):</strong>{' '}
+            {underWay.map((c, i) => (
+              <span key={c.personId}>
+                {i > 0 && '; '}
+                {c.name}{' '}
+                <span className="text-neutral-500">
+                  ({c.openRequestId ? `invited ${dayInMorristown(c.lastVb?.sentAt)}` : c.lastVb?.status === 'clear' ? 'clear, waiting on your OK to serve' : 'result needs review'})
+                </span>
+              </span>
+            ))}
+            . Their progress and results are under <strong>Invites and results</strong> below.
+          </p>
+        )}
 
         {orderable.length === 0 && blocked.length === 0 ? (
           <p className="rounded-sm border border-green-200 bg-green-50 px-4 py-3 text-green-900">
