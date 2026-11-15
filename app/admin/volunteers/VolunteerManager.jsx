@@ -99,7 +99,7 @@ function CopyLine({ label, text, onUse }) {
   );
 }
 
-function RecordHelper({ firstName, lastName, date, verdict, onUseNote }) {
+function RecordHelper({ firstName, lastName, date, verdict, note: current = '', onUseNote }) {
   const [provider, setProvider] = useState('VolunteerBadge');
   if (!date) {
     return (
@@ -118,7 +118,9 @@ function RecordHelper({ firstName, lastName, date, verdict, onUseNote }) {
   return (
     <div className="mt-3 rounded-sm border border-blue-200 bg-blue-50 px-3 py-2">
       <div className="flex flex-wrap items-center gap-3 text-xs">
-        <span className="font-semibold text-blue-900">Recorded by hand: copy these</span>
+        <span className="font-semibold text-blue-900">
+          Suggestions for a check recorded by hand (not saved; only the note box above is saved)
+        </span>
         {PROVIDERS.map(([v, label]) => (
           <label key={v} className="flex items-center gap-1">
             <input type="radio" checked={provider === v} onChange={() => setProvider(v)} />
@@ -126,7 +128,11 @@ function RecordHelper({ firstName, lastName, date, verdict, onUseNote }) {
           </label>
         ))}
       </div>
-      <CopyLine label="Note" text={note} onUse={() => onUseNote(note)} />
+      {current.trim() === note ? (
+        <p className="mt-1.5 text-xs text-green-800">✓ The suggested note is in the note box.</p>
+      ) : (
+        <CopyLine label="Suggested note" text={note} onUse={() => onUseNote(note)} />
+      )}
       <CopyLine label={`Report file name (restricted SharePoint folder; year folder ${date.slice(0, 4)})`} text={fileName} />
     </div>
   );
@@ -198,7 +204,7 @@ function ClearanceEditor({ personId, clearance, vb, email, firstName, lastName, 
           placeholder="Note (optional), e.g. Spoke with Larry 14 Oct. Cleared to serve with a buddy."
           className="mt-2 w-full rounded-sm border border-neutral-300 px-2 py-1"
         />
-        <RecordHelper firstName={firstName} lastName={lastName} date={date} verdict={verdict} onUseNote={(t) => setNote(t.slice(0, 500))} />
+        <RecordHelper firstName={firstName} lastName={lastName} date={date} verdict={verdict} note={note} onUseNote={(t) => setNote(t.slice(0, 500))} />
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <button onClick={save} disabled={pending} className="btn-primary py-1.5! text-sm">
             {pending ? 'Saving…' : 'Save record'}
@@ -495,13 +501,24 @@ function VolunteerRow({ row, maySeeChecks, canReview = true }) {
               title={`${pill.title} Open the background check record.`}
               className={`rounded-full px-2.5 py-0.5 font-semibold hover:underline ${pill.cls}`}
             >
-              {pill.text} <span aria-hidden>▸</span>
+              {pill.text} <span aria-hidden>{open ? '▾' : '▸'}</span>
             </button>
           ) : (
             <span title={pill.title} className={`rounded-full px-2.5 py-0.5 font-semibold ${pill.cls}`}>
               {pill.text}
             </span>
           )}
+          {/* One plain open/close control (Lawrence, 14 Nov 2026: it wasn't
+              obvious how a card opens and closes). The pills still open it at
+              their own part. */}
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            className="ml-1 rounded-sm border border-neutral-300 bg-white px-2 py-0.5 font-semibold text-neutral-700 hover:border-brand"
+          >
+            {open ? 'Close ▴' : 'Open ▾'}
+          </button>
         </span>
       </div>
 
