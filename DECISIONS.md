@@ -4965,3 +4965,13 @@ admin portal. From a Fable review:
   below already has a current OK or Not permitted verdict reads "The ministry's verdict is recorded
   below… nothing more is needed on Background Screening", not "Confirm it as OK to serve"
   (`recordSettles()` in components/ClearanceEditor.jsx, the browser copy of `settledByRecord()`).
+
+## 15 November 2026 — Recent Changes counts changes after approval
+
+- Lawrence: the Recent Changes count "should only be changes to applications (volunteer or family)
+  that were ALREADY approved." Before approval, staff see the current details when they review, so
+  an edit then isn't news. A change now counts when the person it is about (or, for a household-level
+  change, anyone in that household) had a confirmed place on a current event at the moment of the
+  change (`afterApprovalFilter()` in lib/changesAfterApproval.js, using `status_changed_at`, 0128).
+- The page lists "After approval" first (what the badge counts) and folds "Before approval" below,
+  still there to mark reviewed.

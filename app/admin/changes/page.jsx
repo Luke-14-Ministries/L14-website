@@ -4,6 +4,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import ChangesList from './ChangesList';
 import { whenInMorristown } from '@/lib/events';
+import { afterApprovalFilter } from '@/lib/changesAfterApproval';
 
 export const metadata = { title: 'Recent Changes · Staff Admin' };
 
@@ -75,9 +76,14 @@ export default async function RecentChangesPage() {
     (actors ?? []).map((p) => [p.id, `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim()])
   );
 
-  const byHousehold = new Map();
+  // After approval first (what the nav badge counts); changes made before
+  // approval are folded below (Lawrence, 15 Nov 2026).
+  const afterApproval = list.length ? await afterApprovalFilter(supabase) : () => false;
+  const after = new Map();
+  const before = new Map();
   for (const r of list) {
     const key = r.household_id ?? 'unknown';
+    const byHousehold = afterApproval(r) ? after : before;
     if (!byHousehold.has(key)) {
       byHousehold.set(key, {
         householdId: key,
@@ -131,7 +137,24 @@ export default async function RecentChangesPage() {
         </p>
       )}
 
-      <ChangesList groups={[...byHousehold.values()]} />
+      <h3 className="mb-2 text-lg font-bold">After approval ({after.size})</h3>
+      <p className="mb-3 text-sm text-neutral-500">
+        Changes from people already approved for a current event. These are the ones the menu counts.
+      </p>
+      <ChangesList groups={[...after.values()]} />
+
+      {before.size > 0 && (
+        <details className="mt-8">
+          <summary className="fold-summary cursor-pointer text-lg font-bold select-none">
+            Before approval ({before.size} {before.size === 1 ? 'family' : 'families'})
+          </summary>
+          <p className="mt-1 mb-3 text-sm text-neutral-500">
+            Changes made before the person was approved, or by people not approved yet. Their current details show
+            when the registration is reviewed, so these aren&rsquo;t counted.
+          </p>
+          <ChangesList groups={[...before.values()]} />
+        </details>
+      )}
     </div>
   );
 }

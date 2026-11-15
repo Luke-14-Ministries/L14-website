@@ -9,6 +9,7 @@ import AdminNav from './AdminNav';
 import { VOLUNTEER_ROLES } from '@/lib/roles';
 import { adultOnFirstDay } from '@/lib/backgroundChecks';
 import { backgroundCheckWork } from '@/lib/backgroundCheckWork';
+import { afterApprovalFilter } from '@/lib/changesAfterApproval';
 import { volunteerBadgeMode } from '@/lib/volunteerBadge';
 
 export const metadata = { title: 'Staff Admin' };
@@ -229,9 +230,11 @@ export default async function AdminLayout({ children }) {
     ] = await Promise.all([
         // Families with unreviewed changes, not one per field changed (Fable
         // badge review, 14 Nov 2026): the page groups by family.
+        // Since 15 Nov 2026, only changes made after approval count
+        // (lib/changesAfterApproval.js), so the person and time come too.
         supabase
           .from('family_change_log')
-          .select('household_id')
+          .select('household_id, person_id, changed_at')
           .is('reviewed_at', null)
           .limit(5000),
         // Applications sitting in "applied" — same treatment as Recent
@@ -326,7 +329,12 @@ export default async function AdminLayout({ children }) {
     if (familyScholError) console.error('family scholarships badge:', familyScholError.message);
     if (reviewError) console.error('review badge:', reviewError.message);
     if (repliedError) console.error('review badge (family replies):', repliedError.message);
-    unreviewedChanges = new Set((changesRows ?? []).map((r) => r.household_id ?? 'none')).size;
+    try {
+      const afterApproval = (changesRows ?? []).length ? await afterApprovalFilter(supabase) : () => false;
+      unreviewedChanges = new Set((changesRows ?? []).filter(afterApproval).map((r) => r.household_id ?? 'none')).size;
+    } catch (err) {
+      console.error('changes badge:', err.message);
+    }
     volunteersAwaiting = volCount ?? 0;
 
     // Volunteers on an event that has not finished, counted by PERSON, whose
@@ -674,7 +682,10 @@ export default async function AdminLayout({ children }) {
                 'adult who still needs a background check (not counting invites out with VolunteerBadge)',
                 'adults who still need a background check (not counting invites out with VolunteerBadge)',
               ],
-              '/admin/changes': ['family with changes nobody has marked reviewed', 'families with changes nobody has marked reviewed'],
+              '/admin/changes': [
+                'family who changed details after being approved, not yet marked reviewed',
+                'families who changed details after being approved, not yet marked reviewed',
+              ],
               '/admin/volunteers': ['volunteer application waiting for a decision', 'volunteer applications waiting for a decision'],
             }}
             // The colour key is staff vocabulary ("waiting on staff",
