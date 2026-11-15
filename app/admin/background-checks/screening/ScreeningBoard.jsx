@@ -99,6 +99,10 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
   const orderable = useMemo(() => candidates.filter((c) => !c.blockedBecause), [candidates]);
   const blocked = useMemo(() => candidates.filter((c) => c.blockedBecause && !c.inProgress), [candidates]);
   const underWay = useMemo(() => candidates.filter((c) => c.inProgress), [candidates]);
+  // Done rows fold away under the open ones (Lawrence, 15 Nov 2026).
+  const isFinished = (r) => (r.status === 'clear' && r.confirmedAt) || r.status === 'cancelled' || r.status === 'superseded';
+  const active = requests.filter((r) => !isFinished(r));
+  const finished = requests.filter(isFinished);
   const allPicked = orderable.length > 0 && picked.size === orderable.length;
   const toggle = (id) =>
     setPicked((s) => {
@@ -514,6 +518,31 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
         {requests.length === 0 ? (
           <p className="text-sm text-neutral-500">No invites in the last 90 days.</p>
         ) : (
+          <>
+          {active.length === 0 && <p className="text-sm text-neutral-500">Nothing open. Finished invites are below.</p>}
+          {[
+            ['active', active],
+            ['finished', finished],
+          ].map(([which, rows]) =>
+            rows.length === 0 ? null : which === 'finished' ? (
+              <details key={which} className="mt-4">
+                <summary className="cursor-pointer text-sm font-semibold text-neutral-600">
+                  Finished ({rows.length}): marked OK to serve, taken back or replaced
+                </summary>
+                {table(rows)}
+              </details>
+            ) : (
+              <div key={which}>{table(rows)}</div>
+            )
+          )}
+          </>
+        )}
+      </section>
+    </div>
+  );
+
+  function table(rows) {
+    return (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[40rem] text-sm">
               <thead className="bg-neutral-50 text-left text-neutral-500">
@@ -525,7 +554,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                 </tr>
               </thead>
               <tbody>
-                {requests.map((r) => {
+                {rows.map((r) => {
                   const [state, words] = VB_WORDS[r.status] ?? ['na', r.status];
                   return (
                     <tr key={r.id} className="border-t border-neutral-100 align-top">
@@ -635,8 +664,6 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
               </tbody>
             </table>
           </div>
-        )}
-      </section>
-    </div>
-  );
+    );
+  }
 }

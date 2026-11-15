@@ -671,8 +671,8 @@ export default async function AdminLayout({ children }) {
               '/admin/activities': ['outside-provider confirmation waiting to be checked', 'outside-provider confirmations waiting to be checked'],
               '/admin/my-program': ['person in your program', 'people in your program'],
               '/admin/background-checks': [
-                'background check to act on now: ready to invite, a result to confirm, or an adult camper’s registry search',
-                'background checks to act on now: ready to invite, results to confirm, or adult campers’ registry searches',
+                'adult who still needs a background check (not counting invites out with VolunteerBadge)',
+                'adults who still need a background check (not counting invites out with VolunteerBadge)',
               ],
               '/admin/changes': ['family with changes nobody has marked reviewed', 'families with changes nobody has marked reviewed'],
               '/admin/volunteers': ['volunteer application waiting for a decision', 'volunteer applications waiting for a decision'],

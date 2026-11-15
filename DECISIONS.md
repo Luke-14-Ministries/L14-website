@@ -4922,3 +4922,15 @@ admin portal. From a Fable review:
 - Lawrence couldn't find My Account on his phone: it was the last item in the phone menu, below the
   bottom of the screen. It's now an outline button beside "Register for camp" at the top of the menu,
   and the menu's height uses `dvh` so its end no longer sits behind the browser's own bar.
+
+## 15 November 2026 — Background Checks badge counts every adult still needing one
+
+- Lawrence: the menu count "seems wrong, now that it's supposed to cover all adults." Since the 14 Nov
+  badge review it counted only what staff could do that minute (ready to invite, results to confirm,
+  adult campers' registry searches), so anyone waiting on a deposit or a fixable problem dropped out.
+  It now counts every volunteer and family adult who still needs a background check, plus adult
+  campers' registry searches, leaving out only people whose invite is out with VolunteerBadge
+  (`due` in lib/backgroundCheckWork.js). The red Volunteers badge stays volunteers only: it is the
+  "can't be approved yet" number.
+- Background Screening's Invites and results: rows marked OK to serve, taken back or replaced fold
+  under "Finished", so the card shows what is still open.
