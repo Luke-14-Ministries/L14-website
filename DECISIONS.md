@@ -4961,3 +4961,7 @@ admin portal. From a Fable review:
   and isn't counted as a result to confirm (Screening's "waiting on you", the badge's results).
 - Screening's "can't be sent yet" list shows each hold as a bold label (Waiting on the deposit, Turns
   18 on…, Shared email, No email…) with the explanation after it (`holds` beside `blockedBecause`).
+- The record fold on Background Checks follows the same rule: a VolunteerBadge result whose record
+  below already has a current OK or Not permitted verdict reads "The ministry's verdict is recorded
+  below… nothing more is needed on Background Screening", not "Confirm it as OK to serve"
+  (`recordSettles()` in components/ClearanceEditor.jsx, the browser copy of `settledByRecord()`).

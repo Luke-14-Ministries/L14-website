@@ -248,6 +248,18 @@ const VB_PANEL = {
   superseded: ['Replaced by a resend', 'bg-neutral-100 text-neutral-600'],
 };
 
+// The record below already settles a VolunteerBadge result: a current full
+// background check on file, verdict OK or Not permitted. The same rule as
+// settledByRecord() in lib/backgroundChecks.js, restated here because that
+// file is server-side (Lawrence, 15 Nov 2026: Larry's record said OK to serve
+// while this panel still asked for a confirm on Background Screening).
+function recordSettles(c) {
+  if (!c?.background_check_on_file || c.provider === 'registry_search') return false;
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  if (c.expires_on && c.expires_on < today) return false;
+  return c.verdict === 'ok' || c.verdict === 'not_permitted';
+}
+
 function ScreeningPanel({ clearance, vb, email }) {
   const checkrStatus = clearance?.checkr_status ?? 'not_started';
   const checkrOut = ['invited', 'pending', 'suspended'].includes(checkrStatus);
@@ -261,8 +273,20 @@ function ScreeningPanel({ clearance, vb, email }) {
   let words;
   if (vb) {
     const [label, tone] = VB_PANEL[vb.status] ?? [vb.status, 'bg-neutral-100 text-neutral-600'];
-    chip = vb.status === 'clear' && vb.confirmedAt ? ['OK to serve recorded', 'bg-green-100 text-green-800'] : [label, tone];
-    if (vb.status === 'clear' && !vb.confirmedAt) {
+    const settled = !vb.confirmedAt && (vb.status === 'clear' || vb.status === 'consider') && recordSettles(clearance);
+    chip =
+      (vb.status === 'clear' && vb.confirmedAt) || (settled && clearance.verdict === 'ok')
+        ? ['OK to serve recorded', 'bg-green-100 text-green-800']
+        : [label, tone];
+    if (settled) {
+      words = (
+        <>
+          {vb.status === 'clear' ? 'Clear.' : 'Records were released on the report.'} The ministry&rsquo;s verdict is
+          recorded below ({CLEARANCE_VERDICT_LABEL[clearance.verdict] ?? clearance.verdict}), so nothing more is needed
+          on {screening}.
+        </>
+      );
+    } else if (vb.status === 'clear' && !vb.confirmedAt) {
       words = <>Clear. Confirm it as OK to serve on {screening}.</>;
     } else if (vb.status === 'clear') {
       words = <>Clear, and recorded as OK to serve {dayInMorristown(vb.confirmedAt)}.</>;
