@@ -55,7 +55,8 @@ function detail(r) {
     case 'in_review':
       return 'Possible records found. VolunteerBadge’s reviewer is checking them, usually within 3 business days.';
     case 'clear':
-      if (r.recordedByHand) return 'Clear. Already recorded on their background check record (Background Checks), so nothing to do here.';
+      if (r.recordedByHand)
+        return `Clear${r.completedAt ? ` on ${dayInMorristown(r.completedAt)}` : ''}, from VolunteerBadge. OK to serve was entered on their background check record (Background Checks) rather than with the button here, so nothing more to do.`;
       return r.confirmedAt
         ? `OK to serve recorded ${dayInMorristown(r.confirmedAt)}.`
         : `Clear${r.completedAt ? ` on ${dayInMorristown(r.completedAt)}` : ''}. Record it as OK to serve.`;
@@ -541,7 +542,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
             rows.length === 0 ? null : which === 'finished' ? (
               <details key={which} className="mt-4">
                 <summary className="cursor-pointer text-sm font-semibold text-neutral-600">
-                  Finished ({rows.length}): marked OK to serve, recorded by hand, taken back or replaced
+                  Finished ({rows.length}): OK to serve or verdict recorded, taken back or replaced
                 </summary>
                 {table(rows)}
               </details>
@@ -579,7 +580,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                       <td className="px-3 py-2">
                         <StatusMark
                           state={(r.status === 'clear' && r.confirmedAt) || r.recordedByHand ? 'yes' : state}
-                          label={r.status === 'clear' && r.confirmedAt ? 'OK to serve' : r.recordedByHand ? 'Recorded by hand' : words}
+                          label={(r.status === 'clear' && r.confirmedAt) || (r.recordedByHand && r.status === 'clear') ? 'OK to serve' : r.recordedByHand ? 'Verdict recorded' : words}
                           title={detail(r)}
                         />
                         {/* So it is plain later that this check ran without ID
