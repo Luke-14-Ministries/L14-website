@@ -132,8 +132,13 @@ export default function Header() {
       </div>
 
       {open && (
-        <nav className="lg:hidden border-t border-neutral-200 pb-4 max-h-[calc(100vh-5rem)] overflow-y-auto">
-          <div className="px-6 pt-4">
+        // dvh, not vh: on a phone 100vh runs behind the browser's own bar, so
+        // the last items sat out of reach.
+        <nav className="lg:hidden border-t border-neutral-200 pb-4 max-h-[calc(100dvh-5rem)] overflow-y-auto">
+          {/* My Account sits beside Register at the top: at the bottom of the
+              list it was below the fold on a phone and families didn't find
+              it (Lawrence, 15 Nov 2026). */}
+          <div className="px-6 pt-4 flex flex-wrap gap-3">
             <Link
               href="/camp-celebrate"
               className="btn-primary"
@@ -141,8 +146,20 @@ export default function Header() {
             >
               Register for camp
             </Link>
+            {nav
+              .filter((group) => !group.items)
+              .map((group) => (
+                <Link
+                  key={group.label}
+                  href={group.href}
+                  className="btn-outline"
+                  onClick={() => setOpen(false)}
+                >
+                  {group.label}
+                </Link>
+              ))}
           </div>
-          {nav.map((group) =>
+          {nav.filter((group) => group.items).map((group) =>
             group.items ? (
               <div key={group.label} className="px-6 pt-3">
                 <div className="font-semibold text-neutral-500 uppercase text-sm">

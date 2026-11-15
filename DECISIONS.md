@@ -4916,3 +4916,9 @@ admin portal. From a Fable review:
   the full table. The card now has two headed lists that never overlap: "Adult campers: registry search"
   (the queue, then the ones already searched) and "Parents, siblings and caregivers: VolunteerBadge
   background check" (the table with its filter pills). The card header still counts everyone.
+
+## 15 November 2026 — My Account at the top of the phone menu
+
+- Lawrence couldn't find My Account on his phone: it was the last item in the phone menu, below the
+  bottom of the screen. It's now an outline button beside "Register for camp" at the top of the menu,
+  and the menu's height uses `dvh` so its end no longer sits behind the browser's own bar.
