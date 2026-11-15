@@ -295,10 +295,19 @@ export default async function BackgroundChecksPage({ searchParams }) {
       };
     })
     .sort(byName);
-  const rCounts = Object.fromEntries(
-    REGISTRY_FILTERS.map((f) => [f.key, f.key ? registryRows.filter((x) => x.bucket === f.key).length : registryRows.length])
-  );
-  const rShown = rFilter ? registryRows.filter((x) => x.bucket === rFilter) : registryRows;
+  // Two lists that never overlap (Lawrence, 15 Nov 2026: "shouldn't be
+  // duplicates across cards"): adult campers (registry search) and family
+  // adults (VolunteerBadge). The header counts everyone; the filter pills are
+  // the family adults' list.
+  const camperRows = registryRows.filter((x) => x.adultCamper);
+  const familyRows = registryRows.filter((x) => !x.adultCamper);
+  const countBy = (list) =>
+    Object.fromEntries(REGISTRY_FILTERS.map((f) => [f.key, f.key ? list.filter((x) => x.bucket === f.key).length : list.length]));
+  const rCountsAll = countBy(registryRows);
+  const rCounts = countBy(familyRows);
+  const rShown = rFilter ? familyRows.filter((x) => x.bucket === rFilter) : familyRows;
+  // Adult campers already searched (the due ones are in the search queue).
+  const campersDone = camperRows.filter((x) => x.bucket !== 'due');
   // The queue: adult campers with a search due (family adults go to
   // VolunteerBadge; a registry search is their fallback, under their row).
   const queue = canWrite
@@ -371,20 +380,98 @@ export default async function BackgroundChecksPage({ searchParams }) {
     volunteerWork === 0 && vCounts.not_permitted === 0 && vCounts[''] > 0 && { text: 'Nothing due', cls: QUIET },
   ].filter(Boolean);
   const registrySummary = [
-    plural(rCounts[''], 'adult', 'adults'),
-    `${rCounts.due} background ${rCounts.due === 1 ? 'check' : 'checks'} due`,
-    `${rCounts.follow_up} ${rCounts.follow_up === 1 ? 'needs' : 'need'} follow-up`,
-    `${rCounts.not_permitted} not permitted`,
-    `${rCounts.current + rCounts.soon} current`,
+    plural(rCountsAll[''], 'adult', 'adults'),
+    `${rCountsAll.due} background ${rCountsAll.due === 1 ? 'check' : 'checks'} due`,
+    `${rCountsAll.follow_up} ${rCountsAll.follow_up === 1 ? 'needs' : 'need'} follow-up`,
+    `${rCountsAll.not_permitted} not permitted`,
+    `${rCountsAll.current + rCountsAll.soon} current`,
   ].join(' · ');
-  const registryWork = rCounts.due + rCounts.follow_up;
+  const registryWork = rCountsAll.due + rCountsAll.follow_up;
   const registryPills = [
-    rCounts.due > 0 && { text: `${rCounts.due} background ${rCounts.due === 1 ? 'check' : 'checks'} due`, cls: AMBER },
-    rCounts.follow_up > 0 && { text: `${rCounts.follow_up} follow-up`, cls: AMBER },
-    rCounts.not_permitted > 0 && { text: `${rCounts.not_permitted} not permitted`, cls: CHECK_TONE.blocked },
-    rCounts.soon > 0 && { text: `${rCounts.soon} expiring soon`, cls: AMBER },
-    registryWork === 0 && rCounts.not_permitted === 0 && rCounts[''] > 0 && { text: 'Nothing due', cls: QUIET },
+    rCountsAll.due > 0 && { text: `${rCountsAll.due} background ${rCountsAll.due === 1 ? 'check' : 'checks'} due`, cls: AMBER },
+    rCountsAll.follow_up > 0 && { text: `${rCountsAll.follow_up} follow-up`, cls: AMBER },
+    rCountsAll.not_permitted > 0 && { text: `${rCountsAll.not_permitted} not permitted`, cls: CHECK_TONE.blocked },
+    rCountsAll.soon > 0 && { text: `${rCountsAll.soon} expiring soon`, cls: AMBER },
+    registryWork === 0 && rCountsAll.not_permitted === 0 && rCountsAll[''] > 0 && { text: 'Nothing due', cls: QUIET },
   ].filter(Boolean);
+
+  // One table for both lists in Campers & families.
+  const registryTable = (rows) => (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[40rem] text-sm">
+                <thead>
+                  <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <th className="py-2 pr-3">Name</th>
+                    <th className="py-2 pr-3">Role</th>
+                    <th className="py-2 pr-3">Event</th>
+                    <th className="py-2 pr-3">Date checked</th>
+                    <th className="py-2 pr-3">Expires</th>
+                    <th className="py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((x) => (
+                    <Fragment key={x.id}>
+                    <tr className={`${canWrite ? '' : 'border-b border-neutral-100 '}align-top`}>
+                      <td className="py-2 pr-3">
+                        <PersonLink row={x} />
+                      </td>
+                      <td className="py-2 pr-3 text-neutral-600">{x.roleLabel}</td>
+                      <td className="py-2 pr-3 text-neutral-600">{x.events.join(' · ')}</td>
+                      <td className="py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>
+                      <td className={`py-2 pr-3 ${x.bucket === 'due' && x.expiresOn ? 'font-semibold text-amber-800' : ''}`}>
+                        {fmtDate(x.expiresOn) || '—'}
+                      </td>
+                      <td className="py-2">
+                        <span className="flex flex-wrap gap-1">
+                          <StatusPill pill={x.pill} />
+                          {x.bucket === 'soon' && (
+                            <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.todo}`}>
+                              Expires soon
+                            </span>
+                          )}
+                        </span>
+                        {!x.coveredByFullCheck && x.bucket === 'due' && x.noOwnEmail && (
+                          <span className={`mt-1 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.todo}`}
+                            title="No email of their own, so no VolunteerBadge invite can be sent. Write to the family: they add one on their registration, or you agree another way and record it under Background check record.">
+                            No email of their own
+                          </span>
+                        )}
+                        {!x.adultCamper && !x.coveredByFullCheck && x.bucket === 'due' && (
+                          <span className="mt-1 block text-xs">
+                            {x.vbStatus ? (
+                              <>VolunteerBadge: {VB_STATUS_WORDS[x.vbStatus] ?? x.vbStatus}</>
+                            ) : x.heldForDeposit ? (
+                              <span className="text-amber-800">VolunteerBadge background check waiting on their deposit</span>
+                            ) : (
+                              <Link href="/admin/background-checks/screening/" className="font-semibold text-brand underline">
+                                Send a VolunteerBadge invite
+                              </Link>
+                            )}
+                          </span>
+                        )}
+                        {canWrite && !x.coveredByFullCheck && x.adultCamper && (
+                          <RegistrySearchForm personId={x.id} name={x.name} today={today} initial={x.initial} />
+                        )}
+                        {/* The registry search, kept as the fallback for a family
+                            adult who declines VolunteerBadge (the board, 14 Nov 2026). */}
+                        {canWrite && !x.coveredByFullCheck && !x.adultCamper && (
+                          <details className="mt-1 text-xs" open={Boolean(x.initial)}>
+                            <summary className="cursor-pointer text-neutral-500">
+                              Use a registry search instead (if they decline VolunteerBadge)
+                            </summary>
+                            <RegistrySearchForm personId={x.id} name={x.name} today={today} initial={x.initial} />
+                          </details>
+                        )}
+                      </td>
+                    </tr>
+                    {recordFold(x, 6)}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+  );
 
   return (
     <div className="space-y-5">
@@ -582,20 +669,32 @@ export default async function BackgroundChecksPage({ searchParams }) {
           registry search doesn&rsquo;t count as a volunteer&rsquo;s background check.
         </p>
 
+        {/* ---- Adult campers: registry search ---- */}
+        <h3 className="mt-2 text-lg font-bold">Adult campers: registry search ({camperRows.length})</h3>
         {canWrite ? (
           <RegistryQueue rows={queue} today={today} />
         ) : (
           <div className={HOW_TO_BOX}>
-            <h3 className="font-bold">Background checks due ({rCounts.due})</h3>
+            <h3 className="font-bold">Registry searches due ({camperRows.length - campersDone.length})</h3>
             <p className="mt-1 text-sm text-neutral-700">
               Searches are run and recorded here by staff who can edit background checks.
             </p>
           </div>
         )}
+        {campersDone.length > 0 && (
+          <div className="rounded-lg border border-neutral-200 bg-white p-4">
+            <p className="text-sm font-semibold text-neutral-700">Already searched</p>
+            {registryTable(campersDone)}
+          </div>
+        )}
 
+        {/* ---- Parents, siblings and caregivers: VolunteerBadge ---- */}
+        <h3 className="mt-4 text-lg font-bold">
+          Parents, siblings and caregivers: VolunteerBadge background check ({familyRows.length})
+        </h3>
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <FilterPills
-            label="Campers and families to show"
+            label="Parents, siblings and caregivers to show"
             filters={REGISTRY_FILTERS}
             counts={rCounts}
             current={rFilter}
@@ -603,83 +702,10 @@ export default async function BackgroundChecksPage({ searchParams }) {
           />
           {rShown.length === 0 ? (
             <p className="mt-4 text-sm text-neutral-500">
-              {registryRows.length === 0 ? 'No adults who aren’t volunteers on upcoming events.' : 'Nobody in this list.'}
+              {familyRows.length === 0 ? 'No parents, siblings or caregivers on upcoming events.' : 'Nobody in this list.'}
             </p>
           ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[40rem] text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
-                    <th className="py-2 pr-3">Name</th>
-                    <th className="py-2 pr-3">Role</th>
-                    <th className="py-2 pr-3">Event</th>
-                    <th className="py-2 pr-3">Date checked</th>
-                    <th className="py-2 pr-3">Expires</th>
-                    <th className="py-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rShown.map((x) => (
-                    <Fragment key={x.id}>
-                    <tr className={`${canWrite ? '' : 'border-b border-neutral-100 '}align-top`}>
-                      <td className="py-2 pr-3">
-                        <PersonLink row={x} />
-                      </td>
-                      <td className="py-2 pr-3 text-neutral-600">{x.roleLabel}</td>
-                      <td className="py-2 pr-3 text-neutral-600">{x.events.join(' · ')}</td>
-                      <td className="py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>
-                      <td className={`py-2 pr-3 ${x.bucket === 'due' && x.expiresOn ? 'font-semibold text-amber-800' : ''}`}>
-                        {fmtDate(x.expiresOn) || '—'}
-                      </td>
-                      <td className="py-2">
-                        <span className="flex flex-wrap gap-1">
-                          <StatusPill pill={x.pill} />
-                          {x.bucket === 'soon' && (
-                            <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.todo}`}>
-                              Expires soon
-                            </span>
-                          )}
-                        </span>
-                        {!x.coveredByFullCheck && x.bucket === 'due' && x.noOwnEmail && (
-                          <span className={`mt-1 inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${CHECK_TONE.todo}`}
-                            title="No email of their own, so no VolunteerBadge invite can be sent. Write to the family: they add one on their registration, or you agree another way and record it under Background check record.">
-                            No email of their own
-                          </span>
-                        )}
-                        {!x.adultCamper && !x.coveredByFullCheck && x.bucket === 'due' && (
-                          <span className="mt-1 block text-xs">
-                            {x.vbStatus ? (
-                              <>VolunteerBadge: {VB_STATUS_WORDS[x.vbStatus] ?? x.vbStatus}</>
-                            ) : x.heldForDeposit ? (
-                              <span className="text-amber-800">VolunteerBadge background check waiting on their deposit</span>
-                            ) : (
-                              <Link href="/admin/background-checks/screening/" className="font-semibold text-brand underline">
-                                Send a VolunteerBadge invite
-                              </Link>
-                            )}
-                          </span>
-                        )}
-                        {canWrite && !x.coveredByFullCheck && x.adultCamper && (
-                          <RegistrySearchForm personId={x.id} name={x.name} today={today} initial={x.initial} />
-                        )}
-                        {/* The registry search, kept as the fallback for a family
-                            adult who declines VolunteerBadge (the board, 14 Nov 2026). */}
-                        {canWrite && !x.coveredByFullCheck && !x.adultCamper && (
-                          <details className="mt-1 text-xs" open={Boolean(x.initial)}>
-                            <summary className="cursor-pointer text-neutral-500">
-                              Use a registry search instead (if they decline VolunteerBadge)
-                            </summary>
-                            <RegistrySearchForm personId={x.id} name={x.name} today={today} initial={x.initial} />
-                          </details>
-                        )}
-                      </td>
-                    </tr>
-                    {recordFold(x, 6)}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            registryTable(rShown)
           )}
         </div>
       </CheckCard>

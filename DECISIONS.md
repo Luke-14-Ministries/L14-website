@@ -4909,3 +4909,10 @@ admin portal. From a Fable review:
 - "Canceled" and "canceling" (American spelling) in every label and sentence people read; the stored status
   word `cancelled` and identifiers are unchanged.
 - Loading screens: app/admin/loading.jsx (the sidebar stays) and app/account/loading.jsx.
+
+## 15 November 2026 — Campers & families: two lists, nobody twice
+
+- Lawrence: "shouldn't be duplicates across cards." Adult campers showed in the search queue and again in
+  the full table. The card now has two headed lists that never overlap: "Adult campers: registry search"
+  (the queue, then the ones already searched) and "Parents, siblings and caregivers: VolunteerBadge
+  background check" (the table with its filter pills). The card header still counts everyone.
