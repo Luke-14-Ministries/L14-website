@@ -43,7 +43,7 @@ import SupportDetailsFields from '@/components/SupportDetailsFields';
 import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 import { hasPhone } from '@/lib/caregivers';
 import { VOLUNTEER_CHILD_UNDER } from '@/lib/roles';
-import { selfRowIndex, sameName, duplicatePeople, needsOwnEmail, ownEmailProblems, ownEmailMessage, namesSelf } from '@/lib/wizardPeople';
+import { selfRowIndex, sameName, duplicatePeople, needsOwnEmail, ownEmailProblems, ownEmailMessage, namesSelf, isAdultCamperRole } from '@/lib/wizardPeople';
 
 // The emergency contact carried across the household (Lawrence, 6 Nov 2026):
 // see setSupport. A person added to the form starts with the contact the
@@ -1684,6 +1684,28 @@ export default function FamilyWizard({
             </p>
           </div>
 
+          {/* Every adult's background check, said plainly before anyone is
+              named (the board, 14 Nov 2026; Lawrence's points: the safety
+              policy, an email for each adult, VolunteerBadge's secure link,
+              and who to ask). */}
+          <div className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <p className="font-semibold">A background check for every adult</p>
+            <p className="mt-1">
+              For everyone&rsquo;s safety, Luke 14 does a background check on every adult (18 or
+              older) coming to camp: volunteers, family members and campers. Each adult needs an email
+              address below. Our background check provider, VolunteerBadge, will email them a link to
+              its secure site, where they give permission and fill in their details. We never see
+              Social Security numbers.
+            </p>
+            <p className="mt-1">
+              Questions or concerns? Email{' '}
+              <a href="mailto:info@luke14ministries.net" className="font-semibold underline">
+                info@luke14ministries.net
+              </a>{' '}
+              or write to camp staff from your dashboard after you {isUpdate ? 'update' : 'submit'}.
+            </p>
+          </div>
+
           {/* One tick instead of retyping the name from the card above.
               Requested in testing (24 Aug): the primary contact is usually
               attending, and typing your own name twice on one form is the
@@ -1857,14 +1879,15 @@ export default function FamilyWizard({
                   })()}
                   {needsOwnEmail(m, week?.startsOn) && (() => {
                     const who = m.firstName.trim() || 'This person';
-                    const isContact = i === selfIdx;
+                    const camper = isAdultCamperRole(m.role);
+                    const isContact = i === selfIdx || camper;
                     // On a non-contact login's own card, their account's
                     // address, not the household's (the contact's).
                     const household = asOther ? (selfLogin.email || '').trim() : (family.email || '').trim();
                     return (
                       <div className="mt-3 sm:max-w-md">
                         <label className={label} htmlFor={`fw-p${i}-email`}>
-                          {who}&rsquo;s own email (for the background check)
+                          {camper ? `${who}’s email for the background check` : `${who}’s own email (for the background check)`}
                         </label>
                         <input
                           id={`fw-p${i}-email`}
@@ -1877,8 +1900,9 @@ export default function FamilyWizard({
                           onChange={setM(i, 'email')}
                         />
                         <p className="mt-1 text-sm text-neutral-600">
-                          VolunteerBadge, the company that runs our background checks, emails {who} the
-                          consent form here. Each adult needs their own address.
+                          {camper
+                            ? `VolunteerBadge, the company that runs our background checks, emails the link here. It can be a parent’s or guardian’s address, if they will help ${who} with it.`
+                            : `VolunteerBadge, the company that runs our background checks, emails ${who} the link here. Each adult needs their own address.`}
                         </p>
                         {isContact && household && !(m.email ?? '').trim() && (
                           <button

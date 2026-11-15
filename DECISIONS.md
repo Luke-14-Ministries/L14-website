@@ -4795,3 +4795,14 @@ background check", the screening page's status words and confirms, the record fo
 record"), the note helper ("VolunteerBadge background check dated …"), the VolunteerBadge problem words,
 the deposit-hold words, and the family form's email message. "Check" as a verb stays. Rule added to
 WRITING.md.
+
+## 14 November 2026 — The family form says every adult gets a background check, and asks adult campers for an email
+
+Lawrence asked that the form make clear: a background check for ALL adults 18+ coming to camp, as a safety
+policy; each needs an email (volunteer, family, camper); VolunteerBadge emails a link to its secure site;
+questions to info@luke14ministries.net. "Who's coming" now carries that notice (amber box under the blue
+one), with "write to camp staff from your dashboard" as the second way to ask. Adult campers are asked for an
+email too (`needsOwnEmail` includes them); theirs may be a parent's or guardian's who helps them, so it
+never counts as shared, and its label and help say so. Their VolunteerBadge invite still waits on
+VolunteerBadge's answer about guardians; until then staff can use the registry search or record a
+background check by hand.
