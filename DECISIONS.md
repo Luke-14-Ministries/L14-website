@@ -4848,3 +4848,27 @@ paired as buddies are not stand-alone on this list waiting to be placed".
 - A Buddy column: a camper's row names their buddy or buddies; a buddy's row says whose buddy they are.
 - Only volunteers with no camper (often a volunteer child not paired) are placed by hand.
 - Program leaders' lists are unchanged: a camper's row already names their buddy (buddyWords).
+
+## 14 November 2026 — Sidebar numbers say what they count; admin flow fixes (Fable review)
+
+Lawrence asked for the badge logic clarified after the day's background check work, and a run across the
+admin portal. From a Fable review:
+
+- **Background Checks badge** = background checks staff can act on now (`lib/backgroundCheckWork.js`):
+  adults ready to invite on Background Screening (volunteers and family adults, nothing in the way), plus
+  VolunteerBadge results waiting on staff, plus adult campers with a registry search due. The page's "How
+  to run a background check" line uses the same function (ready, waiting on a deposit, results to
+  confirm, registry searches due). It used to count family adults by the old registry rule.
+  `countRegistryDue` takes `campersOnly`.
+- **Volunteers, amber** = volunteer applications waiting for a decision, now current events only and not a
+  cancelled place (the page's "volunteers to decide"). **Red** is unchanged; its hover says the work is on
+  Background Checks.
+- **Recent Changes** = families with unreviewed changes (was one per field changed).
+- **Awaiting Review**: the "Waiting on staff" tab now says "N people in M families", the badge's number.
+- Hover text on every one of these.
+- Flow: the family card says "background check due" (not "search due"); the how-to names "Background check
+  record"; a `#check-` link opens its card; "Waiting on an earlier background check order" (not Checkr);
+  Recent Changes links Awaiting Review; Background Checks and Background Screening without the grant land on
+  Volunteers with a note saying so; the person page's back link reads "Rosters".
+- Not done yet: one age rule ("18 on the first day") and Morristown's date in screeningCandidates and the
+  red badge; moving the record editor off Volunteers cards; heading levels.

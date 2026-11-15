@@ -290,6 +290,13 @@ export default async function ReviewQueuePage({ searchParams }) {
             }`}
           >
             Waiting on staff
+            {/* The nav badge's number, said here (Fable badge review, 14 Nov 2026). */}
+            {show === 'staff' && totalPending > 0 && (
+              <span className="ml-1 font-normal">
+                · {totalPending} {totalPending === 1 ? 'person' : 'people'} in {rows.length}{' '}
+                {rows.length === 1 ? 'family' : 'families'}
+              </span>
+            )}
           </Link>
           <Link
             href={`/admin/review/?show=nodeposit${eventFilter ? `&event=${eventFilter}` : ''}`}

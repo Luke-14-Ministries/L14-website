@@ -7,7 +7,9 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sinceISO, STAFF_ASSIGNED_TYPES, isCurrentEventRow, todayInMorristown } from '@/lib/events';
 import AdminNav from './AdminNav';
 import { VOLUNTEER_ROLES } from '@/lib/roles';
-import { adultOnFirstDay, countRegistryDue } from '@/lib/backgroundChecks';
+import { adultOnFirstDay } from '@/lib/backgroundChecks';
+import { backgroundCheckWork } from '@/lib/backgroundCheckWork';
+import { volunteerBadgeMode } from '@/lib/volunteerBadge';
 
 export const metadata = { title: 'Staff Admin — Luke 14 Ministries' };
 
@@ -216,7 +218,7 @@ export default async function AdminLayout({ children }) {
   if (staff && can(staff, 'read:registration')) {
     const paymentsSince = sinceISO(7);
     const [
-      { count: changesCount, error: changesError },
+      { data: changesRows, error: changesError },
       { count: volCount, error: volError },
       { count: payCount, error: payError },
       { count: cancelCount, error: cancelError },
@@ -225,18 +227,25 @@ export default async function AdminLayout({ children }) {
       { data: repliedRows, error: repliedError },
       { data: familyScholRows, error: familyScholError },
     ] = await Promise.all([
+        // Families with unreviewed changes, not one per field changed (Fable
+        // badge review, 14 Nov 2026): the page groups by family.
         supabase
           .from('family_change_log')
-          .select('id', { count: 'exact', head: true })
-          .is('reviewed_at', null),
+          .select('household_id')
+          .is('reviewed_at', null)
+          .limit(5000),
         // Applications sitting in "applied" — same treatment as Recent
         // Changes: a number on the nav whenever something needs review.
         // Not for an archived event (Lawrence, 4 Nov 2026): no badge counts
         // an event staff have taken off every current list.
+        // Current events only, and not a cancelled place: the same people as
+        // the Volunteers page's "volunteers to decide" (14 Nov 2026).
         supabase
           .from('volunteer_applications')
-          .select('id, registration_participants!inner ( registrations!inner ( events!inner ( archived_at ) ) )', { count: 'exact', head: true })
+          .select('id, registration_participants!inner ( status, registrations!inner ( events!inner ( archived_at, ends_on ) ) )', { count: 'exact', head: true })
           .eq('status', 'applied')
+          .neq('registration_participants.status', 'cancelled')
+          .gte('registration_participants.registrations.events.ends_on', new Date().toISOString().slice(0, 10))
           .is('registration_participants.registrations.events.archived_at', null),
         // Payment ACTIVITY, not a review queue (asked for 24 Aug). Nothing
         // here is waiting on a decision; the number answers "has money moved
@@ -317,7 +326,7 @@ export default async function AdminLayout({ children }) {
     if (familyScholError) console.error('family scholarships badge:', familyScholError.message);
     if (reviewError) console.error('review badge:', reviewError.message);
     if (repliedError) console.error('review badge (family replies):', repliedError.message);
-    unreviewedChanges = changesCount ?? 0;
+    unreviewedChanges = new Set((changesRows ?? []).map((r) => r.household_id ?? 'none')).size;
     volunteersAwaiting = volCount ?? 0;
 
     // Volunteers on an event that has not finished, counted by PERSON, whose
@@ -384,12 +393,16 @@ export default async function AdminLayout({ children }) {
   // Registry searches due (0162): every adult who isn't a volunteer with no
   // current search, the same people as the queue on Background Checks. For
   // holders of the background-checks grant, who are the ones who can do it.
+  // Since 14 Nov 2026 (Fable badge review): what staff can do now, the same
+  // number as the page's top line (lib/backgroundCheckWork.js).
   if (staff && can(staff, 'background_checks')) {
     try {
-      registrySearchesDue = await countRegistryDue(supabase, todayInMorristown());
+      registrySearchesDue = (
+        await backgroundCheckWork(supabase, { sandbox: volunteerBadgeMode() === 'test', today: todayInMorristown() })
+      ).total;
     } catch (err) {
       // Logged, never thrown: a throw here would take down every staff page.
-      console.error('registry search badge:', err.message);
+      console.error('background check badge:', err.message);
     }
   }
 
@@ -658,9 +671,11 @@ export default async function AdminLayout({ children }) {
               '/admin/activities': ['outside-provider confirmation waiting to be checked', 'outside-provider confirmations waiting to be checked'],
               '/admin/my-program': ['person in your program', 'people in your program'],
               '/admin/background-checks': [
-                'adult who isn’t a volunteer with a registry search due',
-                'adults who aren’t volunteers with a registry search due',
+                'background check to act on now: ready to invite, a result to confirm, or an adult camper’s registry search',
+                'background checks to act on now: ready to invite, results to confirm, or adult campers’ registry searches',
               ],
+              '/admin/changes': ['family with changes nobody has marked reviewed', 'families with changes nobody has marked reviewed'],
+              '/admin/volunteers': ['volunteer application waiting for a decision', 'volunteer applications waiting for a decision'],
             }}
             // The colour key is staff vocabulary ("waiting on staff",
             // background checks); a leader sees one blue number (26 Oct 2026).
@@ -668,7 +683,10 @@ export default async function AdminLayout({ children }) {
             mailBadges={{ '/admin/review': unreadReplies }}
             redBadges={{ '/admin/volunteers': volunteersMissingCheck }}
             redBadgeTitles={{
-              '/admin/volunteers': ['adult volunteer without a current background check marked OK', 'adult volunteers without a current background check marked OK'],
+              '/admin/volunteers': [
+                'adult volunteer who can’t be approved yet: no current background check marked OK (done on Background Checks)',
+                'adult volunteers who can’t be approved yet: no current background check marked OK (done on Background Checks)',
+              ],
             }}
             />
           </div>

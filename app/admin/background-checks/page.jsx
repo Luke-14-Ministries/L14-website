@@ -34,6 +34,7 @@ import CheckLengthForm from './CheckLengthForm';
 import RegistrySearchForm from './RegistrySearchForm';
 import RegistryQueue from './RegistryQueue';
 import RecordFold from './RecordFold';
+import { backgroundCheckWork } from '@/lib/backgroundCheckWork';
 import ClearanceEditor from '@/components/ClearanceEditor';
 import { loadClearanceRecords, vbSummary } from '@/lib/clearanceRecords';
 import CheckCard from './CheckCard';
@@ -332,12 +333,12 @@ export default async function BackgroundChecksPage({ searchParams }) {
     }
   }
   // Who an invite would go to now: no check, or one out of date, deposit in.
-  const OPEN_VB = ['sending', 'invited', 'applied', 'processing', 'in_review', 'clear', 'consider'];
-  const familyDue = registryRows.filter((x) => !x.adultCamper && x.bucket === 'due' && !OPEN_VB.includes(x.vbStatus));
-  const readyToInvite =
-    volunteerRows.filter((x) => (x.bucket === 'missing' || x.bucket === 'expired') && !x.heldForDeposit).length +
-    familyDue.filter((x) => !x.heldForDeposit).length;
-  const heldCount = volunteerRows.filter((x) => x.heldForDeposit).length + familyDue.filter((x) => x.heldForDeposit).length;
+  // The same numbers as the nav badge (lib/backgroundCheckWork.js): who an
+  // invite would go to now, who waits on the deposit, results waiting on
+  // staff, and adult campers' registry searches due.
+  const work = await backgroundCheckWork(supabase, { sandbox: volunteerBadgeMode() === 'test', today });
+  const readyToInvite = work.ready;
+  const heldCount = work.held;
 
   // ---- What each folded header says (Lawrence, 11 Nov 2026) ----
   // In the same tones as the status pills (CHECK_TONE). Read here, not at
@@ -438,6 +439,25 @@ export default async function BackgroundChecksPage({ searchParams }) {
               {heldCount > 0 && (
                 <>
                   {' '}(<strong className="text-amber-700">{heldCount} more waiting on a deposit</strong>)
+                </>
+              )}
+              {work.results > 0 && (
+                <>
+                  {', '}
+                  <strong className="text-amber-700">
+                    {work.results} VolunteerBadge {work.results === 1 ? 'result' : 'results'} to confirm
+                  </strong>{' '}
+                  on Background Screening
+                </>
+              )}
+              {work.registry > 0 && (
+                <>
+                  {', '}
+                  <strong className="text-amber-700">
+                    {work.registry} adult {work.registry === 1 ? 'camper' : 'campers'}&rsquo; registry{' '}
+                    {work.registry === 1 ? 'search' : 'searches'} due
+                  </strong>{' '}
+                  below
                 </>
               )}
               . The next page lists them:
