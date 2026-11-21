@@ -34,8 +34,8 @@ Two constraints shape every decision:
 nameservers moved to Cloudflare, Supabase's Site URL and `SITE_URL` (Vercel Production and the
 function secrets) name the real domain, and the four preview switches were reversed together
 (`dc36479`). Stripe has been live since 29 Oct (Stage B) and `REMINDERS_MODE=live` since 4 Nov.
-**A push to `main` now reaches families within minutes.** Left of Stage C: C6's email check, C7 the
-transfer to Cloudflare Registrar, C10 the phone checks, C11 the records, and a few days after C10 a
+**A push to `main` now reaches families within minutes.** C7, the transfer to Cloudflare Registrar,
+finished 19 Nov 2026. Left of Stage C: C6's email check, C10 the phone checks, C11 the records, and a few days after C10 a
 308 redirect from `luke14-ministries.vercel.app` to the real domain. H3 (a card payment on a phone)
 was still open at the swap and is still worth doing. **Testing Script 7** (SharePoint, `01 Plans and Decisions`) holds the
 checks for after go-live. The working checklist is `DO-THIS-NEXT.md` (its *Go live* section, A1–C11);
@@ -99,8 +99,8 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
    refund webhook fails silently (migration `0054`). Stripe payouts are automatic, daily, no minimum
    balance (W44, 20 Oct).
 6. **Stage C — the address** — *done 12 Nov 2026*: C2–C5 (nameservers to Cloudflare at 8:32 PM ET),
-   C8 (Site URL and `SITE_URL`), C9 (`dc36479`; the 2026 Retreat was archived 2 Nov). **Left:** C6's
-   email check, C7 the transfer to Cloudflare Registrar, C10 a phone check, C11 the records, then
+   C8 (Site URL and `SITE_URL`), C9 (`dc36479`; the 2026 Retreat was archived 2 Nov), C7 (registrar,
+   19 Nov). **Left:** C6's email check, C10 a phone check, C11 the records, then
    the preview-address redirect and Microsoft DKIM signing on.
 
 ---
@@ -537,10 +537,9 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
   (A7); signing in Microsoft 365 is switched on only after C6's email check.
 - **Microsoft 365 also has `autodiscover`, `lyncdiscover` and `sip` CNAMEs** (Outlook and Teams
   sign-in); keep them.
-- **The registrar is still Squarespace** until the transfer to Cloudflare Registrar (C7) completes.
-  The registrant contact is a personal email address, not the ministry's (DO-THIS-NEXT has who), so
-  the transfer's approval may go there. Change the registrant to the ministry (admin@) only after the
-  transfer: a registrant change can lock the domain against transfer for 60 days.
+- **The registrar is Cloudflare Registrar since 19 Nov 2026** (C7), in the same admin@ account as the
+  zone. The registrant is the ministry (admin@, changed 13 Nov before the transfer). Registry status
+  *client transfer prohibited* (locked); registered until 21 Oct 2028, renewing at cost.
 - **Mail is Microsoft 365** — MX `luke14ministries-net.mail.protection.outlook.com`, plus an `MS=`
   verification token.
 - **SPF is `v=spf1 include:spf.protection.outlook.com ~all`** — a *soft* fail (`~all`, seen 28 Oct 2026; it was `-all` on 7 Aug). Adding a sender means
@@ -672,7 +671,7 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
 - **Phase 3** — review by real people on the preview URL. Done October 2026.
 - **Phase 4 — launch, in three sittings** (DO-THIS-NEXT *Go live*). Stage A (ready ahead) done
   28 Oct; the gate G1–G4 29 Oct; Stage B live Stripe keys 29 Oct – 4 Nov; **Stage C, the domain,
-  12 Nov 2026** (the transfer and the after-checks still open). Board approval for B and C: given by
+  12 Nov 2026** (the registrar transfer done 19 Nov; the after-checks still open). Board approval for B and C: given by
   Larry, 29 Oct 2026 (`DECISIONS.md`). (Vercel Pro: done 20 Oct.)
 - **Now: live.** Small fixes go straight to `main` and reach families in minutes; medium and large
   changes are meant to go through the test site first (DO-THIS-NEXT Stage D, once C has settled).

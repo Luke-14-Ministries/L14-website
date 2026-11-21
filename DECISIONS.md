@@ -5013,3 +5013,13 @@ admin portal. From a Fable review:
   Checks cards (CheckCard), with pills in the header: ready to send, can't be sent yet, already invited;
   waiting on you, open, finished. Each starts open when it has something in it to act on. The "Check
   VolunteerBadge for updates" button moved from the header into the card.
+
+## 2026-11-21 — C7 done: the domain is registered with Cloudflare
+
+Cloudflare emailed "transfer complete" at 10:18 PM ET on 19 Nov 2026 (to admin@ and Lawrence). The
+public registry, checked 21 Nov, names Cloudflare, Inc. as registrar, shows the domain locked
+(*client transfer prohibited*), the nameservers unchanged, DNSSEC still off, and an expiry of
+21 Oct 2028 (a transfer adds a year). The site and the mail record answered normally. The registrant
+had been moved to the ministry (admin@) at Squarespace on 13 Nov, before the transfer, so no contact
+change is needed now. Left for a person in Cloudflare: confirm the contact, auto-renew and its card;
+check Squarespace no longer bills for the domain; the `_domainconnect` record can go.
