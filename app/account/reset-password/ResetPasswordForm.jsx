@@ -1,17 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PasswordInput from '@/components/PasswordInput';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+// Supabase refuses a password change on an account with two-factor until the
+// session has passed the code step (aal2), and the link in a reset email only
+// gives aal1 -- so a reset by anyone with two-factor failed with Supabase's own
+// "AAL2 session is required..." (Lawrence, 21 Nov 2026). A browser remembered
+// at login is aal1 too (the skip is ours, not Supabase's), so Change password
+// on the dashboard hit the same wall. When the account needs it, the form asks
+// for the authenticator code and verifies it before saving.
+async function verifyAnyFactor(supabase, code) {
+  const { data: list } = await supabase.auth.mfa.listFactors();
+  const verified = (list?.totp ?? []).filter((f) => f.status === 'verified');
+  // Someone with two devices may type a code from either: try each.
+  for (const f of verified) {
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: f.id, code });
+    if (!error) return true;
+  }
+  return false;
+}
+
+function friendly(err) {
+  const msg = err?.message ?? '';
+  if (err?.code === 'same_password' || /different from the old/i.test(msg)) {
+    return 'That is your current password. Please choose a different one.';
+  }
+  if (err?.code === 'weak_password' || /weak|pwned|known to be/i.test(msg)) {
+    return 'That password is too easy to guess or has appeared in a data breach elsewhere. Please choose another.';
+  }
+  return msg || 'The password could not be saved. Please try again.';
+}
+
 export default function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [code, setCode] = useState('');
+  const [needsCode, setNeedsCode] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const router = useRouter();
   const annual = useSearchParams().get('reason') === 'annual';
+
+  useEffect(() => {
+    createClient()
+      .auth.mfa.getAuthenticatorAssuranceLevel()
+      .then(({ data }) => setNeedsCode(data?.nextLevel === 'aal2' && data?.currentLevel !== 'aal2'))
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -24,10 +62,24 @@ export default function ResetPasswordForm() {
 
     setBusy(true);
     const supabase = createClient();
+    if (needsCode) {
+      if (!(await verifyAnyFactor(supabase, code.trim()))) {
+        setError('That code did not match. It changes every 30 seconds, so try the current one.');
+        setBusy(false);
+        return;
+      }
+      setNeedsCode(false);
+    }
     const { error: updateError } = await supabase.auth.updateUser({ password });
 
     if (updateError) {
-      setError(updateError.message);
+      // In case the code check above was skipped (the level lookup failed).
+      if (updateError.code === 'insufficient_aal' || /AAL2/i.test(updateError.message ?? '')) {
+        setNeedsCode(true);
+        setError('Your account has two-factor turned on. Enter the code from your authenticator app as well.');
+      } else {
+        setError(friendly(updateError));
+      }
       setBusy(false);
       return;
     }
@@ -90,6 +142,27 @@ export default function ResetPasswordForm() {
         className="w-full rounded-sm border border-neutral-300 px-4 py-2.5"
         wrapClassName="mb-6"
       />
+      {needsCode && (
+        <>
+          <label className="block font-semibold mb-1.5" htmlFor="rp-code">
+            Code from your authenticator app
+          </label>
+          <p className="text-sm text-neutral-500 mb-1.5">
+            Your account has two-factor turned on, so changing the password needs the 6-digit code too.
+          </p>
+          <input
+            id="rp-code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            required
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-6 tracking-widest"
+          />
+        </>
+      )}
       <button type="submit" className="btn-primary w-full" disabled={busy}>
         {busy ? 'Saving…' : 'Save New Password'}
       </button>

@@ -31,6 +31,22 @@ export const metadata = { title: 'Confirm' };
 // flow that arrives with a ?code=. New emails should point HERE; the Supabase
 // email templates (dashboard -> Authentication -> Emails) are what decide.
 
+// Where to send someone once the link has signed them in. An account with
+// two-factor still owes its code (the link gives aal1), and the middleware
+// would bounce the onward page to the code step -- but that bounce, after a
+// server action's redirect, left the address bar on the onward page: the code
+// step's "Remember this browser" then posted to the wrong page and failed, and
+// the person landed on the dashboard instead of the reset form (Lawrence's
+// reset, 21 Nov 2026). So go to the code step directly, with the onward page
+// as its next. A remembered browser skips the code there, as at any login.
+async function onward(supabase, next) {
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === 'aal1' && aal?.nextLevel === 'aal2') {
+    return `/account/?verify=1&next=${encodeURIComponent(next)}`;
+  }
+  return next;
+}
+
 async function confirmAction(formData) {
   'use server';
 
@@ -46,7 +62,7 @@ async function confirmAction(formData) {
       type,
       token_hash: tokenHash,
     });
-    if (!error) redirect(next);
+    if (!error) redirect(await onward(supabase, next));
   }
 
   // Same courtesy as the callback route: if a duplicate submit from this
@@ -55,7 +71,7 @@ async function confirmAction(formData) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect(next);
+  if (user) redirect(await onward(supabase, next));
 
   redirect('/account/link-expired/');
 }

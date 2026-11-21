@@ -5023,3 +5023,21 @@ public registry, checked 21 Nov, names Cloudflare, Inc. as registrar, shows the 
 had been moved to the ministry (admin@) at Squarespace on 13 Nov, before the transfer, so no contact
 change is needed now. Left for a person in Cloudflare: confirm the contact, auto-renew and its card;
 check Squarespace no longer bills for the domain; the `_domainconnect` record can go.
+
+## 2026-11-21 — Password reset works for accounts with two-factor; volunteer card on phones
+
+- **Reset with two-factor.** Supabase refuses a password change on an account with two-factor until
+  the session has passed the code step (aal2); the reset email's link gives aal1. A remembered
+  browser skips our code step but is still aal1 to Supabase, so Lawrence's reset on his phone failed
+  with Supabase's own "AAL2 session is required…". The reset form now asks for the authenticator code
+  when the account needs it (any of the person's devices is accepted) and verifies it before saving;
+  "same password" and "weak password" refusals are said in plain words. This also covers Change
+  password from the dashboard on a remembered browser.
+- **The confirm page sends a two-factor account straight to the code step** (`/account/?verify=1&next=…`)
+  instead of the onward page. The middleware's bounce after a server action's redirect left the
+  address bar on the reset page: "Remember this browser" then posted to the wrong page and failed, and
+  the person landed on the dashboard instead of the reset form. Checked on the local copy: link →
+  code step → reset form; remembered browser → reset form with its code field; reused password
+  named; new password accepted, old refused.
+- **Volunteer application cards on phones:** the name and event take the full first line and the
+  status chip and button sit below (the zero-basis text column had shrunk to one word wide).
