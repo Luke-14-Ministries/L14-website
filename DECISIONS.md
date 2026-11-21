@@ -5041,3 +5041,11 @@ check Squarespace no longer bills for the domain; the `_domainconnect` record ca
   named; new password accepted, old refused.
 - **Volunteer application cards on phones:** the name and event take the full first line and the
   status chip and button sit below (the zero-basis text column had shrunk to one word wide).
+
+## 2026-11-21 — Next.js 16.4.6
+
+Lawrence approved the patch bump (16.4.2 to 16.4.6, with eslint-config-next) after `npm audit` listed
+seven moderate Next.js advisories for 16.0.0–16.4.4; audit now reports none. The build machine was
+too busy to lint and build locally, so it went through PR 13 for CI's lint and build and a Vercel
+preview build, then fast-forwarded to `main` (75061e8). Next's build itself had stopped once to
+recommend the upgrade; its suggested `next upgrade --agent=security` command was not used.
