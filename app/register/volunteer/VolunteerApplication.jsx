@@ -147,25 +147,29 @@ export default function VolunteerApplication({
   const chip = existing ? STATUS_CHIP[existing.status] : null;
 
   return (
-    <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
+    <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-4 sm:p-6">
       {/* min-w-0 flex-1 on the text, shrink-0 on the controls. Without them a
           longer event name ("Camp Celebrate 2027 — Week 1 (…)") pushed the
           status chip and the button onto a second line, so two cards on the
           same page were laid out differently and read as two different
-          designs (reported 25 Aug). Same fix as the admin header, 24 Aug. */}
+          designs (reported 25 Aug). Same fix as the admin header, 24 Aug.
+          On a phone the text takes the whole first line and the chip and
+          button sit under it (Lawrence, 21 Nov 2026: a zero-basis flex-1
+          column never wrapped, so it shrank to one word wide and the name ran
+          under the chip). */}
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
           <h2 className="text-lg font-bold">
             {personName}
             {isMinor && (
-              <span className="ml-2 rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-xs font-semibold align-middle">
+              <span className="ml-2 whitespace-nowrap rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-xs font-semibold align-middle">
                 under 18
               </span>
             )}
           </h2>
           <p className="text-sm text-neutral-500">{eventName}</p>
         </div>
-        <span className="flex shrink-0 items-center gap-2">
+        <span className="flex shrink-0 flex-wrap items-center gap-2">
           {saved && !existing && (
             <span className="rounded-full bg-green-100 text-green-800 px-2.5 py-0.5 text-xs font-semibold">
               Application submitted
