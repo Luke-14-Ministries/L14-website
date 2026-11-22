@@ -23,8 +23,23 @@ async function verifyAnyFactor(supabase, code) {
   return false;
 }
 
+// Changing a password from the dashboard needs the current one (Lawrence,
+// 21 Nov 2026: a phone left signed in should not let someone else take over
+// the account). The reset-email link is the exception -- that person has
+// forgotten it. Supabase draws the same line when its "require current
+// password" setting is on: a session that began from an emailed link (amr
+// otp / magiclink / recovery) is exempt, and so is no one else. The server's
+// check is the real one; this only decides whether to show the box.
+const LINK_METHODS = ['otp', 'magiclink', 'recovery'];
+function cameFromEmailLink(aal) {
+  return (aal?.currentAuthenticationMethods ?? []).some((m) => LINK_METHODS.includes(m?.method));
+}
+
 function friendly(err) {
   const msg = err?.message ?? '';
+  if (err?.code === 'current_password_mismatch') {
+    return 'Your current password was not right. Please try it again.';
+  }
   if (err?.code === 'same_password' || /different from the old/i.test(msg)) {
     return 'That is your current password. Please choose a different one.';
   }
@@ -39,6 +54,8 @@ export default function ResetPasswordForm() {
   const [confirm, setConfirm] = useState('');
   const [code, setCode] = useState('');
   const [needsCode, setNeedsCode] = useState(false);
+  const [current, setCurrent] = useState('');
+  const [needsCurrent, setNeedsCurrent] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const router = useRouter();
@@ -47,7 +64,10 @@ export default function ResetPasswordForm() {
   useEffect(() => {
     createClient()
       .auth.mfa.getAuthenticatorAssuranceLevel()
-      .then(({ data }) => setNeedsCode(data?.nextLevel === 'aal2' && data?.currentLevel !== 'aal2'))
+      .then(({ data }) => {
+        setNeedsCode(data?.nextLevel === 'aal2' && data?.currentLevel !== 'aal2');
+        setNeedsCurrent(!cameFromEmailLink(data));
+      })
       .catch(() => {});
   }, []);
 
@@ -70,9 +90,18 @@ export default function ResetPasswordForm() {
       }
       setNeedsCode(false);
     }
-    const { error: updateError } = await supabase.auth.updateUser({ password });
+    const { error: updateError } = await supabase.auth.updateUser(
+      needsCurrent ? { password, current_password: current } : { password }
+    );
 
     if (updateError) {
+      // In case the lookup above failed and the box was not shown.
+      if (updateError.code === 'current_password_required') {
+        setNeedsCurrent(true);
+        setError('Please enter your current password as well.');
+        setBusy(false);
+        return;
+      }
       // In case the code check above was skipped (the level lookup failed).
       if (updateError.code === 'insufficient_aal' || /AAL2/i.test(updateError.message ?? '')) {
         setNeedsCode(true);
@@ -104,7 +133,9 @@ export default function ResetPasswordForm() {
       <p className="text-sm text-neutral-500 mb-5">
         {annual
           ? 'Staff passwords are changed once a year. Choose a new one to carry on: at least 10 characters, and not one you use anywhere else.'
-          : <>You&rsquo;re signed in from the link in your email. Choose a new password (at least 10 characters) and you&rsquo;re done.</>}
+          : needsCurrent
+            ? 'Enter your current password, then choose a new one (at least 10 characters).'
+            : <>You&rsquo;re signed in from the link in your email. Choose a new password (at least 10 characters) and you&rsquo;re done.</>}
       </p>
 
       {error && (
@@ -116,6 +147,25 @@ export default function ResetPasswordForm() {
         </p>
       )}
 
+      {needsCurrent && (
+        <>
+          <label className="block font-semibold mb-1.5" htmlFor="rp-current">
+            Current password
+          </label>
+          <PasswordInput
+            id="rp-current"
+            autoComplete="current-password"
+            required
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            className="w-full rounded-sm border border-neutral-300 px-4 py-2.5"
+            wrapClassName="mb-1.5"
+          />
+          <p className="text-sm text-neutral-500 mb-4">
+            Forgotten it? <a href="/account/forgot-password/" className="text-brand underline">Send a reset link</a> instead.
+          </p>
+        </>
+      )}
       <label className="block font-semibold mb-1.5" htmlFor="rp-password">
         New password
       </label>

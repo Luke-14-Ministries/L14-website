@@ -5049,3 +5049,17 @@ seven moderate Next.js advisories for 16.0.0–16.4.4; audit now reports none. T
 too busy to lint and build locally, so it went through PR 13 for CI's lint and build and a Vercel
 preview build, then fast-forwarded to `main` (75061e8). Next's build itself had stopped once to
 recommend the upgrade; its suggested `next upgrade --agent=security` command was not used.
+
+## 2026-11-21 — Change password needs the current one; logged-out pages reload
+
+Lawrence found two things on his phone. **Log out** looked like it failed: Back showed the dashboard
+and its pages opened. Supabase's auth logs showed all three of the day's logouts had worked (the old
+session was refused from then on), so the phone was showing pages it kept in memory (the
+back/forward cache restores the whole page, Next's store of visited pages included). `IdleTimeout`
+now checks for the sign-in cookie whenever a page comes back to life (pageshow, tab shown, window
+focus) and reloads if it is gone, which lands on the login screen. **Change password** on the
+dashboard asked only for the new password. The form now asks for the current one too, except in a
+session that began from an emailed link (amr `otp`/`magiclink`/`recovery`), which is the reset case.
+The real check is Supabase's **require current password** setting (Lawrence switches it on in
+Authentication); Supabase exempts the same emailed-link sessions (`session.IsRecovery()` in
+supabase/auth), so the reset email keeps working.

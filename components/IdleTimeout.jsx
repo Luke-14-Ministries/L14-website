@@ -51,6 +51,18 @@ const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchst
 // the person who walked away from the person who picked up their phone.
 const LAST_KEY = 'l14_last_activity';
 
+// Is the Supabase sign-in cookie still there? Read straight from
+// document.cookie: no Supabase call, so no auth lock (see onAuthStateChange
+// below) and no network. The cookie may be split into .0, .1 chunks.
+const SESSION_COOKIE = /(?:^|;\s*)sb-[^=;]+-auth-token(?:\.\d+)?=[^;]/;
+function hasSessionCookie() {
+  try {
+    return SESSION_COOKIE.test(document.cookie);
+  } catch {
+    return true; // cannot tell: leave the page alone
+  }
+}
+
 function readLastActivity(userId) {
   try {
     const raw = window.localStorage.getItem(LAST_KEY);
@@ -301,10 +313,23 @@ export default function IdleTimeout() {
   //
   // All three ask the same question of the stored stamp: has too much real
   // time passed?
+  //
+  // They also ask whether this browser is still signed in at all. Reported
+  // 21 Nov 2026: after Log out on a phone, Back showed the dashboard again and
+  // its pages still opened. Supabase's logs showed the logout had worked (the
+  // old session was refused from then on); the phone was showing pages it
+  // kept in memory -- the back/forward cache restores the whole page,
+  // including Next's store of pages already visited. Another tab left open
+  // does the same. So a page that comes back to life with the sign-in cookie
+  // gone reloads, and the reload meets the login screen.
   useEffect(() => {
     if (!enabled) return;
 
     const recheck = () => {
+      if (!hasSessionCookie()) {
+        window.location.reload();
+        return;
+      }
       const stored = readLastActivity(userIdRef.current);
       if (stored != null && Date.now() - stored >= idleLimitRef.current) {
         doLogout(true);
