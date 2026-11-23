@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
+import { householdPhrase } from '@/lib/householdInvite';
+import { InviteProblem } from '@/components/HouseholdInviteNotes';
 
 export const metadata = { title: 'Join your family' };
 
@@ -7,10 +9,15 @@ export const metadata = { title: 'Join your family' };
 // emailed links, opening it spends nothing: the button posts to ./accept/.
 // It sits under /auth/ so the two-factor gate leaves it alone; the accept
 // function checks the signed-in login's own email against the invite.
+//
+// 23 Nov 2026 (S3-14, A5-06): a refusal arrives as ?problem=<code> and shows
+// one of the site's own sentences; ?error= and any unknown code print
+// nothing, so a link cannot put its own words on this page. The household's
+// name no longer reads "the Smith Household household" (householdPhrase).
 export default async function HouseholdInvitePage({ searchParams }) {
   const sp = await searchParams;
   const token = typeof sp?.token === 'string' ? sp.token : '';
-  const error = typeof sp?.error === 'string' ? sp.error.slice(0, 300) : '';
+  const problem = typeof sp?.problem === 'string' ? sp.problem : '';
   const supabase = await createClient();
   const user = await getCurrentUser();
 
@@ -24,6 +31,7 @@ export default async function HouseholdInvitePage({ searchParams }) {
   const here = `/auth/household-invite/?token=${encodeURIComponent(token)}`;
   const signedInAs = (user?.email ?? '').toLowerCase();
   const rightLogin = invite && signedInAs === invite.email;
+  const householdWords = householdPhrase(invite?.household_name);
 
   let title = 'Join your family';
   let body = null;
@@ -48,8 +56,8 @@ export default async function HouseholdInvitePage({ searchParams }) {
     body = (
       <>
         {invite.invited_by_name || 'Someone in your family'} invited <strong>{invite.email}</strong> to share the{' '}
-        <strong>{invite.household_name}</strong> household. Sign in with that address, or create an account with it,
-        then come back to this link.
+        <strong>{householdWords}</strong>. Sign in with that address, or create an account with it. You will come
+        straight back here to join.
       </>
     );
     action = (
@@ -80,15 +88,16 @@ export default async function HouseholdInvitePage({ searchParams }) {
   } else {
     body = (
       <>
-        {invite.invited_by_name || 'Someone in your family'} invited you to share the <strong>{invite.household_name}</strong>{' '}
-        household. You&rsquo;ll see its registrations, payments and details with your own sign-in.
+        {invite.invited_by_name || 'Someone in your family'} invited you to share the <strong>{householdWords}</strong>.
+        With your own sign-in you&rsquo;ll see, and can change, its registrations, payments and details, the same as
+        the adults already on it.
       </>
     );
     action = (
       <form action="/auth/household-invite/accept/" method="post">
         <input type="hidden" name="token" value={token} />
         <button type="submit" className="btn-primary w-full">
-          Join the {invite.household_name} household
+          Join the {householdWords}
         </button>
       </form>
     );
@@ -99,11 +108,8 @@ export default async function HouseholdInvitePage({ searchParams }) {
       <div className="container-site max-w-md mx-auto">
         <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8 text-center">
           <h1 className="text-3xl font-bold mb-3">{title}</h1>
-          {error && (
-            <p role="alert" className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-left text-red-800">
-              {error}
-            </p>
-          )}
+          {/* An invite that is no longer open already says why in its title. */}
+          <InviteProblem code={invite && invite.status !== 'open' ? '' : problem} className="mb-4" />
           {body && <p className="text-neutral-700 mb-6">{body}</p>}
           {action}
         </div>
