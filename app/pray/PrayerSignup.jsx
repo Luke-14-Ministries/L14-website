@@ -45,9 +45,11 @@ export default function PrayerSignup() {
       <div role="status" className="rounded-sm border border-brand bg-brand-light px-5 py-6 text-left text-brand-dark">
         <p className="text-lg font-bold">Thank you! Now check your email.</p>
         <p className="mt-2">
-          We sent a confirmation to <span className="font-semibold">{form.email}</span>. Press the
-          button in it and the prayer emails will start coming. If it is not there in a few minutes,
-          look in your junk or spam folder.
+          {/* Worded to fit both cases, new or already on the list (23 Nov 2026): the page
+              never says which, so it never tells anyone who is on the list. */}
+          We sent an email to <span className="font-semibold">{form.email}</span>. If you are new to
+          the list, press the button in it and the prayer emails will start coming. If it is not
+          there in a few minutes, look in your junk or spam folder.
         </p>
       </div>
     );
