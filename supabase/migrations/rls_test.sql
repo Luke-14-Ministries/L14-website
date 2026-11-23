@@ -91,6 +91,12 @@ exception
 end;
 $$;
 
+-- Since 0175 a new function reaches nobody but its owner until granted, the
+-- session's own pg_temp helpers included; the personas run as authenticated.
+grant execute on function pg_temp.as_user(uuid), pg_temp.as_user_aal1(uuid, text),
+  pg_temp.expect(text, bigint, bigint), pg_temp.expect_denied(text, text),
+  pg_temp.expect_allowed(text, text), pg_temp.expect_no_effect(text, text) to public;
+
 
 -- ---------------------------------------------------------------------
 -- Seed, as the table owner (bypasses RLS)
@@ -573,6 +579,132 @@ $$;
 
 
 -- ---------------------------------------------------------------------
+-- Function grants and read rules (0175, 23 Nov 2026). Its own block,
+-- cleaned up after itself, so the checks below see the seed as it was.
+-- ---------------------------------------------------------------------
+do $$
+declare
+  uA uuid; uR uuid; uF uuid; hA uuid; pA uuid; regA uuid;
+  uAct uuid := '99990000-0000-4000-8000-000000000175';  -- staff, Activities write only
+  uNew uuid := '99990000-0000-4000-8000-000000000176';  -- a first-time family login
+  hNew uuid; frId uuid; noteId uuid; noteAuthor uuid;
+  n bigint; paid bigint; s text;
+begin
+  select v into uA from t where k='uA';   select v into uR from t where k='uR';
+  select v into uF from t where k='uF';   select v into hA from t where k='hA';
+  select v into pA from t where k='pA';   select v into regA from t where k='regA';
+
+  -- What a signed-out visitor may run is exactly the recorded list. A new
+  -- function for anon is a decision: add it to 0175's list and here.
+  select string_agg(p.proname || '(' || oidvectortypes(p.proargtypes) || ')', ', ' order by p.proname)
+    into s
+    from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ns.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
+  if s is distinct from 'confirm_household_email_change(text), household_invite_preview(text), is_staff()' then
+    raise exception 'FAIL: anon may run exactly three functions in public (0175) — got %', s;
+  end if;
+
+  select count(*) into n from pg_policies
+   where schemaname in ('public', 'storage') and roles = '{public}';
+  perform pg_temp.expect('no policy applies to every role, signed-out included (0175)', n, 0);
+
+  -- A function made from now on reaches nobody until granted.
+  create function public.zz_probe_0175() returns int language sql as 'select 1';
+  select count(*) into n from pg_proc
+   where proname = 'zz_probe_0175'
+     and (has_function_privilege('anon', oid, 'execute') or has_function_privilege('authenticated', oid, 'execute'));
+  perform pg_temp.expect('a new function is not executable by anon or authenticated until granted (0175)', n, 0);
+  drop function public.zz_probe_0175();
+
+  -- Seed: an Activities-only staff member, a family scholarship request, a
+  -- first-time login with no household.
+  insert into auth.users (id, email) values (uAct, 'act@example.test'), (uNew, 'new@example.test');
+  insert into public.staff (profile_id, role, can_view_sensitive) values (uAct, 'coordinator', false);
+  insert into public.staff_grants (profile_id, area, level) values (uAct, 'activities', 'write');
+  insert into public.family_scholarship_requests (registration_id, ask_kind, family_statement)
+    values (regA, 'unsure', 'harness statement of need') returning id into frId;
+
+  set local role authenticated;
+
+  ---- a family edits its support record but never deletes it ----------
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_allowed('a family may still update its own support record (0175)',
+    format('update public.person_support set other_concerns = other_concerns where person_id = %L', pA));
+  perform pg_temp.expect_no_effect('a family may NOT delete its own support record (0175)',
+    format('delete from public.person_support where person_id = %L', pA));
+  set local role postgres;
+  select count(*) into n from public.person_support where person_id = pA;
+  perform pg_temp.expect('the family''s support record is still there (0175)', n, 1);
+  set local role authenticated;
+
+  ---- Activities-only staff: no statements of need, emails or paid totals
+  perform pg_temp.as_user(uAct);
+  select count(*) into n from public.family_scholarship_requests;
+  perform pg_temp.expect('Activities-only staff sees no scholarship requests (0175)', n, 0);
+  select count(*) into n from public.message_log;
+  perform pg_temp.expect('Activities-only staff sees no stored emails (0175)', n, 0);
+  select public.registration_paid_cents(regA) into paid;
+  if paid is not null then
+    raise exception 'FAIL: Activities-only staff reads a paid total (0175) — got %', paid;
+  end if;
+
+  perform pg_temp.as_user(uR);   -- Registration and Payments write
+  select count(*) into n from public.family_scholarship_requests where id = frId;
+  perform pg_temp.expect('Registration/Payments staff sees the scholarship request (0175)', n, 1);
+  select count(*) into n from public.message_log;
+  perform pg_temp.expect('Registration/Payments staff sees the stored emails (0175)', n, 1);
+  select count(*) into n from (select public.registration_paid_cents(regA) as c) x where c is not null;
+  perform pg_temp.expect('Registration/Payments staff reads the paid total (0175)', n, 1);
+
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.family_scholarship_requests where id = frId;
+  perform pg_temp.expect('the family still sees its own scholarship request (0175)', n, 1);
+  select count(*) into n from (select public.registration_paid_cents(regA) as c) x where c is not null;
+  perform pg_temp.expect('the family still reads its own paid total (0175)', n, 1);
+
+  ---- staff notes are signed by their author and never rewritten -------
+  perform pg_temp.as_user(uR);
+  perform pg_temp.expect_denied('staff may NOT sign a note as someone else (0175)',
+    format('insert into public.registration_notes (registration_id, body, author_id) values (%L, ''x'', %L)', regA, uF));
+  insert into public.registration_notes (registration_id, body) values (regA, 'harness 0175')
+    returning id, author_id into noteId, noteAuthor;
+  perform pg_temp.expect('a note is signed by whoever wrote it (0175)', (noteAuthor = uR)::int, 1);
+  perform pg_temp.expect_denied('a note cannot be edited (0175)',
+    format('update public.registration_notes set body = ''changed'' where id = %L', noteId));
+  perform pg_temp.expect_denied('a note cannot be deleted (0175)',
+    format('delete from public.registration_notes where id = %L', noteId));
+
+  ---- one household per login -----------------------------------------
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('a login with a household may NOT make a second one (0175)',
+    format('insert into public.households (id, display_name) values (%L, ''Second'')', gen_random_uuid()));
+  perform pg_temp.as_user(uNew);
+  hNew := gen_random_uuid();
+  perform pg_temp.expect_allowed('a first-time login may make its household (0175)',
+    format('insert into public.households (id, display_name) values (%L, ''New family'')', hNew));
+  perform pg_temp.expect_allowed('a first-time login may join its new household as owner (0175)',
+    format('insert into public.household_members (household_id, profile_id, role) values (%L, %L, ''owner'')', hNew, uNew));
+  perform pg_temp.expect_denied('once in a household, that login may NOT make another (0175)',
+    format('insert into public.households (id, display_name) values (%L, ''Another'')', gen_random_uuid()));
+  perform pg_temp.as_user(uF);   -- Registration write
+  perform pg_temp.expect_allowed('Registration write may still create a household (0175)',
+    format('insert into public.households (id, display_name) values (%L, ''Staff-made'')', gen_random_uuid()));
+
+  ---- clean up ----------------------------------------------------------
+  set local role postgres;
+  delete from public.registration_notes where id = noteId;
+  delete from public.household_members where profile_id = uNew;
+  delete from public.households where display_name in ('New family', 'Staff-made');
+  delete from public.family_scholarship_requests where id = frId;
+  delete from public.staff_grants where profile_id = uAct;
+  delete from public.staff where profile_id = uAct;
+  delete from public.profiles where id in (uAct, uNew);
+  delete from auth.users where id in (uAct, uNew);
+end;
+$$;
+
+
+-- ---------------------------------------------------------------------
 -- Checks
 -- ---------------------------------------------------------------------
 
@@ -649,11 +781,28 @@ begin
   perform pg_temp.expect('sensitive-grant staff sees all support records', n, 2);
 
   ---- the camp doctor --------------------------------------------------
+  -- Since 0175 the dated grant covers a live place only (submitted,
+  -- confirmed, waitlisted); the seed's rows are drafts.
+  perform pg_temp.as_user(uD);
+  select count(*) into n from public.person_support where person_id = pA;
+  perform pg_temp.expect('doctor does NOT see support for a draft place (0175)', n, 0);
+  set local role postgres;
+  update public.registration_participants set status = 'submitted' where id in (rpA, rpB);
+  set local role authenticated;
   perform pg_temp.as_user(uD);
   select count(*) into n from public.person_support where person_id = pA;
   perform pg_temp.expect('doctor sees support for a camper at their event', n, 1);
   select count(*) into n from public.person_support where person_id = pB;
   perform pg_temp.expect('doctor also sees B (also at this event)', n, 1);
+  set local role postgres;
+  update public.registration_participants set status = 'cancelled' where id = rpB;
+  set local role authenticated;
+  perform pg_temp.as_user(uD);
+  select count(*) into n from public.person_support where person_id = pB;
+  perform pg_temp.expect('doctor does NOT see a cancelled participant''s support (0175)', n, 0);
+  set local role postgres;
+  update public.registration_participants set status = 'draft' where id in (rpA, rpB);
+  set local role authenticated;
 
   ---- family write limits ----------------------------------------------
   perform pg_temp.as_user(uA);

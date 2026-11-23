@@ -178,4 +178,28 @@ begin
   raise notice 'PASS 10 a declined family can ask again, and after withdrawing can ask per person';
 end $$;
 
+-- ---- 11. Who among staff reads a statement of need (0175) --------------------------------
+-- Registration read or Payments read; an Activities-only login reads none.
+reset role;
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000ac', 'act@example.org');
+insert into public.staff (profile_id, role) values ('00000000-0000-0000-0000-0000000000ac', 'coordinator');
+insert into public.staff_grants (profile_id, area, level) values ('00000000-0000-0000-0000-0000000000ac', 'activities', 'write');
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000ac', true), set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000ac","role":"authenticated","aal":"aal2"}', true) \g /dev/null
+do $$
+declare n int;
+begin
+  select count(*) into n from public.family_scholarship_requests;
+  if n <> 0 then raise exception 'FAIL 11a: an Activities-only login reads % statements of need', n; end if;
+end $$;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', true), set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000000b","role":"authenticated","aal":"aal2"}', true) \g /dev/null
+do $$
+declare n int;
+begin
+  select count(*) into n from public.family_scholarship_requests
+   where registration_id = '50000000-0000-0000-0000-000000000001';
+  if n <> 1 then raise exception 'FAIL 11b: Registration/Payments staff reads % requests (want 1)', n; end if;
+  raise notice 'PASS 11 statements of need: Registration or Payments read only';
+end $$;
+
 rollback;

@@ -15,6 +15,8 @@ language sql as $$
          (select d.deposit_in from public.registration_deposit_in(array['50000000-0000-0000-0000-000000000001'::uuid]) d)
   from public.registration_review v where v.registration_id = '50000000-0000-0000-0000-000000000001';
 $$;
+-- Since 0175 a new function needs its own grant, pg_temp helpers included.
+grant execute on function pg_temp.look() to public;
 
 \echo == 1 nothing paid, no scholarship: deposit short, held
 begin;
@@ -138,6 +140,7 @@ language sql as $$
          bool_or(d.deposit_in) filter (where d.person_id = '20000000-0000-0000-0000-000000000002')
   from public.person_deposit_in(array['50000000-0000-0000-0000-000000000001'::uuid]) d;
 $$;
+grant execute on function pg_temp.mine() to public;
 
 \echo == 7 (0169) own share: a $50 scholarship on the parent releases the parent, not the camper
 begin;
