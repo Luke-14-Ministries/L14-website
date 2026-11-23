@@ -1,6 +1,8 @@
 -- Checks for migrations 0161 and 0162: an adult camper's registry search never clears a
 -- volunteer, never carries into a Checkr order, and shows its provider to staff
--- (and nothing to a family) through clearance_status.
+-- (and nothing to a family) through clearance_status. 0177 (23 Nov 2026): Not
+-- permitted also holds a same-name, same-birthday record until it is decided, a
+-- registrar still gets 0162's words, and the helpers are staff only.
 -- Run on a fresh database seeded with payment_plans_seed.sql (see README.md):
 --   L14_DB=l14_reg bash supabase/tests/run_rls_local.sh supabase/tests/payment_plans_seed.sql
 --   "/c/Program Files/PostgreSQL/16/bin/psql.exe" -h localhost -U postgres -d l14_reg -f supabase/tests/registry_search_rules.sql
@@ -168,5 +170,102 @@ begin
   update public.registration_participants set status = 'confirmed' where id = '60000000-0000-0000-0000-000000000018';
   raise notice 'PASS 12 follow-up does not hold approval';
 end $$;
+
+-- ---- 0177: the same name and birth date, the 0162 message, staff-only helpers ----
+-- Pa (...02) is marked Not permitted (test 8). A second record with the same
+-- name (other spacing and case) and the same date of birth, on a place.
+update public.people set date_of_birth = '1980-01-01' where id = '20000000-0000-0000-0000-000000000002';
+insert into public.people (id, household_id, first_name, last_name, date_of_birth) values
+ ('20000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000001',' pa','RENT ','1980-01-01');
+insert into public.registration_participants (id, registration_id, person_id, event_option_id, camp_role, status) values
+ ('60000000-0000-0000-0000-000000000003','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000003','40000000-0000-0000-0000-000000000001','caregiver','submitted');
+-- Pa's verdict a day older, so a decision on the second record can come after it.
+update public.person_clearances set verdict_at = now() - interval '1 day'
+ where person_id = '20000000-0000-0000-0000-000000000002';
+
+-- As the seed's registrar (Registration write), on a strong session.
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', true) \g /dev/null
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000000b","aal":"aal2"}', true) \g /dev/null
+do $$
+declare n int;
+begin
+  -- 13. A registrar approving the Not permitted person still gets 0162's words.
+  begin
+    update public.registration_participants set status = 'confirmed' where id = '60000000-0000-0000-0000-000000000002';
+    raise exception 'FAIL 13: a Not permitted parent was confirmed by a registrar';
+  exception when raise_exception then
+    if sqlerrm not like '%is marked Not permitted to attend.' or sqlerrm like '%same name%' then
+      raise exception 'FAIL 13 words: %', sqlerrm;
+    end if;
+  end;
+  raise notice 'PASS 13 a registrar approving Not permitted gets the 0162 message';
+
+  -- 14. The same name and birth date holds the second record, and says why.
+  begin
+    update public.registration_participants set status = 'confirmed' where id = '60000000-0000-0000-0000-000000000003';
+    raise exception 'FAIL 14: a same-name, same-birthday record was confirmed';
+  exception when raise_exception then
+    if sqlerrm not like '%same name and birth date as someone marked Not permitted%' then
+      raise exception 'FAIL 14 words: %', sqlerrm;
+    end if;
+  end;
+  raise notice 'PASS 14 the same name and birth date holds approval';
+
+  -- 15. Staff read which records are held only by the match.
+  select count(*) into n from public.not_permitted_name_matches(array[
+    '20000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000003',
+    '20000000-0000-0000-0000-000000000001']::uuid[]) m
+   where m = '20000000-0000-0000-0000-000000000003';
+  if n <> 1 or (select count(*) from public.not_permitted_name_matches(array['20000000-0000-0000-0000-000000000002']::uuid[])) <> 0 then
+    raise exception 'FAIL 15: name matches read %', n;
+  end if;
+  if public.not_permitted_reason('20000000-0000-0000-0000-000000000002') <> 'own'
+     or not public.person_not_permitted('20000000-0000-0000-0000-000000000003') then
+    raise exception 'FAIL 15b: reasons read wrong';
+  end if;
+  raise notice 'PASS 15 staff see the reason: own, or the same name and birth date';
+end $$;
+reset role;
+
+do $$
+begin
+  -- 16. A decision recorded on the second record after the first clears the match.
+  insert into public.person_clearances (person_id, provider, background_check_on_file, background_check_date, verdict)
+  values ('20000000-0000-0000-0000-000000000003', 'manual', true, current_date, 'ok');
+  if public.person_not_permitted('20000000-0000-0000-0000-000000000003') then
+    raise exception 'FAIL 16: a decided record is still held';
+  end if;
+  update public.registration_participants set status = 'confirmed' where id = '60000000-0000-0000-0000-000000000003';
+  raise notice 'PASS 16 deciding the second record clears the match';
+end $$;
+
+-- 17. A family can't ask the background-check helpers about anyone.
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true) \g /dev/null
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000000a"}', true) \g /dev/null
+do $$
+begin
+  begin
+    perform public.person_not_permitted('20000000-0000-0000-0000-000000000002');
+    raise exception 'FAIL 17a: a family read person_not_permitted()';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.volunteer_clearance_ok('20000000-0000-0000-0000-000000000002', current_date);
+    raise exception 'FAIL 17b: a family read volunteer_clearance_ok()';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.not_permitted_name_matches(array['20000000-0000-0000-0000-000000000003']::uuid[]);
+    raise exception 'FAIL 17c: a family read not_permitted_name_matches()';
+  exception when insufficient_privilege then null;
+  end;
+  if public.volunteer_not_cleared_message('20000000-0000-0000-0000-000000000002') is not null then
+    raise exception 'FAIL 17d: a family read the not-cleared message';
+  end if;
+  raise notice 'PASS 17 the background-check helpers are staff only';
+end $$;
+reset role;
 rollback;
 \echo ALL REGISTRY SEARCH CHECKS PASSED

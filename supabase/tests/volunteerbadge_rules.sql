@@ -1,7 +1,8 @@
 -- Checks for migrations 0165, 0167 and 0170: VolunteerBadge requests. Who may send and read them,
 -- one open invite per person and per address, the adult / Not permitted guard,
 -- the frozen columns, and OK to serve from a clear result (never from a sandbox one;
--- 0167: a completion date that fits the invite, and a newer check on file wins).
+-- 0167: a completion date that fits the invite, and a newer check on file wins;
+-- 0177: a family can't delete a screened person or change a locked date of birth).
 -- Run on a fresh database seeded with payment_plans_seed.sql (see README.md):
 --   L14_DB=l14_vb bash supabase/tests/run_rls_local.sh supabase/tests/payment_plans_seed.sql
 --   "/c/Program Files/PostgreSQL/16/bin/psql.exe" -h localhost -U postgres -d l14_vb -f supabase/tests/volunteerbadge_rules.sql
@@ -389,7 +390,7 @@ begin
 end $$;
 rollback;
 
-\echo == 7 (0170) templates per group, and a family adult's check is recorded as theirs
+\echo == 7 (0170) templates per group, and the check of a family adult is recorded as theirs
 begin;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
@@ -456,6 +457,91 @@ begin
   select * into r from public.person_clearances where person_id = '20000000-0000-0000-0000-000000000002';
   if r.screening_reason <> 'volunteer' then raise exception 'FAIL 7e: %', r.screening_reason; end if;
   raise notice 'PASS 7e a volunteer''s check is recorded as a volunteer''s';
+end $$;
+rollback;
+
+-- 0177 (23 Nov 2026): records a family can't remove or rewrite. Ad (...03)
+-- has a VolunteerBadge invite; Cam (...01) a submitted place; ...04 a place
+-- and no date of birth; ...05 nothing at all.
+\echo == 8 a family cannot delete a screened person or change a locked date of birth
+begin;
+insert into public.volunteerbadge_requests (id, person_id, invited_email, sandbox)
+values ('65000000-0000-0000-0000-000000000077','20000000-0000-0000-0000-000000000003','ad3@example.test', false);
+insert into public.people (id, household_id, first_name, last_name) values
+ ('20000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000001','No','Birthday'),
+ ('20000000-0000-0000-0000-000000000005','10000000-0000-0000-0000-000000000001','Wrong','Entry');
+insert into public.registration_participants (id, registration_id, person_id, event_option_id, camp_role, status) values
+ ('60000000-0000-0000-0000-000000000004','50000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000004','40000000-0000-0000-0000-000000000001','sibling','submitted');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',true),
+       set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000a"}',true) \g /dev/null
+do $$
+declare n int;
+begin
+  begin
+    delete from public.people where id = '20000000-0000-0000-0000-000000000003';
+    raise exception 'FAIL 8a: a family deleted a person with an invite on file';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'Ask the office to remove this person.' then raise exception 'FAIL 8a words: %', sqlerrm; end if;
+  end;
+  raise notice 'PASS 8a a family can''t delete a person with a background check invite on file';
+
+  begin
+    update public.people set date_of_birth = '1971-01-01' where id = '20000000-0000-0000-0000-000000000003';
+    raise exception 'FAIL 8b: a family changed a screened person''s date of birth';
+  exception when insufficient_privilege then
+    if sqlerrm not like 'To correct a date of birth after registering, email registration@%' then raise exception 'FAIL 8b words: %', sqlerrm; end if;
+  end;
+  begin
+    update public.people set date_of_birth = '2014-04-04' where id = '20000000-0000-0000-0000-000000000001';
+    raise exception 'FAIL 8c: a family changed a registered camper''s date of birth';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    update public.people set date_of_birth = null where id = '20000000-0000-0000-0000-000000000001';
+    raise exception 'FAIL 8d: a family blanked a registered camper''s date of birth';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'PASS 8b a family can''t change or blank a locked date of birth';
+
+  update public.people set date_of_birth = '2012-02-02' where id = '20000000-0000-0000-0000-000000000004';
+  update public.people set first_name = 'Ad' where id = '20000000-0000-0000-0000-000000000003';
+  raise notice 'PASS 8c a missing date of birth can be filled in; other edits still save';
+
+  if not public.person_dob_locked('20000000-0000-0000-0000-000000000003')
+     or not public.person_dob_locked('20000000-0000-0000-0000-000000000001')
+     or public.person_dob_locked('20000000-0000-0000-0000-000000000005') then
+    raise exception 'FAIL 8d: person_dob_locked() reads wrong for the family';
+  end if;
+  raise notice 'PASS 8d the family reads which dates are locked';
+
+  delete from public.people where id = '20000000-0000-0000-0000-000000000005';
+  select count(*) into n from public.people where id = '20000000-0000-0000-0000-000000000005';
+  if n <> 0 then raise exception 'FAIL 8e: a wrong entry was not deleted'; end if;
+  raise notice 'PASS 8e a person with nothing on file can still be deleted';
+end $$;
+
+-- Another family learns nothing about this household's people.
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-0000000000ff',true) \g /dev/null
+do $$
+begin
+  if public.person_screening_on_file('20000000-0000-0000-0000-000000000003')
+     or public.person_dob_locked('20000000-0000-0000-0000-000000000001') then
+    raise exception 'FAIL 8f: another login read this household''s locks';
+  end if;
+  raise notice 'PASS 8f the locks answer only for your own household';
+end $$;
+
+-- The seed's registrar (Registration write) corrects it.
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true),
+       set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000b","aal":"aal2"}',true) \g /dev/null
+do $$
+begin
+  update public.people set date_of_birth = '1971-01-01' where id = '20000000-0000-0000-0000-000000000003';
+  if (select date_of_birth from public.people where id = '20000000-0000-0000-0000-000000000003') <> '1971-01-01' then
+    raise exception 'FAIL 8g: the registrar''s correction did not save';
+  end if;
+  raise notice 'PASS 8g staff with Registration write correct a date of birth';
 end $$;
 rollback;
 
