@@ -49,7 +49,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0174`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0175`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -111,6 +111,13 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
   `grant ... to authenticated` is permission denied. Since 30 October 2026 Supabase grants nothing
   automatically to new tables, so this is the rule for every migration, not a habit. The one table
   without a grant, `mfa_trusted_sessions`, is reached only through its functions, on purpose.
+- **Every new function needs an explicit `grant execute` too** (`0175`, 23 Nov 2026). PUBLIC no
+  longer gets EXECUTE by default; the schema default gives `service_role` only. A function families
+  or staff call needs `grant execute on function public.f(args) to authenticated;` in the same
+  migration, or the site gets "permission denied for function". Signed-out visitors (`anon`) may run
+  exactly `is_staff()`, `confirm_household_email_change(text)` and `household_invite_preview(text)`;
+  adding one is a decision, and `rls_test.sql` checks the list. Trigger functions need no grant. A
+  test's own `pg_temp` helper run as `authenticated` needs `grant execute ... to public` as well.
 - **Never swallow a query error, and never turn one into an empty list.** `/admin/search` returned
   "Nothing matches" for every query for weeks because it did.
 - **`/account/*` "my data" queries scope by household membership explicitly** — never rely on RLS
@@ -408,7 +415,8 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   hand-set discount is capped at the fee in the database. The discount rules (`recalc_*`) run for
   staff, the family's own registration or a server-side caller; the "both weeks" volunteer
   discount needs volunteer rows staff have **confirmed**. `registration_paid_cents()` is the
-  deposit question for any staff member (the balances view runs with the caller's rights).
+  deposit question for staff with Registration read or Payments read (`0175`; the balances view
+  runs with the caller's rights).
 - **Paid counts a payment refunded in full** (`0133`): `registration_balances`, `registration_paid_cents()`
   and `registration_review` sum payments with status `succeeded` / `processing` / **`refunded`** and subtract
   succeeded refunds. Summing only `succeeded` subtracted a refunded payment's refunds twice ("Paid
@@ -473,7 +481,8 @@ Staff see what was sent in **Emails sent** on each registration page (`loadEmail
 sent to families** on Email Families (`searchEmailLog()`, grouped by send and event with
 `groupEmailsBySend()` / `groupSendsByEvent()`; filters in the URL as `q` and `sent_*` — all in `lib/emailLog.js`); since `0132` a send keeps Resend's message id
 (`provider_message_id`), linked as *delivery*. Since `0134` the plain text as sent is kept too (`body_text`, under
-*What it said* on each line); staff read it, families do not read `message_log`.
+*What it said* on each line); staff holding Registration read or Payments read see it (`0175`; the
+same rule covers statements of need, `family_scholarship_requests`), families do not read `message_log`.
 Volunteers arrive a day early (`events.volunteer_arrives_on`).
 **A family's contact email (`households.email`) is confirmed before it is used** (`0171`, Lawrence
 23 Nov 2026): a new address goes to `household_email_changes` and gets a link (`lib/contactEmail.js`,
