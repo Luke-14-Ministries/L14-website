@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { reviewVolunteerApplication } from './actions';
 import ClearanceEditor from '@/components/ClearanceEditor';
-import { clearancePill, isMinor, formatPhone } from '@/lib/format';
+import { clearancePill, isMinor, formatPhone, CHECK_TONE } from '@/lib/format';
 
 // One pill per volunteer (Lawrence, 4 Nov 2026). Since 0152 the place at
 // camp and the application are one decision, so the two pills that named
@@ -227,6 +227,17 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
           ) : (
             <span title={pill.title} className={`rounded-full px-2.5 py-0.5 font-semibold ${pill.cls}`}>
               {pill.text}
+            </span>
+          )}
+          {/* 0177 (23 Nov 2026): another record with the same name and birth
+              date is marked Not permitted, so approval is held until a
+              decision is recorded for this person. */}
+          {row.notPermittedMatch && (
+            <span
+              title="Approval is held. If this is a different person, record a background check decision for them."
+              className={`rounded-full px-2.5 py-0.5 font-semibold ${CHECK_TONE.blocked}`}
+            >
+              Same name and birth date as someone marked Not permitted
             </span>
           )}
           {/* One plain open/close control (Lawrence, 14 Nov 2026: it wasn't

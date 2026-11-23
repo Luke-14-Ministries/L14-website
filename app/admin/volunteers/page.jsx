@@ -100,6 +100,14 @@ export default async function AdminVolunteersPage({ searchParams }) {
   if (appsError) throw new Error(`Volunteer applications: ${appsError.message}`);
   if (clearancesError) throw new Error(`Background checks: ${clearancesError.message}`);
 
+  // Held only because someone with the same name and birth date is marked
+  // Not permitted (0177, 23 Nov 2026): the database refuses to approve them.
+  const { data: nameMatchRows, error: nameMatchError } = personIds.length
+    ? await supabase.rpc('not_permitted_name_matches', { p_person_ids: personIds })
+    : { data: [], error: null };
+  if (nameMatchError) throw new Error(`Not permitted name check: ${nameMatchError.message}`);
+  const nameMatched = new Set((nameMatchRows ?? []).map((r) => (typeof r === 'string' ? r : Object.values(r)[0])));
+
   // Names for the stamps on the record, and the recent log lines, only when
   // the record itself is shown.
   let nameOf = new Map();
@@ -211,6 +219,7 @@ export default async function AdminVolunteersPage({ searchParams }) {
       // Lawrence 29 Sep); never affirmed. The answer on the application wins;
       // the signature only fills in for applications saved before the column.
       // A volunteer child is not asked the Creed (Lawrence, 6 Nov 2026).
+      notPermittedMatch: nameMatched.has(v.person?.id),
       creedAsked: v.campRole !== 'volunteer_child',
       creedAffirmed: app?.creed_affirmed ?? creedAffirmedBy.has(v.person?.id),
       creedWithdrawn: app?.creed_affirmed === false && creedAffirmedBy.has(v.person?.id),

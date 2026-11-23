@@ -465,6 +465,7 @@ export default async function RegistrationDetailPage({ params }) {
     { data: clearRows, error: clearError },
     { data: reqRows, error: reqError },
     { data: eventParts, error: eventPartsError },
+    { data: nameMatchRows, error: nameMatchError },
   ] = await Promise.all([
     peopleIds.length
       ? supabase.from('clearance_status').select('person_id, on_file, check_date, expires_on, is_current, verdict, provider').in('person_id', peopleIds)
@@ -486,12 +487,21 @@ export default async function RegistrationDetailPage({ params }) {
           .select('status, registrations!inner ( event_id )')
           .eq('registrations.event_id', eventId)
       : Promise.resolve({ data: [], error: null }),
+    // Held only because someone with the same name and birth date is marked
+    // Not permitted (0177, 23 Nov 2026). The database refuses to confirm
+    // them; the card says why before Approve is pressed.
+    peopleIds.length
+      ? supabase.rpc('not_permitted_name_matches', { p_person_ids: peopleIds })
+      : Promise.resolve({ data: [], error: null }),
   ]);
   if (clearError) throw new Error(`Background checks: ${clearError.message}`);
+  if (nameMatchError) throw new Error(`Not permitted name check: ${nameMatchError.message}`);
   if (reqError) throw new Error(`Required agreements: ${reqError.message}`);
   if (eventPartsError) throw new Error(`Event headcount: ${eventPartsError.message}`);
 
   const clearanceOf = new Map((clearRows ?? []).map((c) => [c.person_id, c]));
+  // A setof uuid arrives as plain strings.
+  const nameMatched = new Set((nameMatchRows ?? []).map((r) => (typeof r === 'string' ? r : Object.values(r)[0])));
   // Keyed by person: CREED_COLUMNS carries person_id, not participant_id.
   const creedOfPerson = new Map(
     (creedRows ?? []).filter((c) => c.registration_id === id).map((c) => [c.person_id, c])
@@ -534,6 +544,9 @@ export default async function RegistrationDetailPage({ params }) {
           : null;
       return {
         id: p.id,
+        // The Review card links to #check-<person> on Background Checks; it
+        // read undefined until 23 Nov 2026.
+        personId: pid,
         status: p.status,
         // 0152: a volunteer is approved only with a background check on file
         // marked OK to serve (under 18 is not screened).
@@ -543,7 +556,9 @@ export default async function RegistrationDetailPage({ params }) {
         needsSearch: registryAdult && clearanceMarkOf?.state !== 'yes' && clearanceRow?.verdict !== 'not_permitted',
         // 0162: marked Not permitted to attend. The database refuses to
         // confirm them, from any button; the card says so first.
-        notPermitted: clearanceRow?.verdict === 'not_permitted',
+        notPermitted: clearanceRow?.verdict === 'not_permitted' || nameMatched.has(pid),
+        // 0177: held by a same-name, same-birthday record, not their own.
+        notPermittedMatch: clearanceRow?.verdict !== 'not_permitted' && nameMatched.has(pid),
         name: `${p.people?.preferred_name || p.people?.first_name || ''} ${p.people?.last_name ?? ''}`.trim() || 'Person',
         volunteer,
         clearance: clearanceMarkOf,

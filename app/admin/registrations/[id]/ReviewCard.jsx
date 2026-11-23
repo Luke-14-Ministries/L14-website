@@ -429,18 +429,34 @@ export default function ReviewCard({
       )}
       {/* "Not permitted" (0162): the database refuses to confirm them, from
           any button. Said before Approve is pressed. */}
-      {checks.some((c) => c.notPermitted && c.status !== 'cancelled' && c.status !== 'confirmed') && (
+      {checks.some((c) => c.notPermitted && !c.notPermittedMatch && c.status !== 'cancelled' && c.status !== 'confirmed') && (
         <p className="mb-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
           <strong>
             {checks
-              .filter((c) => c.notPermitted && c.status !== 'cancelled' && c.status !== 'confirmed')
+              .filter((c) => c.notPermitted && !c.notPermittedMatch && c.status !== 'cancelled' && c.status !== 'confirmed')
               .map((c) => c.name)
               .join(', ')}
           </strong>{' '}
-          {checks.filter((c) => c.notPermitted && c.status !== 'cancelled' && c.status !== 'confirmed').length === 1 ? 'is' : 'are'}{' '}
+          {checks.filter((c) => c.notPermitted && !c.notPermittedMatch && c.status !== 'cancelled' && c.status !== 'confirmed').length === 1 ? 'is' : 'are'}{' '}
           marked <strong>Not permitted to attend</strong>, so they can&rsquo;t be approved.
         </p>
       )}
+      {/* 0177 (23 Nov 2026): held by another record with the same name and
+          birth date. It may be someone else; a decision recorded for this
+          person on Background Checks clears it. */}
+      {checks
+        .filter((c) => c.notPermittedMatch && c.status !== 'cancelled' && c.status !== 'confirmed')
+        .map((c) => (
+          <p key={`npm-${c.id}`} className="mb-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+            <strong>{c.name}</strong>: same name and birth date as someone marked{' '}
+            <strong>Not permitted to attend</strong>, so they can&rsquo;t be approved yet. If this is a different person,
+            record a background check decision for them on{' '}
+            <a href={`/admin/background-checks/#check-${c.personId}`} className="font-semibold underline">
+              Background Checks
+            </a>
+            .
+          </p>
+        ))}
       {/* Every adult who isn't a volunteer needs a registry search (0161/0162,
           Lawrence 10-11 Nov 2026): a flag, never a hold -- Approve works
           either way. */}
