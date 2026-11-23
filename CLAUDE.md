@@ -49,7 +49,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0170`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0171`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -475,6 +475,12 @@ sent to families** on Email Families (`searchEmailLog()`, grouped by send and ev
 (`provider_message_id`), linked as *delivery*. Since `0134` the plain text as sent is kept too (`body_text`, under
 *What it said* on each line); staff read it, families do not read `message_log`.
 Volunteers arrive a day early (`events.volunteer_arrives_on`).
+**A family's contact email (`households.email`) is confirmed before it is used** (`0171`, Lawrence
+23 Nov 2026): a new address goes to `household_email_changes` and gets a link (`lib/contactEmail.js`,
+`/auth/confirm-contact/`); the old one keeps getting mail until it is pressed. The family's own login
+email needs no link; staff with Registration write still set one directly. `guard_household_email()`
+refuses any other direct family write. Checkout starts with that address (`checkoutEmail()`), so
+receipts go where reminders go.
 Data-deletion requests: `/account/delete-data` → `/admin/deletion-requests`; nothing is deleted
 automatically.
 
