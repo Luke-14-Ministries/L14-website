@@ -35,9 +35,9 @@ nameservers moved to Cloudflare, Supabase's Site URL and `SITE_URL` (Vercel Prod
 function secrets) name the real domain, and the four preview switches were reversed together
 (`dc36479`). Stripe has been live since 29 Oct (Stage B) and `REMINDERS_MODE=live` since 4 Nov.
 **A push to `main` now reaches families within minutes.** C7, the transfer to Cloudflare Registrar,
-finished 19 Nov 2026. Left of Stage C: C6's email check, C10 the phone checks, C11 the records, and a few days after C10 a
-308 redirect from `luke14-ministries.vercel.app` to the real domain. H3 (a card payment on a phone)
-was still open at the swap and is still worth doing. **Testing Script 7** (SharePoint, `01 Plans and Decisions`) holds the
+finished 19 Nov 2026. Left of Stage C: C10 the phone checks (sign-up and the brochure QR code), C11 the records, and a few days after C10 a
+308 redirect from `luke14-ministries.vercel.app` to the real domain. C6's email check and H3 (a card
+payment on a phone) were done 23 Nov 2026. **Testing Script 7** (SharePoint, `01 Plans and Decisions`) holds the
 checks for after go-live. The working checklist is `DO-THIS-NEXT.md` (its *Go live* section, A1–C11);
 open policy questions are in `Luke14-Staff-Questions.md` §1.
 
@@ -100,8 +100,8 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
    balance (W44, 20 Oct).
 6. **Stage C — the address** — *done 12 Nov 2026*: C2–C5 (nameservers to Cloudflare at 8:32 PM ET),
    C8 (Site URL and `SITE_URL`), C9 (`dc36479`; the 2026 Retreat was archived 2 Nov), C7 (registrar,
-   19 Nov). **Left:** C6's email check, C10 a phone check, C11 the records, then
-   the preview-address redirect and Microsoft DKIM signing on.
+   19 Nov). **Left:** C10 a phone check, C11 the records, then the preview-address
+   redirect and Microsoft DKIM signing on (C6 done 23 Nov).
 
 ---
 
@@ -540,7 +540,7 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
   it. The Squarespace site is retired from the address (it stays in the Squarespace account until that
   plan ends).
 - **Microsoft 365's DKIM CNAMEs** `selector1._domainkey` and `selector2._domainkey` are in the zone
-  (A7); signing in Microsoft 365 is switched on only after C6's email check.
+  (A7); signing in Microsoft 365 can be switched on now that C6's email check passed (23 Nov 2026).
 - **Microsoft 365 also has `autodiscover`, `lyncdiscover` and `sip` CNAMEs** (Outlook and Teams
   sign-in); keep them.
 - **The registrar is Cloudflare Registrar since 19 Nov 2026** (C7), in the same admin@ account as the
