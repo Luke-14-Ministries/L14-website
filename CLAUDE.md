@@ -109,15 +109,17 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
 
 - **Every new table needs explicit role grants alongside its RLS policies** — RLS without
   `grant ... to authenticated` is permission denied. Since 30 October 2026 Supabase grants nothing
-  automatically to new tables, so this is the rule for every migration, not a habit. The one table
-  without a grant, `mfa_trusted_sessions`, is reached only through its functions, on purpose.
+  automatically to new tables, so this is the rule for every migration, not a habit. The two tables
+  without a signed-in grant, `mfa_trusted_sessions` and `household_email_change_requests` (`0178`),
+  are reached only through their functions, on purpose.
 - **Every new function needs an explicit `grant execute` too** (`0175`, 23 Nov 2026). PUBLIC no
   longer gets EXECUTE by default. Write `grant execute on function public.f(args) to authenticated,
   service_role;` in the same migration as the function (leave out `authenticated` only when no family
   or staff login calls it), or the site gets "permission denied for function". Live's own defaults
   never gave `service_role` new functions (local's did), so 0175 adds that default to make them
   match; name `service_role` anyway, because a local-only pass proves nothing about live. Signed-out visitors (`anon`) may run
-  exactly `is_staff()`, `confirm_household_email_change(text)` and `household_invite_preview(text)`;
+  exactly `is_staff()`, `confirm_household_email_change(text)`, `household_invite_preview(text)` and
+  `log_contact_change_notice(...)` (`0178`: the confirm page's one notice, only with the link's token);
   adding one is a decision, and `rls_test.sql` checks the list. Trigger functions need no grant. A
   test's own `pg_temp` helper run as `authenticated` needs `grant execute ... to public` as well.
 - **Never swallow a query error, and never turn one into an empty list.** `/admin/search` returned
@@ -228,7 +230,7 @@ on the Programs page; the preset Lawrence wanted (16 Oct) is not built.
 **Since `0113`:** a family's new participant row is `draft` or `submitted`, never confirmed, and
 `submitted_at` is set by the database; attaching a login to a household is the administrator's,
 through `admin_link_login_to_household()`; confirming an agreement signature is Registration write;
-`message_log` is read-only for staff (the one staff write is `log_family_email()`, `0120`; the plan edge functions write it as service_role, `0121`); `pay_in_full_amount()` needs Payments read or your own
+`message_log` is read-only for staff (the one staff write is `log_family_email()`, `0120`; the plan edge functions write it as service_role, `0121`; a family's own sign-in logs its own household's family emails through `log_own_household_email()`, `0178`, fixed templates, `logOwnEmail()` in `lib/email.js`); `pay_in_full_amount()` needs Payments read or your own
 registration. The money columns left `registration_participants` for `participant_money` the same
 day (`0114`, see *Money*).
 
@@ -500,6 +502,17 @@ Manage Household's *Who can sign in* card emails a link (`lib/householdInvite.js
 only the token's hash is stored, it lasts 7 days, and `accept_household_invite()` accepts it only for a
 signed-in login **whose own email is the one invited** and that has no household yet (two households are
 still a staff merge, `0151`). The new login joins as `adult` and, if named, claims that person.
+**Since `0178`** (security review, 23 Nov 2026): 10 invites a day per household or login (cancelled
+ones counted), and a named person must be 18+ or have no date of birth; a login whose own household is
+**provably empty** (only them, only their own person row, nothing else in the database pointing at it,
+`household_is_empty_signup()`) has it removed and joins; a join is a line on Recent Changes
+(`family_change_log`, `household_members` / `login`) and emails the household's contact address and the
+inviter. **The person who set up the household (owner) or staff with Registration write remove a sign-in**
+with `remove_household_login()` (never the owner, never yourself). The invite page shows names only while
+the invite is open. Contact-email links: 5 a household a day, counted in `household_email_change_requests`
+(Cancel does not reset it); a confirmed or applied change emails the replaced address once. The daily
+reminders run clears invites 30 days past use and expired links (`forget_old_household_links()`).
+"Send us feedback" is 5 an hour per login (`my_feedback_notes_this_hour()`).
 Data-deletion requests: `/account/delete-data` → `/admin/deletion-requests`; nothing is deleted
 automatically.
 
@@ -601,7 +614,11 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   updates `volunteerbadge_requests` only, never confirms or sends), and VB's signed
   `application.submitted` webhook (`app/api/webhooks/volunteerbadge/`, Lawrence 14 Nov 2026: it
   writes VB's volunteer id on one invite and refreshes it, nothing else); `server-only` fails the build if it is ever imported into
-  browser code. Nothing else may use it. The key in Vercel is a dedicated Supabase secret key made for
+  browser code. Nothing else may use it. Its importers are exactly `app/api/cron/reminders/route.js`,
+  `app/admin/email-families/page.jsx`, `app/pray/actions.js`, `app/admin/prayer/actions.js`,
+  `app/api/cron/volunteerbadge/route.js` and `app/api/webhooks/volunteerbadge/route.js` (listed in the
+  file's header too, 23 Nov 2026); family emails sent from a family's own action are logged as the
+  family since `0178`, not through it. The key in Vercel is a dedicated Supabase secret key made for
   Vercel on 28 Oct (A1), Production only.
 - **Row-level security is enforced at the database level**, not in application code. Every table
   holding family data gets RLS policies. A query that works because the app "wouldn't ask for

@@ -3,9 +3,12 @@ import ResetPasswordForm from './ResetPasswordForm';
 
 export const metadata = { title: 'Set a New Password' };
 
-// Reached from the link in a password-reset email, which passes through
-// app/auth/callback/route.js first. By the time anyone sees this page they are
-// signed in -- middleware turns away anyone who is not.
+// Reached from the link in a password-reset email: the button page at
+// /auth/confirm/ verifies the emailed token (verifyOtp) and signs the person
+// in, then sends them here. By the time anyone sees this page they are signed
+// in -- proxy.js turns away anyone who is not. Also reached with
+// ?reason=annual when a staff password is a year old. (Comment corrected
+// 23 Nov 2026: it named /auth/callback, which reset links no longer use.)
 export default function ResetPasswordPage() {
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
