@@ -4,12 +4,25 @@
 // Lawrence 23 Nov 2026). Each adult keeps their own sign-in; all of them see
 // and manage the same family. An invite works only for the address it was
 // sent to, for 7 days.
+//
+// 23 Nov 2026 (0178): the person who set the household up can remove another
+// adult's sign-in here, and "Who they are" lists adults only (a sign-in on a
+// child's record is refused by the database).
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { inviteAdult, cancelInvite } from './actions';
+import { inviteAdult, cancelInvite, removeHouseholdLogin } from './actions';
 
 const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-2';
+
+// 18 or over today, or no date of birth on file (the database's own rule).
+function isAdult(dob) {
+  if (!dob) return true;
+  const [y, m, d] = String(dob).split('-').map(Number);
+  const now = new Date();
+  const ageYears = now.getFullYear() - y - (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d) ? 1 : 0);
+  return ageYears >= 18;
+}
 
 function fmtDay(iso) {
   try {
@@ -25,7 +38,8 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
   const [status, setStatus] = useState(null); // { ok, text }
   const [busy, setBusy] = useState(false);
   // People in the household with no login yet: the invite can say "this is them".
-  const unclaimed = people.filter((p) => !p.profile_id);
+  const unclaimed = people.filter((p) => !p.profile_id && isAdult(p.date_of_birth));
+  const iAmOwner = logins.some((l) => l.is_me && l.role === 'owner');
 
   function run(fn, after) {
     setBusy(true);
@@ -54,7 +68,23 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
               <span className="font-semibold">{l.name || 'A family member'}</span>
               {l.is_me ? <span className="text-neutral-500"> (you)</span> : null}
             </span>
-            <span className="text-neutral-500">{l.role === 'owner' ? 'Set up the household' : 'Can sign in'}</span>
+            <span className="flex items-center gap-3">
+              <span className="text-neutral-500">{l.role === 'owner' ? 'Set up the household' : 'Can sign in'}</span>
+              {iAmOwner && !l.is_me && l.role !== 'owner' ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    if (window.confirm(`Remove ${l.name || 'this person'}'s sign-in? They will no longer see this household.`)) {
+                      run(() => removeHouseholdLogin(householdId, l.profile_id));
+                    }
+                  }}
+                  className="text-sm font-semibold text-red-700 underline disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              ) : null}
+            </span>
           </li>
         ))}
         {invites.map((i) => (
@@ -105,7 +135,8 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
       </form>
       <p className="mt-2 text-xs text-neutral-500">
         They sign in, or create an account, with the address you enter. If they already have their own
-        household on the site, staff will join the two: email registration@luke14ministries.net.
+        household on the site with a registration or other records, staff will join the two: email
+        registration@luke14ministries.net. The person who set up the household can remove a sign-in.
       </p>
       {status && (
         <p className={`mt-2 text-sm ${status.ok ? 'text-green-700' : 'text-red-700'}`} role="status">

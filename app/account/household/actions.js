@@ -581,3 +581,17 @@ export async function cancelInvite(inviteId) {
   revalidatePath('/account/household');
   return { ok: true };
 }
+
+// Take another adult's sign-in off this household (0178, 23 Nov 2026). Only
+// the person who set the household up may (or staff); the database checks
+// that, and that the owner and you yourself are never removed this way.
+export async function removeHouseholdLogin(householdId, profileId) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('remove_household_login', {
+    p_household_id: householdId,
+    p_profile_id: profileId,
+  });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/account/household');
+  return { ok: true, message: 'Removed. They can no longer sign in to this household.' };
+}

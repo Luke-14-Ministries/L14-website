@@ -16,6 +16,8 @@ const SOURCE_LABEL = {
   registration_participants: 'Registration',
   person_caregivers: 'Caregivers',
   person_consents: 'Permissions',
+  // A sign-in joining or leaving the household (0178).
+  household_members: 'Who can sign in',
 };
 
 // Changes where being out of date can hurt somebody. Same list as the
@@ -55,6 +57,7 @@ const FIELD_LABEL = {
   phone: 'Phone',
   email: 'Email',
   display_name: 'Family name',
+  login: 'Sign-in',
   address_line1: 'Address',
   address_line2: 'Address (line 2)',
   city: 'City',
