@@ -22,6 +22,8 @@ import FeedbackBox from './FeedbackBox';
 import ReplyToStaff from './ReplyToStaff';
 import { getProgramLeadership } from '@/lib/programs';
 import WelcomeNotice from '@/components/WelcomeNotice';
+import { InviteProblem, WaitingInvites } from '@/components/HouseholdInviteNotes';
+import { householdPhrase } from '@/lib/householdInvite';
 import { depositDueNow, supportState, volunteerApplicationNeeded } from '@/lib/familyNeeds';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { CHOOSES_ACTIVITIES } from '@/lib/activityRoles';
@@ -140,6 +142,11 @@ export default async function DashboardPage({ searchParams }) {
   // A bank typed in by hand switches only after Stripe's small deposits are
   // confirmed (11 Nov 2026), so say so rather than imply it's done.
   const planBankSaved = params?.plan === 'updated' && params?.m === 'bank';
+  // Back from joining a household by invite (23 Nov 2026, A5-05), or from a
+  // waiting invite that could not be joined (?invite=<code>; only the site's
+  // own codes print anything).
+  const justJoined = params?.joined === '1';
+  const inviteProblem = typeof params?.invite === 'string' ? params.invite : '';
   const supabase = await createClient();
 
   const {
@@ -184,6 +191,12 @@ export default async function DashboardPage({ searchParams }) {
     .eq('profile_id', user.id);
   if (memberError) throw new Error(`Your household: ${memberError.message}`);
   const householdIds = (memberships ?? []).map((m) => m.household_id);
+
+  // Invites sent to this sign-in's confirmed address and not yet joined
+  // (0179; 23 Nov 2026, A5-21): the relative who signed up on their own, or
+  // lost the email, sees it here rather than starting a second household.
+  const { data: waitingInvites, error: waitingError } = await supabase.rpc('my_open_household_invites');
+  if (waitingError) throw new Error(`Invites to share a household: ${waitingError.message}`);
 
   // people!people_household_id_fkey — the constraint is named EXPLICITLY, and
   // it has to be. Since 0037 there are two foreign keys between households and
@@ -1035,6 +1048,16 @@ export default async function DashboardPage({ searchParams }) {
             </p>
           </div>
         )}
+
+        {justJoined && household && (
+          <div className="mb-8 rounded-lg border border-green-300 bg-green-50 p-5 text-green-900" role="status">
+            You&rsquo;ve joined the <span className="font-semibold">{householdPhrase(household.display_name)}</span>.
+            Everything below is shared with the other adults on it.
+          </div>
+        )}
+
+        <InviteProblem code={inviteProblem} className="mb-8" />
+        <WaitingInvites invites={waitingInvites ?? []} />
 
         {planBankSaved && (
           <div className="mb-8 rounded-lg border border-neutral-300 bg-white p-5" role="status">
@@ -2034,6 +2057,15 @@ export default async function DashboardPage({ searchParams }) {
                   Household contact email &amp; address (where camp email goes)
                 </Link>
               </li>
+              {/* Inviting another adult was only findable at the bottom of
+                  Manage Household (23 Nov 2026, A5-22). */}
+              {household && (
+                <li>
+                  <Link href="/account/household/#logins" className="text-brand underline">
+                    Who can sign in to this household (invite another adult)
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link href="/account/reset-password" className="text-brand underline">
                   Change password

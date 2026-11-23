@@ -13,6 +13,7 @@ import FamilyWizard from './FamilyWizard';
 import WelcomeNotice from '@/components/WelcomeNotice';
 import { emptySupport } from '@/lib/support';
 import BackLink from '@/components/BackLink';
+import { WaitingInvites } from '@/components/HouseholdInviteNotes';
 
 export const metadata = { title: 'Registration' };
 
@@ -210,6 +211,15 @@ export default async function FamilyRegisterPage({ searchParams }) {
   if (memberError) throw new Error(`Household: ${memberError.message}`);
   if (profileError) throw new Error(`Profile: ${profileError.message}`);
   const householdId = memberRows?.[0]?.household_id;
+
+  // No household yet, but a family has invited this sign-in (0179; 23 Nov
+  // 2026, A5-21): say so before the wizard starts a second household.
+  let waitingInvites = [];
+  if (!householdId) {
+    const { data, error } = await supabase.rpc('my_open_household_invites');
+    if (error) throw new Error(`Invites to share a household: ${error.message}`);
+    waitingInvites = data ?? [];
+  }
 
   if (householdId) {
     const [{ data: household, error: householdError }, { data: regs, error: regsError }] = await Promise.all([
@@ -586,6 +596,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
         {chosenProgram && weeks.length > 0 && (
           <p className="text-lg text-brand-dark font-semibold mt-1">{chosenProgram}</p>
         )}
+        <WaitingInvites invites={waitingInvites} className="mt-4" />
         <p className="text-neutral-600 mt-2 mb-6">
           Signed in as {user.email}.{' '}
           {existing?.isUpdate
