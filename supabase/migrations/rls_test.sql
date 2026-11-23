@@ -597,12 +597,14 @@ begin
 
   -- What a signed-out visitor may run is exactly the recorded list. A new
   -- function for anon is a decision: add it to 0175's list and here.
+  -- 0178 (23 Nov 2026) added log_contact_change_notice(): the signed-out
+  -- confirm-contact page logs its one notice, and only with the link's token.
   select string_agg(p.proname || '(' || oidvectortypes(p.proargtypes) || ')', ', ' order by p.proname)
     into s
     from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
    where ns.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute');
-  if s is distinct from 'confirm_household_email_change(text), household_invite_preview(text), is_staff()' then
-    raise exception 'FAIL: anon may run exactly three functions in public (0175) — got %', s;
+  if s is distinct from 'confirm_household_email_change(text), household_invite_preview(text), is_staff(), log_contact_change_notice(text, text, text, text)' then
+    raise exception 'FAIL: anon may run exactly four functions in public (0175, 0178) — got %', s;
   end if;
 
   select count(*) into n from pg_policies
