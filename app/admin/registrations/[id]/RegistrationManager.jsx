@@ -478,7 +478,9 @@ function ParticipantRow({
               <span className="font-normal text-neutral-500"> (&ldquo;{p.preferred_name}&rdquo;)</span>
             ) : null}
             <span
-              className={`ml-2 rounded-full px-2.5 py-0.5 text-xs font-semibold align-middle ${
+              // nowrap + inline-block: on a phone the whole pill drops to the
+              // next line instead of splitting in two (Lawrence, 23 Nov 2026).
+              className={`ml-2 inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold align-middle ${
                 ROLE_BADGE[participant.camp_role] ?? 'bg-neutral-200 text-neutral-700'
               }`}
             >
