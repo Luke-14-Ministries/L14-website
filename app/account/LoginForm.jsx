@@ -13,17 +13,23 @@ import { rememberBrowser, trustedBrowserCheck } from './trust-actions';
 // The password is still required at every login; only the 6-digit code is
 // skipped, and only on a browser that has already passed two-factor once.
 // A random token stays in this browser; its SHA-256 hash sits in
-// mfa_trusted_devices, whose insert policy requires an aal2 session -- so the
-// skip cannot be faked by someone who only knows the password.
-// The token lives in a COOKIE (not localStorage) because the middleware is
-// what enforces the two-factor rule on protected pages, and middleware can
-// read cookies but never a browser's localStorage. The old localStorage slot
-// is still read as a fallback so browsers trusted before this change keep
-// their skip at login; passing the code once more writes the cookie and
-// brings them fully into the new scheme.
-const TRUST_KEY = 'l14_mfa_trust';
+// mfa_trusted_devices, written only by remember_this_browser(), which needs a
+// code-verified (aal2) session -- so the skip cannot be faked by someone who
+// only knows the password. The database also sets how long it lasts (0176,
+// 23 Nov 2026): until then this form chose the expiry date itself.
+// The token lives in an HttpOnly COOKIE because the middleware is what
+// enforces the two-factor rule on protected pages, and middleware can read
+// cookies but never a browser's localStorage.
+//
+// The localStorage copy of the token (kept as a backup until 23 Nov 2026) is
+// no longer written or read: any script on the page could read it, which is
+// the reason the cookie is HttpOnly. Its slot is cleared on load. A browser
+// whose cookie is still there keeps its skip; one whose cookie was cleared
+// asks for the code once more.
+const OLD_TRUST_KEY = 'l14_mfa_trust';
 // 30 days for families; 7 for staff, program leaders and the camp doctor
-// (Lawrence, 18 Oct 2026). The database enforces the 7 (0104).
+// (Lawrence, 18 Oct 2026). The database decides (0176); these are for the
+// words beside the tick box.
 const TRUST_DAYS = 30;
 const TRUST_DAYS_STAFF = 7;
 
@@ -35,19 +41,11 @@ async function sha256Hex(text) {
 // The cookie itself is written and read on the server (trust-actions.js), as
 // an HttpOnly cookie no page script can see -- security audit, 21 Oct 2026.
 
-function readTrustStore() {
+function clearOldTrustStore() {
   try {
-    return JSON.parse(localStorage.getItem(TRUST_KEY) || '{}');
+    localStorage.removeItem(OLD_TRUST_KEY);
   } catch {
-    return {};
-  }
-}
-
-function writeTrustStore(store) {
-  try {
-    localStorage.setItem(TRUST_KEY, JSON.stringify(store));
-  } catch {
-    /* private-browsing modes can refuse; the code step still works */
+    /* private-browsing modes can refuse; nothing is lost */
   }
 }
 
@@ -108,14 +106,11 @@ export default function LoginForm({ newSite = false } = {}) {
   const supabase = createClient();
 
   // Is this browser trusted for the signed-in user? The server checks the
-  // HttpOnly cookie (which this script cannot read) and any token left in the
-  // legacy localStorage slot, asks the database (mark_session_trusted, 0104)
-  // and moves a valid legacy token into the cookie so the middleware agrees.
-  async function isTrustedBrowser(user) {
-    const legacy = user ? readTrustStore()[user.id] : null;
-    const legacyTokens = legacy?.token && legacy.exp > Date.now() ? [legacy.token] : [];
+  // HttpOnly cookie (which this script cannot read) and asks the database
+  // (mark_session_trusted, 0104), which registers this session as trusted.
+  async function isTrustedBrowser() {
     try {
-      return (await trustedBrowserCheck(legacyTokens)) === true;
+      return (await trustedBrowserCheck()) === true;
     } catch {
       return false;
     }
@@ -213,6 +208,7 @@ export default function LoginForm({ newSite = false } = {}) {
   // signInWithPassword already created the session; only the upgrade to aal2
   // is missing.
   useEffect(() => {
+    clearOldTrustStore();
     (async () => {
       const {
         data: { user },
@@ -221,7 +217,7 @@ export default function LoginForm({ newSite = false } = {}) {
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aal?.currentLevel !== 'aal1' || aal?.nextLevel !== 'aal2') return;
       try {
-        if (await isTrustedBrowser(user)) {
+        if (await isTrustedBrowser()) {
           finish();
           return;
         }
@@ -291,7 +287,7 @@ export default function LoginForm({ newSite = false } = {}) {
       // other way round.
       try {
         const { data } = await withTimeout(supabase.auth.getUser(), 6000, { data: {} });
-        if (data?.user && (await isTrustedBrowser(data.user))) {
+        if (data?.user && (await isTrustedBrowser())) {
           finish();
           return;
         }
@@ -328,42 +324,23 @@ export default function LoginForm({ newSite = false } = {}) {
       return;
     }
 
-    // Passed two-factor. If asked, remember this browser: random token here,
-    // its hash server-side (insert allowed only now, at aal2).
+    // Passed two-factor. If asked, remember this browser: a random token
+    // here, its hash in the database. remember_this_browser() (0176) needs
+    // this aal2 session and decides the length itself (7 days for staff,
+    // leaders and the camp doctor, 30 for families), so the cookie is given
+    // the date it returns.
     if (remember) {
       try {
         const bytes = new Uint8Array(32);
         crypto.getRandomValues(bytes);
         const token = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
         const hash = await sha256Hex(token);
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        // Staff remember for 7 days; the database would stop honouring a staff
-        // device after 7 anyway, so the cookie should not promise 30.
-        const { data: staffRow, error: staffError } = user
-          ? await supabase.from('staff').select('active').eq('profile_id', user.id).maybeSingle()
-          : { data: null };
-        // Not guessed as "not staff" (30 days): skip remembering instead.
-        if (staffError) throw new Error(`Staff lookup: ${staffError.message}`);
-        const days = staffRow?.active ? TRUST_DAYS_STAFF : TRUST_DAYS;
-        const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-        if (user) {
-          const { error: insError } = await supabase.from('mfa_trusted_devices').insert({
-            profile_id: user.id,
-            token_hash: hash,
-            user_agent: navigator.userAgent.slice(0, 250),
-            expires_at: expires.toISOString(),
-          });
-          if (!insError) {
-            // The cookie is set by the server, HttpOnly. localStorage kept as
-            // a same-browser backup in case cookies get cleared selectively.
-            await rememberBrowser(token, expires.toISOString());
-            const store = readTrustStore();
-            store[user.id] = { token, exp: expires.getTime() };
-            writeTrustStore(store);
-          }
-        }
+        const { data: expiresAt, error: rememberError } = await supabase.rpc('remember_this_browser', {
+          p_token_hash: hash,
+          p_user_agent: navigator.userAgent.slice(0, 250),
+        });
+        if (rememberError) throw new Error(rememberError.message);
+        if (expiresAt) await rememberBrowser(token, expiresAt);
       } catch (err) {
         // Trust is a convenience; the login itself has already succeeded.
         console.error('Remember this browser:', err?.message);

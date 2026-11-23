@@ -12,7 +12,6 @@
 // (the middleware, and these two actions) can read it. Security audit,
 // "think like a hacker" round.
 
-import { createHash } from 'crypto';
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 
@@ -30,7 +29,8 @@ function cookieOptions(expires) {
   };
 }
 
-// After the code step, with the device row already written by the form.
+// After the code step, with the device row already written by
+// remember_this_browser() (0176), which also chose `expiresIso`.
 export async function rememberBrowser(token, expiresIso) {
   if (typeof token !== 'string' || !TOKEN_SHAPE.test(token)) return { ok: false };
   const expires = new Date(expiresIso);
@@ -40,41 +40,20 @@ export async function rememberBrowser(token, expiresIso) {
   return { ok: true };
 }
 
-// At login: is this browser remembered for the signed-in person? The cookie
-// first; then any token the form still holds from the old localStorage
-// scheme (moved into the cookie here when it proves valid, so the middleware
-// -- which trusts only the cookie -- agrees with the form). The database
-// decides (mark_session_trusted, 0104): the token's hash must be this
-// person's own unexpired device, within the 7-day staff limit, and the call
-// registers this session as trusted.
-export async function trustedBrowserCheck(legacyTokens = []) {
+// At login: is this browser remembered for the signed-in person? Only the
+// HttpOnly cookie counts (the old localStorage fallback went on 23 Nov 2026,
+// 0176). The database decides (mark_session_trusted, 0104): the token's hash
+// must be this person's own unexpired device, within the 7-day staff limit,
+// and the call registers this session as trusted.
+export async function trustedBrowserCheck() {
   const jar = await cookies();
-  const fromCookie = jar.get(NAME)?.value;
-  const candidates = [];
-  if (fromCookie && TOKEN_SHAPE.test(fromCookie)) candidates.push({ token: fromCookie, legacy: false });
-  for (const t of Array.isArray(legacyTokens) ? legacyTokens.slice(0, 3) : []) {
-    if (typeof t === 'string' && TOKEN_SHAPE.test(t)) candidates.push({ token: t, legacy: true });
-  }
-  if (candidates.length === 0) return false;
+  const token = jar.get(NAME)?.value;
+  if (!token || !TOKEN_SHAPE.test(token)) return false;
 
   const supabase = await createClient();
-  for (const c of candidates) {
-    const { data: ok, error: trustError } = await supabase.rpc('mark_session_trusted', { p_token: c.token });
-    // Logged, then treated as "not remembered": the form asks for the code,
-    // which fails closed. Throwing here would stop the login altogether.
-    if (trustError) console.error('trustedBrowserCheck:', trustError.message);
-    if (ok !== true) continue;
-    if (c.legacy) {
-      const hash = createHash('sha256').update(c.token).digest('hex');
-      const { data: device, error: deviceError } = await supabase
-        .from('mfa_trusted_devices')
-        .select('expires_at')
-        .eq('token_hash', hash)
-        .maybeSingle();
-      if (deviceError) console.error('trustedBrowserCheck device:', deviceError.message);
-      if (device?.expires_at) jar.set(NAME, c.token, cookieOptions(new Date(device.expires_at)));
-    }
-    return true;
-  }
-  return false;
+  const { data: ok, error: trustError } = await supabase.rpc('mark_session_trusted', { p_token: token });
+  // Logged, then treated as "not remembered": the form asks for the code,
+  // which fails closed. Throwing here would stop the login altogether.
+  if (trustError) console.error('trustedBrowserCheck:', trustError.message);
+  return ok === true;
 }

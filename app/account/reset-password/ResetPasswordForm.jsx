@@ -115,11 +115,9 @@ export default function ResetPasswordForm() {
       setBusy(false);
       return;
     }
-    // The annual-change clock (0104). Never fatal: the password is changed.
-    await supabase.rpc('stamp_password_changed').then(
-      () => {},
-      () => {}
-    );
+    // The annual-change clock (0104) is stamped by the database itself when
+    // the password changes (a trigger on auth.users, 0176, 23 Nov 2026), so
+    // it cannot be reset without a new password. Nothing to call here.
 
     // The reset link already signed them in, so there is nothing further to
     // do -- send them into the account area.
