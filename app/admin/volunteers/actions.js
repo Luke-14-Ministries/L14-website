@@ -8,6 +8,8 @@ import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { setParticipantStatus } from '../registrations/[id]/actions';
+import { checkDateProblem } from '@/lib/format';
+import { todayInMorristown } from '@/lib/events';
 
 export async function reviewVolunteerApplication(participantId, decision, { override = false } = {}) {
   const staff = await getStaff();
@@ -79,6 +81,12 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
   if (!personId) return { ok: false, error: 'Missing person.' };
   const isOn = Boolean(onFile);
   if (isOn && !date) return { ok: false, error: 'Give the date of the background check. The expiry is based on it.' };
+  // A full date, not in the future, not more than 10 years back (23 Nov 2026):
+  // a mistyped year made a check read as current for decades.
+  if (date) {
+    const bad = checkDateProblem(date);
+    if (bad) return { ok: false, error: bad };
+  }
   const v = verdict ? String(verdict) : null;
   if (v && !VERDICTS.includes(v)) return { ok: false, error: 'Unknown verdict.' };
   if (v && !isOn) return { ok: false, error: 'A verdict needs the paperwork on file first.' };
@@ -98,7 +106,7 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
   // adults too: a volunteer's check, or an adult participant's.
   let reason = 'volunteer';
   if (fromRegistry) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInMorristown();
     const { data: places, error: placesError } = await supabase
       .from('registration_participants')
       .select('camp_role, registrations!inner ( events!inner ( ends_on, archived_at ) )')

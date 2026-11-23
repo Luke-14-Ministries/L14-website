@@ -8,6 +8,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { recordRegistrySearch } from './actions';
+import { checkDateMin } from '@/lib/format';
 
 const RESULTS = [
   { value: 'ok', label: 'No match' },
@@ -69,6 +70,7 @@ export default function RegistrySearchForm({ personId, name, today, initial }) {
         <input
           type="date"
           value={date}
+          min={checkDateMin(today)}
           max={today}
           onChange={(e) => setDate(e.target.value)}
           className="rounded-sm border border-neutral-300 px-2 py-1"

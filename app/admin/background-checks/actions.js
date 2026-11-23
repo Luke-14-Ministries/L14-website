@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { withReason } from '@/lib/dbErrors';
+import { checkDateProblem } from '@/lib/format';
 
 // A sex-offender registry search for an adult who isn't a volunteer (0161,
 // widened to every non-volunteer role in 0162; Lawrence 10-11 Nov 2026). A
@@ -28,7 +29,11 @@ export async function recordRegistrySearch({ personId, date, result, note }) {
   }
   if (!personId) return { ok: false, error: 'Missing person.' };
   const day = String(date ?? '').trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { ok: false, error: 'Give the date you searched the registry.' };
+  if (!day) return { ok: false, error: 'Give the date you searched the registry.' };
+  // A full date, not after today in Morristown, not more than 10 years back
+  // (security review, 23 Nov 2026); the database also refuses a future date.
+  const badDay = checkDateProblem(day);
+  if (badDay) return { ok: false, error: badDay };
   if (!REGISTRY_RESULTS.includes(result)) return { ok: false, error: 'Choose what the search found.' };
   const why = String(note ?? '').trim().slice(0, 500);
   if (result !== 'ok' && !why) {

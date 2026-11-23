@@ -11,8 +11,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { setVolunteerClearance } from '@/app/admin/volunteers/actions';
-import { CLEARANCE_VERDICT_LABEL } from '@/lib/format';
-import { dayInMorristown } from '@/lib/events';
+import { CLEARANCE_VERDICT_LABEL, checkDateMin } from '@/lib/format';
+import { dayInMorristown, todayInMorristown } from '@/lib/events';
 
 const VERDICT_OPTIONS = [
   ['ok', 'OK to serve', 'text-green-800'],
@@ -155,7 +155,16 @@ export default function ClearanceEditor({ personId, clearance, vb, email, firstN
         </label>
         <label className="block">
           <span className="block text-xs font-semibold text-neutral-500 mb-0.5">Background check date (required when on file)</span>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-sm border border-neutral-300 px-2 py-1" />
+          {/* Not after today, not more than 10 years back: the server's
+              rule (checkDateProblem, 23 Nov 2026). */}
+          <input
+            type="date"
+            value={date}
+            min={checkDateMin()}
+            max={todayInMorristown()}
+            onChange={(e) => setDate(e.target.value)}
+            className="rounded-sm border border-neutral-300 px-2 py-1"
+          />
         </label>
         <span className="text-xs text-neutral-500">
           {/* No check date, no expiry: 0108 clears expires_on with the date,
