@@ -513,7 +513,7 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
 
 - **`output: 'export'` is gone — do not put it back.** It disables all server code. `next.config.mjs`
   carries `trailingSlash: true` and the security headers (the content security policy is
-  report-only until a test round shows no reports); **`trailingSlash` stays** (removing it turns
+  enforced since 23 Nov 2026: a new outside service must be added to it or it will not load); **`trailingSlash` stays** (removing it turns
   `/about/` into `/about` across every link). Anything calling this site a "static export" is out of
   date.
 - **GitHub Pages is retired — do not revive it.** Hosting is Vercel only, through its GitHub

@@ -2,14 +2,17 @@
 // none beyond Vercel's default HSTS: /admin (refunds, "Approve all") could be
 // framed by another site and clicked through invisibly.
 //
-// The content security policy is REPORT-ONLY for now: browsers log what it
-// would block (DevTools console) and block nothing. It lists what the site
+// The content security policy is ENFORCED since 23 Nov 2026 (Lawrence's go):
+// browsers block anything not listed here. It was report-only from 18 Oct;
+// before switching, every public page (videos included) was loaded and each
+// outside origin it used was on the list, and no signed-in page embeds
+// outside content (uploaded files open in a new tab). A new outside service
+// (a widget, an embed, a font host) must be added here or it will not load. It lists what the site
 // really loads -- Turnstile, the YouTube and Vimeo embeds, Supabase
 // (API, realtime, signed photo links), Vercel Analytics (same-origin
 // /_vercel/*). Stripe Checkout is a full-page redirect, so it needs no entry.
-// Enforce it (rename the header to Content-Security-Policy) once a round of
-// testing shows no reports. Vercel's preview toolbar (vercel.live) is not
-// listed; on previews it will show up in the reports.
+// Vercel's preview toolbar (vercel.live) is not listed, so it does not load
+// on preview deployments; that is expected.
 // `npm run dev` also reports eval and va.vercel-scripts.com debug scripts --
 // development-only; production uses neither.
 const SUPABASE = 'https://nnbcxqxwkivadzognpno.supabase.co';
@@ -26,12 +29,11 @@ const CSP = [
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "object-src 'none'",
-  // Add 'upgrade-insecure-requests' when enforcing; report-only ignores it
-  // and logs an error on every page.
+  'upgrade-insecure-requests',
 ].join('; ');
 
 const SECURITY_HEADERS = [
-  { key: 'Content-Security-Policy-Report-Only', value: CSP },
+  { key: 'Content-Security-Policy', value: CSP },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

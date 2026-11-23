@@ -5107,3 +5107,14 @@ sign-in email. If one of two parents ticks it, the shared address gets the newsl
 - Lawrence switched Claude's single sign-on from required to optional, so an SSO failure (Microsoft
   down, an expired certificate) cannot lock the ministry out of Claude. The Anthropic domain record
   stays. The Entra hardening settings flagged the same day were changed by Lawrence.
+
+## 2026-11-23 — Content security policy enforced
+
+Report-only since the 18 Oct audit. Before switching (Lawrence's go): every public page, the video
+pages included, was loaded and each outside origin it used (Turnstile, YouTube, Vimeo) was on the list;
+no signed-in page embeds outside content, and Stripe Checkout is a full-page redirect the policy does
+not govern. The header is now `Content-Security-Policy`, with `upgrade-insecure-requests` added. A new
+outside service (widget, embed, font host) has to be added in `next.config.mjs` or it will not load.
+Also closed the same day: W71's last piece (the `purge-storage-once` function is gone from Supabase) and
+the `luke14-ministries.vercel.app` 308 redirect to the real domain (Lawrence, in Vercel; checked from
+outside, paths kept).
