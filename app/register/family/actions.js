@@ -15,8 +15,7 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { supportPatch, supportProblems } from '@/lib/support';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { sendEmail, registrationConfirmationEmail } from '@/lib/email';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { sendEmail, registrationConfirmationEmail, logOwnEmail } from '@/lib/email';
 import { requestContactEmailChange } from '@/lib/contactEmail';
 
 import { balanceDueOn, registrationOpen, OPEN_EVENT_COLUMNS } from '@/lib/events';
@@ -393,28 +392,20 @@ export async function submitFamilyRegistration(payload) {
       const sent = await sendEmail({ to, subject, html });
       // Kept in the email log like every other email to a family (Lawrence,
       // 4 Nov 2026: Darlene's confirmation arrived but Emails sent said
-      // none). A family's own login cannot write message_log (0113), so the
-      // site's server client does, as the automatic emails do. A failure to
-      // log is noted and never undoes the registration.
-      const admin = createAdminClient();
-      if (admin && data?.registrationId) {
-        const { data: reg } = await admin
-          .from('registrations')
-          .select('household_id')
-          .eq('id', data.registrationId)
-          .maybeSingle();
-        const { error: logError } = await admin.from('message_log').insert({
-          to_email: to,
-          household_id: reg?.household_id ?? null,
-          registration_id: data.registrationId,
-          template_key: payload?.isUpdate ? 'registration_updated' : 'registration_confirmation',
-          subject: String(subject).slice(0, 300),
-          status: sent?.ok ? 'sent' : 'failed',
-          error: sent?.ok ? null : String(sent?.error ?? '').slice(0, 1000),
-          provider_message_id: sent?.id ?? null,
-          body_text: htmlToText(html).slice(0, 20000),
+      // none). Since 0178 (23 Nov 2026) the family's own sign-in writes it
+      // through log_own_household_email(), which finds the household from the
+      // registration and checks it is theirs; the service-role key is no
+      // longer used here. A failure to log is noted and never undoes the
+      // registration.
+      if (data?.registrationId) {
+        await logOwnEmail(supabase, {
+          registrationId: data.registrationId,
+          to,
+          templateKey: payload?.isUpdate ? 'registration_updated' : 'registration_confirmation',
+          subject,
+          sent,
+          bodyText: htmlToText(html),
         });
-        if (logError) console.error('registration confirmation log:', logError.message);
       }
     }
   } catch (e) {
