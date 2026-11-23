@@ -710,6 +710,140 @@ begin
 end;
 $$;
 
+-- ---------------------------------------------------------------------
+-- Sign-in strength (0176): remembered browsers, the yearly password
+-- stamp, a family's two-factor in the database. Cleans up after itself.
+-- ---------------------------------------------------------------------
+do $$
+declare
+  uA uuid; uB uuid; uR uuid; hA uuid; hB uuid; ev uuid; prog uuid;
+  uE uuid := '99990000-0000-4000-8000-0000000001e1';   -- made a program leader below
+  sidA text := '33333333-3333-4333-8333-333333333333';
+  sidR text := '44444444-4444-4444-8444-444444444444';
+  tokR text := repeat('ab', 32);
+  until_ts timestamptz;
+  stamp timestamptz;
+  ok boolean;
+  n bigint;
+begin
+  select v into uA from t where k='uA';   select v into uB from t where k='uB';
+  select v into uR from t where k='uR';   select v into hA from t where k='hA';
+  select v into hB from t where k='hB';   select v into ev from t where k='ev';
+
+  set local role authenticated;
+
+  -- A device row is written only by remember_this_browser(), which sets the dates.
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('a login may NOT insert its own remembered browser (0176)',
+    format('insert into public.mfa_trusted_devices (profile_id, token_hash, expires_at) values (%L, %L, now() + interval ''10 years'')',
+           uA, repeat('cd', 32)));
+  perform pg_temp.as_user_aal1(uA);
+  perform pg_temp.expect_denied('remembering a browser needs a code on this session (0176)',
+    format('select public.remember_this_browser(%L, ''test'')', repeat('ef', 32)));
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('remembering a browser needs a 64-hex hash (0176)',
+    'select public.remember_this_browser(''short'', ''test'')');
+  until_ts := public.remember_this_browser(repeat('ef', 32), 'test');
+  perform pg_temp.expect('a family is remembered for 30 days (0176)',
+    round(extract(epoch from until_ts - now()) / 86400)::bigint, 30);
+  perform pg_temp.as_user(uR);
+  until_ts := public.remember_this_browser(encode(sha256(convert_to(tokR, 'UTF8')), 'hex'), 'test');
+  perform pg_temp.expect('staff are remembered for 7 days (0176)',
+    round(extract(epoch from until_ts - now()) / 86400)::bigint, 7);
+  perform pg_temp.expect_denied('a remembered browser may NOT be stretched past 30 days (0176)',
+    format('update public.mfa_trusted_devices set expires_at = now() + interval ''1 year'' where profile_id = %L', uR));
+
+  -- A staff device remembered more than 7 days ago: refused, and its
+  -- session stops counting at once (0176).
+  set local role postgres;
+  update public.mfa_trusted_devices set created_at = now() - interval '8 days', expires_at = now() + interval '20 days'
+   where profile_id = uR;
+  insert into public.mfa_trusted_sessions (session_id, profile_id, expires_at)
+    values (sidR::uuid, uR, now() + interval '20 days');
+  set local role authenticated;
+  perform pg_temp.as_user_aal1(uR, sidR);
+  ok := public.mark_session_trusted(tokR);
+  perform pg_temp.expect('a staff browser remembered 8 days ago is not honoured (0176)', ok::int, 0);
+  set local role postgres;
+  select count(*) into n from public.mfa_trusted_sessions where session_id = sidR::uuid;
+  perform pg_temp.expect('...and its trusted session is dropped (0176)', n, 0);
+
+  -- Made a program leader: old remembered browsers and every trusted session go (0176).
+  insert into auth.users (id, email) values (uE, 'e176@example.test');
+  insert into public.mfa_trusted_devices (profile_id, token_hash, created_at, expires_at) values
+    (uE, repeat('11', 32), now() - interval '10 days', now() + interval '20 days'),
+    (uE, repeat('22', 32), now() - interval '2 days',  now() + interval '28 days');
+  insert into public.mfa_trusted_sessions (session_id, profile_id, expires_at)
+    values ('55555555-5555-4555-8555-555555555555', uE, now() + interval '20 days');
+  insert into public.programs (name) values ('Harness program 0176') returning id into prog;
+  insert into public.program_leaders (profile_id, program_id, event_id, active) values (uE, prog, ev, true);
+  select count(*) into n from public.mfa_trusted_devices where profile_id = uE;
+  perform pg_temp.expect('a new leader keeps only browsers remembered in the last 7 days (0176)', n, 1);
+  select count(*) into n from public.mfa_trusted_sessions where profile_id = uE;
+  perform pg_temp.expect('a new leader''s trusted sessions are dropped (0176)', n, 0);
+
+  -- A family's two-factor, in the database (0176). A enrols a device.
+  insert into auth.mfa_factors (user_id, status) values (uA, 'verified');
+  set local role authenticated;
+  perform pg_temp.as_user_aal1(uA, sidA);
+  select count(*) into n from public.households;
+  perform pg_temp.expect('an enrolled family on a password-only session sees no household (0176)', n, 0);
+  select count(*) into n from public.people where household_id = hA;
+  perform pg_temp.expect('...and none of its people (0176)', n, 0);
+  select count(*) into n from public.registrations;
+  perform pg_temp.expect('...and none of its registrations (0176)', n, 0);
+  select count(*) into n from public.my_household_logins(hA);
+  perform pg_temp.expect('...and no household logins (0176)', n, 0);
+  perform pg_temp.expect_denied('...and may not send a household invite (0176)',
+    format('select public.create_household_invite(%L, ''x176@example.test'', null, %L)', hA, repeat('99', 32)));
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.households where id = hA;
+  perform pg_temp.expect('an enrolled family that entered its code sees its household (0176)', n, 1);
+  select count(*) into n from public.people where household_id = hA;
+  perform pg_temp.expect('...and its people (0176)', n, 2);
+  set local role postgres;
+  insert into public.mfa_trusted_sessions (session_id, profile_id, expires_at)
+    values (sidA::uuid, uA, now() + interval '1 day');
+  set local role authenticated;
+  perform pg_temp.as_user_aal1(uA, sidA);
+  select count(*) into n from public.households where id = hA;
+  perform pg_temp.expect('an enrolled family on a remembered browser sees its household (0176)', n, 1);
+  perform pg_temp.as_user_aal1(uB);
+  select count(*) into n from public.households where id = hB;
+  perform pg_temp.expect('a family with no two-factor still sees its household on a password (0176)', n, 1);
+
+  -- The yearly password stamp is the database's, not the login's (0176).
+  perform pg_temp.as_user(uA);
+  perform pg_temp.expect_denied('a login may NOT set its own password date (0176)',
+    format('update public.profiles set password_changed_at = now() where id = %L', uA));
+  perform pg_temp.expect_allowed('a login may still change its own name (0176)',
+    format('update public.profiles set first_name = first_name where id = %L', uA));
+  set local role postgres;
+  update public.profiles set password_changed_at = now() - interval '400 days' where id = uA;
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  perform public.stamp_password_changed();
+  set local role postgres;
+  select password_changed_at into stamp from public.profiles where id = uA;
+  perform pg_temp.expect('stamp_password_changed() no longer moves the date (0176)',
+    (stamp < now() - interval '300 days')::int, 1);
+  update auth.users set encrypted_password = 'new-hash' where id = uA;
+  select password_changed_at into stamp from public.profiles where id = uA;
+  perform pg_temp.expect('a real password change moves the date (0176)',
+    (stamp > now() - interval '1 minute')::int, 1);
+
+  ---- clean up ----------------------------------------------------------
+  set local role postgres;
+  delete from auth.mfa_factors where user_id = uA;
+  delete from public.mfa_trusted_sessions where profile_id in (uA, uR, uE);
+  delete from public.mfa_trusted_devices where profile_id in (uA, uR, uE);
+  delete from public.program_leaders where profile_id = uE;
+  delete from public.programs where id = prog;
+  delete from public.profiles where id = uE;
+  delete from auth.users where id = uE;
+end;
+$$;
+
 
 -- ---------------------------------------------------------------------
 -- Checks

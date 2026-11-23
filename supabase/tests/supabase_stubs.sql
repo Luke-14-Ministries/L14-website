@@ -1,7 +1,9 @@
 -- Minimal stand-ins for the Supabase pieces the migrations expect (auth.uid(),
 -- roles, storage), so every migration can run on a plain local Postgres. Tests only.
 create schema auth; create schema extensions; create schema storage;
-create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}', created_at timestamptz default now(), phone text, email_confirmed_at timestamptz, last_sign_in_at timestamptz);
+create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}', created_at timestamptz default now(), phone text, email_confirmed_at timestamptz, last_sign_in_at timestamptz, encrypted_password text);
+-- Two-factor devices (0176's family_session_ok() reads it; status is an enum on Supabase).
+create table auth.mfa_factors (id uuid primary key default gen_random_uuid(), user_id uuid not null, friendly_name text, factor_type text not null default 'totp', status text not null default 'verified', created_at timestamptz default now(), updated_at timestamptz default now());
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid $$;
 create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true),'')::jsonb, jsonb_build_object('aal', coalesce(nullif(current_setting('request.jwt.claim.aal', true),''),'aal1'))) $$;
 create function auth.role() returns text language sql stable as $$ select 'authenticated' $$;
