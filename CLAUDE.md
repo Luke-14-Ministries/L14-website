@@ -540,7 +540,7 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
   it. The Squarespace site is retired from the address (it stays in the Squarespace account until that
   plan ends).
 - **Microsoft 365's DKIM CNAMEs** `selector1._domainkey` and `selector2._domainkey` are in the zone
-  (A7); signing in Microsoft 365 can be switched on now that C6's email check passed (23 Nov 2026).
+  (A7); signing in Microsoft 365 is on since 23 Nov 2026.
 - **Microsoft 365 also has `autodiscover`, `lyncdiscover` and `sip` CNAMEs** (Outlook and Teams
   sign-in); keep them.
 - **The registrar is Cloudflare Registrar since 19 Nov 2026** (C7), in the same admin@ account as the
@@ -551,7 +551,9 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
 - **SPF is `v=spf1 include:spf.protection.outlook.com ~all`** — a *soft* fail (`~all`, seen 28 Oct 2026; it was `-all` on 7 Aug). Adding a sender means
   editing this exact line; an error silently breaks every staff email. Change it carefully, with
   someone watching, and never as the last task of a session.
-- **DMARC exists but does nothing**: `v=DMARC1; p=none`, no `rua=` reporting address.
+- **DMARC is `p=none` with reports to Cloudflare** (since 23 Nov 2026): `v=DMARC1; p=none;
+  rua=mailto:…@dmarc-reports.cloudflare.net;`, read in Cloudflare → Email → DMARC Management. Moving to
+  `p=quarantine` (with SPF `-all`) waits until the reports show every real sender passing.
 - **Mailchimp is DKIM-authenticated on this domain** (`k2._domainkey`, `k3._domainkey` → `dkim2/dkim3.mcsv.net`, found by Cloudflare's scan on 28 Oct 2026; the 7 August check missed them). SPF does not list it and does not need to. The DNS copy and the records to keep are in DO-THIS-NEXT, *Reference*.
 - **Anthropic's domain verification** (`anthropic-domain-verification-…` TXT on `@`): the ministry's
   Claude organization signs in through Microsoft Entra single sign-on since 22 Nov 2026, and that
