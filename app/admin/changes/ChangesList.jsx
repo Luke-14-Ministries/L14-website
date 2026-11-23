@@ -310,6 +310,14 @@ export default function ChangesList({ groups: given }) {
                       {SOURCE_LABEL[c.source] ?? c.source}
                     </span>
                   </p>
+                  {/* Under 18 on the first day is not screened (0161/0162), so
+                      this edit takes them out of screening (23 Nov 2026). */}
+                  {c.underEighteenFor && (
+                    <p className="mt-1 rounded-sm border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-900">
+                      Now under 18 on the first day of {c.underEighteenFor.join(' and ')}, so no longer screened. Check
+                      the date with the family before relying on it.
+                    </p>
+                  )}
                   <p className="mt-0.5">
                     <span className="rounded-sm bg-red-50 px-1.5 py-0.5 text-red-800 line-through decoration-red-300">
                       <Value v={c.oldValue} />

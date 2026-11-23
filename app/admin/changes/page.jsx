@@ -4,7 +4,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import ChangesList from './ChangesList';
 import { whenInMorristown } from '@/lib/events';
-import { afterApprovalFilter } from '@/lib/changesAfterApproval';
+import { afterApprovalFilter, dobDropsUnder18 } from '@/lib/changesAfterApproval';
 
 export const metadata = { title: 'Recent Changes · Staff Admin' };
 
@@ -80,6 +80,9 @@ export default async function RecentChangesPage() {
   // show changes here if application not accepted"). Before approval, staff
   // see the current details when they review the registration.
   const afterApproval = list.length ? await afterApprovalFilter(supabase) : () => false;
+  // A date of birth change that takes someone under 18 for an upcoming event,
+  // so out of screening (23 Nov 2026).
+  const under18 = await dobDropsUnder18(supabase, list);
   const after = new Map();
   const before = new Map();
   for (const r of list) {
@@ -102,6 +105,7 @@ export default async function RecentChangesPage() {
       person: r.person_id ? personName.get(r.person_id) ?? '' : '',
       actor: r.actor_profile_id ? actorName.get(r.actor_profile_id) ?? '' : '',
       actorIsStaff: staffActorIds.has(r.actor_profile_id),
+      underEighteenFor: under18.get(r.id) ?? null,
     });
   }
 
