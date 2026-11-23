@@ -1,5 +1,9 @@
 'use client';
 
+// 23 Nov 2026 (A5-07): the second option names every sign-in, since a
+// household can have more than one (W75), and staff contact the household's
+// primary contact first, which the confirm now says.
+
 import { useState } from 'react';
 import { requestDataDeletion } from './actions';
 
@@ -12,7 +16,7 @@ export default function DeleteDataForm() {
   async function submit() {
     if (scope === 'account_and_medical') {
       const ok = window.confirm(
-        'Ask us to delete your account and everyone in your household?\n\nStaff will contact you before anything is removed.'
+        'Ask us to delete your account and everyone in your household?\n\nStaff will contact your household’s primary contact before anything is removed.'
       );
       if (!ok) return;
     }
@@ -41,7 +45,7 @@ export default function DeleteDataForm() {
           <input type="radio" name="scope" className="mt-1" checked={scope === 'account_and_medical'} onChange={() => setScope('account_and_medical')} />
           <span>
             <span className="font-semibold">Delete our account and medical information</span>
-            <span className="block text-sm text-neutral-600">Your login, your household and everyone in it.</span>
+            <span className="block text-sm text-neutral-600">Every sign-in for this household, the household and everyone in it.</span>
           </span>
         </label>
       </fieldset>

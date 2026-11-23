@@ -8,6 +8,11 @@
 // 23 Nov 2026 (0178): the person who set the household up can remove another
 // adult's sign-in here, and "Who they are" lists adults only (a sign-in on a
 // child's record is refused by the database).
+//
+// 23 Nov 2026 (review A5-06/A5-07; a guess, flagged for Lawrence to confirm): the
+// card says plainly that an invited adult sees and can change everything the
+// first one can; the first login reads "Started this account"; the office
+// address is a link.
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -57,8 +62,9 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
     <section id="logins" className="mt-8 rounded-lg bg-white border border-neutral-200 shadow-xs p-6 scroll-mt-24">
       <h2 className="text-lg font-bold mb-1">Who can sign in to this household</h2>
       <p className="text-sm text-neutral-600 mb-4">
-        Another parent, guardian or adult in the family can have their own sign-in and see the same
-        registrations, payments and details. Invite them by email.
+        Another parent, guardian or adult in your family can have their own sign-in. They see, and
+        can change, the same things you can: registrations, payments and everyone&rsquo;s details.
+        Invite them by email.
       </p>
 
       <ul className="mb-4 divide-y divide-neutral-100 rounded-sm border border-neutral-200">
@@ -69,7 +75,7 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
               {l.is_me ? <span className="text-neutral-500"> (you)</span> : null}
             </span>
             <span className="flex items-center gap-3">
-              <span className="text-neutral-500">{l.role === 'owner' ? 'Set up the household' : 'Can sign in'}</span>
+              <span className="text-neutral-500">{l.role === 'owner' ? 'Started this account' : 'Can sign in'}</span>
               {iAmOwner && !l.is_me && l.role !== 'owner' ? (
                 <button
                   type="button"
@@ -106,7 +112,7 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
       </ul>
 
       <form
-        className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+        className="grid gap-3 sm:grid-cols-2 sm:items-end"
         onSubmit={(e) => {
           e.preventDefault();
           const formEl = e.currentTarget;
@@ -121,7 +127,7 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
         <label className="block">
           <span className="block text-sm font-semibold mb-1">Who they are (optional)</span>
           <select name="person_id" defaultValue="" className={inputCls}>
-            <option value="">Not listed below / not sure</option>
+            <option value="">Someone not on the list, or not sure</option>
             {unclaimed.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.first_name} {p.last_name}
@@ -129,14 +135,19 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
             ))}
           </select>
         </label>
-        <button type="submit" disabled={busy} className="btn-outline py-2! disabled:opacity-50">
+        {/* On its own row: beside the two boxes it squeezed the "who" list until
+            its first choice was cut off (23 Nov 2026). */}
+        <button type="submit" disabled={busy} className="btn-outline py-2! justify-self-start sm:col-span-2 disabled:opacity-50">
           {busy ? 'Sending…' : 'Send invite'}
         </button>
       </form>
       <p className="mt-2 text-xs text-neutral-500">
         They sign in, or create an account, with the address you enter. If they already have their own
-        household on the site with a registration or other records, staff will join the two: email
-        registration@luke14ministries.net. The person who set up the household can remove a sign-in.
+        household on the site with a registration or other records, staff will join the two: email{' '}
+        <a href="mailto:registration@luke14ministries.net" className="text-brand underline">
+          registration@luke14ministries.net
+        </a>
+        . Only the person who started this account can remove a sign-in.
       </p>
       {status && (
         <p className={`mt-2 text-sm ${status.ok ? 'text-green-700' : 'text-red-700'}`} role="status">

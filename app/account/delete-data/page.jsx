@@ -22,15 +22,23 @@ export default async function DeleteDataPage() {
     .limit(1)
     .maybeSingle();
   if (memberError) throw new Error(`Your household: ${memberError.message}`);
-  const { data: requests, error: requestsError } = member?.household_id
-    ? await supabase
-        .from('data_deletion_requests')
-        .select('id, scope, status, created_at, staff_note')
-        .eq('household_id', member.household_id)
-        .order('created_at', { ascending: false })
-    : { data: [] };
+  const [{ data: requests, error: requestsError }, { data: logins, error: loginsError }] = member?.household_id
+    ? await Promise.all([
+        supabase
+          .from('data_deletion_requests')
+          .select('id, scope, status, created_at, staff_note, requested_by')
+          .eq('household_id', member.household_id)
+          .order('created_at', { ascending: false }),
+        // Who asked (23 Nov 2026, A5-07): a household can have more than one
+        // sign-in since W75, so a request shows whose it was. Names come from
+        // the household's own sign-ins (my_household_logins(), 0174).
+        supabase.rpc('my_household_logins', { p_household_id: member.household_id }),
+      ])
+    : [{ data: [] }, { data: [] }];
   // A failed read must not look like "no requests" -- the family would ask again.
   if (requestsError) throw new Error(`Your deletion requests: ${requestsError.message}`);
+  if (loginsError) throw new Error(`Who signs in to your household: ${loginsError.message}`);
+  const askedBy = new Map((logins ?? []).map((l) => [l.profile_id, l.is_me ? 'you' : l.name || 'another adult']));
   const open = (requests ?? []).some((r) => r.status === 'requested');
 
   return (
@@ -41,9 +49,10 @@ export default async function DeleteDataPage() {
       </div>
       <p className="mt-3 text-neutral-700">
         You can ask us to delete your family&rsquo;s medical information, or your whole account. A
-        staff member looks at every request and will contact you before anything is removed. Some
-        records, such as payments and signed releases, have to be kept for a time even after the
-        rest is gone. Staff will tell you which.
+        staff member looks at every request and contacts your household&rsquo;s primary contact
+        before anything is removed, so nothing goes on one adult&rsquo;s word alone. Some records,
+        such as payments and signed releases, have to be kept for a time even after the rest is
+        gone. Staff will tell you which.
       </p>
       {(requests ?? []).length > 0 && (
         <ul className="mt-6 divide-y divide-neutral-200 rounded-sm border border-neutral-200 bg-white text-sm">
@@ -52,6 +61,7 @@ export default async function DeleteDataPage() {
               <span className="font-semibold">{SCOPE[r.scope]}</span> · requested{' '}
               {new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} ·{' '}
               {STATUS[r.status]}
+              {askedBy.has(r.requested_by) && <span className="text-neutral-600"> · asked by {askedBy.get(r.requested_by)}</span>}
               {r.staff_note && <span className="block text-neutral-600">{r.staff_note}</span>}
             </li>
           ))}
