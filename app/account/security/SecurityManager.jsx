@@ -343,8 +343,25 @@ export default function SecurityManager({ required }) {
   async function doRemove(factorId) {
     setBusy(true);
     const { error: unError } = await supabase.auth.mfa.unenroll({ factorId });
+    let leftError = '';
     if (!unError) {
       await supabase.from('mfa_factor_labels').delete().eq('factor_id', factorId);
+      // The last device gone: forget the remembered browsers too, so turning
+      // two-factor on again later starts with the code everywhere rather than
+      // waking up old 30-day skips (security review, 23 Nov 2026). Deleting a
+      // device row takes its trusted sessions with it (0104's cascade).
+      const { data: left, error: listError } = await supabase.auth.mfa.listFactors();
+      if (listError) {
+        leftError = `Your device was removed, but we couldn't check your remembered browsers (${listError.message}). If you turn two-factor on again, use "Forget all trusted browsers" afterward.`;
+      } else if (!(left?.totp ?? []).some((f) => f.status === 'verified')) {
+        const { error: forgetError } = await supabase
+          .from('mfa_trusted_devices')
+          .delete()
+          .neq('token_hash', '');
+        if (forgetError) {
+          leftError = `Your device was removed, but we couldn't forget your remembered browsers (${forgetError.message}). If you turn two-factor on again, use "Forget all trusted browsers" afterward.`;
+        }
+      }
       // Re-issue the session so the cookie's copy of the user stops listing the
       // factor that no longer exists -- otherwise the middleware and any check
       // that reads the cookie believe two-factor is still on for up to an hour.
@@ -367,6 +384,8 @@ export default function SecurityManager({ required }) {
       return;
     }
     await loadFactors();
+    // After loadFactors, which clears nothing but may set its own message.
+    if (leftError) setError(leftError);
     router.refresh();
   }
 
@@ -591,8 +610,8 @@ export default function SecurityManager({ required }) {
             <p className="text-sm font-semibold mb-1">Trusted browsers</p>
             <p className="text-sm text-neutral-500 mb-2">
               {trustedCount > 0
-                ? `${trustedCount} ${trustedCount === 1 ? 'browser is' : 'browsers are'} remembered. The code is skipped there for 30 days; the password is still required.`
-                : 'None right now. Checking “Remember this browser” at login skips the code there for 30 days.'}
+                ? `${trustedCount} ${trustedCount === 1 ? 'browser is' : 'browsers are'} remembered. The code is skipped there for 30 days (7 for staff); the password is still required.`
+                : 'None right now. Checking “Remember this browser” at login skips the code there for 30 days (7 for staff).'}
             </p>
             {trustedCount > 0 && (
               <button
