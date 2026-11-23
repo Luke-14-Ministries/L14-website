@@ -18,6 +18,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { isVolunteerRole } from '@/lib/roles';
 import { withReason } from '@/lib/dbErrors';
+import { clearancePill } from '@/lib/format';
 
 async function requireCoordinator() {
   const staff = await getStaff();
@@ -95,7 +96,7 @@ export async function setManyParticipantPrograms({ participantIds, programId }) 
 // who granted it, and revoking sets active = false rather than deleting the
 // row. Who could see which children's names, and when, should still be
 // answerable next year.
-export async function grantProgramLeader({ email, profileId = null, programId, eventId }) {
+export async function grantProgramLeader({ email, profileId = null, programId, eventId, confirm = false }) {
   const staff = await getStaff();
   if (!can(staff, 'admin')) {
     return { ok: false, error: 'Only an administrator can name a program leader.' };
@@ -226,6 +227,33 @@ export async function grantProgramLeader({ email, profileId = null, programId, e
   // exactly the things a leader is trusted on. Warned, not blocked: the person
   // deciding is an administrator who can see the whole picture.
   const isVolunteer = myRoles.some(isVolunteerRole);
+
+  // NO CURRENT BACKGROUND CHECK (security review, 23 Nov 2026): a leader sees
+  // children's names and support flags. Asked, not blocked, so an
+  // administrator can still act the week of camp: the first press returns
+  // needsConfirm naming what is missing, and only confirm: true saves. A
+  // registry search does not count; a leader is held to the volunteer rule
+  // (clearancePill without forRegistry).
+  if (!confirm) {
+    const { data: checks, error: checksError } = await supabase
+      .from('clearance_status')
+      .select('person_id, on_file, check_date, expires_on, is_current, verdict, provider')
+      .in('person_id', myPersonIds);
+    if (checksError) return { ok: false, error: `Their background check could not be read: ${checksError.message}` };
+    const pills = (myPersonIds.length ? myPersonIds : [null]).map((id) =>
+      clearancePill((checks ?? []).find((c) => c.person_id === id) ?? null)
+    );
+    if (!pills.some((p) => p.key === 'ok')) {
+      const who = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'This person';
+      return {
+        ok: false,
+        needsConfirm: true,
+        error:
+          `${who} has no current background check marked OK to serve (${pills[0].text}). ` +
+          'A leader sees the names and support flags of the campers in their program. Name them anyway?',
+      };
+    }
+  }
 
   const { error } = await supabase.from('program_leaders').upsert(
     {

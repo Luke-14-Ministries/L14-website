@@ -9,6 +9,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { volunteerApplicationProblem, TRANSLATION_AREA } from '@/lib/volunteer';
+import { ageOnDay } from '@/lib/roles';
 
 // Returns the participant's ids when this login owns it, or null. It used to
 // return a boolean; the Creed signature needs person_id and registration_id,
@@ -26,12 +27,21 @@ async function ownParticipant(supabase, userId, participantId) {
 
   const { data: part, error: partError } = await supabase
     .from('registration_participants')
-    .select('id, person_id, registration_id, camp_role, registrations!inner ( household_id )')
+    .select('id, person_id, registration_id, camp_role, people ( date_of_birth ), registrations!inner ( household_id, events ( starts_on ) )')
     .eq('id', participantId)
     .in('registrations.household_id', householdIds)
     .maybeSingle();
   if (partError) return { queryError: partError.message };
-  return part ? { personId: part.person_id, registrationId: part.registration_id, campRole: part.camp_role } : null;
+  return part
+    ? {
+        personId: part.person_id,
+        registrationId: part.registration_id,
+        campRole: part.camp_role,
+        householdId: part.registrations?.household_id ?? null,
+        startsOn: part.registrations?.events?.starts_on ?? null,
+        dateOfBirth: part.people?.date_of_birth ?? null,
+      }
+    : null;
 }
 
 export async function submitVolunteerApplication(payload) {
@@ -87,6 +97,30 @@ export async function submitVolunteerApplication(payload) {
 
   const clean = (v, max = 4000) => (typeof v === 'string' ? v.trim().slice(0, max) : '') || null;
 
+  // THE ACCOMPANYING ADULT (security review, 23 Nov 2026). Kept only for a
+  // volunteer child or a volunteer under 18 on the event's first day -- the
+  // people the form asks it of -- and it must be someone in their own
+  // household who is 18 or older that day (an unknown birth date is allowed,
+  // as the form allows it; staff see who was named). It was saved as sent.
+  const minorOnDay = (ageOnDay(owned.dateOfBirth, owned.startsOn) ?? 18) < 18;
+  let accompanyingAdultId = null;
+  if ((child || minorOnDay) && payload.accompanyingAdultId) {
+    const { data: adult, error: adultError } = await supabase
+      .from('people')
+      .select('id, date_of_birth')
+      .eq('id', payload.accompanyingAdultId)
+      .eq('household_id', owned.householdId)
+      .maybeSingle();
+    if (adultError) {
+      console.error('submitVolunteerApplication adult:', adultError.message);
+      return { ok: false, error: "We couldn't save your application. Please try again." };
+    }
+    if (!adult || adult.id === owned.personId || (ageOnDay(adult.date_of_birth, owned.startsOn) ?? 18) < 18) {
+      return { ok: false, error: 'Choose an adult from your own household.' };
+    }
+    accompanyingAdultId = adult.id;
+  }
+
   const { error } = await supabase.from('volunteer_applications').upsert(
     {
       registration_participant_id: participantId,
@@ -104,7 +138,7 @@ export async function submitVolunteerApplication(payload) {
       // Optional tick beside the experience question (0118). Not one of the
       // required answers: the experience box is still answered either way.
       first_time_disability_ministry: payload?.firstTimeDisabilityMinistry === true,
-      accompanying_adult_person_id: payload.accompanyingAdultId || null,
+      accompanying_adult_person_id: accompanyingAdultId,
       // The answer AS LAST GIVEN (0075). Ticked = true; left unticked = false,
       // which re-flags the application at review even if an earlier save
       // recorded a signature. The signature itself is history and stays.

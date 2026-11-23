@@ -538,7 +538,16 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
     e.preventDefault();
     setMessage(null);
     startTransition(async () => {
-      const res = await grantProgramLeader({ profileId: profileId || null, programId, eventId });
+      let res = await grantProgramLeader({ profileId: profileId || null, programId, eventId });
+      // No current background check (23 Nov 2026): asked, then saved only on
+      // a yes, the way an approval without a deposit is asked.
+      if (res.needsConfirm) {
+        if (!window.confirm(res.error)) {
+          setMessage({ tone: 'warn', text: 'Not saved. No leader was named.' });
+          return;
+        }
+        res = await grantProgramLeader({ profileId: profileId || null, programId, eventId, confirm: true });
+      }
       if (!res.ok) setMessage({ tone: 'bad', text: res.error });
       else {
         setMessage({
