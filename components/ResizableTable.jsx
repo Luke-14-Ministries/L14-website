@@ -51,12 +51,27 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
     // or less (one shown only with a permission) keeps its own widths.
     const key = `${storageKey}:${ths.length}`;
 
+    // Widths that add up to more than the box can hold are scaled down to
+    // fit when the box around the table does not scroll (Lawrence, 23 Nov
+    // 2026: Accounts ran past its border). Staff tables let the box overflow on
+    // desktop on purpose, so a row menu can open over the edge, which means a
+    // too-wide table spilled outside its own border instead of scrolling. The
+    // saved widths are kept as set; only what is shown is scaled.
+    const fit = (widths) => {
+      const total = widths.reduce((a, b) => a + b, 0);
+      const room = ref.current?.clientWidth ?? 0;
+      const box = ref.current?.parentElement;
+      const scrolls = box ? getComputedStyle(box).overflowX !== 'visible' : true;
+      if (scrolls || room <= 0 || total <= room) return widths;
+      return widths.map((w) => Math.max(MIN, Math.floor((w * room) / total)));
+    };
     const apply = (widths) => {
+      const shown = fit(widths);
       ths.forEach((th, i) => {
-        th.style.width = `${widths[i]}px`;
+        th.style.width = `${shown[i]}px`;
       });
       table.style.tableLayout = 'fixed';
-      table.style.width = `${widths.reduce((a, b) => a + b, 0)}px`;
+      table.style.width = `${shown.reduce((a, b) => a + b, 0)}px`;
       table.style.minWidth = '100%';
     };
     const fallback = () => ths.map((th, i) => defaults[i] ?? Math.max(MIN, Math.round(th.getBoundingClientRect().width)));
@@ -119,8 +134,13 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
       apply(widths);
     };
     window.addEventListener('resizable-table', follow);
+    // A narrower window may no longer fit the widths (or a wider one may fit
+    // them again).
+    const refit = () => apply(widths);
+    window.addEventListener('resize', refit);
     return () => {
       window.removeEventListener('resizable-table', follow);
+      window.removeEventListener('resize', refit);
       handles.forEach((h) => h.remove());
     };
     // defaults is a fixed list per table; the key decides.
