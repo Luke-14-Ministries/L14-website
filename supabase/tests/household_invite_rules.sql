@@ -1,5 +1,7 @@
 -- Checks for migrations 0174 and 0178 (inviting another adult to a household;
--- daily limit, adults only, removing a login, the empty-household fold-in). Fresh
+-- daily limit, adults only, removing a login, the empty-household fold-in) and 0179
+-- (waiting invites listed for the invited sign-in, joining by id, the two-factor
+-- rule on accepting). Fresh
 -- database after every migration, no seed:
 --   L14_DB=l14_inv bash supabase/tests/run_rls_local.sh
 --   psql ... -d l14_inv -f supabase/tests/household_invite_rules.sql
@@ -242,7 +244,7 @@ begin
 end $$;
 rollback;
 
-\echo == 6 an empty household of one's own folds in; anything more is refused (0178)
+\echo == 6 an empty household of their own folds in; anything more is refused (0178)
 begin;
 set local role postgres;
 -- The cousin made an account and set up a household, nothing more (0149's shape).
@@ -302,6 +304,115 @@ begin
   exception when raise_exception then if sqlerrm like 'FAIL%' then raise; end if;
   end;
   raise notice 'PASS 6 a household with anything on file is refused';
+end $$;
+rollback;
+
+\echo == 7 a waiting invite shows to the invited sign-in only, and joins by id (0179)
+begin;
+set local role postgres;
+insert into auth.users (id, email, email_confirmed_at) values
+  ('00000000-0000-0000-0000-0000000000a6', 'aunt@example.test', now()),
+  ('00000000-0000-0000-0000-0000000000a7', 'unconfirmed@example.test', null),
+  ('00000000-0000-0000-0000-0000000000a8', 'guarded@example.test', now());
+insert into public.household_invites (id, household_id, email, token_hash, invited_by) values
+  ('00000000-0000-0000-0000-0000000000d6', '00000000-0000-0000-0000-0000000000b1', 'aunt@example.test',
+   encode(sha256(convert_to('invite-token-invite-token-9', 'UTF8')), 'hex'), '00000000-0000-0000-0000-0000000000a1'),
+  ('00000000-0000-0000-0000-0000000000d7', '00000000-0000-0000-0000-0000000000b1', 'unconfirmed@example.test',
+   encode(sha256(convert_to('invite-token-invite-token-10', 'UTF8')), 'hex'), '00000000-0000-0000-0000-0000000000a1'),
+  ('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000b1', 'guarded@example.test',
+   encode(sha256(convert_to('invite-token-invite-token-11', 'UTF8')), 'hex'), '00000000-0000-0000-0000-0000000000a1');
+-- guarded@ has two-factor turned on (a verified device).
+insert into auth.mfa_factors (user_id) values ('00000000-0000-0000-0000-0000000000a8');
+do $$
+begin
+  if has_function_privilege('anon', 'public.my_open_household_invites()', 'execute') then
+    raise exception 'FAIL 7: signed-out visitors may list invites';
+  end if;
+  if has_function_privilege('authenticated', 'public.accept_household_invite_by_id(uuid)', 'execute') then
+    raise exception 'FAIL 7: the internal accept is callable by a signed-in login';
+  end if;
+  if has_function_privilege('anon', 'public.accept_household_invite_for_me(uuid)', 'execute') then
+    raise exception 'FAIL 7: signed-out visitors may accept by id';
+  end if;
+  raise notice 'PASS 7 grants: internal accept closed, signed-out shut out';
+end $$;
+
+set local role authenticated;
+-- A stranger sees none of it and cannot join by the id.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a3', true) \g /dev/null
+select set_config('request.jwt.claims', '{"aal":"aal2","email":"stranger@example.test"}', true) \g /dev/null
+do $$
+declare n int;
+begin
+  select count(*) into n from public.my_open_household_invites();
+  if n <> 0 then raise exception 'FAIL 7: a stranger sees invites'; end if;
+  begin
+    perform public.accept_household_invite_for_me('00000000-0000-0000-0000-0000000000d6');
+    raise exception 'FAIL 7: a stranger joined by id';
+  exception when raise_exception then if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  raise notice 'PASS 7 stranger sees nothing, cannot join by id';
+end $$;
+-- An address Supabase has not confirmed proves nothing about the mailbox.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a7', true) \g /dev/null
+select set_config('request.jwt.claims', '{"aal":"aal2","email":"unconfirmed@example.test"}', true) \g /dev/null
+do $$
+declare n int;
+begin
+  select count(*) into n from public.my_open_household_invites();
+  if n <> 0 then raise exception 'FAIL 7: an unconfirmed address sees its invite'; end if;
+  begin
+    perform public.accept_household_invite_for_me('00000000-0000-0000-0000-0000000000d7');
+    raise exception 'FAIL 7: an unconfirmed address joined by id';
+  exception when raise_exception then if sqlerrm like 'FAIL%' then raise; end if;
+  end;
+  raise notice 'PASS 7 unconfirmed address refused';
+end $$;
+-- Two-factor on, password only (aal1, no remembered browser): nothing listed,
+-- and neither door joins.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a8', true) \g /dev/null
+select set_config('request.jwt.claims', '{"aal":"aal1","email":"guarded@example.test"}', true) \g /dev/null
+do $$
+declare n int;
+begin
+  select count(*) into n from public.my_open_household_invites();
+  if n <> 0 then raise exception 'FAIL 7: a password-only session sees invites'; end if;
+  begin
+    perform public.accept_household_invite_for_me('00000000-0000-0000-0000-0000000000d8');
+    raise exception 'FAIL 7: a password-only session joined by id';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.accept_household_invite('invite-token-invite-token-11');
+    raise exception 'FAIL 7: a password-only session joined by the link';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'PASS 7 two-factor owed: refused on both doors';
+end $$;
+-- The invited, confirmed address sees it, with the names, and joins by id.
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a6', true) \g /dev/null
+select set_config('request.jwt.claims', '{"aal":"aal2","email":"aunt@example.test"}', true) \g /dev/null
+do $$
+declare r record; n int; j boolean;
+begin
+  select * into r from public.my_open_household_invites();
+  if r.invite_id is distinct from '00000000-0000-0000-0000-0000000000d6'::uuid or r.household_name <> 'Test family' then
+    raise exception 'FAIL 7: the invited sign-in does not see its invite';
+  end if;
+  select a.joined into j from public.accept_household_invite_for_me('00000000-0000-0000-0000-0000000000d6') a;
+  if not j then raise exception 'FAIL 7: joining by id did not join'; end if;
+  select count(*) into n from public.my_open_household_invites();
+  if n <> 0 then raise exception 'FAIL 7: the used invite is still listed'; end if;
+  raise notice 'PASS 7 invited sign-in sees it and joins by id';
+end $$;
+set local role postgres;
+do $$
+declare n int;
+begin
+  select count(*) into n from public.household_members
+   where profile_id = '00000000-0000-0000-0000-0000000000a6' and household_id = '00000000-0000-0000-0000-0000000000b1' and role = 'adult';
+  if n <> 1 then raise exception 'FAIL 7: no adult membership after joining by id'; end if;
+  raise notice 'PASS 7 membership written';
 end $$;
 rollback;
 
