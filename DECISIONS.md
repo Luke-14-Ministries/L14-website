@@ -5118,3 +5118,15 @@ outside service (widget, embed, font host) has to be added in `next.config.mjs` 
 Also closed the same day: W71's last piece (the `purge-storage-once` function is gone from Supabase) and
 the `luke14-ministries.vercel.app` 308 redirect to the real domain (Lawrence, in Vercel; checked from
 outside, paths kept).
+
+## 2026-11-23 — W75: families invite another adult; the policy reports only on the dev server
+
+- **Household invites** (`0174`): from the Harding family (an adult camper registered himself; a
+  relative's own sign-ups never confirmed), a family no longer needs staff to give a second adult their
+  own sign-in. Manage Household lists who can sign in and sends an invite by email; the invite is
+  accepted only by a signed-in login whose own email is the one invited (a forwarded link is useless to
+  anyone else), only if that login has no household yet (otherwise it is a staff merge, 0151), within 7
+  days; the token's hash is all that is stored. Checks: `supabase/tests/household_invite_rules.sql`.
+- **The content security policy only reports under `next dev`.** Enforced, it blocked React's
+  development tools (they need eval) and the local site could not run its scripts. Production still
+  enforces it.

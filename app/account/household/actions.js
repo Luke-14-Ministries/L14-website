@@ -12,6 +12,7 @@ import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { requestContactEmailChange } from '@/lib/contactEmail';
+import { sendHouseholdInvite } from '@/lib/householdInvite';
 
 async function siteOrigin() {
   if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/$/, '');
@@ -537,5 +538,43 @@ export async function createMyHousehold(form) {
   }
   revalidatePath('/account/household');
   revalidatePath('/account/dashboard');
+  return { ok: true };
+}
+
+// W75 (0174): invite another adult to share this household.
+export async function inviteAdult(householdId, form) {
+  const email = String(form?.email ?? '').trim();
+  if (!emailLooksValid(email) || !email) {
+    return { ok: false, error: 'That email address doesn’t look right. Please check it.' };
+  }
+  const supabase = await createClient();
+  const [{ data: hh, error: hhError }, { data: me }] = await Promise.all([
+    supabase.from('households').select('display_name').eq('id', householdId).maybeSingle(),
+    supabase.auth.getUser(),
+  ]);
+  if (hhError) return { ok: false, error: `Your household could not be read: ${hhError.message}` };
+  let inviterName = '';
+  if (me?.user) {
+    const { data: prof } = await supabase.from('profiles').select('first_name, last_name').eq('id', me.user.id).maybeSingle();
+    inviterName = [prof?.first_name, prof?.last_name].filter(Boolean).join(' ');
+  }
+  const res = await sendHouseholdInvite({
+    supabase,
+    householdId,
+    email,
+    personId: clean(form?.person_id),
+    origin: await siteOrigin(),
+    householdName: hh?.display_name ?? '',
+    inviterName,
+  });
+  revalidatePath('/account/household');
+  return res;
+}
+
+export async function cancelInvite(inviteId) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('cancel_household_invite', { p_invite_id: inviteId });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/account/household');
   return { ok: true };
 }

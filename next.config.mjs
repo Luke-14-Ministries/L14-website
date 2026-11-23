@@ -33,7 +33,14 @@ const CSP = [
 ].join('; ');
 
 const SECURITY_HEADERS = [
-  { key: 'Content-Security-Policy', value: CSP },
+  // Enforced in production. `next dev` needs eval (React's dev tools) and
+  // Vercel's debug analytics scripts, which production never loads, so on a
+  // local dev server the same policy only reports (found 23 Nov 2026: with it
+  // enforced, the local site could not run its scripts).
+  {
+    key: process.env.NODE_ENV === 'production' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only',
+    value: CSP,
+  },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

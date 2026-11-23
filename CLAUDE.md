@@ -49,7 +49,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0173`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0174`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -484,6 +484,11 @@ receipts go where reminders go. **Everything the ministry sends a family goes to
 email is only for signing in and password resets** (Lawrence, 23 Nov 2026): the news tick lives beside it on
 Manage Household, and the newsletter list (`admin_newsletter_list()`, `0172`) exports it, falling back
 to the sign-in email.
+**A family can invite another adult to share its household** (W75, `0174`, Lawrence 23 Nov 2026):
+Manage Household's *Who can sign in* card emails a link (`lib/householdInvite.js`, `/auth/household-invite/`);
+only the token's hash is stored, it lasts 7 days, and `accept_household_invite()` accepts it only for a
+signed-in login **whose own email is the one invited** and that has no household yet (two households are
+still a staff merge, `0151`). The new login joins as `adult` and, if named, claims that person.
 Data-deletion requests: `/account/delete-data` → `/admin/deletion-requests`; nothing is deleted
 automatically.
 

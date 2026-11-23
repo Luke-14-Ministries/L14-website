@@ -4,6 +4,7 @@ import { formatPhone } from '@/lib/format';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import HouseholdManager from './HouseholdManager';
+import HouseholdLogins from './HouseholdLogins';
 import SetUpHousehold from './SetUpHousehold';
 import BackBar from '@/components/BackBar';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
@@ -69,6 +70,8 @@ export default async function ManageHouseholdPage() {
     { data: guardianRoles, error: guardianError },
     { data: pendingEmail, error: pendingError },
     { data: newsPref, error: newsError },
+    { data: logins, error: loginsError },
+    { data: invites, error: invitesError },
   ] = await Promise.all([
       supabase
         .from('households')
@@ -77,7 +80,7 @@ export default async function ManageHouseholdPage() {
         .maybeSingle(),
       supabase
         .from('people')
-        .select('id, first_name, last_name, preferred_name, date_of_birth, gender, phone, email')
+        .select('id, first_name, last_name, preferred_name, date_of_birth, gender, phone, email, profile_id')
         .eq('household_id', householdId)
         .order('created_at'),
       supabase
@@ -93,12 +96,24 @@ export default async function ManageHouseholdPage() {
         .maybeSingle(),
       // The person's own news tick, shown beside the contact email it goes to.
       supabase.from('profiles').select('email_news').eq('id', user.id).maybeSingle(),
+      // Who signs in to this household, and invites still waiting (W75, 0174).
+      supabase.rpc('my_household_logins', { p_household_id: householdId }),
+      supabase
+        .from('household_invites')
+        .select('id, email, created_at, expires_at')
+        .eq('household_id', householdId)
+        .is('accepted_at', null)
+        .is('cancelled_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at'),
     ]);
   if (householdError) throw new Error(`Your household could not be read: ${householdError.message}`);
   if (peopleError) throw new Error(`Your household's people could not be read: ${peopleError.message}`);
   if (guardianError) throw new Error(`Parent/guardian roles could not be read: ${guardianError.message}`);
   if (pendingError) throw new Error(`Your contact email change could not be read: ${pendingError.message}`);
   if (newsError) throw new Error(`Your email preference could not be read: ${newsError.message}`);
+  if (loginsError) throw new Error(`Who signs in to your household could not be read: ${loginsError.message}`);
+  if (invitesError) throw new Error(`Your household's invites could not be read: ${invitesError.message}`);
 
   // Caregiver links for THIS household's people only. It used to read every
   // link RLS allowed, which for a staff member who is also a family is every
@@ -191,6 +206,12 @@ export default async function ManageHouseholdPage() {
           currentRegistrations={currentRegistrations}
           pendingEmail={pendingEmail ?? null}
           emailNews={newsPref?.email_news !== false}
+        />
+        <HouseholdLogins
+          householdId={householdId}
+          logins={logins ?? []}
+          invites={invites ?? []}
+          people={people ?? []}
         />
         <BackBar />
       </div>
