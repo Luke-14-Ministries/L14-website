@@ -129,11 +129,27 @@ export default async function ManageHouseholdPage() {
     careLinks = data ?? [];
   }
 
+  // Whose date of birth is the office's to correct (0177, 23 Nov 2026): a
+  // known date on someone registered, or with a background check or invite
+  // on file. The database refuses the change; the box says so first. One
+  // small call per person (a household is a handful of people).
+  const dobLockRows = await Promise.all(
+    (people ?? [])
+      .filter((p) => p.date_of_birth)
+      .map(async (p) => {
+        const { data, error } = await supabase.rpc('person_dob_locked', { p_person_id: p.id });
+        if (error) throw new Error(`Your household's details could not be read: ${error.message}`);
+        return [p.id, data === true];
+      })
+  );
+  const dobLocked = new Map(dobLockRows);
+
   const guardianIds = new Set((guardianRoles ?? []).map((g) => g.people?.id).filter(Boolean));
   const members = (people ?? []).map((p) => ({
     ...p,
     age: ageFrom(p.date_of_birth),
     isGuardian: guardianIds.has(p.id),
+    dobLocked: dobLocked.get(p.id) === true,
   }));
 
   // Signed URLs for whoever already has a photo. Asked for 25 Aug: the photo

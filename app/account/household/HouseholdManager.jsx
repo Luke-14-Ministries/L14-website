@@ -655,8 +655,28 @@ Anything already saved is untouched.`
                     className={inputCls}
                   />
                 </Field>
+                {/* Locked once they are registered or have a background check
+                    on file (0177, 23 Nov 2026): the date of birth decides who is
+                    screened, so the office corrects it. A disabled box is not
+                    sent, and the save leaves the date alone. */}
                 <Field label="Date of birth">
-                  <input name="date_of_birth" type="date" defaultValue={m.date_of_birth ?? ''} className={inputCls} />
+                  <input
+                    name="date_of_birth"
+                    type="date"
+                    defaultValue={m.date_of_birth ?? ''}
+                    disabled={m.dobLocked}
+                    aria-describedby={m.dobLocked ? `dob-locked-${m.id}` : undefined}
+                    className={`${inputCls} ${m.dobLocked ? 'bg-neutral-100 text-neutral-600' : ''}`}
+                  />
+                  {m.dobLocked && (
+                    <span id={`dob-locked-${m.id}`} className="mt-1 block text-xs text-neutral-600">
+                      To correct a date of birth after registering, email{' '}
+                      <a href="mailto:registration@luke14ministries.net" className="text-brand underline">
+                        registration@luke14ministries.net
+                      </a>
+                      .
+                    </span>
+                  )}
                 </Field>
                 <Field label="Sex">
                   <select name="gender" defaultValue={m.gender ?? ''} className={inputCls}>

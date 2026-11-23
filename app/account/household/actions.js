@@ -269,7 +269,10 @@ export async function updatePersonInfo(personId, form) {
   const patch = {
     first_name: clean(form.first_name) ?? undefined,
     last_name: clean(form.last_name) ?? undefined,
-    date_of_birth: clean(form.date_of_birth),
+    // Left alone when the form doesn't send it: a locked date of birth is a
+    // disabled box, which a form never submits (0177, 23 Nov 2026). Sending
+    // null there would ask the database to blank it, and it refuses.
+    date_of_birth: 'date_of_birth' in form ? clean(form.date_of_birth) : undefined,
     // Blank never wipes a known value — same rule as the wizard.
     gender: clean(form.gender) ?? undefined,
     // E45. Not in the locked set above on purpose — see the note by the field
