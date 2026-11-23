@@ -31,11 +31,15 @@ export default function ContactManager({ email, profile }) {
   const router = useRouter();
   const [, start] = useTransition();
   const [msg, setMsg] = useState({});
+  // The login email change asks for the authenticator code when Supabase
+  // wants a code-verified session (two-factor accounts, 23 Nov 2026).
+  const [needsCode, setNeedsCode] = useState(false);
 
   function run(key, fn) {
     setMsg((m) => ({ ...m, [key]: { state: 'saving' } }));
     start(async () => {
       const res = await fn();
+      if (key === 'email') setNeedsCode(Boolean(res.needsCode));
       setMsg((m) => ({
         ...m,
         [key]: res.ok
@@ -96,7 +100,7 @@ export default function ContactManager({ email, profile }) {
         onSubmit={(e) => {
           e.preventDefault();
           const f = Object.fromEntries(new FormData(e.currentTarget));
-          run('email', () => requestLoginEmailChange(f.new_email));
+          run('email', () => requestLoginEmailChange(f.new_email, f.code ?? ''));
         }}
       >
         <h2 className="text-lg font-bold mb-1">Login email</h2>
@@ -112,6 +116,20 @@ export default function ContactManager({ email, profile }) {
           </label>
           <button type="submit" className="btn-outline py-2!">Send confirmation</button>
         </div>
+        {needsCode && (
+          <label className="mt-3 block max-w-xs">
+            <span className="block text-sm font-semibold mb-1">Code from your authenticator app</span>
+            <input
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              required
+              className={`${inputCls} tracking-widest`}
+            />
+          </label>
+        )}
         <div className="mt-2">
           <Status s={msg.email} />
         </div>
