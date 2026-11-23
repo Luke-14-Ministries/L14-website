@@ -2051,7 +2051,7 @@ export default async function DashboardPage({ searchParams }) {
                 </Link>
               </li>
               <li>
-                <Link href="/account/contact#email-preferences" className="text-brand underline">
+                <Link href="/account/household/#news" className="text-brand underline">
                   Email preferences
                 </Link>
               </li>

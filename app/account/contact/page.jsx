@@ -6,8 +6,7 @@ import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
 export const metadata = { title: 'My Account Details' };
 
-// The person's own account details: name, personal phone, login email, and
-// email preferences. Family/household contact info (the address and phone camp
+// The person's own account details: name, personal phone and sign-in email. Family/household contact info (the address and phone camp
 // uses) lives under Manage Household -- this page links there.
 export default async function ContactPage() {
   const user = await getCurrentUser();
@@ -16,7 +15,7 @@ export default async function ContactPage() {
   const supabase = await createClient();
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('first_name, last_name, phone, sms_opt_in, email_news')
+    .select('first_name, last_name, phone, sms_opt_in')
     .eq('id', user.id)
     .maybeSingle();
   // CLAUDE.md: never swallow a query error -- here it would show empty boxes
@@ -61,7 +60,6 @@ export default async function ContactPage() {
             last_name: profile?.last_name ?? '',
             phone: profile?.phone ?? '',
             sms_opt_in: profile?.sms_opt_in === true,
-            email_news: profile?.email_news !== false,
           }}
         />
       </div>

@@ -5086,3 +5086,14 @@ which checkout was pre-filled with). Both changed (`0171`):
 - Addresses on file before today were left as they were.
 
 Tests: `supabase/tests/contact_email_rules.sql` (fresh database, no seed). The RLS harness passes.
+
+## 2026-11-23 — One address for everything the ministry sends a family
+
+Lawrence: the news tick sat with the sign-in email on My Account Details, while camp email goes to
+the household's contact email on Manage Household, and the newsletter export used the sign-in email.
+Now the rule is one address: reminders, receipts, confirmations and the newsletter all go to the
+household's contact email (confirmed before use, `0171`); the sign-in email is only for signing in and
+password resets. The "Also send me ministry news & updates" tick moved under the Contact email on
+Manage Household (it still saves per person, `profiles.email_news`), the dashboard's Email preferences
+link goes there, and `admin_newsletter_list()` (`0172`) exports the contact email, falling back to the
+sign-in email. If one of two parents ticks it, the shared address gets the newsletter.

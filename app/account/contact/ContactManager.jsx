@@ -1,14 +1,15 @@
 'use client';
 
-// Name/phone, login-email change (goes through Supabase Auth's confirmation
-// email), and email preferences. Transactional email -- receipts,
+// Name/phone and the sign-in email change (goes through Supabase Auth's
+// confirmation email). The news tick moved to Manage Household, beside the
+// contact email it is sent to (Lawrence, 23 Nov 2026). Transactional email -- receipts,
 // confirmations, password resets -- always sends; the preference only covers
 // ministry news & updates.
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { updateMyProfile, requestLoginEmailChange, setEmailNews } from './actions';
+import { updateMyProfile, requestLoginEmailChange } from './actions';
 
 const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-2';
 
@@ -141,27 +142,6 @@ export default function ContactManager({ email, profile }) {
           <Status s={msg.email} />
         </div>
       </form>
-
-      {/* Email preferences */}
-      <div id="email-preferences" className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
-        <h2 className="text-lg font-bold mb-1">Email preferences</h2>
-        <p className="text-sm text-neutral-500 mb-4">
-          Receipts, registration confirmations and account emails always send. This only
-          controls optional mail.
-        </p>
-        <label className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            defaultChecked={profile.email_news}
-            onChange={(e) => run('news', () => setEmailNews(e.target.checked))}
-            className="h-4 w-4"
-          />
-          <span>Ministry news &amp; updates (camp announcements, newsletters)</span>
-        </label>
-        <div className="mt-2">
-          <Status s={msg.news} />
-        </div>
-      </div>
     </div>
   );
 }

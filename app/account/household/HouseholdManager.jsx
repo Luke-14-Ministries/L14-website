@@ -17,6 +17,7 @@ import { useEffect, useState, useTransition } from 'react';
 import FoldArrow from '@/components/FoldArrow';
 import { useRouter } from 'next/navigation';
 import SaveButton from '@/components/SaveButton';
+import { setEmailNews } from '../contact/actions';
 import PhotoUpload from '@/components/PhotoUpload';
 import { formatPhone, formatZip, tidyCity, US_STATES } from '@/lib/format';
 import {
@@ -62,6 +63,44 @@ function Chip({ children }) {
 // server action checks the same range and answers in the site's words, as
 // the wizard and the staff screen do.
 
+// The "ministry news" tick, beside the contact email it is sent to (Lawrence,
+// 23 Nov 2026: everything the ministry sends goes to that address). It saves on
+// its own, apart from the household form: it is this person's preference, not
+// the household's. Module level, never inside HouseholdManager (CLAUDE.md).
+function NewsTick({ initial }) {
+  const [checked, setChecked] = useState(initial);
+  const [status, setStatus] = useState('');
+  const [, start] = useTransition();
+  return (
+    <span id="news" className="mt-3 block scroll-mt-24">
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setChecked(next);
+            setStatus('Saving…');
+            start(async () => {
+              const res = await setEmailNews(next);
+              if (!res.ok) setChecked(!next);
+              setStatus(res.ok ? 'Saved ✓' : res.error);
+            });
+          }}
+          className="mt-0.5 h-4 w-4"
+        />
+        <span>
+          Also send me ministry news &amp; updates (camp announcements, newsletters) at this address.
+          <span className="block text-xs text-neutral-500">
+            Reminders, receipts and confirmations always come. This only adds the optional news.
+          </span>
+        </span>
+      </label>
+      {status && <span className="ml-6 text-xs text-neutral-600">{status}</span>}
+    </span>
+  );
+}
+
 export default function HouseholdManager({
   household,
   members,
@@ -73,6 +112,8 @@ export default function HouseholdManager({
   // { new_email, requested_at, expires_at } while a new contact email waits
   // for its link (0171), else null.
   pendingEmail = null,
+  // This person's "ministry news" tick (profiles.email_news).
+  emailNews = true,
 }) {
   const router = useRouter();
   const [, start] = useTransition();
@@ -368,6 +409,7 @@ Anything already saved is untouched.`
                 </button>
               </span>
             )}
+            <NewsTick initial={emailNews} />
           </Field>
           <Field label="Street address">
             <input name="address_line1" defaultValue={household?.address_line1 ?? ''} className={inputCls} />

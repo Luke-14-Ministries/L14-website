@@ -103,6 +103,6 @@ export async function setEmailNews(optIn) {
     .update({ email_news: !!optIn })
     .eq('id', user.id);
   if (error) return { ok: false, error: error.message };
-  revalidatePath('/account/contact');
+  revalidatePath('/account/household');
   return { ok: true };
 }
