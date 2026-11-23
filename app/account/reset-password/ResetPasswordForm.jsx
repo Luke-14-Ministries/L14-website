@@ -37,7 +37,10 @@ function cameFromEmailLink(aal) {
 
 function friendly(err) {
   const msg = err?.message ?? '';
-  if (err?.code === 'current_password_mismatch') {
+  // Supabase's code for a wrong current password is current_password_invalid
+  // on the live project (seen 23 Nov 2026); its source names it _mismatch.
+  // Either way the message itself says "required", which reads wrong.
+  if (err?.code === 'current_password_invalid' || err?.code === 'current_password_mismatch') {
     return 'Your current password was not right. Please try it again.';
   }
   if (err?.code === 'same_password' || /different from the old/i.test(msg)) {
