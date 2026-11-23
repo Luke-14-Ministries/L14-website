@@ -91,8 +91,9 @@ exception
 end;
 $$;
 
--- Since 0175 a new function reaches nobody but its owner until granted, the
--- session's own pg_temp helpers included; the personas run as authenticated.
+-- Since 0175 a new function reaches nobody but its owner (and, in schema
+-- public, service_role) until granted, the session's own pg_temp helpers
+-- included; the personas run as authenticated.
 grant execute on function pg_temp.as_user(uuid), pg_temp.as_user_aal1(uuid, text),
   pg_temp.expect(text, bigint, bigint), pg_temp.expect_denied(text, text),
   pg_temp.expect_allowed(text, text), pg_temp.expect_no_effect(text, text) to public;
@@ -614,6 +615,12 @@ begin
    where proname = 'zz_probe_0175'
      and (has_function_privilege('anon', oid, 'execute') or has_function_privilege('authenticated', oid, 'execute'));
   perform pg_temp.expect('a new function is not executable by anon or authenticated until granted (0175)', n, 0);
+  -- ...except service_role (crons, webhooks, reminders). Live's defaults did
+  -- not give it this before 0175 and local's did; this harness starts like
+  -- live, so it catches the line going missing.
+  select count(*) into n from pg_proc
+   where proname = 'zz_probe_0175' and has_function_privilege('service_role', oid, 'execute');
+  perform pg_temp.expect('a new function is executable by service_role without a grant (0175)', n, 1);
   drop function public.zz_probe_0175();
 
   -- Seed: an Activities-only staff member, a family scholarship request, a

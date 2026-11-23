@@ -112,9 +112,11 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
   automatically to new tables, so this is the rule for every migration, not a habit. The one table
   without a grant, `mfa_trusted_sessions`, is reached only through its functions, on purpose.
 - **Every new function needs an explicit `grant execute` too** (`0175`, 23 Nov 2026). PUBLIC no
-  longer gets EXECUTE by default; the schema default gives `service_role` only. A function families
-  or staff call needs `grant execute on function public.f(args) to authenticated;` in the same
-  migration, or the site gets "permission denied for function". Signed-out visitors (`anon`) may run
+  longer gets EXECUTE by default. Write `grant execute on function public.f(args) to authenticated,
+  service_role;` in the same migration as the function (leave out `authenticated` only when no family
+  or staff login calls it), or the site gets "permission denied for function". Live's own defaults
+  never gave `service_role` new functions (local's did), so 0175 adds that default to make them
+  match; name `service_role` anyway, because a local-only pass proves nothing about live. Signed-out visitors (`anon`) may run
   exactly `is_staff()`, `confirm_household_email_change(text)` and `household_invite_preview(text)`;
   adding one is a decision, and `rls_test.sql` checks the list. Trigger functions need no grant. A
   test's own `pg_temp` helper run as `authenticated` needs `grant execute ... to public` as well.

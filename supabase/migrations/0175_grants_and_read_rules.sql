@@ -17,8 +17,8 @@
 --      keeps exactly what it could run before, service_role everything, and
 --      anon only the three the signed-out pages use (see section 2).
 --      From now on a new function needs its own
---        grant execute on function ... to authenticated;   (if families or
---      staff call it). CLAUDE.md says so.
+--        grant execute on function ... to authenticated, service_role;
+--      (authenticated only if families or staff call it). CLAUDE.md says so.
 --   3. PostgreSQL 17's MAINTAIN privilege (VACUUM, REINDEX, REFRESH) is kept
 --      from anon and authenticated.
 --   4. Staff over-reads closed: statements of need, the stored email log and
@@ -98,9 +98,18 @@ grant execute on function public.is_staff() to anon;
 grant execute on function public.confirm_household_email_change(text) to anon;
 grant execute on function public.household_invite_preview(text) to anon;
 
--- New functions owned by postgres stop reaching PUBLIC by default. (The
--- schema-level default already gives service_role EXECUTE; authenticated
--- must be granted by the migration that makes the function.)
+-- New functions owned by postgres stop reaching PUBLIC by default.
+-- authenticated must be granted by the migration that makes the function.
+--
+-- service_role keeps getting EXECUTE on new public functions by default.
+-- The local Supabase copy already had that default, but live did not (live's
+-- postgres defaults for functions in public were postgres alone, read 23 Nov
+-- 2026): until now live's service_role reached new functions only through
+-- PUBLIC. Without this line, a function added by a later migration would be
+-- refused to the crons, webhooks and reminders on live while every local
+-- check passed. It makes live match local. Migrations still grant
+-- service_role by name as well (CLAUDE.md), so neither copy depends on it.
+alter default privileges for role postgres in schema public grant execute on functions to service_role;
 alter default privileges for role postgres revoke execute on functions from public;
 
 -- ---------------------------------------------------------------------------
