@@ -49,7 +49,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0172`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0173`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -87,8 +87,8 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
 **Next, in order (go-live, Phase 4 — the steps are DO-THIS-NEXT *Go live*; Stage A is done):**
 
 1. ~~G1 — Script 6 finished~~ — closed 29 Oct.
-2. ~~G2 — Purge ALL test data~~ — done 29 Oct (`DECISIONS.md`; the copy taken first is the schema
-   `purge_backup_20261029`, dropped once go-live settles).
+2. ~~G2 — Purge ALL test data~~ — done 29 Oct (`DECISIONS.md`; the copy taken first, the schema
+   `purge_backup_20261029`, was dropped 23 Nov 2026, `0173`).
 3. ~~G3 — The security audit~~ — done 29 Oct (Next 16.4.2 for a critical advisory; `DECISIONS.md`). After the purge (the RLS harness, the advisor, `0101`'s mapping, every
    server action's grant, `npm audit`).
 4. ~~G4 — The board's yes~~ — Larry, 29 Oct.
@@ -558,9 +558,9 @@ static assets. `.github/workflows/build.yml` lints and builds every push to `mai
   rua=mailto:…@dmarc-reports.cloudflare.net;`, read in Cloudflare → Email → DMARC Management. Moving to
   `p=quarantine` (with SPF `-all`) waits until the reports show every real sender passing.
 - **Mailchimp is DKIM-authenticated on this domain** (`k2._domainkey`, `k3._domainkey` → `dkim2/dkim3.mcsv.net`, found by Cloudflare's scan on 28 Oct 2026; the 7 August check missed them). SPF does not list it and does not need to. The DNS copy and the records to keep are in DO-THIS-NEXT, *Reference*.
-- **Anthropic's domain verification** (`anthropic-domain-verification-…` TXT on `@`): the ministry's
-  Claude organization signs in through Microsoft Entra single sign-on since 22 Nov 2026, and that
-  depends on this record. Keep it, or nobody with a ministry address can sign in to Claude.
+- **Anthropic's domain verification** (`anthropic-domain-verification-…` TXT on `@`): it proves the
+  domain to Claude for its Microsoft Entra single sign-on (set up 22 Nov 2026). Since 23 Nov SSO is
+  offered but not required, so a broken SSO cannot lock anyone out; keep the record all the same.
 
 ---
 

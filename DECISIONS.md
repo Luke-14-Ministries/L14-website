@@ -5097,3 +5097,13 @@ password resets. The "Also send me ministry news & updates" tick moved under the
 Manage Household (it still saves per person, `profiles.email_news`), the dashboard's Email preferences
 link goes there, and `admin_newsletter_list()` (`0172`) exports the contact email, falling back to the
 sign-in email. If one of two parents ticks it, the shared address gets the newsletter.
+
+## 2026-11-23 — W71: the pre-purge copy dropped; Claude SSO no longer required
+
+- The schema `purge_backup_20261029` (the test data as it was before the G2 purge of 29 Oct: 67
+  tables, about 1 MB, nothing outside it depending on it) was dropped with Lawrence's go (`0173`).
+  The do-nothing `purge-storage-once` edge function is left for the Supabase dashboard (no tool here
+  deletes functions).
+- Lawrence switched Claude's single sign-on from required to optional, so an SSO failure (Microsoft
+  down, an expired certificate) cannot lock the ministry out of Claude. The Anthropic domain record
+  stays. The Entra hardening settings flagged the same day were changed by Lawrence.
