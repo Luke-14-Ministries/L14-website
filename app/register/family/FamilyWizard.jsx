@@ -1269,6 +1269,11 @@ export default function FamilyWizard({
             {result.supportError}
           </p>
         )}
+        {result.contactEmailNotice && (
+          <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900">
+            {result.contactEmailNotice}
+          </p>
+        )}
         {result.emailNotice && (
           <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-900">
             {result.emailNotice}

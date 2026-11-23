@@ -28,6 +28,8 @@ import {
 } from '@/lib/caregivers';
 import {
   updateHouseholdInfo,
+  resendContactEmailLink,
+  cancelContactEmailChange,
   updatePersonInfo,
   setCaregivers,
   setPersonPhone,
@@ -68,6 +70,9 @@ export default function HouseholdManager({
   // [{ id, eventId, eventName }]: this household's registrations at current
   // events, for the note after someone is added.
   currentRegistrations = [],
+  // { new_email, requested_at, expires_at } while a new contact email waits
+  // for its link (0171), else null.
+  pendingEmail = null,
 }) {
   const router = useRouter();
   const [, start] = useTransition();
@@ -329,7 +334,40 @@ Anything already saved is untouched.`
             />
           </Field>
           <Field label="Email">
-            <input name="email" type="email" defaultValue={household?.email ?? ''} className={inputCls} />
+            {/* Keyed on the saved address so the box shows it again after a
+                save that only asked for a link. */}
+            <input
+              key={household?.email ?? ''}
+              name="email"
+              type="email"
+              defaultValue={household?.email ?? ''}
+              className={inputCls}
+            />
+            <span className="mt-1 block text-xs text-neutral-500">
+              Camp reminders and payment receipts go here. A new address is used once you press the
+              link we email to it.
+            </span>
+            {pendingEmail && (
+              <span className="mt-2 block rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                Waiting for you to confirm <strong>{pendingEmail.new_email}</strong>: press the link we
+                emailed to it.{household?.email ? <> Until then, email goes to {household.email}.</> : null}{' '}
+                <button
+                  type="button"
+                  className="font-semibold underline"
+                  onClick={() => run('hh', () => resendContactEmailLink(household.id))}
+                >
+                  Send the link again
+                </button>{' '}
+                ·{' '}
+                <button
+                  type="button"
+                  className="font-semibold underline"
+                  onClick={() => run('hh', () => cancelContactEmailChange(household.id))}
+                >
+                  Keep the current email
+                </button>
+              </span>
+            )}
           </Field>
           <Field label="Street address">
             <input name="address_line1" defaultValue={household?.address_line1 ?? ''} className={inputCls} />
@@ -390,6 +428,7 @@ Anything already saved is untouched.`
             </button>
           )}
           {state.hh?.error && <span className="text-sm text-red-700">{state.hh.error}</span>}
+          {state.hh?.warning && <span className="text-sm text-amber-800">{state.hh.warning}</span>}
         </div>
       </form>
 

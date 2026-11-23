@@ -5063,3 +5063,26 @@ session that began from an emailed link (amr `otp`/`magiclink`/`recovery`), whic
 The real check is Supabase's **require current password** setting (Lawrence switches it on in
 Authentication); Supabase exempts the same emailed-link sessions (`session.IsRecovery()` in
 supabase/auth), so the reset email keeps working.
+
+## 2026-11-23 — Contact email confirmed before use; receipts go to it
+
+Lawrence asked whether the household contact email was confirmed (it was not: it saved with a format
+check only) and whether receipts should go to it rather than the login email (they went to the login,
+which checkout was pre-filled with). Both changed (`0171`):
+
+- A new contact address waits in `household_email_changes` until the link emailed to it is pressed;
+  the old address keeps getting reminders and staff email until then. The link carries a random
+  token, only its SHA-256 hash is stored, it lasts 3 days, and one can be sent a minute. It works
+  signed out (`/auth/confirm-contact/`, a button page like `/auth/confirm`, posting to a route rather
+  than a server action so the two-factor gate leaves it alone).
+- The family's own login email needs no link (Supabase confirmed it). Staff with Registration write
+  still set an address directly, as when a family phones in. `guard_household_email()` refuses any
+  other direct write by a family, so the Household page and the wizard both go through the link.
+- Checkout is pre-filled with the confirmed contact email (`checkoutEmail()`), so receipts, refund
+  and plan emails reach the same address as reminders. The payer can still change it there, and the
+  webhook keeps recording the address actually used.
+- The confirmation email is logged to `message_log` without its body (the body holds the link),
+  through the same service-role insert the wizard's confirmation email already uses.
+- Addresses on file before today were left as they were.
+
+Tests: `supabase/tests/contact_email_rules.sql` (fresh database, no seed). The RLS harness passes.

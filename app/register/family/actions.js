@@ -17,6 +17,7 @@ import { supportPatch, supportProblems } from '@/lib/support';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sendEmail, registrationConfirmationEmail } from '@/lib/email';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requestContactEmailChange } from '@/lib/contactEmail';
 
 import { balanceDueOn, registrationOpen, OPEN_EVENT_COLUMNS } from '@/lib/events';
 import { requiresPaymentChoice } from '@/lib/plans';
@@ -277,11 +278,32 @@ export async function submitFamilyRegistration(payload) {
   const emailProblems = ownEmailProblems(members || [], eventStartsOn).filter((p) => p.kind === 'invalid');
   if (emailProblems.length > 0) return { ok: false, error: ownEmailMessage(emailProblems[0]) };
 
+  // The contact email (0171, 23 Nov 2026). A new address is never written
+  // here: the registration saves with the confirmed one (the household's, or
+  // the login's for a first registration) and the typed one is sent a link
+  // after the save. The database refuses anything else from a family.
+  let contactEmail = (user.email ?? '').trim().toLowerCase();
+  let wantedEmail = null;
+  {
+    const { data: mine, error: mineError } = await supabase
+      .from('household_members')
+      .select('households ( id, email )')
+      .eq('profile_id', user.id)
+      .limit(1)
+      .maybeSingle();
+    if (mineError) return { ok: false, error: `Could not save your registration: ${mineError.message}` };
+    if (mine?.households) contactEmail = (mine.households.email ?? '').trim().toLowerCase();
+    const typed = (family.email ?? '').trim().toLowerCase();
+    const login = (user.email ?? '').trim().toLowerCase();
+    if (typed && typed !== contactEmail && typed !== login) wantedEmail = typed;
+    else if (typed) contactEmail = typed;
+  }
+
   const { data, error } = await supabase.rpc('submit_family_registration', {
     payload: {
       // The phone tidied here as well as on blur: autofill fills the box
       // without the blur (alpha feedback, 11 Nov 2026).
-      family: { ...family, phone: formatPhone(family.phone ?? '') },
+      family: { ...family, email: contactEmail, phone: formatPhone(family.phone ?? '') },
       members: mapped,
       eventId,
       optionId,
@@ -346,7 +368,8 @@ export async function submitFamilyRegistration(payload) {
       .eq('id', eventId)
       .maybeSingle();
     if (evError) throw new Error(evError.message);
-    const to = (family.email || '').trim() || user.email;
+    // The confirmed contact address (a newly typed one is only sent a link).
+    const to = contactEmail || user.email;
     if (origin && to && ev?.name) {
       const { subject, html } = registrationConfirmationEmail({
         origin,
@@ -913,9 +936,44 @@ export async function submitFamilyRegistration(payload) {
     console.error('people read-back:', e?.message);
   }
 
+  // The new contact email, typed on the form, gets its link now that the
+  // household certainly exists (0171). Never fatal: the registration saved.
+  let contactEmailNotice = null;
+  if (wantedEmail) {
+    try {
+      const { data: mine } = await supabase
+        .from('household_members')
+        .select('household_id')
+        .eq('profile_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (mine?.household_id) {
+        const hdrs = await headers();
+        const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
+        const proto = hdrs.get('x-forwarded-proto') ?? 'https';
+        const origin = process.env.SITE_URL?.replace(/\/$/, '') || (host ? `${proto}://${host}` : '');
+        const res = await requestContactEmailChange({
+          supabase,
+          householdId: mine.household_id,
+          email: wantedEmail,
+          origin,
+          oldEmail: contactEmail || user.email || null,
+        });
+        if (res.ok && res.status === 'pending') {
+          contactEmailNotice = `We emailed a link to ${wantedEmail} to confirm it as your contact email. Until you press it, camp email goes to ${contactEmail || user.email}.`;
+        } else if (!res.ok) {
+          contactEmailNotice = `Your new contact email (${wantedEmail}) is not in use yet: ${res.error} You can save it again on the Household page.`;
+        }
+      }
+    } catch (e) {
+      console.error('contact email request:', e?.message);
+    }
+  }
+
   return {
     ok: true,
     registrationId: data?.registrationId,
+    contactEmailNotice,
     paidCents,
     balanceCents,
     people,

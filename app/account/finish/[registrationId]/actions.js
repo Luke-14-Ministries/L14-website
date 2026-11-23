@@ -10,6 +10,7 @@
 // need riding along as metadata.
 
 import { headers } from 'next/headers';
+import { checkoutEmail } from '@/lib/contactEmail';
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
@@ -143,7 +144,7 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
       allowed_payment_method_types: method === 'bank' ? ['us_bank_account'] : ['card'],
       // A Stripe customer to keep the saved payment method on.
       customer_creation: 'always',
-      customer_email: user.email,
+      customer_email: await checkoutEmail(supabase, registrationId, user.email),
       line_items: [
         {
           quantity: 1,

@@ -67,6 +67,7 @@ export default async function ManageHouseholdPage() {
     { data: household, error: householdError },
     { data: people, error: peopleError },
     { data: guardianRoles, error: guardianError },
+    { data: pendingEmail, error: pendingError },
   ] = await Promise.all([
       supabase
         .from('households')
@@ -83,10 +84,17 @@ export default async function ManageHouseholdPage() {
         .select('camp_role, people!inner ( id, household_id )')
         .eq('people.household_id', householdId)
         .eq('camp_role', 'parent_guardian'),
+      // A new contact email waiting for its link (0171).
+      supabase
+        .from('household_email_changes')
+        .select('new_email, requested_at, expires_at')
+        .eq('household_id', householdId)
+        .maybeSingle(),
     ]);
   if (householdError) throw new Error(`Your household could not be read: ${householdError.message}`);
   if (peopleError) throw new Error(`Your household's people could not be read: ${peopleError.message}`);
   if (guardianError) throw new Error(`Parent/guardian roles could not be read: ${guardianError.message}`);
+  if (pendingError) throw new Error(`Your contact email change could not be read: ${pendingError.message}`);
 
   // Caregiver links for THIS household's people only. It used to read every
   // link RLS allowed, which for a staff member who is also a family is every
@@ -177,6 +185,7 @@ export default async function ManageHouseholdPage() {
           caregiversByPerson={caregiversByPerson}
           photoUrlByPerson={photoUrlByPerson}
           currentRegistrations={currentRegistrations}
+          pendingEmail={pendingEmail ?? null}
         />
         <BackBar />
       </div>

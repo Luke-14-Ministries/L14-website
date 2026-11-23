@@ -9,7 +9,46 @@ import { carerPhone, caregiverPhoneProblem, hasPhone } from '@/lib/caregivers';
 // additionally requires both ends of a link to be in the caller's household.
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+import { requestContactEmailChange } from '@/lib/contactEmail';
+
+async function siteOrigin() {
+  if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/$/, '');
+  const h = await headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host');
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  return host ? `${proto}://${host}` : '';
+}
+
+// A new contact email waits for its link (0171, 23 Nov 2026); the old one
+// keeps getting mail until then. Shared by the save below and "send again".
+async function askForContactEmail(supabase, householdId, wanted) {
+  const { data: hh, error: hhError } = await supabase
+    .from('households')
+    .select('email')
+    .eq('id', householdId)
+    .maybeSingle();
+  if (hhError) return { ok: false, error: `Your household could not be read: ${hhError.message}` };
+  const current = (hh?.email ?? '').trim();
+  const res = await requestContactEmailChange({
+    supabase,
+    householdId,
+    email: wanted,
+    origin: await siteOrigin(),
+    oldEmail: current || null,
+  });
+  if (!res.ok) return res;
+  if (res.status === 'pending') {
+    return {
+      ok: true,
+      warning: `We emailed a link to ${wanted.trim().toLowerCase()}. Press it to start using that address.${
+        current ? ` Until then, email keeps going to ${current}.` : ''
+      }`,
+    };
+  }
+  return { ok: true };
+}
 
 // A deliberately loose check: something@something.tld. Anything stricter
 // starts rejecting addresses that genuinely work, and the cost of a false
@@ -75,7 +114,6 @@ export async function updateHouseholdInfo(householdId, form) {
   const patch = {
     display_name: clean(form.display_name) ?? undefined,
     phone: clean(formatPhone(form.phone ?? '')),
-    email: clean(form.email),
     address_line1: clean(form.address_line1),
     city: clean(form.city),
     state: clean(form.state),
@@ -102,8 +140,41 @@ export async function updateHouseholdInfo(householdId, form) {
   }
   const { error } = await supabase.from('households').update(patch).eq('id', householdId);
   if (error) return { ok: false, error: error.message };
+
+  // The email last, on its own: a new address is not written here but sent a
+  // link (askForContactEmail). Blank clears it, as it always has.
+  let emailResult = { ok: true };
+  const wanted = clean(form.email);
+  if (wanted) {
+    emailResult = await askForContactEmail(supabase, householdId, wanted);
+  } else if ('email' in (form ?? {})) {
+    const { error: clearError } = await supabase.from('households').update({ email: null }).eq('id', householdId);
+    if (clearError) emailResult = { ok: false, error: clearError.message };
+  }
   revalidatePath('/account/household');
   revalidatePath('/account/dashboard');
+  return emailResult;
+}
+
+export async function resendContactEmailLink(householdId) {
+  const supabase = await createClient();
+  const { data: pending, error } = await supabase
+    .from('household_email_changes')
+    .select('new_email')
+    .eq('household_id', householdId)
+    .maybeSingle();
+  if (error) return { ok: false, error: error.message };
+  if (!pending) return { ok: false, error: 'There is no change waiting. Save the new email again.' };
+  const res = await askForContactEmail(supabase, householdId, pending.new_email);
+  revalidatePath('/account/household');
+  return res;
+}
+
+export async function cancelContactEmailChange(householdId) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('cancel_household_email_change', { p_household_id: householdId });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/account/household');
   return { ok: true };
 }
 

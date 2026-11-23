@@ -9,6 +9,7 @@
 // starts the checkout.
 
 import { headers } from 'next/headers';
+import { checkoutEmail } from '@/lib/contactEmail';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
 import { coverFeeCents, firstPaymentCents, dollars } from '@/lib/payments';
@@ -160,7 +161,7 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
           },
         },
       ],
-      customer_email: user.email,
+      customer_email: await checkoutEmail(supabase, registrationId, user.email),
       success_url: `${origin}/account/pay/success/?session_id={CHECKOUT_SESSION_ID}`,
       // ?pay=cancelled lets Ways to pay say what happened (it is where every
       // payment starts since 27 Oct 2026). Stripe's own
