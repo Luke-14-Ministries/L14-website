@@ -6,6 +6,7 @@
 // ministry news & updates.
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { updateMyProfile, requestLoginEmailChange, setEmailNews } from './actions';
 
@@ -108,8 +109,12 @@ export default function ContactManager({ email, profile }) {
           The address you sign in with, and where password reset emails go. Currently{' '}
           <span className="font-semibold">{email}</span>. To change it, enter the new address.
           We&rsquo;ll email a confirmation link to it, and nothing changes until you click that
-          link. This does not change where camp email goes (that&rsquo;s the household&rsquo;s
-          contact email, above).
+          link. This does not change where camp email goes: that is your household&rsquo;s contact
+          email, changed on{' '}
+          <Link href="/account/household/" className="text-brand underline">
+            Manage Household
+          </Link>
+          .
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <label className="block flex-1 min-w-[16rem]">
