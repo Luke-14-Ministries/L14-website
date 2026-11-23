@@ -13,7 +13,7 @@ import { sendEmail } from '@/lib/email';
 import { emailLooksValid } from '@/lib/format';
 import { verifyTurnstile } from '@/lib/turnstile';
 import { site } from '@/lib/site';
-import { PRAYER_FROM, PRAYER_REPLY_TO, PRAYER_MAX, prayerConfirmEmail } from '@/lib/prayer';
+import { PRAYER_FROM, PRAYER_REPLY_TO, PRAYER_MAX, prayerConfirmEmail, prayerAlreadyOnListEmail } from '@/lib/prayer';
 
 const NOT_ON = `The prayer email list sign-up is not switched on yet. Please write to ${site.emails.pray} and the prayer team will add you.`;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -48,7 +48,7 @@ export async function signUpForPrayerList(form) {
 
   const { data: row, error: readError } = await db
     .from('prayer_list_subscribers')
-    .select('id, token, confirmed_at, unsubscribed_at, confirm_sent_at')
+    .select('id, token, name, confirmed_at, unsubscribed_at, confirm_sent_at')
     .eq('email', email)
     .maybeSingle();
   if (readError) {
@@ -56,10 +56,30 @@ export async function signUpForPrayerList(form) {
     return { ok: false, error: 'Sorry, the sign-up could not be saved. Please try again in a moment.' };
   }
 
-  // Already on the list: nothing to send. The answer is the same as for a
-  // new sign-up, so the form never tells anyone who else is on the list.
-  if (row?.confirmed_at && !row.unsubscribed_at) return { ok: true };
+  // At most one email per address per ten minutes, whichever kind.
   if (row?.confirm_sent_at && Date.now() - Date.parse(row.confirm_sent_at) < RESEND_AFTER_MS) return { ok: true };
+
+  // Already on the list: the form's answer is the same as for a new sign-up,
+  // so it never tells anyone who else is on the list. The address itself gets
+  // a short "you're already on it" (23 Nov 2026), so its owner isn't left
+  // waiting for a confirmation that will never come. A failed send is only
+  // logged: the person is on the list either way.
+  if (row?.confirmed_at && !row.unsubscribed_at) {
+    const { error: stampError } = await db
+      .from('prayer_list_subscribers')
+      .update({ confirm_sent_at: new Date().toISOString() })
+      .eq('id', row.id);
+    if (stampError) {
+      console.error('prayer sign-up (already on, stamp):', stampError.message);
+      return { ok: true };
+    }
+    // The name on file, never the one just typed: anyone can type into the
+    // form, and this email goes to someone already on the list.
+    const again = prayerAlreadyOnListEmail({ origin: await siteOrigin(), name: row.name ?? '', token: row.token });
+    const sentAgain = await sendEmail({ to: email, from: PRAYER_FROM, replyTo: PRAYER_REPLY_TO, ...again });
+    if (!sentAgain.ok) console.error('prayer sign-up (already on, email):', sentAgain.error);
+    return { ok: true };
+  }
 
   const now = new Date().toISOString();
   let saved = row;
