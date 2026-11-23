@@ -1,6 +1,6 @@
 'use server';
 
-// My Contact Info & Preferences. Everything here is the signed-in user's own
+// My Account Details (was My Contact Info & Preferences). Everything here is the signed-in user's own
 // record: profiles_update_self RLS allows only their row, and the login-email
 // change goes through Supabase Auth's own confirmation flow.
 
@@ -75,7 +75,7 @@ export async function requestLoginEmailChange(newEmail, code = '') {
       return {
         ok: false,
         needsCode: true,
-        error: 'Your account has two-factor turned on, so changing the login email needs the 6-digit code from your authenticator app too.',
+        error: 'Your account has two-factor turned on, so changing the sign-in email needs the 6-digit code from your authenticator app too.',
       };
     }
     // Words of our own (security audit, 20 Oct 2026): Supabase's message can
@@ -87,7 +87,7 @@ export async function requestLoginEmailChange(newEmail, code = '') {
   return {
     ok: true,
     // "Secure email change" is on in Supabase: both addresses get a link.
-    message: `We sent a link to ${email} and one to your current address. Your login email changes once both are clicked.`,
+    message: `We sent a link to ${email} and one to your current address. Your sign-in email changes once both are clicked.`,
   };
 }
 

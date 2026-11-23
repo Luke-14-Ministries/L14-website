@@ -2022,8 +2022,16 @@ export default async function DashboardPage({ searchParams }) {
             <h2 className="text-xl font-bold mb-4">My Account Settings</h2>
             <ul className="space-y-2 text-neutral-700">
               <li>
+                {/* Two different emails (Lawrence, 23 Nov 2026): the one you sign in
+                    with, and the household's, where camp email goes. Named apart so
+                    "contact information" no longer leads to the sign-in one. */}
                 <Link href="/account/contact" className="text-brand underline">
-                  Update contact information
+                  My name, phone &amp; sign-in email
+                </Link>
+              </li>
+              <li>
+                <Link href="/account/household/" className="text-brand underline">
+                  Household contact email &amp; address (where camp email goes)
                 </Link>
               </li>
               <li>

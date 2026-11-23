@@ -103,11 +103,13 @@ export default function ContactManager({ email, profile }) {
           run('email', () => requestLoginEmailChange(f.new_email, f.code ?? ''));
         }}
       >
-        <h2 className="text-lg font-bold mb-1">Login email</h2>
+        <h2 className="text-lg font-bold mb-1">Sign-in email</h2>
         <p className="text-sm text-neutral-500 mb-4">
-          Currently <span className="font-semibold">{email}</span>. To change it, enter the new
-          address. We&rsquo;ll email a confirmation link to it, and nothing changes until you
-          click that link.
+          The address you sign in with, and where password reset emails go. Currently{' '}
+          <span className="font-semibold">{email}</span>. To change it, enter the new address.
+          We&rsquo;ll email a confirmation link to it, and nothing changes until you click that
+          link. This does not change where camp email goes (that&rsquo;s the household&rsquo;s
+          contact email, above).
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <label className="block flex-1 min-w-[16rem]">

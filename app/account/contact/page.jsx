@@ -4,7 +4,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import ContactManager from './ContactManager';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
-export const metadata = { title: 'My Contact Info & Preferences' };
+export const metadata = { title: 'My Account Details' };
 
 // The person's own account details: name, personal phone, login email, and
 // email preferences. Family/household contact info (the address and phone camp
@@ -23,17 +23,32 @@ export default async function ContactPage() {
   // as if nothing had ever been saved.
   if (profileError) throw new Error(`Your account details: ${profileError.message}`);
 
+  // The household's contact email, shown so the two emails are told apart
+  // (Lawrence, 23 Nov 2026): this page's is the sign-in one.
+  const { data: membership, error: householdError } = await supabase
+    .from('household_members')
+    .select('households ( email )')
+    .eq('profile_id', user.id)
+    .limit(1)
+    .maybeSingle();
+  if (householdError) throw new Error(`Your household: ${householdError.message}`);
+  const householdEmail = membership?.households?.email ?? null;
+
   return (
     <section className="bg-neutral-50 py-12 min-h-[60vh]">
       <div className="container-site max-w-2xl mx-auto">
         <div className={`${TITLE_ROW} mb-2`}>
-          <h1 className="text-3xl font-bold">My Contact Info &amp; Preferences</h1>
+          <h1 className="text-3xl font-bold">My Account Details</h1>
           <BackLink />
         </div>
-        <p className="text-neutral-600 mb-8">
-          These are your own account details. Your family&rsquo;s shared contact info, the
-          household phone and address camp uses, is under{' '}
-          <Link href="/account/household/" className="text-brand font-semibold">
+        <p className="text-neutral-600 mb-3">
+          Your own details: your name, your phone and the email you sign in with.
+        </p>
+        <p className="mb-8 rounded-sm border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
+          <strong>Camp reminders and payment receipts</strong> go to your household&rsquo;s contact
+          email{householdEmail ? <>, <span className="font-semibold">{householdEmail}</span></> : null}, not
+          necessarily the one you sign in with. Change it, and the household phone and address, on{' '}
+          <Link href="/account/household/" className="text-brand font-semibold underline">
             Manage Household
           </Link>
           .

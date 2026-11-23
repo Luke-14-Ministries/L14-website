@@ -333,7 +333,7 @@ Anything already saved is untouched.`
               className={inputCls}
             />
           </Field>
-          <Field label="Email">
+          <Field label="Contact email">
             {/* Keyed on the saved address so the box shows it again after a
                 save that only asked for a link. */}
             <input
