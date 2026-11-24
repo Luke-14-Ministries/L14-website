@@ -527,6 +527,36 @@ with camp staff* flag, never a block; group size (default 6) is a warning, never
 
 ---
 
+## Design scheme — staff pages (23 Nov 2026)
+
+One piece per job; use it rather than copying a string of utilities from a neighbouring file.
+
+- **Page top:** `components/AdminPageHeader.jsx` (title, `actions`, `back`, `intro`). Bare on the gray
+  background with cards below; never a white card around the whole page. Order: title, intro, filters,
+  then any export row that follows those filters.
+- **Headings:** page title h2 (`text-xl font-bold`, from AdminPageHeader); a section h3 `text-lg font-bold`;
+  a card title h3 bold (h4 under a section heading), in the page's own colour, never teal.
+- **Cards:** the `card` class (`card p-4` for a tighter one); `FoldCard` uses it (`as` sets the level).
+- **Buttons:** `btn-primary` / `btn-outline` / `btn-danger` with a size: `btn-sm` is the staff standard,
+  `btn-xs` inside a table row; the plain size is for the public site and Check-In's main button. No
+  `py-N!` overrides.
+- **Fields:** `field` (text box, select, text area, with the focus ring), `field-sm` in a row or a crowded
+  filter line, `field-label` above. Add `w-auto` for a field that should not fill its line.
+- **Status pills:** `components/Pill.jsx`, round, toned by `PILL_TONE` in `lib/format.js`: red `hold`
+  (holds approval), solid red `blocked` (Not permitted), amber `todo`, green `done`, blue `waiting` (on
+  someone else), gray `na`, teal `info`. A helper's class string goes in `cls`. The key's words are
+  `PILL_TONE_WORDS` (shown under Background Checks' intro).
+- **Filter rows:** `components/FilterChips.jsx` (wrapping, solid teal selected, count bubble; `href` for a
+  server page, `onClick` for a client list). Event choice stays the one `EventFilter`.
+- **Messages:** `components/Notice.jsx` (`error` for any failed save or load, `warn`, `ok`, `info`);
+  `components/EmptyState.jsx` (`plain` when a list is simply empty, `missing` when something expected
+  is not there).
+- **Tables:** `th-cell` / `td-cell`, sentence-case headers; `components/SortMark.jsx` (↕ idle, ▲/▼);
+  yes/no cells are `StatusMark` with a `StatusLegend` on print sheets; `ResizableTable` says when a table
+  has more columns than fit.
+- **Dark mode:** `card`, `field`, `field-sm` and `btn-danger` are on `scripts/gen-dark-css.py`'s lists; a new
+  class that draws white or a solid colour from inside itself needs a line there too.
+
 ## Stack
 
 Next.js 16 (App Router, **JavaScript — not TypeScript**), Tailwind CSS 4 (CSS-first: the brand
