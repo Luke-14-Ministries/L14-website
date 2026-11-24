@@ -1,0 +1,6 @@
+# Luke 14 Ministries -- reporting a security problem with this website.
+# Please email us; we read every report. (RFC 9116)
+Contact: mailto:info@luke14ministries.net
+Expires: 2027-11-23T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://luke14ministries.net/.well-known/security.txt

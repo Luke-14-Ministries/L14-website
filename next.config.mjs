@@ -19,6 +19,12 @@ const SUPABASE = 'https://nnbcxqxwkivadzognpno.supabase.co';
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+  // No inline event handlers (onclick="..." in the HTML). React never writes
+  // them, so nothing on the site uses one, and an injected one cannot run
+  // (security review, 23 Nov 2026). The cheap half of tightening
+  // 'unsafe-inline'; the nonce policy that would drop it altogether makes
+  // every page dynamic and is its own piece of work.
+  "script-src-attr 'none'",
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${SUPABASE}`,
   `connect-src 'self' ${SUPABASE} wss://nnbcxqxwkivadzognpno.supabase.co`,
@@ -32,6 +38,31 @@ const CSP = [
   'upgrade-insecure-requests',
 ].join('; ');
 
+// Browser features no page here uses, switched off (the four added
+// 23 Nov 2026: interest-based ad topics, MIDI, serial, Bluetooth and the
+// magnetometer). One list so the camera pages below cannot drift from it.
+function permissions(camera) {
+  return [
+    camera,
+    'microphone=()',
+    'geolocation=()',
+    'payment=()',
+    'usb=()',
+    'browsing-topics=()',
+    'midi=()',
+    'serial=()',
+    'bluetooth=()',
+    'magnetometer=()',
+  ].join(', ');
+}
+
+// Signed-in pages, sign-in plumbing and the prayer list's emailed-link pages:
+// nothing a search engine should list. robots.txt already asks; this header
+// is the instruction a crawler honors even when it reaches a page by a link
+// (23 Nov 2026).
+const NOINDEX = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
+const NOINDEX_PATHS = ['/admin', '/account', '/auth', '/api', '/pray/confirm', '/pray/unsubscribe'];
+
 const SECURITY_HEADERS = [
   // Enforced in production. `next dev` needs eval (React's dev tools) and
   // Vercel's debug analytics scripts, which production never loads, so on a
@@ -44,7 +75,7 @@ const SECURITY_HEADERS = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
+  { key: 'Permissions-Policy', value: permissions('camera=()') },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   // No includeSubDomains until the Microsoft 365 subdomains have been checked.
   { key: 'Strict-Transport-Security', value: 'max-age=63072000' },
@@ -100,16 +131,23 @@ const nextConfig = {
   // every route ending in a slash (/about/ rather than /about), which is how
   // every existing link in this site is written. It stays.
   trailingSlash: true,
+  // No "X-Powered-By: Next.js" on every response: it tells a stranger which
+  // framework to look up advisories for, and helps nobody else (23 Nov 2026).
+  poweredByHeader: false,
   async headers() {
     // The camera, on the two pages with a photo upload only (Lawrence, 4 Nov
     // 2026: a webcam for families on a computer). Everywhere else it stays
     // off. A later match with the same header wins, so these override the
     // site-wide line for these paths; the browser still asks the person.
-    const CAMERA_OK = { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()' };
+    const CAMERA_OK = { key: 'Permissions-Policy', value: permissions('camera=(self)') };
     return [
       { source: '/:path*', headers: SECURITY_HEADERS },
       { source: '/account/details/:path*', headers: [CAMERA_OK] },
       { source: '/account/household/:path*', headers: [CAMERA_OK] },
+      ...NOINDEX_PATHS.flatMap((p) => [
+        { source: p, headers: NOINDEX },
+        { source: `${p}/:path*`, headers: NOINDEX },
+      ]),
     ];
   },
   async redirects() {
