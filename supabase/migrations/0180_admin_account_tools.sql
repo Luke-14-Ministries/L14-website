@@ -23,7 +23,9 @@
 --   3. Purge and remove-login need the administrator's own session to have
 --      entered a code just now (aal2), like the two-factor reset already did
 --      (0104). A browser remembered for 7 days is enough to read staff pages,
---      not to delete a family. The reset's message is plainer.
+--      not to delete a family. The reset's message is plainer. These refusals
+--      carry the plain error code (not 42501), so the staff page shows the
+--      sentence itself rather than its generic "your access does not allow".
 --   4. admin_merge_households() (0151) failed outright when both households
 --      had a pending contact-email change (household_email_changes is one row
 --      per household, keyed by household_id), and left the merged household's
@@ -129,12 +131,12 @@ begin
     raise exception 'Only an administrator may remove a login' using errcode = '42501';
   end if;
   if not public.session_is_aal2() then
-    raise exception 'Removing a login needs your own code first. Enter it and try again.' using errcode = '42501';
+    raise exception 'Removing an account needs your own code first. Enter it and try again.';
   end if;
   -- Locking yourself out of the admin area is not a recoverable mistake from
   -- inside the admin area.
   if p_user_id = auth.uid() then
-    raise exception 'You cannot remove your own login' using errcode = '42501';
+    raise exception 'You cannot remove your own account.';
   end if;
 
   select lower(u.email) into v_email from auth.users u where u.id = p_user_id;
@@ -181,7 +183,7 @@ begin
     raise exception 'Only an administrator may purge a household' using errcode = '42501';
   end if;
   if not public.session_is_aal2() then
-    raise exception 'Deleting a family needs your own code first. Enter it and try again.' using errcode = '42501';
+    raise exception 'Deleting a family needs your own code first. Enter it and try again.';
   end if;
 
   select h.display_name into v_name from public.households h where h.id = p_household_id;
@@ -195,7 +197,7 @@ begin
    where hm.household_id = p_household_id;
 
   if auth.uid() = any (v_members) then
-    raise exception 'You cannot purge the household your own login belongs to' using errcode = '42501';
+    raise exception 'You cannot delete the household your own account belongs to.';
   end if;
 
   -- Real money on file: this is a deletion request, not a tidy-up.
@@ -282,11 +284,10 @@ begin
     raise exception 'Only an administrator may reset two-factor' using errcode = '42501';
   end if;
   if not public.session_is_aal2() then
-    raise exception 'Resetting two-factor needs your own code first. Enter it and try again.'
-      using errcode = '42501';
+    raise exception 'Resetting two-factor needs your own code first. Enter it and try again.';
   end if;
   if p_user_id = auth.uid() then
-    raise exception 'You cannot reset your own two-factor. Ask another administrator.' using errcode = '42501';
+    raise exception 'You cannot reset your own two-factor. Ask another administrator.';
   end if;
 
   delete from auth.mfa_factors where user_id = p_user_id;
