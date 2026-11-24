@@ -1,4 +1,5 @@
 import { namesSelf } from '@/lib/wizardPeople';
+import { sortByAge } from '@/lib/format';
 import Link from 'next/link';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import {
@@ -398,7 +399,8 @@ export default async function FamilyRegisterPage({ searchParams }) {
       .eq('household_id', householdId)
       .order('created_at');
     if (allPeopleError) throw new Error(`Household members: ${allPeopleError.message}`);
-    householdPeople = (allPeople ?? []).map((p) => ({
+    // Oldest first, as on Manage Household (Lawrence, 23 Nov 2026).
+    householdPeople = sortByAge(allPeople).map((p) => ({
       personId: p.id,
       firstName: p.first_name ?? '',
       preferredName: p.preferred_name ?? '',

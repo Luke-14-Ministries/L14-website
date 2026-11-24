@@ -23,6 +23,9 @@ import FoldArrow from '@/components/FoldArrow';
 export default function RegistrationsPanel({
   className = '',
   needCount = 0,
+  // Registrations with nothing to do but a balance still owed and no plan
+  // running (Lawrence, 23 Nov 2026): the heading then says so, not "All set".
+  owingCount = 0,
   hasRegistrations = false,
   stateKey,
   children,
@@ -49,6 +52,10 @@ export default function RegistrationsPanel({
             {needCount > 0 ? (
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-300">
                 {needCount} {needCount === 1 ? 'needs' : 'need'} something
+              </span>
+            ) : owingCount > 0 ? (
+              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-700">
+                Registered, balance due
               </span>
             ) : hasRegistrations ? (
               <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">

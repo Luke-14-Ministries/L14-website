@@ -51,6 +51,9 @@ export default function RegistrationCard({
   // A small green "All set" when nothing is outstanding. The page leaves it
   // off for a past event that owes nothing: there is nothing to reassure.
   allSet = false,
+  // A balance still owed with no plan running: the pill says "Registered",
+  // in grey, beside the balance pill (Lawrence, 23 Nov 2026).
+  owing = false,
   // The same outstanding list as links ([{ text, href }]), shown as a full
   // line under the title bar, folded or not (Lawrence, 11 Nov 2026: a family
   // "wasn't quite sure" when registration was finished; the pills alone were
@@ -114,9 +117,15 @@ export default function RegistrationCard({
             </span>
           )}
           {needs.length === 0 && allSet && (
-            <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
-              All set
-            </span>
+            owing ? (
+              <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-700">
+                Registered
+              </span>
+            ) : (
+              <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+                All set
+              </span>
+            )
           )}
           {place && <span className="basis-full pl-6 text-sm text-neutral-500">{place}</span>}
         </span>

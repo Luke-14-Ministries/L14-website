@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { todayInMorristown } from '@/lib/events';
-import { formatPhone } from '@/lib/format';
+import { formatPhone, sortByAge } from '@/lib/format';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import HouseholdManager from './HouseholdManager';
@@ -67,7 +67,7 @@ export default async function ManageHouseholdPage() {
 
   const [
     { data: household, error: householdError },
-    { data: people, error: peopleError },
+    { data: peopleRows, error: peopleError },
     { data: guardianRoles, error: guardianError },
     { data: pendingEmail, error: pendingError },
     { data: newsPref, error: newsError },
@@ -110,6 +110,8 @@ export default async function ManageHouseholdPage() {
     ]);
   if (householdError) throw new Error(`Your household could not be read: ${householdError.message}`);
   if (peopleError) throw new Error(`Your household's people could not be read: ${peopleError.message}`);
+  // Oldest first (Lawrence, 23 Nov 2026).
+  const people = sortByAge(peopleRows);
   if (guardianError) throw new Error(`Parent/guardian roles could not be read: ${guardianError.message}`);
   if (pendingError) throw new Error(`Your contact email change could not be read: ${pendingError.message}`);
   if (newsError) throw new Error(`Your email preference could not be read: ${newsError.message}`);

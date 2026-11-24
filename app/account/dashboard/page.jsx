@@ -15,6 +15,7 @@ import {
   fullScholarshipRequested,
   CLEARING_PILL,
 } from '@/lib/payments';
+import { sortByAge } from '@/lib/format';
 import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown, formatDay } from '@/lib/events';
 import { requiresPaymentChoice, feeLabel, planHasProblem } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
@@ -254,7 +255,7 @@ export default async function DashboardPage({ searchParams }) {
                     event_medical_contacts ( name, phone ) ),
            registration_participants ( id, camp_role, status, checked_in_at, waitlist_reason,
              participant_money ( fee_cents, discount_cents, early_discount_cents, family_discount_cents ),
-             people ( id, first_name, last_name ) )`
+             people ( id, first_name, last_name, date_of_birth ) )`
         )
         .in('household_id', householdIds)
         .order('created_at', { ascending: false })
@@ -401,6 +402,8 @@ export default async function DashboardPage({ searchParams }) {
         byPerson.set(id, {
           id,
           name: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
+          firstName: p.people?.first_name ?? '',
+          dob: p.people?.date_of_birth ?? null,
           roles: [],
         });
       }
@@ -410,7 +413,8 @@ export default async function DashboardPage({ searchParams }) {
       });
     }
   }
-  const attendingPeople = [...byPerson.values()];
+  // Oldest first, as on Manage Household (Lawrence, 23 Nov 2026).
+  const attendingPeople = sortByAge([...byPerson.values()], (p) => p.dob, (p) => p.firstName);
   const attendingIds = new Set(attendingPeople.map((p) => p.id));
 
   // "Details on file" means exactly one thing: the details form itself was
@@ -862,6 +866,17 @@ export default async function DashboardPage({ searchParams }) {
     needsByReg.set(r.id, { needs, todo, depositDue });
   }
   const needCount = [...needsByReg.values()].filter((x) => x.needs.length > 0).length;
+  // "All set" only when the money is settled too (Lawrence, 23 Nov 2026: not
+  // the right word "when a balance is still owed (and not on a payment
+  // plan)"). A balance with a plan running as it should is handled; a balance
+  // with no plan reads "Registered" instead. One rule for the card and the
+  // heading.
+  const balanceStillOwed = (r) => {
+    if (!((balByReg.get(r.id)?.balance_cents ?? 0) > 0)) return false;
+    const plan = planByReg.get(r.id);
+    return !(plan?.status === 'active' && !planHasProblem(plan));
+  };
+  const owingCount = regs.filter((r) => (needsByReg.get(r.id)?.needs.length ?? 0) === 0 && balanceStillOwed(r)).length;
   // The card's remembered "closed" holds only while the same registrations
   // need something; a new one opens it again (visitChoice.js).
   const registrationsStateKey = `l14.dashboard.registrations:${regs
@@ -1188,6 +1203,7 @@ export default async function DashboardPage({ searchParams }) {
           <RegistrationsPanel
             className={donorFirst ? 'order-3' : 'order-1'}
             needCount={needCount}
+            owingCount={owingCount}
             hasRegistrations={regs.length > 0}
             stateKey={registrationsStateKey}
           >
@@ -1202,7 +1218,8 @@ export default async function DashboardPage({ searchParams }) {
             ) : (
               <div className="space-y-4">
                 {regs.map((r) => {
-                  const parts = r.registration_participants ?? [];
+                  // Oldest first, as on Manage Household (Lawrence, 23 Nov 2026).
+                  const parts = sortByAge(r.registration_participants, (p) => p.people?.date_of_birth, (p) => p.people?.first_name);
                   // Each person's fee is on participant_money (0114), read
                   // through the embed above. A family always sees its own
                   // rows, so a missing object is a fault, not a free place:
@@ -1321,6 +1338,7 @@ export default async function DashboardPage({ searchParams }) {
                         (n) => !(n === 'deposit' && depositDue) && !(n === 'choose how to pay' && notFinished)
                       )}
                       allSet={allSet}
+                      owing={balanceStillOwed(r)}
                       // Dropped when every line repeats a card at the top of
                       // the page (23 Nov 2026): the support and medical
                       // details card while anyone's are owed, the waivers box
