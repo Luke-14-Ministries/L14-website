@@ -11,10 +11,12 @@ import { useState } from 'react';
 import { AREAS, PRESETS, PRESET_LEAVES, BACKGROUND_WRITE_WARNING, grantsForPreset, matchingPreset, nearestPreset } from '@/lib/grants';
 
 import ResizableTable from '@/components/ResizableTable';
+// The three choices in words (23 Nov 2026): "R / W / —" needed a legend to
+// read. The stored values stay read / write / none.
 const LEVELS = [
-  ['', '—'],
-  ['read', 'R'],
-  ['write', 'W'],
+  ['', 'No access'],
+  ['read', 'View only'],
+  ['write', 'Can edit'],
 ];
 
 export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClose }) {
@@ -23,7 +25,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
   const matches = matchingPreset(member.grants ?? {});
   // No exact match is the normal case; say so, and name the nearest preset.
   const nearest = matches ? null : nearestPreset(member.grants ?? {});
-  const level = (v) => (v === 'write' ? 'W' : v === 'read' ? 'R' : '—');
+  const level = (v) => (v === 'write' ? 'can edit' : v === 'read' ? 'view only' : 'no access');
 
   // Giving Background checks write orders paid checks: asked first.
   const set = (area, level) => {
@@ -43,7 +45,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-bold">
-            Grants for {member.name}
+            Access for {member.name}
             {matches ? (
               <span className="ml-2 rounded-full bg-brand-light px-2 py-0.5 text-xs font-semibold text-brand-dark">
                 matches {PRESETS[matches].label}
@@ -57,12 +59,12 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
           {nearest && (
             <p className="mt-0.5 text-xs text-neutral-600">
               Nearest preset: <em>{nearest.label}</em>, except{' '}
-              {nearest.diffs.map((d) => `${d.label} ${level(d.have)}`).join(', ')}.
+              {nearest.diffs.map((d) => `${d.label}: ${level(d.have)}`).join(', ')}.
             </p>
           )}
           <p className="mt-0.5 text-xs text-neutral-600">
-            R = read, W = write, — = no access. Presets never set Giving. Check it by hand for a
-            named person. Every change goes in the access log.
+            Presets never set Giving or the prayer list. Check those by hand for a named person.
+            Every change goes in the access log.
           </p>
         </div>
         <button type="button" onClick={onClose} className="text-xs underline">
@@ -83,7 +85,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
                 p.grants.background_checks === 'write' && (member.grants ?? {}).background_checks !== 'write';
               if (
                 window.confirm(
-                  `Apply the ${p.label} preset to ${member.name}?\n\n${p.note}\n\nThis sets every area to the preset (Giving is left as it is). The Administrator tick is not touched.${addsOrdering ? `\n\n${BACKGROUND_WRITE_WARNING}` : ''}`
+                  `Apply the ${p.label} preset to ${member.name}?\n\n${p.note}\n\nThis sets every area to the preset. Giving and the prayer list are left as they are. The Administrator box is not changed.${addsOrdering ? `\n\n${BACKGROUND_WRITE_WARNING}` : ''}`
                 )
               ) {
                 onApplyPreset(member.profileId, key);
@@ -146,7 +148,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
           onClick={() => onSave(member.profileId, grants)}
           className="btn-primary btn-sm disabled:opacity-50"
         >
-          {busy ? 'Saving…' : 'Save grants'}
+          {busy ? 'Saving…' : 'Save access'}
         </button>
         {dirty && !busy && (
           <button
@@ -158,8 +160,8 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
           </button>
         )}
         <span className="text-xs text-neutral-500">
-          These boxes control what each person can do. Granting access to others isn&rsquo;t an area
-          here. It&rsquo;s the <em>Administrator (grants access)</em> box on the person&rsquo;s row.
+          Giving access to others isn&rsquo;t an area here. It&rsquo;s the{' '}
+          <em>Administrator (grants access)</em> box on the person&rsquo;s row.
         </span>
       </div>
     </div>

@@ -64,7 +64,7 @@ export async function updateStaffMember(profileId, patch) {
   if (clean.role === 'admin') {
     const all = Object.fromEntries(AREA_KEYS.map((k) => [k, 'write']));
     const res = await setStaffGrants(profileId, all);
-    if (!res.ok) return { ok: false, error: `Made an administrator, but the grants did not save: ${res.error}` };
+    if (!res.ok) return { ok: false, error: `Made an administrator, but their access did not save: ${res.error}` };
     revalidatePath('/admin/staff');
     return { ok: true, grants: res.grants };
   }
@@ -117,7 +117,7 @@ export async function addStaffMember(email, role) {
   if (role === 'admin') {
     const all = Object.fromEntries(AREA_KEYS.map((k) => [k, 'write']));
     const res = await setStaffGrants(person.profile_id, all);
-    if (!res.ok) return { ok: false, error: `${name} was added as an administrator, but the grants did not save: ${res.error}` };
+    if (!res.ok) return { ok: false, error: `${name} was added as an administrator, but their access did not save: ${res.error}` };
   }
   revalidatePath('/admin/staff');
   return { ok: true, name };

@@ -104,7 +104,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
                   !window.confirm(
                     `Make ${m.name} an administrator?
 
-An administrator can grant and remove access, manage accounts and name program leaders. This also sets every area, including Giving, to write. Unchecking it later leaves the grants as they are.`
+An administrator can grant and remove access, manage accounts and name program leaders. This also sets every area, including Giving, to write. Unchecking it later leaves their access as it is.`
                   )
                 ) {
                   return;
@@ -121,8 +121,9 @@ An administrator can grant and remove access, manage accounts and name program l
           {/* The grants model (0100): a summary, and the panel under the row. */}
           {(() => {
             const g = m.grants ?? {};
-            const w = Object.values(g).filter((v) => v === 'write').length;
-            const r = Object.values(g).filter((v) => v === 'read').length;
+            // 23 Nov 2026: "Access: 3 areas" in place of "2 W · 1 R"; the
+            // tooltip and the panel say which level each one is.
+            const n = Object.values(g).filter((v) => v === 'write' || v === 'read').length;
             const open = openId === m.profileId;
             return (
               <button
@@ -130,14 +131,14 @@ An administrator can grant and remove access, manage accounts and name program l
                 onClick={() => onToggleGrants(m.profileId)}
                 title={
                   Object.entries(g)
-                    .map(([k, v]) => `${AREA_LABEL[k] ?? k}: ${v}`)
-                    .join('\n') || 'No grants recorded yet'
+                    .map(([k, v]) => `${AREA_LABEL[k] ?? k}: ${v === 'write' ? 'can edit' : 'view only'}`)
+                    .join('\n') || 'No access yet'
                 }
                 className={`rounded-sm border px-2 py-1 text-xs font-semibold ${
                   open ? 'border-brand bg-brand-light text-brand-dark' : 'border-neutral-300 text-neutral-700 hover:border-brand hover:text-brand'
                 }`}
               >
-                {w} W · {r} R {open ? '▲' : '▾'}
+                Access: {n} {n === 1 ? 'area' : 'areas'} {open ? '▲' : '▾'}
               </button>
             );
           })()}
@@ -220,7 +221,7 @@ function Table({
                 wrapped a letter at a time once the grants panel widened. */}
             <SortTh k="name" className="min-w-56" {...sortProps}>Person</SortTh>
             <SortTh k="role" center {...sortProps}>Administrator (grants access)</SortTh>
-            <SortTh k="grants" center {...sortProps}>Grants</SortTh>
+            <SortTh k="grants" center {...sortProps}>Access</SortTh>
             <th className="px-4 py-2" />
           </tr>
         </thead>
@@ -330,7 +331,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       const res = await setStaffGrants(profileId, grants);
       if (res.ok && res.grants) remember(profileId, { grants: res.grants });
       if (!res.ok) setError(res.error);
-      else setNotice(res.changed ? `Grants saved. ${res.changed} ${res.changed === 1 ? 'change' : 'changes'} logged.` : 'Nothing changed.');
+      else setNotice(res.changed ? `Access saved. ${res.changed} ${res.changed === 1 ? 'change' : 'changes'} logged.` : 'Nothing changed.');
       setBusyId(null);
       router.refresh();
     });
@@ -441,7 +442,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       <strong>Access belongs to the login, not the person.</strong> The address under each name is
       the account that has this access. If someone signs in with a different email, such as a
       personal one, they won&rsquo;t see the staff area at all, even though they&rsquo;re listed here.
-      If that happens, check which email they signed in with before granting anything else.
+      If that happens, check which email they signed in with before giving them any more access.
     </p>
   );
 

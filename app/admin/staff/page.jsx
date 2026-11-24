@@ -3,6 +3,7 @@ import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import StaffManager from './StaffManager';
+import { AREAS } from '@/lib/grants';
 
 // The site's fold arrow on the left (fold-summary in globals.css, 26 Oct 2026).
 const SUMMARY = 'fold-summary flex items-center gap-1';
@@ -90,55 +91,68 @@ export default async function StaffAccessPage() {
         }
         intro={
           <>
-            Who can do what. Each person has <span className="font-semibold">grants</span> on ten
-            areas: read, write or no access. Set them with a <span className="font-semibold">preset</span>,
-            then adjust them with the <em>Grants</em> button on each row. Only someone with the{' '}
-            <span className="font-semibold">Administrator</span> box checked can grant access. Every
-            change goes in the access log. One login covers every role, so nobody needs a second account.
+            Who can do what. Each person has access to each area: can edit, view only or no access.
+            Set it with a <span className="font-semibold">preset</span>, then adjust it with the{' '}
+            <em>Access</em> button on their row. Only an administrator can give access, and every
+            change goes in the access log.
           </>
         }
       />
 
       {/* One fold, collapsed by default (Lawrence, 2 Oct 2026: the page is for
           doing). <details> needs no client JS. Consolidated 21 Oct 2026 from
-          five folds that narrated how the page had changed. */}
+          five folds that narrated how the page had changed. 23 Nov 2026: the
+          area list comes from AREAS in lib/grants.js, so a new area (the
+          prayer list was missing) shows here without anyone counting, and the
+          presets are a list read against PRESETS in the same file. */}
       <details className="card group mb-6 p-4 text-sm">
         <summary className={SUMMARY}>
           <span className="font-bold">How access works</span>
         </summary>
+        <p className="text-neutral-600 mt-3 font-semibold">The presets</p>
+        <ul className="text-neutral-600 mt-1 list-disc space-y-1 pl-5">
+          <li>
+            <em>Every area, read and write</em>: can edit every area except Giving and the prayer
+            list, which are always set by hand.
+          </li>
+          <li>
+            <em>Registration &amp; coordination</em>: can edit families, money and placements. Views
+            background checks and the programs list.
+          </li>
+          <li>
+            <em>Finance</em>: records payments and refunds, and views names and events. Deciding a
+            scholarship also needs Registration info at can edit, so that stays with Registration
+            &amp; coordination.
+          </li>
+          <li>
+            <em>Operations lead</em>: contact details at the door, and moves people between rooms
+            and activities. Views buddies and programs. No money.
+          </li>
+          <li>
+            <em>Operations helper</em>: views what&rsquo;s needed to move people around camp
+            safely, and changes nothing.
+          </li>
+        </ul>
         <p className="text-neutral-600 mt-3">
-          <span className="font-semibold">The presets.</span>{' '}
-          <em>Every area, read and write</em>: all nine areas at write.{' '}
-          <em>Registration &amp; coordination</em>: families, money and placements.{' '}
-          <em>Finance</em>: records payments and refunds, and reads names and events. Scholarship
-          decisions also need Registration write, so they stay with Registration &amp; coordination.{' '}
-          <em>Operations lead</em>: the door, rooms, activities and buddies, but no money.{' '}
-          <em>Operations helper</em>: reads what&rsquo;s needed to move people around camp safely,
-          and writes nothing. After applying a preset, you can adjust any area by hand. No preset
-          makes someone an administrator. That&rsquo;s the box in the{' '}
-          <em>Administrator (grants access)</em> column. Only an administrator can grant access, add
-          or remove staff, name a program leader, or reset two-factor.
+          After applying a preset, you can change any area by hand. No preset makes someone an
+          administrator. That&rsquo;s the box in the <em>Administrator (grants access)</em> column.
+          Only an administrator can give access, add or remove staff, name a program leader, or
+          reset two-factor.
         </p>
-        <p className="text-neutral-600 mt-3">
-          <span className="font-semibold">The ten areas.</span>{' '}
-          <span className="font-semibold">Registration info</span>,{' '}
-          <span className="font-semibold">Payments &amp; scholarships</span>,{' '}
-          <span className="font-semibold">Events &amp; camp setup</span> (the definitions), and four
-          placement areas: <span className="font-semibold">Activities, Rooming, Buddies, Programs</span>{' '}
-          (who is in what). Three more are need-to-know.{' '}
-          <span className="font-semibold">Sensitive:</span> medical, dietary and support details.{' '}
-          <span className="font-semibold">Giving:</span> donor gift records. It&rsquo;s never set by a
-          preset, only checked by hand for a named person.{' '}
-          <span className="font-semibold">Background checks:</span> read shows the three facts every
-          staff member sees (on file, current, verdict). Write covers ordering, importing and the
-          verdict, and is for administrators only.
-        </p>
+        <p className="text-neutral-600 mt-3 font-semibold">The areas</p>
+        <ul className="text-neutral-600 mt-1 list-disc space-y-1 pl-5">
+          {AREAS.map(([key, label, what]) => (
+            <li key={key}>
+              <span className="font-semibold">{label}:</span> {what}
+            </li>
+          ))}
+        </ul>
         <p className="text-neutral-600 mt-3">
           <span className="font-semibold">Administrators.</span> An administrator adds and removes
-          staff, changes anyone&rsquo;s grants, and can make or remove another administrator. All
+          staff, changes anyone&rsquo;s access, and can make or remove another administrator. All
           administrators are equal. Nobody can remove or deactivate themselves. Another
           administrator has to do it, which is one reason to have two. Sensitive and Giving are
-          separate grants, even for administrators. Running the site doesn&rsquo;t need medical
+          separate areas, even for administrators. Running the site doesn&rsquo;t need medical
           details or donor giving, and an administrator without them can safely project their screen
           at check-in. Keep the administrator list short.
         </p>
