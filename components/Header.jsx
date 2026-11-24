@@ -88,7 +88,12 @@ export default function Header() {
           <img
             src={site.logo}
             alt="Luke 14 Ministries"
-            className={`site-logo-light w-auto transition-[height] duration-200 ${slim ? 'h-10 sm:h-12' : 'h-12 sm:h-16'}`}
+            // A step smaller on a phone's signed-in pages (23 Nov 2026
+            // review): at 390px the logo, Donate and the menu button left no
+            // room and the page scrolled sideways.
+            className={`site-logo-light w-auto transition-[height] duration-200 ${
+              slim ? 'h-10 sm:h-12' : themed ? 'h-10 sm:h-16' : 'h-12 sm:h-16'
+            }`}
           />
           {/* Dark mode's copy, words light (app/theme-dark.css swaps them).
               Lazy, so it is fetched only once it shows. */}
@@ -98,12 +103,12 @@ export default function Header() {
               src={site.logoDark}
               alt="Luke 14 Ministries"
               loading="lazy"
-              className="site-logo-dark hidden h-12 sm:h-16 w-auto"
+              className="site-logo-dark hidden h-10 sm:h-16 w-auto"
             />
           )}
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <nav className="hidden lg:flex items-center gap-1">
             {nav.map((group) => (
               <DesktopDropdown key={group.label} group={group} />
@@ -113,7 +118,10 @@ export default function Header() {
             </Link>
           </nav>
 
-          {themed && <ThemeSwitch className="lg:ml-2" />}
+          {/* From lg up the switch sits here; below lg it is inside the
+              opened menu (23 Nov 2026 review), so a phone's top row is the
+              logo, Donate and the menu button. */}
+          {themed && <ThemeSwitch display="hidden lg:inline-flex" className="lg:ml-2" />}
 
           {/* Donate stays one tap away on a phone, not only inside the menu. */}
           <Link href="/donate" className="lg:hidden btn-gold px-3! py-1.5! text-sm">
@@ -186,6 +194,11 @@ export default function Header() {
                 {group.label}
               </Link>
             )
+          )}
+          {themed && (
+            <div className="px-6 pt-4">
+              <ThemeSwitch label="Dark mode" />
+            </div>
           )}
           <div className="px-6 pt-4">
             <Link

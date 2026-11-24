@@ -40,7 +40,11 @@ function apply(dark) {
   else delete document.documentElement.dataset.theme;
 }
 
-export default function ThemeSwitch({ className = '' }) {
+// `display` is the switch's display classes, apart from className so the
+// header can show it only from lg up ('hidden lg:inline-flex') without two
+// display classes fighting; below lg it sits in the opened menu, labelled
+// "Dark mode" (23 Nov 2026 review).
+export default function ThemeSwitch({ className = '', display = 'inline-flex', label = 'Dark' }) {
   // The server cannot know the choice, so it draws Light; the browser then
   // reads <html>, which THEME_SCRIPT has already set.
   const dark = useSyncExternalStore(subscribe, isDark, () => false);
@@ -62,7 +66,7 @@ export default function ThemeSwitch({ className = '' }) {
       aria-checked={dark}
       onClick={toggle}
       title={dark ? 'Dark mode is on' : 'Dark mode is off'}
-      className={`inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-800 ${className}`}
+      className={`${display} items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-800 ${className}`}
     >
       <span
         aria-hidden="true"
@@ -77,7 +81,7 @@ export default function ThemeSwitch({ className = '' }) {
           style={{ backgroundColor: '#fff' }}
         />
       </span>
-      <span>Dark</span>
+      <span>{label}</span>
     </button>
   );
 }

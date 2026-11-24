@@ -1,7 +1,29 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { site } from '@/lib/site';
 
+// A client component since 23 Nov 2026, only to know whether this is a staff
+// page: staff pages end with one line, straight under the grey staff area,
+// instead of a white band and the full public footer (23 Nov 2026 review).
+// Family pages keep the full footer.
 export default function Footer() {
+  const pathname = usePathname() ?? '';
+  if (pathname.startsWith('/admin')) {
+    return (
+      <footer className="keep-light bg-brand-dark px-4 py-3 text-center text-sm text-neutral-300">
+        © {new Date().getFullYear()} Luke 14 Ministries ·{' '}
+        <Link href="/" className="hover:underline">
+          Public site
+        </Link>{' '}
+        ·{' '}
+        <Link href="/contact" className="hover:underline">
+          Contact
+        </Link>
+      </footer>
+    );
+  }
   return (
     // keep-light: the footer is dark in both modes, so dark mode leaves its
     // colours as they are (app/theme-dark.css).
