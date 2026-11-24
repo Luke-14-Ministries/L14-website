@@ -4,7 +4,7 @@
 // payments never come through here -- they are recorded automatically by the
 // Stripe webhook.
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { recordManualPayment } from './actions';
 
@@ -20,6 +20,11 @@ export default function RecordPaymentForm({ registrations }) {
   // "already recorded", replaced once a row is saved. The button is also
   // disabled while a save is running, so a double click sends one.
   const [requestKey, setRequestKey] = useState(() => crypto.randomUUID());
+  // `pending` updates only on the next render, so three quick clicks all see
+  // false; this ref turns the second and third away at once (seen in the
+  // local check, 23 Nov 2026: one row saved, but an "already recorded" line
+  // beside the "Recorded" one).
+  const inFlight = useRef(false);
   const [f, setF] = useState({
     registrationId: registrations[0]?.id ?? '',
     amount: '',
@@ -38,10 +43,11 @@ export default function RecordPaymentForm({ registrations }) {
 
   function submit(e) {
     e.preventDefault();
+    if (pending || inFlight.current) return;
+    inFlight.current = true;
     setError('');
     setDone('');
     const cents = Math.round((parseFloat(f.amount) || 0) * 100);
-    if (pending) return;
     start(async () => {
       const res = await recordManualPayment({
         requestKey,
@@ -50,7 +56,11 @@ export default function RecordPaymentForm({ registrations }) {
         method: f.method,
         receivedOn: f.receivedOn || undefined,
         note: f.note,
-      });
+      }).catch(() => ({
+        ok: false,
+        error: 'The connection dropped. Check the list on this page before pressing again.',
+      }));
+      inFlight.current = false;
       if (!res.ok) {
         setError(res.error);
         return;
