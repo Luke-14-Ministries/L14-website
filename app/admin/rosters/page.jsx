@@ -101,7 +101,7 @@ export default async function RostersPage() {
         // and background check. The trip back the other way has always
         // existed; this one did not (25 Aug).
         participantId: p.id,
-        household: r.households?.display_name ?? 'Household',
+        household: r.households?.display_name ?? 'Family',
         contact: [r.households?.email, r.households?.phone ? formatPhone(r.households.phone) : null].filter(Boolean).join(' · '),
         person: `${p.people?.first_name ?? ''} ${p.people?.last_name ?? ''}`.trim(),
         // E04/E05: the person cell links to their own page.
@@ -143,7 +143,7 @@ export default async function RostersPage() {
         intro={
           <>
             Everyone registered, by event. Filter below, and click a column heading to sort. The CSV
-            download matches what is filtered on screen. Select a household to review it, change
+            download matches what is filtered on screen. Select a family to review it, change
             a status, or add and edit people.
           </>
         }

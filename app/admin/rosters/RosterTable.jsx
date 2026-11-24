@@ -338,8 +338,9 @@ export default function RosterTable({ events, rows, programs = [] }) {
             that works in every browser on every machine. Printing and the
             CSV are the other two ways out, and both are one click away. */}
         <p className="mb-2 text-xs text-neutral-500">
-          More columns than fit? Hold <kbd className="rounded-sm border border-neutral-300 bg-neutral-50 px-1">Shift</kbd>{' '}
-          and scroll sideways. Print and CSV show every column.
+          {/* The table's own line under this says how to scroll (23 Nov
+              2026); this one only says where every column is. */}
+          Print view and the CSV show every column.
         </p>
         <div className="card p-0 overflow-x-auto">
           <ResizableTable storageKey="rosters">
