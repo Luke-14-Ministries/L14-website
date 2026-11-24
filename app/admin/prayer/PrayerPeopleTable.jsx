@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import DataTable from '@/components/DataTable';
-import RemoveButton from './RemoveButton';
+import RemoveButton, { AllowAgainButton } from './RemoveButton';
 
 export default function PrayerPeopleTable({ people, canWrite }) {
   const [showLeft, setShowLeft] = useState(false);
@@ -29,8 +29,13 @@ export default function PrayerPeopleTable({ people, canWrite }) {
       label: '',
       sortable: false,
       align: 'right',
-      defaultWidth: 140,
-      render: (p) => (p.unsubscribed ? null : <RemoveButton id={p.id} email={p.email} />),
+      defaultWidth: 180,
+      render: (p) =>
+        p.removedByStaff ? (
+          <AllowAgainButton id={p.id} email={p.email} />
+        ) : p.unsubscribed ? null : (
+          <RemoveButton id={p.id} email={p.email} />
+        ),
     });
   }
 

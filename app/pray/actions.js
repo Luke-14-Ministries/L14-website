@@ -12,22 +12,23 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email';
 import { emailLooksValid } from '@/lib/format';
 import { verifyTurnstile } from '@/lib/turnstile';
+import { siteOrigin } from '@/lib/origin';
 import { site } from '@/lib/site';
-import { PRAYER_FROM, PRAYER_REPLY_TO, PRAYER_MAX, prayerConfirmEmail, prayerAlreadyOnListEmail } from '@/lib/prayer';
+import {
+  PRAYER_FROM,
+  PRAYER_REPLY_TO,
+  PRAYER_MAX,
+  PRAYER_REMOVED_BY_STAFF,
+  prayerConfirmEmail,
+  prayerAlreadyOnListEmail,
+  prayerRemovedByStaffEmail,
+} from '@/lib/prayer';
 
 const NOT_ON = `The prayer email list sign-up is not switched on yet. Please write to ${site.emails.pray} and the prayer team will add you.`;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // One confirmation email per address per ten minutes, so the form cannot be
 // used to fill someone's inbox.
 const RESEND_AFTER_MS = 10 * 60 * 1000;
-
-async function siteOrigin() {
-  if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/$/, '');
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host');
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  return host ? `${proto}://${host}` : '';
-}
 
 export async function signUpForPrayerList(form) {
   const name = String(form?.name ?? '').trim().slice(0, PRAYER_MAX.name);
@@ -38,7 +39,18 @@ export async function signUpForPrayerList(form) {
 
   const h = await headers();
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
-  const check = await verifyTurnstile(form?.captchaToken, ip);
+  // Shut on the live site when the check cannot run (23 Nov 2026): this form
+  // sends an email to whatever address is typed. Contact stays open.
+  const check = await verifyTurnstile(form?.captchaToken, ip, {
+    failOpen: process.env.VERCEL_ENV !== 'production',
+    action: 'prayer',
+  });
+  if (check.unavailable) {
+    return {
+      ok: false,
+      error: `The sign-up is having trouble just now. Please try again in a few minutes, or write to ${site.emails.pray} and the prayer team will add you.`,
+    };
+  }
   if (!check.ok) {
     return { ok: false, error: 'That check timed out. Please check the box again and resend.', retryCaptcha: true };
   }
@@ -48,7 +60,7 @@ export async function signUpForPrayerList(form) {
 
   const { data: row, error: readError } = await db
     .from('prayer_list_subscribers')
-    .select('id, token, name, confirmed_at, unsubscribed_at, confirm_sent_at')
+    .select('id, token, confirmed_at, unsubscribed_at, confirm_sent_at, removed_by_staff_at')
     .eq('email', email)
     .maybeSingle();
   if (readError) {
@@ -73,11 +85,32 @@ export async function signUpForPrayerList(form) {
       console.error('prayer sign-up (already on, stamp):', stampError.message);
       return { ok: true };
     }
-    // The name on file, never the one just typed: anyone can type into the
-    // form, and this email goes to someone already on the list.
-    const again = prayerAlreadyOnListEmail({ origin: await siteOrigin(), name: row.name ?? '', token: row.token });
+    const again = prayerAlreadyOnListEmail({ origin: await siteOrigin(), token: row.token });
     const sentAgain = await sendEmail({ to: email, from: PRAYER_FROM, replyTo: PRAYER_REPLY_TO, ...again });
     if (!sentAgain.ok) console.error('prayer sign-up (already on, email):', sentAgain.error);
+    return { ok: true };
+  }
+
+  // Taken off by the prayer team (0181, 23 Nov 2026): not signed up again.
+  // The form gives its usual answer, so a visitor learns nothing about the
+  // address; the mailbox owner is told to write to pray@ to rejoin. Stamped
+  // first, so this too goes at most once per ten minutes.
+  if (row?.removed_by_staff_at) {
+    const { error: stampError } = await db
+      .from('prayer_list_subscribers')
+      .update({ confirm_sent_at: new Date().toISOString() })
+      .eq('id', row.id);
+    if (stampError) {
+      console.error('prayer sign-up (removed by staff, stamp):', stampError.message);
+      return { ok: true };
+    }
+    const told = await sendEmail({
+      to: email,
+      from: PRAYER_FROM,
+      replyTo: PRAYER_REPLY_TO,
+      ...prayerRemovedByStaffEmail({ origin: await siteOrigin() }),
+    });
+    if (!told.ok) console.error('prayer sign-up (removed by staff, email):', told.error);
     return { ok: true };
   }
 
@@ -105,7 +138,7 @@ export async function signUpForPrayerList(form) {
     saved = data;
   }
 
-  const mail = prayerConfirmEmail({ origin: await siteOrigin(), name, token: saved.token });
+  const mail = prayerConfirmEmail({ origin: await siteOrigin(), token: saved.token });
   const sent = await sendEmail({ to: email, from: PRAYER_FROM, replyTo: PRAYER_REPLY_TO, ...mail });
   // The email is the whole point here: without it the person cannot confirm,
   // so a failed send is said, not swallowed (like the contact form).
@@ -119,16 +152,31 @@ export async function confirmPrayerList(token) {
   if (!UUID.test(String(token ?? ''))) return { ok: false, error: 'This link is not complete. Please open it from the email again.' };
   const db = createAdminClient();
   if (!db) return { ok: false, error: NOT_ON };
+  // An address the prayer team took off stays off (0181, 23 Nov 2026), even
+  // from an old confirmation link still in the inbox. The update repeats the
+  // test, so a removal between the read and the write still wins.
+  const { data: found, error: readError } = await db
+    .from('prayer_list_subscribers')
+    .select('removed_by_staff_at')
+    .eq('token', token)
+    .maybeSingle();
+  if (readError) {
+    console.error('prayer confirm (read):', readError.message);
+    return { ok: false, error: 'Sorry, that did not save. Please try again in a moment.' };
+  }
+  if (!found) return { ok: false, error: 'This link is no longer valid. Please sign up again on the Pray page.' };
+  if (found.removed_by_staff_at) return { ok: false, error: PRAYER_REMOVED_BY_STAFF };
   const { data, error } = await db
     .from('prayer_list_subscribers')
     .update({ confirmed_at: new Date().toISOString(), unsubscribed_at: null })
     .eq('token', token)
+    .is('removed_by_staff_at', null)
     .select('email');
   if (error) {
     console.error('prayer confirm:', error.message);
     return { ok: false, error: 'Sorry, that did not save. Please try again in a moment.' };
   }
-  if (!data?.length) return { ok: false, error: 'This link is no longer valid. Please sign up again on the Pray page.' };
+  if (!data?.length) return { ok: false, error: PRAYER_REMOVED_BY_STAFF };
   return { ok: true, email: data[0].email };
 }
 

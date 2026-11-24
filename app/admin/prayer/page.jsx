@@ -24,7 +24,7 @@ export default async function PrayerListPage() {
   const [{ data: people, error }, { data: sends, error: sendsError }] = await Promise.all([
     supabase
       .from('prayer_list_subscribers')
-      .select('id, email, name, created_at, confirmed_at, unsubscribed_at')
+      .select('id, email, name, created_at, confirmed_at, unsubscribed_at, removed_by_staff_at')
       .order('created_at', { ascending: false }),
     supabase
       .from('prayer_list_sends')
@@ -53,7 +53,8 @@ export default async function PrayerListPage() {
       <p className="mb-6 text-sm text-neutral-500">
         People join on the <Link href="/pray/" className="underline">Pray page</Link> and confirm by email.
         Prayer requests and replies go to {site.emails.pray}. If someone asks to be taken off, use
-        <em> Take off the list</em> below.
+        <em> Take off the list</em> below. The Pray page won&rsquo;t add them back; if they write
+        asking to rejoin, use <em>Let them sign up again</em>.
       </p>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -69,7 +70,7 @@ export default async function PrayerListPage() {
         </div>
         <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
           <div className="text-3xl font-bold">{left.length}</div>
-          <div className="text-sm font-semibold text-neutral-700">Unsubscribed</div>
+          <div className="text-sm font-semibold text-neutral-700">Unsubscribed or taken off</div>
           <div className="text-xs text-neutral-500">not emailed again unless they sign up again</div>
         </div>
       </div>
@@ -114,8 +115,12 @@ export default async function PrayerListPage() {
           signedUp: dayInMorristown(p.created_at),
           signedUpAt: p.created_at,
           unsubscribed: Boolean(p.unsubscribed_at),
+          // 0181: taken off by staff; the Pray page will not add them back.
+          removedByStaff: Boolean(p.removed_by_staff_at),
           statusOrder: p.unsubscribed_at ? 2 : p.confirmed_at ? 0 : 1,
-          status: p.unsubscribed_at
+          status: p.removed_by_staff_at
+            ? `Taken off by staff ${dayInMorristown(p.removed_by_staff_at)}`
+            : p.unsubscribed_at
             ? `Unsubscribed ${dayInMorristown(p.unsubscribed_at)}`
             : p.confirmed_at
               ? `On the list since ${dayInMorristown(p.confirmed_at)}`

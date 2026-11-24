@@ -6,21 +6,13 @@
 // the list but never the tokens (the migration's column grants), and every
 // copy needs its own token for its unsubscribe link.
 
-import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
+import { siteOrigin } from '@/lib/origin';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail, sendEmailBatch } from '@/lib/email';
 import { PRAYER_FROM, PRAYER_REPLY_TO, PRAYER_MAX, prayerListEmail, prayerBodyIsEmpty } from '@/lib/prayer';
-
-async function siteOrigin() {
-  if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/$/, '');
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host');
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  return host ? `${proto}://${host}` : '';
-}
 
 function cleanMessage(input) {
   const subject = String(input?.subject ?? '').trim().slice(0, PRAYER_MAX.subject);
@@ -32,18 +24,39 @@ function cleanMessage(input) {
 
 // Take someone off the list by hand (28 Oct 2026): for "please take me off"
 // written to pray@ rather than pressed. The same stamp as their own
-// unsubscribe, so they are never emailed again unless they sign up afresh.
-// Service role, because no signed-in role writes the list (0141).
+// unsubscribe, plus removed_by_staff_at (0181, 23 Nov 2026), so the removal
+// sticks: the Pray page and an old confirmation link can no longer put the
+// address back. Service role, because no signed-in role writes the list (0141).
 export async function removeFromPrayerList(id) {
+  const staff = await getStaff();
+  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Changing the prayer list needs Prayer list write.' };
+  const db = createAdminClient();
+  if (!db) return { ok: false, error: 'The site’s server key (SUPABASE_SERVICE_ROLE_KEY) is not set in Vercel, so the list cannot be changed.' };
+  const now = new Date().toISOString();
+  const { error } = await db
+    .from('prayer_list_subscribers')
+    .update({ unsubscribed_at: now, removed_by_staff_at: now })
+    .eq('id', String(id ?? ''))
+    .is('unsubscribed_at', null);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/admin/prayer/');
+  return { ok: true };
+}
+
+// The way back for someone the team took off (0181): they wrote to pray@
+// asking to rejoin. This clears the staff mark only; they stay off the list
+// until they sign up on the Pray page and confirm from their own inbox, so
+// nobody is put on the list without their own say-so.
+export async function allowPrayerSignUpAgain(id) {
   const staff = await getStaff();
   if (!can(staff, 'write:prayer')) return { ok: false, error: 'Changing the prayer list needs Prayer list write.' };
   const db = createAdminClient();
   if (!db) return { ok: false, error: 'The site’s server key (SUPABASE_SERVICE_ROLE_KEY) is not set in Vercel, so the list cannot be changed.' };
   const { error } = await db
     .from('prayer_list_subscribers')
-    .update({ unsubscribed_at: new Date().toISOString() })
+    .update({ removed_by_staff_at: null })
     .eq('id', String(id ?? ''))
-    .is('unsubscribed_at', null);
+    .not('removed_by_staff_at', 'is', null);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/admin/prayer/');
   return { ok: true };

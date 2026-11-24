@@ -110,4 +110,35 @@ begin
 end $$;
 rollback;
 
+\echo == 6 the staff-removal mark (0181): Prayer staff read it, nobody signed in sets or clears it
+update public.prayer_list_subscribers set unsubscribed_at = now(), removed_by_staff_at = now() where email = 'two@example.org';
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true),
+       set_config('request.jwt.claims','{"aal":"aal2"}',true) \g /dev/null
+do $$
+declare n int;
+begin
+  select count(*) into n from public.prayer_list_subscribers where removed_by_staff_at is not null;
+  if n <> 1 then raise exception 'FAIL 6: Prayer write sees % removed rows, expected 1', n; end if;
+  raise notice 'PASS 6 Prayer staff see who was taken off';
+  begin
+    update public.prayer_list_subscribers set removed_by_staff_at = null where true;
+    raise exception 'FAIL 6: Prayer write cleared the mark directly';
+  exception when insufficient_privilege then raise notice 'PASS 6 the mark is changed only through the site';
+  end;
+end $$;
+rollback;
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000a',true) \g /dev/null
+do $$
+declare n int;
+begin
+  select count(*) into n from public.prayer_list_subscribers where removed_by_staff_at is not null;
+  if n <> 0 then raise exception 'FAIL 6: a family sees % removed rows', n; end if;
+  raise notice 'PASS 6 a family sees no removal marks';
+end $$;
+rollback;
+
 \echo ALL PRAYER CHECKS PASSED
