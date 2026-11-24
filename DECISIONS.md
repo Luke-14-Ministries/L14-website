@@ -5130,3 +5130,32 @@ outside, paths kept).
 - **The content security policy only reports under `next dev`.** Enforced, it blocked React's
   development tools (they need eval) and the local site could not run its scripts. Production still
   enforces it.
+
+## 2026-11-23 — Whole-site review: security, and the staff area's content, clarity, design and organization
+
+Lawrence asked for a complete review with every proposed change built and pushed, and educated guesses
+flagged rather than asked about. Five Fable reviewers (security S1–S4, site A1–A5) produced 256
+findings; 251 were built in 17 packages plus a gaps package, each checked by a second reviewer, and
+migrations `0175`–`0186` carry the database side. The numbered record, with every guess marked, is
+*Site review, 23 November 2026* (PDF, `00 Comments and Critiques`). The choices worth knowing later:
+
+- **New functions grant nothing by default** (`0175`): execute is revoked from public and anon on every
+  function in `public`, re-granted to authenticated and service_role, and the default privileges
+  changed, so every new function needs its own explicit grant (CLAUDE.md says so). Anon keeps only the
+  functions signed-out pages need. Policies written `to public` became `to authenticated`.
+- **Statements of need, the email log and paid totals** need Registration read or Payments read, not
+  any staff login (`0175`).
+- **Remembering a browser goes through `remember_this_browser()`** (`0176`): the browser no longer
+  writes its own expiry, staff get 7 days and families 30, enforced by a check on the table.
+- **Not permitted, date of birth and activity sign-up rules moved into the database** (`0177`).
+- **Household logins** (`0178`/`0179`/`0186`): daily invite limits, the account's starter can remove
+  another adult's sign-in (which also cancels that login's waiting contact-email change), and an invited
+  login whose own household is an empty sign-up can join without staff.
+- **Accounts page tools are logged** (`0180`, `admin_account_log`, readable on Access Changes) and need
+  the administrator's own code. **Delete family & all their data refuses when any payment was
+  received, check and cash included** (a guess, flagged): such a family goes through Deletion Requests.
+- **Staff menu follows the season** (Registration, Money, Camp Planning, Camp Week, Communication,
+  Admin), one name per page across menu, heading and title, one page header, round pills with a key,
+  "Awaiting review" as the one label for a submitted person, dates as "Nov 15, 2026".
+- **Family pages** list a household's people oldest first (`sortByAge()`), and a registration owing a
+  balance with no plan running reads "Registered", not "All set" (Lawrence, the same day).
