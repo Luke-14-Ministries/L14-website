@@ -1,53 +1,45 @@
 'use client';
 
-// Admin control to reset a locked-out user's two-factor. It calls
-// resetMfaByEmail (./actions.js), which goes through admin_reset_mfa(): a
-// code-verified session, never your own account, and logged (0104). The
-// admin-reset-mfa Edge Function it used before is retired.
+// Reset a locked-out person's two-factor by their email address. It calls
+// resetMfaByEmail (./actions.js), which goes through admin_reset_mfa(): the
+// administrator's own code entered just now (aal2), never your own account,
+// and logged (0104, 0180). Since 23 Nov 2026 the button opens the same
+// step-up box as the Accounts page, which names the account and asks for
+// your own code; it no longer resets on one click.
 
 import { useState } from 'react';
+import StepUpModal from '@/components/StepUpModal';
 import { resetMfaByEmail } from './actions';
 
 export default function AdminMfaReset() {
   const [email, setEmail] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(null); // the email being confirmed
   const [result, setResult] = useState(null); // { ok, message }
 
-  async function submit(e) {
+  function submit(e) {
     e.preventDefault();
-    setBusy(true);
+    const clean = email.trim();
+    if (!clean) return;
     setResult(null);
-    const data = await resetMfaByEmail(email.trim()).catch(() => ({
-      ok: false,
-      error: 'Could not reset two-factor. Please try again.',
-    }));
-    setBusy(false);
+    setAsking(clean);
+  }
 
-    if (data?.ok) {
-      setResult({
-        ok: true,
-        message:
-          data.removed > 0
-            ? `Done. Removed ${data.removed} two-factor ${
-                data.removed === 1 ? 'device' : 'devices'
-              } from ${data.email}. They can log in with their password and set it up again.`
-            : `${data.email} had no two-factor set up, so there was nothing to remove.`,
-      });
-      setEmail('');
-    } else {
-      setResult({ ok: false, message: data?.error || 'Could not reset two-factor.' });
-    }
+  function done(data) {
+    setAsking(null);
+    setEmail('');
+    setResult({
+      ok: true,
+      message:
+        data.removed > 0
+          ? `Done. Removed ${data.removed} two-factor ${data.removed === 1 ? 'device' : 'devices'} from ${
+              data.email
+            }. They can sign in with their password and set it up again.`
+          : `${data.email} had no two-factor set up, so there was nothing to remove.`,
+    });
   }
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Reset a user&rsquo;s two-factor</h2>
-      <p className="text-sm text-neutral-500 mb-5 max-w-4xl">
-        For someone locked out because they lost their phone or reinstalled their
-        authenticator app. This removes their two-factor so they can log in with
-        their password and set it up again. It does not change their password.
-      </p>
-
       <form onSubmit={submit} className="max-w-md">
         <label className="block font-semibold mb-1.5" htmlFor="reset-email">
           Their account email
@@ -58,11 +50,11 @@ export default function AdminMfaReset() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="name@luke14ministries.net"
+          placeholder="name@example.com"
           className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
         />
-        <button type="submit" disabled={busy} className="btn-primary">
-          {busy ? 'Resetting…' : 'Reset two-factor'}
+        <button type="submit" className="btn-primary">
+          Reset two-factor…
         </button>
       </form>
 
@@ -76,6 +68,24 @@ export default function AdminMfaReset() {
         >
           {result.message}
         </p>
+      )}
+
+      {asking && (
+        <StepUpModal
+          title="Reset this account's two-factor?"
+          account={asking}
+          confirmLabel="Reset two-factor"
+          busyLabel="Resetting…"
+          onClose={() => setAsking(null)}
+          onConfirm={() => resetMfaByEmail(asking)}
+          onDone={done}
+        >
+          <p className="text-sm text-neutral-700 mb-3">
+            They sign in with their password and set up two-factor again. Their password does not
+            change. Anyone who knows that password could set it up in their place, so do this only
+            for the person themselves.
+          </p>
+        </StepUpModal>
       )}
     </div>
   );

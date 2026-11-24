@@ -25,8 +25,10 @@ export async function resetMfaByEmail(email) {
   const target = found?.[0];
   if (!target) return { ok: false, error: `No account found for ${clean}.` };
 
+  // The page asked for the administrator's own code first (StepUpModal);
+  // admin_reset_mfa() refuses without it (0180), in words withReason keeps.
   const { data: removed, error } = await supabase.rpc('admin_reset_mfa', { p_user_id: target.profile_id });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: withReason('Two-factor was not reset.', error) };
   revalidatePath('/admin/accounts');
   revalidatePath('/admin/staff/access-log');
   return { ok: true, email: clean, removed: removed ?? 0 };
