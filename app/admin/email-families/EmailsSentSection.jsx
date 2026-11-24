@@ -61,7 +61,8 @@ export default function EmailsSentSection({ result, byEvent, filters, eventOptio
         defaultOpen
       >
         <p className="text-sm text-neutral-500 mb-3">
-          Emails sent from this page and the automatic payment plan emails, one line per send. Open
+          Emails sent from this page, the automatic reminders and confirmations, and the payment-plan
+          notices, one line per send. Open
           one to see each family&rsquo;s address and <em>What it said</em>. Each family&rsquo;s full
           list is on their registration page. <em>Delivery</em> shows whether it was delivered,
           bounced or opened.

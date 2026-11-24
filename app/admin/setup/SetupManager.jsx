@@ -1108,6 +1108,11 @@ function ReminderScheduleNote({ mode }) {
         <Link href="/admin/email-families/" className="text-brand underline">
           See the next 7 days on Email Families
         </Link>
+        , and{' '}
+        {/* 23 Nov 2026: the wording of each kind, read-only. */}
+        <Link href="/admin/email-families/#automatic-emails" className="text-brand underline">
+          what each email says
+        </Link>
         .
       </p>
     </div>

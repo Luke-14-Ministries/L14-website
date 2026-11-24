@@ -9,6 +9,7 @@ import { previewFamilyEmail } from './actions';
 import { searchEmailLog, emailFiltersFrom, groupEmailsBySend, groupSendsByEvent } from '@/lib/emailLog';
 import EmailsSentSection from './EmailsSentSection';
 import UpcomingReminders from './UpcomingReminders';
+import AutomaticEmailsGuide from './AutomaticEmailsGuide';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { upcomingReminders, reminderMode } from '@/lib/reminders/run';
 import { todayInMorristown } from '@/lib/events';
@@ -179,6 +180,10 @@ export default async function EmailFamiliesPage({ searchParams }) {
       />
 
       <UpcomingReminders rows={upcoming ?? []} mode={reminderMode()} error={upcomingError} moneyHidden={moneyHidden} />
+
+      {/* Every kind's wording with made-up facts (23 Nov 2026); Setup's
+          reminder note links here. */}
+      <AutomaticEmailsGuide origin={origin} />
 
       <EmailsSentSection
         result={sent}
