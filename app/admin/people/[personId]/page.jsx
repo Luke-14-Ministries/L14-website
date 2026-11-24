@@ -146,7 +146,7 @@ function FormAnswers({ sensitive, support, name }) {
     return (
       <div id="form-answers" className="mt-4">
         <Section title="Form answers">
-          <p className="text-neutral-500">Form answers need the Sensitive grant.</p>
+          <p className="text-neutral-500">Form answers need access to Sensitive.</p>
         </Section>
       </div>
     );
@@ -990,8 +990,8 @@ export default async function PersonPage({ params }) {
       {!sensitive && (
         <p className="mt-4 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           <strong>Some of this person&rsquo;s information is hidden.</strong> Allergies,
-          medical flags and the emergency contact need the <em>sensitive information</em>{' '}
-          permission. An administrator can grant it on Staff &amp; Access.
+          medical flags and the emergency contact need access to <em>Sensitive</em>. An administrator
+          can give it on Staff &amp; Access.
         </p>
       )}
 
@@ -1143,7 +1143,7 @@ export default async function PersonPage({ params }) {
         >
           {!sensitive ? (
             <p className="text-neutral-500">
-              Hidden. You need the <em>sensitive information</em> permission.
+              Hidden. You need access to <em>Sensitive</em>.
             </p>
           ) : !support ? (
             <p className="text-neutral-500">Nothing recorded.</p>
@@ -1183,7 +1183,7 @@ export default async function PersonPage({ params }) {
         <Section title="Emergency contact" note="Someone not attending the event.">
           {!sensitive ? (
             <p className="text-neutral-500">
-              Hidden. You need the <em>sensitive information</em> permission.
+              Hidden. You need access to <em>Sensitive</em>.
             </p>
           ) : !support?.emergency_contact_name && !support?.emergency_contact_phone ? (
             <p className="text-amber-700">

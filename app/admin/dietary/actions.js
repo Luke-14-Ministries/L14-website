@@ -30,7 +30,7 @@ export async function setAllergySeverity({ personId, severity }) {
 
   const staff = await getStaff();
   if (!can(staff, 'write:sensitive')) {
-    return { ok: false, error: 'Setting allergy severity needs the sensitive-information permission.' };
+    return { ok: false, error: 'Setting allergy severity needs edit access to Sensitive.' };
   }
 
   const supabase = await createClient();

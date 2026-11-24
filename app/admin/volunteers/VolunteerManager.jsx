@@ -445,13 +445,18 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
       {/* The title, buttons and intro are the page's (page.jsx, 23 Nov 2026). */}
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
         {[
-          ['all', total, 'registered', ''],
-          ['review', needsReview, needsReview === 1 ? 'volunteer to decide' : 'volunteers to decide', 'text-amber-700'],
-          ['noapp', noApp, 'no application yet', 'text-neutral-600'],
+          // Tile words say what is counted (23 Nov 2026). A volunteer child
+          // under 16 is asked the application too (lib/volunteer.js), so
+          // "not started" counts them like anyone else.
+          ['all', total, total === 1 ? 'volunteer registered' : 'volunteers registered', ''],
+          ['review', needsReview, needsReview === 1 ? 'application to decide' : 'applications to decide', 'text-amber-700'],
+          ['noapp', noApp, noApp === 1 ? 'application not started' : 'applications not started', 'text-neutral-600'],
           [
             'check',
             missingCheck.size,
-            missingCheck.size === 1 ? 'adult without a background check' : 'adults without a background check',
+            // Counts anything short of a current background check marked OK
+            // (none, expired, undecided, follow-up), so not "on file".
+            missingCheck.size === 1 ? 'adult not cleared by a background check' : 'adults not cleared by a background check',
             missingCheck.size > 0 ? 'text-amber-700' : 'text-green-700',
           ],
         ].map(([key, n, label, tone]) =>

@@ -199,7 +199,7 @@ export default function ClearanceEditor({ personId, clearance, vb, email, firstN
         <div className="mt-2 flex flex-wrap items-center gap-3">
           {!canEdit && (
             <span className="text-xs text-neutral-600">
-              Changing this record needs the Background checks write grant.
+              Changing this record needs edit access to Background checks.
             </span>
           )}
           {canEdit && <button onClick={save} disabled={pending} className="btn-primary btn-sm">

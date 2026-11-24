@@ -237,7 +237,7 @@ export default async function PhotographerListPage({ searchParams }) {
             show up in the background of a group shot.
             {unanswered > 0 &&
               ` ${unanswered} ${unanswered === 1 ? 'other person has' : 'others have'} no answer on file.`}
-            {!seesPhotos && ' Names only: photos need the Sensitive read permission.'}
+            {!seesPhotos && ' Names only: photos need access to Sensitive.'}
             {' '}Hand this back at the end of camp.
           </p>
         </>

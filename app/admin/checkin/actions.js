@@ -36,7 +36,7 @@ export async function setEventMedicalContact(eventId, name, phone) {
 export async function toggleCheckIn(participantId, checkedIn) {
   const staff = await getStaff();
   if (!can(staff, 'write:registration')) {
-    return { ok: false, error: 'You do not have permission to check people in.' };
+    return { ok: false, error: 'You don’t have access to check people in.' };
   }
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('set_check_in', {

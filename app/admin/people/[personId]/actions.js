@@ -16,7 +16,7 @@ import { editPersonAsStaff } from '@/lib/staffPersonEdit';
 export async function updatePersonFromPersonPage(personId, fields, options = {}) {
   const staff = await getStaff();
   if (!can(staff, 'write:registration')) {
-    return { ok: false, error: 'You do not have permission to change registrations.' };
+    return { ok: false, error: 'You don’t have access to change registrations.' };
   }
   if (!personId) return { ok: false, error: 'Which person is this?' };
   const supabase = await createClient();

@@ -278,11 +278,11 @@ export default async function AdminVolunteersPage({ searchParams }) {
         }
         intro={
           <>
-            Everyone registered as a Volunteer: decide each application here (press Open, or the
-            volunteer pill). Background checks are sent from Send Background Check Invites and kept on Background
-            Checks, where a background check done another way is recorded by hand; the record also shows here under
-            each card. The paperwork is kept in the restricted SharePoint folder. Other staff see whether a
-            background check is on file, whether it&rsquo;s current, and the verdict.
+            {/* Three sentences (23 Nov 2026). Where the paperwork lives and
+                what other staff see are on Background Checks. */}
+            Everyone registered as a volunteer, by event. Press <em>Open</em> or the volunteer pill to decide
+            each application. Background checks are sent and recorded on Background Checks, and each
+            person&rsquo;s shows under their card.
           </>
         }
       />
@@ -299,8 +299,8 @@ export default async function AdminVolunteersPage({ searchParams }) {
           grant (14 Nov 2026): said, not a silent bounce. */}
       {params?.need === 'background_checks' && (
         <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-          Background Checks and Send Background Check Invites need the <strong>Background checks</strong> grant
-          (sending invites needs it with write). An administrator can give it on Staff &amp; Access.
+          Background Checks and Send Background Check Invites need access to <strong>Background checks</strong>.
+          Sending invites needs it at can edit. An administrator can give it on Staff &amp; Access.
         </p>
       )}
       <VolunteerManager

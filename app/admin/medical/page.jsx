@@ -131,8 +131,8 @@ export default async function MedicalPage({ searchParams }) {
         intro={
           <>
             Medications (with any medication allergy), seizure and rescue-medication details, and emergency contacts, per event.
-            This is the most sensitive page on the site. It needs its own permission, so take the same
-            care with printouts as with the screen.
+            This is the most sensitive page on the site. Take the same care with printouts as with the
+            screen.
           </>
         }
       />

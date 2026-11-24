@@ -120,8 +120,8 @@ export default async function DietaryPage({ searchParams }) {
         }
         intro={
           <>
-            Everyone with dietary needs or allergies, by event. This is the kitchen list. It needs its
-            own permission, so take the same care with printouts as with the screen.
+            Everyone with dietary needs or allergies, by event. This is the kitchen list. Take the same
+            care with printouts as with the screen.
           </>
         }
       />

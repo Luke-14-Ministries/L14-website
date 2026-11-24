@@ -137,7 +137,7 @@ const KINDS = ['building', 'room', 'cabin', 'lodge', 'tent', 'rv', 'offsite'];
 async function requireCoordinator() {
   const staff = await getStaff();
   if (!can(staff, 'write:setup')) {
-    return { error: 'You do not have permission to change rooms and cabins.' };
+    return { error: 'You don’t have access to change rooms and cabins.' };
   }
   return { staff };
 }
@@ -259,7 +259,7 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
     // No rows back means the policy refused -- Postgres does not call an
     // UPDATE that matches nothing a failure, so say it here.
     if (!data || data.length === 0) {
-      return { ok: false, error: 'Nothing was saved. You may not have permission to change this.' };
+      return { ok: false, error: 'Nothing was saved. You may not have access to change this.' };
     }
     revalidatePath('/admin/lodging');
     return { ok: true, id };
@@ -333,7 +333,7 @@ export async function upsertLodging({ id, eventId, parentId, sortOrder, ...input
     return { ok: false, error: withReason('That could not be added.', dbError) };
   }
   if (!data || data.length === 0) {
-    return { ok: false, error: 'Nothing was saved. You may not have permission to change this.' };
+    return { ok: false, error: 'Nothing was saved. You may not have access to change this.' };
   }
 
   revalidatePath('/admin/lodging');
@@ -434,7 +434,7 @@ async function setActive(id, active) {
     return { ok: false, error: withReason('That could not be changed.', error) };
   }
   if (!data || data.length === 0) {
-    return { ok: false, error: 'Nothing was saved. You may not have permission to change this.' };
+    return { ok: false, error: 'Nothing was saved. You may not have access to change this.' };
   }
 
   revalidatePath('/admin/lodging');

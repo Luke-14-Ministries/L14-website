@@ -136,7 +136,7 @@ export async function setBuddyRequired({ personId, required }) {
   if (!can(staff, 'write:sensitive')) {
     return {
       ok: false,
-      error: 'Marking who needs a buddy needs the sensitive-information permission.',
+      error: 'Marking who needs a buddy needs access to Sensitive.',
     };
   }
 

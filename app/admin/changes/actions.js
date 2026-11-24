@@ -12,7 +12,7 @@ import { holdRegistration } from '@/app/admin/registrations/[id]/actions';
 export async function markChangesReviewed(ids) {
   const staff = await getStaff();
   if (!can(staff, 'write:registration')) {
-    return { ok: false, error: 'You do not have permission to review changes.' };
+    return { ok: false, error: 'You don’t have access to review changes.' };
   }
   if (!Array.isArray(ids) || ids.length === 0) return { ok: true };
 
@@ -47,7 +47,7 @@ export async function markChangesReviewed(ids) {
 export async function holdFromChange(changeId, reason) {
   const staff = await getStaff();
   if (!can(staff, 'write:registration')) {
-    return { ok: false, error: 'You do not have permission to put a registration on hold.' };
+    return { ok: false, error: 'You don’t have access to put a registration on hold.' };
   }
   const supabase = await createClient();
   const { data: row, error: rowError } = await supabase

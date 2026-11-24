@@ -31,8 +31,10 @@ const FIELD_LABEL = {
 // person. A role reads as itself. Showing "false → true" would be accurate and
 // useless.
 // A grant (0100) reads as its two levels: none → read, read → write, write → none.
+const LEVEL_WORD = { read: 'view only', write: 'can edit' };
 function describe(field, from, to) {
-  if (field.startsWith('grant:')) return `${from ?? 'none'} → ${to ?? 'none'}`;
+  // In the page's own words since 23 Nov 2026 (view only / can edit).
+  if (field.startsWith('grant:')) return `${LEVEL_WORD[from] ?? 'no access'} → ${LEVEL_WORD[to] ?? 'no access'}`;
   if (field === 'role') return `${from ?? '—'} → ${to ?? '—'}`;
   if (to === 'true') return from === undefined || from === null ? 'granted' : 'granted';
   if (to === 'false') return 'removed';
@@ -41,7 +43,7 @@ function describe(field, from, to) {
 
 const labelOf = (field) =>
   field.startsWith('grant:')
-    ? `Grant: ${AREA_LABEL[field.slice(6)] ?? field.slice(6)}`
+    ? `Access: ${AREA_LABEL[field.slice(6)] ?? field.slice(6)}`
     : FIELD_LABEL[field] ?? field;
 
 const name = (p) =>
@@ -128,7 +130,7 @@ export default async function AccessLogPage() {
         {!error && selfGrants > 0 && (
           <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <strong>{selfGrants}</strong>{' '}
-            {selfGrants === 1 ? 'permission was' : 'permissions were'} granted by
+            {selfGrants === 1 ? 'access change was' : 'access changes were'} made by
             somebody to their own account. Administrators are allowed to do that. It&rsquo;s
             flagged here because it&rsquo;s the change most worth being able to find.
           </p>

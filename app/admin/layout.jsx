@@ -26,11 +26,11 @@ const ROLE_INFO = {
   },
   registrar: {
     label: 'Registrar',
-    blurb: 'What you can open is set by your grants on Staff & Access.',
+    blurb: 'What you can open is set by your access on Staff & Access.',
   },
   coordinator: {
     label: 'Coordinator',
-    blurb: 'What you can open is set by your grants on Staff & Access.',
+    blurb: 'What you can open is set by your access on Staff & Access.',
   },
 };
 

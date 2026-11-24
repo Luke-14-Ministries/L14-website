@@ -295,8 +295,7 @@ function PersonEditor({ registrationId, person, onDone }) {
         </button>
       </div>
       <p className="mt-2 text-xs text-neutral-400">
-        Edit medical and support details on the Medical &amp; Support screen. It needs its own
-        permission.
+        Edit medical and support details on the Medical &amp; Support screen.
       </p>
     </div>
   );

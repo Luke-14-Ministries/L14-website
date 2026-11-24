@@ -57,7 +57,7 @@ function shapeWaiver(w) {
 async function requireCoordinator() {
   const staff = await getStaff();
   if (!can(staff, 'write:setup')) {
-    return { error: 'You do not have permission to change activities.' };
+    return { error: 'You don’t have access to change activities.' };
   }
   return { staff };
 }

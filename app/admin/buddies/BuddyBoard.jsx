@@ -30,7 +30,7 @@ function SupportNotes({ support, canSee = true }) {
   if (!support && !canSee) {
     return (
       <p className="mt-1 text-sm text-neutral-500">
-        Support details are hidden. You need the Sensitive grant to see them.
+        Support details are hidden. You need access to Sensitive to see them.
       </p>
     );
   }

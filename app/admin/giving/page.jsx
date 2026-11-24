@@ -102,8 +102,7 @@ export default async function AdminGivingPage({ searchParams }) {
         intro={
           <>
             Tax-deductible donations, kept separate from camp payments (which are not deductible).
-            This page needs its own permission. Online gifts are recorded automatically. Enter mailed
-            checks and cash below.
+            Online gifts are recorded automatically. Enter mailed checks and cash below.
           </>
         }
       />
