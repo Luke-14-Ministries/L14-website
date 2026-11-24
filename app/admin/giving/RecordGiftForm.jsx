@@ -4,6 +4,7 @@
 // themselves via the Stripe webhook. Labels are kept to one line so the field
 // grid stays aligned; the longer explanations live in the intro text.
 
+import Notice from '@/components/Notice';
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { recordManualGift } from './actions';
@@ -120,7 +121,7 @@ export default function RecordGiftForm() {
       </div>
 
       {error && (
-        <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+        <Notice tone="error" className="mt-3">{error}</Notice>
       )}
       {done && (
         <p className="mt-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">{done}</p>

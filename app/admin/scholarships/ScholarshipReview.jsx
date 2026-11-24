@@ -11,6 +11,7 @@
 // stops being amber the moment it is answered, because a badge nobody can
 // clear teaches staff that badges are wallpaper.
 
+import Notice from '@/components/Notice';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -241,7 +242,7 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
             </div>
           </div>
 
-          {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
+          {error && <Notice tone="error" className="mt-2">{error}</Notice>}
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <button

@@ -8,6 +8,7 @@
 // statement. Unwaived fees are part of the balance everywhere
 // (registration_balances.fees_cents).
 
+import Notice from '@/components/Notice';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { dollars } from '@/lib/payments';
@@ -84,7 +85,7 @@ function FeeRow({ fee, canWaive, registrationId }) {
           <p className="w-full text-xs text-neutral-500">The family can see this reason.</p>
         </div>
       )}
-      {error && <p className="mt-1 text-sm text-red-700">{error}</p>}
+      {error && <Notice tone="error" className="mt-1">{error}</Notice>}
     </li>
   );
 }
@@ -152,7 +153,7 @@ function AddFeeForm({ registrationId }) {
           Cancel
         </button>
       </div>
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      {error && <Notice tone="error" className="mt-2">{error}</Notice>}
     </div>
   );
 }

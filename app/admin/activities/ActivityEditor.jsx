@@ -7,6 +7,7 @@
 // about zip line: "where do we activate things like this? Have to go through
 // you, right now? doesn't seem sensible." It isn't. This is the answer.
 
+import Notice from '@/components/Notice';
 import { useId, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -572,7 +573,7 @@ export function ActivityEditor({ activity, eventId = null, canEmail = false, wai
             hadProvider={Boolean(activity.provider_name)}
           />
 
-          {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
+          {error && <Notice tone="error" className="mt-2">{error}</Notice>}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
@@ -671,7 +672,7 @@ export function AddActivity({ eventId, eventName, waiverChoices = [] }) {
           one or make a whole run at once.
         </p>
       )}
-      {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
+      {error && <Notice tone="error" className="mt-2">{error}</Notice>}
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           onClick={() => {
@@ -950,7 +951,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         </label>
       </div>
 
-      {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
+      {error && <Notice tone="error" className="mt-2">{error}</Notice>}
 
       {outsideCamp(f.date) && (
         <p className="mt-2 text-xs font-semibold text-amber-800">

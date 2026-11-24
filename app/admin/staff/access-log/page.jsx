@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Notice from '@/components/Notice';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -118,10 +119,10 @@ export default async function AccessLogPage() {
       <div className="card">
 
         {error && (
-          <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+          <Notice tone="error" className="mb-4">
             The log could not be read: {error.message}. The log didn&rsquo;t load, so
             this doesn&rsquo;t mean nothing has changed.
-          </p>
+          </Notice>
         )}
 
         {!error && selfGrants > 0 && (
@@ -202,10 +203,10 @@ export default async function AccessLogPage() {
           it. Shows the most recent 100.
         </p>
         {exportsError ? (
-          <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+          <Notice tone="error" className="mb-4">
             The downloads could not be read: {exportsError.message}. This doesn&rsquo;t mean
             nothing was downloaded.
-          </p>
+          </Notice>
         ) : (exports ?? []).length === 0 ? (
           <p className="text-neutral-600">No downloads recorded yet.</p>
         ) : (

@@ -6,6 +6,7 @@
 // it. Every write goes through those actions, so RLS still governs what a
 // staff member can actually do -- this file only decides how it looks.
 
+import Notice from '@/components/Notice';
 import { formatPhone } from '@/lib/format';
 import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -123,9 +124,9 @@ const inputCls =
 function ErrorNote({ children }) {
   if (!children) return null;
   return (
-    <p className="mt-2 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+    <Notice tone="error" className="mt-2">
       {children}
-    </p>
+    </Notice>
   );
 }
 
@@ -1669,9 +1670,9 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
       </label>
 
       {error && (
-        <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <Notice tone="error" className="mt-3">
           {error}
-        </p>
+        </Notice>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-3">

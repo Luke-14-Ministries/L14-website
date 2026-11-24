@@ -1,5 +1,6 @@
 'use client';
 
+import Notice from '@/components/Notice';
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { settleDeletionRequest } from './actions';
@@ -35,7 +36,7 @@ function Row({ r }) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
-          {error && <p className="text-sm text-red-700">{error}</p>}
+          {error && <Notice tone="error">{error}</Notice>}
           <div className="flex gap-2">
             <button type="button" className="btn-primary btn-sm" disabled={pending} onClick={() => go('done')}>
               Mark done

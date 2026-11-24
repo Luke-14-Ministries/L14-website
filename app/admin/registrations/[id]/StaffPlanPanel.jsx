@@ -5,6 +5,7 @@
 // Staff never see or enter card details -- a new card or bank account is the
 // family's to save, from their dashboard.
 
+import Notice from '@/components/Notice';
 import { useState, useTransition } from 'react';
 import { setPlanStatus } from './actions';
 import {
@@ -225,7 +226,7 @@ export default function StaffPlanPanel({
       {plan?.status === 'pending' && (
         <p className="text-sm text-neutral-500">A plan was started but its deposit has not been paid.</p>
       )}
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      {error && <Notice tone="error" className="mt-2">{error}</Notice>}
     </section>
   );
 }

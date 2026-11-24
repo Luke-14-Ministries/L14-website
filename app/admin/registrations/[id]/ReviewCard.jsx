@@ -50,6 +50,7 @@
 // sees it; a person added or renamed since the conversation is named again
 // as waiting on it.
 
+import Notice from '@/components/Notice';
 import Pill from '@/components/Pill';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -403,7 +404,7 @@ export default function ReviewCard({
       {/* One decision for a volunteer, and not without a background check
           (0152, Lawrence 4 Nov 2026): say so before Approve is pressed. */}
       {checks.some((c) => c.blocked && c.status === 'submitted') && (
-        <p className="mb-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+        <Notice tone="error" className="mb-3">
           {checks
             .filter((c) => c.blocked && c.status === 'submitted')
             .map((c, i, all) => (
@@ -426,12 +427,12 @@ export default function ReviewCard({
               </span>
             ))}
           . Approving a volunteer here also approves their application.
-        </p>
+        </Notice>
       )}
       {/* "Not permitted" (0162): the database refuses to confirm them, from
           any button. Said before Approve is pressed. */}
       {checks.some((c) => c.notPermitted && !c.notPermittedMatch && c.status !== 'cancelled' && c.status !== 'confirmed') && (
-        <p className="mb-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+        <Notice tone="error" className="mb-3">
           <strong>
             {checks
               .filter((c) => c.notPermitted && !c.notPermittedMatch && c.status !== 'cancelled' && c.status !== 'confirmed')
@@ -440,7 +441,7 @@ export default function ReviewCard({
           </strong>{' '}
           {checks.filter((c) => c.notPermitted && !c.notPermittedMatch && c.status !== 'cancelled' && c.status !== 'confirmed').length === 1 ? 'is' : 'are'}{' '}
           marked <strong>Not permitted to attend</strong>, so they can&rsquo;t be approved.
-        </p>
+        </Notice>
       )}
       {/* 0177 (23 Nov 2026): held by another record with the same name and
           birth date. It may be someone else; a decision recorded for this
@@ -946,7 +947,7 @@ export default function ReviewCard({
         </div>
       )}
       {error && (
-        <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+        <Notice tone="error" className="mt-3">{error}</Notice>
       )}
     </Panel>
   );

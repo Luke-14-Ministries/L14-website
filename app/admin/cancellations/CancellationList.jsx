@@ -1,5 +1,6 @@
 'use client';
 
+import Notice from '@/components/Notice';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -97,7 +98,7 @@ function Row({ row }) {
             placeholder="Spoke to Dana; canceled both places, refunded the deposit."
             className="field"
           />
-          {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+          {error && <Notice tone="error" className="mt-2">{error}</Notice>}
           <div className="mt-3 flex flex-wrap gap-3">
             <button
               onClick={() => settle('actioned')}

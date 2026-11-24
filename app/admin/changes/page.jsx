@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Notice from '@/components/Notice';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -145,9 +146,9 @@ export default async function RecentChangesPage() {
       </details>
 
       {error && (
-        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <Notice tone="error" className="mb-4">
           Could not load the change log: {error.message}
-        </p>
+        </Notice>
       )}
 
       <ChangesList groups={[...after.values()]} />

@@ -5,6 +5,7 @@
 // record (a yes/no and dates — documents stay in the restricted SharePoint
 // folder). Actions live in ./actions.js; RLS is the backstop.
 
+import Notice from '@/components/Notice';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -380,7 +381,7 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
             </div>
           )}
 
-          {error && <p className="mt-2 text-red-700 text-sm">{error}</p>}
+          {error && <Notice tone="error" className="mt-2">{error}</Notice>}
 
           {maySeeChecks ? (
             <div id={checkId} tabIndex={-1} className="scroll-mt-4 outline-none">

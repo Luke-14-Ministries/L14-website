@@ -4,6 +4,7 @@
 // send the invites, then the invites and their results. Replaced the Checkr
 // batch file (download, upload, import).
 
+import Notice from '@/components/Notice';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import StatusMark from '@/components/StatusMark';
@@ -289,7 +290,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
         </p>
       )}
       {mode !== 'off' && connectionProblem && (
-        <p className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">{connectionProblem}</p>
+        <Notice tone="error">{connectionProblem}</Notice>
       )}
       {mode === 'live' && !connectionProblem && (
         <p className="text-sm text-neutral-600">

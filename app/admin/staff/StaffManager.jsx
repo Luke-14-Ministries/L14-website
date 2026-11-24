@@ -7,6 +7,7 @@
 // Deactivated section also offers Remove, which drops the staff row entirely
 // for helpers who have moved on (re-addable later; nothing else is touched).
 
+import Notice from '@/components/Notice';
 import StatusMark from '@/components/StatusMark';
 import SortMark from '@/components/SortMark';
 import { Fragment, useState, useTransition } from 'react';
@@ -463,9 +464,9 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
   return (
     <div>
       {error && (
-        <p className="mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <Notice tone="error" className="mb-3">
           {error}
-        </p>
+        </Notice>
       )}
       {notice && (
         <p className="mb-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">

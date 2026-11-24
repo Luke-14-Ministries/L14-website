@@ -3,6 +3,7 @@
 // The tracked-changes review list: family edits grouped by household, each
 // field shown old -> new, checked off one at a time or per household.
 
+import Notice from '@/components/Notice';
 import { useState, useTransition } from 'react';
 import { ALLERGEN_LABEL } from '@/lib/support';
 import { useRouter } from 'next/navigation';
@@ -225,9 +226,9 @@ export default function ChangesList({ groups: given }) {
         </p>
       )}
       {error && (
-        <p className="rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <Notice tone="error">
           {error}
-        </p>
+        </Notice>
       )}
 
       {medicalCount > 0 && (
@@ -316,10 +317,10 @@ export default function ChangesList({ groups: given }) {
                   {/* Under 18 on the first day is not screened (0161/0162), so
                       this edit takes them out of screening (23 Nov 2026). */}
                   {c.underEighteenFor && (
-                    <p className="mt-1 rounded-sm border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-900">
+                    <Notice tone="error" className="mt-1">
                       Now under 18 on the first day of {c.underEighteenFor.join(' and ')}, so no longer screened. Check
                       the date with the family before relying on it.
-                    </p>
+                    </Notice>
                   )}
                   <p className="mt-0.5">
                     <span className="rounded-sm bg-red-50 px-1.5 py-0.5 text-red-800 line-through decoration-red-300">

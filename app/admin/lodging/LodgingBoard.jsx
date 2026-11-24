@@ -3,6 +3,7 @@
 // The bed board: unplaced people at the top, then every cabin and room with
 // who is in it.
 
+import Notice from '@/components/Notice';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { assignLodging, unassignLodging, setLodgingPublication } from './actions';
@@ -584,9 +585,9 @@ export default function LodgingBoard({
   return (
     <div>
       {error && (
-        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
+        <Notice tone="error" className="mb-4">
           {error}
-        </p>
+        </Notice>
       )}
 
       <div className="card mb-5 flex flex-wrap items-center justify-between gap-3 p-4">

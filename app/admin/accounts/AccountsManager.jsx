@@ -22,6 +22,7 @@
 //   Delete family each open the step-up box (components/StepUpModal.jsx),
 //   which asks for the administrator's own code; none acts on one click.
 
+import Notice from '@/components/Notice';
 import Pill from '@/components/Pill';
 import StatusMark from '@/components/StatusMark';
 import SortMark from '@/components/SortMark';
@@ -280,10 +281,10 @@ export default function AccountsManager({
   return (
     <div>
       {loadError && (
-        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 text-red-800 px-4 py-3">
+        <Notice tone="error" className="mb-4">
           The account list could not be loaded. Refresh the page. If it keeps
           happening, check the server logs for admin_list_accounts.
-        </p>
+        </Notice>
       )}
 
       {/* Search + quick filters */}
@@ -587,11 +588,11 @@ export default function AccountsManager({
             instead.
           </p>
           {confirm.rows.some((r) => r.staff_role) && (
-            <p className="text-sm rounded-sm border border-red-300 bg-red-50 text-red-800 px-3 py-2 mb-3">
+            <Notice tone="error" className="mb-3">
               {confirm.rows.length === 1
                 ? `${confirm.rows[0].email} is staff (${roleWord(confirm.rows[0].staff_role)}). Removing the account also takes them off Staff & Access.`
                 : 'At least one of these accounts is staff. Removing it also takes them off Staff & Access.'}
-            </p>
+            </Notice>
           )}
           {confirm.rows.length > 1 && (
             <ul className="text-sm text-neutral-600 mb-3 max-h-32 overflow-y-auto list-disc pl-5">

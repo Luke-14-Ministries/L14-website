@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Notice from '@/components/Notice';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -75,9 +76,9 @@ export default async function NewsletterPage() {
       />
 
       {error && (
-        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <Notice tone="error" className="mb-4">
           The list could not be loaded. Check the server log for admin_newsletter_list.
-        </p>
+        </Notice>
       )}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">

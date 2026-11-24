@@ -5,6 +5,7 @@
 // only) so the server works out the list with the same function the Send
 // uses; subject and message stay in this component and never go in a URL.
 
+import Notice from '@/components/Notice';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { sendFamilyEmail } from './actions';
@@ -282,7 +283,7 @@ export default function EmailFamiliesForm({
         )}
       </div>
 
-      {error && <p className="text-sm font-semibold text-red-700">{error}</p>}
+      {error && <Notice tone="error">{error}</Notice>}
 
       <div className="flex flex-wrap items-center gap-3">
         <button

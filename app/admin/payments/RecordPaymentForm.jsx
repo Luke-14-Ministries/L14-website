@@ -4,6 +4,7 @@
 // payments never come through here -- they are recorded automatically by the
 // Stripe webhook.
 
+import Notice from '@/components/Notice';
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { recordManualPayment } from './actions';
@@ -137,9 +138,9 @@ export default function RecordPaymentForm({ registrations }) {
       </div>
 
       {error && (
-        <p className="mt-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <Notice tone="error" className="mt-3">
           {error}
-        </p>
+        </Notice>
       )}
       {done && (
         <p className="mt-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">

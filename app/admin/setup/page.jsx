@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Notice from '@/components/Notice';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -118,12 +119,12 @@ export default async function SetupPage() {
           prayer sign-up check each visitor before sending.
         </p>
       ) : (
-        <p className="mb-6 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <Notice tone="error" className="mb-6">
           <span className="font-semibold">Bot check: NOT RUNNING.</span> One or both Turnstile keys
           (TURNSTILE_SECRET_KEY, NEXT_PUBLIC_TURNSTILE_SITE_KEY) are missing here. On the live site
           Donate and the prayer sign-up turn everyone away until both are set in Vercel; Contact still
           sends.
-        </p>
+        </Notice>
       )}
       <SetupManager events={rows} />
     </div>

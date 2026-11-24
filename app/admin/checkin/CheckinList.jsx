@@ -5,6 +5,7 @@
 // the sensitive-gated medical pages (and only appears here at all for staff
 // who hold that permission -- RLS strips it for everyone else).
 
+import Notice from '@/components/Notice';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toggleCheckIn } from './actions';
@@ -85,9 +86,9 @@ export default function CheckinList({ rows }) {
       </div>
 
       {error && (
-        <p className="mb-3 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <Notice tone="error" className="mb-3">
           {error}
-        </p>
+        </Notice>
       )}
 
       <ul className="card p-0 divide-y divide-neutral-100">

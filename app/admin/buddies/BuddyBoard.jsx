@@ -3,6 +3,7 @@
 // The pairing board: campers who need a buddy on the left, volunteers on the
 // right, and one deliberate publish step underneath.
 
+import Notice from '@/components/Notice';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { assignBuddy, unassignBuddy, setBuddyPublication, setBuddyRequired } from './actions';
@@ -234,9 +235,9 @@ export default function BuddyBoard({
   return (
     <div>
       {error && (
-        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
+        <Notice tone="error" className="mb-4">
           {error}
-        </p>
+        </Notice>
       )}
 
       {/* The two numbers staff run the week from, given the size that says so.
