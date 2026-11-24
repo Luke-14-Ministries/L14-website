@@ -3,7 +3,15 @@ import Link from 'next/link';
 import { isCurrentEventRow, eventInScope, isEventScope, SCOPE_ALL } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import { redirect } from 'next/navigation';
-import { getStaff, can, bounceNonStaff } from '@/lib/staff';
+import { can, bounceNonStaff } from '@/lib/staff';
+import {
+  loadAdminBadges,
+  currentStaff,
+  BADGE_TITLES,
+  RED_BADGE_TITLES,
+  MAIL_BADGE_TITLES,
+  WINDOW_BADGES,
+} from '@/lib/adminBadges';
 import { createClient } from '@/lib/supabase/server';
 import { planFailingSince, planFailingNext } from '@/lib/plans';
 
@@ -72,9 +80,47 @@ function FailingPlansCard({ plans }) {
   );
 }
 
+// [one, many] or a phrase, picked by the count (the same words as the menu's
+// tooltips, lib/adminBadges.js).
+const words = (t, n) => (Array.isArray(t) ? t[n === 1 ? 0 : 1] : t);
+
+// What is waiting on staff, one linked line per queue with something in it,
+// in the sidebar's order (the order a season's work comes). It replaced the
+// "New registrations awaiting review" list on 23 Nov 2026 (review): that list
+// was Awaiting Review's first column again, and said nothing about the other
+// queues. The numbers are the menu's own (loadAdminBadges), so the card and
+// the badges always agree. Module level, like Stat.
+function WaitingCard({ lines }) {
+  return (
+    <div id="waiting" className="scroll-mt-4 rounded-lg bg-white border border-neutral-200 shadow-xs p-6 mb-8">
+      <h3 className="font-bold mb-1">Waiting on staff</h3>
+      {lines.length === 0 ? (
+        <p className="text-sm text-neutral-500">Nothing is waiting on staff.</p>
+      ) : (
+        <>
+          <p className="text-sm text-neutral-500 mb-3">
+            Every current event, the same numbers as the menu. Open one to work through it.
+          </p>
+          <ul className="divide-y divide-neutral-100">
+            {lines.map((l) => (
+              <li key={l.key} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2">
+                <Link href={l.href} className="min-w-0 text-brand underline font-medium">
+                  <span className={`font-bold ${l.red ? 'text-red-700' : 'text-amber-700'}`}>{l.count}</span>{' '}
+                  {l.words}
+                </Link>
+                <span className="text-sm text-neutral-500">{l.page}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default async function AdminOverview({ searchParams }) {
   const params = await searchParams;
-  const staff = await getStaff();
+  const staff = await currentStaff();
   if (!staff) await bounceNonStaff('/admin/');
   // The Overview is registration numbers (4 Nov 2026). Anyone without
   // Registration read -- a prayer-team login -- goes to the first page in the
@@ -88,7 +134,7 @@ export default async function AdminOverview({ searchParams }) {
 
   // The event dropdown (Lawrence, 4 Nov 2026: "Week 1 vs Week 2"; first
   // pills, then the shared dropdown every page uses): ?event= narrows the
-  // headline numbers, the review list and the plan and reply cards to one
+  // headline numbers and the plan and reply cards to one
   // event or one of the three scopes every page shares -- All, All (current)
   // (none chosen, the default), All (archived) (eventInScope, lib/events.js).
   // The By-event table follows the scope; with one event chosen it keeps
@@ -156,7 +202,7 @@ export default async function AdminOverview({ searchParams }) {
       household: r.households?.display_name ?? 'Household',
       eventId: r.events?.id ?? UNASSIGNED,
       event: r.events?.name ?? 'Unassigned',
-      // The headline numbers and the review list follow the scope: by
+      // The headline numbers follow the scope: by
       // default the CURRENT events only (Lawrence, 4 Nov 2026: an archived
       // test event was still counted) -- the rule every staff page uses.
       current: inScope(r.events),
@@ -182,7 +228,6 @@ export default async function AdminOverview({ searchParams }) {
   };
   let cancelled = 0;
   let draft = 0;
-  const needsReview = new Map();
 
   for (const p of participants) {
     const meta = regById.get(p.registration_id);
@@ -207,16 +252,6 @@ export default async function AdminOverview({ searchParams }) {
     // be reachable by doing the work.
     if (p.status === 'submitted') row.pending += 1;
     if (p.status === 'waitlisted') row.waitlisted += 1;
-
-    if (p.status === 'submitted' && meta?.current) {
-      const cur = needsReview.get(p.registration_id) ?? {
-        household: meta?.household ?? 'Household',
-        event: meta?.event ?? 'Unassigned',
-        count: 0,
-      };
-      cur.count += 1;
-      needsReview.set(p.registration_id, cur);
-    }
   }
 
   const totalFamilies = new Set(
@@ -231,8 +266,6 @@ export default async function AdminOverview({ searchParams }) {
   const totalConfirmed = currentRows.reduce((s, r) => s + r.confirmed, 0);
   const totalPending = currentRows.reduce((s, r) => s + r.pending, 0);
   const totalWaitlisted = currentRows.reduce((s, r) => s + r.waitlisted, 0);
-
-  const reviewList = [...needsReview.entries()];
 
   // Each event's places (events.capacity; null is no limit), by id, as the
   // rollup is keyed. Shown at the top for the events in scope and as a column
@@ -298,6 +331,34 @@ export default async function AdminOverview({ searchParams }) {
       household: regById.get(plan.registration_id)?.household ?? 'Household',
       next: planFailingNext(failing),
     }));
+  // The "Waiting on staff" card: the menu's amber numbers (and its unread
+  // replies and red background-check count), one line each, in sidebar
+  // order. Only queues this staffer can open; loadAdminBadges() already
+  // counts only those.
+  const { badges, mailBadges, redBadges } = await loadAdminBadges();
+  const waitingLines = [];
+  for (const n of ADMIN_NAV) {
+    if (!can(staff, n.need)) continue;
+    const amber = WINDOW_BADGES.has(n.href) ? 0 : badges[n.href] ?? 0;
+    const mail = mailBadges[n.href] ?? 0;
+    const red = redBadges[n.href] ?? 0;
+    if (amber > 0) {
+      waitingLines.push({ key: n.href, href: `${n.href}/`, count: amber, words: words(BADGE_TITLES[n.href], amber), page: n.label });
+    }
+    if (mail > 0) {
+      waitingLines.push({
+        key: `${n.href}-mail`,
+        href: n.href === '/admin/review' ? '/admin/review/?show=replied' : `${n.href}/`,
+        count: mail,
+        words: words(MAIL_BADGE_TITLES[n.href], mail),
+        page: n.label,
+      });
+    }
+    if (red > 0) {
+      waitingLines.push({ key: `${n.href}-red`, href: `${n.href}/`, count: red, words: words(RED_BADGE_TITLES[n.href], red), page: n.label, red: true });
+    }
+  }
+
   const extraCards =
     (plansStopped > 0 ? 1 : 0) + (plansFailing.length > 0 ? 1 : 0) + (replies.length > 0 ? 1 : 0);
 
@@ -355,7 +416,7 @@ export default async function AdminOverview({ searchParams }) {
           label="Awaiting Review"
           sub={
             totalPending > 0
-              ? 'needs staff action below'
+              ? 'open the queue to confirm or waitlist'
               : totalWaitlisted > 0
                 ? `nothing waiting on staff · ${totalWaitlisted} waitlisted`
                 : 'nothing waiting on staff'
@@ -392,38 +453,7 @@ export default async function AdminOverview({ searchParams }) {
         {seesStoppedPlans && plansFailing.length > 0 && <FailingPlansCard plans={plansFailing} />}
       </div>
 
-      {/* The work queue: families with someone still pending review.
-          Given an id (25 Aug) because other pages point at it in words --
-          Changes to Review says new people "land in the Awaiting Review queue on
-          the Overview" -- and a page you have to hunt for is not really a
-          queue. That sentence is now a link to this card. */}
-      {can(staff, 'read:registration') && reviewList.length > 0 && (
-        <div
-          id="awaiting-review"
-          className="scroll-mt-4 rounded-lg bg-white border border-amber-200 shadow-xs p-6 mb-8"
-        >
-          <h3 className="font-bold mb-1">New registrations awaiting review</h3>
-          <p className="text-sm text-neutral-500 mb-3">
-            New sign-ups, newly added people and changed roles. Open one to confirm, waitlist or
-            edit it. Changes to existing details are on Changes to Review.
-          </p>
-          <ul className="divide-y divide-neutral-100">
-            {reviewList.map(([id, r]) => (
-              <li key={id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span>
-                  <Link href={`/admin/registrations/${id}`} className="text-brand underline font-medium">
-                    {r.household}
-                  </Link>
-                  <span className="text-neutral-500"> · {r.event}</span>
-                </span>
-                <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-xs font-semibold">
-                  {r.count} pending
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <WaitingCard lines={waitingLines} />
 
       <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
