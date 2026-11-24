@@ -16,6 +16,10 @@ export default function RecordPaymentForm({ registrations }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
   const [done, setDone] = useState('');
+  // One key per entry (0182): sent with the save, kept when the answer is
+  // "already recorded", replaced once a row is saved. The button is also
+  // disabled while a save is running, so a double click sends one.
+  const [requestKey, setRequestKey] = useState(() => crypto.randomUUID());
   const [f, setF] = useState({
     registrationId: registrations[0]?.id ?? '',
     amount: '',
@@ -37,8 +41,10 @@ export default function RecordPaymentForm({ registrations }) {
     setError('');
     setDone('');
     const cents = Math.round((parseFloat(f.amount) || 0) * 100);
+    if (pending) return;
     start(async () => {
       const res = await recordManualPayment({
+        requestKey,
         registrationId: f.registrationId,
         amountCents: cents,
         method: f.method,
@@ -49,6 +55,7 @@ export default function RecordPaymentForm({ registrations }) {
         setError(res.error);
         return;
       }
+      setRequestKey(crypto.randomUUID());
       setDone(`Recorded $${(cents / 100).toFixed(2)} (${f.method}).`);
       setF({ ...f, amount: '', note: '' });
       router.refresh();

@@ -10,10 +10,12 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { todayInMorristown } from '@/lib/events';
+import { withReason } from '@/lib/dbErrors';
+import { MAX_MANUAL_CENTS, receivedOnProblem, requestKeyOf } from '@/lib/manualMoney';
 
 const MANUAL_METHODS = ['check', 'cash', 'other'];
 
-export async function recordManualPayment({ registrationId, amountCents, method, receivedOn, note }) {
+export async function recordManualPayment({ registrationId, amountCents, method, receivedOn, note, requestKey }) {
   const staff = await getStaff();
   if (!can(staff, 'write:payments')) {
     return { ok: false, error: 'You do not have permission to record payments.' };
@@ -26,6 +28,11 @@ export async function recordManualPayment({ registrationId, amountCents, method,
   if (!Number.isFinite(amt) || amt < 1) {
     return { ok: false, error: 'Please enter an amount greater than zero.' };
   }
+  if (amt > MAX_MANUAL_CENTS) {
+    return { ok: false, error: 'That amount is over $50,000, which looks like a typo. Check it and try again.' };
+  }
+  const dateProblem = receivedOnProblem(receivedOn);
+  if (dateProblem) return { ok: false, error: dateProblem };
 
   const supabase = await createClient();
 
@@ -67,8 +74,16 @@ export async function recordManualPayment({ registrationId, amountCents, method,
     payer_email: payerEmail || null,
     payer_name: payerName || null,
     note: note?.trim() ? note.trim() : null,
+    request_key: requestKeyOf(requestKey),
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    // 23505 on request_key: this press was already recorded (0182). The form
+    // keeps its key for that answer, so pressing again never adds a second.
+    if (error.code === '23505') {
+      return { ok: false, duplicate: true, error: 'This was already recorded. Refresh the page.' };
+    }
+    return { ok: false, error: withReason('The payment could not be recorded.', error) };
+  }
 
   revalidatePath('/admin/payments');
   revalidatePath('/admin');
