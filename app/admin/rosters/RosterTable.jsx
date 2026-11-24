@@ -6,7 +6,7 @@
 
 import SortMark from '@/components/SortMark';
 import { shortEventName, formatDay, eventInScope, isEventScope } from '@/lib/events';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import EventFilter from '@/components/EventFilter';
 import { STATUS_LABEL, statusPill } from '@/lib/format';
 import { ROLE_LABEL } from '@/lib/roles';
@@ -20,7 +20,7 @@ import ResizableTable from '@/components/ResizableTable';
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US')}`;
 
 const COLS = [
-  { key: 'household', label: 'Household' },
+  { key: 'household', label: 'Family' },
   { key: 'person', label: 'Person' },
   { key: 'sex', label: 'Sex' },
   { key: 'role', label: 'Role' },
@@ -339,17 +339,18 @@ export default function RosterTable({ events, rows, programs = [] }) {
             CSV are the other two ways out, and both are one click away. */}
         <p className="mb-2 text-xs text-neutral-500">
           More columns than fit? Hold <kbd className="rounded-sm border border-neutral-300 bg-neutral-50 px-1">Shift</kbd>{' '}
-          and scroll to move sideways. The name column stays in place. The print view and the
-          CSV both include every column.
+          and scroll sideways. Print and CSV show every column.
         </p>
         <div className="card p-0 overflow-x-auto">
           <ResizableTable storageKey="rosters">
           <table className="w-full text-left text-sm">
             <thead className="bg-neutral-50 text-neutral-500">
               <tr>
+                {/* The Event column sits beside Role (23 Nov 2026), and only
+                    when the list spans events (manyEvents). */}
                 {COLS.map((c, ci) => (
+                  <Fragment key={c.key}>
                   <th
-                    key={c.key}
                     className={`px-4 py-2 font-semibold ${c.right ? 'text-right' : ''} ${
                       ci === 0 ? 'sticky left-0 z-10 bg-neutral-50' : ''
                     }`}
@@ -367,8 +368,9 @@ export default function RosterTable({ events, rows, programs = [] }) {
                       </button>
                     )}
                   </th>
+                  {c.key === 'role' && manyEvents && <th className="px-4 py-2 font-semibold">Event</th>}
+                  </Fragment>
                 ))}
-                {manyEvents && <th className="px-4 py-2 font-semibold">Event</th>}
               </tr>
             </thead>
             <tbody>
@@ -467,6 +469,11 @@ export default function RosterTable({ events, rows, programs = [] }) {
                         their page, which links on from there. */}
                     {ROLE_LABEL[r.role] ?? r.role}
                   </td>
+                  {manyEvents && (
+                    <td className="px-4 py-2 text-neutral-600 whitespace-nowrap" title={eventName(r.eventId)}>
+                      {shortEventName(eventName(r.eventId))}
+                    </td>
+                  )}
                   {/* E21. "Not placed" is said in words rather than left blank:
                       an empty cell reads as missing data, and this is a queue
                       somebody has to work through — the same one the Programs
@@ -507,7 +514,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                       )}
                       {!r.agreementsSigned && (
                         <Flag tone="amber" title="No signed agreements on file for this registration">
-                          unsigned
+                          Agreements not signed
                         </Flag>
                       )}
                     </span>
@@ -524,11 +531,6 @@ export default function RosterTable({ events, rows, programs = [] }) {
                   </td>
                   {/* Read as a day; the ISO value stays the sort key. */}
                   <td className="px-4 py-2 text-neutral-600 whitespace-nowrap">{r.submitted ? formatDay(r.submitted) : '—'}</td>
-                  {manyEvents && (
-                    <td className="px-4 py-2 text-neutral-600 whitespace-nowrap" title={eventName(r.eventId)}>
-                      {shortEventName(eventName(r.eventId))}
-                    </td>
-                  )}
                 </tr>
                 );
               })}
