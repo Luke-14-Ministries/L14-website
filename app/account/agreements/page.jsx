@@ -4,7 +4,9 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
 import { agreementText, formatDay } from '@/lib/events';
 
-export const metadata = { title: 'My Agreements' };
+// One name per account page, in sentence case, the same in the heading, the
+// dashboard's links and the browser tab (23 Nov 2026).
+export const metadata = { title: 'Signed agreements' };
 
 // A family's copy of what they signed.
 //
@@ -154,11 +156,11 @@ export default async function AgreementsPage() {
           {/* The account pages' header (26 Oct 2026): title left, the Back to
               dashboard pill right; Print, this page's action, below the intro. */}
           <div className={TITLE_ROW}>
-            <h1 className="text-3xl font-bold">My Agreements</h1>
+            <h1 className="text-3xl font-bold">Signed agreements</h1>
             <BackLink />
           </div>
           <p className="text-neutral-600 mt-2">
-            Everything you have signed, with the exact wording you agreed to.
+            Everything your household has signed, with the exact wording.
           </p>
           {signatures.length > 0 && (
             <div className="mt-4 mb-8">
@@ -177,7 +179,7 @@ export default async function AgreementsPage() {
             alt="Luke 14 Ministries"
             className="h-14 w-auto mb-3"
           />
-          <h1 className="text-3xl font-bold">Signed Agreements</h1>
+          <h1 className="text-3xl font-bold">Signed agreements</h1>
           <p className="text-sm text-neutral-600">
             Account: {user.email} · Printed{' '}
             {new Date().toLocaleDateString('en-US', {
@@ -197,8 +199,8 @@ export default async function AgreementsPage() {
 
         {!householdId || signatures.length === 0 ? (
           <p className="mt-6 text-neutral-600">
-            You haven&rsquo;t signed anything yet. Agreements are presented as part of
-            registration, and your signed copy appears here afterward.
+            Nothing signed yet. The agreements come up when you register, and your signed copy
+            shows here after that.
           </p>
         ) : (
           <div className="space-y-8">

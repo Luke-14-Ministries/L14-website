@@ -453,18 +453,17 @@ function EventSection({ section: s }) {
       </div>
       <div className="space-y-6 p-5">
         {hasCampers ? (
+          // Shortened 23 Nov 2026; the bold sentence is kept word for word.
           <p className="text-neutral-700">
             Choose what each person would like to do. A camper&rsquo;s buddy goes along with
-            them. Nothing here is binding. Tell us what you&rsquo;d like, and camp staff will
-            confirm the details closer to the time. You can change your mind whenever you
-            like.{' '}
+            them. Camp staff confirm the details closer to the time, and you can change your
+            mind until then.{' '}
             <span className="font-semibold text-neutral-800">
               Put a name down for anything that appeals, even if you are not sure it will
               work.
             </span>{' '}
-            Camp has done this before. There is a great deal of support on hand, and staff
-            can usually make a wide range of needs work. If you have questions or concerns,
-            please ask.
+            Staff can usually make a wide range of needs work. If you have questions, please
+            ask.
           </p>
         ) : (
           hasVolunteers && (

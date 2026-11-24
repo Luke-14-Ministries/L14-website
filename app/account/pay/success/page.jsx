@@ -35,7 +35,8 @@ export default async function PaySuccessPage({ searchParams }) {
             (27 Oct 2026); the title wraps in its own column instead. */}
         <div className="flex items-start justify-between gap-3 mb-6">
           <h1 className="min-w-0 text-3xl font-bold">
-            {pending ? 'Payment on its way ⏳' : 'Thank you! Payment received ✅'}
+            {/* No emoji in headings (23 Nov 2026), as on every other page. */}
+            {pending ? 'Payment on its way' : 'Thank you! Payment received'}
           </h1>
           <BackLink hard className="shrink-0" />
         </div>
