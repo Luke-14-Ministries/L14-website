@@ -794,9 +794,8 @@ function AgreementsCard({ signatures }) {
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
           <p className="font-semibold text-amber-900">No signed agreements on file</p>
           <p className="mt-1 text-sm text-amber-800">
-            Families sign while they register. A registration staff entered by hand won&rsquo;t
-            have signatures, and neither will one submitted before 23 Aug 2026, when agreements
-            were added.
+            Families sign the agreements when they register. A registration staff entered by hand
+            has none, and neither does one submitted before Aug 23, 2026.
           </p>
         </div>
       </Panel>
@@ -2153,7 +2152,7 @@ export default function RegistrationManager({
                 {' · '}
               </>
             )}
-            Status changes and edits save immediately.
+            Changes save as you make them.
           </>
         }
       />
@@ -2255,7 +2254,8 @@ export default function RegistrationManager({
 
         <Panel title="People on this week" count={parts.length} id="people" opensFor="person-" defaultOpen={peopleOpen}>
           <p className="text-sm text-neutral-500 mb-2">
-            Change someone&rsquo;s status to move them out of &ldquo;Awaiting review.&rdquo;
+            {/* Says what the menu does, not how the queue moves (23 Nov 2026). */}
+            To approve, waitlist or cancel one person, use the status menu beside their name.
           </p>
           {parts.length === 0 ? (
             <p className="text-neutral-500 text-sm py-2">Nobody is on this registration yet.</p>

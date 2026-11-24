@@ -177,8 +177,10 @@ export default function FeesPanel({ registrationId, fees = [], canWrite = false,
       )}
       {canWrite && <AddFeeForm registrationId={registrationId} />}
       <p className="mt-2 text-xs text-neutral-500">
-        Fees that aren&rsquo;t waived are part of the balance. A returned bank payment adds the fee
-        the family saw when they chose to pay by bank. A plan&rsquo;s remaining charges collect it.
+        {/* Plain sentences (23 Nov 2026); the rules are unchanged. */}
+        A fee is added to the balance unless it&rsquo;s waived. If a bank payment comes back, the
+        returned-payment fee the family was shown is added here. A payment plan collects it with its
+        next charges.
       </p>
     </section>
   );

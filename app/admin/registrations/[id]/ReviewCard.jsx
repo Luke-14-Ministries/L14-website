@@ -426,7 +426,7 @@ export default function ReviewCard({
                 </a>
               </span>
             ))}
-          . Approving a volunteer here also approves their application.
+          . Approving a volunteer approves their application too.
         </Notice>
       )}
       {/* "Not permitted" (0162): the database refuses to confirm them, from
@@ -808,8 +808,8 @@ export default function ReviewCard({
           </ul>
           {canWrite && (
             <p className="mt-1 text-xs">
-              Approving confirms them and takes the family out of Awaiting Review. To decide one
-              person at a time, use <PeopleLink />.
+              Approving confirms everyone listed here. To decide one person at a time, use{' '}
+              <PeopleLink />.
             </p>
           )}
         </div>
