@@ -25,7 +25,7 @@ import { CHECK_TONE, PILL_TONE_WORDS, clearancePill, isRegistrySearch } from '@/
 import AdminPageHeader from '@/components/AdminPageHeader';
 import Pill, { PillKey, PILL_SHAPE } from '@/components/Pill';
 import FilterChips from '@/components/FilterChips';
-import { todayInMorristown } from '@/lib/events';
+import { todayInMorristown, formatDay } from '@/lib/events';
 import { depositInByPerson } from '@/lib/screeningDeposit';
 import { loadScreeningPeople, registryBucket, volunteerBucket, fullCheckCurrent } from '@/lib/backgroundChecks';
 import { latestVbRequests } from '@/lib/screeningCandidates';
@@ -76,11 +76,6 @@ function listHref(sel, anchor) {
   for (const { param } of CARDS) if (sel[param]) q.set(param, sel[param]);
   const str = q.toString();
   return `${BASE}${str ? `?${str}` : ''}${anchor ? `#${anchor}` : ''}`;
-}
-
-function fmtDob(iso) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
-  return m ? `${Number(m[2])}/${Number(m[3])}/${m[1]}` : 'unknown';
 }
 
 // 'YYYY-MM-DD' as "Jan 15, 2027", read as a calendar date (no time zone).
@@ -402,10 +397,13 @@ export default async function BackgroundChecksPage({ searchParams }) {
   };
 
   // One table for every card, one set of adjustable widths shared by all
-  // three so their columns line up (Lawrence, 15 Nov 2026).
+  // three so their columns line up (Lawrence, 15 Nov 2026). The defaults add
+  // up to less than the card holds at 1366px, so the Status column's second
+  // pill shows in full (23 Nov 2026, P99: it was cut to "No email of the…");
+  // a new key so widths saved under the old defaults do not keep it clipped.
   const table = (rows) => (
     <div className="mt-4 overflow-x-auto">
-      <ResizableTable storageKey="background-checks-columns-v2" defaults={[210, 240, 125, 125, 380]}>
+      <ResizableTable storageKey="background-checks-columns-v3" defaults={[180, 200, 110, 110, 340]}>
       <table className="w-full text-sm">
         <thead>
           {/* Sentence case, the shared header cells (23 Nov 2026). */}
@@ -432,7 +430,9 @@ export default async function BackgroundChecksPage({ searchParams }) {
                   {/* What a registry result is checked against. */}
                   {x.kind === 'campers' && (
                     <span className="block text-xs text-neutral-500">
-                      Born {fmtDob(x.dob)}
+                      {/* "Born Feb 2, 2000", as every other staff page prints a
+                          date of birth (23 Nov 2026, P99). */}
+                      {x.dob ? `Born ${formatDay(x.dob)}` : 'No birth date on file'}
                       {x.place ? ` · ${x.place}` : ''}
                       {x.reason ? ` · ${x.reason}` : ''}
                     </span>
@@ -649,7 +649,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
             defaultOpen={f.work > 0 || Boolean(sel[param])}
           >
             <p className="text-sm text-neutral-600">{text.intro}</p>
-            <div className="card p-4">
+            {/* Less padding than other cards, so the table gets the width. */}
+            <div className="card p-2 sm:p-3">
               <FilterPills
                 label={text.label}
                 filters={FILTERS}
