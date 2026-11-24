@@ -3,6 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import SetupManager from './SetupManager';
 import { enrollmentOption, todayInMorristown } from '@/lib/events';
+import { turnstileConfigured } from '@/lib/turnstile';
 
 export const metadata = { title: 'Setup & Manage Events · Staff Admin' };
 
@@ -101,6 +102,24 @@ export default async function SetupPage() {
         are optional. Leave them blank and a published event takes registrations until you
         change it. Set them and registration opens and closes on its own.
       </p>
+      {/* One health line (23 Nov 2026, security review): the bot check on
+          Contact, Donate and the prayer sign-up needs both Turnstile keys,
+          and a check that is quietly off looks exactly like one that works.
+          On the live site Donate and the prayer sign-up refuse everyone
+          while it is off, so this line is the first place to look. */}
+      {turnstileConfigured() ? (
+        <p className="mb-6 text-sm text-neutral-600">
+          <span className="font-semibold text-green-800">Bot check: on.</span> Contact, Donate and the
+          prayer sign-up check each visitor before sending.
+        </p>
+      ) : (
+        <p className="mb-6 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <span className="font-semibold">Bot check: NOT RUNNING.</span> One or both Turnstile keys
+          (TURNSTILE_SECRET_KEY, NEXT_PUBLIC_TURNSTILE_SITE_KEY) are missing here. On the live site
+          Donate and the prayer sign-up turn everyone away until both are set in Vercel; Contact still
+          sends.
+        </p>
+      )}
       <SetupManager events={rows} />
     </div>
   );

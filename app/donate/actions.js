@@ -16,6 +16,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
 import { coverFeeCents } from '@/lib/payments';
 import { verifyTurnstile } from '@/lib/turnstile';
+import { siteOrigin } from '@/lib/origin';
 import { DONATION_FUNDS } from '@/lib/funds';
 
 // The server-side whitelist is the same list the form shows (lib/funds.js).
@@ -63,15 +64,26 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
   const h = await headers();
   // The bot check, as on the contact form (lib/turnstile.js). Gift checkout
   // needs no login, so without it the page is a free card-testing endpoint.
+  // Unlike Contact it stays shut when the check cannot run on the live site
+  // (23 Nov 2026): a laptop or a preview without the keys still works.
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
-  const check = await verifyTurnstile(captchaToken, ip);
+  const check = await verifyTurnstile(captchaToken, ip, {
+    failOpen: process.env.VERCEL_ENV !== 'production',
+    action: 'donate',
+  });
+  if (check.unavailable) {
+    return {
+      ok: false,
+      error: 'Online giving is having trouble just now. Please try again in a few minutes, or give by mail with the form on this page.',
+    };
+  }
   if (!check.ok) {
     return { ok: false, error: 'That check timed out. Please check the box again and press Give.', retryCaptcha: true };
   }
 
-  const host = h.get('host');
-  const proto = h.get('x-forwarded-proto') || 'https';
-  const origin = host ? `${proto}://${host}` : '';
+  // Stripe's return addresses: the site's own, never the request's Host
+  // header (lib/origin.js, 23 Nov 2026).
+  const origin = await siteOrigin();
 
   const metadata = {
     gift: '1',

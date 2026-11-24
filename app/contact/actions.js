@@ -50,7 +50,9 @@ export async function sendContactMessage(form) {
   // an unreachable verifier lets the message through rather than blocking it.
   const h = await headers();
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
-  const check = await verifyTurnstile(form?.captchaToken, ip);
+  // Fails open (the default), by decision; the action makes a token from
+  // another form count for nothing here (23 Nov 2026).
+  const check = await verifyTurnstile(form?.captchaToken, ip, { action: 'contact' });
   if (!check.ok) {
     return {
       ok: false,
