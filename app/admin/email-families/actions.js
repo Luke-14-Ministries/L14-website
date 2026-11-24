@@ -18,7 +18,7 @@
 // 0113. Addresses never leave the server: the preview carries names and a
 // yes/no for "has an email", and the URL carries only ids.
 
-import { headers } from 'next/headers';
+import { siteOrigin } from '@/lib/origin';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff, can } from '@/lib/staff';
 import { sendEmail, familyUpdateEmail } from '@/lib/email';
@@ -244,10 +244,7 @@ export async function sendFamilyEmail({
     };
   }
 
-  const hdrs = await headers();
-  const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
-  const proto = hdrs.get('x-forwarded-proto') ?? 'https';
-  const origin = host ? `${proto}://${host}` : '';
+  const origin = await siteOrigin();
   const templateKey = outstandingOnly ? 'waiver_needed' : 'family_update';
 
   const results = [];

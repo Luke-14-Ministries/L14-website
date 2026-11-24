@@ -9,18 +9,10 @@ import { carerPhone, caregiverPhoneProblem, hasPhone } from '@/lib/caregivers';
 // additionally requires both ends of a link to be in the caller's household.
 
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
+import { siteOrigin } from '@/lib/origin';
 import { createClient } from '@/lib/supabase/server';
 import { requestContactEmailChange } from '@/lib/contactEmail';
 import { sendHouseholdInvite } from '@/lib/householdInvite';
-
-async function siteOrigin() {
-  if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/$/, '');
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host');
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  return host ? `${proto}://${host}` : '';
-}
 
 // A new contact email waits for its link (0171, 23 Nov 2026); the old one
 // keeps getting mail until then. Shared by the save below and "send again".

@@ -8,7 +8,7 @@
 // Function) is what actually records the payment once the money moves; this only
 // starts the checkout.
 
-import { headers } from 'next/headers';
+import { siteOrigin } from '@/lib/origin';
 import { checkoutEmail } from '@/lib/contactEmail';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
@@ -116,12 +116,10 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
   const KIND_LABEL = { deposit: 'Deposit', balance: 'Balance', custom: 'Payment' };
   const label = `${ev?.name ?? 'Camp registration'}: ${KIND_LABEL[kind]}`;
 
-  // Build the return URLs from the request's own host, so this works the same
-  // on the production domain and on any preview deployment.
-  const h = await headers();
-  const host = h.get('host');
-  const proto = h.get('x-forwarded-proto') || 'https';
-  const origin = host ? `${proto}://${host}` : '';
+  // The return URLs: the site's own address on the live site, the copy's own
+  // host on a preview or a laptop (lib/origin.js; until 23 Nov 2026 this read
+  // the request's Host header everywhere).
+  const origin = await siteOrigin();
 
   // The metadata travels with the payment and is what the webhook reads to
   // record it against the right registration. base_cents (not the grossed-up

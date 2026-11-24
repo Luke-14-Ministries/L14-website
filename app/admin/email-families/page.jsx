@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { siteOrigin } from '@/lib/origin';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow } from '@/lib/events';
@@ -109,9 +109,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
 
   // The address the email's Activities link uses, so the preview shows it as
   // the family will see it.
-  const hdrs = await headers();
-  const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
-  const origin = host ? `${hdrs.get('x-forwarded-proto') ?? 'https'}://${host}` : '';
+  const origin = await siteOrigin();
 
   // The automatic emails' next 7 days (0138). Read with the job's own
   // service-role client -- it has to see every family's money and details to

@@ -11,7 +11,7 @@ import { dobProblem, formatPhone } from '@/lib/format';
 // applies to every row. It is also idempotent: resubmitting matches existing people
 // by name + date of birth and updates them rather than creating duplicates.
 
-import { headers } from 'next/headers';
+import { siteOrigin } from '@/lib/origin';
 import { revalidatePath } from 'next/cache';
 import { supportPatch, supportProblems } from '@/lib/support';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
@@ -357,10 +357,7 @@ export async function submitFamilyRegistration(payload) {
   // as doubt. Recipient preference: the email typed on the form (it may
   // deliberately differ from the login), falling back to the login.
   try {
-    const hdrs = await headers();
-    const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
-    const proto = hdrs.get('x-forwarded-proto') ?? 'https';
-    const origin = host ? `${proto}://${host}` : '';
+    const origin = await siteOrigin();
     const { data: ev, error: evError } = await supabase
       .from('events')
       .select('name, deposit_cents, event_type, starts_on, balance_due_on')
@@ -939,10 +936,7 @@ export async function submitFamilyRegistration(payload) {
         .limit(1)
         .maybeSingle();
       if (mine?.household_id) {
-        const hdrs = await headers();
-        const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
-        const proto = hdrs.get('x-forwarded-proto') ?? 'https';
-        const origin = process.env.SITE_URL?.replace(/\/$/, '') || (host ? `${proto}://${host}` : '');
+        const origin = await siteOrigin();
         const res = await requestContactEmailChange({
           supabase,
           householdId: mine.household_id,

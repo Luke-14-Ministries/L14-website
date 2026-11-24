@@ -9,7 +9,7 @@
 // This action only opens Stripe Checkout with everything the webhook will
 // need riding along as metadata.
 
-import { headers } from 'next/headers';
+import { siteOrigin } from '@/lib/origin';
 import { checkoutEmail } from '@/lib/contactEmail';
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
@@ -22,13 +22,6 @@ import {
   PLAN_CONSENT_VERSION,
   SCHEDULE_LABEL,
 } from '@/lib/plans';
-
-async function originFromRequest() {
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host');
-  const proto = h.get('x-forwarded-proto') || 'https';
-  return host ? `${proto}://${host}` : '';
-}
 
 // The registration, only if it belongs to the caller's own household.
 // { reg, error }: a failed read is reported, never passed off as "not found".
@@ -116,7 +109,7 @@ export async function startPaymentPlan({ registrationId, schedule, method, agree
   // the only fee that plan can ever add (0 = never).
   const returnedFeeCents = Math.max(0, ev.returned_payment_fee_cents ?? 0);
   const consent = planConsentText({ schedule, dueLabel: formatDueDate(due), returnedFeeCents });
-  const origin = await originFromRequest();
+  const origin = await siteOrigin();
 
   const metadata = {
     registration_id: reg.id,
@@ -200,7 +193,7 @@ export async function updatePlanPaymentMethod({ registrationId, method }) {
     return { ok: false, error: 'There is no payment plan to update on this registration.' };
   }
 
-  const origin = await originFromRequest();
+  const origin = await siteOrigin();
   const metadata = { kind: 'plan_method_update', registration_id: reg.id, plan_id: plan.id };
   try {
     const session = await stripe.checkout.sessions.create({
