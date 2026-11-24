@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { staffAssigns, isCurrentEventRow } from '@/lib/events';
@@ -206,12 +207,16 @@ export default async function ProgramsPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Program Groups</h2>
-      <p className="text-sm text-neutral-500 mb-4">
-        Which group each person is in for the week: nursery, children, youth, young adults, men or
-        women. Families never see or choose this. A program leader sees only their own list, with
-        flags instead of medical details.
-      </p>
+      <AdminPageHeader
+        title="Program Groups"
+        intro={
+          <>
+            Which group each person is in for the week: nursery, children, youth, young adults, men or
+            women. Families never see or choose this. A program leader sees only their own list, with
+            flags instead of medical details.
+          </>
+        }
+      />
 
       <EventFilter
         events={(events ?? []).map((e) => ({

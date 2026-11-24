@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -101,7 +102,7 @@ export default async function SearchPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Find a person or family</h2>
+      <AdminPageHeader title="Find a person or family" className="mb-2" />
       <form action="/admin/search/" method="get" className="mb-5 flex flex-wrap items-center gap-2">
         <input
           type="search"

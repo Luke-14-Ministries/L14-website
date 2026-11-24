@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import Link from 'next/link';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -125,17 +126,21 @@ export default async function AccountsPage() {
   }
 
   return (
-    <div className="card">
-      <h2 className="text-xl font-bold mb-1">Accounts</h2>
+    <div>
       {/* max-w-prose caps this at a 65-character measure, as everywhere else
           in the staff pages. Reworded 23 Nov 2026: no more "test data" (the
           site is live) and no sentence about the menu badge's colour. */}
-      <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        Every account on the site, families and staff. Removing an account never deletes a
-        family&rsquo;s registrations or payments. &ldquo;Delete family &amp; all their data&rdquo;
-        does, and only for a family with no payments on record. Resetting two-factor, removing an
-        account and deleting a family each ask for your own two-factor code first.
-      </p>
+      <AdminPageHeader
+        title="Accounts"
+        intro={
+          <>
+            Every account on the site, families and staff. Removing an account never deletes a
+            family&rsquo;s registrations or payments. &ldquo;Delete family &amp; all their data&rdquo;
+            does, and only for a family with no payments on record. Resetting two-factor, removing an
+            account and deleting a family each ask for your own two-factor code first.
+          </>
+        }
+      />
       <AccountsManager
         accounts={accounts ?? []}
         households={households ?? []}

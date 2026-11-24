@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import BackLink from '@/components/BackLink';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -92,22 +93,29 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl p-8 print-sheet bg-white print:text-[12px]">
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-2 print:hidden">
-        <h2 className="text-xl font-bold">Allergies by allergen, with names</h2>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href={`/admin/dietary/${eventFilter ? `?event=${eventFilter}` : ""}`} label="Back to Dietary" />
-          <PrintButton />
-        </span>
-      </div>
-      <p className="text-sm text-neutral-500 mb-2 print:hidden">
-        Every allergen ticked by anyone at a current event, with names and severity, anaphylaxis
-        first. This is for the cook and the nurse. The{' '}
-        <a href={`/admin/dietary/print${eventFilter ? `?event=${eventFilter}` : ''}`} className="text-brand underline">
-          no-names tally
-        </a>{' '}
-        is the one to post in the kitchen.
-      </p>
+      <AdminPageHeader
+        className="print:hidden"
+        title="Allergies by allergen, with names"
+        actions={
+          <>
+            {/* The way back on the title's line, Print under it (27 Oct 2026). */}
+            <span className="flex flex-col items-end gap-2">
+              <BackLink href={`/admin/dietary/${eventFilter ? `?event=${eventFilter}` : ""}`} label="Back to Dietary" />
+              <PrintButton />
+            </span>
+          </>
+        }
+        intro={
+          <>
+            Every allergen ticked by anyone at a current event, with names and severity, anaphylaxis
+            first. This is for the cook and the nurse. The{' '}
+            <a href={`/admin/dietary/print${eventFilter ? `?event=${eventFilter}` : ''}`} className="text-brand underline">
+              no-names tally
+            </a>{' '}
+            is the one to post in the kitchen.
+          </>
+        }
+      />
       <p className="mb-6 text-sm font-semibold">
         {eventScopeHeading(eventFilter, shownEvents[0]?.name)}
       </p>

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { sinceISO, dayInMorristown } from '@/lib/events';
@@ -45,27 +46,33 @@ export default async function NewsletterPage() {
 
   return (
     <div>
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">Newsletter</h2>
-        <span className="flex flex-wrap gap-2">
-          <a href="/admin/newsletter/export" className="btn-outline btn-sm">
-            Download CSV
-          </a>
-          <a
-            href="/admin/newsletter/export?format=mailchimp"
-            className="btn-outline btn-sm"
-            title="Email Address, First Name, Last Name, Tags: Mailchimp's import layout, tagged 'website'"
-          >
-            Mailchimp import CSV
-          </a>
-        </span>
-      </div>
-      <p className="mb-5 text-sm text-neutral-500">
-        Everyone with an account who has <em>Ministry news &amp; updates</em> switched on. Families
-        change it themselves on My Account → Contact details. For now the newsletter is sent from
-        Mailchimp, which Ellen runs. This page is the list. People who signed up through the public
-        Google Form are not here.
-      </p>
+      <AdminPageHeader
+        title="Newsletter"
+        actions={
+          <>
+            <span className="flex flex-wrap gap-2">
+              <a href="/admin/newsletter/export" className="btn-outline btn-sm">
+                Download CSV
+              </a>
+              <a
+                href="/admin/newsletter/export?format=mailchimp"
+                className="btn-outline btn-sm"
+                title="Email Address, First Name, Last Name, Tags: Mailchimp's import layout, tagged 'website'"
+              >
+                Mailchimp import CSV
+              </a>
+            </span>
+          </>
+        }
+        intro={
+          <>
+            Everyone with an account who has <em>Ministry news &amp; updates</em> switched on. Families
+            change it themselves on My Account → Contact details. For now the newsletter is sent from
+            Mailchimp, which Ellen runs. This page is the list. People who signed up through the public
+            Google Form are not here.
+          </>
+        }
+      />
 
       {error && (
         <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">

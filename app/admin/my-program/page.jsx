@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff } from '@/lib/staff';
 import {
@@ -60,12 +61,17 @@ export default async function MyProgramPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">{current.programName}</h2>
-      <p className="text-sm text-neutral-500 mb-4">
-        {current.eventName}
-        {current.startsOn ? ` · from ${current.startsOn}` : ''} · {rows.length}{' '}
-        {rows.length === 1 ? 'person' : 'people'} in your program.
-      </p>
+      <AdminPageHeader
+        title={current.programName}
+        className="mb-4"
+        intro={
+          <>
+            {current.eventName}
+            {current.startsOn ? ` · from ${current.startsOn}` : ''} · {rows.length}{' '}
+            {rows.length === 1 ? 'person' : 'people'} in your program.
+          </>
+        }
+      />
 
       {/* Who else leads this program, head leader first. Everyone with a
           program_leaders grant is a LEADER; the one marked is_lead (0071) is

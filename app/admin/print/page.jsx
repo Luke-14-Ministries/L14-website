@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -135,11 +136,15 @@ export default async function PrintSheetsPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Print Sheets</h2>
-      <p className="text-sm text-neutral-500 mb-4">
-        Every sheet to print for one event, and who each is for. Choose the event, then open a
-        sheet and print it, or save it as a PDF from the print dialog.
-      </p>
+      <AdminPageHeader
+        title="Print Sheets"
+        intro={
+          <>
+            Every sheet to print for one event, and who each is for. Choose the event, then open a
+            sheet and print it, or save it as a PDF from the print dialog.
+          </>
+        }
+      />
 
       {current.length > 1 && (
         <EventFilter

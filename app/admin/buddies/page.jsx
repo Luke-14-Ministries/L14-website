@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { staffAssigns, isCurrentEventRow } from '@/lib/events';
@@ -173,12 +174,16 @@ export default async function BuddiesPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Buddy Assignments</h2>
-      <p className="text-sm text-neutral-500 mb-4">
-        Campers who need a one-to-one buddy, and the volunteers who can be one. Siblings are
-        listed too and get a buddy when a volunteer is free, but that isn&rsquo;t promised.
-        Families see nothing here until you publish.
-      </p>
+      <AdminPageHeader
+        title="Buddy Assignments"
+        intro={
+          <>
+            Campers who need a one-to-one buddy, and the volunteers who can be one. Siblings are
+            listed too and get a buddy when a volunteer is free, but that isn&rsquo;t promised.
+            Families see nothing here until you publish.
+          </>
+        }
+      />
 
       <EventFilter
         events={(events ?? []).map((e) => ({

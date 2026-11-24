@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { siteOrigin } from '@/lib/origin';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -152,13 +153,17 @@ export default async function EmailFamiliesPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Email Families</h2>
-      <p className="text-sm text-neutral-500 mb-4">
-        Email the people registered for an event about a change. You can send to everyone, the
-        campers&rsquo; families, the volunteers, or only the people on one activity. Each household
-        gets one email from registration@, sent only when you press Send. Every send is recorded
-        in the message log.
-      </p>
+      <AdminPageHeader
+        title="Email Families"
+        intro={
+          <>
+            Email the people registered for an event about a change. You can send to everyone, the
+            campers&rsquo; families, the volunteers, or only the people on one activity. Each household
+            gets one email from registration@, sent only when you press Send. Every send is recorded
+            in the message log.
+          </>
+        }
+      />
       <EmailFamiliesForm
         events={listed.map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }))}
         eventId={eventId}

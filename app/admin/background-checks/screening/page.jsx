@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import BackLink from '@/components/BackLink';
 import ScreeningBoard from './ScreeningBoard';
 import TemplatePicker from './TemplatePicker';
 import { loadScreeningCandidates } from '@/lib/screeningCandidates';
@@ -167,16 +167,18 @@ export default async function ScreeningPage() {
   }
 
   return (
-    <div className="card">
-      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">Send Background Check Invites</h2>
-        <BackLink href="/admin/background-checks" label="Back to Background Checks" />
-      </div>
-      <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        VolunteerBadge emails each person an invite. They sign the consent and type their own
-        details, including their Social Security number, on VolunteerBadge&rsquo;s site. We never
-        see or keep it, or the report: only the result word comes back here.
-      </p>
+    <div>
+      <AdminPageHeader
+        title="Send Background Check Invites"
+        back={{ href: '/admin/background-checks', label: 'Back to Background Checks' }}
+        intro={
+          <>
+            VolunteerBadge emails each person an invite. They sign the consent and type their own
+            details, including their Social Security number, on VolunteerBadge&rsquo;s site. We never
+            see or keep it, or the report: only the result word comes back here.
+          </>
+        }
+      />
       {noEvents ? (
         <p className="text-neutral-600">No upcoming events, so nobody is due a background check for one.</p>
       ) : null}

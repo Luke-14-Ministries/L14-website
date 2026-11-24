@@ -1,4 +1,5 @@
 import BackLink from '@/components/BackLink';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -143,18 +144,25 @@ export default async function PhotographerListPage({ searchParams }) {
 
   return (
     <div className="print-sheet mx-auto max-w-3xl bg-white p-8 print:text-[12px] text-neutral-900">
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-3 print:hidden">
-        <h2 className="text-xl font-bold">Photographer&rsquo;s list</h2>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href="/admin/rosters/" label="Back to Rosters" />
-          <PrintButton />
-        </span>
-      </div>
-      <p className="mb-3 text-sm text-neutral-500 print:hidden">
-        Everyone at one event whose family asked us not to feature them in photos or video.
-        Print it for whoever is taking photos.
-      </p>
+      <AdminPageHeader
+        className="print:hidden"
+        title="Photographer&rsquo;s list"
+        actions={
+          <>
+            {/* The way back on the title's line, Print under it (27 Oct 2026). */}
+            <span className="flex flex-col items-end gap-2">
+              <BackLink href="/admin/rosters/" label="Back to Rosters" />
+              <PrintButton />
+            </span>
+          </>
+        }
+        intro={
+          <>
+            Everyone at one event whose family asked us not to feature them in photos or video.
+            Print it for whoever is taking photos.
+          </>
+        }
+      />
       <div className="mb-6 print:hidden">
         <EventFilter
           events={(events ?? []).map((e) => ({

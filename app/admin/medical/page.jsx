@@ -1,4 +1,5 @@
 import { formatPhone } from '@/lib/format';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -114,20 +115,26 @@ export default async function MedicalPage({ searchParams }) {
   return (
     <div>
       {/* The nurse's paper copy, one event at a time (23 Nov 2026 review). */}
-      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-bold">Medical &amp; Support</h2>
-        <a
-          href={`/admin/medical/print/${eventFilter && !isEventScope(eventFilter) ? `?event=${eventFilter}` : ''}`}
-          className="btn-outline btn-sm"
-        >
-          Medical sheet (print)
-        </a>
-      </div>
-      <p className="text-sm text-neutral-500 mb-6">
-        Medications (with any medication allergy), seizure and rescue-medication details, and emergency contacts, per event.
-        This is the most sensitive page on the site. It needs its own permission, so take the same
-        care with printouts as with the screen.
-      </p>
+      <AdminPageHeader
+        title="Medical &amp; Support"
+        actions={
+          <>
+            <a
+              href={`/admin/medical/print/${eventFilter && !isEventScope(eventFilter) ? `?event=${eventFilter}` : ''}`}
+              className="btn-outline btn-sm"
+            >
+              Medical sheet (print)
+            </a>
+          </>
+        }
+        intro={
+          <>
+            Medications (with any medication allergy), seizure and rescue-medication details, and emergency contacts, per event.
+            This is the most sensitive page on the site. It needs its own permission, so take the same
+            care with printouts as with the screen.
+          </>
+        }
+      />
 
 
       {/* The one event filter every staff page uses (16 Oct 2026). "All

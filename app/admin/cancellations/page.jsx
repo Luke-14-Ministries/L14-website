@@ -1,4 +1,5 @@
 import { formatPhone } from '@/lib/format';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -80,12 +81,16 @@ export default async function CancellationsPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Cancellations</h2>
-      <p className="text-sm text-neutral-500 mb-4">
-        Families asking to cancel. Marking one handled records that you dealt with it. It
-        does <strong>not</strong> release places or move money. Do those on the registration
-        and the payment.
-      </p>
+      <AdminPageHeader
+        title="Cancellations"
+        intro={
+          <>
+            Families asking to cancel. Marking one handled records that you dealt with it. It
+            does <strong>not</strong> release places or move money. Do those on the registration
+            and the payment.
+          </>
+        }
+      />
 
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Link

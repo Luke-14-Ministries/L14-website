@@ -15,8 +15,11 @@ import BackLink from './BackLink';
 // No 'use client', so server pages render it directly.
 
 export default function AdminPageHeader({ title, intro, actions, back, className = '', children }) {
+  // A page that wants a tighter gap passes its own mb-*; two margins in one
+  // class string would leave the winner to the stylesheet's order.
+  const gap = /(^|\s)mb-/.test(className) ? '' : 'mb-6';
   return (
-    <div className={`mb-6 ${className}`}>
+    <div className={`${gap} ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2 className="min-w-0 text-xl font-bold">{title}</h2>
         {(actions || back) && (

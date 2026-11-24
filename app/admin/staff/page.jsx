@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import StaffManager from './StaffManager';
@@ -77,20 +78,26 @@ export default async function StaffAccessPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 className="text-xl font-bold mb-1">Staff &amp; Access</h2>
-        {/* The log is only worth keeping if somebody can read it. */}
-        <a href="/admin/staff/access-log" className="btn-outline btn-sm shrink-0">
-          Access changes
-        </a>
-      </div>
-      <p className="text-sm text-neutral-500 mb-4">
-        Who can do what. Each person has <span className="font-semibold">grants</span> on ten
-        areas: read, write or no access. Set them with a <span className="font-semibold">preset</span>,
-        then adjust them with the <em>Grants</em> button on each row. Only someone with the{' '}
-        <span className="font-semibold">Administrator</span> box checked can grant access. Every
-        change goes in the access log. One login covers every role, so nobody needs a second account.
-      </p>
+      <AdminPageHeader
+        title="Staff &amp; Access"
+        actions={
+          <>
+            {/* The log is only worth keeping if somebody can read it. */}
+            <a href="/admin/staff/access-log" className="btn-outline btn-sm shrink-0">
+              Access changes
+            </a>
+          </>
+        }
+        intro={
+          <>
+            Who can do what. Each person has <span className="font-semibold">grants</span> on ten
+            areas: read, write or no access. Set them with a <span className="font-semibold">preset</span>,
+            then adjust them with the <em>Grants</em> button on each row. Only someone with the{' '}
+            <span className="font-semibold">Administrator</span> box checked can grant access. Every
+            change goes in the access log. One login covers every role, so nobody needs a second account.
+          </>
+        }
+      />
 
       {/* One fold, collapsed by default (Lawrence, 2 Oct 2026: the page is for
           doing). <details> needs no client JS. Consolidated 21 Oct 2026 from

@@ -1,4 +1,5 @@
 import { formatPhone } from '@/lib/format';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -48,12 +49,16 @@ export default async function DeletionRequestsPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold">Deletion Requests</h2>
-      <p className="mt-1 mb-4 text-sm text-neutral-600">
-        Families asking us to delete their medical information or their account. Contact the
-        family, delete what can go, and note what was kept and why. Payments, signed releases and
-        background checks are kept for three years.
-      </p>
+      <AdminPageHeader
+        title="Deletion Requests"
+        intro={
+          <>
+            Families asking us to delete their medical information or their account. Contact the
+            family, delete what can go, and note what was kept and why. Payments, signed releases and
+            background checks are kept for three years.
+          </>
+        }
+      />
       {/* Open and Closed pills, the same as Cancellations (23 Nov 2026). */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Link

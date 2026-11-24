@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
-import BackLink from '@/components/BackLink';
 import AdminMfaReset from './AdminMfaReset';
 
 export const metadata = { title: 'Reset Two-Factor · Staff Admin' };
@@ -16,18 +16,22 @@ export default async function AdminSecurityPage() {
   if (!can(staff, 'admin')) redirect('/admin');
 
   return (
-    <div className="card">
-      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">Reset someone&rsquo;s two-factor</h2>
-        <BackLink href="/admin/accounts/" label="Back to Accounts" />
+    <div>
+      <AdminPageHeader
+        title="Reset someone&rsquo;s two-factor"
+        back={{ href: '/admin/accounts/', label: 'Back to Accounts' }}
+        intro={
+          <>
+            For someone who can&rsquo;t sign in because they lost their phone or reinstalled their
+            authenticator app. This takes off their two-factor, so they sign in with their password and
+            set it up again. Their password stays the same. You will be asked for your own code before
+            it happens.
+          </>
+        }
+      />
+      <div className="card">
+        <AdminMfaReset />
       </div>
-      <p className="text-sm text-neutral-500 mb-5 max-w-4xl">
-        For someone who can&rsquo;t sign in because they lost their phone or reinstalled their
-        authenticator app. This takes off their two-factor, so they sign in with their password and
-        set it up again. Their password stays the same. You will be asked for your own code before
-        it happens.
-      </p>
-      <AdminMfaReset />
     </div>
   );
 }

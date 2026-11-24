@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow, dayInMorristown } from '@/lib/events';
@@ -298,21 +299,27 @@ export default async function AdminActivitiesPage({ searchParams }) {
 
   return (
     <div>
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">Activities</h2>
-        {/* E51. Carries the event filter through, so the sheets you print are
-            the ones you are looking at — same rule as the kitchen list. */}
-        <a
-          href={`/admin/activities/print/${selected ? `?event=${selected}` : ''}`}
-          className="btn-outline btn-sm"
-        >
-          Print activity sheets
-        </a>
-      </div>
-      <p className="text-sm text-neutral-500 mb-4">
-        What each event offers and who has signed up. Give these numbers to the stable, the boat
-        company and the outfitter.
-      </p>
+      <AdminPageHeader
+        title="Activities"
+        actions={
+          <>
+            {/* E51. Carries the event filter through, so the sheets you print are
+                the ones you are looking at — same rule as the kitchen list. */}
+            <a
+              href={`/admin/activities/print/${selected ? `?event=${selected}` : ''}`}
+              className="btn-outline btn-sm"
+            >
+              Print activity sheets
+            </a>
+          </>
+        }
+        intro={
+          <>
+            What each event offers and who has signed up. Give these numbers to the stable, the boat
+            company and the outfitter.
+          </>
+        }
+      />
 
       <EventFilter
         events={(events ?? []).map((e) => ({

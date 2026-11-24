@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { isCurrentEventRow, eventInScope, isEventScope } from '@/lib/events';
@@ -87,36 +88,42 @@ export default async function DietaryPage({ searchParams }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">Dietary &amp; Allergies</h2>
-        {/* The filter travels with the link. Printing "the kitchen list"
-            from a page filtered to one week and getting every registrant the
-            ministry has ever had is not a longer list — it is the wrong list,
-            and the kitchen cannot tell (25 Aug). */}
-        <span className="flex flex-wrap gap-2">
-          <a
-            href={`/admin/dietary/print${
-              eventFilter ? `?event=${eventFilter}` : showPast ? '?past=1' : ''
-            }`}
-            className="btn-outline btn-sm"
-          >
-            Kitchen list (no names)
-            {eventFilter && !isEventScope(eventFilter) && <span className="font-normal">, this event</span>}
-          </a>
-          {/* With names and severity, grouped by allergen (Ellen, 15 Oct
-              2026): for the cook and the nurse, not the kitchen door. */}
-          <a
-            href={`/admin/dietary/by-allergen${eventFilter ? `?event=${eventFilter}` : ''}`}
-            className="btn-outline btn-sm"
-          >
-            By allergen (names)
-          </a>
-        </span>
-      </div>
-      <p className="text-sm text-neutral-500 mb-6">
-        Everyone with dietary needs or allergies, by event. This is the kitchen list. It needs its
-        own permission, so take the same care with printouts as with the screen.
-      </p>
+      <AdminPageHeader
+        title="Dietary &amp; Allergies"
+        actions={
+          <>
+            {/* The filter travels with the link. Printing "the kitchen list"
+                from a page filtered to one week and getting every registrant the
+                ministry has ever had is not a longer list — it is the wrong list,
+                and the kitchen cannot tell (25 Aug). */}
+            <span className="flex flex-wrap gap-2">
+              <a
+                href={`/admin/dietary/print${
+                  eventFilter ? `?event=${eventFilter}` : showPast ? '?past=1' : ''
+                }`}
+                className="btn-outline btn-sm"
+              >
+                Kitchen list (no names)
+                {eventFilter && !isEventScope(eventFilter) && <span className="font-normal">, this event</span>}
+              </a>
+              {/* With names and severity, grouped by allergen (Ellen, 15 Oct
+                  2026): for the cook and the nurse, not the kitchen door. */}
+              <a
+                href={`/admin/dietary/by-allergen${eventFilter ? `?event=${eventFilter}` : ''}`}
+                className="btn-outline btn-sm"
+              >
+                By allergen (names)
+              </a>
+            </span>
+          </>
+        }
+        intro={
+          <>
+            Everyone with dietary needs or allergies, by event. This is the kitchen list. It needs its
+            own permission, so take the same care with printouts as with the screen.
+          </>
+        }
+      />
       {/* Staff may set severity (ruling 29 Sep 2026, Testing Script 3 §13.3) --
           with this reminder in view rather than a dialog in the way. */}
       <p className="mb-6 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">

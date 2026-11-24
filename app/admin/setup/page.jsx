@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import SetupManager from './SetupManager';
@@ -91,17 +92,21 @@ export default async function SetupPage() {
   }
 
   return (
-    <div className="card">
-      <h2 className="text-xl font-bold mb-1">Setup &amp; Manage Events</h2>
-      <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        Create events and open or close registration for each one. The{' '}
-        <span className="font-semibold">Event status</span> controls each event.{' '}
-        <em>Unpublished</em> keeps it off the public site while staff set it up.{' '}
-        <em>Published</em> puts it on the site. <em>Archived</em> takes a finished event off the
-        site and out of current lists, and keeps its records. Registration open and close times
-        are optional. Leave them blank and a published event takes registrations until you
-        change it. Set them and registration opens and closes on its own.
-      </p>
+    <div>
+      <AdminPageHeader
+        title="Setup &amp; Manage Events"
+        intro={
+          <>
+            Create events and open or close registration for each one. The{' '}
+            <span className="font-semibold">Event status</span> controls each event.{' '}
+            <em>Unpublished</em> keeps it off the public site while staff set it up.{' '}
+            <em>Published</em> puts it on the site. <em>Archived</em> takes a finished event off the
+            site and out of current lists, and keeps its records. Registration open and close times
+            are optional. Leave them blank and a published event takes registrations until you
+            change it. Set them and registration opens and closes on its own.
+          </>
+        }
+      />
       {/* One health line (23 Nov 2026, security review): the bot check on
           Contact, Donate and the prayer sign-up needs both Turnstile keys,
           and a check that is quietly off looks exactly like one that works.

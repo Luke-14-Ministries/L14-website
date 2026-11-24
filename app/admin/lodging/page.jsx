@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { staffAssigns, isCurrentEventRow } from '@/lib/events';
@@ -153,11 +154,15 @@ export default async function LodgingPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Rooms &amp; Cabins</h2>
-      <p className="text-sm text-neutral-500 mb-4">
-        A cabin can be assigned whole, or split into rooms that are assigned one by one. Add or
-        fix rooms under &lsquo;Set up rooms&rsquo;. Families see nothing here until you publish.
-      </p>
+      <AdminPageHeader
+        title="Rooms &amp; Cabins"
+        intro={
+          <>
+            A cabin can be assigned whole, or split into rooms that are assigned one by one. Add or
+            fix rooms under &lsquo;Set up rooms&rsquo;. Families see nothing here until you publish.
+          </>
+        }
+      />
 
       <EventFilter
         events={(events ?? []).map((e) => ({

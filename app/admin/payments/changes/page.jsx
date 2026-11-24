@@ -1,8 +1,8 @@
 import Link from 'next/link';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import BackLink from '@/components/BackLink';
 import { whenInMorristown } from '@/lib/events';
 import ResizableTable from '@/components/ResizableTable';
 
@@ -198,131 +198,135 @@ export default async function MoneyChangesPage({ searchParams }) {
   const filtered = Boolean(q || from || to);
 
   return (
-    <div className="card">
-      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">Money Changes</h2>
-        <BackLink href="/admin/payments/" label="Back to Event Payments" />
-      </div>
-      <p className="text-sm text-neutral-500 mb-4 max-w-4xl">
-        Every payment, refund, payment plan, fee, scholarship amount and discount that was added,
-        changed or removed, and who did it. Changes are recorded automatically, and nobody can edit
-        or delete them, including an administrator. Shows the newest {SHOW_LIMIT}.
-      </p>
+    <div>
+      <AdminPageHeader
+        title="Money Changes"
+        back={{ href: '/admin/payments/', label: 'Back to Event Payments' }}
+        intro={
+          <>
+            Every payment, refund, payment plan, fee, scholarship amount and discount that was added,
+            changed or removed, and who did it. Changes are recorded automatically, and nobody can edit
+            or delete them, including an administrator. Shows the newest {SHOW_LIMIT}.
+          </>
+        }
+      />
+      <div className="card">
 
-      {/* A plain GET form: works without JavaScript, and the address keeps
-          the filter. */}
-      <form method="get" action="/admin/payments/changes/" className="mb-4 flex flex-wrap items-end gap-3 text-sm">
-        <label className="block">
-          <span className="block font-semibold mb-1">Family</span>
-          <input
-            type="search"
-            name="q"
-            defaultValue={q}
-            placeholder="Family name"
-            className="field sm:w-64"
-          />
-        </label>
-        <label className="block">
-          <span className="block font-semibold mb-1">From</span>
-          <input type="date" name="from" defaultValue={from} className="field-sm w-auto" />
-        </label>
-        <label className="block">
-          <span className="block font-semibold mb-1">To</span>
-          <input type="date" name="to" defaultValue={to} className="field-sm w-auto" />
-        </label>
-        <button type="submit" className="btn-outline btn-sm">
-          Show
-        </button>
-        {filtered && (
-          <Link href="/admin/payments/changes/" className="text-brand underline self-center">
-            Clear
-          </Link>
-        )}
-      </form>
+        {/* A plain GET form: works without JavaScript, and the address keeps
+            the filter. */}
+        <form method="get" action="/admin/payments/changes/" className="mb-4 flex flex-wrap items-end gap-3 text-sm">
+          <label className="block">
+            <span className="block font-semibold mb-1">Family</span>
+            <input
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder="Family name"
+              className="field sm:w-64"
+            />
+          </label>
+          <label className="block">
+            <span className="block font-semibold mb-1">From</span>
+            <input type="date" name="from" defaultValue={from} className="field-sm w-auto" />
+          </label>
+          <label className="block">
+            <span className="block font-semibold mb-1">To</span>
+            <input type="date" name="to" defaultValue={to} className="field-sm w-auto" />
+          </label>
+          <button type="submit" className="btn-outline btn-sm">
+            Show
+          </button>
+          {filtered && (
+            <Link href="/admin/payments/changes/" className="text-brand underline self-center">
+              Clear
+            </Link>
+          )}
+        </form>
 
-      <p className="mb-3 text-sm text-neutral-600">
-        {matching.length} {matching.length === 1 ? 'change' : 'changes'}
-        {q ? ` for families matching “${q}”` : ''}
-        {from || to ? ` · ${from || 'the start'} to ${to || 'today'}` : ''}
-        {matching.length > SHOW_LIMIT ? ` · the newest ${SHOW_LIMIT} shown` : ''}
-        {log.length === READ_LIMIT && q
-          ? `. The search looked at the newest ${READ_LIMIT.toLocaleString('en-US')} changes; set dates to look further back.`
-          : ''}
-      </p>
-
-      {shown.length === 0 ? (
-        <p className="text-neutral-600">
-          {filtered ? 'No changes match this filter.' : 'Nothing recorded yet.'}
+        <p className="mb-3 text-sm text-neutral-600">
+          {matching.length} {matching.length === 1 ? 'change' : 'changes'}
+          {q ? ` for families matching “${q}”` : ''}
+          {from || to ? ` · ${from || 'the start'} to ${to || 'today'}` : ''}
+          {matching.length > SHOW_LIMIT ? ` · the newest ${SHOW_LIMIT} shown` : ''}
+          {log.length === READ_LIMIT && q
+            ? `. The search looked at the newest ${READ_LIMIT.toLocaleString('en-US')} changes; set dates to look further back.`
+            : ''}
         </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <ResizableTable storageKey="money-change-log">
-            <table className="w-full text-sm">
-              <thead className="bg-neutral-50 text-neutral-500">
-                <tr className="text-left">
-                  <th className="px-3 py-2 font-semibold">When</th>
-                  <th className="px-3 py-2 font-semibold">Family</th>
-                  <th className="px-3 py-2 font-semibold">What</th>
-                  <th className="px-3 py-2 font-semibold">Change</th>
-                  <th className="px-3 py-2 font-semibold">By</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 align-top">
-                {shown.map((r) => {
-                  const regId = regOfRow.get(r.id);
-                  const fam = regId ? familyOfReg.get(regId) : null;
-                  const lines = summary(r);
-                  return (
-                    <tr key={r.id}>
-                      <td className="px-3 py-2 whitespace-nowrap text-neutral-600">
-                        {whenInMorristown(r.changed_at)}
-                      </td>
-                      <td className="px-3 py-2">
-                        {fam ? (
-                          <>
-                            <Link href={`/admin/registrations/${regId}/`} className="font-semibold text-brand underline">
-                              {fam.family}
-                            </Link>
-                            {fam.event && <span className="block text-xs text-neutral-500">{fam.event}</span>}
-                          </>
-                        ) : (
-                          <span className="text-neutral-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <span className="font-semibold">{OP_LABEL[r.op] ?? r.op}</span>{' '}
-                        <span className="text-neutral-600">· {TABLE_LABEL[r.table_name] ?? r.table_name}</span>
-                      </td>
-                      <td className="px-3 py-2">
-                        {lines.length > 0 ? (
-                          <ul className="space-y-0.5">
-                            {lines.slice(0, 6).map((l) => (
-                              <li key={l} className="break-words">{l}</li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <span className="text-neutral-400">—</span>
-                        )}
-                        {lines.length > 6 && (
-                          <details className="mt-1 text-xs text-neutral-500">
-                            <summary className="cursor-pointer">All fields ({lines.length})</summary>
-                            <ul className="mt-1 space-y-0.5">
-                              {lines.slice(6).map((l) => (
+
+        {shown.length === 0 ? (
+          <p className="text-neutral-600">
+            {filtered ? 'No changes match this filter.' : 'Nothing recorded yet.'}
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <ResizableTable storageKey="money-change-log">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 text-neutral-500">
+                  <tr className="text-left">
+                    <th className="px-3 py-2 font-semibold">When</th>
+                    <th className="px-3 py-2 font-semibold">Family</th>
+                    <th className="px-3 py-2 font-semibold">What</th>
+                    <th className="px-3 py-2 font-semibold">Change</th>
+                    <th className="px-3 py-2 font-semibold">By</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 align-top">
+                  {shown.map((r) => {
+                    const regId = regOfRow.get(r.id);
+                    const fam = regId ? familyOfReg.get(regId) : null;
+                    const lines = summary(r);
+                    return (
+                      <tr key={r.id}>
+                        <td className="px-3 py-2 whitespace-nowrap text-neutral-600">
+                          {whenInMorristown(r.changed_at)}
+                        </td>
+                        <td className="px-3 py-2">
+                          {fam ? (
+                            <>
+                              <Link href={`/admin/registrations/${regId}/`} className="font-semibold text-brand underline">
+                                {fam.family}
+                              </Link>
+                              {fam.event && <span className="block text-xs text-neutral-500">{fam.event}</span>}
+                            </>
+                          ) : (
+                            <span className="text-neutral-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <span className="font-semibold">{OP_LABEL[r.op] ?? r.op}</span>{' '}
+                          <span className="text-neutral-600">· {TABLE_LABEL[r.table_name] ?? r.table_name}</span>
+                        </td>
+                        <td className="px-3 py-2">
+                          {lines.length > 0 ? (
+                            <ul className="space-y-0.5">
+                              {lines.slice(0, 6).map((l) => (
                                 <li key={l} className="break-words">{l}</li>
                               ))}
                             </ul>
-                          </details>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">{whoWrote(r, names)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </ResizableTable>
-        </div>
-      )}
+                          ) : (
+                            <span className="text-neutral-400">—</span>
+                          )}
+                          {lines.length > 6 && (
+                            <details className="mt-1 text-xs text-neutral-500">
+                              <summary className="cursor-pointer">All fields ({lines.length})</summary>
+                              <ul className="mt-1 space-y-0.5">
+                                {lines.slice(6).map((l) => (
+                                  <li key={l} className="break-words">{l}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </td>
+                        <td className="px-3 py-2">{whoWrote(r, names)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </ResizableTable>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

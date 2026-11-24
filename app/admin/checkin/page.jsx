@@ -1,4 +1,5 @@
 import { formatPhone } from '@/lib/format';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -178,19 +179,25 @@ export default async function CheckinPage({ searchParams }) {
     <div>
       {/* A paper copy for the door, by family with tick boxes (23 Nov 2026
           review). */}
-      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-bold">Check-In</h2>
-        {eventId && (
-          <a href={`/admin/checkin/print/?event=${eventId}`} className="btn-outline btn-sm">
-            Arrival sheet (print)
-          </a>
-        )}
-      </div>
-      <p className="text-sm text-neutral-500 mb-4">
-        Mark people as they arrive. Works on a phone. Red flags are quick alerts, and the full
-        details are on the Medical &amp; Support page. A family paying at the door pays on their own
-        phone. Show them the QR code.
-      </p>
+      <AdminPageHeader
+        title="Check-In"
+        actions={
+          <>
+            {eventId && (
+              <a href={`/admin/checkin/print/?event=${eventId}`} className="btn-outline btn-sm">
+                Arrival sheet (print)
+              </a>
+            )}
+          </>
+        }
+        intro={
+          <>
+            Mark people as they arrive. Works on a phone. Red flags are quick alerts, and the full
+            details are on the Medical &amp; Support page. A family paying at the door pays on their own
+            phone. Show them the QR code.
+          </>
+        }
+      />
 
       {eventsList.length > 1 && (
         <EventFilter

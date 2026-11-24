@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -113,12 +114,16 @@ export default async function RecentChangesPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Changes to Review</h2>
-      <p className="text-sm text-neutral-500 mb-1">
-        Changes made after someone was approved for a current event: every edit a family makes to their
-        own information, and staff edits to names, dates of birth and safety details, shown old → new with
-        who made each. Marking one reviewed takes it off this list.
-      </p>
+      <AdminPageHeader
+        title="Changes to Review"
+        intro={
+          <>
+            Changes made after someone was approved for a current event: every edit a family makes to their
+            own information, and staff edits to names, dates of birth and safety details, shown old → new with
+            who made each. Marking one reviewed takes it off this list.
+          </>
+        }
+      />
       {/* The nuance lives behind a labeled disclosure: visible enough for the
           volunteer who's here twice a season, collapsed to one line for the
           registrar who's here daily. (A hover tooltip would fail on the

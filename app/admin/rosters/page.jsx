@@ -1,4 +1,5 @@
 import { formatPhone } from '@/lib/format';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -137,12 +138,16 @@ export default async function RostersPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Rosters</h2>
-      <p className="text-sm text-neutral-500 mb-4">
-        Everyone registered, by event. Filter below, and click a column heading to sort. The CSV
-        download matches what is filtered on screen. Select a household to review it, change
-        a status, or add and edit people.
-      </p>
+      <AdminPageHeader
+        title="Rosters"
+        intro={
+          <>
+            Everyone registered, by event. Filter below, and click a column heading to sort. The CSV
+            download matches what is filtered on screen. Select a household to review it, change
+            a status, or add and edit people.
+          </>
+        }
+      />
 
       <RosterTable
         events={(events ?? []).map((e) => ({

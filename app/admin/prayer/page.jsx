@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -49,13 +50,17 @@ export default async function PrayerListPage() {
 
   return (
     <div>
-      <h2 className="mb-1 text-xl font-bold">Prayer List</h2>
-      <p className="mb-6 text-sm text-neutral-500">
-        People join on the <Link href="/pray/" className="underline">Pray page</Link> and confirm by email.
-        Prayer requests and replies go to {site.emails.pray}. If someone asks to be taken off, use
-        <em> Take off the list</em> below. The Pray page won&rsquo;t add them back; if they write
-        asking to rejoin, use <em>Let them sign up again</em>.
-      </p>
+      <AdminPageHeader
+        title="Prayer List"
+        intro={
+          <>
+            People join on the <Link href="/pray/" className="underline">Pray page</Link> and confirm by email.
+            Prayer requests and replies go to {site.emails.pray}. If someone asks to be taken off, use
+            <em> Take off the list</em> below. The Pray page won&rsquo;t add them back; if they write
+            asking to rejoin, use <em>Let them sign up again</em>.
+          </>
+        }
+      />
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="card p-5">

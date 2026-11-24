@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import BackLink from '@/components/BackLink';
 import { AREA_LABEL } from '@/lib/grants';
 import { whenInMorristown } from '@/lib/events';
 
@@ -102,137 +102,141 @@ export default async function AccessLogPage() {
   ).length;
 
   return (
-    <div className="card">
-      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">Access Changes</h2>
-        <BackLink href="/admin/staff" label="Back to Staff &amp; Access" />
-      </div>
-      <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        Every change to what a staff member can see or do: their grants on each
-        area, their role label, and whether their account is active. Changes are
-        logged automatically, and nobody can edit or delete them, including an
-        administrator. Shows the most recent 200.
-      </p>
+    <div>
+      <AdminPageHeader
+        title="Access Changes"
+        back={{ href: '/admin/staff', label: 'Back to Staff &amp; Access' }}
+        intro={
+          <>
+            Every change to what a staff member can see or do: their grants on each
+            area, their role label, and whether their account is active. Changes are
+            logged automatically, and nobody can edit or delete them, including an
+            administrator. Shows the most recent 200.
+          </>
+        }
+      />
+      <div className="card">
 
-      {error && (
-        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
-          The log could not be read: {error.message}. The log didn&rsquo;t load, so
-          this doesn&rsquo;t mean nothing has changed.
-        </p>
-      )}
+        {error && (
+          <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+            The log could not be read: {error.message}. The log didn&rsquo;t load, so
+            this doesn&rsquo;t mean nothing has changed.
+          </p>
+        )}
 
-      {!error && selfGrants > 0 && (
-        <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <strong>{selfGrants}</strong>{' '}
-          {selfGrants === 1 ? 'permission was' : 'permissions were'} granted by
-          somebody to their own account. Administrators are allowed to do that. It&rsquo;s
-          flagged here because it&rsquo;s the change most worth being able to find.
-        </p>
-      )}
+        {!error && selfGrants > 0 && (
+          <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <strong>{selfGrants}</strong>{' '}
+            {selfGrants === 1 ? 'permission was' : 'permissions were'} granted by
+            somebody to their own account. Administrators are allowed to do that. It&rsquo;s
+            flagged here because it&rsquo;s the change most worth being able to find.
+          </p>
+        )}
 
-      {!error && (rows ?? []).length === 0 ? (
-        <p className="text-neutral-600">
-          Nothing recorded yet. The log started on 26 August 2026, so earlier changes
-          aren&rsquo;t in it.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <ResizableTable storageKey="staff-access-log">
-          <table className="w-full text-sm">
-            <thead className="bg-neutral-50 text-neutral-500">
-              <tr className="text-left">
-                <th className="px-3 py-2 font-semibold">When</th>
-                <th className="px-3 py-2 font-semibold">Who</th>
-                <th className="px-3 py-2 font-semibold">What</th>
-                <th className="px-3 py-2 font-semibold">Change</th>
-                <th className="px-3 py-2 font-semibold">By</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {(rows ?? []).map((r) => {
-                const granted = r.new_value === 'true';
-                return (
-                  <tr key={r.id} className={r.changed_by_self ? 'bg-amber-50/60' : ''}>
-                    <td className="px-3 py-2 whitespace-nowrap text-neutral-600">
-                      {whenInMorristown(r.changed_at)}
-                    </td>
-                    <td className="px-3 py-2 font-semibold">{name(r.subject) ?? '—'}</td>
-                    <td className="px-3 py-2">{labelOf(r.field)}</td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={
-                          granted
-                            ? 'font-semibold text-green-800'
-                            : r.new_value === 'false'
-                              ? 'text-neutral-600'
-                              : ''
-                        }
-                      >
-                        {describe(r.field, r.old_value, r.new_value)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2">
-                      {name(r.actor) ?? (
-                        <span className="italic text-neutral-500">
-                          system or migration
-                        </span>
-                      )}
-                      {r.changed_by_self && (
-                        <span className="ml-2 rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-900">
-                          own account
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          </ResizableTable>
-        </div>
-      )}
-
-      <h3 className="mt-10 mb-1 text-lg font-bold">Downloads</h3>
-      <p className="text-sm text-neutral-500 mb-4 max-w-4xl">
-        Every CSV export of family, payment or giving details: who downloaded it, when, and
-        with which filters. Recorded since 23 November 2026, and nobody can edit or delete
-        it. Shows the most recent 100.
-      </p>
-      {exportsError ? (
-        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
-          The downloads could not be read: {exportsError.message}. This doesn&rsquo;t mean
-          nothing was downloaded.
-        </p>
-      ) : (exports ?? []).length === 0 ? (
-        <p className="text-neutral-600">No downloads recorded yet.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <ResizableTable storageKey="staff-export-log">
-          <table className="w-full text-sm">
-            <thead className="bg-neutral-50 text-neutral-500">
-              <tr className="text-left">
-                <th className="px-3 py-2 font-semibold">When</th>
-                <th className="px-3 py-2 font-semibold">Who</th>
-                <th className="px-3 py-2 font-semibold">Export</th>
-                <th className="px-3 py-2 font-semibold">Filters</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {(exports ?? []).map((x) => (
-                <tr key={x.id}>
-                  <td className="px-3 py-2 whitespace-nowrap text-neutral-600">{whenInMorristown(x.exported_at)}</td>
-                  <td className="px-3 py-2 font-semibold">
-                    {name(x.who) ?? <span className="italic font-normal text-neutral-500">login since removed</span>}
-                  </td>
-                  <td className="px-3 py-2">{EXPORT_LABEL[x.kind] ?? x.kind}</td>
-                  <td className="px-3 py-2 text-neutral-600 break-all">{filterWords(x.filters)}</td>
+        {!error && (rows ?? []).length === 0 ? (
+          <p className="text-neutral-600">
+            Nothing recorded yet. The log started on 26 August 2026, so earlier changes
+            aren&rsquo;t in it.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <ResizableTable storageKey="staff-access-log">
+            <table className="w-full text-sm">
+              <thead className="bg-neutral-50 text-neutral-500">
+                <tr className="text-left">
+                  <th className="px-3 py-2 font-semibold">When</th>
+                  <th className="px-3 py-2 font-semibold">Who</th>
+                  <th className="px-3 py-2 font-semibold">What</th>
+                  <th className="px-3 py-2 font-semibold">Change</th>
+                  <th className="px-3 py-2 font-semibold">By</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          </ResizableTable>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {(rows ?? []).map((r) => {
+                  const granted = r.new_value === 'true';
+                  return (
+                    <tr key={r.id} className={r.changed_by_self ? 'bg-amber-50/60' : ''}>
+                      <td className="px-3 py-2 whitespace-nowrap text-neutral-600">
+                        {whenInMorristown(r.changed_at)}
+                      </td>
+                      <td className="px-3 py-2 font-semibold">{name(r.subject) ?? '—'}</td>
+                      <td className="px-3 py-2">{labelOf(r.field)}</td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={
+                            granted
+                              ? 'font-semibold text-green-800'
+                              : r.new_value === 'false'
+                                ? 'text-neutral-600'
+                                : ''
+                          }
+                        >
+                          {describe(r.field, r.old_value, r.new_value)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        {name(r.actor) ?? (
+                          <span className="italic text-neutral-500">
+                            system or migration
+                          </span>
+                        )}
+                        {r.changed_by_self && (
+                          <span className="ml-2 rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                            own account
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </ResizableTable>
+          </div>
+        )}
+
+        <h3 className="mt-10 mb-1 text-lg font-bold">Downloads</h3>
+        <p className="text-sm text-neutral-500 mb-4 max-w-4xl">
+          Every CSV export of family, payment or giving details: who downloaded it, when, and
+          with which filters. Recorded since 23 November 2026, and nobody can edit or delete
+          it. Shows the most recent 100.
+        </p>
+        {exportsError ? (
+          <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+            The downloads could not be read: {exportsError.message}. This doesn&rsquo;t mean
+            nothing was downloaded.
+          </p>
+        ) : (exports ?? []).length === 0 ? (
+          <p className="text-neutral-600">No downloads recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <ResizableTable storageKey="staff-export-log">
+            <table className="w-full text-sm">
+              <thead className="bg-neutral-50 text-neutral-500">
+                <tr className="text-left">
+                  <th className="px-3 py-2 font-semibold">When</th>
+                  <th className="px-3 py-2 font-semibold">Who</th>
+                  <th className="px-3 py-2 font-semibold">Export</th>
+                  <th className="px-3 py-2 font-semibold">Filters</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {(exports ?? []).map((x) => (
+                  <tr key={x.id}>
+                    <td className="px-3 py-2 whitespace-nowrap text-neutral-600">{whenInMorristown(x.exported_at)}</td>
+                    <td className="px-3 py-2 font-semibold">
+                      {name(x.who) ?? <span className="italic font-normal text-neutral-500">login since removed</span>}
+                    </td>
+                    <td className="px-3 py-2">{EXPORT_LABEL[x.kind] ?? x.kind}</td>
+                    <td className="px-3 py-2 text-neutral-600 break-all">{filterWords(x.filters)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            </ResizableTable>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

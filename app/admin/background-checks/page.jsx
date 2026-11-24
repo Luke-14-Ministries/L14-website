@@ -21,7 +21,10 @@ import { Fragment } from 'react';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { CHECK_TONE, clearancePill, isRegistrySearch } from '@/lib/format';
+import { CHECK_TONE, PILL_TONE_WORDS, clearancePill, isRegistrySearch } from '@/lib/format';
+import AdminPageHeader from '@/components/AdminPageHeader';
+import Pill, { PillKey, PILL_SHAPE } from '@/components/Pill';
+import FilterChips from '@/components/FilterChips';
 import { todayInMorristown } from '@/lib/events';
 import { depositInByPerson } from '@/lib/screeningDeposit';
 import { loadScreeningPeople, registryBucket, volunteerBucket, fullCheckCurrent } from '@/lib/backgroundChecks';
@@ -102,22 +105,14 @@ function addDays(iso, days) {
   return d.toISOString().slice(0, 10);
 }
 
+// The filter row on each card: the shared chips (23 Nov 2026, design scheme).
 function FilterPills({ filters, counts, current, hrefFor, label }) {
   return (
-    <nav aria-label={label} className="flex flex-wrap gap-2 text-sm">
-      {filters.map((f) => (
-        <Link
-          key={f.key || 'all'}
-          href={hrefFor(f.key)}
-          aria-current={current === f.key ? 'page' : undefined}
-          className={`rounded-full border px-3 py-1 ${
-            current === f.key ? 'border-brand bg-brand-light font-semibold text-brand-dark' : 'border-neutral-300'
-          }`}
-        >
-          {f.label} ({counts[f.key]})
-        </Link>
-      ))}
-    </nav>
+    <FilterChips
+      label={label}
+      current={current}
+      items={filters.map((f) => ({ key: f.key, label: f.label, count: counts[f.key], href: hrefFor(f.key) }))}
+    />
   );
 }
 
@@ -128,9 +123,9 @@ const HOW_TO_BOX = 'rounded-lg border border-neutral-300 bg-white p-4';
 
 function StatusPill({ pill }) {
   return (
-    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${pill.cls}`} title={pill.title}>
+    <Pill cls={pill.cls} title={pill.title}>
       {pill.text}
-    </span>
+    </Pill>
   );
 }
 
@@ -213,7 +208,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
   const recordFold = (x, cols) =>
     canWrite ? (
       <tr className="border-b border-neutral-100">
-        <td colSpan={cols} className="pb-2">
+        <td colSpan={cols} className="px-3 pb-2">
           <RecordFold personId={x.id}>
             <ClearanceEditor
               personId={x.id}
@@ -350,7 +345,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
   };
 
   // One status cell for every card: the pill, then what is happening or what to do.
-  const chip = (cls) => `whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`;
+  const chip = (cls) => `${PILL_SHAPE} ${cls}`;
   const statusCell = (x) => {
     const due = x.bucket === 'missing' || x.bucket === 'expired';
     const viaVb = x.kind !== 'campers';
@@ -419,19 +414,20 @@ export default async function BackgroundChecksPage({ searchParams }) {
       <ResizableTable storageKey="background-checks-columns-v2" defaults={[210, 240, 125, 125, 380]}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
-            <th className="py-2 pr-3">Name</th>
-            <th className="py-2 pr-3">Event</th>
-            <th className="py-2 pr-3">Date checked</th>
-            <th className="py-2 pr-3">Expires</th>
-            <th className="py-2">Status</th>
+          {/* Sentence case, the shared header cells (23 Nov 2026). */}
+          <tr className="border-b border-neutral-200">
+            <th className="th-cell">Name</th>
+            <th className="th-cell">Event</th>
+            <th className="th-cell">Date checked</th>
+            <th className="th-cell">Expires</th>
+            <th className="th-cell">Status</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((x) => (
             <Fragment key={x.id}>
               <tr className={`${canWrite ? '' : 'border-b border-neutral-100 '}align-top`}>
-                <td className="py-2 pr-3">
+                <td className="td-cell">
                   <PersonLink row={x} />
                   {/* No Role column (Lawrence, 15 Nov 2026: "these are all
                       volunteers"); only this card mixes roles, so it says
@@ -448,12 +444,12 @@ export default async function BackgroundChecksPage({ searchParams }) {
                     </span>
                   )}
                 </td>
-                <td className="py-2 pr-3 text-neutral-600">{x.events.join(' · ')}</td>
-                <td className="whitespace-nowrap py-2 pr-3">{fmtDate(x.checkDate) || '—'}</td>
-                <td className={`whitespace-nowrap py-2 pr-3 ${x.bucket === 'expired' ? 'font-semibold text-red-800' : ''}`}>
+                <td className="td-cell text-neutral-600">{x.events.join(' · ')}</td>
+                <td className="td-cell whitespace-nowrap">{fmtDate(x.checkDate) || '—'}</td>
+                <td className={`td-cell whitespace-nowrap ${x.bucket === 'expired' ? 'font-semibold text-red-800' : ''}`}>
                   {fmtDate(x.expiresOn) || '—'}
                 </td>
-                <td className="py-2">{statusCell(x)}</td>
+                <td className="td-cell">{statusCell(x)}</td>
               </tr>
               {recordFold(x, 5)}
             </Fragment>
@@ -518,25 +514,33 @@ export default async function BackgroundChecksPage({ searchParams }) {
 
   return (
     <div className="space-y-5">
-      <div className="card">
-        <h2 className="text-xl font-bold">Background Checks</h2>
-        <p className="mt-1 text-sm text-neutral-600">
-          Everyone 18 or older on an upcoming event gets a background check (the board, 14 Nov 2026), in three groups:{' '}
-          <a href="#volunteers" className="font-semibold text-brand underline">
-            volunteers
-          </a>
-          ,{' '}
-          <a href="#families" className="font-semibold text-brand underline">
-            parents, siblings and caregivers
-          </a>{' '}
-          and{' '}
-          <a href="#campers" className="font-semibold text-brand underline">
-            adult campers
-          </a>
-          . Age is counted on the first day of camp.
-          {minors > 0 && ` ${minors} under 18 ${minors === 1 ? 'is' : 'are'} not screened and not listed.`}
-        </p>
-      </div>
+      {/* Bare on the gray like every staff page (23 Nov 2026, design
+          scheme), with the colour key under the intro: the same red, amber,
+          green, blue and gray as every pill below. */}
+      <AdminPageHeader
+        title="Background Checks"
+        className="mb-0"
+        intro={
+          <>
+            Everyone 18 or older on an upcoming event gets a background check (the board, 14 Nov 2026), in three groups:{' '}
+            <a href="#volunteers" className="font-semibold text-brand underline">
+              volunteers
+            </a>
+            ,{' '}
+            <a href="#families" className="font-semibold text-brand underline">
+              parents, siblings and caregivers
+            </a>{' '}
+            and{' '}
+            <a href="#campers" className="font-semibold text-brand underline">
+              adult campers
+            </a>
+            . Age is counted on the first day of camp.
+            {minors > 0 && ` ${minors} under 18 ${minors === 1 ? 'is' : 'are'} not screened and not listed.`}
+          </>
+        }
+      >
+        <PillKey items={PILL_TONE_WORDS} className="mt-2" />
+      </AdminPageHeader>
 
       {/* For everyone, above the three cards (Lawrence, 15 Nov 2026). */}
       <div className="grid gap-4 md:grid-cols-2">
