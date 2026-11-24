@@ -157,10 +157,12 @@ export default async function EmailFamiliesPage({ searchParams }) {
         title="Email Families"
         intro={
           <>
-            Email the people registered for an event about a change. You can send to everyone, the
-            campers&rsquo; families, the volunteers, or only the people on one activity. Each household
-            gets one email from registration@, sent only when you press Send. Every send is recorded
-            in the message log.
+            {/* 23 Nov 2026: the full sending address, and "the list of
+                emails sent" (the section below) for "the message log". */}
+            Email the people registered for an event about a change. Send to everyone, the
+            campers&rsquo; families, the volunteers, or only the people on one activity. Each family
+            gets one email from registration@luke14ministries.net, and nothing goes until you press
+            Send. Every send shows in the list of emails sent at the bottom of this page.
           </>
         }
       />

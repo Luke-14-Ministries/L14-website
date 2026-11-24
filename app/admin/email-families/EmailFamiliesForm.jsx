@@ -315,7 +315,7 @@ export default function EmailFamiliesForm({
                     <span className="text-xs text-red-700">{r.error}</span>
                   )}
                   {r.logError && (
-                    <span className="text-xs text-red-700">Not recorded in the message log: {r.logError}</span>
+                    <span className="text-xs text-red-700">Not added to the list of emails sent: {r.logError}</span>
                   )}
                 </li>
               );

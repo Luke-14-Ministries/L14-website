@@ -61,10 +61,10 @@ export default function EmailsSentSection({ result, byEvent, filters, eventOptio
         defaultOpen
       >
         <p className="text-sm text-neutral-500 mb-3">
-          Emails sent from this page and the site&rsquo;s automatic emails (payment plans), one line
-          per send. Open one to see each family&rsquo;s address and <em>What it said</em>. Each
-          family&rsquo;s full list is on their registration page. <em>Delivery</em> opens the mail
-          service&rsquo;s record: delivered, bounced or opened.
+          Emails sent from this page and the automatic payment plan emails, one line per send. Open
+          one to see each family&rsquo;s address and <em>What it said</em>. Each family&rsquo;s full
+          list is on their registration page. <em>Delivery</em> shows whether it was delivered,
+          bounced or opened.
         </p>
 
         {/* Plain GET form (like Giving's): the URL is the filter. The send

@@ -27,7 +27,8 @@ export default function UpcomingReminders({ rows, mode, error, moneyHidden = 0 }
   const badge =
     mode === 'live' ? null : (
       <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-        {mode === 'off' ? 'switched off' : 'test mode: only @luke14ministries.net addresses are emailed'}
+        {/* 23 Nov 2026: what it means for families, not the setting. */}
+        {mode === 'off' ? 'Switched off: nobody gets these emails' : 'Test mode: families don’t get these emails, only @luke14ministries.net addresses'}
       </span>
     );
   return (
@@ -55,7 +56,7 @@ export default function UpcomingReminders({ rows, mode, error, moneyHidden = 0 }
       {!error && moneyHidden > 0 && (
         <p className="mt-3 text-sm text-neutral-600">
           Payment reminders also go to {moneyHidden} {moneyHidden === 1 ? 'family' : 'families'} in
-          these 7 days. Who and when shows only with Payments read access.
+          these 7 days. Who and when shows only with access to Payments.
         </p>
       )}
       <p className="mt-3 text-xs text-neutral-500">
