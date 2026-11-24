@@ -6,6 +6,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { familyError } from '@/lib/dbErrors';
 
 const clean = (v) => {
   const s = String(v ?? '').trim();
@@ -28,7 +29,7 @@ export async function updateMyProfile(form) {
       sms_opt_in: form.sms_opt_in === 'on' || form.sms_opt_in === true,
     })
     .eq('id', user.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('updateMyProfile', error, 'Your details could not be saved.') };
   revalidatePath('/account/contact');
   revalidatePath('/account/dashboard');
   return { ok: true };
@@ -102,7 +103,7 @@ export async function setEmailNews(optIn) {
     .from('profiles')
     .update({ email_news: !!optIn })
     .eq('id', user.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('setEmailNews', error, 'Your choice could not be saved.') };
   revalidatePath('/account/household');
   return { ok: true };
 }

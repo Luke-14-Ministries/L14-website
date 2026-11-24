@@ -8,6 +8,7 @@
 // rather than permission (capacity, closed windows, waiver acknowledgement).
 
 import { revalidatePath } from 'next/cache';
+import { myHouseholdIds } from '@/lib/myHousehold';
 import { createClient } from '@/lib/supabase/server';
 import { isVolunteerRole } from '@/lib/roles';
 
@@ -100,16 +101,10 @@ async function activityAndPerson(supabase, participantId, activityId, label) {
   if (!participant) return { error: 'That person is not on one of your registrations.' };
   // Explicit household scope, not RLS alone (CLAUDE.md): staff who are also a
   // family read every participant, and must still sign only for their own.
-  const { data: { user } = {} } = await supabase.auth.getUser();
-  const { data: memberships, error: memError } = await supabase
-    .from('household_members')
-    .select('household_id')
-    .eq('profile_id', user?.id ?? '00000000-0000-0000-0000-000000000000');
-  if (memError) {
-    console.error(`${label} memberships:`, memError.message);
-    return { error: `Your household could not be read: ${memError.message}` };
-  }
-  if (!(memberships ?? []).some((m) => m.household_id === participant.registrations?.household_id)) {
+  // The one shared helper since 23 Nov 2026 (lib/myHousehold.js).
+  const { ids: householdIds, error: idsError } = await myHouseholdIds(supabase);
+  if (idsError) return { error: idsError };
+  if (!householdIds.includes(participant.registrations?.household_id)) {
     return { error: 'That person is not on one of your registrations.' };
   }
   return { activity, participant };

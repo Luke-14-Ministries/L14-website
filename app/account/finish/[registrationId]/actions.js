@@ -15,6 +15,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
 import { firstPaymentCents } from '@/lib/payments';
+import { myHouseholdIds } from '@/lib/myHousehold';
 import { balanceDueOn, formatDueDate } from '@/lib/events';
 import {
   planAvailable,
@@ -25,13 +26,11 @@ import {
 
 // The registration, only if it belongs to the caller's own household.
 // { reg, error }: a failed read is reported, never passed off as "not found".
+// The households come from the shared helper (lib/myHousehold.js, 23 Nov
+// 2026); userId is kept in the signature so the callers stay as they were.
 async function ownRegistration(supabase, userId, registrationId) {
-  const { data: memberships, error: memberError } = await supabase
-    .from('household_members')
-    .select('household_id')
-    .eq('profile_id', userId);
-  if (memberError) return { reg: null, error: memberError.message };
-  const ids = (memberships ?? []).map((m) => m.household_id);
+  const { ids, error: idsError } = await myHouseholdIds(supabase);
+  if (idsError) return { reg: null, error: idsError };
   if (!ids.length || !registrationId) return { reg: null, error: null };
   const { data, error } = await supabase
     .from('registrations')

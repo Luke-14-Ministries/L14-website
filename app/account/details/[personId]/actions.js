@@ -16,6 +16,8 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { supportPatch, supportProblems } from '@/lib/support';
+import { assertMine } from '@/lib/myHousehold';
+import { familyError } from '@/lib/dbErrors';
 
 export async function savePersonSupport(personId, fields) {
   const user = await getCurrentUser();
@@ -31,6 +33,11 @@ export async function savePersonSupport(personId, fields) {
   // A camper's required answers are checked here as well as in the browser
   // (18 Oct review: this save had no server-side check).
   const supabase = await createClient();
+  // The person must be in the caller's own household (lib/myHousehold.js,
+  // 23 Nov 2026): RLS alone would let a staff login that is also a parent
+  // write any family's medical details from this form.
+  const { error: scopeError } = await assertMine(supabase, { person: personId });
+  if (scopeError) return { ok: false, error: scopeError };
   const { data: camperRows, error: camperError } = await supabase
     .from('registration_participants')
     .select('id')
@@ -39,7 +46,7 @@ export async function savePersonSupport(personId, fields) {
     .neq('status', 'cancelled')
     .limit(1);
   // Read as "not a camper", a failed lookup would skip the camper's checks.
-  if (camperError) return { ok: false, error: `Could not save: ${camperError.message}` };
+  if (camperError) return { ok: false, error: familyError('savePersonSupport camper', camperError, 'Their details could not be saved.') };
   const problems = supportProblems(fields ?? {}, { isCamper: Boolean(camperRows?.length) });
   if (problems.length > 0) {
     return { ok: false, error: `Please fill in: ${problems.join('; ')}.` };
@@ -55,13 +62,7 @@ export async function savePersonSupport(personId, fields) {
     .from('person_support')
     .upsert(patch, { onConflict: 'person_id' });
 
-  if (error) {
-    // The most likely failure is RLS refusing a person outside this family.
-    if (/row-level security/i.test(error.message || '')) {
-      return { ok: false, error: 'That person is not in your household.' };
-    }
-    return { ok: false, error: `Could not save: ${error.message}` };
-  }
+  if (error) return { ok: false, error: familyError('savePersonSupport', error, 'Their details could not be saved.') };
 
   revalidatePath('/account/dashboard');
   revalidatePath(`/account/details/${personId}`);

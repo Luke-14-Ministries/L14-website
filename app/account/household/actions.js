@@ -13,6 +13,16 @@ import { siteOrigin } from '@/lib/origin';
 import { createClient } from '@/lib/supabase/server';
 import { requestContactEmailChange } from '@/lib/contactEmail';
 import { sendHouseholdInvite } from '@/lib/householdInvite';
+import { assertMine, myHouseholdIds } from '@/lib/myHousehold';
+import { familyError } from '@/lib/dbErrors';
+
+// Each action below first proves the household, person or invite is the
+// caller's own (lib/myHousehold.js, 23 Nov 2026). RLS stays the real gate for
+// families, but a staff login that is also a family passes RLS for EVERY
+// household, so without this a staff parent's dashboard could edit someone
+// else's. Database errors reach the page through familyError(): our own
+// sentences pass, Postgres's words go to the server log.
+const SAVE_FAILED = 'Your changes could not be saved.';
 
 // A new contact email waits for its link (0171, 23 Nov 2026); the old one
 // keeps getting mail until then. Shared by the save below and "send again".
@@ -22,7 +32,7 @@ async function askForContactEmail(supabase, householdId, wanted) {
     .select('email')
     .eq('id', householdId)
     .maybeSingle();
-  if (hhError) return { ok: false, error: `Your household could not be read: ${hhError.message}` };
+  if (hhError) return { ok: false, error: familyError('askForContactEmail', hhError, 'Your household could not be read.') };
   const current = (hh?.email ?? '').trim();
   const res = await requestContactEmailChange({
     supabase,
@@ -58,14 +68,8 @@ const clean = (v) => {
 // Returns { person } (id, names, date of birth, phone, household_id) or
 // { error } -- a read error is reported, never treated as "not found".
 async function myPerson(supabase, personId) {
-  const { data: { user } = {} } = await supabase.auth.getUser();
-  if (!user) return { error: 'Please sign in again.' };
-  const { data: memberships, error: memError } = await supabase
-    .from('household_members')
-    .select('household_id')
-    .eq('profile_id', user.id);
-  if (memError) return { error: `Your household could not be read: ${memError.message}` };
-  const householdIds = (memberships ?? []).map((m) => m.household_id);
+  const { ids: householdIds, error: idsError } = await myHouseholdIds(supabase);
+  if (idsError) return { error: idsError };
   if (householdIds.length === 0) return { error: 'That person is not in your household.' };
   const { data: person, error } = await supabase
     .from('people')
@@ -73,7 +77,7 @@ async function myPerson(supabase, personId) {
     .eq('id', personId)
     .in('household_id', householdIds)
     .maybeSingle();
-  if (error) return { error: `That person could not be read: ${error.message}` };
+  if (error) return { error: familyError('myPerson', error, 'That person could not be read.') };
   if (!person) return { error: 'That person is not in your household.' };
   return { person };
 }
@@ -86,7 +90,7 @@ async function caresForNames(supabase, personId, householdId) {
     .from('person_caregivers')
     .select('person_id')
     .eq('caregiver_person_id', personId);
-  if (error) return { error: `Caregiver links could not be read: ${error.message}` };
+  if (error) return { error: familyError('caresForNames', error, 'Caregiver links could not be read.') };
   const ids = (links ?? []).map((l) => l.person_id);
   if (ids.length === 0) return { names: [] };
   const { data: people, error: peopleError } = await supabase
@@ -95,7 +99,7 @@ async function caresForNames(supabase, personId, householdId) {
     .in('id', ids)
     .eq('household_id', householdId)
     .order('created_at');
-  if (peopleError) return { error: `Caregiver links could not be read: ${peopleError.message}` };
+  if (peopleError) return { error: familyError('caresForNames', peopleError, 'Caregiver links could not be read.') };
   return { names: (people ?? []).map((p) => p.first_name) };
 }
 
@@ -104,6 +108,8 @@ export async function updateHouseholdInfo(householdId, form) {
     return { ok: false, error: 'That email address doesn’t look right. Please check it.' };
   }
   const supabase = await createClient();
+  const { error: scopeError } = await assertMine(supabase, { household: householdId });
+  if (scopeError) return { ok: false, error: scopeError };
   const patch = {
     display_name: clean(form.display_name) ?? undefined,
     phone: clean(formatPhone(form.phone ?? '')),
@@ -126,13 +132,13 @@ export async function updateHouseholdInfo(householdId, form) {
         .eq('id', chosen)
         .eq('household_id', householdId)
         .maybeSingle();
-      if (inHouseholdError) return { ok: false, error: inHouseholdError.message };
+      if (inHouseholdError) return { ok: false, error: familyError('updateHouseholdInfo contact', inHouseholdError, SAVE_FAILED) };
       if (!inHousehold) return { ok: false, error: 'That person is not in this household.' };
     }
     patch.primary_contact_person_id = chosen;
   }
   const { error } = await supabase.from('households').update(patch).eq('id', householdId);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('updateHouseholdInfo', error, SAVE_FAILED) };
 
   // The email last, on its own: a new address is not written here but sent a
   // link (askForContactEmail). Blank clears it, as it always has.
@@ -142,7 +148,7 @@ export async function updateHouseholdInfo(householdId, form) {
     emailResult = await askForContactEmail(supabase, householdId, wanted);
   } else if ('email' in (form ?? {})) {
     const { error: clearError } = await supabase.from('households').update({ email: null }).eq('id', householdId);
-    if (clearError) emailResult = { ok: false, error: clearError.message };
+    if (clearError) emailResult = { ok: false, error: familyError('updateHouseholdInfo email', clearError, SAVE_FAILED) };
   }
   revalidatePath('/account/household');
   revalidatePath('/account/dashboard');
@@ -151,12 +157,14 @@ export async function updateHouseholdInfo(householdId, form) {
 
 export async function resendContactEmailLink(householdId) {
   const supabase = await createClient();
+  const { error: scopeError } = await assertMine(supabase, { household: householdId });
+  if (scopeError) return { ok: false, error: scopeError };
   const { data: pending, error } = await supabase
     .from('household_email_changes')
     .select('new_email')
     .eq('household_id', householdId)
     .maybeSingle();
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('resendContactEmailLink', error, 'The waiting change could not be read.') };
   if (!pending) return { ok: false, error: 'There is no change waiting. Save the new email again.' };
   const res = await askForContactEmail(supabase, householdId, pending.new_email);
   revalidatePath('/account/household');
@@ -165,8 +173,10 @@ export async function resendContactEmailLink(householdId) {
 
 export async function cancelContactEmailChange(householdId) {
   const supabase = await createClient();
+  const { error: scopeError } = await assertMine(supabase, { household: householdId });
+  if (scopeError) return { ok: false, error: scopeError };
   const { error } = await supabase.rpc('cancel_household_email_change', { p_household_id: householdId });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('cancelContactEmailChange', error, 'The change could not be cancelled.') };
   revalidatePath('/account/household');
   return { ok: true };
 }
@@ -218,7 +228,7 @@ export async function updatePersonInfo(personId, form) {
         .select('id', { count: 'exact', head: true })
         .eq('person_id', personId)
         .neq('status', 'cancelled');
-      if (countError) return { ok: false, error: `Registrations could not be read: ${countError.message}` };
+      if (countError) return { ok: false, error: familyError('updatePersonInfo registrations', countError, 'Their registrations could not be read.') };
       if ((count ?? 0) > 0) {
         return {
           ok: false,
@@ -247,7 +257,7 @@ export async function updatePersonInfo(personId, form) {
         .select('phone, primary_contact_person_id')
         .eq('id', current.household_id)
         .maybeSingle();
-      if (hhError) return { ok: false, error: `Your household could not be read: ${hhError.message}` };
+      if (hhError) return { ok: false, error: familyError('updatePersonInfo household', hhError, 'Your household could not be read.') };
       phone = carerPhone({ id: personId, phone }, hh);
     }
     const bad = caregiverPhoneProblem({
@@ -280,7 +290,7 @@ export async function updatePersonInfo(personId, form) {
     .update(patch)
     .eq('id', personId)
     .eq('household_id', current.household_id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('updatePersonInfo', error, SAVE_FAILED) };
   revalidatePath('/account/household');
   revalidatePath('/account/dashboard');
   return { ok: true };
@@ -297,6 +307,8 @@ export async function updatePersonInfo(personId, form) {
 // my_household_ids()); only the UI was missing.
 export async function addHouseholdPerson(householdId, form) {
   const supabase = await createClient();
+  const { error: scopeError } = await assertMine(supabase, { household: householdId });
+  if (scopeError) return { ok: false, error: scopeError };
   const first = clean(form.first_name);
   const last = clean(form.last_name);
   if (!first || !last) {
@@ -319,7 +331,7 @@ export async function addHouseholdPerson(householdId, form) {
     })
     .select('id')
     .maybeSingle();
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('addHouseholdPerson', error, 'That person could not be added.') };
   revalidatePath('/account/household');
   revalidatePath('/account/dashboard');
   revalidatePath('/register/family');
@@ -336,12 +348,17 @@ export async function addHouseholdPerson(householdId, form) {
 // deleting a wrong entry is exactly right.
 export async function removeHouseholdPerson(personId) {
   const supabase = await createClient();
+  // Theirs first (myPerson): every read below is then about a person in the
+  // caller's own household, and the delete is filtered by that household too.
+  const { person, error: scopeError } = await myPerson(supabase, personId);
+  if (scopeError) return { ok: false, error: scopeError };
+  const REMOVE_FAILED = 'They could not be removed.';
 
   const { count: partCount, error: partError } = await supabase
     .from('registration_participants')
     .select('id', { count: 'exact', head: true })
     .eq('person_id', personId);
-  if (partError) return { ok: false, error: partError.message };
+  if (partError) return { ok: false, error: familyError('removeHouseholdPerson registrations', partError, REMOVE_FAILED) };
   if ((partCount ?? 0) > 0) {
     return {
       ok: false,
@@ -360,7 +377,7 @@ export async function removeHouseholdPerson(personId) {
     .select('id')
     .eq('primary_contact_person_id', personId)
     .maybeSingle();
-  if (asContactError) return { ok: false, error: asContactError.message };
+  if (asContactError) return { ok: false, error: familyError('removeHouseholdPerson contact', asContactError, REMOVE_FAILED) };
   if (asContact) {
     return {
       ok: false,
@@ -379,14 +396,7 @@ export async function removeHouseholdPerson(personId) {
   // other, which is exactly the state you cannot explain later. Matched by
   // name because a household-level signature records the signer's name rather
   // than a person id.
-  const { data: person, error: personError } = await supabase
-    .from('people')
-    .select('first_name, last_name, household_id')
-    .eq('id', personId)
-    .maybeSingle();
-  if (personError) return { ok: false, error: personError.message };
-
-  if (person) {
+  {
     const fullName = `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim();
     if (fullName) {
       const { data: sigs, error: sigsError } = await supabase
@@ -394,7 +404,7 @@ export async function removeHouseholdPerson(personId) {
         .select('signed_at, signer_name')
         .eq('household_id', person.household_id)
         .ilike('signer_name', fullName);
-      if (sigsError) return { ok: false, error: sigsError.message };
+      if (sigsError) return { ok: false, error: familyError('removeHouseholdPerson signatures', sigsError, REMOVE_FAILED) };
       if ((sigs ?? []).length > 0) {
         return {
           ok: false,
@@ -404,8 +414,15 @@ export async function removeHouseholdPerson(personId) {
     }
   }
 
-  const { error } = await supabase.from('people').delete().eq('id', personId);
-  if (error) return { ok: false, error: error.message };
+  const { data: removed, error } = await supabase
+    .from('people')
+    .delete()
+    .eq('id', personId)
+    .eq('household_id', person.household_id)
+    .select('id');
+  if (error) return { ok: false, error: familyError('removeHouseholdPerson', error, REMOVE_FAILED) };
+  // No error and nothing deleted: someone else removed them first.
+  if (!removed?.length) return { ok: false, error: 'Nothing was removed. Refresh the page and try again.' };
   revalidatePath('/account/household');
   revalidatePath('/account/dashboard');
   revalidatePath('/register/family');
@@ -436,7 +453,7 @@ export async function setCaregivers(personId, caregiver1Id, caregiver2Id) {
       .from('person_caregivers')
       .select('caregiver_person_id')
       .eq('person_id', personId);
-    if (exError) return { ok: false, error: `Caregiver links could not be read: ${exError.message}` };
+    if (exError) return { ok: false, error: familyError('setCaregivers links', exError, 'Caregiver links could not be read.') };
     const [{ data: carers, error: carerError }, { data: hh, error: hhError }] = await Promise.all([
       supabase
         .from('people')
@@ -449,8 +466,8 @@ export async function setCaregivers(personId, caregiver1Id, caregiver2Id) {
         .eq('id', person.household_id)
         .maybeSingle(),
     ]);
-    if (carerError) return { ok: false, error: `Caregivers could not be read: ${carerError.message}` };
-    if (hhError) return { ok: false, error: `Your household could not be read: ${hhError.message}` };
+    if (carerError) return { ok: false, error: familyError('setCaregivers people', carerError, 'Caregivers could not be read.') };
+    if (hhError) return { ok: false, error: familyError('setCaregivers household', hhError, 'Your household could not be read.') };
     if ((carers ?? []).length !== chosen.length) {
       return { ok: false, error: 'A linked caregiver has to be someone in your household.' };
     }
@@ -468,14 +485,14 @@ export async function setCaregivers(personId, caregiver1Id, caregiver2Id) {
     .from('person_caregivers')
     .delete()
     .eq('person_id', personId);
-  if (delError) return { ok: false, error: delError.message };
+  if (delError) return { ok: false, error: familyError('setCaregivers delete', delError, SAVE_FAILED) };
 
   // Positions follow the slots the family filled, minus anyone skipped.
   const keep = [caregiver1Id, caregiver2Id].filter((id, i, all) => id && !skip.has(id) && all.indexOf(id) === i);
   const rows = keep.map((id, i) => ({ person_id: personId, caregiver_person_id: id, position: i + 1 }));
   if (rows.length > 0) {
     const { error } = await supabase.from('person_caregivers').insert(rows);
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: familyError('setCaregivers insert', error, SAVE_FAILED) };
   }
   revalidatePath('/account/household');
   return { ok: true, skipped };
@@ -495,7 +512,7 @@ export async function setPersonPhone(personId, phone) {
     .update({ phone: value })
     .eq('id', personId)
     .eq('household_id', person.household_id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('setPersonPhone', error, SAVE_FAILED) };
   revalidatePath('/account/household');
   return { ok: true };
 }
@@ -543,11 +560,13 @@ export async function inviteAdult(householdId, form) {
     return { ok: false, error: 'That email address doesn’t look right. Please check it.' };
   }
   const supabase = await createClient();
+  const { error: scopeError } = await assertMine(supabase, { household: householdId });
+  if (scopeError) return { ok: false, error: scopeError };
   const [{ data: hh, error: hhError }, { data: me }] = await Promise.all([
     supabase.from('households').select('display_name').eq('id', householdId).maybeSingle(),
     supabase.auth.getUser(),
   ]);
-  if (hhError) return { ok: false, error: `Your household could not be read: ${hhError.message}` };
+  if (hhError) return { ok: false, error: familyError('inviteAdult household', hhError, 'Your household could not be read.') };
   let inviterName = '';
   if (me?.user) {
     const { data: prof } = await supabase.from('profiles').select('first_name, last_name').eq('id', me.user.id).maybeSingle();
@@ -569,7 +588,7 @@ export async function inviteAdult(householdId, form) {
 export async function cancelInvite(inviteId) {
   const supabase = await createClient();
   const { error } = await supabase.rpc('cancel_household_invite', { p_invite_id: inviteId });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('cancelInvite', error, 'The invitation could not be cancelled.') };
   revalidatePath('/account/household');
   return { ok: true };
 }
@@ -583,7 +602,7 @@ export async function removeHouseholdLogin(householdId, profileId) {
     p_household_id: householdId,
     p_profile_id: profileId,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: familyError('removeHouseholdLogin', error, 'That sign-in could not be removed.') };
   revalidatePath('/account/household');
   return { ok: true, message: 'Removed. They can no longer sign in to this household.' };
 }

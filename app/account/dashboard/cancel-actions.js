@@ -9,6 +9,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
+import { assertMine } from '@/lib/myHousehold';
 
 export async function requestCancellation({ registrationId, participantIds, reason }) {
   const user = await getCurrentUser();
@@ -26,6 +27,25 @@ export async function requestCancellation({ registrationId, participantIds, reas
   }
 
   const supabase = await createClient();
+  // The registration must be the caller's own (lib/myHousehold.js, 23 Nov
+  // 2026), and every person named must be on it.
+  const { error: scopeError } = await assertMine(supabase, { registration: registrationId });
+  if (scopeError) return { ok: false, error: scopeError };
+  const named = Array.isArray(participantIds) ? [...new Set(participantIds.filter((x) => typeof x === 'string'))] : [];
+  if (named.length > 0) {
+    const { data: onReg, error: onRegError } = await supabase
+      .from('registration_participants')
+      .select('id')
+      .eq('registration_id', registrationId)
+      .in('id', named);
+    if (onRegError) {
+      console.error('requestCancellation participants:', onRegError.message);
+      return { ok: false, error: 'That request could not be sent. Please try again.' };
+    }
+    if ((onReg ?? []).length !== named.length) {
+      return { ok: false, error: 'Someone named is not on this registration. Refresh the page and try again.' };
+    }
+  }
 
   // One open request at a time. A family clicking twice should not produce two
   // queue items staff have to reconcile against each other.
@@ -48,7 +68,7 @@ export async function requestCancellation({ registrationId, participantIds, reas
 
   const { error } = await supabase.from('registration_cancellation_requests').insert({
     registration_id: registrationId,
-    participant_ids: Array.isArray(participantIds) ? participantIds : [],
+    participant_ids: named,
     reason: reason.trim(),
     requested_by: user.id,
   });
@@ -70,15 +90,22 @@ export async function withdrawCancellation({ requestId }) {
   if (!requestId) return { ok: false, error: 'Nothing to withdraw.' };
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { error: scopeError } = await assertMine(supabase, { cancellation: requestId });
+  if (scopeError) return { ok: false, error: scopeError };
+  const { data: changed, error } = await supabase
     .from('registration_cancellation_requests')
     .update({ status: 'withdrawn', updated_at: new Date().toISOString() })
     .eq('id', requestId)
-    .eq('status', 'open');
+    .eq('status', 'open')
+    .select('id');
 
   if (error) {
     console.error('withdrawCancellation:', error.message);
     return { ok: false, error: 'That could not be withdrawn. Staff may already have acted on it.' };
+  }
+  // No error and no row: staff settled it first (or a second click).
+  if (!changed?.length) {
+    return { ok: false, error: 'Staff have already dealt with this request, so it can no longer be withdrawn.' };
   }
 
   revalidatePath('/account/dashboard');

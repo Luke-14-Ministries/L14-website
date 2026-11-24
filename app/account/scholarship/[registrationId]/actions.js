@@ -14,6 +14,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
+import { assertMine } from '@/lib/myHousehold';
+import { familyError } from '@/lib/dbErrors';
+
+const SAVE_FAILED = 'Your request could not be saved.';
 
 const MAX_CENTS = 10_000_00; // A sanity bound, not a policy. See below.
 
@@ -39,14 +43,14 @@ async function signAgreementIfNeeded(supabase, user, registrationId, input) {
     .order('version', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (agreementError) return `Could not save your request: ${agreementError.message}`;
+  if (agreementError) return familyError('signAgreementIfNeeded', agreementError, SAVE_FAILED);
 
   const { data: regRow, error: regError } = await supabase
     .from('registrations')
     .select('household_id')
     .eq('id', registrationId)
     .maybeSingle();
-  if (regError) return `Could not save your request: ${regError.message}`;
+  if (regError) return familyError('signAgreementIfNeeded', regError, SAVE_FAILED);
 
   if (agreementRow && regRow) {
     const { data: profile, error: profileError } = await supabase
@@ -54,7 +58,7 @@ async function signAgreementIfNeeded(supabase, user, registrationId, input) {
       .select('first_name, last_name')
       .eq('id', user.id)
       .maybeSingle();
-    if (profileError) return `Could not save your request: ${profileError.message}`;
+    if (profileError) return familyError('signAgreementIfNeeded', profileError, SAVE_FAILED);
     // The name the person actually TYPED, when they typed one. Falling
     // straight to the profile made every scholarship signature read as
     // whoever was logged in, which is not the same claim -- and testing
@@ -78,7 +82,7 @@ async function signAgreementIfNeeded(supabase, user, registrationId, input) {
           .eq('id', regRow.household_id)
           .maybeSingle()
       : { data: null };
-    if (contactError) return `Could not save your request: ${contactError.message}`;
+    if (contactError) return familyError('signAgreementIfNeeded', contactError, SAVE_FAILED);
     const contactFull = contactPerson?.people
       ? `${contactPerson.people.first_name ?? ''} ${contactPerson.people.last_name ?? ''}`
       : '';
@@ -93,7 +97,7 @@ async function signAgreementIfNeeded(supabase, user, registrationId, input) {
       .eq('agreement_id', agreementRow.id)
       .eq('registration_id', registrationId)
       .limit(1);
-    if (existingSigError) return `Could not save your request: ${existingSigError.message}`;
+    if (existingSigError) return familyError('signAgreementIfNeeded', existingSigError, SAVE_FAILED);
 
     if (!existingSig?.length) {
       const { error: sigError } = await supabase.from('agreement_signatures').insert({
@@ -104,7 +108,7 @@ async function signAgreementIfNeeded(supabase, user, registrationId, input) {
         signer_name: signerName,
         signer_role: 'account_holder',
       });
-      if (sigError) return `Could not sign the agreement: ${sigError.message}`;
+      if (sigError) return familyError('signAgreementIfNeeded insert', sigError, 'The agreement could not be signed.');
     }
   }
   return null;
@@ -129,6 +133,12 @@ export async function requestScholarship(registrationId, participantId, input) {
 
   const supabase = await createClient();
 
+  // The person must be on this registration, and the registration in the
+  // caller's own household (lib/myHousehold.js, 23 Nov 2026): RLS alone lets
+  // a staff login that is also a parent ask on any family's behalf.
+  const { error: scopeError } = await assertMine(supabase, { participant: participantId, registration: registrationId });
+  if (scopeError) return { ok: false, error: scopeError };
+
   const agreementError = await signAgreementIfNeeded(supabase, user, registrationId, input);
   if (agreementError) return { ok: false, error: agreementError };
 
@@ -141,7 +151,7 @@ export async function requestScholarship(registrationId, participantId, input) {
     .eq('registration_participant_id', participantId)
     .maybeSingle();
   // Read as "no request yet", a failed lookup would insert a duplicate.
-  if (existingError) return { ok: false, error: `Could not save your request: ${existingError.message}` };
+  if (existingError) return { ok: false, error: familyError('requestScholarship read', existingError, SAVE_FAILED) };
 
   if (existing) {
     if ((existing.granted_cents ?? 0) > 0) {
@@ -157,7 +167,7 @@ export async function requestScholarship(registrationId, participantId, input) {
       // declined or withdrawn becomes this person's own request (0160).
       .update({ requested_cents: cents, family_statement: statement || null, status: 'requested', family_request_id: null })
       .eq('id', existing.id);
-    if (error) return { ok: false, error: `Could not save your request: ${error.message}` };
+    if (error) return { ok: false, error: familyError('requestScholarship update', error, SAVE_FAILED) };
   } else {
     const { error } = await supabase.from('scholarships').insert({
       registration_participant_id: participantId,
@@ -165,7 +175,7 @@ export async function requestScholarship(registrationId, participantId, input) {
       family_statement: statement || null,
       status: 'requested',
     });
-    if (error) return { ok: false, error: `Could not save your request: ${error.message}` };
+    if (error) return { ok: false, error: familyError('requestScholarship insert', error, SAVE_FAILED) };
   }
 
   revalidatePath('/account/dashboard');
@@ -179,12 +189,20 @@ export async function withdrawScholarship(registrationId, participantId) {
   if (!user) return { ok: false, error: 'Your session has expired.' };
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { error: scopeError } = await assertMine(supabase, { participant: participantId, registration: registrationId });
+  if (scopeError) return { ok: false, error: scopeError };
+  // Only an open request is withdrawn, and the answer says when there was
+  // none (a decided one, or a second click), instead of "withdrawn" for a
+  // change that never happened (23 Nov 2026).
+  const { data: changed, error } = await supabase
     .from('scholarships')
     .update({ status: 'withdrawn' })
-    .eq('registration_participant_id', participantId);
+    .eq('registration_participant_id', participantId)
+    .eq('status', 'requested')
+    .select('id');
 
-  if (error) return { ok: false, error: `Could not withdraw the request: ${error.message}` };
+  if (error) return { ok: false, error: familyError('withdrawScholarship', error, 'The request could not be withdrawn.') };
+  if (!changed?.length) return { ok: false, error: 'There is no open request to withdraw.' };
   revalidatePath('/account/dashboard');
   revalidatePath(`/account/scholarship/${registrationId}`);
   revalidatePath(`/admin/registrations/${registrationId}`);
@@ -218,6 +236,8 @@ export async function requestFamilyScholarship(registrationId, input) {
   }
 
   const supabase = await createClient();
+  const { error: scopeError } = await assertMine(supabase, { registration: registrationId });
+  if (scopeError) return { ok: false, error: scopeError };
   const agreementError = await signAgreementIfNeeded(supabase, user, registrationId, input);
   if (agreementError) return { ok: false, error: agreementError };
 
@@ -228,7 +248,7 @@ export async function requestFamilyScholarship(registrationId, input) {
     p_cents: cents,
     p_statement: (input?.statement || '').trim() || null,
   });
-  if (error) return { ok: false, error: `Could not save your request: ${error.message}` };
+  if (error) return { ok: false, error: familyError('requestFamilyScholarship', error, SAVE_FAILED) };
 
   revalidatePath('/account/dashboard');
   revalidatePath(`/account/scholarship/${registrationId}`);
@@ -240,8 +260,10 @@ export async function withdrawFamilyScholarship(registrationId) {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: 'Your session has expired.' };
   const supabase = await createClient();
+  const { error: scopeError } = await assertMine(supabase, { registration: registrationId });
+  if (scopeError) return { ok: false, error: scopeError };
   const { error } = await supabase.rpc('family_withdraw_scholarship', { p_registration_id: registrationId });
-  if (error) return { ok: false, error: `Could not withdraw the request: ${error.message}` };
+  if (error) return { ok: false, error: familyError('withdrawFamilyScholarship', error, 'The request could not be withdrawn.') };
   revalidatePath('/account/dashboard');
   revalidatePath(`/account/scholarship/${registrationId}`);
   revalidatePath(`/admin/registrations/${registrationId}`);

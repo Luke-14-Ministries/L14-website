@@ -14,6 +14,7 @@ import { dobProblem, formatPhone } from '@/lib/format';
 import { siteOrigin } from '@/lib/origin';
 import { revalidatePath } from 'next/cache';
 import { supportPatch, supportProblems } from '@/lib/support';
+import { myHouseholdIds } from '@/lib/myHousehold';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sendEmail, registrationConfirmationEmail, logOwnEmail } from '@/lib/email';
 import { requestContactEmailChange } from '@/lib/contactEmail';
@@ -254,10 +255,19 @@ export async function submitFamilyRegistration(payload) {
   // public endpoint needs (18 Oct review: a family could register for an
   // archived event by calling the action). Editing an existing registration
   // after close stays allowed.
+  //
+  // "Existing" means THIS family's registration (lib/myHousehold.js, 23 Nov
+  // 2026). Read through RLS alone, a staff login that is also a parent saw
+  // every family's registrations, so any one of them made a closed event
+  // look like an edit and let the staff parent register after close.
   {
+    const { ids: myHouseholds, error: idsError } = await myHouseholdIds(supabase);
+    if (idsError) return { ok: false, error: idsError };
     const [{ data: ev, error: evError }, { data: existingReg, error: existingError }] = await Promise.all([
       supabase.from('events').select(OPEN_EVENT_COLUMNS).eq('id', eventId).maybeSingle(),
-      supabase.from('registrations').select('id').eq('event_id', eventId).limit(1),
+      myHouseholds.length
+        ? supabase.from('registrations').select('id').eq('event_id', eventId).in('household_id', myHouseholds).limit(1)
+        : Promise.resolve({ data: [], error: null }),
     ]);
     // A failed read is not "closed" and not "no registration yet".
     const openCheckError = evError ?? existingError;

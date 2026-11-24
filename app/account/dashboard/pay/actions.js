@@ -13,6 +13,7 @@ import { checkoutEmail } from '@/lib/contactEmail';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
 import { coverFeeCents, firstPaymentCents, dollars } from '@/lib/payments';
+import { assertMine } from '@/lib/myHousehold';
 
 export async function createCheckout({ registrationId, kind, method, coverFee, customCents }) {
   const user = await getCurrentUser();
@@ -30,6 +31,12 @@ export async function createCheckout({ registrationId, kind, method, coverFee, c
   }
 
   const supabase = await createClient();
+
+  // The caller's own registration (lib/myHousehold.js, 23 Nov 2026). RLS
+  // alone would let a staff login with Payments read open a checkout for
+  // another family's balance from the family dashboard.
+  const { error: scopeError } = await assertMine(supabase, { registration: registrationId });
+  if (scopeError) return { ok: false, error: scopeError };
 
   // What is owed, scoped to this family by RLS on the underlying tables.
   const { data: bal, error: balError } = await supabase
