@@ -42,37 +42,41 @@ export default async function DeleteDataPage() {
   const open = (requests ?? []).some((r) => r.status === 'requested');
 
   return (
-    <section className="mx-auto max-w-2xl px-4 py-10">
-      <div className={TITLE_ROW}>
-        <h1 className="text-3xl font-bold">Delete my data</h1>
-        <BackLink />
-      </div>
-      <p className="mt-3 text-neutral-700">
-        You can ask us to delete your family&rsquo;s medical information, or your whole account. A
-        staff member looks at every request and contacts your household&rsquo;s primary contact
-        before anything is removed, so nothing goes on one adult&rsquo;s word alone. Some records,
-        such as payments and signed releases, have to be kept for a time even after the rest is
-        gone. Staff will tell you which.
-      </p>
-      {(requests ?? []).length > 0 && (
-        <ul className="mt-6 divide-y divide-neutral-200 rounded-sm border border-neutral-200 bg-white text-sm">
-          {requests.map((r) => (
-            <li key={r.id} className="px-4 py-3">
-              <span className="font-semibold">{SCOPE[r.scope]}</span> · requested{' '}
-              {new Date(r.created_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'long', day: 'numeric', year: 'numeric' })} ·{' '}
-              {STATUS[r.status]}
-              {askedBy.has(r.requested_by) && <span className="text-neutral-600"> · asked by {askedBy.get(r.requested_by)}</span>}
-              {r.staff_note && <span className="block text-neutral-600">{r.staff_note}</span>}
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
-        {open ? (
-          <p className="text-neutral-700">Your request is with staff. They will be in touch.</p>
-        ) : (
-          <DeleteDataForm />
+    // The account pages' one shell (23 Nov 2026), shared with Security and
+    // Change password.
+    <section className="bg-neutral-50 py-12 min-h-[60vh]">
+      <div className="container-site max-w-2xl mx-auto">
+        <div className={TITLE_ROW}>
+          <h1 className="text-3xl font-bold">Delete my data</h1>
+          <BackLink />
+        </div>
+        <p className="mt-3 text-neutral-700">
+          You can ask us to delete your family&rsquo;s medical information, or your whole account. A
+          staff member looks at every request and contacts your household&rsquo;s primary contact
+          before anything is removed, so nothing goes on one adult&rsquo;s word alone. Some records,
+          such as payments and signed releases, have to be kept for a time even after the rest is
+          gone. Staff will tell you which.
+        </p>
+        {(requests ?? []).length > 0 && (
+          <ul className="mt-6 divide-y divide-neutral-200 rounded-sm border border-neutral-200 bg-white text-sm">
+            {requests.map((r) => (
+              <li key={r.id} className="px-4 py-3">
+                <span className="font-semibold">{SCOPE[r.scope]}</span> · requested{' '}
+                {new Date(r.created_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'long', day: 'numeric', year: 'numeric' })} ·{' '}
+                {STATUS[r.status]}
+                {askedBy.has(r.requested_by) && <span className="text-neutral-600"> · asked by {askedBy.get(r.requested_by)}</span>}
+                {r.staff_note && <span className="block text-neutral-600">{r.staff_note}</span>}
+              </li>
+            ))}
+          </ul>
         )}
+        <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
+          {open ? (
+            <p className="text-neutral-700">Your request is with staff. They will be in touch.</p>
+          ) : (
+            <DeleteDataForm />
+          )}
+        </div>
       </div>
     </section>
   );

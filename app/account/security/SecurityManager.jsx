@@ -447,7 +447,8 @@ export default function SecurityManager({ required, isStaff = false }) {
 
   return (
     <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8">
-      <h2 className="text-2xl font-bold mb-1">Two-factor authentication</h2>
+      {/* A card title under the page's own "Security" heading (23 Nov 2026). */}
+      <h2 className="text-xl font-bold mb-1">Two-factor authentication</h2>
       <p className="text-sm text-neutral-500 mb-5">
         A second step at login: a 6-digit code from an app on your phone. A
         stolen password alone can&rsquo;t get into your account.

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { createClient } from '@/lib/supabase/server';
 import { getStaff } from '@/lib/staff';
 import SecurityManager from './SecurityManager';
@@ -22,11 +22,13 @@ export default async function SecurityPage({ searchParams }) {
   const staff = await getStaff();
 
   return (
-    <section className="bg-brand-light min-h-[60vh] py-14">
-      <div className="container-site max-w-lg mx-auto">
-        {/* The account pages' back pill (26 Oct 2026); the page's title is
-            SecurityManager's own heading, just below. */}
-        <div className="mb-4 flex justify-end">
+    // The account pages' one shell and title row (23 Nov 2026), shared with
+    // Change password and Delete my data: gray band, heading left, Back pill
+    // right. It was a blue band with the pill alone above a card.
+    <section className="bg-neutral-50 py-12 min-h-[60vh]">
+      <div className="container-site max-w-2xl mx-auto">
+        <div className={`${TITLE_ROW} mb-6`}>
+          <h1 className="text-3xl font-bold">Security</h1>
           <BackLink />
         </div>
         {/* isStaff for the 7-day words (23 Nov 2026); required also covers

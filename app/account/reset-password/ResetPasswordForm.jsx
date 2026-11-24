@@ -116,7 +116,8 @@ export default function ResetPasswordForm() {
       className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8"
       onSubmit={handleSubmit}
     >
-      <h2 className="text-2xl font-bold mb-1">Set a new password</h2>
+      {/* The page's heading says "Change password" (23 Nov 2026); a second
+          title inside the card said the same thing again. */}
       <p className="text-sm text-neutral-500 mb-5">
         {annual
           ? 'Staff passwords are changed once a year. Choose a new one to carry on: at least 10 characters, and not one you use anywhere else.'

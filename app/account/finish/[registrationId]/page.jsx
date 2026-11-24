@@ -8,7 +8,9 @@ import Link from 'next/link';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { isVolunteerRole, VOLUNTEER_ROLES } from '@/lib/roles';
 
-export const metadata = { title: 'Finish Registering' };
+// The browser tab says what the page heading says (23 Nov 2026: one name per
+// page; it read 'Finish Registering' under a 'Ways to pay' heading).
+export const metadata = { title: 'Ways to pay' };
 
 // The last step of registering for a camp week (Larry, 30 Sep 2026): the
 // family chooses how the balance will be paid, and the registration is not
@@ -211,8 +213,10 @@ export default async function FinishPage({ params, searchParams }) {
   const depositDue = !done && !reg.deposit_waived_at && depositOwed > 0 && (bal?.paid_cents ?? 0) === 0 && clearing === 0;
 
   return (
-    <section className="section">
-      <div className="max-w-2xl mx-auto">
+    // The account pages' one shell (23 Nov 2026): a gray band and the
+    // narrow column, so Ways to pay no longer sits on white beside the rest.
+    <section className="bg-neutral-50 py-12 min-h-[60vh]">
+      <div className="container-site max-w-2xl mx-auto">
         {/* Retitled 30 Sep 2026: choosing is optional now -- a registration
             is complete when submitted; the deposit is what staff need to
             approve it (Lawrence). This page is simply the ways to pay. The
@@ -223,8 +227,9 @@ export default async function FinishPage({ params, searchParams }) {
           <BackLink />
         </div>
         <p className="text-neutral-600 mb-2">
-          {ev.name}. Pay the deposit or any amount, pay in full, set up a payment plan, or request
-          help with the fee.
+          {/* Shorter intro (23 Nov 2026): the choices are the cards below, so
+              the event and the due date are all this line needs to say. */}
+          {ev.name}.
           {/* Once the date has passed, "due by" a day gone reads wrong
               (29 Oct 2026); the dashboard says "balance past due". */}
           {due && due < today && balance > 0 ? (
@@ -307,15 +312,9 @@ export default async function FinishPage({ params, searchParams }) {
                 : 'Your place is saved and your deposit is clearing the bank.'}
             </p>
             <p className="mt-1 text-sm">
-              Still to do: pay the rest
-              {due && due >= today ? (
-                <>
-                  {' '}by <strong>{formatDueDate(due)}</strong>
-                </>
-              ) : due ? (
-                ', which is due now'
-              ) : null}
-              {canPlan ? ', or set up a payment plan' : ''}, below.
+              {/* The due date is in the intro just above; saying it twice
+                  in one screen read as two dates (23 Nov 2026). */}
+              Still to do: pay the rest{canPlan ? ', or set up a payment plan' : ''}, below.
             </p>
           </div>
         )}
@@ -366,7 +365,7 @@ export default async function FinishPage({ params, searchParams }) {
               </div>
             </details>
             <p className="text-xs text-neutral-500">
-              Payments are handled securely by Stripe. Card and bank details never touch this site.
+              Payments go through Stripe. Card and bank details never touch this site.
               Registration payments cover event costs (food, lodging and activities) and are{' '}
               <strong>not tax-deductible</strong>.
             </p>

@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { site } from '@/lib/site';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
@@ -8,7 +8,9 @@ import { participantMoney, dollars } from '@/lib/payments';
 import FeeLines from '@/components/FeeLines';
 import { FAMILY_ROLE_LABEL as ROLE_LABEL } from '@/lib/roles';
 
-export const metadata = { title: 'My Statement' };
+// One name per account page, in sentence case, the same in the heading, the
+// dashboard's link and the browser tab (23 Nov 2026).
+export const metadata = { title: 'Statement' };
 
 // The site's one money formatter (lib/payments.js).
 const money = dollars;
@@ -109,13 +111,17 @@ export default async function MyStatementPage({ params }) {
 
   return (
     <div className="print-sheet mx-auto max-w-2xl p-4 sm:p-8 bg-white print:text-[12px] text-neutral-900">
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-6 print:hidden">
-        <h1 className="text-3xl font-bold">My statement</h1>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
+      {/* The account pages' title row (23 Nov 2026): heading left, the Back
+          pill right (above the heading on a phone), and Print on its own line
+          underneath, so the three never crowd one narrow row. */}
+      <div className="mb-6 print:hidden">
+        <div className={TITLE_ROW}>
+          <h1 className="text-3xl font-bold">Statement</h1>
           <BackLink />
+        </div>
+        <div className="mt-3">
           <PrintButton />
-        </span>
+        </div>
       </div>
 
       {/* Letterhead */}
@@ -133,7 +139,9 @@ export default async function MyStatementPage({ params }) {
           loading="lazy"
           className="site-logo-dark hidden h-16 w-auto"
         />
-        <p className="text-sm text-neutral-600 text-right">
+        {/* Left-aligned on a phone, where the logo sits above it; right
+            beside the logo from the small breakpoint up (23 Nov 2026). */}
+        <p className="text-sm text-neutral-600 text-left sm:text-right">
           2348 W Andrew Johnson Hwy, #140 · Morristown, TN 37814
           <br />
           registration@luke14ministries.net
@@ -163,16 +171,19 @@ export default async function MyStatementPage({ params }) {
         </div>
       </div>
 
-      {/* Charges */}
-      <div className="overflow-x-auto print:overflow-visible"><table className="w-full text-sm border-collapse mb-4">
+      {/* Charges. A minimum width so a phone scrolls the table sideways rather
+          than wrapping each dollar figure onto two lines, and every right-aligned
+          cell (here and in Payments) has left padding and no wrap, so "−$1,250.00"
+          never runs into its neighbor (23 Nov 2026). */}
+      <div className="overflow-x-auto print:overflow-visible"><table className="w-full min-w-[34rem] print:min-w-0 text-sm border-collapse mb-4">
         <thead>
           <tr className="text-left border-b border-neutral-400">
             <th className="py-1 pr-3">Person</th>
             <th className="py-1 pr-3">Role</th>
-            <th className="py-1 text-right">Fee</th>
-            <th className="py-1 text-right">Scholarship</th>
-            <th className="py-1 text-right">Discount</th>
-            <th className="py-1 text-right">Due</th>
+            <th className="py-1 pl-3 text-right whitespace-nowrap">Fee</th>
+            <th className="py-1 pl-3 text-right whitespace-nowrap">Scholarship</th>
+            <th className="py-1 pl-3 text-right whitespace-nowrap">Discount</th>
+            <th className="py-1 pl-3 text-right whitespace-nowrap">Due</th>
           </tr>
         </thead>
         <tbody>
@@ -190,10 +201,10 @@ export default async function MyStatementPage({ params }) {
                     {p.people?.first_name} {p.people?.last_name}
                   </td>
                   <td className="py-1 pr-3">{ROLE_LABEL[p.camp_role] ?? p.camp_role}</td>
-                  <td className="py-1 text-right">—</td>
-                  <td className="py-1 text-right">—</td>
-                  <td className="py-1 text-right">—</td>
-                  <td className="py-1 text-right font-semibold">—</td>
+                  <td className="py-1 pl-3 text-right whitespace-nowrap">—</td>
+                  <td className="py-1 pl-3 text-right whitespace-nowrap">—</td>
+                  <td className="py-1 pl-3 text-right whitespace-nowrap">—</td>
+                  <td className="py-1 pl-3 text-right whitespace-nowrap font-semibold">—</td>
                 </tr>
               );
             }
@@ -207,14 +218,14 @@ export default async function MyStatementPage({ params }) {
                   {p.people?.first_name} {p.people?.last_name}
                 </td>
                 <td className="py-1 pr-3">{ROLE_LABEL[p.camp_role] ?? p.camp_role}</td>
-                <td className="py-1 text-right">{money(m.fee_cents)}</td>
-                <td className="py-1 text-right">
+                <td className="py-1 pl-3 text-right whitespace-nowrap">{money(m.fee_cents)}</td>
+                <td className="py-1 pl-3 text-right whitespace-nowrap">
                   {m.scholarship_cents > 0 ? `−${money(m.scholarship_cents)}` : '—'}
                 </td>
-                <td className="py-1 text-right">
+                <td className="py-1 pl-3 text-right whitespace-nowrap">
                   {disc > 0 ? `−${money(disc)}` : '—'}
                 </td>
-                <td className="py-1 text-right font-semibold">{money(due)}</td>
+                <td className="py-1 pl-3 text-right whitespace-nowrap font-semibold">{money(due)}</td>
               </tr>
             );
           })}
@@ -232,7 +243,7 @@ export default async function MyStatementPage({ params }) {
               <th className="py-1 pr-3">Date</th>
               <th className="py-1 pr-3">Method</th>
               <th className="py-1 pr-3">Status</th>
-              <th className="py-1 text-right">Amount</th>
+              <th className="py-1 pl-3 text-right whitespace-nowrap">Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -243,7 +254,7 @@ export default async function MyStatementPage({ params }) {
                 <td className="py-1 pr-3">
                   {p.status === 'processing' ? 'clearing the bank' : p.status === 'refunded' ? 'received, refunded' : 'received'}
                 </td>
-                <td className="py-1 text-right">{money(p.amount_cents)}</td>
+                <td className="py-1 pl-3 text-right whitespace-nowrap">{money(p.amount_cents)}</td>
               </tr>
             ))}
           </tbody>

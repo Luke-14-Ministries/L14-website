@@ -6,7 +6,8 @@ import GivingStatementSheet, { statementTitle } from '@/components/GivingStateme
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { dayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'My Giving Statement' };
+// One name per account page, in sentence case (23 Nov 2026).
+export const metadata = { title: 'Giving statement' };
 
 // A donor's own giving statement, one calendar year at a time (Lawrence,
 // 27 Oct 2026: the dashboard's "Download Giving Statement" was a coming-soon
@@ -48,16 +49,19 @@ export default async function MyGivingStatementPage({ searchParams }) {
   const name = [...inYear].reverse().find((g) => g.donor_name)?.donor_name || user.email;
 
   return (
-    <div className="mx-auto max-w-2xl p-8 print:p-0 bg-white text-neutral-900 print:text-[12px]">
+    <div className="mx-auto max-w-2xl p-4 sm:p-8 print:p-0 bg-white text-neutral-900 print:text-[12px]">
       <div className="mb-6 print:hidden">
-        <div className={`${TITLE_ROW} mb-2`}>
-          <h1 className="text-3xl font-bold">My giving statement</h1>
-          {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-          <span className="flex flex-col items-end gap-2">
-            <BackLink />
-            {inYear.length > 0 && <PrintButton label="Print or save as PDF" />}
-          </span>
+        {/* The same title row as the statement (23 Nov 2026): heading and Back
+            pill on one line, Print on its own line underneath. */}
+        <div className={TITLE_ROW}>
+          <h1 className="text-3xl font-bold">Giving statement</h1>
+          <BackLink />
         </div>
+        {inYear.length > 0 && (
+          <div className="mt-3 mb-2">
+            <PrintButton label="Print or save as PDF" />
+          </div>
+        )}
         {years.length > 1 && (
           <p className="text-sm text-neutral-600">
             Year:{' '}
