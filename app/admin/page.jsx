@@ -200,7 +200,7 @@ export default async function AdminOverview({ searchParams }) {
   const eventMeta = new Map();
   for (const r of registrations) {
     regById.set(r.id, {
-      household: r.households?.display_name ?? 'Household',
+      household: r.households?.display_name ?? 'Family',
       eventId: r.events?.id ?? UNASSIGNED,
       event: r.events?.name ?? 'Unassigned',
       // The headline numbers follow the scope: by
@@ -309,7 +309,7 @@ export default async function AdminOverview({ searchParams }) {
     // Every non-archived event's unless one event or a scope is chosen.
     replies = (replyRegs ?? []).filter((r) => !scope || inScope(r.events)).map((r) => ({
       id: r.id,
-      family: r.households?.display_name ?? 'Household',
+      family: r.households?.display_name ?? 'Family',
       event: r.events?.name ?? '',
     }));
   }

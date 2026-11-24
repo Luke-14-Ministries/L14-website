@@ -115,7 +115,7 @@ export default function AddToRegistration({ person, registrations }) {
   if (registrations.length === 0) {
     return (
       <span className="text-sm text-neutral-500">
-        Not on any registration, and the household has none for a current event. The family can
+        Not on any registration, and the family has none for a current event. The family can
         register them from their account.
       </span>
     );

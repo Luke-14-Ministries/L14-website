@@ -63,7 +63,7 @@ export default async function CancellationsPage({ searchParams }) {
     return {
       id: r.id,
       registrationId: r.registration_id,
-      household: r.registrations?.households?.display_name ?? 'Household',
+      household: r.registrations?.households?.display_name ?? 'Family',
       phone: formatPhone(r.registrations?.households?.phone ?? ''),
       email: r.registrations?.households?.email ?? '',
       eventName: r.registrations?.events?.name ?? '',

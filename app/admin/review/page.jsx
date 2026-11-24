@@ -167,7 +167,7 @@ export default async function ReviewQueuePage({ searchParams }) {
       const pending = people.filter((p) => p.status === 'submitted');
       return {
         id: r.id,
-        household: r.households?.display_name ?? 'Household',
+        household: r.households?.display_name ?? 'Family',
         event: r.events ?? null,
         people,
         pending,

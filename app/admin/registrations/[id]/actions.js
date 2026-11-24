@@ -331,7 +331,7 @@ export async function updateHousehold(registrationId, householdId, fields) {
     .maybeSingle();
   if (regError) return { ok: false, error: withReason('The registration could not be read.', regError) };
   if (!reg || reg.household_id !== householdId) {
-    return { ok: false, error: 'That household is not the one on this registration. Refresh the page.' };
+    return { ok: false, error: 'That family is not the one on this registration. Refresh the page.' };
   }
   const { data: changed, error } = await supabase.from('households').update(patch).eq('id', householdId).select('id');
   if (error) return { ok: false, error: error.message };
@@ -479,7 +479,7 @@ export async function addParticipant(registrationId, input) {
       .eq('household_id', reg.household_id)
       .maybeSingle();
     if (exError) return { ok: false, error: exError.message };
-    if (!existing) return { ok: false, error: 'That person is not in this household.' };
+    if (!existing) return { ok: false, error: 'That person is not in this family.' };
     personId = existing.id;
   } else if (!input?.confirm_new) {
     const { data: same, error: sameError } = await supabase
@@ -503,7 +503,7 @@ export async function addParticipant(registrationId, input) {
           name: `${q.first_name} ${q.last_name}`,
           date_of_birth: q.date_of_birth,
         })),
-        error: 'This household already has someone by that name. Is it the same person?',
+        error: 'This family already has someone by that name. Is it the same person?',
       };
     }
   }

@@ -159,7 +159,7 @@ export default async function MedicalPage({ searchParams }) {
           type="search"
           name="q"
           defaultValue={q}
-          placeholder="Find a person or household…"
+          placeholder="Find a person or family…"
           className="field w-64"
         />
         <button type="submit" className="btn-outline btn-sm">Search</button>
@@ -210,7 +210,7 @@ export default async function MedicalPage({ searchParams }) {
                       <th className="px-4 py-2 font-semibold">Medications</th>
                       <th className="px-4 py-2 font-semibold">Seizures / rescue med</th>
                       <th className="px-4 py-2 font-semibold">Emergency contact</th>
-                      <th className="px-4 py-2 font-semibold">Household / phone</th>
+                      <th className="px-4 py-2 font-semibold">Family / phone</th>
                     </tr>
                   </thead>
                   <tbody>

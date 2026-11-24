@@ -120,7 +120,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
         intro={
           <>
             Who is volunteering at each event, where they&rsquo;d like to serve, and where their
-            application stands. It includes household contact details, but nothing from the
+            application stands. It includes family contact details, but nothing from the
             application and nothing medical.
           </>
         }
@@ -149,7 +149,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
             <thead>
               <tr className="border-b border-neutral-400 text-left">
                 <th className="py-1 pr-2">Name</th>
-                <th className="py-1 pr-2">Household · contact</th>
+                <th className="py-1 pr-2">Family · contact</th>
                 <th className="py-1 pr-2">Serve where</th>
                 <th className="py-1 pr-2">New?</th>
                 <th className="py-1 pr-2">Application</th>

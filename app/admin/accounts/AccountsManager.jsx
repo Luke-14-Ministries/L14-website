@@ -103,9 +103,9 @@ function movedWords(moved) {
 // How this account came to be in its household, from staff_household_logins().
 function joinedLine(login) {
   if (!login) return null;
-  if (login.role === 'owner') return 'Set up this household';
+  if (login.role === 'owner') return 'Set up this family';
   if (login.invite_accepted_at) {
-    return `Joined by invite from ${login.invited_by_name ?? 'someone no longer on the household'}, ${fmtDay(login.invite_accepted_at)}`;
+    return `Joined by invite from ${login.invited_by_name ?? 'someone no longer in the family'}, ${fmtDay(login.invite_accepted_at)}`;
   }
   return `Added ${fmtDay(login.joined_at)}`;
 }
@@ -237,7 +237,7 @@ export default function AccountsManager({
   // both families with where each lives, and typing a town finds them too.
   const householdOptions = households.map((h) => ({
     value: h.id,
-    label: h.display_name ?? 'Household',
+    label: h.display_name ?? 'Family',
     hint: h.city ?? '',
   }));
 
@@ -293,7 +293,7 @@ export default function AccountsManager({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search name, email, or household…"
+          placeholder="Search name, email, or family…"
           className="field w-72 max-w-full"
         />
         <FilterChips
@@ -377,7 +377,7 @@ export default function AccountsManager({
               <Th k="mfa_factor_count" sort={sort} onSort={toggleSort}>
                 Two-factor
               </Th>
-              <th className="px-3 py-2 text-left font-semibold">Household</th>
+              <th className="px-3 py-2 text-left font-semibold">Family</th>
               <th className="px-3 py-2 w-10" />
             </tr>
           </thead>
@@ -491,19 +491,19 @@ export default function AccountsManager({
                         </MenuItem>
                         <MenuItem
                           disabled={(a.household_count ?? 0) > 0}
-                          reason={(a.household_count ?? 0) > 0 ? 'already in a household' : null}
+                          reason={(a.household_count ?? 0) > 0 ? 'already in a family' : null}
                           onClick={() =>
                             setConfirm({ kind: 'link', row: a, householdId: '', personId: '' })
                           }
                         >
-                          Link to household…
+                          Link to family…
                         </MenuItem>
                         <MenuItem
                           disabled={!a.household_id}
-                          reason={!a.household_id ? 'no household attached' : null}
+                          reason={!a.household_id ? 'no family attached' : null}
                           onClick={() => setConfirm({ kind: 'merge', row: a, keepId: '' })}
                         >
-                          Merge household into…
+                          Merge family into…
                         </MenuItem>
                         <MenuItem
                           disabled={isSelf || !myLogin || myLogin.role === 'owner'}
@@ -511,14 +511,14 @@ export default function AccountsManager({
                             isSelf
                               ? 'your own account'
                               : !myLogin
-                                ? 'no household attached'
+                                ? 'no family attached'
                                 : myLogin.role === 'owner'
-                                  ? 'they set up this household'
+                                  ? 'they set up this family'
                                   : null
                           }
                           onClick={() => setConfirm({ kind: 'takeout', row: a })}
                         >
-                          Take out of household…
+                          Take out of family…
                         </MenuItem>
                         <MenuItem
                           disabled={isSelf}
@@ -534,7 +534,7 @@ export default function AccountsManager({
                             isSelf
                               ? 'your own account'
                               : !a.household_id
-                                ? 'no household attached'
+                                ? 'no family attached'
                                 : null
                           }
                           onClick={() => setConfirm({ kind: 'purge', row: a, typed: '' })}
@@ -577,7 +577,7 @@ export default function AccountsManager({
         >
           <p className="text-sm text-neutral-700 mb-3">
             This deletes the sign-in only. The family&rsquo;s registrations, payments and records
-            stay, but nobody can sign in to them until someone is linked to the household again.
+            stay, but nobody can sign in to them until someone is linked to the family again.
             A new account does <strong>not</strong> reconnect to the old records on its own.
           </p>
           <p className="text-sm text-neutral-700 mb-3">
@@ -680,7 +680,7 @@ export default function AccountsManager({
           goes. Never the person who set the household up. */}
       {confirm?.kind === 'takeout' && (
         <Dialog
-          title={`Take this account out of ${confirm.row.household_name ?? 'the household'}?`}
+          title={`Take this account out of ${confirm.row.household_name ?? 'the family'}?`}
           onClose={closeConfirm}
           busy={busy}
         >
@@ -699,7 +699,7 @@ export default function AccountsManager({
               onClick={() =>
                 run(
                   () => takeOutOfHousehold(confirm.row.household_id, confirm.row.user_id),
-                  () => `Took ${confirm.row.email} out of ${confirm.row.household_name ?? 'the household'}.`
+                  () => `Took ${confirm.row.email} out of ${confirm.row.household_name ?? 'the family'}.`
                 )
               }
               className="btn-primary btn-sm"
@@ -716,10 +716,10 @@ export default function AccountsManager({
           hand the household's records to whoever controls that mailbox
           later, which is not necessarily the same person. */}
       {confirm?.kind === 'link' && (
-        <Dialog title="Link this account to a household" onClose={closeConfirm} busy={busy}>
+        <Dialog title="Link this account to a family" onClose={closeConfirm} busy={busy}>
           <p className="text-sm text-neutral-700 mb-3">
             Connects <strong className="wrap-break-word">{confirm.row.email}</strong> to
-            an existing family, giving it access to that household&rsquo;s
+            an existing family, giving it access to that family&rsquo;s
             registrations, payments and records. Do this only after
             you&rsquo;ve confirmed who you&rsquo;re talking to by phone or in
             person, not by email alone.
@@ -727,13 +727,13 @@ export default function AccountsManager({
           {/* Searchable (Lawrence, 4 Nov 2026): the list grows with every family. */}
           <div className="mb-4">
             <SearchSelect
-              label="Household"
+              label="Family"
               options={householdOptions}
               value={confirm.householdId}
               onChange={(v) => setConfirm({ ...confirm, householdId: v ?? '', personId: '' })}
               placeholder="Family name or town…"
               printPrefix={false}
-              noun={['household', 'households']}
+              noun={['family', 'families']}
             />
           </div>
           {confirm.householdId &&
@@ -762,7 +762,7 @@ export default function AccountsManager({
                     onChange={(e) => setConfirm({ ...confirm, personId: e.target.value })}
                     className="field mb-1"
                   >
-                    <option value="">Don&rsquo;t mark anyone, only link the household</option>
+                    <option value="">Don&rsquo;t mark anyone, only link the family</option>
                     {candidates.map((pp) => (
                       <option key={pp.id} value={pp.id}>
                         {pp.first_name} {pp.last_name}
@@ -794,7 +794,7 @@ export default function AccountsManager({
                       confirm.personId || null
                     ),
                   (r) =>
-                    `Linked ${confirm.row.email} to the household as ${
+                    `Linked ${confirm.row.email} to the family as ${
                       r.role === 'owner' ? 'the person who set it up' : 'another adult who signs in'
                     }${confirm.personId ? ', and marked which family member they are' : ''}.`
                 )
@@ -814,29 +814,29 @@ export default function AccountsManager({
           close on an outside click: a half-made choice should not vanish. */}
       {confirm?.kind === 'merge' && (
         <Dialog
-          title={`Merge ${confirm.row.household_name ?? 'this household'} into another`}
+          title={`Merge ${confirm.row.household_name ?? 'this family'} into another`}
           onClose={closeConfirm}
           closeOnOutside={false}
           busy={busy}
         >
           <p className="text-sm text-neutral-700 mb-3">
             Its people, accounts, registrations, payments and records move into the
-            household you choose, and{' '}
-            <strong>{confirm.row.household_name ?? 'this household'}</strong> is then
-            deleted. Blank contact details on the kept household are filled from
+            family you choose, and{' '}
+            <strong>{confirm.row.household_name ?? 'this family'}</strong> is then
+            deleted. Blank contact details on the kept family are filled from
             this one. Its open invites, and any contact-email change still waiting
-            for a click, are canceled. There is no undo. If both households are
+            for a click, are canceled. There is no undo. If both families are
             registered for the same event, cancel one of those registrations first.
           </p>
           <div className="mb-4">
             <SearchSelect
-              label="Keep this household"
+              label="Keep this family"
               options={householdOptions.filter((o) => o.value !== confirm.row.household_id)}
               value={confirm.keepId}
               onChange={(v) => setConfirm({ ...confirm, keepId: v ?? '' })}
               placeholder="Family name or town…"
               printPrefix={false}
-              noun={['household', 'households']}
+              noun={['family', 'families']}
             />
           </div>
           <div className="flex gap-3 justify-end">
@@ -852,9 +852,9 @@ export default function AccountsManager({
                   (r) => {
                     const kept =
                       households.find((h) => h.id === confirm.keepId)?.display_name ??
-                      'the chosen household';
+                      'the chosen family';
                     const moved = movedWords(r.moved);
-                    return `Merged ${confirm.row.household_name ?? 'the household'} into ${kept}.${
+                    return `Merged ${confirm.row.household_name ?? 'the family'} into ${kept}.${
                       moved ? ` Moved across: ${moved}.` : ''
                     }`;
                   }
@@ -888,25 +888,25 @@ export default function AccountsManager({
             const kept = r.loginsKept ?? [];
             finish({
               ok: true,
-              message: `Deleted ${confirm.row.household_name ?? 'the household'} and all its data. ${
+              message: `Deleted ${confirm.row.household_name ?? 'the family'} and all its data. ${
                 r.loginsDeleted === 1 ? '1 account was' : `${r.loginsDeleted} accounts were`
               } deleted.${
                 kept.length
-                  ? ` Kept, because they are staff, a program leader or in another household: ${kept.join(', ')}. They are only off this household.`
+                  ? ` Kept, because they are staff, a program leader or in another family: ${kept.join(', ')}. They are only off this family.`
                   : ''
               }`,
             });
           }}
         >
           <p className="text-sm text-neutral-700 mb-3">
-            This permanently deletes the household, its people,{' '}
+            This permanently deletes the family, its people,{' '}
             <strong>
               {confirm.row.registration_count ?? 0} registration
               {(confirm.row.registration_count ?? 0) === 1 ? '' : 's'}
             </strong>{' '}
             and the accounts of everyone in it. There is no undo. Donation records are kept, as
-            anonymous entries. An account that is staff, a program leader or in another household
-            is kept and only taken off this household.
+            anonymous entries. An account that is staff, a program leader or in another family
+            is kept and only taken off this family.
           </p>
           {(confirm.row.payment_count ?? 0) > 0 && (
             <p className="text-sm rounded-sm border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 mb-3">

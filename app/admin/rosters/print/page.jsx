@@ -106,7 +106,7 @@ export default async function PrintRostersPage({ searchParams }) {
                   <th className="py-1 pr-3">Role</th>
                   <th className="py-1 pr-3">Shirt</th>
                   <th className="py-1 pr-3">Status</th>
-                  <th className="py-1 pr-3">Household</th>
+                  <th className="py-1 pr-3">Family</th>
                   <th className="py-1">Phone</th>
                 </tr>
               </thead>

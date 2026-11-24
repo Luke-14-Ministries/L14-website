@@ -37,7 +37,7 @@ export default async function DeletionRequestsPage({ searchParams }) {
     .map((r) => ({
       id: r.id,
       householdId: r.household_id,
-      household: r.households?.display_name ?? 'Household',
+      household: r.households?.display_name ?? 'Family',
       email: r.households?.email ?? '',
       phone: formatPhone(r.households?.phone ?? ''),
       scope: r.scope,

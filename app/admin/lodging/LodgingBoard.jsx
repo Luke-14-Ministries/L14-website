@@ -88,7 +88,7 @@ function PersonChip({ person, onRemove, onMove, pending, accessWarning, moving }
         </span>
       )}
       {person.household && (
-        <span className="text-xs text-neutral-400" title="Household">
+        <span className="text-xs text-neutral-400" title="Family">
           {person.household}
         </span>
       )}
@@ -180,7 +180,7 @@ export default function LodgingBoard({
   const unplacedByHousehold = useMemo(() => {
     const m = new Map();
     for (const p of unplaced) {
-      const key = p.household || 'No household name';
+      const key = p.household || 'No family name';
       if (!m.has(key)) m.set(key, []);
       m.get(key).push(p);
     }
@@ -647,7 +647,7 @@ export default function LodgingBoard({
         {placingGroup && placingGroup.length > 0 && (
           <p className="mt-2 rounded-sm border border-brand bg-brand-light px-3 py-2 text-sm">
             Placing the whole{' '}
-            <span className="font-semibold">{placingGroup[0]?.household}</span> household (
+            <span className="font-semibold">{placingGroup[0]?.household}</span> family (
             {placingGroup.length} {placingGroup.length === 1 ? 'person' : 'people'}). Choose a room below.{' '}
             <button
               onClick={() => setPlacingGroup(null)}

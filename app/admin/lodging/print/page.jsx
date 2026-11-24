@@ -183,7 +183,7 @@ export default async function RoomListPrintPage({ searchParams }) {
         back={{ href: `/admin/lodging/${selected ? `?event=${selected}` : ''}`, label: 'Back to Rooms & Cabins' }}
         intro={
           <>
-            Who is in each room, by building. Names, role, age and household only. Mobility and care
+            Who is in each room, by building. Names, role, age and family only. Mobility and care
             notes stay on the Rooms &amp; Cabins screen, because paper sheets get left lying around.
           </>
         }

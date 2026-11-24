@@ -55,7 +55,7 @@ const SIGNER_ROLE_LABEL = {
   // four are kept because the rows that used them are still on file, and a
   // signature is never rewritten.
   all_registered: 'on behalf of everyone on this registration',
-  self: 'for themselves and their household',
+  self: 'for themselves and their family',
   parent: 'as a parent',
   guardian: 'as parent or legal guardian',
   account_holder: 'as the account holder',
@@ -415,7 +415,7 @@ function ParticipantRow({
   function hardDelete() {
     if (
       !confirm(
-        `Permanently delete ${p.first_name} ${p.last_name} from this registration?\n\nThis can't be undone. Only this week's entry is removed. Their household record stays.`
+        `Permanently delete ${p.first_name} ${p.last_name} from this registration?\n\nThis can't be undone. Only this week's entry is removed. They stay in the family.`
       )
     )
       return;
@@ -1072,10 +1072,10 @@ function HouseholdEditor({ registrationId, household }) {
         </div>
       ) : (
         <div>
-          <h3 className="text-base font-bold mb-3">Edit household</h3>
+          <h3 className="text-base font-bold mb-3">Edit family details</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="field-label">Household name</label>
+              <label className="field-label">Family name</label>
               <input className={inputCls} value={f.display_name} onChange={set('display_name')} />
             </div>
             <div>

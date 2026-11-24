@@ -157,7 +157,7 @@ export default async function DietaryPage({ searchParams }) {
           type="search"
           name="q"
           defaultValue={q}
-          placeholder="Find a person or household…"
+          placeholder="Find a person or family…"
           className="field w-64"
         />
         <button type="submit" className="btn-outline btn-sm">Search</button>
@@ -186,7 +186,7 @@ export default async function DietaryPage({ searchParams }) {
                       <th className="px-4 py-2 font-semibold">Person</th>
                       <th className="px-4 py-2 font-semibold">Allergies</th>
                       <th className="px-4 py-2 font-semibold">Dietary needs</th>
-                      <th className="px-4 py-2 font-semibold">Household / phone</th>
+                      <th className="px-4 py-2 font-semibold">Family / phone</th>
                     </tr>
                   </thead>
                   <tbody>

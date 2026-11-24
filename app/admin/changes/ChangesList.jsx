@@ -12,7 +12,7 @@ import FoldArrow from '@/components/FoldArrow';
 
 const SOURCE_LABEL = {
   people: 'Person details',
-  households: 'Household info',
+  households: 'Family info',
   person_support: 'Support & medical',
   registration_participants: 'Registration',
   person_caregivers: 'Caregivers',
@@ -171,7 +171,7 @@ export default function ChangesList({ groups: given }) {
   // will read. One prompt, prefilled with what changed.
   function hold(c) {
     const reason = window.prompt(
-      `Put ${c.person || 'this household'}'s current registration on hold for another review?\n\nWhy? The family sees this:`,
+      `Put ${c.person || 'this family'}'s current registration on hold for another review?\n\nWhy? The family sees this:`,
       `A change to ${(FIELD_LABEL[c.field] ?? c.field).toLowerCase()} on ${c.when} needs a second look.`
     );
     if (reason === null) return;
