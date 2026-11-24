@@ -49,6 +49,48 @@ unchanged and the link expires on its own.</p>
 registration@luke14ministries.net</p>
 ```
 
+## 3 · "Change email address" template (added 23 Nov 2026)
+
+"Secure email change" is on, so this one email goes to BOTH addresses, each
+with its own token. The button page (`type=email_change`) says a change needs
+both links, and afterwards `/auth/confirm/changed/` says whether one is still
+to press.
+
+```html
+<h2>Confirm your new sign-in email</h2>
+
+<p>A change of sign-in email was requested for your Luke&nbsp;14&nbsp;Ministries
+account, from {{ .Email }} to {{ .NewEmail }}. A link like this one went to
+both addresses. The change happens once both are pressed:</p>
+
+<p><a href="{{ .SiteURL }}/auth/confirm/?token_hash={{ .TokenHash }}&type=email_change&redirect_to={{ .RedirectTo }}">Confirm the change</a></p>
+
+<p>If you didn't ask for this, don't press the link, and let us know at
+info@luke14ministries.net. Nothing changes without both links.</p>
+
+<p>Luke 14 Ministries<br>
+registration@luke14ministries.net</p>
+```
+
+## 4 · "Magic link" template (added 23 Nov 2026)
+
+The site sends no magic links today. The template is pointed at the button
+page anyway, so a later flow that sends one cannot bring back a self-spending
+link.
+
+```html
+<h2>Your sign-in link</h2>
+
+<p>Press the link to sign in to your Luke&nbsp;14&nbsp;Ministries account:</p>
+
+<p><a href="{{ .SiteURL }}/auth/confirm/?token_hash={{ .TokenHash }}&type=magiclink&redirect_to={{ .RedirectTo }}">Sign in</a></p>
+
+<p>If you didn't ask for this, ignore this email. The link expires on its own.</p>
+
+<p>Luke 14 Ministries<br>
+registration@luke14ministries.net</p>
+```
+
 ---
 
 ## Why these exact pieces

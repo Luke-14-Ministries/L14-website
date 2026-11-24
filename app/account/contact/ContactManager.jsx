@@ -109,8 +109,11 @@ export default function ContactManager({ email, profile }) {
         <p className="text-sm text-neutral-500 mb-4">
           The address you sign in with, and where password reset emails go. Currently{' '}
           <span className="font-semibold">{email}</span>. To change it, enter the new address.
-          We&rsquo;ll email a confirmation link to it, and nothing changes until you click that
-          link. This does not change where camp email goes: that is your household&rsquo;s contact
+          {/* Both links, because "secure email change" is on in Supabase: it
+              said one link until 23 Nov 2026, and the second email then
+              looked like a mistake. */}
+          We will email a link to the new address and one to your current address. Nothing
+          changes until both are pressed. This does not change where camp email goes: that is your household&rsquo;s contact
           email, changed on{' '}
           <Link href="/account/household/" className="text-brand underline">
             Manage Household

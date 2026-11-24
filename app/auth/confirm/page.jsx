@@ -47,6 +47,30 @@ async function onward(supabase, next) {
   return next;
 }
 
+// The link types Supabase's emails send. Anything else in ?type= is a
+// mangled or hand-made link (23 Nov 2026: it went straight to verifyOtp).
+const LINK_TYPES = ['email', 'signup', 'recovery', 'email_change', 'magiclink', 'invite'];
+
+// A password-reset or email-change link that fails while someone is already
+// signed in used to send them on as if it had worked: a reset link that had
+// expired opened the reset form for whoever happened to be signed in, a
+// different account from the one the email was for (security review,
+// 23 Nov 2026). The courtesy below is meant for one case only: a second press
+// of the same button, where the first press has just signed this browser in
+// from the link. So it applies only when the session itself began from an
+// emailed link in the last ten minutes. Supabase lists how the session was
+// signed in (amr), with a time in seconds.
+const LINK_METHODS = ['otp', 'magiclink', 'recovery', 'email_change', 'email/signup', 'invite'];
+const RECENT_SECONDS = 10 * 60;
+async function sessionBeganFromRecentLink(supabase) {
+  const { data: aal, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (error) return false;
+  const now = Date.now() / 1000;
+  return (aal?.currentAuthenticationMethods ?? []).some(
+    (m) => LINK_METHODS.includes(m?.method) && now - Number(m?.timestamp ?? 0) < RECENT_SECONDS
+  );
+}
+
 async function confirmAction(formData) {
   'use server';
 
@@ -54,24 +78,40 @@ async function confirmAction(formData) {
   const type = formData.get('type');
   // Path-only: never redirect off-site. See safeNextPath in lib/site.js.
   const next = safeNextPath(formData.get('next'));
+  if (!LINK_TYPES.includes(type)) redirect('/account/link-expired/');
 
   const supabase = await createClient();
 
-  if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({
+  if (tokenHash) {
+    const { data, error } = await supabase.auth.verifyOtp({
       type,
       token_hash: tokenHash,
     });
-    if (!error) redirect(await onward(supabase, next));
+    if (!error) {
+      // An email change with both links needed: the first press confirms one
+      // address and signs nobody in; the second finishes the change and does.
+      if (type === 'email_change') {
+        redirect(`/auth/confirm/changed/?step=${data?.session ? 'done' : 'half'}`);
+      }
+      redirect(await onward(supabase, next));
+    }
+    // The reason only (expired, already used); never the token.
+    console.error('confirm link:', type, error.code ?? error.message);
   }
 
   // Same courtesy as the callback route: if a duplicate submit from this
   // browser already spent the token, the session it created is on this
-  // request -- check before showing an error page.
+  // request -- check before showing an error page. For a reset or an email
+  // change, only when that session came from a link minutes ago (see above).
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect(await onward(supabase, next));
+  if (user) {
+    const strict = type === 'recovery' || type === 'email_change';
+    if (strict && !(await sessionBeganFromRecentLink(supabase))) redirect('/account/link-expired/');
+    if (type === 'email_change') redirect('/auth/confirm/changed/');
+    redirect(await onward(supabase, next));
+  }
 
   redirect('/account/link-expired/');
 }
@@ -98,30 +138,52 @@ export default async function ConfirmPage({ searchParams }) {
 
   // No token in the URL at all: someone typed the address by hand, or a mail
   // client mangled the link. Nothing to verify, nothing to show but the door.
-  if (!tokenHash) redirect('/account/link-expired/');
+  if (!tokenHash || !LINK_TYPES.includes(type)) redirect('/account/link-expired/');
 
   const isRecovery = type === 'recovery';
+  const isEmailChange = type === 'email_change';
+  if (isEmailChange) next = '/auth/confirm/changed/';
+
+  const heading = isEmailChange
+    ? 'Confirm your new sign-in email'
+    : isRecovery
+      ? 'Reset your password'
+      : 'Confirm your email address';
+  const lead = isEmailChange
+    ? 'We sent one link to your new address and one to your current address. Your sign-in email changes once both are pressed.'
+    : isRecovery
+      ? 'Press the button to choose a new password.'
+      : 'One more click and your account is ready.';
+  const button = isEmailChange
+    ? 'Confirm the change'
+    : isRecovery
+      ? 'Continue to password reset'
+      : 'Confirm my email address';
 
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
       <div className="container-site max-w-md mx-auto">
         <div className="rounded-lg border border-neutral-200 shadow-sm bg-white p-6 sm:p-8 text-center">
-          <h1 className="text-3xl font-bold mb-3">
-            {isRecovery ? 'Reset your password' : 'Confirm your email address'}
-          </h1>
-          <p className="text-neutral-700 mb-6">
-            {isRecovery
-              ? 'Press the button to choose a new password.'
-              : 'One more click and your account is ready.'}
-          </p>
+          <h1 className="text-3xl font-bold mb-3">{heading}</h1>
+          <p className="text-neutral-700 mb-6">{lead}</p>
           <form action={confirmAction}>
             <input type="hidden" name="token_hash" value={tokenHash} />
             <input type="hidden" name="type" value={type} />
             <input type="hidden" name="next" value={next} />
             <button type="submit" className="btn-primary w-full">
-              {isRecovery ? 'Continue to password reset' : 'Confirm my email address'}
+              {button}
             </button>
           </form>
+          {/* Said because it is true and can surprise: pressing the button on
+              a computer where someone else is signed in replaces their
+              session with the account the email was for (23 Nov 2026). The
+              first press of an email change signs nobody in, so it is left
+              out there. */}
+          {!isEmailChange && (
+            <p className="mt-3 text-sm text-neutral-600">
+              You will be signed in to the account this email was sent to.
+            </p>
+          )}
           <p className="mt-5 text-sm text-neutral-500">
             Didn&rsquo;t expect this email? You can ignore it. Nothing happens
             unless you press the button.

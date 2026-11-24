@@ -87,7 +87,7 @@ export async function requestLoginEmailChange(newEmail, code = '') {
   return {
     ok: true,
     // "Secure email change" is on in Supabase: both addresses get a link.
-    message: `We sent a link to ${email} and one to your current address. Your sign-in email changes once both are clicked.`,
+    message: `We sent a link to ${email} and one to your current address. Your sign-in email changes once both are pressed.`,
   };
 }
 
