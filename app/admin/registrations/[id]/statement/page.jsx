@@ -272,7 +272,7 @@ export default async function FamilyStatementPage({ params }) {
       <p className="text-xs text-neutral-500">
         Registration payments for camp and other ministry events cover event costs (food, lodging,
         and activities) and are not tax-deductible. Payments marked &ldquo;clearing the bank&rdquo;
-        are counted above and finish settling within a few days. Questions? Email
+        are counted above and finish settling within a few days. Questions? Email{' '}
         {site.emails.registration} or call {site.phone}.
       </p>
     </div>
