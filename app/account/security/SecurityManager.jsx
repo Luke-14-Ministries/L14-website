@@ -66,6 +66,10 @@ export default function SecurityManager({ required, isStaff = false }) {
   // the row that is this browser.
   const [trusted, setTrusted] = useState([]);
   const [thisHash, setThisHash] = useState(null);
+  // Five at first, this browser on top: someone who ticks the box at every
+  // login on a few computers builds a long list, and the newest are the ones
+  // worth seeing.
+  const [showAllTrusted, setShowAllTrusted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -435,6 +439,10 @@ export default function SecurityManager({ required, isStaff = false }) {
   }
 
   const inputCls = 'w-full rounded-sm border border-neutral-300 px-4 py-2.5';
+  const orderedTrusted = thisHash
+    ? [...trusted.filter((t) => t.token_hash === thisHash), ...trusted.filter((t) => t.token_hash !== thisHash)]
+    : trusted;
+  const shownTrusted = showAllTrusted ? orderedTrusted : orderedTrusted.slice(0, 5);
   const isSvgMarkup = enrolling?.qr && enrolling.qr.trim().startsWith('<svg');
 
   return (
@@ -661,7 +669,7 @@ export default function SecurityManager({ required, isStaff = false }) {
             {trusted.length > 0 && (
               <>
                 <ul className="divide-y divide-neutral-100 mb-2">
-                  {trusted.map((t) => (
+                  {shownTrusted.map((t) => (
                     <li key={t.id} className="py-2 flex items-center justify-between gap-3">
                       <span className="min-w-0 text-sm">
                         <span className="font-medium">{browserName(t.user_agent ?? '')}</span>
@@ -669,8 +677,8 @@ export default function SecurityManager({ required, isStaff = false }) {
                           <span className="text-neutral-500"> · this browser</span>
                         )}
                         <span className="block text-neutral-500">
-                          Remembered {whenInMorristown(t.created_at)} · last used{' '}
-                          {t.last_used_at ? whenInMorristown(t.last_used_at) : 'not since'}
+                          Remembered {whenInMorristown(t.created_at)} ·{' '}
+                          {t.last_used_at ? `last used ${whenInMorristown(t.last_used_at)}` : 'not used since'}
                         </span>
                       </span>
                       <button
@@ -683,6 +691,14 @@ export default function SecurityManager({ required, isStaff = false }) {
                     </li>
                   ))}
                 </ul>
+                {trusted.length > shownTrusted.length && (
+                  <button
+                    onClick={() => setShowAllTrusted(true)}
+                    className="mb-2 block text-brand underline text-sm"
+                  >
+                    Show all {trusted.length}
+                  </button>
+                )}
                 {trusted.length > 1 && (
                   <button
                     onClick={() => forgetBrowsers()}

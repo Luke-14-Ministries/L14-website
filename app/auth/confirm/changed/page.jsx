@@ -33,12 +33,14 @@ export default async function EmailChangedPage({ searchParams }) {
         <strong className="break-all">{user.email}</strong> until both links are pressed.
       </>
     );
-  } else if (user && step !== 'half') {
-    heading = 'Your sign-in email has changed';
+  } else if (user) {
+    // Nothing waiting. Only a press this page was told finished the change
+    // is called a change; otherwise it just says which address is in use.
+    heading = step === 'done' ? 'Your sign-in email has changed' : 'Your sign-in email';
     body = (
       <>
-        You now sign in with <strong className="break-all">{user.email}</strong>. Password
-        reset emails go there too.
+        You sign in with <strong className="break-all">{user.email}</strong>. Password reset
+        emails go there too.
       </>
     );
   } else if (step === 'half') {
