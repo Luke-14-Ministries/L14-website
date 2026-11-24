@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sinceISO, dayInMorristown } from '@/lib/events';
 
 import ResizableTable from '@/components/ResizableTable';
+import Pill from '@/components/Pill';
 export const metadata = { title: 'Newsletter · Staff Admin' };
 
 // The newsletter list, as staff see it (14 Oct 2026, Lawrence).
@@ -143,13 +144,7 @@ export default async function NewsletterPage() {
             <ul className="space-y-1 text-sm">
               {(recent ?? []).map((r, i) => (
                 <li key={i} className="flex flex-wrap items-baseline gap-x-2">
-                  <span
-                    className={`rounded-sm px-1.5 py-0.5 text-xs font-semibold ${
-                      r.email_news ? 'bg-green-100 text-green-800' : 'bg-neutral-200 text-neutral-700'
-                    }`}
-                  >
-                    {r.email_news ? 'joined' : 'left'}
-                  </span>
+                  <Pill tone={r.email_news ? 'done' : 'na'}>{r.email_news ? 'joined' : 'left'}</Pill>
                   <span>
                     {`${r.profiles?.first_name ?? ''} ${r.profiles?.last_name ?? ''}`.trim() || 'Someone'}
                   </span>

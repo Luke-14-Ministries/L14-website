@@ -88,8 +88,8 @@ const PAY_METHOD_LABEL = {
 const money = (c) =>
   `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const inputCls =
-  'w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm';
+// Inputs use the shared `field` box (23 Nov 2026, P99): same size as the old
+// private inputCls, plus the teal focus ring every other staff form has.
 
 // A tiny inline banner used by every sub-form to show a save error.
 function ErrorNote({ children }) {
@@ -250,23 +250,23 @@ function PersonEditor({ registrationId, person, onDone }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="field-label">First name <span className="text-red-600">*</span></label>
-          <input className={inputCls} value={f.first_name} onChange={set('first_name')} />
+          <input className="field" value={f.first_name} onChange={set('first_name')} />
         </div>
         <div>
           <label className="field-label">Last name <span className="text-red-600">*</span></label>
-          <input className={inputCls} value={f.last_name} onChange={set('last_name')} />
+          <input className="field" value={f.last_name} onChange={set('last_name')} />
         </div>
         <div>
           <label className="field-label">Preferred name</label>
-          <input className={inputCls} value={f.preferred_name} onChange={set('preferred_name')} />
+          <input className="field" value={f.preferred_name} onChange={set('preferred_name')} />
         </div>
         <div>
           <label className="field-label">Date of birth</label>
-          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={todayInMorristown()} />
+          <input type="date" className="field" value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={todayInMorristown()} />
         </div>
         <div>
           <label className="field-label">Sex</label>
-          <select className={inputCls} value={f.gender} onChange={set('gender')}>
+          <select className="field" value={f.gender} onChange={set('gender')}>
             <option value="">Choose…</option>
             <option>Male</option>
             <option>Female</option>
@@ -278,11 +278,11 @@ function PersonEditor({ registrationId, person, onDone }) {
         </div>
         <div>
           <label className="field-label">Email</label>
-          <input className={inputCls} value={f.email} onChange={set('email')} />
+          <input className="field" value={f.email} onChange={set('email')} />
         </div>
         <div>
           <label className="field-label">Phone</label>
-          <input className={inputCls} value={f.phone} onChange={set('phone')} />
+          <input className="field" value={f.phone} onChange={set('phone')} />
         </div>
       </div>
       <ErrorNote>{error}</ErrorNote>
@@ -339,15 +339,15 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
           <label className="field-label">Scholarship ($)</label>
-          <input className={inputCls} inputMode="decimal" value={f.scholarship} onChange={set('scholarship')} />
+          <input className="field" inputMode="decimal" value={f.scholarship} onChange={set('scholarship')} />
         </div>
         <div>
           <label className="field-label">Discount ($)</label>
-          <input className={inputCls} inputMode="decimal" value={f.discount} onChange={set('discount')} />
+          <input className="field" inputMode="decimal" value={f.discount} onChange={set('discount')} />
         </div>
         <div className="sm:col-span-3">
           <label className="field-label">Reason (staff only) <span className="text-red-600">*</span></label>
-          <input className={inputCls} value={f.note} onChange={set('note')} placeholder="e.g. Board-approved hardship scholarship" />
+          <input className="field" value={f.note} onChange={set('note')} placeholder="e.g. Board-approved hardship scholarship" />
         </div>
       </div>
       <ErrorNote>{error}</ErrorNote>
@@ -911,19 +911,19 @@ function AddPerson({ registrationId, options }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="field-label">First name <span className="text-red-600">*</span></label>
-          <input className={inputCls} value={f.first_name} onChange={set('first_name')} />
+          <input className="field" value={f.first_name} onChange={set('first_name')} />
         </div>
         <div>
           <label className="field-label">Last name <span className="text-red-600">*</span></label>
-          <input className={inputCls} value={f.last_name} onChange={set('last_name')} />
+          <input className="field" value={f.last_name} onChange={set('last_name')} />
         </div>
         <div>
           <label className="field-label">Date of birth</label>
-          <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={todayInMorristown()} />
+          <input type="date" className="field" value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={todayInMorristown()} />
         </div>
         <div>
           <label className="field-label">Sex</label>
-          <select className={inputCls} value={f.gender} onChange={set('gender')}>
+          <select className="field" value={f.gender} onChange={set('gender')}>
             <option value="">Choose…</option>
             <option>Male</option>
             <option>Female</option>
@@ -931,7 +931,7 @@ function AddPerson({ registrationId, options }) {
         </div>
         <div>
           <label className="field-label">Role</label>
-          <select className={inputCls} value={f.camp_role} onChange={set('camp_role')}>
+          <select className="field" value={f.camp_role} onChange={set('camp_role')}>
             {Object.entries(ROLE_LABEL).map(([v, label]) => (
               <option key={v} value={v}>
                 {label}
@@ -941,7 +941,7 @@ function AddPerson({ registrationId, options }) {
         </div>
         <div className="sm:col-span-2">
           <label className="field-label">Camp option (sets the fee) <span className="text-red-600">*</span></label>
-          <select className={inputCls} value={f.event_option_id} onChange={set('event_option_id')}>
+          <select className="field" value={f.event_option_id} onChange={set('event_option_id')}>
             {options.length === 0 && <option value="">No options published</option>}
             {options.map((o) => (
               <option key={o.id} value={o.id}>
@@ -1076,39 +1076,39 @@ function HouseholdEditor({ registrationId, household }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="field-label">Family name</label>
-              <input className={inputCls} value={f.display_name} onChange={set('display_name')} />
+              <input className="field" value={f.display_name} onChange={set('display_name')} />
             </div>
             <div>
               <label className="field-label">Email</label>
-              <input className={inputCls} value={f.email} onChange={set('email')} />
+              <input className="field" value={f.email} onChange={set('email')} />
             </div>
             <div>
               <label className="field-label">Phone</label>
-              <input className={inputCls} value={f.phone} onChange={set('phone')} />
+              <input className="field" value={f.phone} onChange={set('phone')} />
             </div>
             <div className="sm:col-span-2">
               <label className="field-label">Address line 1</label>
-              <input className={inputCls} value={f.address_line1} onChange={set('address_line1')} />
+              <input className="field" value={f.address_line1} onChange={set('address_line1')} />
             </div>
             <div className="sm:col-span-2">
               <label className="field-label">Address line 2</label>
-              <input className={inputCls} value={f.address_line2} onChange={set('address_line2')} />
+              <input className="field" value={f.address_line2} onChange={set('address_line2')} />
             </div>
             <div>
               <label className="field-label">City</label>
-              <input className={inputCls} value={f.city} onChange={set('city')} />
+              <input className="field" value={f.city} onChange={set('city')} />
             </div>
             <div>
               <label className="field-label">State</label>
-              <input className={inputCls} value={f.state} onChange={set('state')} />
+              <input className="field" value={f.state} onChange={set('state')} />
             </div>
             <div>
               <label className="field-label">Postal code</label>
-              <input className={inputCls} value={f.postal_code} onChange={set('postal_code')} />
+              <input className="field" value={f.postal_code} onChange={set('postal_code')} />
             </div>
             <div>
               <label className="field-label">Home church</label>
-              <input className={inputCls} value={f.home_church} onChange={set('home_church')} />
+              <input className="field" value={f.home_church} onChange={set('home_church')} />
             </div>
             <div>
               {/* Asked once, at the family's first registration, and never again --
@@ -1116,7 +1116,7 @@ function HouseholdEditor({ registrationId, household }) {
                   corrected. */}
               <label className="field-label">How they heard about us</label>
               <input
-                className={inputCls}
+                className="field"
                 value={f.how_did_you_hear}
                 onChange={set('how_did_you_hear')}
               />
@@ -1124,7 +1124,7 @@ function HouseholdEditor({ registrationId, household }) {
             <div className="sm:col-span-2">
               <label className="field-label">Who from / detail</label>
               <input
-                className={inputCls}
+                className="field"
                 value={f.how_did_you_hear_from}
                 onChange={set('how_did_you_hear_from')}
               />

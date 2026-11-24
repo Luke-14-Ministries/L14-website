@@ -7,6 +7,7 @@
 
 import EmptyState from '@/components/EmptyState';
 import Notice from '@/components/Notice';
+import Pill from '@/components/Pill';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { sendFamilyEmail } from './actions';
@@ -33,10 +34,11 @@ function urlFor({ eventId, activityId, outstanding, who }) {
   return `/admin/email-families/${s ? `?${s}` : ''}`;
 }
 
+// Words and the shared pill tone (23 Nov 2026, P99: the design scheme's Pill).
 const STATUS_TEXT = {
-  sent: ['Sent', 'bg-green-100 text-green-800'],
-  failed: ['Failed', 'bg-red-100 text-red-800'],
-  skipped: ['Not sent: no email on file', 'bg-neutral-100 text-neutral-700'],
+  sent: ['Sent', 'done'],
+  failed: ['Failed', 'hold'],
+  skipped: ['Not sent: no email on file', 'na'],
 };
 
 export default function EmailFamiliesForm({
@@ -115,8 +117,10 @@ export default function EmailFamiliesForm({
   const sentCount = results?.filter((r) => r.status === 'sent').length ?? 0;
   const failedCount = results?.filter((r) => r.status === 'failed').length ?? 0;
 
+  // mb-8: the Send row no longer touches the "Automatic emails due" card the
+  // page puts below this form (23 Nov 2026, P99).
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="mb-8 max-w-3xl space-y-5">
       <div className="grid gap-4 sm:grid-cols-3">
         {/* The event dropdown every staff page uses (4 Nov 2026). Nothing
             chosen until staff choose: an email is never sent to an event by
@@ -306,11 +310,11 @@ export default function EmailFamiliesForm({
           </p>
           <ul className="mt-2 divide-y divide-neutral-100">
             {results.map((r) => {
-              const [text, cls] = STATUS_TEXT[r.status] ?? [r.status, ''];
+              const [text, tone] = STATUS_TEXT[r.status] ?? [r.status, 'na'];
               return (
                 <li key={r.householdId} className="flex flex-wrap items-baseline gap-2 py-1.5">
                   <span className="font-medium">{r.name}</span>
-                  <span className={`rounded-sm px-1.5 py-0.5 text-xs font-semibold ${cls}`}>{text}</span>
+                  <Pill tone={tone}>{text}</Pill>
                   {r.status === 'failed' && r.error && (
                     <span className="text-xs text-red-700">{r.error}</span>
                   )}

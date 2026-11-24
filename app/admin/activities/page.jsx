@@ -11,6 +11,7 @@ import { checkAnchor } from '@/lib/waiverAnchors';
 import { groupNoun } from '@/lib/activityGroups';
 
 import ResizableTable from '@/components/ResizableTable';
+import Pill from '@/components/Pill';
 export const metadata = { title: 'Activities · Staff Admin' };
 
 // A person's role, short, for the queue and for a volunteer or buddy who
@@ -531,9 +532,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
                             and not "who is on the 2 o'clock", which is the
                             question the day is actually run from. */}
                         {p.slotId && slotById.get(p.slotId) && (
-                          <span className="rounded-sm bg-neutral-100 px-1.5 py-0.5 text-xs font-semibold text-neutral-700">
-                            {slotLabel(slotById.get(p.slotId))}
-                          </span>
+                          <Pill tone="info">{slotLabel(slotById.get(p.slotId))}</Pill>
                         )}
                         <span className="text-neutral-500">{p.household}</span>
                         {p.uploadOnly && (

@@ -11,6 +11,7 @@ import StatusMark from '@/components/StatusMark';
 import CreditLine from '../CreditLine';
 import { dayInMorristown, whenInMorristown } from '@/lib/events';
 import ResizableTable from '@/components/ResizableTable';
+import Pill from '@/components/Pill';
 import { CHECK_TONE } from '@/lib/format';
 import CheckCard from '../CheckCard';
 import {
@@ -372,17 +373,20 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                             <span className="font-semibold">{c.name}</span>
                             <span className="text-neutral-500">
                               {' '}· {c.email}
-                              {c.emailIsHousehold && ' (household address)'}
+                              {c.emailIsHousehold && ' (family address)'}
                             </span>
+                            {/* The shared pill, then the details in plain small words
+                                (23 Nov 2026, P99: the last square chips on this page). */}
                             {c.emailConflicts?.some((o) => o.camper) && (
-                              <span className="ml-2 rounded-sm bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-700">
-                                also the address of adult camper{' '}
+                              <span className="ml-2 text-xs text-neutral-600">
+                                <Pill tone="na">Shared email</Pill> also the address of adult camper{' '}
                                 {c.emailConflicts.filter((o) => o.camper).map((o) => o.name).join(' and ')} (allowed)
                               </span>
                             )}
                             {c.sharesEmailWith?.length > 0 && (
-                              <span className="ml-2 rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
-                                same email as {c.sharesEmailWith.join(' and ')}: send one at a time
+                              <span className="ml-2 text-xs text-amber-900">
+                                <Pill tone="todo">Shared email</Pill> same email as {c.sharesEmailWith.join(' and ')}: send
+                                one at a time
                               </span>
                             )}
                             <span className="block text-xs text-neutral-500">
@@ -468,9 +472,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                     <span key={i}>
                       {' '}
                       {h.label && (
-                        <span className="whitespace-nowrap rounded-sm bg-amber-200 px-1.5 py-0.5 text-xs font-bold text-amber-950">
-                          {h.label}
-                        </span>
+                        <Pill tone="todo">{h.label}</Pill>
                       )}{' '}
                       {h.text}
                     </span>
@@ -589,9 +591,9 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                         {/* So it is plain later that this check ran without ID
                             verification (Lawrence, 13 Nov 2026). */}
                         {r.idWaived && (
-                          <span className="mt-1 block w-fit rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-900">
+                          <Pill tone="todo" className="mt-1 w-fit">
                             ID step waived
-                          </span>
+                          </Pill>
                         )}
                       </td>
                       <td className="px-3 py-2 text-neutral-700">
