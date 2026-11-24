@@ -1941,6 +1941,42 @@ The horses need a waiver.  ') into logId;
   delete from public.message_log where id = logId;
   set local role authenticated;
 
+  ---- a family reads its own registration's event (0183) ----------------
+  -- An archived event is stored unpublished, so before 0183 a family lost
+  -- the event of its own registration (name, dates, deposit, due date) the
+  -- day staff archived it. Family A is registered for ev; evCopy here is a
+  -- made-up unpublished event nobody is registered for.
+  set local role postgres;
+  insert into public.events (id, name, event_type, starts_on, ends_on, published)
+    values (gen_random_uuid(), 'Unpublished Elsewhere 0183', 'retreat',
+            current_date + 30, current_date + 32, false)
+    returning id into evCopy;
+  update public.events set published = false where id = ev;
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.events where id = ev;
+  perform pg_temp.expect('a family reads its own registration''s event while it is unpublished (0183)', n, 1);
+  select count(*) into n from public.event_options where event_id = ev;
+  perform pg_temp.expect('a family reads its own event''s published options while it is unpublished (0183)', n, 2);
+  select count(*) into n from public.events where id = evCopy;
+  perform pg_temp.expect('a family cannot read an unpublished event it is not registered for (0183)', n, 0);
+  set local role postgres;
+  update public.events set archived_at = now() where id = ev;
+  set local role authenticated;
+  perform pg_temp.as_user(uA);
+  select count(*) into n from public.events where id = ev and archived_at is not null;
+  perform pg_temp.expect('a family reads its own registration''s event once it is archived (0183)', n, 1);
+  select count(*) into n from public.events where id = evCopy;
+  perform pg_temp.expect('an archived week does not open other unpublished events (0183)', n, 0);
+  set local role postgres;
+  select count(*) into n from pg_proc
+   where proname = 'household_registered_for_event'
+     and has_function_privilege('anon', oid, 'execute');
+  perform pg_temp.expect('anon cannot run household_registered_for_event (0183)', n, 0);
+  update public.events set published = true, archived_at = null where id = ev;
+  delete from public.events where id = evCopy;
+  set local role authenticated;
+
   ---- anonymous visitors ----------------------------------------------
   -- anon has SELECT granted on the catalogue tables so a public "our
   -- camps" page can render. Everything else must be invisible.
