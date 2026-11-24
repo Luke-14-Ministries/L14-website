@@ -60,17 +60,19 @@ export default async function NewsletterPage() {
                 className="btn-outline btn-sm"
                 title="Email Address, First Name, Last Name, Tags: Mailchimp's import layout, tagged 'website'"
               >
-                Mailchimp import CSV
+                Download for Mailchimp
               </a>
             </span>
           </>
         }
         intro={
           <>
+            {/* 23 Nov 2026: no "for now" and no staff name; who runs
+                Mailchimp is a staff fact, not page text. */}
             Everyone with an account who has <em>Ministry news &amp; updates</em> switched on. Families
-            change it themselves on My Account → Contact details. For now the newsletter is sent from
-            Mailchimp, which Ellen runs. This page is the list. People who signed up through the public
-            Google Form are not here.
+            change it themselves on My Account → Contact details. The newsletter is sent from Mailchimp;
+            download this list to add them there. People who signed up through the public Google Form
+            aren&rsquo;t here.
           </>
         }
       />
