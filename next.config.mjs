@@ -30,7 +30,10 @@ const CSP = [
   `connect-src 'self' ${SUPABASE} wss://nnbcxqxwkivadzognpno.supabase.co`,
   // YouTube for every video page; Vimeo for the one 2014 video on Camp
   // Memories (28 Oct 2026). components/VideoEmbed.jsx builds both players.
-  'frame-src https://challenges.cloudflare.com https://www.youtube.com https://player.vimeo.com',
+  // YouTube's privacy-enhanced host since 23 Nov 2026. www.youtube.com stays
+  // until the change has been seen working on the live site (and so a page
+  // cached from before still plays); then it can go.
+  'frame-src https://challenges.cloudflare.com https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com',
   "form-action 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
