@@ -12,10 +12,13 @@ export const metadata = { title: 'Newsletter · Staff Admin' };
 //
 // Deliberately small: who has "Ministry news & updates" switched on, who has
 // joined or left in the last 30 days, and a CSV. Sending still happens in
-// Resend's own tools; a future version may hand the list across. The
-// preference itself is set by the family on My Account → Contact details,
-// and the public Newsletter page still points at the Google Form for people
-// without an account -- those names are not here.
+// Mailchimp (the Download for Mailchimp button). The preference itself is
+// each person's "ministry news & updates" tick on Manage Household, beside
+// the household's contact email it goes to (moved from Contact details,
+// 23 Nov 2026), and the list exports that address, falling back to the
+// sign-in email (0172). The public Newsletter page tells a signed-in visitor
+// which way their tick is set and points everyone else at the Google Form;
+// those names are not here.
 
 export default async function NewsletterPage() {
   const staff = await getStaff();
@@ -70,7 +73,7 @@ export default async function NewsletterPage() {
             {/* 23 Nov 2026: no "for now" and no staff name; who runs
                 Mailchimp is a staff fact, not page text. */}
             Everyone with an account who has <em>Ministry news &amp; updates</em> switched on. Families
-            change it themselves on My Account → Contact details. The newsletter is sent from Mailchimp;
+            change it themselves on Manage Household, beside their contact email. The newsletter is sent from Mailchimp;
             download this list to add them there. People who signed up through the public Google Form
             aren&rsquo;t here.
           </>
