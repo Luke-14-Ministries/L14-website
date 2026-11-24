@@ -18,10 +18,15 @@
 //   the menu appearing. And every action is ALWAYS listed -- the ones that
 //   don't apply to a row are disabled with the reason written beside them,
 //   because a menu that silently hides items reads as broken.
+// - Since 23 Nov 2026 (security review) Reset two-factor, Remove account and
+//   Delete family each open the step-up box (components/StepUpModal.jsx),
+//   which asks for the administrator's own code; none acts on one click.
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import SearchSelect from '@/components/SearchSelect';
 import ResizableTable from '@/components/ResizableTable';
+import StepUpModal, { Dialog } from '@/components/StepUpModal';
+import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
 import {
   removeLogins,
   purgeHousehold,
@@ -29,6 +34,7 @@ import {
   resendVerification,
   linkLoginToHousehold,
   mergeHouseholds,
+  takeOutOfHousehold,
 } from './actions';
 
 const FILTERS = [
@@ -56,6 +62,48 @@ const ageOf = (dob) => {
   return age;
 };
 const fmtFull = (iso) => (iso ? fullFmt.format(new Date(iso)) : '');
+// A day in ministry time, "Nov 23, 2026", for the joined and invite lines.
+const dayFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeZone: 'America/New_York' });
+const fmtDay = (iso) => (iso ? dayFmt.format(new Date(iso)) : '');
+
+// The role column's one meaning is administrator (CLAUDE.md); registrar and
+// coordinator are labels, shown as they are.
+const roleWord = (r) => (r === 'admin' ? 'administrator' : r);
+
+// A merge's "moved" counts in plain words (0180 returns table names).
+const MOVED_WORDS = {
+  household_members: ['account', 'accounts'],
+  people: ['person', 'people'],
+  registrations: ['registration', 'registrations'],
+  agreement_signatures: ['signed agreement', 'signed agreements'],
+  coupons: ['coupon', 'coupons'],
+  message_log: ['email record', 'email records'],
+  family_change_log: ['Recent Changes line', 'Recent Changes lines'],
+  data_deletion_requests: ['deletion request', 'deletion requests'],
+  reminder_sends: ['reminder record', 'reminder records'],
+  household_invites: ['invite', 'invites'],
+  household_email_change_requests: ['contact-email request', 'contact-email requests'],
+};
+function movedWords(moved) {
+  return Object.entries(moved ?? {})
+    .map(([table, n]) => {
+      const key = table.replace(/^public\./, '');
+      const plain = key.replace(/_/g, ' ');
+      const [one, many] = MOVED_WORDS[key] ?? [plain, plain];
+      return `${n} ${n === 1 ? one : many}`;
+    })
+    .join(', ');
+}
+
+// How this account came to be in its household, from staff_household_logins().
+function joinedLine(login) {
+  if (!login) return null;
+  if (login.role === 'owner') return 'Set up this household';
+  if (login.invite_accepted_at) {
+    return `Joined by invite from ${login.invited_by_name ?? 'someone no longer on the household'}, ${fmtDay(login.invite_accepted_at)}`;
+  }
+  return `Added ${fmtDay(login.joined_at)}`;
+}
 
 // A sortable column heading. Module level, with the sort state passed in:
 // defined inside AccountsManager it was a new component type on every render
@@ -87,6 +135,9 @@ export default function AccountsManager({
   unclaimedPeople = [],
   // { loginId: personId } -- the login's own person record, for the link.
   personIdByUser = {},
+  // { householdId: [login] } and { householdId: [open invite] } (0180).
+  loginsByHousehold = {},
+  invitesByHousehold = {},
   selfId,
   loadError,
   newSince = null,
@@ -95,7 +146,9 @@ export default function AccountsManager({
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState({ key: 'created_at', dir: 'desc' });
   const [selected, setSelected] = useState(() => new Set());
-  const [confirm, setConfirm] = useState(null); // { kind, rows } | { kind: 'purge', row, typed }
+  // { kind: 'remove', rows } | { kind, row, ... } for reset, resend, link,
+  // merge, takeout and purge.
+  const [confirm, setConfirm] = useState(null);
   const [notice, setNotice] = useState(null); // { ok, message }
   const [busy, startTransition] = useTransition();
 
@@ -183,23 +236,42 @@ export default function AccountsManager({
     hint: h.city ?? '',
   }));
 
+  // Close everything once an action lands. The row menus are native
+  // <details> elements, so any open one is closed the native way.
+  function finish(next) {
+    setConfirm(null);
+    setSelected(new Set());
+    document
+      .querySelectorAll('details[data-row-menu][open]')
+      .forEach((d) => d.removeAttribute('open'));
+    setNotice(next);
+  }
+
+  // For the boxes without a code step: the result shows above the table.
   function run(fn, doneMessage) {
     startTransition(async () => {
       const result = await fn();
-      setConfirm(null);
-      setSelected(new Set());
-      // The row menus are native <details> elements, so close any open one
-      // the native way once an action lands.
-      document
-        .querySelectorAll('details[data-row-menu][open]')
-        .forEach((d) => d.removeAttribute('open'));
-      setNotice(
+      finish(
         result.ok
           ? { ok: true, message: doneMessage(result) }
           : { ok: false, message: result.error }
       );
     });
   }
+
+  // The step-up boxes keep an error inside the box; only success reaches
+  // finish().
+  const closeConfirm = () => setConfirm(null);
+
+  // A box opened from a row menu closes that menu, so it does not hang open
+  // beside the box and after it (23 Nov 2026).
+  const boxKey = confirm ? `${confirm.kind}:${confirm.row?.user_id ?? confirm.rows?.length ?? ''}` : '';
+  useEffect(() => {
+    if (!boxKey) return;
+    document
+      .querySelectorAll('details[data-row-menu][open]')
+      .forEach((d) => d.removeAttribute('open'));
+  }, [boxKey]);
 
   return (
     <div>
@@ -257,7 +329,7 @@ export default function AccountsManager({
             }
             className="btn-outline py-1! text-sm"
           >
-            Remove logins…
+            Remove accounts…
           </button>
           <button
             type="button"
@@ -290,8 +362,10 @@ export default function AccountsManager({
                 <input
                   type="checkbox"
                   aria-label="Select all visible"
+                  // Unticked when no row can be picked (only your own shows):
+                  // an empty "every" read as all selected (23 Nov 2026).
                   checked={
-                    rows.length > 0 &&
+                    rows.some((r) => r.user_id !== selfId) &&
                     rows.filter((r) => r.user_id !== selfId).every((r) => selected.has(r.user_id))
                   }
                   onChange={toggleAllVisible}
@@ -307,7 +381,7 @@ export default function AccountsManager({
                 Last sign-in
               </Th>
               <Th k="mfa_factor_count" sort={sort} onSort={toggleSort}>
-                2FA
+                Two-factor
               </Th>
               <th className="px-3 py-2 text-left font-semibold">Household</th>
               <th className="px-3 py-2 w-10" />
@@ -317,6 +391,10 @@ export default function AccountsManager({
             {rows.map((a) => {
               const isSelf = a.user_id === selfId;
               const name = [a.first_name, a.last_name].filter(Boolean).join(' ');
+              const householdLogins = a.household_id ? loginsByHousehold[a.household_id] ?? [] : [];
+              const myLogin = householdLogins.find((l) => l.profile_id === a.user_id) ?? null;
+              const others = householdLogins.filter((l) => l.profile_id !== a.user_id);
+              const openInvites = a.household_id ? invitesByHousehold[a.household_id] ?? [] : [];
               return (
                 <tr key={a.user_id} className="border-b border-neutral-100 hover:bg-neutral-50 align-top">
                   <td className="px-3 py-2.5">
@@ -346,7 +424,7 @@ export default function AccountsManager({
                       )}
                       {a.staff_role && a.staff_active !== false && (
                         <span className="ml-1.5 text-xs rounded-sm bg-blue-100 text-blue-800 px-1.5 py-0.5 align-middle">
-                          {a.staff_role}
+                          {roleWord(a.staff_role)}
                         </span>
                       )}
                       {!a.email_confirmed_at && (
@@ -378,6 +456,20 @@ export default function AccountsManager({
                     {(a.household_count ?? 0) > 1 && (
                       <span className="text-xs text-neutral-400"> (+{a.household_count - 1})</span>
                     )}
+                    {/* Who signs in and how they joined (0180, 23 Nov 2026):
+                        a family can now invite another adult itself. */}
+                    {myLogin && <div className="text-xs text-neutral-500">{joinedLine(myLogin)}</div>}
+                    {others.length > 0 && (
+                      <div className="text-xs text-neutral-500">
+                        Also signs in: {others.map((l) => l.name || l.email).join(', ')}
+                      </div>
+                    )}
+                    {openInvites.map((i) => (
+                      <div key={i.id} className="text-xs text-amber-800">
+                        Invite waiting: {i.email}, sent {fmtDay(i.created_at)}
+                        {i.invited_by_name ? ` by ${i.invited_by_name}` : ''}
+                      </div>
+                    ))}
                   </td>
                   <td className="px-3 py-2.5 text-right">
                     {/* Same native <details> anchored-overlay as Event
@@ -394,29 +486,16 @@ export default function AccountsManager({
                         <MenuItem
                           disabled={Boolean(a.email_confirmed_at)}
                           reason={a.email_confirmed_at ? 'email already confirmed' : null}
-                          onClick={() =>
-                            run(
-                              () => resendVerification(a.email),
-                              () => `Confirmation email re-sent to ${a.email}.`
-                            )
-                          }
+                          onClick={() => setConfirm({ kind: 'resend', row: a, token: null, error: '' })}
                         >
-                          Re-send confirmation email
+                          Re-send confirmation email…
                         </MenuItem>
                         <MenuItem
                           disabled={(a.mfa_factor_count ?? 0) === 0}
                           reason={(a.mfa_factor_count ?? 0) === 0 ? 'no two-factor set up' : null}
-                          onClick={() =>
-                            run(
-                              () => resetMfa(a.user_id),
-                              (r) =>
-                                `Two-factor reset for ${a.email}. Removed ${r.removed} ${
-                                  r.removed === 1 ? 'device' : 'devices'
-                                }.`
-                            )
-                          }
+                          onClick={() => setConfirm({ kind: 'reset', row: a })}
                         >
-                          Reset two-factor
+                          Reset two-factor…
                         </MenuItem>
                         <MenuItem
                           disabled={(a.household_count ?? 0) > 0}
@@ -435,11 +514,26 @@ export default function AccountsManager({
                           Merge household into…
                         </MenuItem>
                         <MenuItem
+                          disabled={isSelf || !myLogin || myLogin.role === 'owner'}
+                          reason={
+                            isSelf
+                              ? 'your own account'
+                              : !myLogin
+                                ? 'no household attached'
+                                : myLogin.role === 'owner'
+                                  ? 'they set up this household'
+                                  : null
+                          }
+                          onClick={() => setConfirm({ kind: 'takeout', row: a })}
+                        >
+                          Take out of household…
+                        </MenuItem>
+                        <MenuItem
                           disabled={isSelf}
                           reason={isSelf ? 'your own account' : null}
                           onClick={() => setConfirm({ kind: 'remove', rows: [a] })}
                         >
-                          Remove login…
+                          Remove account…
                         </MenuItem>
                         <MenuItem
                           danger
@@ -473,34 +567,138 @@ export default function AccountsManager({
         </ResizableTable>
       </div>
 
-      {/* Remove-login confirmation: safe, but say plainly what stays behind. */}
+      {/* Remove account (rewritten 23 Nov 2026): the step-up box, a pointer
+          to Deletion Requests for a family that asked to be forgotten, and a
+          warning when the account is staff. */}
       {confirm?.kind === 'remove' && (
-        <Modal onClose={() => setConfirm(null)}>
-          <h2 className="text-lg font-bold mb-2">
-            Remove {confirm.rows.length === 1 ? 'this login' : `${confirm.rows.length} logins`}?
-          </h2>
+        <StepUpModal
+          title={confirm.rows.length === 1 ? 'Remove this account?' : `Remove ${confirm.rows.length} accounts?`}
+          account={confirm.rows.length === 1 ? confirm.rows[0].email : null}
+          confirmLabel="Remove"
+          busyLabel="Removing…"
+          remind={false}
+          onClose={closeConfirm}
+          onConfirm={() => removeLogins(confirm.rows.map((r) => r.user_id))}
+          onDone={(r) =>
+            finish({ ok: true, message: `Removed ${r.removed} ${r.removed === 1 ? 'account' : 'accounts'}.` })
+          }
+        >
           <p className="text-sm text-neutral-700 mb-3">
-            This deletes the sign-in only. Registrations, payments and family
-            records are kept, but nobody can sign in to them until the person
-            makes a new account. A new account will{' '}
-            <strong>not</strong> reconnect to the old records on its own.
+            This deletes the sign-in only. The family&rsquo;s registrations, payments and records
+            stay, but nobody can sign in to them until someone is linked to the household again.
+            A new account does <strong>not</strong> reconnect to the old records on its own.
           </p>
-          {confirm.rows.some((r) => (r.registration_count ?? 0) > 0) && (
-            <p className="text-sm rounded-sm border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 mb-3">
+          <p className="text-sm text-neutral-700 mb-3">
+            If a family asked for their data to be deleted, use{' '}
+            <a href="/admin/deletion-requests/" className="font-semibold text-brand-dark underline">
+              Deletion Requests
+            </a>{' '}
+            instead.
+          </p>
+          {confirm.rows.some((r) => r.staff_role) && (
+            <p className="text-sm rounded-sm border border-red-300 bg-red-50 text-red-800 px-3 py-2 mb-3">
               {confirm.rows.length === 1
-                ? `${confirm.rows[0].email} belongs to a household with ${confirm.rows[0].registration_count} registration${confirm.rows[0].registration_count === 1 ? '' : 's'}.`
-                : 'At least one selected account belongs to a household with registrations.'}{' '}
-              To clear test data completely, use &ldquo;Delete family &amp; all
-              their data&rdquo; instead.
+                ? `${confirm.rows[0].email} is staff (${roleWord(confirm.rows[0].staff_role)}). Removing the account also takes them off Staff & Access.`
+                : 'At least one of these accounts is staff. Removing it also takes them off Staff & Access.'}
             </p>
           )}
-          <ul className="text-sm text-neutral-600 mb-4 max-h-32 overflow-y-auto list-disc pl-5">
-            {confirm.rows.map((r) => (
-              <li key={r.user_id}>{r.email}</li>
-            ))}
-          </ul>
+          {confirm.rows.length > 1 && (
+            <ul className="text-sm text-neutral-600 mb-3 max-h-32 overflow-y-auto list-disc pl-5">
+              {confirm.rows.map((r) => (
+                <li key={r.user_id}>{r.email}</li>
+              ))}
+            </ul>
+          )}
+        </StepUpModal>
+      )}
+
+      {/* Reset two-factor: the step-up box names the account and asks for
+          the administrator's own code (23 Nov 2026). */}
+      {confirm?.kind === 'reset' && (
+        <StepUpModal
+          title="Reset this account's two-factor?"
+          account={confirm.row.email}
+          confirmLabel="Reset two-factor"
+          busyLabel="Resetting…"
+          onClose={closeConfirm}
+          onConfirm={() => resetMfa(confirm.row.user_id)}
+          onDone={(r) =>
+            finish({
+              ok: true,
+              message: `Two-factor reset for ${confirm.row.email}. Removed ${r.removed} ${
+                r.removed === 1 ? 'device' : 'devices'
+              }. They sign in with their password and set it up again.`,
+            })
+          }
+        >
+          <p className="text-sm text-neutral-700 mb-3">
+            They sign in with their password and set up two-factor again. Their password does not
+            change. Anyone who knows that password could set it up in their place, so do this only
+            for the person themselves.
+          </p>
+        </StepUpModal>
+      )}
+
+      {/* Re-send the confirmation email: Supabase wants a bot-check token on
+          every auth email, so the widget comes first (23 Nov 2026). */}
+      {confirm?.kind === 'resend' && (
+        <Dialog title="Re-send the confirmation email" onClose={closeConfirm} busy={busy}>
+          <p className="text-sm text-neutral-700 mb-3">
+            Sends the sign-up confirmation email again to{' '}
+            <strong className="wrap-break-word">{confirm.row.email}</strong>.
+          </p>
+          {turnstileEnabled ? (
+            <Turnstile
+              action="resend_confirmation"
+              className="mb-3"
+              onToken={(token) => setConfirm((c) => (c?.kind === 'resend' ? { ...c, token } : c))}
+            />
+          ) : (
+            <p className="text-xs text-neutral-500 mb-3">The bot check is not set up on this copy of the site.</p>
+          )}
+          {confirm.error && (
+            <p role="alert" className="text-sm rounded-sm border border-red-300 bg-red-50 text-red-800 px-3 py-2 mb-3">
+              {confirm.error}
+            </p>
+          )}
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={() => setConfirm(null)} className="btn-outline py-1.5!">
+            <button type="button" onClick={closeConfirm} className="btn-outline py-1.5!">
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={busy || (turnstileEnabled && !confirm.token)}
+              onClick={() =>
+                startTransition(async () => {
+                  const res = await resendVerification(confirm.row.email, confirm.token);
+                  if (res.ok) finish({ ok: true, message: `Confirmation email re-sent to ${confirm.row.email}.` });
+                  else setConfirm((c) => (c ? { ...c, error: res.error } : c));
+                })
+              }
+              className="btn-primary py-1.5! disabled:opacity-40"
+            >
+              {busy ? 'Sending…' : 'Send'}
+            </button>
+          </div>
+        </Dialog>
+      )}
+
+      {/* Take out of household (0178's remove_household_login): the account
+          stays, the family's records stay, only the sign-in to this family
+          goes. Never the person who set the household up. */}
+      {confirm?.kind === 'takeout' && (
+        <Dialog
+          title={`Take this account out of ${confirm.row.household_name ?? 'the household'}?`}
+          onClose={closeConfirm}
+          busy={busy}
+        >
+          <p className="text-sm text-neutral-700 mb-3">
+            <strong className="wrap-break-word">{confirm.row.email}</strong> keeps their account
+            but can no longer see this family&rsquo;s registrations or records. The family&rsquo;s
+            people and registrations stay as they are.
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button type="button" onClick={closeConfirm} className="btn-outline py-1.5!">
               Cancel
             </button>
             <button
@@ -508,26 +706,25 @@ export default function AccountsManager({
               disabled={busy}
               onClick={() =>
                 run(
-                  () => removeLogins(confirm.rows.map((r) => r.user_id)),
-                  (r) => `Removed ${r.removed} ${r.removed === 1 ? 'login' : 'logins'}.`
+                  () => takeOutOfHousehold(confirm.row.household_id, confirm.row.user_id),
+                  () => `Took ${confirm.row.email} out of ${confirm.row.household_name ?? 'the household'}.`
                 )
               }
               className="btn-primary py-1.5!"
             >
-              {busy ? 'Removing…' : 'Remove'}
+              {busy ? 'Taking out…' : 'Take out'}
             </button>
           </div>
-        </Modal>
+        </Dialog>
       )}
 
-      {/* Link-to-household: the reverse of remove-login, for reconnecting a
-          family AFTER staff have verified who they are on the phone or in
-          person. Deliberately manual -- automatic relinking by email address
-          would hand the household's records to whoever controls that mailbox
+      {/* Link-to-household: the reverse of remove, for reconnecting a family
+          AFTER staff have verified who they are on the phone or in person.
+          Deliberately manual -- automatic relinking by email address would
+          hand the household's records to whoever controls that mailbox
           later, which is not necessarily the same person. */}
       {confirm?.kind === 'link' && (
-        <Modal onClose={() => setConfirm(null)}>
-          <h2 className="text-lg font-bold mb-2">Link this login to a household</h2>
+        <Dialog title="Link this account to a household" onClose={closeConfirm} busy={busy}>
           <p className="text-sm text-neutral-700 mb-3">
             Connects <strong className="wrap-break-word">{confirm.row.email}</strong> to
             an existing family, giving it access to that household&rsquo;s
@@ -582,7 +779,7 @@ export default function AccountsManager({
                     ))}
                   </select>
                   <p className="text-xs text-neutral-500 mb-4">
-                    This tells the site which family member uses this login.
+                    This tells the site which family member uses this account.
                     Adults only. If you&rsquo;re not sure, skip it. You can set
                     it later.
                   </p>
@@ -590,7 +787,7 @@ export default function AccountsManager({
               );
             })()}
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={() => setConfirm(null)} className="btn-outline py-1.5!">
+            <button type="button" onClick={closeConfirm} className="btn-outline py-1.5!">
               Cancel
             </button>
             <button
@@ -606,34 +803,38 @@ export default function AccountsManager({
                     ),
                   (r) =>
                     `Linked ${confirm.row.email} to the household as ${
-                      r.role === 'owner' ? 'its owner' : 'an adult member'
+                      r.role === 'owner' ? 'the person who set it up' : 'another adult who signs in'
                     }${confirm.personId ? ', and marked which family member they are' : ''}.`
                 )
               }
               className="btn-primary py-1.5!"
             >
-              {busy ? 'Linking…' : 'Link login'}
+              {busy ? 'Linking…' : 'Link account'}
             </button>
           </div>
-        </Modal>
+        </Dialog>
       )}
 
-      {/* Merge households (0151): for one family that ended up with two
+      {/* Merge households (0151, 0180): for one family that ended up with two
           households -- a married couple who each signed up, say. Everything
           moves into the household chosen here and this one is deleted. The
-          database refuses when both are registered for the same event. */}
+          database refuses when both are registered for the same event. No
+          close on an outside click: a half-made choice should not vanish. */}
       {confirm?.kind === 'merge' && (
-        <Modal onClose={() => setConfirm(null)}>
-          <h2 className="text-lg font-bold mb-2">
-            Merge {confirm.row.household_name ?? 'this household'} into another
-          </h2>
+        <Dialog
+          title={`Merge ${confirm.row.household_name ?? 'this household'} into another`}
+          onClose={closeConfirm}
+          closeOnOutside={false}
+          busy={busy}
+        >
           <p className="text-sm text-neutral-700 mb-3">
-            Its people, logins, registrations, payments and records move into the
+            Its people, accounts, registrations, payments and records move into the
             household you choose, and{' '}
             <strong>{confirm.row.household_name ?? 'this household'}</strong> is then
             deleted. Blank contact details on the kept household are filled from
-            this one. There is no undo. If both households are registered for the
-            same event, cancel one of those registrations first.
+            this one. Its open invites, and any contact-email change still waiting
+            for a click, are cancelled. There is no undo. If both households are
+            registered for the same event, cancel one of those registrations first.
           </p>
           <div className="mb-4">
             <SearchSelect
@@ -647,7 +848,7 @@ export default function AccountsManager({
             />
           </div>
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={() => setConfirm(null)} className="btn-outline py-1.5!">
+            <button type="button" onClick={closeConfirm} className="btn-outline py-1.5!">
               Cancel
             </button>
             <button
@@ -660,12 +861,10 @@ export default function AccountsManager({
                     const kept =
                       households.find((h) => h.id === confirm.keepId)?.display_name ??
                       'the chosen household';
-                    const moved = Object.entries(r.moved ?? {})
-                      .map(([table, n]) => `${n} ${table.replace(/^public\./, '').replace(/_/g, ' ')}`)
-                      .join(', ');
-                    return `Merged ${confirm.row.household_name ?? 'the household'} into ${kept}${
-                      moved ? `. Moved ${moved}` : ''
-                    }.`;
+                    const moved = movedWords(r.moved);
+                    return `Merged ${confirm.row.household_name ?? 'the household'} into ${kept}.${
+                      moved ? ` Moved across: ${moved}.` : ''
+                    }`;
                   }
                 )
               }
@@ -674,50 +873,72 @@ export default function AccountsManager({
               {busy ? 'Merging…' : 'Merge'}
             </button>
           </div>
-        </Modal>
+        </Dialog>
       )}
 
-      {/* Purge confirmation: destructive, so it makes you type. */}
+      {/* Delete family: destructive, so it asks for the family's name and the
+          administrator's own code (23 Nov 2026; it used to be the word
+          DELETE). The database refuses a family with payments on record. */}
       {confirm?.kind === 'purge' && (
-        <Modal onClose={() => setConfirm(null)}>
-          <h2 className="text-lg font-bold mb-2 text-red-700">
-            Delete {confirm.row.household_name ?? 'this family'} and all their data?
-          </h2>
+        <StepUpModal
+          danger
+          title={`Delete ${confirm.row.household_name ?? 'this family'} and all their data?`}
+          confirmLabel="Delete everything"
+          busyLabel="Deleting…"
+          remind={false}
+          canConfirm={
+            confirm.typed.trim() !== '' &&
+            confirm.typed.trim().toLowerCase() === (confirm.row.household_name ?? '').trim().toLowerCase()
+          }
+          onClose={closeConfirm}
+          onConfirm={() => purgeHousehold(confirm.row.household_id)}
+          onDone={(r) => {
+            const kept = r.loginsKept ?? [];
+            finish({
+              ok: true,
+              message: `Deleted ${confirm.row.household_name ?? 'the household'} and all its data. ${
+                r.loginsDeleted === 1 ? '1 account was' : `${r.loginsDeleted} accounts were`
+              } deleted.${
+                kept.length
+                  ? ` Kept, because they are staff, a program leader or in another household: ${kept.join(', ')}. They are only off this household.`
+                  : ''
+              }`,
+            });
+          }}
+        >
           <p className="text-sm text-neutral-700 mb-3">
             This permanently deletes the household, its people,{' '}
-            <strong>{confirm.row.registration_count ?? 0} registration{(confirm.row.registration_count ?? 0) === 1 ? '' : 's'}</strong>,{' '}
-            <strong>{confirm.row.payment_count ?? 0} payment record{(confirm.row.payment_count ?? 0) === 1 ? '' : 's'}</strong>, and
-            every member&rsquo;s login. There is no undo. Donation records are
-            kept, as anonymous entries.
+            <strong>
+              {confirm.row.registration_count ?? 0} registration
+              {(confirm.row.registration_count ?? 0) === 1 ? '' : 's'}
+            </strong>{' '}
+            and the accounts of everyone in it. There is no undo. Donation records are kept, as
+            anonymous entries. An account that is staff, a program leader or in another household
+            is kept and only taken off this household.
           </p>
-          <label className="block text-sm font-semibold mb-1.5">
-            Type <span className="font-mono text-red-700">DELETE</span> to confirm
+          {(confirm.row.payment_count ?? 0) > 0 && (
+            <p className="text-sm rounded-sm border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 mb-3">
+              This family has {confirm.row.payment_count} payment record
+              {confirm.row.payment_count === 1 ? '' : 's'}. A card or bank payment that went
+              through stops the delete: use{' '}
+              <a href="/admin/deletion-requests/" className="font-semibold underline">
+                Deletion Requests
+              </a>{' '}
+              for that family.
+            </p>
+          )}
+          <label className="block text-sm font-semibold mb-1.5" htmlFor="purge-name">
+            Type the family&rsquo;s name to confirm:{' '}
+            <span className="text-red-700">{confirm.row.household_name}</span>
           </label>
           <input
+            id="purge-name"
             value={confirm.typed}
             onChange={(e) => setConfirm({ ...confirm, typed: e.target.value })}
-            className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-4 font-mono"
-            autoFocus
+            className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-4"
+            autoComplete="off"
           />
-          <div className="flex gap-3 justify-end">
-            <button type="button" onClick={() => setConfirm(null)} className="btn-outline py-1.5!">
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={busy || confirm.typed !== 'DELETE'}
-              onClick={() =>
-                run(
-                  () => purgeHousehold(confirm.row.household_id),
-                  () => `Deleted ${confirm.row.household_name ?? 'the household'} and all its data.`
-                )
-              }
-              className="rounded-sm bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-semibold px-4 py-1.5"
-            >
-              {busy ? 'Deleting…' : 'Delete everything'}
-            </button>
-          </div>
-        </Modal>
+        </StepUpModal>
       )}
     </div>
   );
@@ -742,21 +963,5 @@ function MenuItem({ children, onClick, danger = false, disabled = false, reason 
         <span className="block text-xs text-neutral-400">{reason}</span>
       )}
     </button>
-  );
-}
-
-function Modal({ children, onClose }) {
-  return (
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>
   );
 }
