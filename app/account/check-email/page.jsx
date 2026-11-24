@@ -1,14 +1,15 @@
 import Link from 'next/link';
+import SignedUpAddress from './SignedUpAddress';
 
 export const metadata = { title: 'Check Your Email' };
 
 // Shown straight after signing up. The account exists at this point but
 // cannot be used until the address is confirmed, which is what stops someone
 // registering a family under an address they do not own.
-export default async function CheckEmailPage({ searchParams }) {
-  // In Next.js 15 searchParams is a promise. Awaiting it is not optional.
-  const params = await searchParams;
-  const email = typeof params?.email === 'string' ? params.email : '';
+//
+// The address is no longer read from ?email= (23 Nov 2026): the sign-up form
+// keeps it in sessionStorage, and SignedUpAddress shows it.
+export default function CheckEmailPage() {
 
   return (
     <section className="bg-brand-light min-h-[60vh] py-14">
@@ -17,13 +18,7 @@ export default async function CheckEmailPage({ searchParams }) {
           <h1 className="text-3xl font-bold mb-3">Check your email</h1>
           <p className="text-neutral-700">
             We&rsquo;ve sent a confirmation link
-            {email ? (
-              <>
-                {' '}
-                to <strong className="wrap-break-word">{email}</strong>
-              </>
-            ) : null}
-            . Open it to finish setting up your account and continue to
+            <SignedUpAddress />. Open it to finish setting up your account and continue to
             registration.
           </p>
           {/* The same page whether the address is new or already registered

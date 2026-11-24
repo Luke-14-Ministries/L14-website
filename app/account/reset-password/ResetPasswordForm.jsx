@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import PasswordInput from '@/components/PasswordInput';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { authErrorWords } from '@/lib/authErrors';
+import LostPhoneNote from '@/components/LostPhoneNote';
 
 // Supabase refuses a password change on an account with two-factor until the
 // session has passed the code step (aal2), and the link in a reset email only
@@ -33,23 +35,6 @@ async function verifyAnyFactor(supabase, code) {
 const LINK_METHODS = ['otp', 'magiclink', 'recovery'];
 function cameFromEmailLink(aal) {
   return (aal?.currentAuthenticationMethods ?? []).some((m) => LINK_METHODS.includes(m?.method));
-}
-
-function friendly(err) {
-  const msg = err?.message ?? '';
-  // Supabase's code for a wrong current password is current_password_invalid
-  // on the live project (seen 23 Nov 2026); its source names it _mismatch.
-  // Either way the message itself says "required", which reads wrong.
-  if (err?.code === 'current_password_invalid' || err?.code === 'current_password_mismatch') {
-    return 'Your current password was not right. Please try it again.';
-  }
-  if (err?.code === 'same_password' || /different from the old/i.test(msg)) {
-    return 'That is your current password. Please choose a different one.';
-  }
-  if (err?.code === 'weak_password' || /weak|pwned|known to be/i.test(msg)) {
-    return 'That password is too easy to guess or has appeared in a data breach elsewhere. Please choose another.';
-  }
-  return msg || 'The password could not be saved. Please try again.';
 }
 
 export default function ResetPasswordForm() {
@@ -110,7 +95,8 @@ export default function ResetPasswordForm() {
         setNeedsCode(true);
         setError('Your account has two-factor turned on. Enter the code from your authenticator app as well.');
       } else {
-        setError(friendly(updateError));
+        // Plain words, shared with sign-up (lib/authErrors.js, 23 Nov 2026).
+        setError(authErrorWords(updateError, 'The password could not be saved. Please try again.'));
       }
       setBusy(false);
       return;
@@ -210,8 +196,9 @@ export default function ResetPasswordForm() {
             required
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-            className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-6 tracking-widest"
+            className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-2 tracking-widest"
           />
+          <LostPhoneNote className="mb-6" />
         </>
       )}
       <button type="submit" className="btn-primary w-full" disabled={busy}>

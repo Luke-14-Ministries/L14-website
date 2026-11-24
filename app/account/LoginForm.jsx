@@ -8,6 +8,8 @@ import { safeNextPath } from '@/lib/site';
 import { createClient } from '@/lib/supabase/client';
 import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
 import { rememberBrowser, trustedBrowserCheck } from './trust-actions';
+import { authErrorWords } from '@/lib/authErrors';
+import LostPhoneNote from '@/components/LostPhoneNote';
 
 // --- Trusted browser ("remember this browser for 30 days") -----------------
 // The password is still required at every login; only the 6-digit code is
@@ -81,6 +83,10 @@ export default function LoginForm({ newSite = false } = {}) {
   const [busy, setBusy] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaBump, setCaptchaBump] = useState(0);
+  // The password was right but the address was never confirmed: say so, and
+  // offer the link again (23 Nov 2026). `resent` is the line after a resend.
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [resent, setResent] = useState('');
 
   // Second-step (two-factor) state. `mfa` holds the factor + challenge once a
   // password login lands on an account that has two-factor turned on.
@@ -159,7 +165,9 @@ export default function LoginForm({ newSite = false } = {}) {
   async function useDifferentAccount() {
     setBusy(true);
     try {
-      await withTimeout(supabase.auth.signOut(), 6000, null);
+      // This browser only (23 Nov 2026). signOut() with no scope ends the
+      // account's sessions everywhere, and "Not you?" is about this screen.
+      await withTimeout(supabase.auth.signOut({ scope: 'local' }), 6000, null);
     } catch {
       /* the session is going either way */
     }
@@ -240,6 +248,8 @@ export default function LoginForm({ newSite = false } = {}) {
     }
 
     setBusy(true);
+    setUnconfirmed(false);
+    setResent('');
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
@@ -247,6 +257,18 @@ export default function LoginForm({ newSite = false } = {}) {
       // Verified by Supabase, not here -- see components/Turnstile.
       ...(captchaToken ? { options: { captchaToken } } : {}),
     });
+
+    // Right password, unconfirmed address. Supabase checks the password
+    // BEFORE it looks at confirmation, so this answer reaches only someone who
+    // already knows the password: it tells a stranger nothing about who has
+    // an account. Until 23 Nov 2026 it read "did not match", and the person
+    // went off to reset a password that was fine.
+    if (signInError?.code === 'email_not_confirmed') {
+      setUnconfirmed(true);
+      setBusy(false);
+      setCaptchaBump((n) => n + 1);
+      return;
+    }
 
     if (signInError) {
       // Deliberately vague. Supabase distinguishes "no such account" from
@@ -306,6 +328,35 @@ export default function LoginForm({ newSite = false } = {}) {
     }
 
     finish();
+  }
+
+  // "Send the link again" for an unconfirmed address. Supabase wants a fresh
+  // bot-check token for every email it sends, and the one used to sign in is
+  // spent, so the widget was reset above and this waits for its new token.
+  async function resendLink() {
+    setError('');
+    setResent('');
+    if (turnstileEnabled && !captchaToken) {
+      setError('Please complete the "I am human" check, then press "Send the link again".');
+      return;
+    }
+    setBusy(true);
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        ...(captchaToken ? { captchaToken } : {}),
+        // As the sign-up form: the link's button page sends them on to `next`.
+        emailRedirectTo: `${window.location.origin}/auth/callback/?next=${encodeURIComponent(next)}`,
+      },
+    });
+    setBusy(false);
+    setCaptchaBump((n) => n + 1);
+    if (resendError) {
+      setError(authErrorWords(resendError, 'The link could not be sent. Please try again in a minute.'));
+      return;
+    }
+    setResent(`We sent a new link to ${email}. It can take a minute or two, and new senders sometimes land in spam or junk.`);
   }
 
   async function handleVerify(e) {
@@ -437,9 +488,10 @@ export default function LoginForm({ newSite = false } = {}) {
           autoFocus
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4 tracking-widest"
+          className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-2 tracking-widest"
           placeholder="123456"
         />
+        <LostPhoneNote className="mb-4" />
         <label className="flex items-start gap-2 text-sm mb-6">
           <input
             type="checkbox"
@@ -489,6 +541,30 @@ export default function LoginForm({ newSite = false } = {}) {
         >
           {error}
         </p>
+      )}
+
+      {unconfirmed && (
+        <div role="alert" className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+          <p>
+            Your password is right, but this email address hasn&rsquo;t been confirmed yet.
+            Press the link in the email we sent when you made the account.
+          </p>
+          {resent ? (
+            <p className="mt-2 font-semibold">{resent}</p>
+          ) : (
+            <>
+              <p className="mt-2 text-sm">Can&rsquo;t find it? Check your spam or junk folder, or:</p>
+              <button
+                type="button"
+                onClick={resendLink}
+                disabled={busy}
+                className="btn-outline mt-2 py-1.5! text-sm"
+              >
+                {busy ? 'Sending…' : 'Send the link again'}
+              </button>
+            </>
+          )}
+        </div>
       )}
 
       <label className="block font-semibold mb-1.5" htmlFor="login-email">

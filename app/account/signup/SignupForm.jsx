@@ -8,6 +8,8 @@ import { createClient } from '@/lib/supabase/client';
 import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
 import { emailLooksValid, formatPhone } from '@/lib/format';
 import { safeNextPath } from '@/lib/site';
+import { authErrorWords } from '@/lib/authErrors';
+import { SIGNUP_EMAIL_KEY } from '../check-email/SignedUpAddress';
 
 export default function SignupForm() {
   const [form, setForm] = useState({
@@ -92,7 +94,8 @@ export default function SignupForm() {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      // Plain words; Supabase's own message is logged (lib/authErrors.js).
+      setError(authErrorWords(signUpError, 'Your account could not be created. Please try again.'));
       setBusy(false);
       setCaptchaBump((n) => n + 1);
       return;
@@ -111,9 +114,12 @@ export default function SignupForm() {
       router.push(nextPath);
       router.refresh();
     } else {
-      router.push(
-        `/account/check-email/?email=${encodeURIComponent(form.email)}`
-      );
+      try {
+        sessionStorage.setItem(SIGNUP_EMAIL_KEY, form.email);
+      } catch {
+        /* private modes can refuse; the page then just leaves the address out */
+      }
+      router.push('/account/check-email/');
     }
   }
 
