@@ -466,9 +466,8 @@ export default async function BackgroundChecksPage({ searchParams }) {
       empty: 'No adult volunteers on upcoming events.',
       intro: (
         <>
-          {plural(rowsBy.volunteers.length, 'adult volunteer', 'adult volunteers')} on upcoming events. Background check:
-          VolunteerBadge, sent from {screeningLink}. A volunteer can&rsquo;t be approved without a current background
-          check marked OK to serve.
+          {plural(rowsBy.volunteers.length, 'adult volunteer', 'adult volunteers')} on upcoming events. Send their
+          invites from {screeningLink}.
         </>
       ),
     },
@@ -479,9 +478,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
       intro: (
         <>
           {plural(rowsBy.families.length, 'adult', 'adults')} on upcoming events who aren&rsquo;t volunteers or campers.
-          Background check: VolunteerBadge, sent from {screeningLink}; if someone declines, a registry search instead,
-          under their row. A missing background check is a flag on their registration, not a hold.{' '}
-          <strong>Not permitted</strong> holds approval.
+          Send their invites from {screeningLink}. If someone declines, use a registry search under their row.
         </>
       ),
     },
@@ -491,16 +488,13 @@ export default async function BackgroundChecksPage({ searchParams }) {
       empty: 'No campers 18 or older on upcoming events.',
       intro: (
         <>
-          {plural(rowsBy.campers.length, 'camper', 'campers')} 18 or older on upcoming events. Background check, for now:
-          a search of the public sex-offender registry, run from their row. <strong>Copy last name and search</strong>{' '}
-          opens{' '}
+          {plural(rowsBy.campers.length, 'camper', 'campers')} 18 or older on upcoming events. Press{' '}
+          <strong>Copy last name and search</strong> on their row, check the date of birth and place against any
+          result on{' '}
           <a href="https://www.nsopw.gov/" target="_blank" rel="noopener noreferrer" className="underline">
             nsopw.gov
-          </a>{' '}
-          with the last name on your clipboard; check the date of birth and place against any result, then press{' '}
-          <strong>No match</strong> or <strong>Possible match</strong>. NSOPW doesn&rsquo;t allow automated searching,
-          so a person runs each one. A missing search is a flag on their registration, not a hold.{' '}
-          <strong>Not permitted</strong> holds approval.
+          </a>
+          , then press <strong>No match</strong> or <strong>Possible match</strong>.
         </>
       ),
     },
@@ -515,7 +509,10 @@ export default async function BackgroundChecksPage({ searchParams }) {
         title="Background Checks"
         intro={
           <>
-            Everyone 18 or older on an upcoming event gets a background check (the board, 14 Nov 2026), in three groups:{' '}
+            {/* Two sentences (23 Nov 2026); the board's date is in the
+                comments and DECISIONS.md, not on the page. */}
+            Everyone 18 or older on the first day of an upcoming event gets a background check. They&rsquo;re listed
+            in three groups:{' '}
             <a href="#volunteers" className="font-semibold text-brand underline">
               volunteers
             </a>
@@ -527,8 +524,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
             <a href="#campers" className="font-semibold text-brand underline">
               adult campers
             </a>
-            . Age is counted on the first day of camp.
-            {minors > 0 && ` ${minors} under 18 ${minors === 1 ? 'is' : 'are'} not screened and not listed.`}
+            .{minors > 0 && ` ${minors} under 18 ${minors === 1 ? 'isn’t' : 'aren’t'} listed.`}
           </>
         }
       >
@@ -539,11 +535,9 @@ export default async function BackgroundChecksPage({ searchParams }) {
       <div className="grid gap-4 md:grid-cols-2">
         <div className={HOW_TO_BOX}>
           <h3 className="font-bold">How to run a background check</h3>
-          {/* The VolunteerBadge balance, in view before anyone is ready. */}
+          {/* What is due leads (23 Nov 2026), then the balance, then three
+              short steps; the longer explanation is in "How this works". */}
           <p className="mt-1 text-sm text-neutral-700">
-            <CreditLine mode={vbMode} credits={vbCredits} outstanding={vbOutstanding} problem={vbProblem} />
-          </p>
-          <p className="mt-2 text-sm text-neutral-700">
             {/* The counts stand out like the credits (Lawrence, 14 Nov 2026). */}
             {readyToInvite > 0 ? (
               <strong className="text-red-700">
@@ -576,18 +570,20 @@ export default async function BackgroundChecksPage({ searchParams }) {
             )}
             .
           </p>
+          {/* The VolunteerBadge balance, in view before anyone is ready. */}
+          <p className="mt-2 text-sm text-neutral-700">
+            <CreditLine mode={vbMode} credits={vbCredits} outstanding={vbOutstanding} problem={vbProblem} />
+          </p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-700">
             <li>
-              <strong>Volunteers</strong> and <strong>parents, siblings and caregivers</strong>: VolunteerBadge.
-              Send Background Check Invites lists who can be sent and shows the credits; nothing goes until you press Send.
-              Results come back there.
+              <strong>Volunteers, parents, siblings and caregivers:</strong> send a VolunteerBadge invite with the
+              button below. Results show there too.
             </li>
             <li>
-              <strong>Adult campers</strong>, for now: a registry search, run from their row below.
+              <strong>Adult campers:</strong> run a registry search from their row.
             </li>
             <li>
-              A background check done another way (on paper, or straight in VolunteerBadge) is recorded by hand: open{' '}
-              <strong>Background check record</strong> under the person&rsquo;s row.
+              <strong>Done another way?</strong> Record it under <strong>Background check record</strong> on their row.
             </li>
           </ul>
           {/* Named for both halves of that page (Lawrence, 15 Nov 2026);
@@ -598,6 +594,43 @@ export default async function BackgroundChecksPage({ searchParams }) {
         </div>
         <CheckLengthForm months={months} onFile={onFileCount ?? 0} canEdit={canWrite} />
       </div>
+
+      {/* What the cards and the how-to box used to say at length (23 Nov
+          2026), closed by default. The rules are unchanged. */}
+      <details className="card group p-4 text-sm">
+        <summary className="fold-summary flex items-center gap-1">
+          <span className="font-bold">How this works</span>
+        </summary>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-neutral-700">
+          <li>
+            Age is counted on the first day of camp. Nobody under 18 is screened.
+          </li>
+          <li>
+            Volunteers, parents, siblings and caregivers get a full background check through VolunteerBadge.
+            Send Background Check Invites lists who can be sent and shows the credits. Nothing goes until you
+            press Send.
+          </li>
+          <li>
+            A volunteer can&rsquo;t be approved without a current background check marked OK to serve.
+          </li>
+          <li>
+            If a parent, sibling or caregiver declines VolunteerBadge, a registry search covers them instead.
+          </li>
+          <li>
+            Adult campers get a search of the public sex-offender registry for now. NSOPW doesn&rsquo;t allow
+            automated searching, so a person runs each one. <strong>Copy last name and search</strong> opens
+            nsopw.gov with the last name on your clipboard.
+          </li>
+          <li>
+            For anyone who isn&rsquo;t a volunteer, a missing background check or search is a flag on their
+            registration, not a hold. <strong>Not permitted</strong> holds approval for anyone.
+          </li>
+          <li>
+            A background check done another way (on paper, or straight in VolunteerBadge) is recorded by hand under{' '}
+            <strong>Background check record</strong> on the person&rsquo;s row.
+          </li>
+        </ul>
+      </details>
 
       {CARDS.map(({ key, param }) => {
         const text = CARD_TEXT[key];

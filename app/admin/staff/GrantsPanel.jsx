@@ -122,7 +122,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
               </td>
               {LEVELS.map(([lvl, text]) => (
                 <td key={lvl} className="py-1.5 px-1 text-center">
-                  <label className="inline-flex cursor-pointer items-center gap-1">
+                  <label className="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap">
                     <input
                       type="radio"
                       name={`grant-${member.profileId}-${key}`}
