@@ -10,7 +10,7 @@ import EventFilter from '@/components/EventFilter';
 import RecordPaymentForm from './RecordPaymentForm';
 import FoldCard from '@/components/FoldCard';
 import ExportBar from './ExportBar';
-import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
+import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel, reviewClassInfo } from '@/lib/plans';
 import { isStaleRefund, STALE_REFUND_DAYS, CLEARING_PILL } from '@/lib/payments';
 import RecheckRefund from './RecheckRefund';
 
@@ -627,7 +627,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                   <td className="px-4 py-2 text-sm">
                     {(() => {
                       const rv = reviewByReg.get(b.registration_id);
-                      const c = rv ? REVIEW_CLASS[rv.review_class] : null;
+                      const c = rv ? reviewClassInfo(rv) : null;
                       const credit = (b.balance_cents ?? 0) < 0 ? -b.balance_cents : 0;
                       if (!c && !credit) return <span className="text-neutral-400">—</span>;
                       return (

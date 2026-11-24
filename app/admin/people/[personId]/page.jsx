@@ -7,7 +7,7 @@ import { allergyPill, statusPill, telHref, formatPhone, clearancePill, PILL_TONE
 import PersonDetails from './PersonDetails';
 import AddToRegistration from './AddToRegistration';
 import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/support';
-import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
+import { REVIEW_FLAG, reviewClassLabel, reviewClassInfo } from '@/lib/plans';
 import { dayInMorristown, isCurrentEventRow, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 import { isVolunteerRole } from '@/lib/roles';
@@ -825,7 +825,7 @@ export default async function PersonPage({ params }) {
                   </Row>
                   {(() => {
                     const rv = reviewByReg.get(p.registration_id);
-                    const cls = rv ? REVIEW_CLASS[rv.review_class] : null;
+                    const cls = rv ? reviewClassInfo(rv) : null;
                     const flags = rv?.flags ?? [];
                     return (
                       <Row label="Review">

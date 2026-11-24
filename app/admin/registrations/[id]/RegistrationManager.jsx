@@ -7,7 +7,9 @@
 // staff member can actually do -- this file only decides how it looks.
 
 import Notice from '@/components/Notice';
-import { formatPhone } from '@/lib/format';
+import { formatPhone, statusPill, STATUS_LABEL } from '@/lib/format';
+import { ROLE_LABEL, ROLE_ORDER, ROLE_PILL } from '@/lib/roles';
+import { depositShortWords } from '@/lib/plans';
 import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -16,7 +18,7 @@ import Link from 'next/link';
 import ScholarshipReview from '@/app/admin/scholarships/ScholarshipReview';
 import FamilyScholarshipReview from '@/app/admin/scholarships/FamilyScholarshipReview';
 import { familyRequestOpen } from '@/lib/familyScholarships';
-import { registrationHeads, refundSuggestion, REFUND_FULL_UNTIL_DAYS, isStaleRefund, STALE_REFUND_DAYS, CLEARING_PILL } from '@/lib/payments';
+import { registrationHeads, refundSuggestion, REFUND_FULL_UNTIL_DAYS, isStaleRefund, STALE_REFUND_DAYS, paymentStatusPill } from '@/lib/payments';
 import {
   setParticipantStatus,
   updatePerson,
@@ -41,7 +43,7 @@ const TSHIRT_SIZES = [
 // fees and payments are sections of the Money card, which is one).
 import Panel, { PanelLink } from './Panel';
 import ReviewCard from './ReviewCard';
-import { eventDateRange, dayInMorristown, todayInMorristown } from '@/lib/events';
+import { eventDateRange, todayInMorristown, formatDay } from '@/lib/events';
 import RecheckRefund from '../../payments/RecheckRefund';
 
 const SIGNER_ROLE_LABEL = {
@@ -59,49 +61,18 @@ const SIGNER_ROLE_LABEL = {
   account_holder: 'as the account holder',
 };
 
-const STATUS_OPTIONS = [
-  ['draft', 'Draft'],
-  ['submitted', 'Submitted, pending review'],
-  ['waitlisted', 'Waitlisted'],
-  ['confirmed', 'Confirmed'],
-  ['cancelled', 'Cancelled'],
-];
+// Status words and colours are lib/format.js's (23 Nov 2026, review): this
+// page kept its own copy ("Submitted, pending review", "Cancelled") and drifted
+// from Rosters and the person page. Roles are lib/roles.js's, a gray pill.
+const STATUS_OPTIONS = Object.entries(STATUS_LABEL);
 
-const STATUS_CLS = {
-  draft: 'bg-neutral-100 text-neutral-700',
-  submitted: 'bg-amber-100 text-amber-800',
-  waitlisted: 'bg-orange-100 text-orange-800',
-  confirmed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-neutral-200 text-neutral-500',
-};
-
-const ROLE_OPTIONS = [
-  ['camper', 'Camper'],
-  ['parent_guardian', 'Parent/Guardian'],
-  ['sibling', 'Sibling'],
-  ['caregiver', 'Caregiver'],
-  ['volunteer', 'Volunteer'],
-  ['volunteer_child', 'Volunteer child (under 16)'],
-];
-const ROLE_LABEL = Object.fromEntries(ROLE_OPTIONS);
-const ROLE_ORDER = ROLE_OPTIONS.map(([v]) => v);
 const ROLE_PLURAL = {
   camper: 'Campers',
-  parent_guardian: 'Parents / Guardians',
+  parent_guardian: 'Parents/guardians',
   sibling: 'Siblings',
   caregiver: 'Caregivers',
   volunteer: 'Volunteers',
   volunteer_child: 'Volunteer children',
-};
-const ROLE_BADGE = {
-  camper: 'bg-teal-100 text-teal-800',
-  parent_guardian: 'bg-neutral-200 text-neutral-700',
-  sibling: 'bg-neutral-200 text-neutral-700',
-  caregiver: 'bg-purple-100 text-purple-800',
-  // Indigo, not amber (Lawrence, 27 Oct 2026): amber is the site's "needs
-  // attention" colour, and a volunteer is not a problem. Purple is caregivers'.
-  volunteer: 'bg-indigo-100 text-indigo-800',
-  volunteer_child: 'bg-indigo-100 text-indigo-800',
 };
 
 const PAY_METHOD_LABEL = {
@@ -214,7 +185,7 @@ Confirm anyway?`)) {
           disabled={pending}
           aria-label="Change status"
           className={`cursor-pointer rounded-full border-0 py-1 pl-3 pr-7 text-xs font-semibold ${
-            STATUS_CLS[participant.status] ?? STATUS_CLS.submitted
+            statusPill(participant.status).cls
           }`}
         >
           {STATUS_OPTIONS.map(([v, label]) => (
@@ -480,9 +451,7 @@ function ParticipantRow({
             <span
               // nowrap + inline-block: on a phone the whole pill drops to the
               // next line instead of splitting in two (Lawrence, 23 Nov 2026).
-              className={`ml-2 inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold align-middle ${
-                ROLE_BADGE[participant.camp_role] ?? 'bg-neutral-200 text-neutral-700'
-              }`}
+              className={`ml-2 inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold align-middle ${ROLE_PILL}`}
             >
               {ROLE_LABEL[participant.camp_role] ?? participant.camp_role}
             </span>
@@ -508,7 +477,7 @@ function ParticipantRow({
               </span>
             )}
             {canSeeMoney ? ' · ' : ''}
-            {p.date_of_birth ? `b. ${p.date_of_birth}` : 'no DOB on file'}
+            {p.date_of_birth ? `born ${formatDay(p.date_of_birth)}` : 'no date of birth on file'}
             {participant.tshirt_size ? ` · ${participant.tshirt_size}` : ''}
           </p>
           {/* Surfaced on the summary line, not hidden behind the editor: a
@@ -777,7 +746,7 @@ function ConsentRow({ label, help, record, disabled, onSet }) {
       </span>
       {record?.recorded_at && (
         <span className="text-xs text-neutral-500">
-          {dayInMorristown(record.recorded_at)}
+          {formatDay(record.recorded_at)}
           {record.recorded_as === 'staff' ? ' · entered by staff' : ' · from the family'}
         </span>
       )}
@@ -850,13 +819,14 @@ function AgreementsCard({ signatures }) {
         Signed by <strong>{first.signerName}</strong>{' '}
         {first.personName ? '' : SIGNER_ROLE_LABEL[first.signerRole] ?? ''} on{' '}
         {new Date(first.signedAt).toLocaleString('en-US', {
+          timeZone: 'America/New_York',
           month: 'long',
           day: 'numeric',
           year: 'numeric',
           hour: 'numeric',
           minute: '2-digit',
-        })}
-        .
+        })}{' '}
+        ET.
       </p>
       <ul className="mt-3 space-y-1 text-sm">
         {signatures.map((s) => (
@@ -964,7 +934,7 @@ function AddPerson({ registrationId, options }) {
         <div>
           <label className="field-label">Role</label>
           <select className={inputCls} value={f.camp_role} onChange={set('camp_role')}>
-            {ROLE_OPTIONS.map(([v, label]) => (
+            {Object.entries(ROLE_LABEL).map(([v, label]) => (
               <option key={v} value={v}>
                 {label}
               </option>
@@ -994,7 +964,7 @@ function AddPerson({ registrationId, options }) {
               className="btn-primary btn-sm"
             >
               Use {d.name}
-              {d.date_of_birth ? ` (born ${d.date_of_birth})` : ''}
+              {d.date_of_birth ? ` (born ${formatDay(d.date_of_birth)})` : ''}
             </button>
           ))}
           <button onClick={() => add({ confirm_new: true })} disabled={pending} className="btn-outline btn-sm">
@@ -1335,24 +1305,12 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                 )}
                 <span className="text-neutral-500">
                   {' '}· {PAY_METHOD_LABEL[p.method] ?? p.method}
-                  {' '}· {dayInMorristown(p.received_on ?? p.created_at)}
+                  {' '}· {formatDay(p.received_on ?? p.created_at)}
                 </span>
               </span>
               <span className="flex items-center gap-2">
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    p.status === 'refunded'
-                      ? 'bg-neutral-200 text-neutral-600'
-                      : p.status === 'succeeded'
-                        ? 'bg-green-100 text-green-800'
-                        : p.status === 'failed'
-                          ? 'bg-red-100 text-red-800'
-                          : p.status === 'processing'
-                            ? CLEARING_PILL
-                            : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
-                  {p.status}
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${paymentStatusPill(p.status).cls}`}>
+                  {paymentStatusPill(p.status).text}
                 </span>
                 {p.refundableCents > 0 && (
                   <button
@@ -1408,7 +1366,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                   <li key={r.id} className="text-neutral-600">
                     Refunded <strong>{money(r.amount_cents)}</strong>
                     {(r.fee_cover_cents ?? 0) > 0 && ` + ${money(r.fee_cover_cents)} fee`}
-                    {' '}· {dayInMorristown(r.refunded_on ?? r.created_at)}
+                    {' '}· {formatDay(r.refunded_on ?? r.created_at)}
                     {' '}· <span className="italic">{r.reason || 'no reason recorded'}</span>
                     {/* `reason` is written for the family -- it is printed on
                         their dashboard. `note` is where a refund that arrived
@@ -1428,7 +1386,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                         className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-400"
                         title={`Refunds usually clear in a few business days. This one has been pending more than ${STALE_REFUND_DAYS} days. Check it in Stripe.`}
                       >
-                        ⚑ pending since {dayInMorristown(r.created_at)}, check Stripe
+                        ⚑ pending since {formatDay(r.created_at)}, check Stripe
                       </span>
                     )}
                     {/* Ask Stripe directly and record its answer (refundRecheckAction.js). */}
@@ -1778,7 +1736,7 @@ function WeekTab({ reg, active }) {
           {eventDateRange(reg.event.starts_on, reg.event.ends_on)}
         </span>
       )}
-      {cancelledOnly && <span className="block text-xs font-normal">cancelled</span>}
+      {cancelledOnly && <span className="block text-xs font-normal">canceled</span>}
       {attention.length > 0 && <span className="sr-only">, waiting on staff: {attention.join(', ')}</span>}
     </>
   );
@@ -2072,11 +2030,20 @@ export default function RegistrationManager({
   // volunteering has two rows here and holds one place.
   const livePeople = registrationHeads(parts);
   const depositEach = registration.event?.deposit_cents ?? 0;
-  const depositDue = depositEach * livePeople;
-  const depositPaid = balance?.paid_cents ?? 0;
+  // One deposit number (23 Nov 2026, review): the Review card read
+  // registration_review (fee-paying people only, paid plus any deposit
+  // scholarship) while this panel counted every head against paid_cents, so a
+  // family with a $0 volunteer child showed two different totals. Both read
+  // the view now, as Setup's help says; the old sum is only the fallback when
+  // the view returned no row.
+  const depositDue = review?.deposit_expected_cents ?? depositEach * livePeople;
+  const depositPaid = review
+    ? (review.confirmed_paid_cents ?? 0) + (review.deposit_scholarship_cents ?? 0)
+    : balance?.paid_cents ?? 0;
+  const feePeople = depositEach > 0 ? Math.round(depositDue / depositEach) : 0;
   // A waived deposit (0096) is not short (18 Oct review: the page showed both).
   const depositShort =
-    canSeeMoney && !depositWaived && depositEach > 0 && livePeople > 0 && depositPaid < depositDue;
+    canSeeMoney && !depositWaived && depositEach > 0 && depositDue > 0 && depositPaid < depositDue;
   const adjustments = moneyKnown
     ? parts.reduce((s, p) => s + (p.scholarship_cents ?? 0) + (p.discount_cents ?? 0), 0)
     : 0;
@@ -2289,7 +2256,7 @@ export default function RegistrationManager({
 
         <Panel title="People on this week" count={parts.length} id="people" opensFor="person-" defaultOpen={peopleOpen}>
           <p className="text-sm text-neutral-500 mb-2">
-            Change someone&rsquo;s status to move them out of &ldquo;Submitted, pending review.&rdquo;
+            Change someone&rsquo;s status to move them out of &ldquo;Awaiting review.&rdquo;
           </p>
           {parts.length === 0 ? (
             <p className="text-neutral-500 text-sm py-2">Nobody is on this registration yet.</p>
@@ -2364,7 +2331,7 @@ export default function RegistrationManager({
                       {': '}
                       {outcome}
                       {r.grantedBy && <> · by {r.grantedBy}</>}
-                      {r.at && <> · {dayInMorristown(r.at)}</>}
+                      {r.at && <> · {formatDay(r.at)}</>}
                       {/* Two different people's words, kept apart since 0048.
                           The staff note used to overwrite the family's
                           statement, so granting an award erased the reason it
@@ -2412,10 +2379,10 @@ export default function RegistrationManager({
             {depositShort && (
               <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm">
                 <p className="font-bold text-amber-900">
-                  Deposit short: {money(depositPaid)} of {money(depositDue)} paid
+                  {depositShortWords(depositPaid, depositDue)}
                 </p>
                 <p className="mt-1 text-amber-900">
-                  {livePeople} {livePeople === 1 ? 'place' : 'places'} at {money(depositEach)} each.{' '}
+                  {feePeople} fee-paying {feePeople === 1 ? 'person' : 'people'} at {money(depositEach)} each.{' '}
                   {depositPaid === 0
                     ? 'Nothing has been paid, so nothing is held yet.'
                     : `${money(depositDue - depositPaid)} more is needed to hold every place.`}

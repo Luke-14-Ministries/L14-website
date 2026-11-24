@@ -57,7 +57,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Panel, { PanelLink } from './Panel';
 import { reviewRegistration } from './actions';
-import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel } from '@/lib/plans';
+import { REVIEW_FLAG, reviewClassLabel, reviewClassInfo } from '@/lib/plans';
 import { whenInMorristown } from '@/lib/events';
 import { CLEARING_PILL } from '@/lib/payments';
 import StatusMark from '@/components/StatusMark';
@@ -265,7 +265,7 @@ export default function ReviewCard({
   const [creedNote, setCreedNote] = useState('');
 
   const waiting = participants.filter((p) => p.status === 'submitted');
-  const cls = review ? REVIEW_CLASS[review.review_class] : null;
+  const cls = review ? reviewClassInfo(review) : null;
   // The Creed is drawn from `creed`, not the money view's copy of the flag.
   const flags = (review?.flags ?? []).filter((f) => f !== 'creed_not_affirmed');
   const onFamily = Boolean(awaiting?.since);
@@ -327,7 +327,7 @@ export default function ReviewCard({
       : 'nobody waiting'
     : onFamily
       ? `${waiting.length} waiting on the family`
-      : `${waiting.length} waiting on staff`;
+      : `${waiting.length} awaiting review`;
 
   return (
     <Panel title="Review" count={count} id="review" defaultOpen={defaultOpen} opensFor="scholarship-requests">

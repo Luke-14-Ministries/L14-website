@@ -385,7 +385,7 @@ export default async function AdminOverview({ searchParams }) {
           {placesLine.map((l) => (
             <li key={l.id} className={l.over ? 'font-semibold text-amber-900' : ''}>
               <span className="font-semibold">{l.name}:</span> {l.text}
-              {l.waiting > 0 && ` · ${l.waiting} waiting on a decision`}
+              {l.waiting > 0 && ` · ${l.waiting} awaiting review`}
               {l.over && ' · approving everyone waiting would go over capacity'}
             </li>
           ))}
@@ -414,7 +414,7 @@ export default async function AdminOverview({ searchParams }) {
           value={totalPeople}
         />
         <Stat
-          label="Awaiting Review"
+          label="Awaiting review"
           sub={
             totalPending > 0
               ? 'open the queue to confirm or waitlist'
@@ -493,7 +493,7 @@ export default async function AdminOverview({ searchParams }) {
                   <th className="py-2 pr-4 font-semibold text-right">Confirmed</th>
                   <th className="py-2 pr-4 font-semibold text-right">Places</th>
                   <th className="py-2 pr-4 font-semibold text-right">Waitlisted</th>
-                  <th className="py-2 font-semibold text-right">Awaiting Review</th>
+                  <th className="py-2 font-semibold text-right">Awaiting review</th>
                 </tr>
               </thead>
               <tbody>

@@ -8,7 +8,7 @@ import { reviewRowNeedsStaff, reviewRowPills } from '@/lib/reviewRows';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { planStoppedAt, planFailingSince, PLAN_MAX_TRIES } from '@/lib/plans';
+import { planStoppedAt, planFailingSince, PLAN_MAX_TRIES, noDepositOwed } from '@/lib/plans';
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { roleAgeFlags } from '@/lib/roles';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
@@ -215,7 +215,8 @@ export default async function ReviewQueuePage({ searchParams }) {
       if (show === 'waiver') return r.owed.length > 0 && (eventFilter || isCurrentEventRow(r.event));
       if (show === 'plan') return (r.planStopped || r.planFailing) && (eventFilter || isCurrentEventRow(r.event));
       if (show === 'nodeposit') {
-        return r.pending.length > 0 && !r.awaitingSince && (r.review?.review_class ?? 'neither') === 'neither';
+        // Nothing owed (a $0 volunteer child alone) is not short (23 Nov 2026).
+        return r.pending.length > 0 && !r.awaitingSince && (r.review?.review_class ?? 'neither') === 'neither' && !noDepositOwed(r.review);
       }
       return (r.pending.length > 0 || r.familyReplied) && !r.awaitingSince;
     });
@@ -287,13 +288,13 @@ export default async function ReviewQueuePage({ searchParams }) {
         className="mb-3"
         intro={
           <>
-            Every family with someone still <em>submitted</em>. Each row says how many are left to
+            Every family with someone awaiting review. Each row says how many are left to
             review, whether the deposit is in or a scholarship was requested, and how many flags need a
             conversation first; open a row for the people and the flags. Open the registration to
             approve or waitlist everyone at once on its Review card, or to ask the family for more
             information.
             {' '}
-            <strong>{totalPending}</strong> {totalPending === 1 ? 'person' : 'people'} waiting
+            <strong>{totalPending}</strong> {totalPending === 1 ? 'person' : 'people'} awaiting review
             {totalFlags > 0 && (
               <>
                 {' '}· <strong>{totalFlags}</strong> {totalFlags === 1 ? 'flag' : 'flags'}

@@ -5,14 +5,14 @@
 
 import Pill, { PILL_SHAPE } from '@/components/Pill';
 import Link from 'next/link';
-import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel, planFailingNext } from '@/lib/plans';
+import { REVIEW_FLAG, reviewClassLabel, reviewClassInfo, planFailingNext } from '@/lib/plans';
 import { statusPill } from '@/lib/format';
 import { dayInMorristown } from '@/lib/events';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
 export default function ReviewRowBody({ r, seesMoney, nameOf }) {
-  const cls = r.review ? REVIEW_CLASS[r.review.review_class] : null;
+  const cls = r.review ? reviewClassInfo(r.review) : null;
   const flags = r.flags;
   return (
     <div className="grid gap-4 text-sm sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,2fr)_auto]">
