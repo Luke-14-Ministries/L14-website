@@ -1,5 +1,6 @@
 'use client';
 
+import EmptyState from '@/components/EmptyState';
 import Notice from '@/components/Notice';
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
@@ -61,7 +62,7 @@ function Row({ r }) {
 }
 
 export default function DeletionList({ rows }) {
-  if (rows.length === 0) return <p className="text-neutral-600">Nothing here.</p>;
+  if (rows.length === 0) return <EmptyState>Nothing here.</EmptyState>;
   return (
     <ul className="space-y-4">
       {rows.map((r) => (

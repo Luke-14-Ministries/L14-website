@@ -5,6 +5,7 @@
 // only) so the server works out the list with the same function the Send
 // uses; subject and message stay in this component and never go in a URL.
 
+import EmptyState from '@/components/EmptyState';
 import Notice from '@/components/Notice';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -217,7 +218,7 @@ export default function EmailFamiliesForm({
         ) : preview && !preview.ok ? (
           <p className="font-semibold text-red-700">{preview.error}</p>
         ) : households.length === 0 ? (
-          <p className="text-neutral-600">Nobody matches, so no family would get this.</p>
+          <EmptyState>Nobody matches, so no family would get this.</EmptyState>
         ) : (
           <>
             <p>

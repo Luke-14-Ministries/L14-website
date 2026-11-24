@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import EmptyState from '@/components/EmptyState';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -175,7 +176,7 @@ export default async function DietaryPage({ searchParams }) {
               {ev.name} <span className="text-sm font-normal text-neutral-500">· {rows.length} {rows.length === 1 ? 'person' : 'people'}</span>
             </h3>
             {rows.length === 0 ? (
-              <p className="text-neutral-500 text-sm">No dietary needs or allergies recorded.</p>
+              <EmptyState>No dietary needs or allergies recorded.</EmptyState>
             ) : (
               <div className="card p-0 overflow-x-auto">
                 <ResizableTable storageKey="dietary">

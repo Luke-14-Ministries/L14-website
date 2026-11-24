@@ -5,6 +5,7 @@
 // staffer in Tennessee and one traveling see the same instant rendered in
 // their own clocks.
 
+import EmptyState from '@/components/EmptyState';
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateEventRegistration, updateEventDetails, createEvent, setHiddenFromFamilies } from './actions';
@@ -1139,7 +1140,7 @@ export default function SetupManager({ events }) {
     <div>
       <NewEventPanel events={events} />
       {events.length === 0 ? (
-        <p className="text-neutral-600">No events yet. Use “New event” above to make the first.</p>
+        <EmptyState kind="missing">No events yet. Use “New event” above to make the first.</EmptyState>
       ) : (
         <div className="space-y-4">
           {groupByYear(events).map((g) => (

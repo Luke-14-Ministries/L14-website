@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import EmptyState from '@/components/EmptyState';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -197,7 +198,7 @@ export default async function BuddiesPage({ searchParams }) {
       />
 
       {!selected ? (
-        <p className="text-neutral-500">No events to show.</p>
+        <EmptyState kind="missing">No events to show.</EmptyState>
       ) : (
         <BuddyBoard
           eventId={selected.id}

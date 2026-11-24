@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import EmptyState from '@/components/EmptyState';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -180,7 +181,7 @@ export default async function ScreeningPage() {
         }
       />
       {noEvents ? (
-        <p className="text-neutral-600">No upcoming events, so nobody is due a background check for one.</p>
+        <EmptyState kind="missing" className="mb-6">No upcoming events, so nobody is due a background check for one.</EmptyState>
       ) : null}
       {templates && templates.length > 0 && (
         <div className="mb-6">

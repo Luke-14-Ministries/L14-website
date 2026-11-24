@@ -1,4 +1,5 @@
 import { formatPhone } from '@/lib/format';
+import EmptyState from '@/components/EmptyState';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -198,7 +199,7 @@ export default async function MedicalPage({ searchParams }) {
               )}
             </p>
             {rows.length === 0 ? (
-              <p className="text-neutral-500 text-sm">No medical or support details recorded.</p>
+              <EmptyState>No medical or support details recorded.</EmptyState>
             ) : (
               <div className="card p-0 overflow-x-auto">
                 <ResizableTable storageKey="medical">

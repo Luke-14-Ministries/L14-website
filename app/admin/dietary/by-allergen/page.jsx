@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import EmptyState from '@/components/EmptyState';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import BackLink from '@/components/BackLink';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -167,7 +168,7 @@ export default async function AllergiesByAllergenPage({ searchParams }) {
         );
       })}
       {shownEvents.every((ev) => !byEvent.get(ev.id)?.size) && (
-        <p className="text-sm text-neutral-500">Nobody on these events has an allergy recorded.</p>
+        <EmptyState>Nobody on these events has an allergy recorded.</EmptyState>
       )}
     </div>
   );

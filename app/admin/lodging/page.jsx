@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import EmptyState from '@/components/EmptyState';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -176,7 +177,7 @@ export default async function LodgingPage({ searchParams }) {
       />
 
       {!selected ? (
-        <p className="text-neutral-500">No events to show.</p>
+        <EmptyState kind="missing">No events to show.</EmptyState>
       ) : lodgings.length === 0 ? (
         <p className="text-neutral-500">
           No cabins or rooms are set up for this event yet. Add them below, or copy them from

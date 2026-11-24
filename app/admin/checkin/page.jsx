@@ -1,4 +1,5 @@
 import { formatPhone } from '@/lib/format';
+import EmptyState from '@/components/EmptyState';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -224,7 +225,7 @@ export default async function CheckinPage({ searchParams }) {
       )}
 
       {rows.length === 0 ? (
-        <p className="text-neutral-500">Nobody to check in for this event yet.</p>
+        <EmptyState>Nobody to check in for this event yet.</EmptyState>
       ) : (
         <CheckinList rows={rows} />
       )}
