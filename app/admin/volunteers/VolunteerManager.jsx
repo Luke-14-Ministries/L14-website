@@ -398,7 +398,7 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
             </div>
           ) : (
             <p className="mt-4 rounded-sm border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">
-              You can see the pill above: on file, current, and the verdict. Staff with Background
+              You can see the pill above: on file, current, and the decision. Staff with Background
               checks access keep the full record (dates, the result, who decided). Ask one if something
               looks wrong.
             </p>

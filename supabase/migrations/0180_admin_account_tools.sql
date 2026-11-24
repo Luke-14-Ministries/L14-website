@@ -205,8 +205,7 @@ begin
        select 1 from public.payments pay
          join public.registrations r on r.id = pay.registration_id
         where r.household_id = p_household_id
-          and pay.status in ('succeeded', 'processing', 'refunded')
-          and pay.stripe_payment_intent_id is not null)
+          and pay.status in ('succeeded', 'processing', 'refunded'))
      or exists (
        select 1 from public.payment_plans pp
          join public.registrations r on r.id = pp.registration_id
@@ -242,7 +241,9 @@ begin
 
   -- The order is not stylistic (0022): payments and coupon redemptions are
   -- RESTRICT and must go before what they point at. Only payments with no
-  -- real money reach here (pending, failed, or staff-recorded).
+  -- money received reach here (pending or failed). A check or cash payment
+  -- staff recorded counts as received too (Lawrence's review, 23 Nov 2026: a
+  -- guess, flagged).
   delete from public.payments
    where registration_id in (select r.id from public.registrations r where r.household_id = p_household_id);
   delete from public.coupon_redemptions

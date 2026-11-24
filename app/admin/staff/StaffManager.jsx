@@ -90,7 +90,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
             title={
               isSelf && m.role === 'admin'
                 ? 'You cannot remove your own administrator access. Ask another administrator.'
-                : 'Grants access, manages accounts, names program leaders, and sets the camp doctor\u2019s dated access.'
+                : 'Gives and removes access, manages accounts, names program leaders, and sets the camp doctor\u2019s dated access.'
             }
           >
             <input
@@ -104,7 +104,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
                   !window.confirm(
                     `Make ${m.name} an administrator?
 
-An administrator can grant and remove access, manage accounts and name program leaders. This also sets every area, including Giving, to Can edit. Unchecking it later leaves their access as it is.`
+An administrator can give and remove access, manage accounts and name program leaders. This also sets every area, including Giving, to Can edit. Unchecking it later leaves their access as it is.`
                   )
                 ) {
                   return;
