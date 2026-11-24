@@ -176,8 +176,12 @@ export default async function DashboardPage({ searchParams }) {
   // Invites sent to this sign-in's confirmed address and not yet joined
   // (0179; 23 Nov 2026, A5-21): the relative who signed up on their own, or
   // lost the email, sees it here rather than starting a second household.
-  const { data: waitingInvites, error: waitingError } = await supabase.rpc('my_open_household_invites');
-  if (waitingError) throw new Error(`Invites to share a household: ${waitingError.message}`);
+  // The card is optional (23 Nov 2026, P99): a failed read is logged and the
+  // dashboard carries on without it, so one function (or a deploy that reaches
+  // live before 0179) never breaks every family's dashboard.
+  const { data: waitingData, error: waitingError } = await supabase.rpc('my_open_household_invites');
+  if (waitingError) console.error('dashboard: invites to share a household:', waitingError.message);
+  const waitingInvites = waitingError ? [] : waitingData ?? [];
 
   // people!people_household_id_fkey — the constraint is named EXPLICITLY, and
   // it has to be. Since 0037 there are two foreign keys between households and

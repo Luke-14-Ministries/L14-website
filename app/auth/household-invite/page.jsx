@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { householdPhrase } from '@/lib/householdInvite';
+import { householdPhrase, safeName } from '@/lib/householdInvite';
 import { InviteProblem } from '@/components/HouseholdInviteNotes';
 
 export const metadata = { title: 'Join your family' };
@@ -31,7 +31,10 @@ export default async function HouseholdInvitePage({ searchParams }) {
   const here = `/auth/household-invite/?token=${encodeURIComponent(token)}`;
   const signedInAs = (user?.email ?? '').toLowerCase();
   const rightLogin = invite && signedInAs === invite.email;
-  const householdWords = householdPhrase(invite?.household_name);
+  // Names a family typed go through safeName(), as the invite emails do (23 Nov
+  // 2026, P99): no link-like text and at most 60 characters on our page.
+  const householdWords = householdPhrase(safeName(invite?.household_name, ''));
+  const inviterWords = safeName(invite?.invited_by_name, 'Someone in your family');
 
   let title = 'Join your family';
   let body = null;
@@ -55,7 +58,7 @@ export default async function HouseholdInvitePage({ searchParams }) {
   } else if (!user) {
     body = (
       <>
-        {invite.invited_by_name || 'Someone in your family'} invited <strong>{invite.email}</strong> to share the{' '}
+        {inviterWords} invited <strong>{invite.email}</strong> to share the{' '}
         <strong>{householdWords}</strong>. Log in with that address, or create an account with it. You will come
         straight back here to join.
       </>
@@ -88,7 +91,7 @@ export default async function HouseholdInvitePage({ searchParams }) {
   } else {
     body = (
       <>
-        {invite.invited_by_name || 'Someone in your family'} invited you to share the <strong>{householdWords}</strong>.
+        {inviterWords} invited you to share the <strong>{householdWords}</strong>.
         With your own login you&rsquo;ll see, and can change, its registrations, payments and details, the same as
         the adults already on it.
       </>

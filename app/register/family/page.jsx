@@ -217,8 +217,10 @@ export default async function FamilyRegisterPage({ searchParams }) {
   let waitingInvites = [];
   if (!householdId) {
     const { data, error } = await supabase.rpc('my_open_household_invites');
-    if (error) throw new Error(`Invites to share a household: ${error.message}`);
-    waitingInvites = data ?? [];
+    // Optional note (23 Nov 2026, P99): log a failed read and start the wizard
+    // without it rather than refusing to show the page.
+    if (error) console.error('register: invites to share a household:', error.message);
+    else waitingInvites = data ?? [];
   }
 
   if (householdId) {

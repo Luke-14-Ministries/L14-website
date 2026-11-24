@@ -2,7 +2,7 @@
 // registration page (23 Nov 2026, review findings S3-14, A5-07, A5-21).
 // Server components only: they read lib/householdInvite.js (server-only).
 
-import { inviteProblemText, householdPhrase } from '@/lib/householdInvite';
+import { inviteProblemText, householdPhrase, safeName } from '@/lib/householdInvite';
 
 const OFFICE = 'registration@luke14ministries.net';
 
@@ -35,7 +35,8 @@ export function InviteProblem({ code, className = '' }) {
 
 // An invite waiting for this sign-in (my_open_household_invites(), 0179):
 // for the relative who signed up on their own or lost the email, so they join
-// the family's household instead of starting a second one.
+// the family's household instead of starting a second one. Names go through
+// safeName(), as the invite emails do (23 Nov 2026, P99).
 export function WaitingInvites({ invites = [], className = 'mb-8' }) {
   if (!invites.length) return null;
   return invites.map((inv) => (
@@ -44,8 +45,8 @@ export function WaitingInvites({ invites = [], className = 'mb-8' }) {
       className={`rounded-lg border border-amber-300 bg-amber-50 p-5 flex flex-wrap items-center justify-between gap-3 ${className}`}
     >
       <p className="text-amber-900">
-        <span className="font-semibold">{inv.inviter_name || 'Someone in your family'}</span> invited you to share the{' '}
-        <span className="font-semibold">{householdPhrase(inv.household_name)}</span>. Join it to see their
+        <span className="font-semibold">{safeName(inv.inviter_name, 'Someone in your family')}</span> invited you to share the{' '}
+        <span className="font-semibold">{householdPhrase(safeName(inv.household_name, ''))}</span>. Join it to see their
         registrations.
       </p>
       <form action="/auth/household-invite/accept/" method="post">
