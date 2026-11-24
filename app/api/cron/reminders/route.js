@@ -14,6 +14,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { todayInMorristown } from '@/lib/events';
 import { runReminders, reminderMode } from '@/lib/reminders/run';
+import { siteOrigin } from '@/lib/origin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -41,7 +42,8 @@ export async function GET(request) {
     return Response.json({ ok: false, error: 'date must be YYYY-MM-DD.' }, { status: 400 });
   }
   const today = asked || todayInMorristown();
-  const origin = process.env.SITE_URL || url.origin;
+  // The one answer for the site's address (lib/origin.js; 23 Nov 2026, P99).
+  const origin = await siteOrigin();
 
   try {
     const report = await runReminders(admin, { today, origin, dry: url.searchParams.get('dry') === '1', mode });

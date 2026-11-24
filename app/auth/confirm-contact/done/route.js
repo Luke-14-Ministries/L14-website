@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { noticeAfterConfirm } from '@/lib/contactEmail';
+import { siteOrigin } from '@/lib/origin';
 
 export async function POST(request) {
   const { origin } = new URL(request.url);
@@ -32,7 +33,8 @@ export async function POST(request) {
       try {
         await noticeAfterConfirm({
           supabase,
-          origin: process.env.SITE_URL?.replace(/\/$/, '') || origin,
+          // The one answer for the site's address (lib/origin.js; 23 Nov 2026, P99).
+          origin: await siteOrigin(),
           token,
           newEmail: row.new_email,
           previousEmail: row.previous_email,

@@ -18,9 +18,22 @@ import {
   setAsideAfterFailing,
   declineReason,
 } from '@/lib/plans';
-import { formatDay, whenInMorristown } from '@/lib/events';
+import { formatDay } from '@/lib/events';
 
 import ResizableTable from '@/components/ResizableTable';
+
+// When the family agreed to the plan, with the year (23 Nov 2026, P99: it
+// printed "Oct 22, 3:21 PM" with no year), in ministry time, as the Signed
+// agreements card prints a signature.
+const consentWhen = (iso) =>
+  new Date(iso).toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 const INST_LABEL = {
   scheduled: 'Scheduled',
@@ -126,7 +139,7 @@ export default function StaffPlanPanel({
           {plan.consented_at && (
             <details className="text-xs text-neutral-500 mt-1">
               <summary className="fold-summary">
-                Consent given {whenInMorristown(plan.consented_at)} ET
+                Consent given {consentWhen(plan.consented_at)} ET
               </summary>
               <p className="mt-1">{plan.consent_text}</p>
             </details>

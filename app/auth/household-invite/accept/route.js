@@ -21,6 +21,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { sendJoinNotices, inviteProblemCode } from '@/lib/householdInvite';
+import { siteOrigin } from '@/lib/origin';
 
 // The remembered-browser cookie; the proxy's gate reads the same one
 // (lib/supabase/middleware.js).
@@ -78,7 +79,8 @@ export async function POST(request) {
   }
   const joined = Array.isArray(data) ? data[0] ?? null : null;
   try {
-    await sendJoinNotices({ supabase, origin: process.env.SITE_URL?.replace(/\/$/, '') || origin, joined });
+    // The one answer for the site's address (lib/origin.js; 23 Nov 2026, P99).
+    await sendJoinNotices({ supabase, origin: await siteOrigin(), joined });
   } catch (e) {
     console.error('household join notice:', e?.message);
   }
