@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { REVIEW_FLAG, reviewClassLabel, reviewClassInfo, planFailingNext } from '@/lib/plans';
 import { statusPill } from '@/lib/format';
 import { ROLE_LABEL } from '@/lib/roles';
-import { dayInMorristown } from '@/lib/events';
+import { formatDay } from '@/lib/events';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
@@ -68,20 +68,20 @@ export default function ReviewRowBody({ r, seesMoney, nameOf }) {
                   className={`${PILL_SHAPE} bg-amber-100 text-amber-800 ring-1 ring-amber-400 hover:bg-amber-200`}
                 >
                   ✉ Family replied
-                  {r.familyRepliedAt ? ` ${dayInMorristown(r.familyRepliedAt)}` : ''}
+                  {r.familyRepliedAt ? ` ${formatDay(r.familyRepliedAt)}` : ''}
                 </Link>
               </li>
             )}
             {r.planStopped && (
               <li className="whitespace-nowrap text-xs font-semibold text-red-700">
                 ⚑ Payment plan stopped
-                {r.planStoppedAt ? ` ${dayInMorristown(r.planStoppedAt)}` : ''}
+                {r.planStoppedAt ? ` ${formatDay(r.planStoppedAt)}` : ''}
               </li>
             )}
             {r.planFailing && (
               <li className="whitespace-nowrap text-xs font-semibold text-amber-800">
                 ⚑ Plan payment failed
-                {r.planFailing.since ? ` ${dayInMorristown(r.planFailing.since)}` : ''}.{' '}
+                {r.planFailing.since ? ` ${formatDay(r.planFailing.since)}` : ''}.{' '}
                 {planFailingNext(r.planFailing)}
               </li>
             )}
@@ -123,7 +123,7 @@ export default function ReviewRowBody({ r, seesMoney, nameOf }) {
             {r.awaitingSince && (
               <li className="text-xs text-neutral-700" title={r.awaitingReason ?? ''}>
                 <span className="font-semibold">Waiting on the family</span> since{' '}
-                {dayInMorristown(r.awaitingSince)}
+                {formatDay(r.awaitingSince)}
                 {r.awaitingReason && (
                   <span className="block max-w-xs truncate text-neutral-500">
                     &ldquo;{r.awaitingReason}&rdquo;

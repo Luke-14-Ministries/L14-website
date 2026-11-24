@@ -12,7 +12,7 @@ import { planStoppedAt, planFailingSince, PLAN_MAX_TRIES, noDepositOwed } from '
 import { creedByRegistration, CREED_COLUMNS } from '@/lib/creed';
 import { roleAgeFlags } from '@/lib/roles';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
-import { dayInMorristown, isCurrentEventRow, eventInScope, isEventScope } from '@/lib/events';
+import { formatDay, isCurrentEventRow, eventInScope, isEventScope } from '@/lib/events';
 
 export const metadata = { title: 'Awaiting Review · Staff Admin' };
 
@@ -440,7 +440,7 @@ export default async function ReviewQueuePage({ searchParams }) {
               id: r.id,
               household: r.household,
               href: `/admin/registrations/${r.id}/`,
-              registered: dayInMorristown(r.created),
+              registered: formatDay(r.created),
               needsStaff: needsStaff(r),
               pills: pillsFor(r),
               body: <ReviewRowBody r={r} seesMoney={seesMoney} nameOf={nameOf} />,
