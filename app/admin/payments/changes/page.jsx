@@ -170,7 +170,7 @@ export default async function MoneyChangesPage({ searchParams }) {
       .in('id', regIds.slice(i, i + 200));
     if (regError) throw new Error(`Money changes (families): ${regError.message}`);
     for (const x of data ?? []) {
-      familyOfReg.set(x.id, { family: x.households?.display_name ?? 'Household', event: x.events?.name ?? '' });
+      familyOfReg.set(x.id, { family: x.households?.display_name ?? 'Family', event: x.events?.name ?? '' });
     }
   }
 

@@ -322,7 +322,7 @@ export default function GroupsBoard({
 
   const families = useMemo(() => {
     const m = new Map();
-    for (const p of going) if (p.householdId) m.set(p.householdId, p.household || 'No household name');
+    for (const p of going) if (p.householdId) m.set(p.householdId, p.household || 'No family name');
     return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [going]);
   const programIds = new Set(going.map((p) => p.programId).filter(Boolean));
@@ -350,7 +350,7 @@ export default function GroupsBoard({
   // can be split across rafts; "Place the whole family" takes them all.
   const unitFamily = (u) => {
     const lead = u.map((id) => people[id]).find((p) => p && !p.isBuddy) ?? people[u[0]];
-    return { id: lead?.householdId ?? null, name: lead?.household || 'No household name' };
+    return { id: lead?.householdId ?? null, name: lead?.household || 'No family name' };
   };
   const familyMap = new Map();
   for (const u of shown) {

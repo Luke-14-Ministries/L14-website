@@ -357,7 +357,7 @@ export default async function ReviewQueuePage({ searchParams }) {
             {unreadReplies.map((r) => (
               <li key={r.id}>
                 <Link href={`/admin/registrations/${r.id}/#review`} className="font-semibold text-brand underline">
-                  {r.households?.display_name ?? 'Household'}
+                  {r.households?.display_name ?? 'Family'}
                 </Link>
                 <span className="text-neutral-500"> · {r.events?.name ?? ''}</span>
               </li>

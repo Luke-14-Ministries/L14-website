@@ -104,7 +104,7 @@ function Row({ m, selfId, busyId, onPatch, onRemove, openId, onToggleGrants }) {
                   !window.confirm(
                     `Make ${m.name} an administrator?
 
-An administrator can grant and remove access, manage accounts and name program leaders. This also sets every area, including Giving, to write. Unchecking it later leaves their access as it is.`
+An administrator can grant and remove access, manage accounts and name program leaders. This also sets every area, including Giving, to Can edit. Unchecking it later leaves their access as it is.`
                   )
                 ) {
                   return;
@@ -220,7 +220,7 @@ function Table({
             {/* A minimum width (23 Nov 2026): names and sign-in addresses
                 wrapped a letter at a time once the grants panel widened. */}
             <SortTh k="name" className="min-w-56" {...sortProps}>Person</SortTh>
-            <SortTh k="role" center {...sortProps}>Administrator (grants access)</SortTh>
+            <SortTh k="role" center {...sortProps}>Administrator (gives access)</SortTh>
             <SortTh k="grants" center {...sortProps}>Access</SortTh>
             <th className="px-4 py-2" />
           </tr>

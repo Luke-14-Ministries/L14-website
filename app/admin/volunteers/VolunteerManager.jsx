@@ -23,7 +23,7 @@ import { formatDay, eventDateRange } from '@/lib/events';
 function volunteerState(app, placeStatus) {
   if (placeStatus === 'cancelled') return ['Volunteer: canceled', 'bg-neutral-200 text-neutral-600', false];
   if (placeStatus === 'draft') return ['Volunteer: registration not submitted', 'bg-neutral-100 text-neutral-500', false];
-  if (!app) return ['Volunteer: no application yet', 'bg-neutral-100 text-neutral-500', false];
+  if (!app) return ['Volunteer: application not started', 'bg-neutral-100 text-neutral-500', false];
   if (app.status === 'withdrawn') return ['Volunteer: application withdrawn', 'bg-neutral-200 text-neutral-600', false];
   if (app.status === 'declined') return ['Volunteer: declined', 'bg-red-100 text-red-800', false];
   if (app.status === 'approved' && placeStatus === 'confirmed') return ['Volunteer: approved', 'bg-green-100 text-green-800', false];
@@ -161,7 +161,7 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
             <Link href={`/admin/registrations/${row.registrationId}`} className="text-brand underline">
               Registration &amp; approval
             </Link>
-            <span className="text-neutral-500"> ({household?.display_name ?? 'Household'})</span>
+            <span className="text-neutral-500"> ({household?.display_name ?? 'Family'})</span>
           </p>
           {(person?.email || person?.phone) && (
             <p className="text-xs text-neutral-500">

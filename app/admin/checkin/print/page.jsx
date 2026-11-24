@@ -100,7 +100,7 @@ export default async function ArrivalSheetPage({ searchParams }) {
             };
           })
           .sort((a, b) => a.sortName.localeCompare(b.sortName));
-        return { id: r.id, family: r.households?.display_name ?? 'Household', people };
+        return { id: r.id, family: r.households?.display_name ?? 'Family', people };
       })
       .filter((f) => f.people.length > 0)
       .sort((a, b) => a.family.localeCompare(b.family));

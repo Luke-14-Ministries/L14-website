@@ -175,7 +175,7 @@ async function familyAudience(supabase, { eventId, activityId, outstandingOnly, 
     byHousehold.set(r.household_id, {
       householdId: r.household_id,
       registrationId: r.id,
-      name: r.households?.display_name ?? 'Household',
+      name: r.households?.display_name ?? 'Family',
       email: String(r.households?.email ?? '').trim(),
       people: [...new Set(names)].sort(),
       items,

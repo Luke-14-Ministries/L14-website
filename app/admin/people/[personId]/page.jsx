@@ -569,7 +569,7 @@ export default async function PersonPage({ params }) {
     parent_guardian: 'as parent or guardian',
     legal_guardian: 'as legal guardian',
     authorized_adult: 'with their permission',
-    all_registered: 'for everyone on the registration (household signature)',
+    all_registered: 'for everyone on the registration (family signature)',
     parent: 'as a parent',
     guardian: 'as guardian',
     account_holder: 'as the account holder',

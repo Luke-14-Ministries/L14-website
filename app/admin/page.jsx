@@ -331,7 +331,7 @@ export default async function AdminOverview({ searchParams }) {
     .sort((a, b) => String(a.failing.since ?? '').localeCompare(String(b.failing.since ?? '')))
     .map(({ plan, failing }) => ({
       registrationId: plan.registration_id,
-      household: regById.get(plan.registration_id)?.household ?? 'Household',
+      household: regById.get(plan.registration_id)?.household ?? 'Family',
       next: planFailingNext(failing),
     }));
   // The "Waiting on staff" card: the menu's amber numbers (and its unread

@@ -23,8 +23,8 @@ const LOG_FIELD = {
   background_check_on_file: 'paperwork on file',
   background_check_date: 'background check date',
   expires_on: 'expires',
-  verdict: 'verdict',
-  verdict_note: 'verdict note',
+  verdict: 'decision',
+  verdict_note: 'decision note',
   checkr_status: 'Checkr status',
   adjudication: 'adjudication',
 };
@@ -83,7 +83,7 @@ function RecordHelper({ firstName, lastName, date, verdict, note: current = '', 
   if (!date) {
     return (
       <p className="mt-2 text-xs text-neutral-500">
-        Recording a background check done elsewhere? Enter its date and verdict, and the note and the report&rsquo;s file
+        Recording a background check done elsewhere? Enter its date and decision, and the note and the report&rsquo;s file
         name appear here to copy.
       </p>
     );
@@ -92,7 +92,7 @@ function RecordHelper({ firstName, lastName, date, verdict, note: current = '', 
   const by = provider === 'other' ? 'other' : 'VolunteerBadge';
   const fileName = `${date} ${who} - Background check (${by}).pdf`;
   const checkWords = provider === 'other' ? 'Background check' : 'VolunteerBadge background check';
-  const result = verdict ? RESULT_WORDS[verdict] : 'verdict not decided yet';
+  const result = verdict ? RESULT_WORDS[verdict] : 'no decision yet';
   const note = `${checkWords} dated ${longDate(date)}: ${result}. Recorded by hand. Report filed as: ${fileName}`;
   return (
     <div className="mt-3 rounded-sm border border-blue-200 bg-blue-50 px-3 py-2">
@@ -175,7 +175,7 @@ export default function ClearanceEditor({ personId, clearance, vb, email, firstN
         </span>
       </div>
       <div className="mt-3">
-        <span className="block text-xs font-semibold text-neutral-500 mb-1">Verdict (the ministry&rsquo;s decision)</span>
+        <span className="block text-xs font-semibold text-neutral-500 mb-1">Decision</span>
         <div className="flex flex-wrap gap-4">
           <label className="flex items-center gap-1.5">
             <input type="radio" name={`verdict-${personId}`} checked={verdict === ''} onChange={() => setVerdict('')} />
@@ -212,7 +212,7 @@ export default function ClearanceEditor({ personId, clearance, vb, email, firstN
           )}
           {clearance?.verdict_at && (
             <span className="text-xs text-neutral-500">
-              Verdict ({clearance.verdict ? CLEARANCE_VERDICT_LABEL[clearance.verdict] ?? clearance.verdict : 'Not decided'}) by {clearance.verdictByName ?? 'staff'} · {whenLocal(clearance.verdict_at)}
+              Decision ({clearance.verdict ? CLEARANCE_VERDICT_LABEL[clearance.verdict] ?? clearance.verdict : 'Not decided'}) by {clearance.verdictByName ?? 'staff'} · {whenLocal(clearance.verdict_at)}
             </span>
           )}
         </div>
@@ -290,7 +290,7 @@ function ScreeningPanel({ clearance, vb, email }) {
     if (settled) {
       words = (
         <>
-          {vb.status === 'clear' ? 'Clear.' : 'Records were released on the report.'} The ministry&rsquo;s verdict is
+          {vb.status === 'clear' ? 'Clear.' : 'Records were released on the report.'} The ministry&rsquo;s decision is
           recorded below ({CLEARANCE_VERDICT_LABEL[clearance.verdict] ?? clearance.verdict}), so nothing more is needed
           on {screening}.
         </>
@@ -300,7 +300,7 @@ function ScreeningPanel({ clearance, vb, email }) {
     } else if (vb.status === 'clear') {
       words = <>Clear, and recorded as OK to serve {dayInMorristown(vb.confirmedAt)}.</>;
     } else if (vb.status === 'consider') {
-      words = <>Records were released on the report. Read it in VolunteerBadge, then record the ministry&rsquo;s verdict below.</>;
+      words = <>Records were released on the report. Read it in VolunteerBadge, then record the ministry&rsquo;s decision below.</>;
     } else if (['error', 'expired', 'not_sent', 'cancelled'].includes(vb.status)) {
       words = <>{vb.problem ? `${vb.problem} ` : ''}It can be sent again from {screening}.</>;
     } else {

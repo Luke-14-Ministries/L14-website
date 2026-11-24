@@ -112,7 +112,7 @@ export default async function StaffAccessPage() {
         <p className="text-neutral-600 mt-3 font-semibold">The presets</p>
         <ul className="text-neutral-600 mt-1 list-disc space-y-1 pl-5">
           <li>
-            <em>Every area, read and write</em>: can edit every area except Giving and the prayer
+            <em>Every area, can edit</em>: can edit every area except Giving and the prayer
             list, which are always set by hand.
           </li>
           <li>
@@ -135,7 +135,7 @@ export default async function StaffAccessPage() {
         </ul>
         <p className="text-neutral-600 mt-3">
           After applying a preset, you can change any area by hand. No preset makes someone an
-          administrator. That&rsquo;s the box in the <em>Administrator (grants access)</em> column.
+          administrator. That&rsquo;s the box in the <em>Administrator (gives access)</em> column.
           Only an administrator can give access, add or remove staff, name a program leader, or
           reset two-factor.
         </p>

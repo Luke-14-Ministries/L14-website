@@ -111,7 +111,7 @@ export default async function AccessLogPage() {
         back={{ href: '/admin/staff', label: 'Back to Staff &amp; Access' }}
         intro={
           <>
-            Every change to what a staff member can see or do: their grants on each
+            Every change to what a staff member can see or do: their access to each
             area, their role label, and whether their account is active. Changes are
             logged automatically, and nobody can edit or delete them, including an
             administrator. Shows the most recent 200.

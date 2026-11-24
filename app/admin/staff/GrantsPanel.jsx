@@ -161,7 +161,7 @@ export default function GrantsPanel({ member, busy, onApplyPreset, onSave, onClo
         )}
         <span className="text-xs text-neutral-500">
           Giving access to others isn&rsquo;t an area here. It&rsquo;s the{' '}
-          <em>Administrator (grants access)</em> box on the person&rsquo;s row.
+          <em>Administrator (gives access)</em> box on the person&rsquo;s row.
         </span>
       </div>
     </div>
