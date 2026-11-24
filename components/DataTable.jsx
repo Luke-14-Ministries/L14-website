@@ -309,7 +309,7 @@ export default function DataTable({
                     aria-sort={
                       !sortable ? undefined : active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'
                     }
-                    className={`relative overflow-hidden px-3 py-2 font-semibold ${alignCls(c.align)}`}
+                    className={`th-cell relative overflow-hidden ${alignCls(c.align)}`}
                   >
                     {sortable ? (
                       <button

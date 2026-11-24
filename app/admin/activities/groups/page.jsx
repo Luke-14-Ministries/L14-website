@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import BackLink from '@/components/BackLink';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -25,7 +26,7 @@ export default async function ActivityGroupsPage({ searchParams }) {
   if (!activityId) {
     return (
       <div>
-        <h2 className="mb-1 text-xl font-bold">Activity groups</h2>
+        <AdminPageHeader title="Activity groups" className="mb-1" />
         <p className="text-sm text-neutral-500">
           Choose an activity first: open{' '}
           <Link href="/admin/activities/" className="text-brand underline">
@@ -42,7 +43,7 @@ export default async function ActivityGroupsPage({ searchParams }) {
   if (!data) {
     return (
       <div>
-        <h2 className="mb-1 text-xl font-bold">Activity groups</h2>
+        <AdminPageHeader title="Activity groups" className="mb-1" />
         <p className="text-sm text-neutral-500">
           That activity was not found.{' '}
           <Link href="/admin/activities/" className="text-brand underline">
@@ -58,23 +59,21 @@ export default async function ActivityGroupsPage({ searchParams }) {
   return (
     <div>
       {/* An admin sub-page's header (26 Oct 2026): title left, the back pill
-          right, as everywhere signed in. */}
-      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">
-          {data.activity.name}: {noun.many}
-        </h2>
-        <BackLink
-          href={`/admin/activities/${data.event ? `?event=${data.event.id}` : ''}`}
-          label="Back to Activities"
-        />
-      </div>
-      <p className="mb-4 max-w-4xl text-sm text-neutral-500">
-        Everyone signed up for {data.activity.name}
-        {data.event ? ` at ${data.event.name}` : ''}, plus each camper&rsquo;s buddy. Pick someone,
-        then choose their {noun.one}. A camper and their buddy always move together.
-        {data.activity.minAge != null &&
-          ` The minimum age is ${data.activity.minAge}. Younger people are flagged but not turned away, so check with camp staff.`}
-      </p>
+          right, as everywhere signed in; the shared header since 23 Nov 2026. */}
+      <AdminPageHeader
+        title={`${data.activity.name}: ${noun.many}`}
+        className="mb-4"
+        back={{ href: `/admin/activities/${data.event ? `?event=${data.event.id}` : ''}`, label: 'Back to Activities' }}
+        intro={
+          <>
+            Everyone signed up for {data.activity.name}
+            {data.event ? ` at ${data.event.name}` : ''}, plus each camper&rsquo;s buddy. Pick someone,
+            then choose their {noun.one}. A camper and their buddy always move together.
+            {data.activity.minAge != null &&
+              ` The minimum age is ${data.activity.minAge}. Younger people are flagged but not turned away, so check with camp staff.`}
+          </>
+        }
+      />
 
       {!data.activity.active && (
         <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">

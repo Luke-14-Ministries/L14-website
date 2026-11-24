@@ -1,4 +1,5 @@
 import { ADMIN_NAV } from '@/lib/adminNav';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import Link from 'next/link';
 import { isCurrentEventRow, eventInScope, isEventScope, SCOPE_ALL } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
@@ -364,7 +365,7 @@ export default async function AdminOverview({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">Overview</h2>
+      <AdminPageHeader title="Overview" className="mb-4" />
 
       <EventFilter
         events={(eventRows ?? []).map((e) => ({
