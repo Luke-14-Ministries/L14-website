@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 import { asset } from '@/lib/site';
-import { getCampFacts, campHeadline, dayRange } from '@/lib/campFacts';
+import { getCampFacts, campHeadline, dayRange, venueFor, sharedWeekday } from '@/lib/campFacts';
 import { formatDueDate } from '@/lib/events';
 import { dollars } from '@/lib/payments';
 
@@ -24,10 +24,103 @@ const whatToBring = [
   'Medication',
 ];
 
+const linkCls = 'text-brand underline font-semibold';
+
+// What a visitor can do today, from the registration window on Setup
+// (camp.state, 23 Nov 2026, review A4-09). The page offered "Get Started"
+// and "Log in and register" all year, so in December it sent families into
+// a wizard with no week to choose. Before opening day it offers the account
+// only; once registration has closed (or camp is underway, or Setup has no
+// camp ahead) it gives the office address and a log-in for families already
+// registered.
+function RegisterBlock({ camp }) {
+  const state = camp?.state ?? 'none';
+  if (state === 'open') {
+    return (
+      <>
+        <div className="prose-site mt-6">
+          {camp.early && (
+            <p>
+              Register by <strong>{formatDueDate(camp.early.endsOn)}</strong> and get{' '}
+              {dollars(camp.early.cents)} off each person when you pay in full or set up a payment plan.
+            </p>
+          )}
+          <p>New to Camp Celebrate? Create an account to get started and register.</p>
+        </div>
+        <Link href="/account/signup/?next=/register/family/" className="btn-primary mt-6 inline-block">
+          Get Started
+        </Link>
+        <p className="mt-6 text-neutral-600">
+          Already have an account?{' '}
+          <Link href="/account/?next=/register/family/" className={linkCls}>
+            Log in and register
+          </Link>
+          . Volunteering? Start at the{' '}
+          <Link href="/register/volunteer" className={linkCls}>
+            volunteer page
+          </Link>
+          .
+        </p>
+      </>
+    );
+  }
+  if (state === 'soon') {
+    return (
+      <>
+        <div className="prose-site mt-6">
+          <p>
+            Registration opens {camp.opensOn ?? 'soon'}. Create your account now so you are ready.
+          </p>
+          {camp.early && (
+            <p>
+              Register by <strong>{formatDueDate(camp.early.endsOn)}</strong> and get{' '}
+              {dollars(camp.early.cents)} off each person when you pay in full or set up a payment plan.
+            </p>
+          )}
+        </div>
+        <Link href="/account/signup/" className="btn-primary mt-6 inline-block">
+          Create an Account
+        </Link>
+        <p className="mt-6 text-neutral-600">
+          Already have an account?{' '}
+          <Link href="/account/" className={linkCls}>
+            Log in
+          </Link>
+          .
+        </p>
+      </>
+    );
+  }
+  return (
+    <div className="prose-site mt-6">
+      <p>
+        Questions about camp? Email{' '}
+        <a href="mailto:registration@luke14ministries.net" className={linkCls}>
+          registration@luke14ministries.net
+        </a>
+        .
+      </p>
+      <p>
+        Already registered?{' '}
+        <Link href="/account/" className={linkCls}>
+          Log in
+        </Link>
+        .
+      </p>
+    </div>
+  );
+}
+
 // The dates, price and early offer come from Setup (getCampFacts, 28 Oct
 // 2026), so this page can never again advertise last month's offer.
 export default async function CamperInformationPage() {
   const camp = await getCampFacts();
+  const venue = venueFor(camp);
+  // The weekdays from the weeks' own dates (23 Nov 2026, review A4-10); the
+  // page's long-standing Monday and Friday when Setup has no camp or the
+  // weeks fall on different days.
+  const arriveDay = (camp && sharedWeekday(camp.weeks.map((w) => w.startsOn))) ?? 'Monday';
+  const leaveDay = (camp && sharedWeekday(camp.weeks.map((w) => w.endsOn))) ?? 'Friday';
   return (
     <>
       <PageHero
@@ -39,32 +132,7 @@ export default async function CamperInformationPage() {
         <h2 className="text-3xl font-bold">
           {campHeadline(camp)}
         </h2>
-        <div className="prose-site mt-6">
-          {camp?.early && (
-            <p>
-              Register by <strong>{formatDueDate(camp.early.endsOn)}</strong> and get{' '}
-              {dollars(camp.early.cents)} off each person when you pay in full or set up a payment plan.
-            </p>
-          )}
-          <p>
-            New to Camp Celebrate and need a registration account? Click here
-            to get started and register
-          </p>
-        </div>
-        <Link href="/account/signup/?next=/register/family/" className="btn-primary mt-6 inline-block">
-          Get Started
-        </Link>
-        <p className="mt-6 text-neutral-600">
-          Already have an account?{' '}
-          <Link href="/account/?next=/register/family/" className="text-brand underline font-semibold">
-            Log in and register
-          </Link>
-          . Volunteering? Start at the{' '}
-          <Link href="/register/volunteer" className="text-brand underline font-semibold">
-            volunteer page
-          </Link>
-          .
-        </p>
+        <RegisterBlock camp={camp} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={asset('/images/20210720_195424.jpg')}
@@ -78,21 +146,17 @@ export default async function CamperInformationPage() {
           <h2 className="text-3xl font-bold mb-6">Location, Dates, Schedule</h2>
           <div className="prose-site">
             {/* The event's Location from Setup when staff have set it (0184,
-                23 Nov 2026); the venue this page always named otherwise. */}
-            {camp?.location ? (
-              <p className="font-semibold">{camp.location}</p>
-            ) : (
-              <p>
-                <a
-                  href="https://web.archive.org/web/20180826150855/http://www.tnbaptist.org/carson/"
-                  target="_blank"
-                  rel="noopener"
-                  className="text-brand font-semibold underline"
-                >
-                  Carson Springs Baptist Conference Center in Newport, TN
+                23 Nov 2026); the venue this page always named otherwise,
+                linked to its current page (venueFor, lib/campFacts.js). */}
+            <p>
+              {venue.href ? (
+                <a href={venue.href} target="_blank" rel="noopener" className="text-brand font-semibold underline">
+                  {venue.name}
                 </a>
-              </p>
-            )}
+              ) : (
+                <span className="font-semibold">{venue.name}</span>
+              )}
+            </p>
             {camp ? (
               <p>
                 {camp.year} Dates:
@@ -109,8 +173,8 @@ export default async function CamperInformationPage() {
               <p>Next year&rsquo;s dates will be posted soon.</p>
             )}
             <p>
-              Campers arrive on Monday afternoon each week and depart before
-              lunch on Friday.
+              Campers arrive on {arriveDay} afternoon each week and leave before
+              lunch on {leaveDay}. We will email arrival times before camp.
             </p>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}

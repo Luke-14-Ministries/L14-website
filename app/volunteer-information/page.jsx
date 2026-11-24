@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 import { asset } from '@/lib/site';
-import { getCampFacts, campHeadline, dayRange } from '@/lib/campFacts';
-import { formatDueDate } from '@/lib/events';
+import { getCampFacts, campHeadline, dayRange, venueFor, sharedWeekday } from '@/lib/campFacts';
 import { dollars } from '@/lib/payments';
 
 export const metadata = { title: 'Volunteer (STM) Information' };
@@ -26,10 +25,90 @@ const whatToBring = [
   'Towel for showering',
 ];
 
+const linkCls = 'text-brand underline font-semibold';
+
+// What a visitor can do today, from the registration window on Setup
+// (camp.state, 23 Nov 2026, review A4-09), the same rule as Camper
+// Information: register while it is open, make an account before it opens,
+// and after it closes the office address and a log-in for volunteers already
+// registered.
+function RegisterBlock({ camp }) {
+  const state = camp?.state ?? 'none';
+  if (state === 'open') {
+    return (
+      <>
+        <div className="prose-site mt-6">
+          <p>
+            To volunteer, create an account, register for the week you&rsquo;d
+            like to serve (choose the role &ldquo;Volunteer&rdquo;), and fill
+            out an application telling us where you&rsquo;d like to help. Start
+            below and the page will walk you through it.
+          </p>
+        </div>
+        <Link href="/register/volunteer" className="btn-primary mt-6 inline-block">
+          Volunteer: Start Here
+        </Link>
+        <p className="mt-6 text-neutral-600">
+          Already have an account?{' '}
+          <Link href="/account/?next=/register/volunteer/" className={linkCls}>
+            Log in and pick up where you left off
+          </Link>
+          .
+        </p>
+      </>
+    );
+  }
+  if (state === 'soon') {
+    return (
+      <>
+        <div className="prose-site mt-6">
+          <p>
+            Registration opens {camp.opensOn ?? 'soon'}. Create your account now so you are ready.
+          </p>
+        </div>
+        <Link href="/account/signup/" className="btn-primary mt-6 inline-block">
+          Create an Account
+        </Link>
+        <p className="mt-6 text-neutral-600">
+          Already have an account?{' '}
+          <Link href="/account/" className={linkCls}>
+            Log in
+          </Link>
+          .
+        </p>
+      </>
+    );
+  }
+  return (
+    <div className="prose-site mt-6">
+      <p>
+        Questions about volunteering? Email{' '}
+        <a href="mailto:registration@luke14ministries.net" className={linkCls}>
+          registration@luke14ministries.net
+        </a>
+        .
+      </p>
+      <p>
+        Already registered?{' '}
+        <Link href="/account/" className={linkCls}>
+          Log in
+        </Link>
+        .
+      </p>
+    </div>
+  );
+}
+
 // Dates and price from Setup (getCampFacts, 28 Oct 2026). Volunteers arrive
 // the day before campers (events.volunteer_arrives_on).
 export default async function VolunteerInformationPage() {
   const camp = await getCampFacts();
+  const venue = venueFor(camp);
+  // Weekdays from the weeks' dates (23 Nov 2026, review A4-10): volunteers
+  // from their arrival day, the camp's first day when Setup has none. The
+  // page's Sunday and Friday when there is no camp or the weeks disagree.
+  const arriveDay = (camp && sharedWeekday(camp.weeks.map((w) => w.volunteerArrivesOn ?? w.startsOn))) ?? 'Sunday';
+  const leaveDay = (camp && sharedWeekday(camp.weeks.map((w) => w.endsOn))) ?? 'Friday';
   return (
     <>
       <PageHero
@@ -48,23 +127,8 @@ export default async function VolunteerInformationPage() {
             space for fun, community, and belonging to families affected by
             disability.
           </p>
-          <p>
-            To volunteer, create an account, register for the week you&rsquo;d
-            like to serve (choose the role &ldquo;Volunteer&rdquo;), and fill
-            out an application telling us where you&rsquo;d like to help. Start
-            below and the page will walk you through it.
-          </p>
         </div>
-        <Link href="/register/volunteer" className="btn-primary mt-6 inline-block">
-          Volunteer: Start Here
-        </Link>
-        <p className="mt-6 text-neutral-600">
-          Already have an account?{' '}
-          <Link href="/account/?next=/register/volunteer/" className="text-brand underline font-semibold">
-            Log in and pick up where you left off
-          </Link>
-          .
-        </p>
+        <RegisterBlock camp={camp} />
       </section>
 
       <section className="bg-brand-light py-14">
@@ -77,8 +141,17 @@ export default async function VolunteerInformationPage() {
           />
           <h2 className="text-3xl font-bold mb-6">Location, Dates, Schedule</h2>
           <div className="prose-site">
-            {/* Setup's Location when set (0184, 23 Nov 2026). */}
-            <p>{camp?.location ?? 'Carson Springs Baptist Conference Center in Newport, TN'}</p>
+            {/* Setup's Location when set (0184, 23 Nov 2026), linked like
+                Camper Information's (venueFor). */}
+            <p>
+              {venue.href ? (
+                <a href={venue.href} target="_blank" rel="noopener" className="text-brand font-semibold underline">
+                  {venue.name}
+                </a>
+              ) : (
+                venue.name
+              )}
+            </p>
             {camp ? (
               <p>
                 {camp.year} Dates:
@@ -94,9 +167,8 @@ export default async function VolunteerInformationPage() {
               <p>Next year&rsquo;s dates will be posted soon.</p>
             )}
             <p>
-              Each week volunteers arrive at camp on Sunday morning and depart
-              by 3:00 PM on Friday. Specific arrival times are to be
-              determined.
+              Each week volunteers arrive at camp on {arriveDay} morning and leave
+              by 3:00 PM on {leaveDay}. We will email arrival times before camp.
             </p>
           </div>
         </div>
@@ -117,10 +189,16 @@ export default async function VolunteerInformationPage() {
           </p>
         )}
         <div className="prose-site">
-          <p>
-            Assistance is available for the second week if a volunteer wishes
-            to participate in both weeks.
-          </p>
+          {/* The both-weeks discount from Setup (23 Nov 2026, review A4-26);
+              the page's own sentence when Setup sets none. */}
+          {camp?.bothWeeksPercent > 0 ? (
+            <p>Serving both weeks? The second week is {camp.bothWeeksPercent}% off.</p>
+          ) : (
+            <p>
+              Assistance is available for the second week if a volunteer wishes
+              to participate in both weeks.
+            </p>
+          )}
           <p>
             Keep in mind, this is a mission trip! You are leaving home and
             availing yourself to serve and share the love of Jesus with those
