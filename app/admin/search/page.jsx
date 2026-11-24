@@ -9,6 +9,7 @@ import { statusPill } from '@/lib/format';
 import { searchWords, ilikeContains } from '@/lib/search';
 
 import ResizableTable from '@/components/ResizableTable';
+import { ROLE_LABEL } from '@/lib/roles';
 // The header's box words this page (23 Nov 2026 review): one name in the
 // heading and the browser title.
 export const metadata = { title: 'Find a Person or Family · Staff Admin' };
@@ -22,14 +23,6 @@ export const metadata = { title: 'Find a Person or Family · Staff Admin' };
 // Deliberately simple: a few words of a name, or part of an email. No
 // filters; the roster has those.
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent / guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 export default async function SearchPage({ searchParams }) {
   const params = await searchParams;

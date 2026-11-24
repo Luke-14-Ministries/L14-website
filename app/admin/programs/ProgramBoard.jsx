@@ -16,15 +16,8 @@ import { useRouter } from 'next/navigation';
 import SearchSelect from '@/components/SearchSelect';
 import ResizableTable from '@/components/ResizableTable';
 import { setParticipantProgram, setManyParticipantPrograms, grantProgramLeader, revokeProgramLeader, setProgramLead } from './actions';
+import { ROLE_LABEL } from '@/lib/roles';
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  sibling: 'Sibling',
-  parent_guardian: 'Parent / guardian',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 // Natural order ("Cabin 2" before "Cabin 10"), case and accents ignored.
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });

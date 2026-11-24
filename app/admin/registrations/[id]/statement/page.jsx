@@ -6,19 +6,12 @@ import { createClient } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
 import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
 import FeeLines from '@/components/FeeLines';
+import { ROLE_LABEL } from '@/lib/roles';
 
 export const metadata = { title: 'Family Statement · Staff Admin' };
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent/Guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 const METHOD_LABEL = {
   card: 'Card',

@@ -1,10 +1,9 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow, todayInMorristown } from '@/lib/events';
+import { isCurrentEventRow, todayInMorristown, eventDateRange, formatDay } from '@/lib/events';
 import { PROGRAM_ROLE_LABEL } from '@/lib/programs';
-import PrintButton from '@/components/PrintButton';
-import BackLink from '@/components/BackLink';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
 
 export const metadata = { title: 'Arrival Sheet · Staff Admin' };
 
@@ -108,21 +107,24 @@ export default async function ArrivalSheetPage({ searchParams }) {
   }
   const total = families.reduce((n, f) => n + f.people.length, 0);
   const printedBy = [me?.first_name, me?.last_name].filter(Boolean).join(' ') || staff.email;
-  const dates = [event?.starts_on, event?.ends_on].filter(Boolean).join(' – ');
+  const dates = eventDateRange(event?.starts_on, event?.ends_on);
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
-      {/* The way back top right, Print under it, as on every print sheet (27 Oct 2026). */}
-      <div className="mb-2 flex flex-col items-end gap-2 print:hidden">
-        <BackLink href={`/admin/checkin/${eventId ? `?event=${eventId}` : ''}`} label="Back to Check-In" />
-        <PrintButton label="Print / Save as PDF" />
-      </div>
-      {!seesFlags && (
-        <p className="mb-4 text-sm text-neutral-500 print:hidden">
-          The red marks for allergies, seizures and rescue medicine show only for staff with
-          Sensitive access, so this copy has none.
-        </p>
-      )}
+      <PrintSheetHeader
+        title="Arrival sheet"
+        back={{ href: `/admin/checkin/${eventId ? `?event=${eventId}` : ''}`, label: 'Back to Check-In' }}
+        printLabel="Print / Save as PDF"
+        introClassName="mb-4"
+        intro={
+          seesFlags ? null : (
+            <>
+              The red marks for allergies, seizures and rescue medicine show only for staff with
+              Sensitive access, so this copy has none.
+            </>
+          )
+        }
+      />
 
       {!event ? (
         <p className="text-neutral-500">No current events to print an arrival sheet for.</p>
@@ -130,7 +132,7 @@ export default async function ArrivalSheetPage({ searchParams }) {
         <>
           <div className="border-b-2 border-neutral-800 pb-2">
             <p className="text-xs uppercase tracking-wide text-neutral-500">Arrival sheet</p>
-            <h1 className="text-2xl font-bold">{event.name}</h1>
+            <h2 className="text-2xl font-bold">{event.name}</h2>
             <p className="text-sm text-neutral-600">
               {dates ? `${dates} · ` : ''}
               {total} {total === 1 ? 'person' : 'people'} in {families.length}{' '}
@@ -162,7 +164,7 @@ export default async function ArrivalSheetPage({ searchParams }) {
           )}
 
           <p className="mt-6 border-t border-neutral-300 pt-2 text-xs text-neutral-500">
-            Printed {todayInMorristown()} by {printedBy} · Luke 14 Ministries.
+            Printed {formatDay(todayInMorristown())} by {printedBy} · Luke 14 Ministries.
           </p>
         </>
       )}

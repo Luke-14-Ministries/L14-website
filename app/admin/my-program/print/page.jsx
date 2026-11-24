@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
-import BackLink from '@/components/BackLink';
-import PrintButton from '@/components/PrintButton';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
 import { getProgramRoster, getProgramLeaders, programRosterRows, askAboutWords } from '@/lib/programs';
-import { todayInMorristown } from '@/lib/events';
+import { todayInMorristown, eventDateRange, formatDay } from '@/lib/events';
 import { programForCaller } from '../access';
 import FlagsNote from '../FlagsNote';
 import StatusMark, { StatusLegend } from '@/components/StatusMark';
@@ -47,31 +46,29 @@ export default async function MyProgramPrintPage({ searchParams }) {
   const needAsking = rows.filter((r) => r.allergies || r.support).length;
   const lead = leaders.find((l) => l.isLead) ?? null;
   const assistants = leaders.filter((l) => !l.isLead);
-  const dates = [program.startsOn, program.endsOn].filter(Boolean).join(' – ');
+  const dates = eventDateRange(program.startsOn, program.endsOn);
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
-      {/* The way back top right, Print under it, as on every print sheet (27 Oct 2026). */}
-      <div className="mb-2 flex flex-col items-end gap-2 print:hidden">
-        {/* A leader goes back to My Program; staff opening it from Program
-            Groups (no leadership row, so no id) go back there. */}
-        {program.id ? (
-          <BackLink
-            href={`/admin/my-program/?grant=${encodeURIComponent(`${program.programId}:${program.eventId}`)}`}
-            label="Back to My Program"
-          />
-        ) : (
-          <BackLink href={`/admin/programs/?event=${program.eventId}`} label="Back to Program Groups" />
-        )}
-        <PrintButton label="Print / Save as PDF" />
-      </div>
-      <p className="mb-6 text-sm text-neutral-500 print:hidden">
-        To make a PDF, choose “Save as PDF” as the printer in the print dialog.
-      </p>
+      {/* A leader goes back to My Program; staff opening it from Program
+          Groups (no leadership row, so no id) go back there. */}
+      <PrintSheetHeader
+        title="Program roster"
+        back={
+          program.id
+            ? {
+                href: `/admin/my-program/?grant=${encodeURIComponent(`${program.programId}:${program.eventId}`)}`,
+                label: 'Back to My Program',
+              }
+            : { href: `/admin/programs/?event=${program.eventId}`, label: 'Back to Program Groups' }
+        }
+        printLabel="Print / Save as PDF"
+        intro="To make a PDF, choose “Save as PDF” as the printer in the print dialog."
+      />
 
       <div className="border-b-2 border-neutral-800 pb-2">
         <p className="text-xs uppercase tracking-wide text-neutral-500">Program roster</p>
-        <h1 className="text-2xl font-bold">{program.programName}</h1>
+        <h2 className="text-2xl font-bold">{program.programName}</h2>
         <p className="text-sm text-neutral-600">
           {program.eventName}
           {dates ? ` · ${dates}` : ''} · {rows.length} {rows.length === 1 ? 'person' : 'people'}
@@ -137,7 +134,7 @@ export default async function MyProgramPrintPage({ searchParams }) {
 
       <p className="mt-6 border-t border-neutral-300 pt-2 text-xs text-neutral-500">
         Take questions about a flag, or about anyone on this list, to the camp coordinator, not
-        the family. Printed {todayInMorristown()} · Luke 14 Ministries.
+        the family. Printed {formatDay(todayInMorristown())} · Luke 14 Ministries.
       </p>
     </div>
   );

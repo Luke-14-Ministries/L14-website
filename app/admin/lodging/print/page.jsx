@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow } from '@/lib/events';
-import PrintButton from '@/components/PrintButton';
-import BackLink from '@/components/BackLink';
+import { isCurrentEventRow, eventDateRange, formatDay, todayInMorristown } from '@/lib/events';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
 
 export const metadata = { title: 'Room List · Staff Admin' };
 
@@ -179,21 +178,19 @@ export default async function RoomListPrintPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
-      <div className="mb-2 flex items-start justify-between print:hidden">
-        <h1 className="text-xl font-bold">Room list</h1>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href={`/admin/lodging/${selected ? `?event=${selected}` : ''}`} label="Back to Rooms & Cabins" />
-          <PrintButton />
-        </span>
-      </div>
-      <p className="mb-6 text-sm text-neutral-500 print:hidden">
-        Who is in each room, by building. Names, role, age and household only. Mobility and care
-        notes stay on the Rooms &amp; Cabins screen, because paper sheets get left lying around.
-      </p>
+      <PrintSheetHeader
+        title="Room list"
+        back={{ href: `/admin/lodging/${selected ? `?event=${selected}` : ''}`, label: 'Back to Rooms & Cabins' }}
+        intro={
+          <>
+            Who is in each room, by building. Names, role, age and household only. Mobility and care
+            notes stay on the Rooms &amp; Cabins screen, because paper sheets get left lying around.
+          </>
+        }
+      />
 
       <p className="mb-6 text-sm font-semibold">
-        {event ? `${event.name} · ${event.starts_on} – ${event.ends_on}` : 'No event selected'}
+        {event ? `${event.name} · ${eventDateRange(event.starts_on, event.ends_on)}` : 'No event selected'}
         {event && (
           <span className="ml-2 font-normal text-neutral-500">
             {people.length - unplaced.length} of {people.length} placed
@@ -270,7 +267,7 @@ export default async function RoomListPrintPage({ searchParams }) {
 
       <p className="mt-8 text-xs text-neutral-400">
         Support and access notes are left off on purpose. See the Rooms &amp; Cabins screen.
-        Printed {new Date().toLocaleDateString('en-US')} · Luke 14 Ministries.
+        Printed {formatDay(todayInMorristown())} · Luke 14 Ministries.
       </p>
     </div>
   );

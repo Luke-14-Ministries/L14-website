@@ -9,15 +9,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { requestScholarship, withdrawScholarship, requestFamilyScholarship, withdrawFamilyScholarship } from './actions';
 import { dollars } from '@/lib/payments';
+import { FAMILY_ROLE_LABEL as ROLE_LABEL } from '@/lib/roles';
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent/Guardian',
-  sibling: 'Sibling / Child',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 // Two decimals, always (dollars(), lib/payments.js): this printed "$742.5".
 const money = dollars;

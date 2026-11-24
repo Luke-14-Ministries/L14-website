@@ -7,6 +7,7 @@ import PrintButton from '@/components/PrintButton';
 import EventFilter from '@/components/EventFilter';
 import { signedPhotoUrls } from '@/lib/photos';
 import { isCurrentEventRow, eventDateRange } from '@/lib/events';
+import { ROLE_LABEL } from '@/lib/roles';
 
 export const metadata = { title: "Photographer's List · Staff Admin" };
 
@@ -34,14 +35,6 @@ export const metadata = { title: "Photographer's List · Staff Admin" };
 // the database's rule for person_photos and the bucket, which
 // signedPhotoUrls() mirrors; without it the sheet is names only and says so.
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent/Guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 // Whole years on a given day, from YYYY-MM-DD; null when unknown.
 function ageOn(dob, onDate) {

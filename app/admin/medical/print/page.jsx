@@ -2,9 +2,8 @@ import { redirect } from 'next/navigation';
 import { formatPhone } from '@/lib/format';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow, todayInMorristown } from '@/lib/events';
-import PrintButton from '@/components/PrintButton';
-import BackLink from '@/components/BackLink';
+import { isCurrentEventRow, todayInMorristown, eventDateRange, formatDay } from '@/lib/events';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
 
 export const metadata = { title: 'Medical Sheet · Staff Admin' };
 
@@ -156,20 +155,17 @@ export default async function MedicalSheetPage({ searchParams }) {
     rows.sort((a, b) => a.sortName.localeCompare(b.sortName));
   }
   const printedBy = [me?.first_name, me?.last_name].filter(Boolean).join(' ') || staff.email;
-  const dates = [event?.starts_on, event?.ends_on].filter(Boolean).join(' – ');
-  const footer = `Printed ${todayInMorristown()} by ${printedBy}. Shred after camp.`;
+  const dates = eventDateRange(event?.starts_on, event?.ends_on);
+  const footer = `Printed ${formatDay(todayInMorristown())} by ${printedBy}. Shred after camp.`;
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
-      {/* The way back top right, Print under it, as on every print sheet (27 Oct 2026). */}
-      <div className="mb-2 flex flex-col items-end gap-2 print:hidden">
-        <BackLink href={`/admin/medical/${eventId ? `?event=${eventId}` : ''}`} label="Back to Medical & Support" />
-        <PrintButton label="Print / Save as PDF" />
-      </div>
-      <p className="mb-6 text-sm text-neutral-500 print:hidden">
-        This sheet has every medical detail for the event. Keep it with the nurse, and shred it after
-        camp.
-      </p>
+      <PrintSheetHeader
+        title="Medical sheet"
+        back={{ href: `/admin/medical/${eventId ? `?event=${eventId}` : ''}`, label: 'Back to Medical & Support' }}
+        printLabel="Print / Save as PDF"
+        intro="This sheet has every medical detail for the event. Keep it with the nurse, and shred it after camp."
+      />
 
       {!event ? (
         <p className="text-neutral-500">No current events to print a medical sheet for.</p>
@@ -177,7 +173,7 @@ export default async function MedicalSheetPage({ searchParams }) {
         <>
           <div className="border-b-2 border-neutral-800 pb-2">
             <p className="text-xs uppercase tracking-wide text-neutral-500">Medical sheet · confidential</p>
-            <h1 className="text-2xl font-bold">{event.name}</h1>
+            <h2 className="text-2xl font-bold">{event.name}</h2>
             <p className="text-sm text-neutral-600">
               {dates ? `${dates} · ` : ''}
               {rows.length} {rows.length === 1 ? 'person' : 'people'} with details on file

@@ -7,6 +7,7 @@ import Pill, { PILL_SHAPE } from '@/components/Pill';
 import Link from 'next/link';
 import { REVIEW_FLAG, reviewClassLabel, reviewClassInfo, planFailingNext } from '@/lib/plans';
 import { statusPill } from '@/lib/format';
+import { ROLE_LABEL } from '@/lib/roles';
 import { dayInMorristown } from '@/lib/events';
 
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -29,7 +30,7 @@ export default function ReviewRowBody({ r, seesMoney, nameOf }) {
                 <span>
                   {p.people?.first_name} {p.people?.last_name}
                 </span>
-                <span className="text-neutral-400">· {p.camp_role?.replace('_', '/')}</span>
+                <span className="text-neutral-400">· {ROLE_LABEL[p.camp_role] ?? p.camp_role}</span>
                 <Pill cls={pill.cls}>{pill.text}</Pill>
               </li>
             );

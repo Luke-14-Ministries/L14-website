@@ -27,7 +27,7 @@ import { householdPhrase } from '@/lib/householdInvite';
 import { depositDueNow, supportState, volunteerApplicationNeeded } from '@/lib/familyNeeds';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import { CHOOSES_ACTIVITIES } from '@/lib/activityRoles';
-import { isVolunteerRole } from '@/lib/roles';
+import { isVolunteerRole, FAMILY_ROLE_LABEL as ROLE_LABEL } from '@/lib/roles';
 
 export const metadata = { title: 'Dashboard' };
 
@@ -88,14 +88,6 @@ const MONEY_NEEDS = new Set([
   'balance past due',
 ]);
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent/Guardian',
-  sibling: 'Sibling / Child',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 const STATUS = {
   draft: ['Draft', 'bg-neutral-100 text-neutral-700'],

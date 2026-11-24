@@ -2,9 +2,8 @@ import { redirect } from 'next/navigation';
 import { allergenWords } from '@/lib/support';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow, eventInScope, eventScopeHeading } from '@/lib/events';
-import PrintButton from '@/components/PrintButton';
-import BackLink from '@/components/BackLink';
+import { isCurrentEventRow, eventInScope, eventScopeHeading, eventDateRange, formatDay, todayInMorristown } from '@/lib/events';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
 
 export const metadata = { title: 'Kitchen List · Staff Admin' };
 
@@ -110,18 +109,16 @@ export default async function KitchenListPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-2xl p-8 print-sheet bg-white print:text-[12px]">
-      <div className="flex items-start justify-between mb-2 print:hidden">
-        <h1 className="text-xl font-bold">Kitchen list (no names)</h1>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href={`/admin/dietary/${eventFilter ? `?event=${eventFilter}` : ''}`} label="Back to Dietary" />
-          <PrintButton />
-        </span>
-      </div>
-      <p className="text-sm text-neutral-500 mb-6 print:hidden">
-        Dietary needs and allergies counted by event, with no names, so it&rsquo;s safe to post in
-        the kitchen. The list with names is on the Dietary &amp; Allergies page.
-      </p>
+      <PrintSheetHeader
+        title="Kitchen list (no names)"
+        back={{ href: `/admin/dietary/${eventFilter ? `?event=${eventFilter}` : ''}`, label: 'Back to Dietary' }}
+        intro={
+          <>
+            Dietary needs and allergies counted by event, with no names, so it&rsquo;s safe to post in
+            the kitchen. The list with names is on the Dietary &amp; Allergies page.
+          </>
+        }
+      />
 
       {/* Says what it covers, on the printed page too — the one place the
           filter is invisible once the paper leaves the screen. */}
@@ -147,7 +144,7 @@ export default async function KitchenListPage({ searchParams }) {
             <h2 className="text-lg font-bold border-b-2 border-neutral-800 pb-1 mb-2">
               {ev.name}{' '}
               <span className="font-normal text-sm">
-                ({ev.starts_on} – {ev.ends_on})
+                ({eventDateRange(ev.starts_on, ev.ends_on)})
               </span>
             </h2>
             <table className="w-full text-sm border-collapse">
@@ -199,7 +196,7 @@ export default async function KitchenListPage({ searchParams }) {
 
       <p className="text-xs text-neutral-400 mt-8">
         Names are left off on purpose. Ask the camp office if you need to know who. Printed{' '}
-        {new Date().toLocaleDateString('en-US')} · Luke 14 Ministries.
+        {formatDay(todayInMorristown())} · Luke 14 Ministries.
       </p>
     </div>
   );

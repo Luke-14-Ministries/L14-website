@@ -9,17 +9,10 @@ import FamilyScholarshipReview from './FamilyScholarshipReview';
 import { loadFamilyScholarshipRows, familyRequestOpen } from '@/lib/familyScholarships';
 import EventFilter from '@/components/EventFilter';
 import { eventInScope, isEventScope } from '@/lib/events';
+import { ROLE_LABEL } from '@/lib/roles';
 
 export const metadata = { title: 'Scholarship Requests · Staff Admin' };
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent / guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 // Families asking for help with the fee.
 //

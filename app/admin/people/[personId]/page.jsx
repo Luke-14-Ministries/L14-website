@@ -10,7 +10,7 @@ import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/sup
 import { REVIEW_FLAG, reviewClassLabel, reviewClassInfo } from '@/lib/plans';
 import { dayInMorristown, isCurrentEventRow, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
-import { isVolunteerRole } from '@/lib/roles';
+import { isVolunteerRole, ROLE_LABEL } from '@/lib/roles';
 
 export const metadata = { title: 'Person · Staff Admin' };
 
@@ -37,14 +37,6 @@ export const metadata = { title: 'Person · Staff Admin' };
 // Saying "there is more here, and you cannot see it" is honest and tells
 // somebody what to go and ask for.
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent / guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 // Age AT the event, not today. A birthday between now and camp is exactly when
 // the two answers differ, and the one that matters is the one at camp.

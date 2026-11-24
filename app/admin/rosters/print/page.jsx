@@ -1,22 +1,14 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import PrintButton from '@/components/PrintButton';
-import BackLink from '@/components/BackLink';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
 import StatusMark, { StatusLegend } from '@/components/StatusMark';
 import { STATUS_LABEL, formatPhone } from '@/lib/format';
-import { eventInScope } from '@/lib/events';
+import { eventInScope, eventDateRange, formatDay, todayInMorristown } from '@/lib/events';
+import { ROLE_LABEL } from '@/lib/roles';
 
 export const metadata = { title: 'Print Rosters · Staff Admin' };
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent/Guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 // A compact, ink-friendly roster for printing. Uses the browser's own print
 // dialog; the admin chrome is left out on purpose.
@@ -84,14 +76,10 @@ export default async function PrintRostersPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl p-8 print-sheet bg-white print:text-[12px]">
-      <div className="flex items-start justify-between mb-6 print:hidden">
-        <h1 className="text-xl font-bold">Rosters (print view)</h1>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href={`/admin/rosters/${fEvent ? `?event=${fEvent}` : ''}`} label="Back to Rosters" />
-          <PrintButton />
-        </span>
-      </div>
+      <PrintSheetHeader
+        title="Rosters"
+        back={{ href: `/admin/rosters/${fEvent ? `?event=${fEvent}` : ''}`, label: 'Back to Rosters' }}
+      />
       {/* The key, printed (23 Nov 2026, design scheme): paper has no
           tooltips, and the ✓ is the one mark on this sheet. */}
       <StatusLegend
@@ -107,7 +95,7 @@ export default async function PrintRostersPage({ searchParams }) {
             <h2 className="text-lg font-bold border-b-2 border-neutral-800 pb-1 mb-2">
               {ev.name}{' '}
               <span className="font-normal text-sm">
-                ({ev.starts_on} – {ev.ends_on}) · {rows.length} {rows.length === 1 ? 'person' : 'people'}
+                ({eventDateRange(ev.starts_on, ev.ends_on)}) · {rows.length} {rows.length === 1 ? 'person' : 'people'}
               </span>
             </h2>
             <table className="w-full text-sm border-collapse">
@@ -159,7 +147,7 @@ export default async function PrintRostersPage({ searchParams }) {
       })}
 
       <p className="text-xs text-neutral-400 mt-8">
-        Printed {new Date().toLocaleDateString('en-US')} · Luke 14 Ministries · Internal use only.
+        Printed {formatDay(todayInMorristown())} · Luke 14 Ministries · Internal use only.
       </p>
     </div>
   );

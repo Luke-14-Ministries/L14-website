@@ -6,20 +6,13 @@ import PrintButton from './PrintButton';
 import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
 import { participantMoney, dollars } from '@/lib/payments';
 import FeeLines from '@/components/FeeLines';
+import { FAMILY_ROLE_LABEL as ROLE_LABEL } from '@/lib/roles';
 
 export const metadata = { title: 'My Statement' };
 
 // The site's one money formatter (lib/payments.js).
 const money = dollars;
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent/Guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 const METHOD_LABEL = {
   card: 'Card',

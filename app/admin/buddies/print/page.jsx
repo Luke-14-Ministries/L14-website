@@ -2,10 +2,9 @@ import { redirect } from 'next/navigation';
 import { allergySummary } from '@/lib/support';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import PrintButton from '@/components/PrintButton';
-import BackLink from '@/components/BackLink';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
 import { SearchSelectLinks } from '@/components/SearchSelect';
-import { todayInMorristown } from '@/lib/events';
+import { todayInMorristown, eventDateRange, formatDay } from '@/lib/events';
 
 export const metadata = { title: 'Buddy Sheets · Staff Admin' };
 
@@ -166,19 +165,18 @@ export default async function BuddyPrintPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
-      <div className="mb-2 flex items-start justify-between print:hidden">
-        <h1 className="text-xl font-bold">Buddy Sheets</h1>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href={`/admin/buddies/${eventId ? `?event=${eventId}` : ''}`} label="Back to Buddy Assignments" />
-          <PrintButton />
-        </span>
-      </div>
-      <p className="mb-3 text-sm text-neutral-500 print:hidden">
-        One page per pairing, with the buddy, the camper, the notes from the board and the safety
-        facts every buddy needs to know. A buddy with two campers gets two pages.
-        Hand them out at orientation and collect them at the end of camp.
-      </p>
+      <PrintSheetHeader
+        title="Buddy sheets"
+        back={{ href: `/admin/buddies/${eventId ? `?event=${eventId}` : ''}`, label: 'Back to Buddy Assignments' }}
+        intro={
+          <>
+            One page per pairing, with the buddy, the camper, the notes from the board and the safety
+            facts every buddy needs to know. A buddy with two campers gets two pages.
+            Hand them out at orientation and collect them at the end of camp.
+          </>
+        }
+        introClassName="mb-3"
+      />
       {pickerOptions.length > 1 && (
         <div className="mb-6">
           <SearchSelectLinks
@@ -203,7 +201,7 @@ export default async function BuddyPrintPage({ searchParams }) {
             <p className="text-xs uppercase tracking-wide text-neutral-500">Buddy sheet</p>
             <h2 className="text-2xl font-bold">{nameOf(s.buddy)}</h2>
             <p className="text-sm text-neutral-600">
-              {event.name} · {event.starts_on} – {event.ends_on}
+              {event.name} · {eventDateRange(event.starts_on, event.ends_on)}
               {' · with '}
               {nameOf(camperOf(s.list[0]))}
             </p>
@@ -288,7 +286,7 @@ export default async function BuddyPrintPage({ searchParams }) {
 
           <p className="mt-6 border-t border-neutral-300 pt-2 text-xs text-neutral-500">
             Take any questions about this sheet to the family, the coordinator or the camp nurse. This
-            sheet is only for you. Keep it with you and hand it back at the end of camp. Printed {todayInMorristown()} · Luke 14 Ministries.
+            sheet is only for you. Keep it with you and hand it back at the end of camp. Printed {formatDay(todayInMorristown())} · Luke 14 Ministries.
           </p>
         </div>
       ))}

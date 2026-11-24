@@ -5,21 +5,14 @@
 // active filters so the export matches the screen.
 
 import SortMark from '@/components/SortMark';
-import { shortEventName, dayInMorristown, eventInScope, isEventScope } from '@/lib/events';
+import { shortEventName, formatDay, eventInScope, isEventScope } from '@/lib/events';
 import { useMemo, useState } from 'react';
 import EventFilter from '@/components/EventFilter';
 import { STATUS_LABEL, statusPill } from '@/lib/format';
+import { ROLE_LABEL } from '@/lib/roles';
 import { depositShortWords } from '@/lib/plans';
 
 import ResizableTable from '@/components/ResizableTable';
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent/Guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 // STATUS_LABEL and statusPill now live in lib/format.js, so the person page
 // (a server component) says status exactly the way this table does.
@@ -492,7 +485,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                         statusPill(r.status).cls
                       }`}
                     >
-                      {r.status}
+                      {statusPill(r.status).text}
                     </span>
                   </td>
                   <td className="px-4 py-2">
@@ -529,7 +522,8 @@ export default function RosterTable({ events, rows, programs = [] }) {
                       money(r.fee)
                     )}
                   </td>
-                  <td className="px-4 py-2 text-neutral-600">{r.submitted ? dayInMorristown(r.submitted) : '—'}</td>
+                  {/* Read as a day; the ISO value stays the sort key. */}
+                  <td className="px-4 py-2 text-neutral-600 whitespace-nowrap">{r.submitted ? formatDay(r.submitted) : '—'}</td>
                   {manyEvents && (
                     <td className="px-4 py-2 text-neutral-600 whitespace-nowrap" title={eventName(r.eventId)}>
                       {shortEventName(eventName(r.eventId))}

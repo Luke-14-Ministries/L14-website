@@ -11,15 +11,9 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { addParticipant } from '@/app/admin/registrations/[id]/actions';
+import { ROLE_LABEL } from '@/lib/roles';
 
-const ROLES = [
-  ['camper', 'Camper'],
-  ['parent_guardian', 'Parent / guardian'],
-  ['sibling', 'Sibling'],
-  ['caregiver', 'Caregiver'],
-  ['volunteer', 'Volunteer'],
-  ['volunteer_child', 'Volunteer child (under 16)'],
-];
+const ROLES = Object.entries(ROLE_LABEL);
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
 function One({ person, reg }) {

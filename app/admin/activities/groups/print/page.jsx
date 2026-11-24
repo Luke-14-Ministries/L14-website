@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import PrintButton from '@/components/PrintButton';
-import BackLink from '@/components/BackLink';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
+import { eventDateRange } from '@/lib/events';
 import { GROUP_ROLE_LABEL, groupNoun, underAgeWords } from '@/lib/activityGroups';
 import { loadActivityGroups } from '../load';
 import StatusMark, { StatusLegend } from '@/components/StatusMark';
@@ -115,25 +115,22 @@ export default async function ActivityGroupsPrintPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
-      <div className="mb-2 flex items-start justify-between print:hidden">
-        <h1 className="text-xl font-bold">
-          {activity.name}: {noun.many}
-        </h1>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href={`/admin/activities/groups/?activity=${activityId}`} label="Back to the groups" />
-          <PrintButton />
-        </span>
-      </div>
-      <p className="mb-3 text-sm text-neutral-500 print:hidden">
-        One block per {noun.one}, with each camper and their buddy on one line, then the outfitter
-        list (names only). The details behind &ldquo;ask the coordinator&rdquo; are on the
-        Medical &amp; Support page.
-      </p>
+      <PrintSheetHeader
+        title={`${activity.name}: ${noun.many}`}
+        back={{ href: `/admin/activities/groups/?activity=${activityId}`, label: 'Back to the groups' }}
+        intro={
+          <>
+            One block per {noun.one}, with each camper and their buddy on one line, then the outfitter
+            list (names only). The details behind &ldquo;ask the coordinator&rdquo; are on the
+            Medical &amp; Support page.
+          </>
+        }
+        introClassName="mb-3"
+      />
 
       <p className="mb-6 text-sm font-semibold">
         {activity.name}
-        {event ? ` · ${event.name} · ${event.startsOn} – ${event.endsOn}` : ''}
+        {event ? ` · ${event.name} · ${eventDateRange(event.startsOn, event.endsOn)}` : ''}
         {minAge != null ? ` · minimum age ${minAge} (check with camp staff for exceptions)` : ''}
       </p>
 

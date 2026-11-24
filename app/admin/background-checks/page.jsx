@@ -42,6 +42,7 @@ import { loadClearanceRecords, vbSummary } from '@/lib/clearanceRecords';
 import CheckCard from './CheckCard';
 import CreditLine from './CreditLine';
 import ResizableTable from '@/components/ResizableTable';
+import { ROLE_LABEL } from '@/lib/roles';
 
 export const metadata = { title: 'Background Checks · Staff Admin' };
 
@@ -62,13 +63,6 @@ const FILTERS = [
   { key: 'current', label: 'Current' },
 ];
 
-const ROLE_LABEL = {
-  volunteer: 'Volunteer',
-  camper: 'Camper',
-  parent_guardian: 'Parent / guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-};
 
 // Each card keeps its own filter in the URL: v= volunteers, f= parents,
 // siblings and caregivers, c= adult campers.

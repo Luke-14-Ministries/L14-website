@@ -1,10 +1,9 @@
 import { redirect } from 'next/navigation';
 import { clearanceMark, isMinor, formatPhone } from '@/lib/format';
-import { todayInMorristown, eventInScope, isEventScope } from '@/lib/events';
+import { todayInMorristown, eventInScope, isEventScope, eventDateRange, formatDay } from '@/lib/events';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import PrintButton from '@/components/PrintButton';
-import BackLink from '@/components/BackLink';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
 import StatusMark, { StatusLegend } from '@/components/StatusMark';
 import { isVolunteerRole } from '@/lib/roles';
 
@@ -56,7 +55,9 @@ export default async function VolunteerPrintPage({ searchParams }) {
          registration_participants ( id, camp_role, status,
            people ( id, first_name, last_name, email, phone, date_of_birth ) )`
       ),
-    supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on', { ascending: false }),
+    // First day ascending (23 Nov 2026, review): Week 1 before Week 2, as
+    // every other sheet lists events.
+    supabase.from('events').select('id, name, starts_on, ends_on, archived_at').order('starts_on'),
   ]);
   // CLAUDE.md: never turn a query error into an empty list -- the printed
   // sheet would read as "no volunteers" or "no check on file".
@@ -113,19 +114,17 @@ export default async function VolunteerPrintPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-4xl bg-white p-8 print-sheet print:text-[11px]">
-      <div className="mb-2 flex items-start justify-between print:hidden">
-        <h1 className="text-xl font-bold">Volunteer List</h1>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href={`/admin/volunteers/${eventFilter ? `?event=${eventFilter}` : ''}`} label="Back to Volunteers" />
-          <PrintButton />
-        </span>
-      </div>
-      <p className="mb-6 text-sm text-neutral-500 print:hidden">
-        Who is volunteering at each event, where they&rsquo;d like to serve, and where their
-        application stands. It includes household contact details, but nothing from the
-        application and nothing medical.
-      </p>
+      <PrintSheetHeader
+        title="Volunteer list"
+        back={{ href: `/admin/volunteers/${eventFilter ? `?event=${eventFilter}` : ''}`, label: 'Back to Volunteers' }}
+        intro={
+          <>
+            Who is volunteering at each event, where they&rsquo;d like to serve, and where their
+            application stands. It includes household contact details, but nothing from the
+            application and nothing medical.
+          </>
+        }
+      />
       {groups.length > 0 && (
         <StatusLegend
           className="mb-4"
@@ -143,7 +142,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
           <h2 className="text-lg font-bold border-b-2 border-neutral-800 pb-1 mb-2">
             {g.event.name}
             <span className="ml-2 text-sm font-normal text-neutral-600">
-              {g.event.starts_on} – {g.event.ends_on} · {g.rows.length} {g.rows.length === 1 ? 'volunteer' : 'volunteers'}
+              {eventDateRange(g.event.starts_on, g.event.ends_on)} · {g.rows.length} {g.rows.length === 1 ? 'volunteer' : 'volunteers'}
             </span>
           </h2>
           <table className="w-full text-sm">
@@ -205,7 +204,7 @@ export default async function VolunteerPrintPage({ searchParams }) {
           </table>
         </div>
       ))}
-      <p className="mt-4 text-xs text-neutral-500">Printed {today} · Luke 14 Ministries.</p>
+      <p className="mt-4 text-xs text-neutral-500">Printed {formatDay(today)} · Luke 14 Ministries.</p>
     </div>
   );
 }

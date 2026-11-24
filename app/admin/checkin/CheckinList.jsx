@@ -10,15 +10,8 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toggleCheckIn } from './actions';
 import QrCode from '@/components/QrCode';
+import { ROLE_LABEL } from '@/lib/roles';
 
-const ROLE_LABEL = {
-  camper: 'Camper',
-  parent_guardian: 'Parent/Guardian',
-  sibling: 'Sibling',
-  caregiver: 'Caregiver',
-  volunteer: 'Volunteer',
-  volunteer_child: 'Volunteer child (under 16)',
-};
 
 export default function CheckinList({ rows }) {
   const router = useRouter();

@@ -1,10 +1,9 @@
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import PrintButton from '@/components/PrintButton';
-import BackLink from '@/components/BackLink';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
 import { SearchSelectLinks } from '@/components/SearchSelect';
-import { dayInMorristown } from '@/lib/events';
+import { dayInMorristown, eventDateRange } from '@/lib/events';
 import { allergenWords } from '@/lib/support';
 import StatusMark, { StatusLegend } from '@/components/StatusMark';
 
@@ -360,19 +359,18 @@ export default async function ActivityPrintPage({ searchParams }) {
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
-      <div className="mb-2 flex items-start justify-between print:hidden">
-        <h1 className="text-xl font-bold">Activity sheets</h1>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href={`/admin/activities/${selected ? `?event=${selected}` : ''}`} label="Back to Activities" />
-          <PrintButton />
-        </span>
-      </div>
-      <p className="mb-3 text-sm text-neutral-500 print:hidden">
-        One register per activity, per sitting. <strong>Health &amp; safety</strong> shows flags and
-        allergen names only. The details stay on the Medical &amp; Support page, because paper
-        sheets get left lying around.
-      </p>
+      <PrintSheetHeader
+        title="Activity sheets"
+        back={{ href: `/admin/activities/${selected ? `?event=${selected}` : ''}`, label: 'Back to Activities' }}
+        intro={
+          <>
+            One register per activity, per sitting. <strong>Health &amp; safety</strong> shows flags and
+            allergen names only. The details stay on the Medical &amp; Support page, because paper
+            sheets get left lying around.
+          </>
+        }
+        introClassName="mb-3"
+      />
       {pickerOptions.length > 1 && (
         <div className="mb-6">
           <SearchSelectLinks
@@ -390,7 +388,7 @@ export default async function ActivityPrintPage({ searchParams }) {
       )}
 
       <p className="mb-6 text-sm font-semibold">
-        {event ? `${event.name} · ${event.starts_on} – ${event.ends_on}` : 'No event selected'}
+        {event ? `${event.name} · ${eventDateRange(event.starts_on, event.ends_on)}` : 'No event selected'}
       </p>
 
       {shown.some((a) => agreementIdByActivity.has(a.id) || providerIds.has(a.id)) && (
