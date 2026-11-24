@@ -22,6 +22,7 @@
 //   Delete family each open the step-up box (components/StepUpModal.jsx),
 //   which asks for the administrator's own code; none acts on one click.
 
+import FilterChips from '@/components/FilterChips';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import SearchSelect from '@/components/SearchSelect';
 import ResizableTable from '@/components/ResizableTable';
@@ -291,22 +292,11 @@ export default function AccountsManager({
           placeholder="Search name, email, or household…"
           className="field w-72 max-w-full"
         />
-        <div className="flex flex-wrap gap-1.5">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFilter(f.key)}
-              className={`rounded-full px-3 py-1 text-sm border ${
-                filter === f.key
-                  ? 'bg-brand text-white border-brand'
-                  : 'border-neutral-300 text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <FilterChips
+          label="Show accounts"
+          current={filter}
+          items={FILTERS.map((f) => ({ key: f.key, label: f.label, onClick: () => setFilter(f.key) }))}
+        />
         <span className="ml-auto text-sm text-neutral-500">
           {rows.length} of {accounts.length}
         </span>

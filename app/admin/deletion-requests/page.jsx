@@ -1,6 +1,6 @@
 import { formatPhone } from '@/lib/format';
+import FilterChips from '@/components/FilterChips';
 import AdminPageHeader from '@/components/AdminPageHeader';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -60,24 +60,14 @@ export default async function DeletionRequestsPage({ searchParams }) {
         }
       />
       {/* Open and Closed pills, the same as Cancellations (23 Nov 2026). */}
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <Link
-          href="/admin/deletion-requests"
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-            !showClosed ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-          }`}
-        >
-          Open ({openCount})
-        </Link>
-        <Link
-          href="/admin/deletion-requests?closed=1"
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-            showClosed ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-          }`}
-        >
-          Closed ({closedCount})
-        </Link>
-      </div>
+      <FilterChips
+        className="mb-5"
+        current={showClosed ? 'closed' : 'open'}
+        items={[
+          { key: 'open', label: 'Open', count: openCount, href: '/admin/deletion-requests' },
+          { key: 'closed', label: 'Closed', count: closedCount, href: '/admin/deletion-requests?closed=1' },
+        ]}
+      />
       {shaped.length === 0 ? (
         <p className="text-neutral-500">{showClosed ? 'Nothing closed yet.' : 'No open requests.'}</p>
       ) : (

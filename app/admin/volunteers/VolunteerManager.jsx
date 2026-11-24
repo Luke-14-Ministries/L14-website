@@ -440,25 +440,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 className="text-xl font-bold mb-1">Volunteers</h2>
-        {/* Ordering checks is a batch job, not a per-person one -- Checkr's
-            bulk upload takes a whole list at once -- so it gets its own screen
-            rather than a button on every row. */}
-        {maySeeChecks && (
-          <Link href="/admin/background-checks/screening/" className="btn-outline btn-sm shrink-0">
-            Send background check invites
-          </Link>
-        )}
-      </div>
-      <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
-        Everyone registered as a Volunteer: decide each application here (press Open, or the
-        volunteer pill). Background checks are sent from Send Background Check Invites and kept on Background
-        Checks, where a background check done another way is recorded by hand; the record also shows here under
-        each card. The paperwork is kept in the restricted SharePoint folder. Other staff see whether a
-        background check is on file, whether it&rsquo;s current, and the verdict.
-      </p>
-
+      {/* The title, buttons and intro are the page's (page.jsx, 23 Nov 2026). */}
       <div className="flex flex-wrap gap-4 mb-6 text-sm">
         {[
           ['all', total, 'registered', ''],
@@ -497,11 +479,14 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
                   ? 'Show everyone'
                   : 'Click to show only these. Click again to show everyone.'
             }
+            // Selected is solid teal, the same as a selected filter chip
+            // (components/FilterChips.jsx, 23 Nov 2026); the number goes
+            // white with it, since amber or green on teal cannot be read.
             className={`rounded-lg border px-4 py-2 text-left ${
-              show === key ? 'border-brand bg-brand-light ring-1 ring-brand' : 'border-neutral-200 bg-white hover:border-brand'
+              show === key ? 'border-brand bg-brand text-white' : 'border-neutral-200 bg-white hover:border-brand'
             }`}
           >
-            <span className={`font-bold text-lg ${tone}`}>{n}</span> {label}
+            <span className={`font-bold text-lg ${show === key ? '' : tone}`}>{n}</span> {label}
           </button>
           )
         )}

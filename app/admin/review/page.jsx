@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import AdminPageHeader from '@/components/AdminPageHeader';
+import FilterChips from '@/components/FilterChips';
 import EventFilter from '@/components/EventFilter';
 import ReviewGroup from './ReviewGroup';
 import ReviewRowBody from './ReviewRowBody';
@@ -280,103 +282,76 @@ export default async function ReviewQueuePage({ searchParams }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">Awaiting Review</h2>
-        <div className="flex gap-2 text-sm">
-          <Link
-            href={`/admin/review/${eventFilter ? `?event=${eventFilter}` : ''}`}
-            className={`rounded-full px-3 py-1 font-semibold border ${
-              show === 'staff' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
-            }`}
-          >
-            Waiting on staff
-            {/* The nav badge's number, said here (Fable badge review, 14 Nov 2026). */}
-            {show === 'staff' && totalPending > 0 && (
-              <span className="ml-1 font-normal">
-                · {totalPending} {totalPending === 1 ? 'person' : 'people'} in {rows.length}{' '}
-                {rows.length === 1 ? 'family' : 'families'}
-              </span>
-            )}
-          </Link>
-          <Link
-            href={`/admin/review/?show=nodeposit${eventFilter ? `&event=${eventFilter}` : ''}`}
-            className={`rounded-full px-3 py-1 font-semibold border ${
-              show === 'nodeposit' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
-            }`}
-          >
-            Deposit short
-          </Link>
-          <Link
-            href={`/admin/review/?show=family${eventFilter ? `&event=${eventFilter}` : ''}`}
-            className={`rounded-full px-3 py-1 font-semibold border ${
-              show === 'family' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
-            }`}
-          >
-            Waiting on the family{onFamily > 0 && ` (${onFamily})`}
-          </Link>
-          <Link
-            href={`/admin/review/?show=replied${eventFilter ? `&event=${eventFilter}` : ''}`}
-            className={`rounded-full px-3 py-1 font-semibold border ${
-              show === 'replied'
-                ? 'bg-amber-600 text-white border-amber-600'
-                : repliedRegs > 0
-                  ? 'border-amber-400 bg-amber-50 text-amber-900 hover:border-amber-600'
-                  : 'border-neutral-300 text-neutral-700 hover:border-brand'
-            }`}
-          >
-            Family replied{repliedRegs > 0 && ` (${repliedRegs})`}
-          </Link>
-          <Link
-            href={`/admin/review/?show=waiver${eventFilter ? `&event=${eventFilter}` : ''}`}
-            className={`rounded-full px-3 py-1 font-semibold border ${
-              show === 'waiver' ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
-            }`}
-          >
-            Waiver outstanding{waiverRegs > 0 && ` (${waiverRegs})`}
-          </Link>
-          {seesMoney && (
-            <Link
-              href={`/admin/review/?show=plan${eventFilter ? `&event=${eventFilter}` : ''}`}
-              className={`rounded-full px-3 py-1 font-semibold border ${
-                show === 'plan'
-                  ? stoppedRegs > 0
-                    ? 'bg-red-700 text-white border-red-700'
-                    : 'bg-amber-600 text-white border-amber-600'
-                  : stoppedRegs > 0
-                    ? 'border-red-300 text-red-700 hover:border-red-700'
-                    : planProblemRegs > 0
-                      ? 'border-amber-400 bg-amber-50 text-amber-900 hover:border-amber-600'
-                      : 'border-neutral-300 text-neutral-700 hover:border-brand'
-              }`}
-            >
-              Payment plan problems{planProblemRegs > 0 && ` (${planProblemRegs})`}
-            </Link>
-          )}
-          <Link
-            href={`/admin/review/?show=all${eventFilter ? `&event=${eventFilter}` : ''}`}
-            className={`rounded-full px-3 py-1 font-semibold border ${
-              showAll ? 'bg-brand text-white border-brand' : 'border-neutral-300 text-neutral-700 hover:border-brand'
-            }`}
-          >
-            Every registration
-          </Link>
-        </div>
-      </div>
-      <p className="text-sm text-neutral-500 mb-4">
-        Every family with someone still <em>submitted</em>. Each row says how many are left to
-        review, whether the deposit is in or a scholarship was requested, and how many flags need a
-        conversation first; open a row for the people and the flags. Open the registration to
-        approve or waitlist everyone at once on its Review card, or to ask the family for more
-        information.
-        {' '}
-        <strong>{totalPending}</strong> {totalPending === 1 ? 'person' : 'people'} waiting
-        {totalFlags > 0 && (
+      <AdminPageHeader
+        title="Awaiting Review"
+        className="mb-3"
+        intro={
           <>
-            {' '}· <strong>{totalFlags}</strong> {totalFlags === 1 ? 'flag' : 'flags'}
+            Every family with someone still <em>submitted</em>. Each row says how many are left to
+            review, whether the deposit is in or a scholarship was requested, and how many flags need a
+            conversation first; open a row for the people and the flags. Open the registration to
+            approve or waitlist everyone at once on its Review card, or to ask the family for more
+            information.
+            {' '}
+            <strong>{totalPending}</strong> {totalPending === 1 ? 'person' : 'people'} waiting
+            {totalFlags > 0 && (
+              <>
+                {' '}· <strong>{totalFlags}</strong> {totalFlags === 1 ? 'flag' : 'flags'}
+              </>
+            )}
+            .
           </>
-        )}
-        .
-      </p>
+        }
+      />
+      {/* The shared chips (23 Nov 2026, design scheme): a wrapping row, so
+          seven tabs fit a phone, selected solid teal, counts in a bubble.
+          An unselected tab that needs someone is outlined amber, or red for
+          a stopped payment plan, as before. */}
+      <FilterChips
+        className="mb-5"
+        current={showAll ? 'all' : show}
+        items={[
+          {
+            key: 'staff',
+            label: 'Waiting on staff',
+            // The nav badge's number (Fable badge review, 14 Nov 2026).
+            count: show === 'staff' && totalPending > 0 ? totalPending : undefined,
+            title:
+              show === 'staff'
+                ? `${totalPending} ${totalPending === 1 ? 'person' : 'people'} in ${rows.length} ${rows.length === 1 ? 'family' : 'families'}`
+                : undefined,
+            href: `/admin/review/${eventFilter ? `?event=${eventFilter}` : ''}`,
+          },
+          { key: 'nodeposit', label: 'Deposit short', href: `/admin/review/?show=nodeposit${eventFilter ? `&event=${eventFilter}` : ''}` },
+          {
+            key: 'family',
+            label: 'Waiting on the family',
+            count: onFamily > 0 ? onFamily : undefined,
+            href: `/admin/review/?show=family${eventFilter ? `&event=${eventFilter}` : ''}`,
+          },
+          {
+            key: 'replied',
+            label: 'Family replied',
+            count: repliedRegs > 0 ? repliedRegs : undefined,
+            tone: repliedRegs > 0 ? 'todo' : undefined,
+            href: `/admin/review/?show=replied${eventFilter ? `&event=${eventFilter}` : ''}`,
+          },
+          {
+            key: 'waiver',
+            label: 'Waiver outstanding',
+            count: waiverRegs > 0 ? waiverRegs : undefined,
+            href: `/admin/review/?show=waiver${eventFilter ? `&event=${eventFilter}` : ''}`,
+          },
+          seesMoney && {
+            key: 'plan',
+            label: 'Payment plan problems',
+            count: planProblemRegs > 0 ? planProblemRegs : undefined,
+            tone: stoppedRegs > 0 ? 'hold' : planProblemRegs > 0 ? 'todo' : undefined,
+            href: `/admin/review/?show=plan${eventFilter ? `&event=${eventFilter}` : ''}`,
+          },
+          { key: 'all', label: 'Every registration', href: `/admin/review/?show=all${eventFilter ? `&event=${eventFilter}` : ''}` },
+        ].filter(Boolean)}
+      />
 
       {/* Unread family replies first, on every tab but their own (26 Oct
           2026): with many families waiting, a reply was lost in the list. */}

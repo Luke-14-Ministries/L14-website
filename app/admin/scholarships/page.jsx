@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import FilterChips from '@/components/FilterChips';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -199,28 +200,24 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
         />
       </div>
 
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <Link
-          href={`/admin/scholarships${eventFilter ? `?event=${eventFilter}` : ''}`}
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-            !showSettled
-              ? 'bg-brand text-white'
-              : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-          }`}
-        >
-          Waiting ({open.length + familyOpen.length})
-        </Link>
-        <Link
-          href={`/admin/scholarships?settled=1${eventFilter ? `&event=${eventFilter}` : ''}`}
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-            showSettled
-              ? 'bg-brand text-white'
-              : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-          }`}
-        >
-          Answered ({settled.length + familySettled.length})
-        </Link>
-      </div>
+      <FilterChips
+        className="mb-5"
+        current={showSettled ? 'answered' : 'waiting'}
+        items={[
+          {
+            key: 'waiting',
+            label: 'Waiting',
+            count: open.length + familyOpen.length,
+            href: `/admin/scholarships${eventFilter ? `?event=${eventFilter}` : ''}`,
+          },
+          {
+            key: 'answered',
+            label: 'Answered',
+            count: settled.length + familySettled.length,
+            href: `/admin/scholarships?settled=1${eventFilter ? `&event=${eventFilter}` : ''}`,
+          },
+        ]}
+      />
 
       {shaped.length === 0 && familyShown.length === 0 ? (
         <p className="text-neutral-500">

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import FilterChips from '@/components/FilterChips';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -294,21 +296,24 @@ export default async function AdminPaymentsPage({ searchParams }) {
     <div>
       {/* Money Changes (the money audit trail, 0111) at top right for
           administrators, who alone may read it (23 Nov 2026 review). */}
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-bold">Event Payments</h2>
-        {can(staff, 'admin') && (
-          <Link href="/admin/payments/changes/" className="text-sm text-brand underline">
-            Money changes →
-          </Link>
-        )}
-      </div>
-      {/* Exports: report, then format, then dates (ExportBar.jsx). */}
-      <ExportBar eventFilter={eventFilter} paystate={paystate} defaultFrom={monthStart} defaultTo={dueToday} />
-      <p className="text-sm text-neutral-500 mb-4">
-        What each family owes and has paid for an event (Camp Celebrate, retreats and others). Online
-        payments are recorded automatically. Enter checks and cash below. Donations are on the Giving
-        page.
-      </p>
+      <AdminPageHeader
+        title="Event Payments"
+        className="mb-4"
+        actions={
+          can(staff, 'admin') && (
+            <Link href="/admin/payments/changes/" className="text-sm text-brand underline">
+              Money changes →
+            </Link>
+          )
+        }
+        intro={
+          <>
+            What each family owes and has paid for an event (Camp Celebrate, retreats and others). Online
+            payments are recorded automatically. Enter checks and cash below. Donations are on the Giving
+            page.
+          </>
+        }
+      />
 
       {staleRefunds.length > 0 && (
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
@@ -361,6 +366,10 @@ export default async function AdminPaymentsPage({ searchParams }) {
         allowAll
         scopes={Object.entries(SCOPE_LABEL).map(([value, label]) => ({ value, label }))}
       />
+      {/* Exports: report, then format, then dates (ExportBar.jsx). Under the
+          event filter since 23 Nov 2026 (design scheme): two of its three
+          files follow that filter, so the row sits with what it depends on. */}
+      <ExportBar eventFilter={eventFilter} paystate={paystate} defaultFrom={monthStart} defaultTo={dueToday} />
 
       <h3 className="font-semibold text-neutral-700 mb-2">
         By event <span className="font-normal text-sm text-neutral-500">· {scopeLabel}</span>
@@ -487,19 +496,11 @@ export default async function AdminPaymentsPage({ searchParams }) {
         )}
       </form>
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        {PAYSTATES.map(([v, label]) => (
-          <Link
-            key={v}
-            href={`/admin/payments${qs({ paystate: v })}`}
-            className={`rounded-full px-3 py-1 text-sm font-semibold border ${
-              paystate === v
-                ? 'bg-brand text-white border-brand'
-                : 'border-neutral-300 text-neutral-700 hover:border-brand'
-            }`}
-          >
-            {label}
-          </Link>
-        ))}
+        <FilterChips
+          label="Show families"
+          current={paystate}
+          items={PAYSTATES.map(([v, label]) => ({ key: v, label, href: `/admin/payments${qs({ paystate: v })}` }))}
+        />
         <span className="text-sm text-neutral-500 self-center">
           {filteredBalances.length} {filteredBalances.length === 1 ? 'family' : 'families'}
           {q ? ` matching “${q}”` : ''}

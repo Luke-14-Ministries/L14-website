@@ -9,6 +9,7 @@
 // them all at once -- and the per-person dropdown is there for the exceptions
 // rather than as the main road.
 
+import FilterChips from '@/components/FilterChips';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import SearchSelect from '@/components/SearchSelect';
@@ -246,36 +247,23 @@ export default function ProgramBoard({
     <div>
       {/* Counts first: the question this page gets opened with is "how many
           are still unplaced?", and the answer should not need a click. */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setFilter('unplaced')}
-          className={`rounded-full border px-3 py-1 text-sm ${
-            filter === 'unplaced'
-              ? 'border-amber-500 bg-amber-50 font-semibold text-amber-900'
-              : 'border-neutral-300 hover:bg-neutral-50'
-          }`}
-        >
-          Not yet placed
-          <span className="ml-2 rounded-full bg-amber-200 px-2 text-xs text-amber-900">
-            {counts.unplaced}
-          </span>
-        </button>
-        {programs.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setFilter(p.id)}
-            className={`rounded-full border px-3 py-1 text-sm ${
-              filter === p.id
-                ? 'border-brand bg-brand-light font-semibold text-brand-dark'
-                : 'border-neutral-300 hover:bg-neutral-50'
-            }`}
-          >
-            {p.name}
-            <span className="ml-2 rounded-full bg-neutral-200 px-2 text-xs">{counts[p.id] ?? 0}</span>
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {/* The shared chips (23 Nov 2026, design scheme); "Not yet placed"
+            is outlined amber while anyone is waiting for a program. */}
+        <FilterChips
+          current={filter}
+          items={[
+            {
+              key: 'unplaced',
+              label: 'Not yet placed',
+              count: counts.unplaced,
+              tone: counts.unplaced > 0 ? 'todo' : undefined,
+              onClick: () => setFilter('unplaced'),
+            },
+            ...programs.map((p) => ({ key: p.id, label: p.name, count: counts[p.id] ?? 0, onClick: () => setFilter(p.id) })),
+            { key: 'all', label: 'Everyone', count: people.length, onClick: () => setFilter('all') },
+          ]}
+        />
         {/* E21. The one link Ellen asked for that is genuinely useful: these
             chips filter this page, which is for PLACING people. The Rosters
             page is the full record of the same people — fee, t-shirt, status,
@@ -288,7 +276,7 @@ export default function ProgramBoard({
         {filter && filter !== 'all' && filter !== 'unplaced' && (
           <a
             href={`/admin/rosters/?program=${filter}`}
-            className="rounded-full border border-brand px-3 py-1 text-sm font-semibold text-brand hover:bg-brand-light"
+            className="btn-outline btn-sm"
           >
             Open in Rosters &rarr;
           </a>
@@ -299,23 +287,11 @@ export default function ProgramBoard({
         {filter && filter !== 'all' && filter !== 'unplaced' && eventId && (
           <a
             href={`/admin/my-program/print/?program=${filter}&event=${eventId}`}
-            className="rounded-full border border-brand px-3 py-1 text-sm font-semibold text-brand hover:bg-brand-light"
+            className="btn-outline btn-sm"
           >
             Print this program
           </a>
         )}
-        <button
-          type="button"
-          onClick={() => setFilter('all')}
-          className={`rounded-full border px-3 py-1 text-sm ${
-            filter === 'all'
-              ? 'border-brand bg-brand-light font-semibold text-brand-dark'
-              : 'border-neutral-300 hover:bg-neutral-50'
-          }`}
-        >
-          Everyone
-          <span className="ml-2 rounded-full bg-neutral-200 px-2 text-xs">{people.length}</span>
-        </button>
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">

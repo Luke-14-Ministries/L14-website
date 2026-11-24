@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import FilterChips from '@/components/FilterChips';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff } from '@/lib/staff';
@@ -87,25 +88,15 @@ export default async function MyProgramPage({ searchParams }) {
       )}
 
       {leaderships.length > 1 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {leaderships.map((l) => {
+        <FilterChips
+          className="mb-4"
+          label="Your programs"
+          current={`${current.programId}:${current.eventId}`}
+          items={leaderships.map((l) => {
             const key = `${l.programId}:${l.eventId}`;
-            const active = key === `${current.programId}:${current.eventId}`;
-            return (
-              <Link
-                key={l.id}
-                href={`/admin/my-program?grant=${encodeURIComponent(key)}`}
-                className={`rounded-full border px-3 py-1 text-sm ${
-                  active
-                    ? 'border-brand bg-brand-light font-semibold text-brand-dark'
-                    : 'border-neutral-300 hover:bg-neutral-50'
-                }`}
-              >
-                {l.programName} · {l.eventName}
-              </Link>
-            );
+            return { key, label: `${l.programName} · ${l.eventName}`, href: `/admin/my-program?grant=${encodeURIComponent(key)}` };
           })}
-        </div>
+        />
       )}
 
       <FlagsNote

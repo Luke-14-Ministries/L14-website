@@ -17,7 +17,7 @@
 
 import { useState } from 'react';
 
-const selectCls = 'rounded-sm border border-neutral-300 px-2 py-1.5';
+const selectCls = 'field-sm w-auto';
 
 export default function ExportBar({ eventFilter = '', paystate = '', defaultFrom = '', defaultTo = '' }) {
   const [report, setReport] = useState('payments');

@@ -15,7 +15,7 @@
 
 import { useState } from 'react';
 
-const selectCls = 'rounded-sm border border-neutral-300 px-2 py-1.5';
+const selectCls = 'field-sm w-auto';
 
 export default function GivingExportBar({ from = '', to = '', fund = '', method = '' }) {
   const [report, setReport] = useState('gifts');

@@ -4,6 +4,8 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import VolunteerManager from './VolunteerManager';
 import EventFilter from '@/components/EventFilter';
+import AdminPageHeader from '@/components/AdminPageHeader';
+import Link from 'next/link';
 import { isVolunteerRole } from '@/lib/roles';
 import { latestVbRequests } from '@/lib/screeningCandidates';
 import { volunteerBadgeMode } from '@/lib/volunteerBadge';
@@ -248,24 +250,50 @@ export default async function AdminVolunteersPage({ searchParams }) {
     g.event.id === 'none' ? !eventFilter || eventFilter === SCOPE_ALL : eventInScope(g.event, eventFilter)
   );
 
+  // One order for the page (23 Nov 2026, design scheme): the title with its
+  // two buttons at one size, the intro, the labeled Event filter, then the
+  // tiles and the list (VolunteerManager). Until then the filter sat above
+  // the title and the two buttons were in different files at different sizes.
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <AdminPageHeader
+        title="Volunteers"
+        actions={
+          <>
+            {/* Sending invites is a batch job, not a per-person one, so it
+                has its own screen rather than a button on every row. */}
+            {maySeeChecks && (
+              <Link href="/admin/background-checks/screening/" className="btn-outline btn-sm">
+                Send background check invites
+              </Link>
+            )}
+            <a
+              href={`/admin/volunteers/print/${eventFilter ? `?event=${eventFilter}` : ''}`}
+              className="btn-outline btn-sm"
+              title="A printable list of volunteers: who, which event, where they want to serve, and where their application stands."
+            >
+              Print volunteer list
+            </a>
+          </>
+        }
+        intro={
+          <>
+            Everyone registered as a Volunteer: decide each application here (press Open, or the
+            volunteer pill). Background checks are sent from Send Background Check Invites and kept on Background
+            Checks, where a background check done another way is recorded by hand; the record also shows here under
+            each card. The paperwork is kept in the restricted SharePoint folder. Other staff see whether a
+            background check is on file, whether it&rsquo;s current, and the verdict.
+          </>
+        }
+      />
+      <div className="mb-4">
         <EventFilter
           events={(events ?? []).map((e) => ({ id: e.id, name: e.name, startsOn: e.starts_on, endsOn: e.ends_on, archivedAt: e.archived_at }))}
           selected={eventFilter || null}
           basePath="/admin/volunteers"
           allowAll
-          hideLabel
           className="w-full sm:w-80"
         />
-        <a
-          href={`/admin/volunteers/print/${eventFilter ? `?event=${eventFilter}` : ''}`}
-          className="btn-outline btn-sm"
-          title="A printable list of volunteers: who, which event, where they want to serve, and where their application stands."
-        >
-          Print volunteer list
-        </a>
       </div>
       {/* Sent here from Background Checks or Send Background Check Invites without the
           grant (14 Nov 2026): said, not a silent bounce. */}

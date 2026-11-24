@@ -1,7 +1,7 @@
 import { formatPhone } from '@/lib/format';
+import FilterChips from '@/components/FilterChips';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import CancellationList from './CancellationList';
@@ -92,26 +92,16 @@ export default async function CancellationsPage({ searchParams }) {
         }
       />
 
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <Link
-          href="/admin/cancellations"
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-            !showHandled ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-          }`}
-        >
-          Open ({open.length})
-        </Link>
-        <Link
-          href="/admin/cancellations?handled=1"
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-            showHandled ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-          }`}
-        >
-          {/* "Closed", not "Settled" (23 Nov 2026 review): the same pair of
-              words as Deletion Requests. */}
-          Closed ({handled.length})
-        </Link>
-      </div>
+      {/* "Closed", not "Settled" (23 Nov 2026 review): the same pair of
+          words as Deletion Requests. The shared chips since the design scheme. */}
+      <FilterChips
+        className="mb-5"
+        current={showHandled ? 'closed' : 'open'}
+        items={[
+          { key: 'open', label: 'Open', count: open.length, href: '/admin/cancellations' },
+          { key: 'closed', label: 'Closed', count: handled.length, href: '/admin/cancellations?handled=1' },
+        ]}
+      />
 
       {shaped.length === 0 ? (
         <p className="text-neutral-500">

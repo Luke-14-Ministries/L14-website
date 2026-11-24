@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import RecordGiftForm from './RecordGiftForm';
@@ -91,34 +92,35 @@ export default async function AdminGivingPage({ searchParams }) {
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-bold">Giving</h2>
-        <a href={statementHref} className="btn-outline btn-sm">
-          Year-end statements (print)
-        </a>
-      </div>
-      {/* Exports: report, then format (GivingExportBar.jsx); both follow the
-          filter form below. */}
-      <GivingExportBar from={fFrom} to={fTo} fund={fFund} method={fMethod} />
-      <p className="text-sm text-neutral-500 mb-6">
-        Tax-deductible donations, kept separate from camp payments (which are not deductible).
-        This page needs its own permission. Online gifts are recorded automatically. Enter mailed
-        checks and cash below.
-      </p>
+      <AdminPageHeader
+        title="Giving"
+        actions={
+          <a href={statementHref} className="btn-outline btn-sm">
+            Year-end statements (print)
+          </a>
+        }
+        intro={
+          <>
+            Tax-deductible donations, kept separate from camp payments (which are not deductible).
+            This page needs its own permission. Online gifts are recorded automatically. Enter mailed
+            checks and cash below.
+          </>
+        }
+      />
 
       {/* Plain GET form: works with no JavaScript, and the URL becomes a
           shareable/bookmarkable report ("gifts to the camp fund this quarter"). */}
-      <form method="get" className="card mb-6 flex flex-wrap items-end gap-3 p-4">
-        <label className="block text-sm">
-          <span className="block font-semibold mb-1">From</span>
+      <form method="get" className="card mb-3 flex flex-wrap items-end gap-3 p-4">
+        <label className="block">
+          <span className="field-label">From</span>
           <input type="date" name="from" defaultValue={fFrom} className="field-sm w-auto" />
         </label>
-        <label className="block text-sm">
-          <span className="block font-semibold mb-1">To</span>
+        <label className="block">
+          <span className="field-label">To</span>
           <input type="date" name="to" defaultValue={fTo} className="field-sm w-auto" />
         </label>
-        <label className="block text-sm">
-          <span className="block font-semibold mb-1">Fund</span>
+        <label className="block">
+          <span className="field-label">Fund</span>
           <select name="fund" defaultValue={fFund} className="field-sm w-auto">
             <option value="">All funds</option>
             {fundOptions.map((f) => (
@@ -126,8 +128,8 @@ export default async function AdminGivingPage({ searchParams }) {
             ))}
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="block font-semibold mb-1">Method</span>
+        <label className="block">
+          <span className="field-label">Method</span>
           <select name="method" defaultValue={fMethod} className="field-sm w-auto">
             <option value="">All methods</option>
             {Object.entries(METHOD_LABEL).map(([v, l]) => (
@@ -140,6 +142,9 @@ export default async function AdminGivingPage({ searchParams }) {
           <a href="/admin/giving" className="text-sm text-neutral-500 underline">Clear</a>
         )}
       </form>
+      {/* Exports: report, then format (GivingExportBar.jsx). Right under the
+          filter since 23 Nov 2026 (design scheme): both files follow it. */}
+      <GivingExportBar from={fFrom} to={fTo} fund={fFund} method={fMethod} />
 
       <p className="text-sm text-neutral-600 mb-2">
         Showing <span className="font-semibold">{periodLabel}</span>
