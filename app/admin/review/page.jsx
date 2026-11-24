@@ -259,7 +259,6 @@ export default async function ReviewQueuePage({ searchParams }) {
   const onFamily = (regs ?? []).filter((r) => r.awaiting_family_since && !r.events?.archived_at).length;
   // For the Family replied tab's count (0126): unread replies, every event.
   const repliedRegs = (regs ?? []).filter((r) => r.family_reply_unread && !r.events?.archived_at).length;
-  const totalFlags = rows.reduce((s, r) => s + r.flags.length + (r.creed ? 1 : 0) + r.ageFlags.length, 0);
   // For the tab's count: registrations at a current event with a waiver owed.
   const waiverRegs = (regs ?? []).filter(
     (r) => owedByReg.has(r.id) && isCurrentEventRow(r.events)
@@ -288,19 +287,11 @@ export default async function ReviewQueuePage({ searchParams }) {
         className="mb-3"
         intro={
           <>
-            Every family with someone awaiting review. Each row says how many are left to
-            review, whether the deposit is in or a scholarship was requested, and how many flags need a
-            conversation first; open a row for the people and the flags. Open the registration to
-            approve or waitlist everyone at once on its Review card, or to ask the family for more
-            information.
-            {' '}
-            <strong>{totalPending}</strong> {totalPending === 1 ? 'person' : 'people'} awaiting review
-            {totalFlags > 0 && (
-              <>
-                {' '}· <strong>{totalFlags}</strong> {totalFlags === 1 ? 'flag' : 'flags'}
-              </>
-            )}
-            .
+            {/* Three sentences, no trailing counts (23 Nov 2026): the
+                Waiting on staff chip carries the number. */}
+            Every family with someone waiting for review. Open a row to see the people, the deposit and
+            any flags. Open the registration to approve or waitlist everyone on its Review card, or to
+            ask the family for more information.
           </>
         }
       />
@@ -339,13 +330,13 @@ export default async function ReviewQueuePage({ searchParams }) {
           },
           {
             key: 'waiver',
-            label: 'Waiver outstanding',
+            label: 'Waiver due',
             count: waiverRegs > 0 ? waiverRegs : undefined,
             href: `/admin/review/?show=waiver${eventFilter ? `&event=${eventFilter}` : ''}`,
           },
           seesMoney && {
             key: 'plan',
-            label: 'Payment plan problems',
+            label: 'Plan problems',
             count: planProblemRegs > 0 ? planProblemRegs : undefined,
             tone: stoppedRegs > 0 ? 'hold' : planProblemRegs > 0 ? 'todo' : undefined,
             href: `/admin/review/?show=plan${eventFilter ? `&event=${eventFilter}` : ''}`,
