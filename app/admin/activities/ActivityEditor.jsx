@@ -359,8 +359,8 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
         <label className="text-sm">
           <span className="field-label">How it books</span>
           <select className="field-sm" value={f.mode} onChange={set('mode')}>
-            <option value="interest">Interest: families say they&rsquo;d like to go</option>
-            <option value="signup">Sign-up: holds a place</option>
+            <option value="interest">Interest only (no limit): families say they&rsquo;d like to go</option>
+            <option value="signup">Sign-up (places are limited): holds a place</option>
           </select>
         </label>
         <label className="text-sm">

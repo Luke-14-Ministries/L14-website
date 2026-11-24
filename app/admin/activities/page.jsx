@@ -25,8 +25,9 @@ const ROLE_WORD = {
 };
 
 const MODE_LABEL = {
-  interest: 'Interest only',
-  signup: 'Places held',
+  // 23 Nov 2026: says what each mode means for families.
+  interest: 'Interest only (no limit)',
+  signup: 'Sign-up (places are limited)',
   appointment: 'By appointment',
 };
 

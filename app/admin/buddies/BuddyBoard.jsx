@@ -37,7 +37,7 @@ function SupportNotes({ support, canSee = true }) {
   if (!support) {
     return (
       <p className="mt-1 text-sm text-amber-800">
-        No support details on file yet. Get them before you pair this camper.
+        No support details on file yet. Get them before you assign a buddy.
       </p>
     );
   }
@@ -64,7 +64,7 @@ function SupportNotes({ support, canSee = true }) {
         )}
       </div>
       {bits.length === 0 ? (
-        <p className="text-sm text-neutral-500">No pairing notes recorded.</p>
+        <p className="text-sm text-neutral-500">No buddy notes recorded.</p>
       ) : (
         <dl className="text-sm">
           {bits.map(([k, v]) => (
@@ -111,7 +111,7 @@ export default function BuddyBoard({
           `the board, and they stop counting as waiting for a buddy.
 
 ` +
-          `Any buddy already paired with them stays paired. Remove that pairing ` +
+          `Any buddy already assigned to them stays assigned. Remove that buddy ` +
           `separately if you meant to.`
       )
     ) {
@@ -168,7 +168,7 @@ export default function BuddyBoard({
     // it is a double entry. Refused outright (25 Aug) -- there is no reading
     // of it that means anything.
     if (existing.some((a) => a.buddyParticipantId === volunteer.participantId)) {
-      setError(`${volunteer.name} is already paired with ${camper.name}.`);
+      setError(`${volunteer.name} is already assigned to ${camper.name}.`);
       return;
     }
 
@@ -183,7 +183,7 @@ export default function BuddyBoard({
     const pill = clearancePill(volunteer.clearance);
     if (pill.key !== 'ok') {
       const ok = window.confirm(
-        `${volunteer.name}: ${pill.text}.\n\nPair them with ${camper.name} anyway?\n\n(Background checks often come in after pairing starts, so this is a warning, not a block. It must be sorted out before the week of camp.)`
+        `${volunteer.name}: ${pill.text}.\n\nAssign them to ${camper.name} anyway?\n\n(Background checks often come in after assigning starts, so this is a warning, not a block. It must be sorted out before the week of camp.)`
       );
       if (!ok) return;
     }
@@ -215,7 +215,7 @@ export default function BuddyBoard({
     const publishing = !publishedAt;
     const ok = window.confirm(
       publishing
-        ? `Publish buddy assignments for ${eventName}?\n\nEvery paired family and volunteer will be able to see who they are with.${
+        ? `Publish buddy assignments for ${eventName}?\n\nEvery family and volunteer with a buddy assigned will be able to see who they are with.${
             unpaired.length > 0
               ? `\n\n${unpaired.length} camper${unpaired.length === 1 ? '' : 's'} still ${
                   unpaired.length === 1 ? 'has' : 'have'
@@ -248,13 +248,15 @@ export default function BuddyBoard({
       <div className="mb-5 flex flex-wrap gap-4">
         <div className="card px-5 py-3">
           <div className="text-3xl font-bold">{campers.length}</div>
-          <div className="text-sm font-semibold text-neutral-700">asking for a buddy</div>
+          {/* "who could use a buddy" and "assigned" (23 Nov 2026): one verb,
+              assign, across the page. */}
+          <div className="text-sm font-semibold text-neutral-700">who could use a buddy</div>
         </div>
         <div className="card px-5 py-3">
           <div className="text-3xl font-bold text-green-700">
             {campers.length - unpaired.length}
           </div>
-          <div className="text-sm font-semibold text-neutral-700">paired</div>
+          <div className="text-sm font-semibold text-neutral-700">assigned</div>
         </div>
         <div
           className={`rounded-lg border bg-white px-5 py-3 ${
@@ -269,7 +271,7 @@ export default function BuddyBoard({
             {unpaired.length}
           </div>
           <div className="text-sm font-semibold text-neutral-700">
-            {unpaired.length === 0 ? 'nobody left to pair' : 'still without a buddy'}
+            {unpaired.length === 0 ? 'nobody left to assign' : 'still without a buddy'}
           </div>
         </div>
       </div>
@@ -295,7 +297,7 @@ export default function BuddyBoard({
           <a
             href={`/admin/buddies/export?event=${eventId}`}
             className="btn-outline btn-sm"
-            title="Every pairing for this event as a CSV: camper, buddy, family, background check status."
+            title="Every buddy assignment for this event as a CSV: camper, buddy, family, background check status."
           >
             Download CSV
           </a>
@@ -433,7 +435,7 @@ export default function BuddyBoard({
                           checked={hidePaired}
                           onChange={(e) => setHidePaired(e.target.checked)}
                         />
-                        Hide paired
+                        Hide assigned volunteers
                         {hidePaired && volunteers.some((v) => (loadByVolunteer.get(v.participantId) ?? 0) > 0) && (
                           <span className="text-neutral-400">
                             ({volunteers.filter((v) => (loadByVolunteer.get(v.participantId) ?? 0) > 0).length} hidden)
@@ -446,7 +448,7 @@ export default function BuddyBoard({
                         </p>
                       ) : volunteers.every((v) => (loadByVolunteer.get(v.participantId) ?? 0) > 0) && hidePaired ? (
                         <p className="text-sm text-neutral-500">
-                          Every volunteer on this roster already has a camper. Untick &ldquo;Hide paired&rdquo; to see them.
+                          Every volunteer on this roster already has a camper. Untick &ldquo;Hide assigned volunteers&rdquo; to see them.
                         </p>
                       ) : (
                         <ul className="grid gap-1 sm:grid-cols-2">
