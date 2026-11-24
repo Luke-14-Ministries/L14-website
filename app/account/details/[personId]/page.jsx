@@ -3,7 +3,9 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import DetailsForm from './DetailsForm';
 
-export const metadata = { title: 'Support Details' };
+// One name for the form everywhere (23 Nov 2026): "Support and medical
+// details", so parents know allergies and medications are in it.
+export const metadata = { title: 'Support and medical details' };
 
 // The per-person support profile promised at the end of registration:
 // "a fuller form — medications, allergy detail, what helps on a hard day,
@@ -87,12 +89,12 @@ export default async function PersonDetailsPage({ params }) {
     <section className="bg-neutral-50 py-12">
       <div className="container-site max-w-3xl mx-auto">
         <div className={TITLE_ROW}>
-          <h1 className="text-3xl font-bold">Support details for {name}</h1>
+          <h1 className="text-3xl font-bold">Support and medical details for {name}</h1>
           <BackLink />
         </div>
         <p className="text-neutral-600 mt-2 mb-8">
-          This is the fuller form we mentioned when you registered. It helps camp staff
-          look after {name} well all week.
+          These answers help camp staff look after {name} well all week. You can come back
+          and add to them any time.
         </p>
 
         <DetailsForm

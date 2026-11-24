@@ -561,8 +561,8 @@ function supportNeeds({ members }) {
   const first = lacking[0];
   return [
     {
-      chip: `support details for ${whoList(lacking.map((x) => x.m.firstName.trim()))}`,
-      message: `Support details for ${first.m.firstName.trim()}, in “Support and medical details”: ${first.problems.join('; ')}.`,
+      chip: `support and medical details for ${whoList(lacking.map((x) => x.m.firstName.trim()))}`,
+      message: `Still needed for ${first.m.firstName.trim()}, in “Support and medical details”: ${first.problems.join('; ')}.`,
       // Which person's block the error box's button opens.
       personIndex: members.indexOf(first.m),
       personName: (first.m.preferredName || '').trim() || first.m.firstName.trim(),
@@ -1386,7 +1386,7 @@ export default function FamilyWizard({
               "for" apart: JSX drops the line break after a closing tag. */}
           <strong>Also before camp:</strong> a photo of each person attending. It&rsquo;s a big
           help to staff in coordinating details at registration and during camp, and it is
-          required for your registration to be approved. Open <em>Review support details</em>{' '}
+          required for your registration to be approved. Open <em>Review support and medical details</em>{' '}
           for each person on your dashboard to add one, and to change anything you told us
           today.
         </p>

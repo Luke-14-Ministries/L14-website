@@ -180,7 +180,7 @@ export async function submitFamilyRegistration(payload) {
     if (problems.length > 0) {
       return {
         ok: false,
-        error: `Support details for ${m.firstName}: ${problems.join('; ')}.`,
+        error: `Support and medical details for ${m.firstName}: ${problems.join('; ')}.`,
       };
     }
   }
@@ -756,7 +756,7 @@ export async function submitFamilyRegistration(payload) {
   } catch (e) {
     console.error('support details:', e?.message);
     supportError =
-      'Your registration was saved, but the support details could not all be recorded. Please open each person from your dashboard and check them.';
+      'Your registration was saved, but the support and medical details could not all be recorded. Please open each person from your dashboard and check them.';
   }
 
   // CAREGIVER LINKS (Lawrence, 26 Oct 2026): "caregiver (if attending) should

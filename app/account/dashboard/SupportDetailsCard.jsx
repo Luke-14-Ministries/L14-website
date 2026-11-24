@@ -18,7 +18,8 @@ import { useVisitChoice } from './visitChoice';
 import FoldArrow from '@/components/FoldArrow';
 
 export default function SupportDetailsCard({
-  title = 'Support details',
+  // The form's one name (23 Nov 2026).
+  title = 'Support and medical details',
   allDone = false,
   count = 0,
   todoCount = 0,

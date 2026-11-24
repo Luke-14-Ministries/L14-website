@@ -103,20 +103,9 @@ const STAFF_ROLE_LABEL = {
   coordinator: 'Coordinator',
 };
 
-// A disabled "coming soon" button, so the dashboard never shows a control that
-// silently does nothing.
-function SoonButton({ children }) {
-  return (
-    <button
-      type="button"
-      disabled
-      title="Coming soon"
-      className="btn-outline py-2! opacity-40 cursor-not-allowed"
-    >
-      {children}
-    </button>
-  );
-}
+// SoonButton (a disabled "coming soon" button) went on 23 Nov 2026 with its
+// last use, Manage Recurring Gift: a control that does nothing is removed
+// until the thing exists, not shown greyed out.
 
 // Server component: the queries run on the server as the logged-in family, and
 // row-level security guarantees these can only ever return this household's own
@@ -168,9 +157,9 @@ export default async function DashboardPage({ searchParams }) {
     .maybeSingle();
   if (profileError) throw new Error(`Your account details: ${profileError.message}`);
 
-  const greeting =
-    [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() ||
-    user.email;
+  // "Welcome, Pat" (23 Nov 2026): the first name alone, the way the camp
+  // office would say it; the email only when no name is saved yet.
+  const greeting = profile?.first_name?.trim() || user.email;
 
   // Which household(s) this login actually BELONGS to, by membership. This
   // scoping is essential for the one-account design: staff RLS can read every
@@ -849,10 +838,13 @@ export default async function DashboardPage({ searchParams }) {
         }
       }
       if (photoNames.length) needs.push(`a photo of ${nameList(photoNames.map((x) => x.name))}`);
-      if (supportNames.length) needs.push(`support details for ${nameList(supportNames.map((x) => x.name))}`);
+      // "Support and medical details" is the form's one name (23 Nov 2026), so
+      // parents know allergies and medications are in it.
+      if (supportNames.length) needs.push(`support and medical details for ${nameList(supportNames.map((x) => x.name))}`);
       // One link per person: the photo is added on the same details page.
-      for (const x of photoNames) todo.push({ text: `a photo of ${x.name}`, href: `/account/details/${x.id}/` });
-      for (const x of supportNames) todo.push({ text: `${x.name}'s support and medical details`, href: `/account/details/${x.id}/` });
+      // kind: which card at the top of the page already lists it (see todo= below).
+      for (const x of photoNames) todo.push({ text: `a photo of ${x.name}`, href: `/account/details/${x.id}/`, kind: 'support' });
+      for (const x of supportNames) todo.push({ text: `${x.name}'s support and medical details`, href: `/account/details/${x.id}/`, kind: 'support' });
       for (const o of (owedRows ?? []).filter((x) => x.registration_id === r.id)) {
         const who = firstNameByPerson.get(o.person_id) || 'someone';
         const t =
@@ -860,7 +852,7 @@ export default async function DashboardPage({ searchParams }) {
             ? `${o.activity_name} waiver for ${who}`
             : `${o.activity_name} confirmation for ${who}`;
         needs.push(t);
-        todo.push({ text: t, href: `/account/activities/?registration=${r.id}` });
+        todo.push({ text: t, href: `/account/activities/?registration=${r.id}`, kind: 'waiver' });
       }
     }
     needsByReg.set(r.id, { needs, todo, depositDue });
@@ -953,10 +945,10 @@ export default async function DashboardPage({ searchParams }) {
                           "Finish it" here and "Complete it now" on the
                           volunteer banner read as one task, and they are two. */}
                       {state === 'empty'
-                        ? 'Start support details'
+                        ? 'Start support and medical details'
                         : state === 'incomplete'
-                          ? 'Complete support details'
-                          : 'Review support details'}
+                          ? 'Complete support and medical details'
+                          : 'Review support and medical details'}
                     </Link>
                   </li>
                 );
@@ -984,7 +976,7 @@ export default async function DashboardPage({ searchParams }) {
                   className="h-11 w-11 rounded-full object-cover border border-neutral-200"
                 />
               )}
-              Welcome back, {greeting}!
+              Welcome, {greeting}
             </h1>
             <p className="text-neutral-500">Signed in as {user.email}</p>
           </div>
@@ -1037,7 +1029,11 @@ export default async function DashboardPage({ searchParams }) {
             <p className="font-semibold">You don&rsquo;t have access to the staff area.</p>
             <p className="mt-1 text-sm text-neutral-700">
               This account is a family account, so we brought you to your own page. If you
-              think you should have staff access, check with Luke 14 staff.
+              think you should have staff access, email{' '}
+              <a href="mailto:info@luke14ministries.net" className="text-brand underline">
+                info@luke14ministries.net
+              </a>
+              .
             </p>
           </div>
         )}
@@ -1321,7 +1317,20 @@ export default async function DashboardPage({ searchParams }) {
                         (n) => !(n === 'deposit' && depositDue) && !(n === 'choose how to pay' && notFinished)
                       )}
                       allSet={allSet}
-                      todo={isPast(r) && !owes ? [] : todo}
+                      // Dropped when every line repeats a card at the top of
+                      // the page (23 Nov 2026): the support and medical
+                      // details card while anyone's are owed, the waivers box
+                      // while any are. One errand, said once.
+                      todo={
+                        (isPast(r) && !owes) ||
+                        todo.every(
+                          (t) =>
+                            (t.kind === 'support' && !allDetailsDone) ||
+                            (t.kind === 'waiver' && waiversOwed.length > 0)
+                        )
+                          ? []
+                          : todo
+                      }
                       // What "complete" means here: nothing to do now. A balance
                       // not yet due is said, so "nothing more to do" is never
                       // said to a family who still owes before camp.
@@ -1361,7 +1370,19 @@ export default async function DashboardPage({ searchParams }) {
                       })()}
                       <ul className="mt-3 divide-y divide-neutral-100">
                         {parts.map((p, i) => {
-                          const [label, cls] = STATUS[p.status] ?? STATUS.submitted;
+                          const [statusLabel, cls] = STATUS[p.status] ?? STATUS.submitted;
+                          // "Submitted, awaiting review" said nothing about
+                          // what was missing (23 Nov 2026). A volunteer's
+                          // review starts with the application, so their pill
+                          // says whether it is in; everyone else waits on staff.
+                          const label =
+                            p.status !== 'submitted'
+                              ? statusLabel
+                              : isVolunteerRole(p.camp_role)
+                                ? volunteerApplicationNeeded(volAppStatus.get(p.id))
+                                  ? 'Registered, application needed'
+                                  : 'Application in, awaiting review'
+                                : 'Registered, awaiting staff review';
                           return (
                             <li key={i} className="py-2">
                               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1541,7 +1562,7 @@ export default async function DashboardPage({ searchParams }) {
                                     {(p.fee_cover_cents ?? 0) > 0 && (
                                       <span className="text-neutral-500">
                                         {' '}
-                                        + {dollars(p.fee_cover_cents)} fee cover
+                                        + {dollars(p.fee_cover_cents)} processing fee
                                       </span>
                                     )}
                                   </span>
@@ -1566,7 +1587,7 @@ export default async function DashboardPage({ searchParams }) {
                                     <span className="font-semibold">{dollars(rf.amount_cents)}</span>
                                     {(rf.fee_cover_cents ?? 0) > 0 && (
                                       <span className="text-neutral-500">
-                                        {' '}+ {dollars(rf.fee_cover_cents)} processing
+                                        {' '}+ {dollars(rf.fee_cover_cents)} processing fee
                                       </span>
                                     )}
                                     {rf.reason && (
@@ -1715,15 +1736,33 @@ export default async function DashboardPage({ searchParams }) {
                               </span>
                             );
                           }
+                          // On a phone (23 Nov 2026) Ways to pay is the one solid,
+                          // full-width button whenever anything is owed, and it
+                          // carries the amount and the due date, so the card's
+                          // main errand is the first thing under a thumb.
+                          const dueOnPay = balanceDueOn(r.events);
+                          const phoneDue = dueOnPay
+                            ? dueOnPay < todayISO
+                              ? ' · past due'
+                              : ` · due ${formatDueDateShort(dueOnPay)}`
+                            : '';
                           return (
                             <>
-                              <Link
-                                href={`/account/finish/${r.id}/`}
-                                title="Pay the deposit, any amount or in full, set up a payment plan, or request help with the fee."
-                                className={payNow ? 'btn-primary py-2!' : 'btn-outline py-2!'}
-                              >
-                                Ways to pay
-                              </Link>
+                              <span className="contents sm:hidden">
+                                <Link href={`/account/finish/${r.id}/`} className="btn-primary py-2! w-full text-center">
+                                  Ways to pay · {dollars(owing)}
+                                  {phoneDue}
+                                </Link>
+                              </span>
+                              <span className="hidden sm:contents">
+                                <Link
+                                  href={`/account/finish/${r.id}/`}
+                                  title="Pay the deposit, any amount or in full, set up a payment plan, or request help with the fee."
+                                  className={payNow ? 'btn-primary py-2!' : 'btn-outline py-2!'}
+                                >
+                                  Ways to pay
+                                </Link>
+                              </span>
                               {clearingNow > 0 && (
                                 <span
                                   className={`rounded-full ${CLEARING_PILL} px-2.5 py-0.5 text-xs font-semibold`}
@@ -1735,13 +1774,17 @@ export default async function DashboardPage({ searchParams }) {
                             </>
                           );
                         })()}
-                        <Link
-                          href={`/account/statement/${r.id}`}
-                          title="A printable statement: fees, scholarships, payments, and balance."
-                          className="btn-outline py-2!"
-                        >
-                          Statement
-                        </Link>
+                        {/* A button from the small breakpoint up; on a phone,
+                            a text link under the card's buttons (below). */}
+                        <span className="hidden sm:contents">
+                          <Link
+                            href={`/account/statement/${r.id}`}
+                            title="A printable statement: fees, scholarships, payments, and balance."
+                            className="btn-outline py-2!"
+                          >
+                            Statement
+                          </Link>
+                        </span>
                       </div>
                           </div>
                         );
@@ -1827,11 +1870,13 @@ export default async function DashboardPage({ searchParams }) {
                         );
                       })()}
 
-                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                      {/* Two equal columns on a phone, a wrapping row above it
+                          (23 Nov 2026). */}
+                      <div className="mt-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                         <Link
                           href={`/register/family/?event=${r.events?.id ?? ''}`}
                           title="Opens your saved registration so you can make changes."
-                          className="btn-outline py-2!"
+                          className="btn-outline py-2! text-center"
                         >
                           Edit Registration
                         </Link>
@@ -1852,7 +1897,7 @@ export default async function DashboardPage({ searchParams }) {
                           <Link
                             href={`/account/activities/?registration=${r.id}`}
                             title="Choose activities for your family; volunteers sign waivers and upload outside providers' confirmations here too."
-                            className="btn-outline py-2!"
+                            className="btn-outline py-2! text-center"
                           >
                             {/* Volunteers go where their camper goes; on that
                                 page they only sign activity waivers (Lawrence,
@@ -1868,14 +1913,26 @@ export default async function DashboardPage({ searchParams }) {
                         {/* Agreements are event things, so the primary route
                             to them lives with the event (flagged 24 Aug); the
                             account-settings link remains as a second door. */}
-                        <Link
-                          href="/account/agreements/"
-                          title="The agreements you signed for this registration, with the exact wording."
-                          className="btn-outline py-2!"
-                        >
+                        <span className="hidden sm:contents">
+                          <Link
+                            href="/account/agreements/"
+                            title="The agreements you signed for this registration, with the exact wording."
+                            className="btn-outline py-2!"
+                          >
+                            Signed agreements
+                          </Link>
+                        </span>
+                      </div>
+                      {/* On a phone the two records are text links, so the
+                          buttons above are only the things to do. */}
+                      <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm sm:hidden">
+                        <Link href={`/account/statement/${r.id}`} className="font-semibold text-brand underline">
+                          Statement
+                        </Link>
+                        <Link href="/account/agreements/" className="font-semibold text-brand underline">
                           Signed agreements
                         </Link>
-                      </div>
+                      </p>
 
                       {/* Last, quiet, and behind a disclosure. Cancelling is
                           rare and consequential; it does not belong beside
@@ -1949,7 +2006,6 @@ export default async function DashboardPage({ searchParams }) {
               <Link href="/donate" className="btn-gold py-2!">
                 Make a New Gift
               </Link>
-              <SoonButton>Manage Recurring Gift</SoonButton>
               {/* The donor's own statement (27 Oct 2026), the same sheet staff
                   print; shown once a gift has settled. */}
               {myGifts.some((g) => g.status === 'succeeded') && (
@@ -2016,7 +2072,7 @@ export default async function DashboardPage({ searchParams }) {
                         )}
                         {allDetailsDone && attendingIds.has(m.id) && (
                           <span className="block text-xs text-neutral-500">
-                            Support details on file ✓ ·{' '}
+                            Support and medical details on file ✓ ·{' '}
                             <Link href={`/account/details/${m.id}/`} className="text-brand underline">
                               Review
                             </Link>
@@ -2030,7 +2086,7 @@ export default async function DashboardPage({ searchParams }) {
             )}
             <div className="mt-4">
               <Link href="/account/household/" className="btn-outline py-2! inline-block">
-                Manage Household
+                Manage household
               </Link>
             </div>
           </div>
@@ -2039,28 +2095,26 @@ export default async function DashboardPage({ searchParams }) {
           <div className={`rounded-lg bg-white border border-neutral-200 shadow-xs p-6 ${donorFirst ? 'order-2' : 'order-4'}`}>
             <h2 className="text-xl font-bold mb-4">My Account Settings</h2>
             <ul className="space-y-2 text-neutral-700">
+              {/* Each link is the page's own name, as its heading and browser tab
+                  say it (23 Nov 2026), with a short gray line for what is on it.
+                  Two different emails (Lawrence, 23 Nov 2026) stay named apart:
+                  the login email here, the household's (where camp email goes)
+                  under Manage household. The two household links (contact
+                  details, and who can log in, A5-22) are one now: one page. */}
               <li>
-                {/* Two different emails (Lawrence, 23 Nov 2026): the one you sign in
-                    with, and the household's, where camp email goes. Named apart so
-                    "contact information" no longer leads to the sign-in one. */}
                 <Link href="/account/contact" className="text-brand underline">
-                  My name, phone &amp; sign-in email
+                  My account details
                 </Link>
+                <span className="block text-xs text-neutral-500">Your name, phone and login email</span>
               </li>
               <li>
                 <Link href="/account/household/" className="text-brand underline">
-                  Household contact email &amp; address (where camp email goes)
+                  Manage household
                 </Link>
+                <span className="block text-xs text-neutral-500">
+                  Household email and address (where camp email goes){household ? ', and who can log in' : ''}
+                </span>
               </li>
-              {/* Inviting another adult was only findable at the bottom of
-                  Manage Household (23 Nov 2026, A5-22). */}
-              {household && (
-                <li>
-                  <Link href="/account/household/#logins" className="text-brand underline">
-                    Who can sign in to this household (invite another adult)
-                  </Link>
-                </li>
-              )}
               <li>
                 <Link href="/account/reset-password" className="text-brand underline">
                   Change password
@@ -2068,13 +2122,13 @@ export default async function DashboardPage({ searchParams }) {
               </li>
               <li>
                 <Link href="/account/security" className="text-brand underline">
-                  Two-factor authentication
+                  Extra login security (a code from your phone)
                 </Link>
               </li>
               <li>
                 {/* A family should never have to ask us what they signed. */}
                 <Link href="/account/agreements" className="text-brand underline">
-                  Signed agreements &amp; permissions
+                  Signed agreements
                 </Link>
               </li>
               <li>
@@ -2086,9 +2140,6 @@ export default async function DashboardPage({ searchParams }) {
                 <Link href="/account/delete-data" className="text-brand underline">
                   Delete my data
                 </Link>
-              </li>
-              <li className="text-neutral-400" title="Coming with recurring giving">
-                Payment methods
               </li>
             </ul>
           </div>
