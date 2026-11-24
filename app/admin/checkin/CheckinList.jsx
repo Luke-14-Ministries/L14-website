@@ -59,7 +59,7 @@ export default function CheckinList({ rows }) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Find a name or family…"
-          className="flex-1 min-w-56 rounded-sm border border-neutral-300 px-4 py-2.5"
+          className="field-sm flex-1 min-w-56"
         />
         <span className="text-sm font-semibold text-neutral-600">
           {arrived} / {rows.length} arrived

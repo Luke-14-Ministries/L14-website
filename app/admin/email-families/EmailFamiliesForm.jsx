@@ -11,8 +11,6 @@ import { sendFamilyEmail } from './actions';
 import { familyEmailParts } from '@/lib/familyEmail';
 import EventFilter from '@/components/EventFilter';
 
-const input = 'w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm';
-const label = 'block text-sm font-semibold text-neutral-700 mb-1';
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
@@ -133,9 +131,9 @@ export default function EmailFamiliesForm({
           className="w-full text-sm"
         />
         <label className="text-sm">
-          <span className={label}>Who</span>
+          <span className="field-label">Who</span>
           <select
-            className={input}
+            className="field"
             value={who}
             disabled={!eventId || choosing || sending}
             onChange={(e) => choose({ who: e.target.value })}
@@ -148,9 +146,9 @@ export default function EmailFamiliesForm({
           </select>
         </label>
         <label className="text-sm">
-          <span className={label}>Activity</span>
+          <span className="field-label">Activity</span>
           <select
-            className={input}
+            className="field"
             value={activityId}
             disabled={!eventId || eventId === 'current' || choosing || sending}
             onChange={(e) => choose({ activityId: e.target.value })}
@@ -184,9 +182,9 @@ export default function EmailFamiliesForm({
       </label>
 
       <label className="block text-sm">
-        <span className={label}>Subject</span>
+        <span className="field-label">Subject</span>
         <input
-          className={input}
+          className="field"
           value={subject}
           maxLength={150}
           disabled={sending}
@@ -194,10 +192,10 @@ export default function EmailFamiliesForm({
         />
       </label>
       <label className="block text-sm">
-        <span className={label}>Message</span>
+        <span className="field-label">Message</span>
         <textarea
           rows={8}
-          className={input}
+          className="field"
           value={message}
           maxLength={5000}
           disabled={sending}
@@ -258,7 +256,7 @@ export default function EmailFamiliesForm({
                         id="email-sample"
                         value={sample.householdId}
                         onChange={(e) => setSampleId(e.target.value)}
-                        className="rounded-sm border border-neutral-300 px-2 py-1 text-xs font-normal"
+                        className="field-sm text-xs font-normal w-auto"
                       >
                         {sendable.map((h) => (
                           <option key={h.householdId} value={h.householdId}>

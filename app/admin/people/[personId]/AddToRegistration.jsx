@@ -21,7 +21,6 @@ const ROLES = [
   ['volunteer_child', 'Volunteer child (under 16)'],
 ];
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-const input = 'rounded-sm border border-neutral-300 bg-white px-2 py-1 text-sm';
 
 function One({ person, reg }) {
   const router = useRouter();
@@ -58,7 +57,7 @@ function One({ person, reg }) {
       <span className="font-semibold">Add {person.firstName} to {reg.eventName} as</span>
       <select
         aria-label="Role"
-        className={input}
+        className="field-sm w-auto"
         value={role}
         onChange={(e) => {
           setRole(e.target.value);
@@ -72,7 +71,7 @@ function One({ person, reg }) {
         ))}
       </select>
       {reg.options.length > 1 && (
-        <select aria-label="Camp option (sets the fee)" className={input} value={optionId} onChange={(e) => setOptionId(e.target.value)}>
+        <select aria-label="Camp option (sets the fee)" className="field-sm w-auto" value={optionId} onChange={(e) => setOptionId(e.target.value)}>
           {reg.options.map((o) => (
             <option key={o.id} value={o.id}>
               {o.name} ({money(o.fee_cents)})

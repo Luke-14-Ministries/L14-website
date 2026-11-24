@@ -109,7 +109,7 @@ export default async function SearchPage({ searchParams }) {
           defaultValue={q}
           placeholder="A name, part of a name, or an email"
           aria-label="Search people and families"
-          className="w-80 max-w-full rounded-sm border border-neutral-300 px-3 py-2"
+          className="field w-80 max-w-full"
           autoFocus
         />
         <button type="submit" className="btn-primary btn-sm">

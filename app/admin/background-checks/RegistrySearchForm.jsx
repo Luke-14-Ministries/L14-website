@@ -73,7 +73,7 @@ export default function RegistrySearchForm({ personId, name, today, initial }) {
           min={checkDateMin(today)}
           max={today}
           onChange={(e) => setDate(e.target.value)}
-          className="rounded-sm border border-neutral-300 px-2 py-1"
+          className="field-sm w-auto"
           required
         />
       </label>
@@ -95,7 +95,7 @@ export default function RegistrySearchForm({ personId, name, today, initial }) {
           onChange={(e) => setNote(e.target.value)}
           maxLength={500}
           rows={2}
-          className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+          className="field-sm"
         />
       </label>
       {error && <p className="text-xs text-red-700">{error}</p>}

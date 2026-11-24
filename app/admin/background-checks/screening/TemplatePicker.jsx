@@ -37,7 +37,7 @@ export default function TemplatePicker({ templates, volunteer, family }) {
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-sm border border-neutral-300 px-2 py-1.5"
+        className="field-sm w-auto"
       >
         <option value="">Default ({defaultName})</option>
         {templates.map((t) => (

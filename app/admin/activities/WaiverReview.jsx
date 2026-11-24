@@ -161,7 +161,7 @@ export default function ReviewActions({ upload, canReview = false }) {
             maxLength={500}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Or say it in your own words"
-            className="mt-1 w-full rounded-sm border border-neutral-300 px-2 py-1"
+            className="field-sm mt-1 w-full"
           />
           <span className="mt-1 flex gap-3">
             <button

@@ -118,7 +118,6 @@ const money = (c) =>
 
 const inputCls =
   'w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm';
-const labelCls = 'block text-xs font-semibold text-neutral-500 mb-1';
 
 // A tiny inline banner used by every sub-form to show a save error.
 function ErrorNote({ children }) {
@@ -278,23 +277,23 @@ function PersonEditor({ registrationId, person, onDone }) {
     <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={labelCls}>First name <span className="text-red-600">*</span></label>
+          <label className="field-label">First name <span className="text-red-600">*</span></label>
           <input className={inputCls} value={f.first_name} onChange={set('first_name')} />
         </div>
         <div>
-          <label className={labelCls}>Last name <span className="text-red-600">*</span></label>
+          <label className="field-label">Last name <span className="text-red-600">*</span></label>
           <input className={inputCls} value={f.last_name} onChange={set('last_name')} />
         </div>
         <div>
-          <label className={labelCls}>Preferred name</label>
+          <label className="field-label">Preferred name</label>
           <input className={inputCls} value={f.preferred_name} onChange={set('preferred_name')} />
         </div>
         <div>
-          <label className={labelCls}>Date of birth</label>
+          <label className="field-label">Date of birth</label>
           <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={todayInMorristown()} />
         </div>
         <div>
-          <label className={labelCls}>Sex</label>
+          <label className="field-label">Sex</label>
           <select className={inputCls} value={f.gender} onChange={set('gender')}>
             <option value="">Choose…</option>
             <option>Male</option>
@@ -306,11 +305,11 @@ function PersonEditor({ registrationId, person, onDone }) {
           </select>
         </div>
         <div>
-          <label className={labelCls}>Email</label>
+          <label className="field-label">Email</label>
           <input className={inputCls} value={f.email} onChange={set('email')} />
         </div>
         <div>
-          <label className={labelCls}>Phone</label>
+          <label className="field-label">Phone</label>
           <input className={inputCls} value={f.phone} onChange={set('phone')} />
         </div>
       </div>
@@ -368,15 +367,15 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
-          <label className={labelCls}>Scholarship ($)</label>
+          <label className="field-label">Scholarship ($)</label>
           <input className={inputCls} inputMode="decimal" value={f.scholarship} onChange={set('scholarship')} />
         </div>
         <div>
-          <label className={labelCls}>Discount ($)</label>
+          <label className="field-label">Discount ($)</label>
           <input className={inputCls} inputMode="decimal" value={f.discount} onChange={set('discount')} />
         </div>
         <div className="sm:col-span-3">
-          <label className={labelCls}>Reason (staff only) <span className="text-red-600">*</span></label>
+          <label className="field-label">Reason (staff only) <span className="text-red-600">*</span></label>
           <input className={inputCls} value={f.note} onChange={set('note')} placeholder="e.g. Board-approved hardship scholarship" />
         </div>
       </div>
@@ -709,7 +708,7 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
           <select
             value={tshirt}
             onChange={(e) => setTshirt(e.target.value)}
-            className="rounded-sm border border-neutral-300 px-2 py-1 bg-white"
+            className="field-sm w-auto"
           >
             <option value="">Not answered</option>
             {TSHIRT_SIZES.map((s) => (
@@ -722,7 +721,7 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
           <select
             value={firstTime}
             onChange={(e) => setFirstTime(e.target.value)}
-            className="rounded-sm border border-neutral-300 px-2 py-1 bg-white"
+            className="field-sm w-auto"
           >
             <option value="">Not answered</option>
             <option value="true">Yes</option>
@@ -942,19 +941,19 @@ function AddPerson({ registrationId, options }) {
       <h4 className="font-semibold mb-3">Add a person</h4>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={labelCls}>First name <span className="text-red-600">*</span></label>
+          <label className="field-label">First name <span className="text-red-600">*</span></label>
           <input className={inputCls} value={f.first_name} onChange={set('first_name')} />
         </div>
         <div>
-          <label className={labelCls}>Last name <span className="text-red-600">*</span></label>
+          <label className="field-label">Last name <span className="text-red-600">*</span></label>
           <input className={inputCls} value={f.last_name} onChange={set('last_name')} />
         </div>
         <div>
-          <label className={labelCls}>Date of birth</label>
+          <label className="field-label">Date of birth</label>
           <input type="date" className={inputCls} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" max={todayInMorristown()} />
         </div>
         <div>
-          <label className={labelCls}>Sex</label>
+          <label className="field-label">Sex</label>
           <select className={inputCls} value={f.gender} onChange={set('gender')}>
             <option value="">Choose…</option>
             <option>Male</option>
@@ -962,7 +961,7 @@ function AddPerson({ registrationId, options }) {
           </select>
         </div>
         <div>
-          <label className={labelCls}>Role</label>
+          <label className="field-label">Role</label>
           <select className={inputCls} value={f.camp_role} onChange={set('camp_role')}>
             {ROLE_OPTIONS.map(([v, label]) => (
               <option key={v} value={v}>
@@ -972,7 +971,7 @@ function AddPerson({ registrationId, options }) {
           </select>
         </div>
         <div className="sm:col-span-2">
-          <label className={labelCls}>Camp option (sets the fee) <span className="text-red-600">*</span></label>
+          <label className="field-label">Camp option (sets the fee) <span className="text-red-600">*</span></label>
           <select className={inputCls} value={f.event_option_id} onChange={set('event_option_id')}>
             {options.length === 0 && <option value="">No options published</option>}
             {options.map((o) => (
@@ -1107,46 +1106,46 @@ function HouseholdEditor({ registrationId, household }) {
           <h3 className="text-base font-bold mb-3">Edit household</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className={labelCls}>Household name</label>
+              <label className="field-label">Household name</label>
               <input className={inputCls} value={f.display_name} onChange={set('display_name')} />
             </div>
             <div>
-              <label className={labelCls}>Email</label>
+              <label className="field-label">Email</label>
               <input className={inputCls} value={f.email} onChange={set('email')} />
             </div>
             <div>
-              <label className={labelCls}>Phone</label>
+              <label className="field-label">Phone</label>
               <input className={inputCls} value={f.phone} onChange={set('phone')} />
             </div>
             <div className="sm:col-span-2">
-              <label className={labelCls}>Address line 1</label>
+              <label className="field-label">Address line 1</label>
               <input className={inputCls} value={f.address_line1} onChange={set('address_line1')} />
             </div>
             <div className="sm:col-span-2">
-              <label className={labelCls}>Address line 2</label>
+              <label className="field-label">Address line 2</label>
               <input className={inputCls} value={f.address_line2} onChange={set('address_line2')} />
             </div>
             <div>
-              <label className={labelCls}>City</label>
+              <label className="field-label">City</label>
               <input className={inputCls} value={f.city} onChange={set('city')} />
             </div>
             <div>
-              <label className={labelCls}>State</label>
+              <label className="field-label">State</label>
               <input className={inputCls} value={f.state} onChange={set('state')} />
             </div>
             <div>
-              <label className={labelCls}>Postal code</label>
+              <label className="field-label">Postal code</label>
               <input className={inputCls} value={f.postal_code} onChange={set('postal_code')} />
             </div>
             <div>
-              <label className={labelCls}>Home church</label>
+              <label className="field-label">Home church</label>
               <input className={inputCls} value={f.home_church} onChange={set('home_church')} />
             </div>
             <div>
               {/* Asked once, at the family's first registration, and never again --
                   so this is the only place a wrong or missing answer can be
                   corrected. */}
-              <label className={labelCls}>How they heard about us</label>
+              <label className="field-label">How they heard about us</label>
               <input
                 className={inputCls}
                 value={f.how_did_you_hear}
@@ -1154,7 +1153,7 @@ function HouseholdEditor({ registrationId, household }) {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className={labelCls}>Who from / detail</label>
+              <label className="field-label">Who from / detail</label>
               <input
                 className={inputCls}
                 value={f.how_did_you_hear_from}
@@ -1280,7 +1279,7 @@ function FamilyMessages({ registrationId, messages, unreadIds = [], canWrite = t
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Write a short note the family will see…"
-          className="flex-1 rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+          className="field flex-1"
           maxLength={1000}
         />
         <button onClick={add} disabled={pending || !body.trim()} className="btn-primary btn-sm">
@@ -1627,7 +1626,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-28 rounded-sm border border-neutral-300 px-2 py-1 bg-white"
+              className="field-sm w-28"
             />
           </span>
         </label>

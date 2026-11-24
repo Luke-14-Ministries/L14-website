@@ -58,7 +58,7 @@ export default function CheckLengthForm({ months, onFile, canEdit }) {
               inputMode="numeric"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              className="w-20 rounded-sm border border-neutral-300 px-2 py-1"
+              className="field-sm w-20"
             />
           </label>
           <button type="submit" disabled={pending} className="btn-primary btn-sm">

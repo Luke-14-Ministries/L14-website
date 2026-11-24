@@ -29,10 +29,6 @@ import TimeSelect from '@/components/TimeSelect';
 // hour out at the dock.
 import { fmtDay, fmtTime, slotLabel } from '@/lib/activitySlots';
 
-const input = 'w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm';
-
-const label = 'block text-xs font-semibold text-neutral-700 mb-0.5';
-
 // ---------------------------------------------------------------------------
 // The waiver (21 Oct 2026). One decision with three answers -- nothing, the
 // outside provider's own form, or the ministry's own waiver signed on the
@@ -167,17 +163,17 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
           <div className="ml-6">
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-sm">
-                <span className={label}>Provider</span>
+                <span className="field-label">Provider</span>
                 <input
-                  className={input}
+                  className="field-sm"
                   value={f.providerName}
                   onChange={set('providerName')}
                   placeholder="e.g. River outfitter"
                 />
               </label>
               <label className="text-sm">
-                <span className={label}>Their link (optional)</span>
-                <input className={input} value={f.providerUrl} onChange={set('providerUrl')} />
+                <span className="field-label">Their link (optional)</span>
+                <input className="field-sm" value={f.providerUrl} onChange={set('providerUrl')} />
               </label>
             </div>
             {/* Naming a provider is not cosmetic: it is what makes the family's
@@ -244,9 +240,9 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
         {f.waiverChoice === 'ours' && f.waiverMode === 'reuse' && (
           <div className="ml-6">
             <label className="text-sm">
-              <span className={label}>Which waiver</span>
+              <span className="field-label">Which waiver</span>
               <select
-                className={input}
+                className="field-sm"
                 value={f.waiverAgreementId}
                 onChange={(e) =>
                   e.target.value === '__new__' ? startNew() : setMany({ waiverAgreementId: e.target.value })
@@ -276,17 +272,17 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
         {f.waiverChoice === 'ours' && (f.waiverMode === 'new' || f.waiverMode === 'revise') && (
           <div className="ml-6">
             <label className="block text-sm">
-              <span className={label}>Title</span>
+              <span className="field-label">Title</span>
               <input
-                className={input}
+                className="field-sm"
                 value={f.waiverTitle}
                 onChange={set('waiverTitle')}
                 placeholder="e.g. Zip Line Waiver"
               />
             </label>
             <label className="mt-2 block text-sm">
-              <span className={label}>Text</span>
-              <textarea rows={8} className={input} value={f.waiverBody} onChange={set('waiverBody')} />
+              <span className="field-label">Text</span>
+              <textarea rows={8} className="field-sm" value={f.waiverBody} onChange={set('waiverBody')} />
             </label>
             <p className="mt-1 text-xs text-neutral-500">
               Plain text, as the family will read it. Write <code>{'{{event}}'}</code> where the
@@ -320,16 +316,16 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
     <>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
-          <span className={label}>Name</span>
-          <input className={input} value={f.name} onChange={set('name')} />
+          <span className="field-label">Name</span>
+          <input className="field-sm" value={f.name} onChange={set('name')} />
         </label>
         <label className="text-sm">
-          <span className={label}>
+          <span className="field-label">
             Position in the list{' '}
             <span className="font-normal text-neutral-500">(lowest number first)</span>
           </span>
           <input
-            className={input}
+            className="field-sm"
             inputMode="numeric"
             value={f.sortOrder}
             onChange={set('sortOrder')}
@@ -344,7 +340,7 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
       </div>
 
       <label className="mt-3 block text-sm">
-        <span className={label}>
+        <span className="field-label">
           Description{' '}
           <span className="font-normal text-neutral-500">
             (what families read, including when it usually happens)
@@ -352,7 +348,7 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
         </span>
         <textarea
           rows={2}
-          className={input}
+          className="field-sm"
           value={f.description}
           onChange={set('description')}
         />
@@ -360,21 +356,21 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
-          <span className={label}>How it books</span>
-          <select className={input} value={f.mode} onChange={set('mode')}>
+          <span className="field-label">How it books</span>
+          <select className="field-sm" value={f.mode} onChange={set('mode')}>
             <option value="interest">Interest: families say they&rsquo;d like to go</option>
             <option value="signup">Sign-up: holds a place</option>
           </select>
         </label>
         <label className="text-sm">
-          <span className={label}>
+          <span className="field-label">
             Places{' '}
             <span className="font-normal text-neutral-500">
               {f.mode === 'interest' ? '(not used for interest lists)' : '(blank means no limit)'}
             </span>
           </span>
           <input
-            className={input}
+            className="field-sm"
             inputMode="numeric"
             value={f.mode === 'interest' ? '' : f.capacity}
             onChange={set('capacity')}
@@ -385,11 +381,11 @@ function Fields({ f, set, setMany, attached, waiverChoices, activityName, hadPro
         {/* 0125: a flag on the groups board ("Under 8 — check with camp
             staff"), never a block. */}
         <label className="text-sm">
-          <span className={label}>
+          <span className="field-label">
             Minimum age <span className="font-normal text-neutral-500">(optional)</span>
           </span>
           <input
-            className={input}
+            className="field-sm"
             inputMode="numeric"
             value={f.minAge}
             onChange={set('minAge')}
@@ -450,17 +446,17 @@ function GroupsBlock({ f, set, setMany }) {
       {f.groups && (
         <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <label className="text-sm">
-            <span className={label}>
+            <span className="field-label">
               One group is called{' '}
               <span className="font-normal text-neutral-500">(e.g. Raft, Boat, Table)</span>
             </span>
-            <input className={input} value={f.groupLabel} onChange={set('groupLabel')} placeholder="Raft" maxLength={40} />
+            <input className="field-sm" value={f.groupLabel} onChange={set('groupLabel')} placeholder="Raft" maxLength={40} />
           </label>
           <label className="text-sm">
-            <span className={label}>
+            <span className="field-label">
               People in each <span className="font-normal text-neutral-500">(blank means 6)</span>
             </span>
-            <input className={input} inputMode="numeric" value={f.groupSize} onChange={set('groupSize')} placeholder="6" />
+            <input className="field-sm" inputMode="numeric" value={f.groupSize} onChange={set('groupSize')} placeholder="6" />
           </label>
         </div>
       )}
@@ -918,7 +914,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
           <input
             ref={dayRef}
             type="date"
-            className={input}
+            className="field-sm"
             value={f.date}
             onChange={set('date')}
             {...dayBounds}
@@ -927,16 +923,16 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">From</span>
-          <TimeSelect className={input} label="From" value={f.start} onChange={(v) => setF((prev) => ({ ...prev, start: v }))} />
+          <TimeSelect className="field-sm" label="From" value={f.start} onChange={(v) => setF((prev) => ({ ...prev, start: v }))} />
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">To</span>
-          <TimeSelect className={input} label="To" value={f.end} onChange={(v) => setF((prev) => ({ ...prev, end: v }))} />
+          <TimeSelect className="field-sm" label="To" value={f.end} onChange={(v) => setF((prev) => ({ ...prev, end: v }))} />
         </label>
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">Places</span>
           <input
-            className={input}
+            className="field-sm"
             inputMode="numeric"
             value={f.capacity}
             onChange={set('capacity')}
@@ -946,7 +942,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         <label className="text-xs">
           <span className="block font-semibold text-neutral-700 mb-0.5">Name (optional)</span>
           <input
-            className={input}
+            className="field-sm"
             value={f.label}
             onChange={set('label')}
             placeholder="Sitting 1"
@@ -990,7 +986,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
               <input
                 ref={genDayRef}
                 type="date"
-                className={input}
+                className="field-sm"
                 value={g.date}
                 onChange={setG_('date')}
                 {...dayBounds}
@@ -999,16 +995,16 @@ export function SlotEditor({ activity, slots = [], event = null }) {
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Starts</span>
-              <TimeSelect className={input} label="Starts" value={g.start} onChange={(v) => setG((prev) => ({ ...prev, start: v }))} />
+              <TimeSelect className="field-sm" label="Starts" value={g.start} onChange={(v) => setG((prev) => ({ ...prev, start: v }))} />
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Ends</span>
-              <TimeSelect className={input} label="Ends" value={g.end} onChange={(v) => setG((prev) => ({ ...prev, end: v }))} />
+              <TimeSelect className="field-sm" label="Ends" value={g.end} onChange={(v) => setG((prev) => ({ ...prev, end: v }))} />
             </label>
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Each (mins)</span>
               <input
-                className={input}
+                className="field-sm"
                 inputMode="numeric"
                 value={g.minutes}
                 onChange={setG_('minutes')}
@@ -1017,7 +1013,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Places each</span>
               <input
-                className={input}
+                className="field-sm"
                 inputMode="numeric"
                 value={g.capacity}
                 onChange={setG_('capacity')}
@@ -1027,7 +1023,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
             <label className="text-xs">
               <span className="block font-semibold text-neutral-700 mb-0.5">Name each</span>
               <input
-                className={input}
+                className="field-sm"
                 value={g.labelPrefix}
                 onChange={setG_('labelPrefix')}
                 placeholder="Trip"

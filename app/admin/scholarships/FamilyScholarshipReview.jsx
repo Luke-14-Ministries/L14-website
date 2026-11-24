@@ -275,7 +275,7 @@ export default function FamilyScholarshipReview({ row, showRegistrationLink = fa
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+                className="field"
               />
               {owes != null && <p className="mt-1 text-xs text-neutral-500">Up to {money(owes)}</p>}
             </div>
@@ -289,7 +289,7 @@ export default function FamilyScholarshipReview({ row, showRegistrationLink = fa
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="e.g. Board hardship fund. Spoke with the family by phone."
-                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+                className="field"
               />
               <p className="mt-1 text-xs text-neutral-500">
                 Needed to award or decline. Your name and the date are saved for you.

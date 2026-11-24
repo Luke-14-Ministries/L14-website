@@ -111,15 +111,15 @@ export default async function AdminGivingPage({ searchParams }) {
       <form method="get" className="mb-6 flex flex-wrap items-end gap-3 rounded-lg bg-white border border-neutral-200 p-4">
         <label className="block text-sm">
           <span className="block font-semibold mb-1">From</span>
-          <input type="date" name="from" defaultValue={fFrom} className="rounded-sm border border-neutral-300 px-2 py-1.5" />
+          <input type="date" name="from" defaultValue={fFrom} className="field-sm w-auto" />
         </label>
         <label className="block text-sm">
           <span className="block font-semibold mb-1">To</span>
-          <input type="date" name="to" defaultValue={fTo} className="rounded-sm border border-neutral-300 px-2 py-1.5" />
+          <input type="date" name="to" defaultValue={fTo} className="field-sm w-auto" />
         </label>
         <label className="block text-sm">
           <span className="block font-semibold mb-1">Fund</span>
-          <select name="fund" defaultValue={fFund} className="rounded-sm border border-neutral-300 px-2 py-1.5 bg-white">
+          <select name="fund" defaultValue={fFund} className="field-sm w-auto">
             <option value="">All funds</option>
             {fundOptions.map((f) => (
               <option key={f} value={f}>{f}</option>
@@ -128,7 +128,7 @@ export default async function AdminGivingPage({ searchParams }) {
         </label>
         <label className="block text-sm">
           <span className="block font-semibold mb-1">Method</span>
-          <select name="method" defaultValue={fMethod} className="rounded-sm border border-neutral-300 px-2 py-1.5 bg-white">
+          <select name="method" defaultValue={fMethod} className="field-sm w-auto">
             <option value="">All methods</option>
             {Object.entries(METHOD_LABEL).map(([v, l]) => (
               <option key={v} value={v}>{l}</option>

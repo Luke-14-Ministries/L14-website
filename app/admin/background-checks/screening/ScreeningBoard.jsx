@@ -655,7 +655,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                               onChange={(e) => setResendWhy(e.target.value)}
                               maxLength={300}
                               placeholder="e.g. Volunteer declined the photo ID step; approved by Larry"
-                              className="mt-1 w-full rounded-sm border border-neutral-300 px-2 py-1 text-xs"
+                              className="field-sm mt-1 w-full text-xs"
                             />
                             <p className="mt-1 text-xs text-neutral-500">
                               Goes to VolunteerBadge with the invite. At least 10 characters, no personal details.

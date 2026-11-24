@@ -152,7 +152,7 @@ export default async function MedicalPage({ searchParams }) {
           name="q"
           defaultValue={q}
           placeholder="Find a person or household…"
-          className="w-64 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
+          className="field w-64"
         />
         <button type="submit" className="btn-outline btn-sm">Search</button>
         {q && (

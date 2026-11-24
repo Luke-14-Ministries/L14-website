@@ -62,7 +62,7 @@ export default function MedicalContact({ eventId, name, phone, canEdit }) {
           name="name"
           defaultValue={name ?? ''}
           placeholder="Dr. Jane Smith (camp doctor)"
-          className="rounded-sm border border-neutral-300 px-3 py-1.5 min-w-[16rem]"
+          className="field min-w-[16rem]"
         />
       </label>
       <label className="block">
@@ -71,7 +71,7 @@ export default function MedicalContact({ eventId, name, phone, canEdit }) {
           name="phone"
           type="tel"
           defaultValue={phone ?? ''}
-          className="rounded-sm border border-neutral-300 px-3 py-1.5"
+          className="field w-auto"
         />
       </label>
       <button type="submit" disabled={saving} className="btn-primary btn-sm">

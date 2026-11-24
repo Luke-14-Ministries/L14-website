@@ -289,7 +289,7 @@ export default function AccountsManager({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name, email, or household…"
-          className="rounded-sm border border-neutral-300 px-3 py-2 w-72 max-w-full"
+          className="field w-72 max-w-full"
         />
         <div className="flex flex-wrap gap-1.5">
           {FILTERS.map((f) => (
@@ -768,7 +768,7 @@ export default function AccountsManager({
                     id="link-person"
                     value={confirm.personId ?? ''}
                     onChange={(e) => setConfirm({ ...confirm, personId: e.target.value })}
-                    className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-1 bg-white"
+                    className="field mb-1"
                   >
                     <option value="">Don&rsquo;t mark anyone, only link the household</option>
                     {candidates.map((pp) => (
@@ -935,7 +935,7 @@ export default function AccountsManager({
             id="purge-name"
             value={confirm.typed}
             onChange={(e) => setConfirm({ ...confirm, typed: e.target.value })}
-            className="w-full rounded-sm border border-neutral-300 px-3 py-2 mb-4"
+            className="field mb-4"
             autoComplete="off"
           />
         </StepUpModal>

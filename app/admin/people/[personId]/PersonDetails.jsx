@@ -9,8 +9,6 @@ import { useRouter } from 'next/navigation';
 import { formatPhone, telHref } from '@/lib/format';
 import { updatePersonFromPersonPage } from './actions';
 
-const input = 'w-full rounded-sm border border-neutral-300 bg-white px-2 py-1.5 text-sm';
-const label = 'block text-xs font-semibold text-neutral-600 mb-0.5';
 
 function fmtDob(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
@@ -118,24 +116,24 @@ export default function PersonDetails({ person, canEdit }) {
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <label>
-          <span className={label}>First name</span>
-          <input className={input} value={f.first_name} onChange={set('first_name')} autoComplete="off" />
+          <span className="field-label">First name</span>
+          <input className="field" value={f.first_name} onChange={set('first_name')} autoComplete="off" />
         </label>
         <label>
-          <span className={label}>Last name</span>
-          <input className={input} value={f.last_name} onChange={set('last_name')} autoComplete="off" />
+          <span className="field-label">Last name</span>
+          <input className="field" value={f.last_name} onChange={set('last_name')} autoComplete="off" />
         </label>
         <label>
-          <span className={label}>Preferred name (nametags)</span>
-          <input className={input} value={f.preferred_name} onChange={set('preferred_name')} autoComplete="off" />
+          <span className="field-label">Preferred name (nametags)</span>
+          <input className="field" value={f.preferred_name} onChange={set('preferred_name')} autoComplete="off" />
         </label>
         <label>
-          <span className={label}>Date of birth</span>
-          <input type="date" className={input} value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" />
+          <span className="field-label">Date of birth</span>
+          <input type="date" className="field" value={f.date_of_birth} onChange={set('date_of_birth')} min="1900-01-01" />
         </label>
         <label>
-          <span className={label}>Sex</span>
-          <select className={input} value={f.gender} onChange={set('gender')}>
+          <span className="field-label">Sex</span>
+          <select className="field" value={f.gender} onChange={set('gender')}>
             <option value="">— not recorded —</option>
             <option>Male</option>
             <option>Female</option>
@@ -143,10 +141,10 @@ export default function PersonDetails({ person, canEdit }) {
           </select>
         </label>
         <label>
-          <span className={label}>Their own phone</span>
+          <span className="field-label">Their own phone</span>
           <input
             type="tel"
-            className={input}
+            className="field"
             value={f.phone}
             onChange={set('phone')}
             onBlur={() => setF((prev) => ({ ...prev, phone: formatPhone(prev.phone) }))}
@@ -154,8 +152,8 @@ export default function PersonDetails({ person, canEdit }) {
           />
         </label>
         <label className="sm:col-span-2">
-          <span className={label}>Their own email</span>
-          <input type="email" className={input} value={f.email} onChange={set('email')} autoComplete="off" />
+          <span className="field-label">Their own email</span>
+          <input type="email" className="field" value={f.email} onChange={set('email')} autoComplete="off" />
         </label>
       </div>
       {error && (

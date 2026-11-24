@@ -51,7 +51,7 @@ export default function AdminMfaReset() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="name@example.com"
-          className="w-full rounded-sm border border-neutral-300 px-4 py-2.5 mb-4"
+          className="field-sm mb-4"
         />
         <button type="submit" className="btn-primary">
           Reset two-factor…

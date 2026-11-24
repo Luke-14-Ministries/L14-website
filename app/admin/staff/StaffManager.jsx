@@ -485,7 +485,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
             placeholder="start typing…"
-            className="w-full rounded-sm border border-neutral-300 px-3 py-1.5"
+            className="field"
           />
         </label>
         <label className="block">
@@ -493,7 +493,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="rounded-sm border border-neutral-300 px-3 py-1.5"
+            className="field w-auto"
           >
             <option value="">Everyone</option>
             <option value="admin">Administrators</option>
@@ -541,7 +541,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
               onFocus={() => setPickerOpen(true)}
               onBlur={() => setTimeout(() => setPickerOpen(false), 150)}
               autoComplete="off"
-              className="w-full rounded-sm border border-neutral-300 px-3 py-2"
+              className="field"
               placeholder="start typing a name or email"
               role="combobox"
               aria-autocomplete="list"

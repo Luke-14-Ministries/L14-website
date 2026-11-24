@@ -121,7 +121,7 @@ export function RegistryQuickSearch({ row, today }) {
               onChange={(e) => setNote(e.target.value)}
               maxLength={500}
               rows={2}
-              className="w-full rounded-sm border border-neutral-300 bg-white px-2 py-1"
+              className="field-sm"
             />
           </label>
           <div className="flex gap-3">

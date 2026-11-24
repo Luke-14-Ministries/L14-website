@@ -8,8 +8,6 @@ import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { recordManualPayment } from './actions';
 
-const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm';
-const labelCls = 'block text-xs font-semibold text-neutral-500 mb-1';
 
 export default function RecordPaymentForm({ registrations }) {
   const router = useRouter();
@@ -82,7 +80,7 @@ export default function RecordPaymentForm({ registrations }) {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label className={labelCls}>Family / registration</label>
+          <label className="field-label">Family / registration</label>
           <input
             value={q}
             onChange={(e) => {
@@ -98,9 +96,9 @@ export default function RecordPaymentForm({ registrations }) {
               }
             }}
             placeholder="Type to filter by family or week…"
-            className={`${inputCls} mb-1.5`}
+            className={`field mb-1.5`}
           />
-          <select className={inputCls} value={f.registrationId} onChange={set('registrationId')}>
+          <select className="field" value={f.registrationId} onChange={set('registrationId')}>
             {filtered.length === 0 && <option value="">No matches. Clear the filter above.</option>}
             {filtered.map((r) => (
               <option key={r.id} value={r.id}>
@@ -110,31 +108,31 @@ export default function RecordPaymentForm({ registrations }) {
           </select>
         </div>
         <div>
-          <label className={labelCls}>Amount (dollars)</label>
+          <label className="field-label">Amount (dollars)</label>
           <input
             inputMode="decimal"
             placeholder="0.00"
             value={f.amount}
             onChange={set('amount')}
-            className={inputCls}
+            className="field"
             required
           />
         </div>
         <div>
-          <label className={labelCls}>Method</label>
-          <select className={inputCls} value={f.method} onChange={set('method')}>
+          <label className="field-label">Method</label>
+          <select className="field" value={f.method} onChange={set('method')}>
             <option value="check">Check</option>
             <option value="cash">Cash</option>
             <option value="other">Other</option>
           </select>
         </div>
         <div>
-          <label className={labelCls}>Date received (blank = today)</label>
-          <input type="date" className={inputCls} value={f.receivedOn} onChange={set('receivedOn')} />
+          <label className="field-label">Date received (blank = today)</label>
+          <input type="date" className="field" value={f.receivedOn} onChange={set('receivedOn')} />
         </div>
         <div>
-          <label className={labelCls}>Note (check number, etc.)</label>
-          <input className={inputCls} value={f.note} onChange={set('note')} />
+          <label className="field-label">Note (check number, etc.)</label>
+          <input className="field" value={f.note} onChange={set('note')} />
         </div>
       </div>
 

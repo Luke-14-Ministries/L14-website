@@ -68,7 +68,7 @@ function FeeRow({ fee, canWaive, registrationId }) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Why it is waived (required)"
-            className="min-w-64 flex-1 rounded-sm border border-neutral-300 px-2 py-1 text-sm"
+            className="field-sm min-w-64 flex-1"
           />
           <button
             type="button"
@@ -128,7 +128,7 @@ function AddFeeForm({ registrationId }) {
             inputMode="decimal"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-28 rounded-sm border border-neutral-300 px-2 py-1"
+            className="field-sm w-28"
           />
         </label>
         <label className="min-w-64 flex-1 text-sm">
@@ -137,7 +137,7 @@ function AddFeeForm({ registrationId }) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Returned check"
-            className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+            className="field-sm"
           />
         </label>
         <button

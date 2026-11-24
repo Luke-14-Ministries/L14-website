@@ -95,7 +95,7 @@ function Row({ row }) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Spoke to Dana; canceled both places, refunded the deposit."
-            className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+            className="field"
           />
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
           <div className="mt-3 flex flex-wrap gap-3">

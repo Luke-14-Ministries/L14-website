@@ -29,7 +29,7 @@ function Row({ r }) {
       {r.status === 'requested' ? (
         <div className="mt-3 space-y-2">
           <textarea
-            className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+            className="field"
             rows={2}
             placeholder="What was deleted, and what is kept and why. The family sees this."
             value={note}

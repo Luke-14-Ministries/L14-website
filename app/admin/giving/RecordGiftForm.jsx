@@ -13,8 +13,6 @@ import { DONATION_FUNDS } from '@/lib/funds';
 // fund since taken off the list keeps it; this form only offers current ones.
 const FUNDS = DONATION_FUNDS;
 
-const inputCls = 'w-full rounded-sm border border-neutral-300 px-3 py-1.5 text-sm';
-const labelCls = 'block text-xs font-semibold text-neutral-500 mb-1 whitespace-nowrap';
 
 export default function RecordGiftForm() {
   const router = useRouter();
@@ -84,40 +82,40 @@ export default function RecordGiftForm() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={labelCls}>Donor name</label>
-          <input className={inputCls} value={f.donorName} onChange={set('donorName')} />
+          <label className="field-label whitespace-nowrap">Donor name</label>
+          <input className="field" value={f.donorName} onChange={set('donorName')} />
         </div>
         <div>
-          <label className={labelCls}>Donor email</label>
-          <input className={inputCls} value={f.email} onChange={set('email')} />
+          <label className="field-label whitespace-nowrap">Donor email</label>
+          <input className="field" value={f.email} onChange={set('email')} />
         </div>
         <div>
-          <label className={labelCls}>Amount (dollars)</label>
-          <input inputMode="decimal" placeholder="0.00" value={f.amount} onChange={set('amount')} className={inputCls} required />
+          <label className="field-label whitespace-nowrap">Amount (dollars)</label>
+          <input inputMode="decimal" placeholder="0.00" value={f.amount} onChange={set('amount')} className="field" required />
         </div>
         <div>
-          <label className={labelCls}>Fund</label>
-          <select className={inputCls} value={f.fund} onChange={set('fund')}>
+          <label className="field-label whitespace-nowrap">Fund</label>
+          <select className="field" value={f.fund} onChange={set('fund')}>
             {FUNDS.map((x) => (
               <option key={x}>{x}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className={labelCls}>Method</label>
-          <select className={inputCls} value={f.method} onChange={set('method')}>
+          <label className="field-label whitespace-nowrap">Method</label>
+          <select className="field" value={f.method} onChange={set('method')}>
             <option value="check">Check</option>
             <option value="cash">Cash</option>
             <option value="other">Other</option>
           </select>
         </div>
         <div>
-          <label className={labelCls}>Date received (blank = today)</label>
-          <input type="date" className={inputCls} value={f.receivedOn} onChange={set('receivedOn')} />
+          <label className="field-label whitespace-nowrap">Date received (blank = today)</label>
+          <input type="date" className="field" value={f.receivedOn} onChange={set('receivedOn')} />
         </div>
         <div className="sm:col-span-2">
-          <label className={labelCls}>Note (check number, in memory of, etc.)</label>
-          <input className={inputCls} value={f.note} onChange={set('note')} />
+          <label className="field-label whitespace-nowrap">Note (check number, in memory of, etc.)</label>
+          <input className="field" value={f.note} onChange={set('note')} />
         </div>
       </div>
 

@@ -42,8 +42,6 @@ const KIND_LABEL = {
   rv: 'RV site',
 };
 
-const inputCls = 'w-full rounded-sm border border-neutral-300 px-2 py-1 text-sm';
-const labelCls = 'block text-xs font-medium text-neutral-600';
 
 // Plain HTML form, read once on submit. Uncontrolled on purpose: a row that
 // is being edited should not re-render the whole tree on every keystroke, and
@@ -78,18 +76,18 @@ function LodgingForm({ initial, kinds, submitLabel, onSubmit, onCancel, pending 
     >
       <div className="grid gap-2 sm:grid-cols-6">
         <div className="sm:col-span-2">
-          <label className={labelCls}>Name</label>
+          <label className="field-label">Name</label>
           <input
             name="name"
             required
             defaultValue={initial?.name ?? ''}
             placeholder={kinds === ROOM_KINDS ? 'Lodge 103' : 'Lodge'}
-            className={inputCls}
+            className="field-sm"
           />
         </div>
         <div>
-          <label className={labelCls}>Kind</label>
-          <select name="kind" defaultValue={initial?.kind ?? kinds[0][0]} className={inputCls}>
+          <label className="field-label">Kind</label>
+          <select name="kind" defaultValue={initial?.kind ?? kinds[0][0]} className="field-sm">
             {kinds.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -104,34 +102,34 @@ function LodgingForm({ initial, kinds, submitLabel, onSubmit, onCancel, pending 
           </select>
         </div>
         <div className="sm:col-span-2">
-          <label className={labelCls}>Beds (the venue&rsquo;s words)</label>
+          <label className="field-label">Beds (the venue&rsquo;s words)</label>
           <input
             name="beds"
             defaultValue={initial?.beds ?? ''}
             placeholder="2 Double beds"
-            className={inputCls}
+            className="field-sm"
           />
         </div>
         <div>
-          <label className={labelCls}>Capacity</label>
+          <label className="field-label">Capacity</label>
           <input
             name="capacity"
             type="number"
             min="0"
             defaultValue={initial?.capacity ?? ''}
             placeholder="blank = not said"
-            className={inputCls}
+            className="field-sm"
           />
         </div>
         <div>
-          <label className={labelCls}>Staff capacity</label>
+          <label className="field-label">Staff capacity</label>
           <input
             name="staffCapacity"
             type="number"
             min="0"
             defaultValue={initial?.staffCapacity ?? ''}
             placeholder="optional"
-            className={inputCls}
+            className="field-sm"
           />
         </div>
         <div className="flex items-end pb-1">
@@ -141,30 +139,30 @@ function LodgingForm({ initial, kinds, submitLabel, onSubmit, onCancel, pending 
           </label>
         </div>
         <div className="sm:col-span-2">
-          <label className={labelCls}>Access notes</label>
+          <label className="field-label">Access notes</label>
           <input
             name="accessibleNotes"
             defaultValue={initial?.accessibleNotes ?? ''}
             placeholder="Step-free, roll-in shower…"
-            className={inputCls}
+            className="field-sm"
           />
         </div>
         <div className="sm:col-span-2">
-          <label className={labelCls}>Notes</label>
+          <label className="field-label">Notes</label>
           <input
             name="notes"
             defaultValue={initial?.notes ?? ''}
             placeholder="Anything staff should know"
-            className={inputCls}
+            className="field-sm"
           />
         </div>
         <div className="sm:col-span-2">
-          <label className={labelCls}>Floor plan link (buildings)</label>
+          <label className="field-label">Floor plan link (buildings)</label>
           <input
             name="schematicUrl"
             defaultValue={initial?.schematicUrl ?? ''}
             placeholder="https://… the venue's plan of this building"
-            className={inputCls}
+            className="field-sm"
           />
           <p className="mt-0.5 text-xs text-neutral-500">
             Families see it, with the campus map, once one of them is checked in. Set it on the
@@ -422,14 +420,14 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
             (active.length === 0 ? (
               <div className="mb-4 flex flex-wrap items-end gap-2 rounded-sm border border-brand/30 bg-brand-light/50 px-3 py-2">
                 <div>
-                  <label className={labelCls} htmlFor="copy-from">
+                  <label className="field-label" htmlFor="copy-from">
                     Copy rooms from another event&hellip;
                   </label>
                   <select
                     id="copy-from"
                     value={copyFrom}
                     onChange={(e) => setCopyFrom(e.target.value)}
-                    className="rounded-sm border border-neutral-300 px-2 py-1 text-sm"
+                    className="field-sm w-auto"
                   >
                     <option value="">Choose an event</option>
                     {otherEvents.map((e) => (

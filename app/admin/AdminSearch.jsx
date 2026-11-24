@@ -21,7 +21,7 @@ export default function AdminSearch() {
         name="q"
         placeholder="Find a person or family"
         aria-label="Search people and families"
-        className="min-w-0 flex-1 rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm sm:w-80 sm:flex-none"
+        className="field min-w-0 flex-1 sm:w-80 sm:flex-none"
       />
       <button type="submit" className="btn-outline shrink-0 btn-sm">
         Search

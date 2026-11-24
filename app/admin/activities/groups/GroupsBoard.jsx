@@ -158,7 +158,7 @@ function GroupCard({
           <label className="text-sm">
             <span className="block text-xs font-semibold text-neutral-600">Name</span>
             <input
-              className="rounded-sm border border-neutral-300 px-2 py-1"
+              className="field-sm w-auto"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -166,7 +166,7 @@ function GroupCard({
           <label className="text-sm">
             <span className="block text-xs font-semibold text-neutral-600">Size</span>
             <input
-              className="w-20 rounded-sm border border-neutral-300 px-2 py-1"
+              className="field-sm w-20"
               inputMode="numeric"
               value={size}
               onChange={(e) => setSize(e.target.value)}
@@ -433,7 +433,7 @@ export default function GroupsBoard({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Name or family"
-            className="rounded-sm border border-neutral-300 px-2 py-1"
+            className="field-sm w-auto"
           />
         </label>
         <label>
@@ -441,7 +441,7 @@ export default function GroupsBoard({
           <select
             value={family}
             onChange={(e) => setFamily(e.target.value)}
-            className="rounded-sm border border-neutral-300 px-2 py-1"
+            className="field-sm w-auto"
           >
             <option value="">All families</option>
             {families.map(([id, label]) => (
@@ -456,7 +456,7 @@ export default function GroupsBoard({
           <select
             value={program}
             onChange={(e) => setProgram(e.target.value)}
-            className="rounded-sm border border-neutral-300 px-2 py-1"
+            className="field-sm w-auto"
           >
             <option value="">All programs</option>
             {programOptions.map((p) => (

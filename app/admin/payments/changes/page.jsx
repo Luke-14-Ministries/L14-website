@@ -219,16 +219,16 @@ export default async function MoneyChangesPage({ searchParams }) {
             name="q"
             defaultValue={q}
             placeholder="Family name"
-            className="w-full sm:w-64 rounded-sm border border-neutral-300 px-3 py-1.5"
+            className="field sm:w-64"
           />
         </label>
         <label className="block">
           <span className="block font-semibold mb-1">From</span>
-          <input type="date" name="from" defaultValue={from} className="rounded-sm border border-neutral-300 px-2 py-1.5" />
+          <input type="date" name="from" defaultValue={from} className="field-sm w-auto" />
         </label>
         <label className="block">
           <span className="block font-semibold mb-1">To</span>
-          <input type="date" name="to" defaultValue={to} className="rounded-sm border border-neutral-300 px-2 py-1.5" />
+          <input type="date" name="to" defaultValue={to} className="field-sm w-auto" />
         </label>
         <button type="submit" className="btn-outline btn-sm">
           Show

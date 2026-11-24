@@ -433,7 +433,7 @@ function EventRow({ e }) {
                 type="date"
                 value={startsOn}
                 onChange={(ev) => setStartsOn(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
             <label className="text-sm">
@@ -442,7 +442,7 @@ function EventRow({ e }) {
                 type="date"
                 value={endsOn}
                 onChange={(ev) => setEndsOn(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
             <label className="text-sm">
@@ -452,7 +452,7 @@ function EventRow({ e }) {
                 value={capacity}
                 onChange={(ev) => setCapacity(ev.target.value)}
                 placeholder="no limit"
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
             <label className="text-sm">
@@ -461,7 +461,7 @@ function EventRow({ e }) {
                 inputMode="decimal"
                 value={fee}
                 onChange={(ev) => setFee(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
           </div>
@@ -478,7 +478,7 @@ function EventRow({ e }) {
                 type="date"
                 value={earlyEndsOn}
                 onChange={(ev) => setEarlyEndsOn(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
             <label className="text-sm">
@@ -488,7 +488,7 @@ function EventRow({ e }) {
                 value={early}
                 onChange={(ev) => setEarly(ev.target.value)}
                 placeholder="none"
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
             <label className="text-sm">
@@ -497,7 +497,7 @@ function EventRow({ e }) {
                 type="date"
                 value={balanceDueOn}
                 onChange={(ev) => setBalanceDueOn(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
             <label className="text-sm">
@@ -506,7 +506,7 @@ function EventRow({ e }) {
                 inputMode="decimal"
                 value={returnedFee}
                 onChange={(ev) => setReturnedFee(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
           </div>
@@ -518,7 +518,7 @@ function EventRow({ e }) {
                 inputMode="decimal"
                 value={deposit}
                 onChange={(ev) => setDeposit(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
             <label className="text-sm">
@@ -528,7 +528,7 @@ function EventRow({ e }) {
                 value={family}
                 onChange={(ev) => setFamily(ev.target.value)}
                 placeholder="none"
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
             <label className="text-sm">
@@ -537,7 +537,7 @@ function EventRow({ e }) {
                 inputMode="numeric"
                 value={familyFrom}
                 onChange={(ev) => setFamilyFrom(ev.target.value)}
-                className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                className="field-sm"
               />
             </label>
             {/* On the later week only (Lawrence, 27 Oct 2026): it comes off the
@@ -550,7 +550,7 @@ function EventRow({ e }) {
                   inputMode="numeric"
                   value={multiWeek}
                   onChange={(ev) => setMultiWeek(ev.target.value)}
-                  className="w-full rounded-sm border border-neutral-300 px-2 py-1"
+                  className="field-sm"
                 />
               </label>
             ) : (e.laterWeeks ?? []).length > 0 ? (
@@ -946,7 +946,7 @@ function NewEventPanel({ events }) {
             <select
               value={kind === 'copy' ? drafts[0]?.copyFrom ?? '' : ''}
               onChange={(ev) => copyOne(ev.target.value)}
-              className="rounded-sm border border-neutral-300 px-2 py-0.5"
+              className="field-sm w-auto"
             >
               <option value="">choose…</option>
               {events.map((e) => (

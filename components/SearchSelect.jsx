@@ -175,7 +175,7 @@ export default function SearchSelect({
           onClick={openList}
           onBlur={close}
           onKeyDown={onKeyDown}
-          className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-1.5 pr-8 text-sm focus:border-brand focus:outline-none disabled:bg-neutral-100 disabled:text-neutral-500"
+          className="field pr-8 disabled:bg-neutral-100 disabled:text-neutral-500"
         />
         <span aria-hidden className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-neutral-500">
           ▾

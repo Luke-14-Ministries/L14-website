@@ -323,7 +323,7 @@ export default function ProgramBoard({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search a name or family…"
-          className="rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
+          className="field w-auto"
         />
         <label className="flex items-center gap-1.5 text-sm">
           <span className="text-neutral-600">Role</span>
@@ -353,7 +353,7 @@ export default function ProgramBoard({
           <select
             value={bulkProgram}
             onChange={(e) => setBulkProgram(e.target.value)}
-            className="rounded-sm border border-neutral-300 px-2 py-1 text-sm"
+            className="field-sm w-auto"
           >
             <option value="">No program</option>
             {programs.map((p) => (
@@ -714,7 +714,7 @@ function LeaderPanel({ eventId, eventName, programs, leaders, candidates = [], c
               required
               value={programId}
               onChange={(e) => setProgramId(e.target.value)}
-              className="rounded-sm border border-neutral-300 bg-white px-2 py-1.5 text-sm"
+              className="field-sm w-auto"
             >
               <option value="">Choose…</option>
               {programs.map((p) => (

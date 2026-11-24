@@ -526,7 +526,7 @@ export default function ReviewCard({
                     onChange={(e) => setCreedNote(e.target.value)}
                     maxLength={500}
                     placeholder="Note (optional), e.g. Spoke by phone. Happy for them to serve."
-                    className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm"
+                    className="field"
                   />
                   <p className="mt-1 text-xs text-neutral-500">
                     Saved for the people named, with your name and today&rsquo;s date. Anyone added or
@@ -632,7 +632,7 @@ export default function ReviewCard({
                 onChange={(e) => setUndoReason(e.target.value)}
                 maxLength={300}
                 placeholder="Why are you undoing it? (required) e.g. Waived on the wrong family"
-                className="w-full rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900"
+                className="field text-neutral-900"
               />
               <div className="mt-2 flex gap-2">
                 <button
@@ -684,7 +684,7 @@ export default function ReviewCard({
                 onChange={(e) => setWaiveReason(e.target.value)}
                 maxLength={300}
                 placeholder="Reason (optional), e.g. Spoke with the family. Paying at camp."
-                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+                className="field"
               />
               <div className="mt-2 flex gap-2">
                 <button
@@ -746,7 +746,7 @@ export default function ReviewCard({
                 onChange={(e) => setHoldReason(e.target.value)}
                 maxLength={1000}
                 placeholder="e.g. Sam's seizure plan changed. The nurse needs to look again."
-                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+                className="field"
               />
               <div className="mt-2 flex gap-2">
                 <button
@@ -869,7 +869,7 @@ export default function ReviewCard({
                 onChange={(e) => setWaitlistReason(e.target.value)}
                 maxLength={500}
                 placeholder="e.g. The camper cabins are full this week. We'll call if a place opens."
-                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+                className="field"
               />
               <p className="mt-1 text-xs text-neutral-500">
                 The family can see this reason. It shows at the top of this card. No email is sent.
@@ -901,7 +901,7 @@ export default function ReviewCard({
                 onChange={(e) => setReason(e.target.value)}
                 maxLength={1000}
                 placeholder="e.g. Please add Sam's seizure plan under Medical, and tell us who is coming as caregiver."
-                className="w-full rounded-sm border border-neutral-300 px-3 py-2 text-sm"
+                className="field"
               />
               <p className="mt-1 text-xs text-neutral-500">
                 The family sees this as a note on their dashboard and can reply there. Their reply
