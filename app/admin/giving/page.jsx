@@ -6,6 +6,7 @@ import RecordGiftForm from './RecordGiftForm';
 import { dayInMorristown, formatDay } from '@/lib/events';
 import GivingExportBar from './GivingExportBar';
 import { paymentStatusPill } from '@/lib/payments';
+import { DONATION_FUNDS } from '@/lib/funds';
 
 export const metadata = { title: 'Giving · Staff Admin' };
 
@@ -95,7 +96,13 @@ export default async function AdminGivingPage({ searchParams }) {
         intro={
           <>
             Tax-deductible donations, kept separate from camp payments (which are not deductible).
-            Online gifts are recorded automatically. Enter mailed checks and cash below.
+            Online gifts are recorded automatically. Enter mailed checks, cash and PayPal gifts below.
+            {/* The Donate form's choices, from lib/funds.js (23 Nov 2026,
+                review A4-25): staff could not see the list anywhere. Changing
+                it is a code change, so the page says who to ask. */}
+            <span className="mt-1 block">
+              Funds donors can choose: {DONATION_FUNDS.join(', ')}. Ask Lawrence to change the list.
+            </span>
           </>
         }
       />

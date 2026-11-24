@@ -77,6 +77,10 @@ export default async function DonatePage() {
                 </a>{' '}
                 to see if we can find a use for your donation!
               </p>
+              {/* PayPal gifts never reach the site on their own: staff enter
+                  them on Giving, so the donor is told why one is late on a
+                  statement (23 Nov 2026, review A4-24). The link stays until
+                  Lawrence decides whether PayPal is still wanted. */}
               <p className="text-sm text-neutral-500">
                 You can also give through our current PayPal donation page{' '}
                 <a
@@ -87,7 +91,8 @@ export default async function DonatePage() {
                 >
                   here
                 </a>
-                .
+                . Gifts through PayPal are recorded by our office and may take a
+                few days to show on your giving statement.
               </p>
             </div>
           </div>
