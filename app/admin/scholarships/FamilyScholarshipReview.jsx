@@ -105,7 +105,10 @@ function askText(row) {
   );
 }
 
-export default function FamilyScholarshipReview({ row, showRegistrationLink = false }) {
+export default function FamilyScholarshipReview({ row, showRegistrationLink = false, collapsible = false }) {
+  // Folded on the Scholarship Requests queue (Lawrence, 24 Nov 2026), so a
+  // scroll down the names and asks is quick; open on the registration page.
+  const Shell = collapsible ? 'details' : 'div';
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
@@ -164,8 +167,10 @@ export default function FamilyScholarshipReview({ row, showRegistrationLink = fa
 
   const [settledLabel, settledClass] = SETTLED[row.status] ?? SETTLED.withdrawn;
 
-  return (
-    <div className={`rounded-lg border p-5 ${isOpen ? 'border-amber-300 bg-amber-50 shadow-xs' : 'border-neutral-200 bg-white'}`}>
+  // The name, event, status and ask: the folded line on the queue, the top
+  // of the card everywhere else.
+  const head = (
+    <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-lg font-bold">
           {row.household || 'Family'}: whole family
@@ -186,7 +191,18 @@ export default function FamilyScholarshipReview({ row, showRegistrationLink = fa
       </div>
 
       <p className="mt-1 text-sm text-neutral-700">{askText(row)}</p>
+    </>
+  );
 
+  return (
+    <Shell className={`rounded-lg border p-5 ${isOpen ? 'border-amber-300 bg-amber-50 shadow-xs' : 'border-neutral-200 bg-white'}`}>
+      {collapsible ? (
+        <summary className="fold-summary flex items-baseline">
+          <div className="min-w-0 flex-1">{head}</div>
+        </summary>
+      ) : (
+        head
+      )}
       {flagged && row.needsReviewReason && (
         <p className="mt-2 rounded-sm border border-amber-300 bg-white px-3 py-2 text-sm text-amber-900">
           {row.needsReviewReason} Approve again to confirm the split, change the amount, or decline.
@@ -313,6 +329,6 @@ export default function FamilyScholarshipReview({ row, showRegistrationLink = fa
           </div>
         </div>
       )}
-    </div>
+    </Shell>
   );
 }

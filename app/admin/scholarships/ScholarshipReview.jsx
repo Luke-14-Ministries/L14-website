@@ -27,7 +27,10 @@ const SETTLED = {
   withdrawn: ['Withdrawn by family', 'bg-neutral-100 text-neutral-500'],
 };
 
-export default function ScholarshipReview({ row, showRegistrationLink = false }) {
+export default function ScholarshipReview({ row, showRegistrationLink = false, collapsible = false }) {
+  // Folded on the Scholarship Requests queue (Lawrence, 24 Nov 2026), so a
+  // scroll down the names and asks is quick; open on the registration page.
+  const Shell = collapsible ? 'details' : 'div';
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState('');
@@ -99,14 +102,10 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
 
   const [settledLabel, settledClass] = SETTLED[row.status] ?? SETTLED.withdrawn;
 
-  return (
-    <div
-      className={`rounded-lg border p-5 ${
-        isOpen
-          ? 'border-amber-300 bg-amber-50 shadow-xs'
-          : 'border-neutral-200 bg-white'
-      }`}
-    >
+  // The name, event, status and ask: the folded line on the queue, the top
+  // of the card everywhere else.
+  const head = (
+    <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-lg font-bold">
           {row.name}
@@ -151,7 +150,24 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
           <> · {money(row.discountCents)} already discounted, so up to {money(room)} can be awarded</>
         )}
       </p>
+    </>
+  );
 
+  return (
+    <Shell
+      className={`rounded-lg border p-5 ${
+        isOpen
+          ? 'border-amber-300 bg-amber-50 shadow-xs'
+          : 'border-neutral-200 bg-white'
+      }`}
+    >
+      {collapsible ? (
+        <summary className="fold-summary flex items-baseline">
+          <div className="min-w-0 flex-1">{head}</div>
+        </summary>
+      ) : (
+        head
+      )}
       {row.familyStatement ? (
         <p className="mt-2 rounded-sm border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800">
           &ldquo;{row.familyStatement}&rdquo;
@@ -265,6 +281,6 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
           </div>
         </div>
       )}
-    </div>
+    </Shell>
   );
 }

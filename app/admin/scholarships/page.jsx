@@ -221,10 +221,10 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
       ) : (
         <div className="space-y-4">
           {familyShown.map((row) => (
-            <FamilyScholarshipReview key={row.id} row={row} showRegistrationLink />
+            <FamilyScholarshipReview key={row.id} row={row} showRegistrationLink collapsible />
           ))}
           {shaped.map((row) => (
-            <ScholarshipReview key={row.participantId} row={row} showRegistrationLink />
+            <ScholarshipReview key={row.participantId} row={row} showRegistrationLink collapsible />
           ))}
         </div>
       )}
