@@ -21,7 +21,17 @@ export const metadata = { title: 'My Program · Print' };
 // open it: ../access.js, the same gate as the CSV.
 export default async function MyProgramPrintPage({ searchParams }) {
   const params = await searchParams;
-  const gate = await programForCaller(typeof params?.grant === 'string' ? params.grant : '');
+  // ?grant=<program>:<event> from My Program, or ?program=&event= from the
+  // Program Groups page's "Print this program" (23 Nov 2026). Either way
+  // programForCaller() decides: the leader of that program, or staff with
+  // Programs read.
+  const grant =
+    typeof params?.grant === 'string'
+      ? params.grant
+      : typeof params?.program === 'string' && typeof params?.event === 'string'
+        ? `${params.program}:${params.event}`
+        : '';
+  const gate = await programForCaller(grant);
   if (!gate.program) {
     // A read that failed is an error page, not a quiet trip back.
     if (gate.status >= 500) throw new Error(gate.message);
@@ -43,10 +53,16 @@ export default async function MyProgramPrintPage({ searchParams }) {
     <div className="mx-auto max-w-3xl bg-white p-8 print-sheet print:text-[12px]">
       {/* The way back top right, Print under it, as on every print sheet (27 Oct 2026). */}
       <div className="mb-2 flex flex-col items-end gap-2 print:hidden">
-        <BackLink
-          href={`/admin/my-program/?grant=${encodeURIComponent(`${program.programId}:${program.eventId}`)}`}
-          label="Back to My Program"
-        />
+        {/* A leader goes back to My Program; staff opening it from Program
+            Groups (no leadership row, so no id) go back there. */}
+        {program.id ? (
+          <BackLink
+            href={`/admin/my-program/?grant=${encodeURIComponent(`${program.programId}:${program.eventId}`)}`}
+            label="Back to My Program"
+          />
+        ) : (
+          <BackLink href={`/admin/programs/?event=${program.eventId}`} label="Back to Program Groups" />
+        )}
         <PrintButton label="Print / Save as PDF" />
       </div>
       <p className="mb-6 text-sm text-neutral-500 print:hidden">

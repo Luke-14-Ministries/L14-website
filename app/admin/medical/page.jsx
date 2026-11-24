@@ -3,11 +3,25 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { isCurrentEventRow, eventInScope, staffAssigns } from '@/lib/events';
+import { isCurrentEventRow, eventInScope, isEventScope, staffAssigns } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 
 import ResizableTable from '@/components/ResizableTable';
 export const metadata = { title: 'Medical & Support · Staff Admin' };
+
+// A red or amber pill. Hoisted out of the page on 23 Nov 2026: it was defined
+// inside the page function, which CLAUDE.md forbids.
+function Flag({ children, tone = 'red' }) {
+  return (
+    <span
+      className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${
+        tone === 'red' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
 
 // The nurse/support-team view: medications, seizure and rescue-med details, and
 // emergency contacts, per event. Gated by the sensitive permission; the
@@ -97,19 +111,18 @@ export default async function MedicalPage({ searchParams }) {
   const matchesQ = (row) =>
     !q || row.name.toLowerCase().includes(q) || (row.household ?? '').toLowerCase().includes(q);
 
-  const Flag = ({ children, tone = 'red' }) => (
-    <span
-      className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${
-        tone === 'red' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
-      }`}
-    >
-      {children}
-    </span>
-  );
-
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Medical &amp; Support</h2>
+      {/* The nurse's paper copy, one event at a time (23 Nov 2026 review). */}
+      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xl font-bold">Medical &amp; Support</h2>
+        <a
+          href={`/admin/medical/print/${eventFilter && !isEventScope(eventFilter) ? `?event=${eventFilter}` : ''}`}
+          className="btn-outline py-1.5! text-sm"
+        >
+          Medical sheet (print)
+        </a>
+      </div>
       <p className="text-sm text-neutral-500 mb-6">
         Medications (with any medication allergy), seizure and rescue-medication details, and emergency contacts, per event.
         This is the most sensitive page on the site. It needs its own permission, so take the same

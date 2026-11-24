@@ -293,6 +293,17 @@ export default function ProgramBoard({
             Open in Rosters &rarr;
           </a>
         )}
+        {/* The program's roster on paper (23 Nov 2026 review): the same sheet
+            a program leader prints from My Program, opened for this program
+            at this event. Staff with Programs read may open it. */}
+        {filter && filter !== 'all' && filter !== 'unplaced' && eventId && (
+          <a
+            href={`/admin/my-program/print/?program=${filter}&event=${eventId}`}
+            className="rounded-full border border-brand px-3 py-1 text-sm font-semibold text-brand hover:bg-brand-light"
+          >
+            Print this program
+          </a>
+        )}
         <button
           type="button"
           onClick={() => setFilter('all')}

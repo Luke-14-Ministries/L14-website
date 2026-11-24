@@ -176,7 +176,16 @@ export default async function CheckinPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Check-In</h2>
+      {/* A paper copy for the door, by family with tick boxes (23 Nov 2026
+          review). */}
+      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xl font-bold">Check-In</h2>
+        {eventId && (
+          <a href={`/admin/checkin/print/?event=${eventId}`} className="btn-outline py-1.5! text-sm">
+            Arrival sheet (print)
+          </a>
+        )}
+      </div>
       <p className="text-sm text-neutral-500 mb-4">
         Mark people as they arrive. Works on a phone. Red flags are quick alerts, and the full
         details are on the Medical &amp; Support page. A family paying at the door pays on their own
