@@ -206,7 +206,8 @@ export default async function DashboardPage({ searchParams }) {
     console.error('dashboard household query:', householdError.message);
   }
   const household = households?.[0] ?? null;
-  const members = household?.people ?? [];
+  // Oldest first, as on Manage Household (Lawrence, 23 Nov 2026).
+  const members = sortByAge(household?.people);
 
   // Faces beside names (requested 24 Aug). Signed URLs, because the bucket is
   // private; an hour's expiry outlives any dashboard visit. The logged-in
