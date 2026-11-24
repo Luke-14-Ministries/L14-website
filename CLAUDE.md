@@ -49,7 +49,8 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0175`**. **Never edit a migration that has been run; new work takes the next number.** The CLI
+**`0186`** (the files, 23 Nov 2026; the live ledger can trail them until a push is applied, so check
+Supabase `list_migrations` before assuming the newest are live). **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.
 
@@ -57,7 +58,10 @@ ledger begins at `0012` (`0001`–`0011` predate it) and some files are more tha
 grant levels, the camp doctor, an anonymous visitor) and must end `ALL CHECKS PASSED`. Run it
 locally — PostgreSQL 16 is on the build machine: `bash supabase/tests/run_rls_local.sh` builds a
 fresh database from every migration and runs it. The other suites are every `*_rules.sql` in
-`supabase/tests/` (ten on 10 Nov 2026), and each needs a fresh database **seeded first**:
+`supabase/tests/` (seventeen on 23 Nov 2026, among them `activity_signup_rules.sql` for `0177` and
+`export_log_rules.sql` for `0182`; `supabase/tests/README.md` lists them). Most need a fresh database
+**seeded first** (a suite's header says when it needs no seed: `export_log_rules.sql`,
+`household_invite_rules.sql` and a few others run straight after the migrations, passed to the runner):
 `L14_DB=<name> bash supabase/tests/run_rls_local.sh supabase/tests/payment_plans_seed.sql`, then
 `psql -d <name> -f supabase/tests/<suite>.sql` (`lower_price_rules.sql` loads the seed itself, so pass
 it to the runner instead). Run straight after the migrations, without the seed, they fail on their
@@ -209,6 +213,15 @@ families, 7 for staff). A password alone reaches nothing staff can see. **When p
 database by hand, a staff persona's JWT claims need `"aal":"aal2"`.** `getStaff().strong` mirrors it
 in the app; the middleware holds every signed-in page and server action to the code step.
 
+**Families' two-factor is in the database too** (`0176`): `family_session_ok()` (a code-verified or
+remembered-browser session, or a login with no verified device) is asked by the household helpers
+(`my_household_ids()` and the family write functions), so a password alone reaches no family data
+once a device is set up. `mfa_trusted_devices` is written only by `remember_this_browser()` (signed-in
+logins have no insert or update on it). `profiles` is **column-granted**: a login may update only
+`first_name`, `last_name`, `phone`, `phone_work`, `sms_opt_in` and `email_news`, so a new column a
+login should edit needs its own `grant update (...)`. `profiles.password_changed_at` is stamped by the
+`on_auth_password_changed` trigger on `auth.users`, never by the login.
+
 **Grants, not roles** (`0100`, `0101`). `staff_grants` holds (profile, area, read|write); every
 change is logged in `staff_access_log` as `grant:<area>`. Policies and guards ask
 `has_grant(area, level)`; **read `0101`'s mapping table before touching a policy** — it is the
@@ -225,7 +238,7 @@ write, so Finance (payments write, registration read) records money but does not
 an invoker view a reviewer without Payments read would see every family as "neither". Publishing
 buddies or rooms goes through `set_event_publication()` (`0103`), which checks Buddies or Rooming
 write; the stamps live on `events`, whose own policy needs Setup write. Program leaders stay a grant
-on the Programs page; the preset Lawrence wanted (16 Oct) is not built.
+on the Program Groups page; the preset Lawrence wanted (16 Oct) is not built.
 
 **Since `0113`:** a family's new participant row is `draft` or `submitted`, never confirmed, and
 `submitted_at` is set by the database; attaching a login to a household is the administrator's,
@@ -276,7 +289,7 @@ current, verdict, and `provider`. Adults only — under 18 shows "Under 18 — n
 household's email and phone where the person has none.
 
 **Volunteers are screened through VolunteerBadge (VB) since `0165` (13 Nov 2026; Larry approved VB).**
-Background Screening sends VB invites in batches (`POST /applications`); VB emails the volunteer, whose
+Send Background Check Invites sends VB invites in batches (`POST /applications`); VB emails the volunteer, whose
 own form on VB's site takes the FCRA disclosure and authorization, their ID and their SSN. The check
 runs only after they sign there; that signature is the consent, and our pages only say it is coming.
 `lib/volunteerBadgeApi.js` may call only `GET /templates`, `POST /applications`, `GET /credits`,
@@ -376,7 +389,7 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   trouble is a flag, not a status change**, raised after the FIRST failed payment (Lawrence,
   27 Oct): a plan still running (active or paused) with a failed charge waiting to retry
   (`planFailingSince()`) is amber; a stopped plan (`failed`, after three tries, `planStoppedAt()`)
-  is red. Both show on Awaiting review's *Plan problems* tab, as Overview cards (amber, naming
+  is red. Both show on Awaiting Review's *Plan problems* tab, as Overview cards (amber, naming
   the families; red) and as a line on the plan card — Payments read (`payment_plans_select`,
   `0101`).
 - **A person's money lives in `participant_money`** (`0114`, one row per participant:
@@ -505,7 +518,7 @@ still a staff merge, `0151`). The new login joins as `adult` and, if named, clai
 **Since `0178`** (security review, 23 Nov 2026): 10 invites a day per household or login (cancelled
 ones counted), and a named person must be 18+ or have no date of birth; a login whose own household is
 **provably empty** (only them, only their own person row, nothing else in the database pointing at it,
-`household_is_empty_signup()`) has it removed and joins; a join is a line on Recent Changes
+`household_is_empty_signup()`) has it removed and joins; a join is a line on Changes to Review
 (`family_change_log`, `household_members` / `login`) and emails the household's contact address and the
 inviter. **The person who set up the household (owner) or staff with Registration write remove a sign-in**
 with `remove_household_login()` (never the owner, never yourself). The invite page shows names only while
@@ -663,10 +676,10 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   report links from everything, so none of it is stored, logged, shown or passed on; it exists only
   in that one function's memory for an instant. Since `0166` the client also compares VB's date of
   birth with ours there (`volunteer(id, { birthdate })`), and only the answer leaves it, as `dobAgrees`
-  yes / no / unknown; a no refuses the link. The possible-match notes on Background screening never
+  yes / no / unknown; a no refuses the link. The possible-match notes on Send Background Check Invites never
   read a person's VB record. Lawrence is asking VB for a slimmer answer; switch
   to it if offered. Never widen those allow-lists beyond names (roster last names were added
-  13 Nov 2026 at Lawrence's request, for the possible-match note on Background screening), log a raw
+  13 Nov 2026 at Lawrence's request, for the possible-match note on Send Background Check Invites), log a raw
   VB answer, or put VB's own error text about a person in a message. `volunteerbadge_requests` holds pointers, status words, dates, and VB's first and last name on the record an invite was tied to with a yes/no for the date of birth (`0166`); never the date itself. What is actually stored has grown: alongside
   `background_check_on_file`, `background_check_date` and `expires_on`, migration `0029` added a
   `volunteer_clearances` table with Checkr integration columns — `provider`,

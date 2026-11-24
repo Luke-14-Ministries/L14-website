@@ -20,6 +20,27 @@ have been retried every day.
 | `reminders_rules.sql` | `0138`: a status change stamps `status_before` (never by hand); a family reads no reminder rows and cannot pause; a registrar reads, pauses (stamped) and resumes; a reminder is recorded once. Run on a database seeded with `payment_plans_seed.sql`; it ends `ALL REMINDER CHECKS PASSED`. |
 | `payment_plans_e2e.ts` | The real webhook and charger code (`functions/_shared/`) against the scratch database, with a stand-in for Stripe. It covers the deposit activating a plan, a dry run, card charges, repeated Stripe events, declines and retries, the plan stopping after three failures, a new bank account restarting it (but not while Stripe's small deposits are unconfirmed, and only once when two events arrive), a bank transfer clearing, a scholarship partway through, and the last charge landing on $0. It ends `ALL PASSED` or exits non-zero. |
 
+### The other rule suites (listed 23 Nov 2026)
+
+Each file's header says which migration it checks and whether it needs the seed. **Seed** means a
+fresh database seeded with `payment_plans_seed.sql`, then the suite with `psql -f`; **no seed** means
+pass the suite to `run_rls_local.sh` straight after the migrations.
+
+| File | What it checks | Needs |
+|---|---|---|
+| `activity_overlap_rules.sql` | `0156`: one person cannot hold two activity sittings that overlap on a day. | Seed |
+| `activity_signup_rules.sql` | `0177`: what a family may write on activity signups (the event, active, inside the window, not a cancelled place) and that a new place needs a published option at a published, unarchived event. | Seed |
+| `background_check_length_rules.sql` | `0158`: how long a background check lasts is a setting for the background-checks write grant, and a change recalculates every expiry. | Seed |
+| `contact_email_rules.sql` | `0171`, `0178`, `0180`: a new contact email is confirmed first, five links a day, the notice to the old address, merges. | No seed |
+| `deposit_scholarship_rules.sql` | `0168`, `0169`: a granted scholarship pays toward the deposit first; a background check waits for the person's own share. | Seed |
+| `export_log_rules.sql` | `0182`: request keys on hand-recorded payments and gifts, and the export log. | No seed |
+| `family_scholarship_rules.sql` | `0159`: one family scholarship request, split by fee, re-spread when someone is removed. | Seed |
+| `household_invite_rules.sql` | `0174`, `0178`, `0179`, `0186`: invites, removing a login (and its pending contact-email change), the empty-household fold-in, waiting invites. | No seed |
+| `lower_price_rules.sql` | `0145`: a lowered price reaches people already registered. | Loads the seed itself; pass it to the runner |
+| `prayer_rules.sql` | `0141`: the prayer list. | Seed |
+| `staff_answers_rules.sql` | `0081`: family discount, review classes, agreements, deletion requests. | Seed |
+| `volunteerbadge_rules.sql` | `0165`, `0167`, `0170`: VolunteerBadge requests, who sends and reads them, OK to serve from a clear result. | Seed |
+
 ## On the build machine (Windows, PostgreSQL 16 installed 18 Oct 2026)
 
 `run_rls_local.sh` does the whole recipe against the local server on `localhost:5432`, never
