@@ -11,7 +11,7 @@ import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email';
 import { emailLooksValid } from '@/lib/format';
-import { verifyTurnstile } from '@/lib/turnstile';
+import { verifyTurnstile, turnstileConfigured } from '@/lib/turnstile';
 import { siteOrigin } from '@/lib/origin';
 import { site } from '@/lib/site';
 import {
@@ -41,8 +41,13 @@ export async function signUpForPrayerList(form) {
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
   // Shut on the live site when the check cannot run (23 Nov 2026): this form
   // sends an email to whatever address is typed. Contact stays open.
+  // Shut only when the check is set up and still cannot run (Cloudflare down).
+  // With the keys missing it stays open as before, logs loudly, and Setup's
+  // health line says NOT RUNNING (24 Nov 2026: the live keys could not be
+  // confirmed after the review's push, and a missing key would have turned
+  // every gift away; a guess, flagged for Lawrence).
   const check = await verifyTurnstile(form?.captchaToken, ip, {
-    failOpen: process.env.VERCEL_ENV !== 'production',
+    failOpen: process.env.VERCEL_ENV !== 'production' || !turnstileConfigured(),
     action: 'prayer',
   });
   if (check.unavailable) {

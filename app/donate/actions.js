@@ -15,7 +15,7 @@ import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { getStripe } from '@/lib/stripe/server';
 import { coverFeeCents } from '@/lib/payments';
-import { verifyTurnstile } from '@/lib/turnstile';
+import { verifyTurnstile, turnstileConfigured } from '@/lib/turnstile';
 import { siteOrigin } from '@/lib/origin';
 import { DONATION_FUNDS } from '@/lib/funds';
 
@@ -67,8 +67,13 @@ export async function createDonationCheckout({ amountCents, fund, method, coverF
   // Unlike Contact it stays shut when the check cannot run on the live site
   // (23 Nov 2026): a laptop or a preview without the keys still works.
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined;
+  // Shut only when the check is set up and still cannot run (Cloudflare down).
+  // With the keys missing it stays open as before, logs loudly, and Setup's
+  // health line says NOT RUNNING (24 Nov 2026: the live keys could not be
+  // confirmed after the review's push, and a missing key would have turned
+  // every gift away; a guess, flagged for Lawrence).
   const check = await verifyTurnstile(captchaToken, ip, {
-    failOpen: process.env.VERCEL_ENV !== 'production',
+    failOpen: process.env.VERCEL_ENV !== 'production' || !turnstileConfigured(),
     action: 'donate',
   });
   if (check.unavailable) {
