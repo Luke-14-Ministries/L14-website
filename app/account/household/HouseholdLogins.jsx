@@ -59,7 +59,7 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
   }
 
   return (
-    <section id="logins" className="mt-8 rounded-lg bg-white border border-neutral-200 shadow-xs p-6 scroll-mt-24">
+    <section id="logins" className="mt-6 rounded-lg bg-white border border-neutral-200 shadow-xs p-6 scroll-mt-24">
       <h2 className="text-lg font-bold mb-1">Who can sign in to this household</h2>
       <p className="text-sm text-neutral-600 mb-4">
         Another parent, guardian or adult in your family can have their own sign-in. They see, and

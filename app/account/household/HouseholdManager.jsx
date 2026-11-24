@@ -306,7 +306,7 @@ Anything already saved is untouched.`
     setOpenCards((o) => ({ ...o, ...Object.fromEntries(members.map((m) => [m.id, value])) }));
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6">
       {/* Household contact card */}
       <form
         data-card="hh"
@@ -324,21 +324,15 @@ Anything already saved is untouched.`
             HOUSEHOLD, while My Household still listed the old person. They
             are now separate fields with separate meanings, labelled so the
             difference is visible rather than implied. */}
+        {/* One paragraph since 23 Nov 2026 (it was a line and a gray box
+            saying overlapping things). It still says the household phone and
+            email are not a person's: the two cards look alike, and testing
+            read them as duplicates (25 Aug). */}
         <p className="text-sm text-neutral-600 mb-4">
+          The phone and email camp staff use to reach your family, and where mail is sent.
           The <strong>family name</strong> is what staff see on a roster. The{' '}
-          <strong>primary contact</strong> is the person they call. They don&rsquo;t have to
-          match.
-        </p>
-        {/* Said explicitly because the two cards look alike: a household phone
-            and a person phone are different things, and when the family name
-            happens to match a person's name (the usual case for a household of
-            one) they read as duplicates of each other. Testing hit exactly
-            this, 25 Aug. */}
-        <p className="mb-4 rounded-sm border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
-          This section is about the <strong>household</strong>: the phone and email camp
-          staff use to reach your family, and where mail is sent. Each person&rsquo;s own
-          phone and email are on their card further down, and are only used if staff need
-          that person directly.
+          <strong>primary contact</strong> is the person they call first. Each person&rsquo;s own
+          phone and email are on their card below.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Family / household name">
@@ -353,7 +347,7 @@ Anything already saved is untouched.`
               defaultValue={household?.primary_contact_person_id ?? ''}
               className={inputCls}
             >
-              <option value="">— not set —</option>
+              <option value="">Not set</option>
               {members.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.first_name} {m.last_name}
@@ -474,7 +468,8 @@ Anything already saved is untouched.`
         </div>
       </form>
 
-      {/* Open all / Fold all (26 Oct). Plain links, because they change
+      {/* Open all / Close all (26 Oct; "Close" since 23 Nov 2026, the word
+          the cards' own arrows suggest). Plain links, because they change
           nothing but what is shown. */}
       {members.length > 0 && (
         <div className="flex items-center justify-end gap-4 text-sm">
@@ -490,7 +485,7 @@ Anything already saved is untouched.`
             onClick={() => setAllCards(false)}
             className="font-semibold text-brand underline"
           >
-            Fold all
+            Close all
           </button>
         </div>
       )}
@@ -587,11 +582,10 @@ Anything already saved is untouched.`
                 onClick={() => setOpen(m.id, !open)}
                 className="flex w-full items-start gap-3 text-left"
               >
-                <FoldArrow open={open} className="mt-6" />
+                <FoldArrow open={open} className="mt-1.5" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-semibold uppercase tracking-wide text-neutral-400">
-                    Person
-                  </span>
+                  {/* The "Person" label above each name went (23 Nov 2026): the
+                      name and age say it. */}
                   <span className="block text-lg font-bold">
                     {m.first_name} {m.last_name}
                     <span className="font-normal text-neutral-500 text-base">
@@ -754,7 +748,7 @@ Anything already saved is untouched.`
                         onChange={(e) => setCgChoice((c) => ({ ...c, [`${m.id}:${slot}`]: e.target.value }))}
                         className={inputCls}
                       >
-                        <option value="">— none —</option>
+                        <option value="">None</option>
                         {others.map((o) => (
                           <option key={o.id} value={o.id}>
                             {o.first_name} {o.last_name}
@@ -796,10 +790,13 @@ Anything already saved is untouched.`
                       </label>
                     ));
                   })()}
+                  {/* The page intro's caregiver sentence lives here now, with
+                      the boxes it explains (23 Nov 2026). */}
                   <p className="text-xs text-neutral-500 mt-2">
-                    Who staff contact first about this person at camp. A linked caregiver
-                    needs a phone number on their own card, so staff can reach them during
-                    camp.
+                    Who staff contact first about this person at camp. Each person can have up
+                    to two. We suggest the parents or guardians in your household, but you can
+                    change them. A linked caregiver needs a phone number on their own card, so
+                    staff can reach them during camp.
                   </p>
                 </div>
               ) : (
@@ -975,7 +972,7 @@ Anything already saved is untouched.`
           warning, and it is the only thing on this page that knows about more
           than one card at a time.
 
-          pb-24 on the wrapper keeps it from covering the last card's own Save
+          pb-24 on the page's container (page.jsx) keeps it from covering the last card's own Save
           button, which would be a poor joke. */}
       {dirtyKeys.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-amber-300 bg-amber-50/95 backdrop-blur-sm">

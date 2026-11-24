@@ -9,7 +9,8 @@ import SetUpHousehold from './SetUpHousehold';
 import BackBar from '@/components/BackBar';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
-export const metadata = { title: 'Manage Household' };
+// One name per account page, in sentence case (23 Nov 2026).
+export const metadata = { title: 'Manage household' };
 
 const ageFrom = (dob) => {
   if (!dob) return null;
@@ -201,15 +202,18 @@ export default async function ManageHouseholdPage() {
 
   return (
     <section className="bg-neutral-50 py-12 min-h-[60vh]">
-      <div className="container-site max-w-3xl mx-auto">
+      {/* pb-24 here, not on HouseholdManager's wrapper (23 Nov 2026): it keeps
+          the unsaved-changes bar off the last Save button, and inside the
+          manager it opened a wide gap above the login card. */}
+      <div className="container-site max-w-3xl mx-auto pb-24">
         <div className={`${TITLE_ROW} mb-2`}>
-          <h1 className="text-3xl font-bold">Manage Household</h1>
+          <h1 className="text-3xl font-bold">Manage household</h1>
           <BackLink />
         </div>
+        {/* The caregiver sentence moved into each person's Linked caregivers
+            box, where it is used (23 Nov 2026). */}
         <p className="text-neutral-600 mb-8">
-          Keep your family&rsquo;s details current. Camp staff see whatever is saved here. Each
-          person can have up to two linked caregivers. We suggest the parents or guardians in
-          your household, but you can change them.
+          Keep your family&rsquo;s details up to date. Camp staff use what is saved here.
         </p>
 
         <HouseholdManager
