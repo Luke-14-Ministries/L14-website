@@ -344,6 +344,40 @@ export default async function DashboardPage({ searchParams }) {
     ...(viewRows ?? []),
     ...(await rejectedOutsideView(supabase, viewRows, { registrationIds: regs.map((r) => r.id) })),
   ];
+  // Activities nobody has chosen yet (Lawrence, 24 Nov 2026: no family had
+  // picked any, and nothing pointed them there). A gentle, optional line on the
+  // registration card, never a "Needs:" item: an upcoming event that has
+  // activities, a submitted or confirmed person who chooses them
+  // (CHOOSES_ACTIVITIES), and not one interest or sign-up from anyone on the
+  // registration. Scoped to this household's registrations, never RLS alone.
+  const choosers = regs
+    .filter((r) => !isPast(r))
+    .flatMap((r) =>
+      (r.registration_participants ?? [])
+        .filter((p) => CHOOSES_ACTIVITIES.has(p.camp_role) && !['cancelled', 'draft'].includes(p.status))
+        .map((p) => ({ regId: r.id, eventId: r.events?.id, participantId: p.id }))
+    );
+  const chooserEventIds = [...new Set(choosers.map((c) => c.eventId).filter(Boolean))];
+  const [{ data: offeredRows, error: offeredError }, { data: pickedRows, error: pickedError }] = await Promise.all([
+    chooserEventIds.length
+      ? supabase.from('activities').select('event_id').in('event_id', chooserEventIds).eq('active', true)
+      : Promise.resolve({ data: [], error: null }),
+    choosers.length
+      ? supabase
+          .from('activity_signups')
+          .select('registration_participant_id')
+          .in('registration_participant_id', choosers.map((c) => c.participantId))
+          .neq('status', 'cancelled')
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (offeredError) throw new Error(`Activities offered: ${offeredError.message}`);
+  if (pickedError) throw new Error(`Activities chosen: ${pickedError.message}`);
+  const eventsWithActivities = new Set((offeredRows ?? []).map((a) => a.event_id));
+  const pickedParticipants = new Set((pickedRows ?? []).map((x) => x.registration_participant_id));
+  const regsWithPicks = new Set(choosers.filter((c) => pickedParticipants.has(c.participantId)).map((c) => c.regId));
+  const activitiesToChoose = new Set(
+    choosers.filter((c) => eventsWithActivities.has(c.eventId) && !regsWithPicks.has(c.regId)).map((c) => c.regId)
+  );
   const firstNameByPerson = new Map();
   for (const r of regs) {
     for (const p of r.registration_participants ?? []) {
@@ -1340,6 +1374,9 @@ export default async function DashboardPage({ searchParams }) {
                       )}
                       allSet={allSet}
                       owing={balanceStillOwed(r)}
+                      activitiesHref={
+                        activitiesToChoose.has(r.id) ? `/account/activities/?registration=${r.id}` : null
+                      }
                       // Dropped when every line repeats a card at the top of
                       // the page (23 Nov 2026): the support and medical
                       // details card while anyone's are owed, the waivers box

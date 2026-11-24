@@ -61,6 +61,10 @@ export default function RegistrationCard({
   // null) shows the green line instead, for an upcoming event.
   todo = [],
   complete = null,
+  // Activities not chosen yet (24 Nov 2026): a link to the Activities page,
+  // said as optional. It joins the "Still to do" line when there is one,
+  // otherwise it is its own quiet line under "Registration complete".
+  activitiesHref = null,
   stateKey,
   defaultOpen = false,
   children,
@@ -151,6 +155,15 @@ export default function RegistrationCard({
               )}
             </span>
           ))}
+          {activitiesHref && (
+            <>
+              {', '}
+              <Link href={activitiesHref} className="font-semibold underline hover:text-amber-950">
+                choose activities
+              </Link>{' '}
+              (optional)
+            </>
+          )}
           .
         </p>
       ) : (
@@ -159,6 +172,15 @@ export default function RegistrationCard({
             <span className="font-semibold">Registration complete ✓.</span> {complete}
           </p>
         )
+      )}
+      {activitiesHref && todo.length === 0 && (
+        <p className="border-t border-neutral-200 bg-neutral-50 px-4 py-2 text-sm text-neutral-700">
+          <span className="font-semibold">Next, if you like:</span>{' '}
+          <Link href={activitiesHref} className="font-semibold text-brand underline">
+            choose activities
+          </Link>{' '}
+          for anyone going. It&rsquo;s optional.
+        </p>
       )}
 
       {/* Unmounted rather than hidden with CSS: the body holds live controls
