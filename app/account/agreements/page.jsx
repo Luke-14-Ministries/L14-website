@@ -150,7 +150,7 @@ export default async function AgreementsPage() {
   }
 
   return (
-    <section className="print-sheet bg-neutral-50 py-12 print:bg-white print:py-0">
+    <section className="print-sheet bg-neutral-50 py-12 min-h-[60vh] print:min-h-0 print:bg-white print:py-0">
       <div className="container-site max-w-3xl mx-auto">
         <div className="print:hidden">
           {/* The account pages' header (26 Oct 2026): title left, the Back to
