@@ -1,12 +1,12 @@
 // "What the automatic emails say" (23 Nov 2026, review A4-16/A4-17): every
 // kind of daily automatic email as a family would get it, filled with
 // made-up facts, and when it goes. Read-only. The wording lives in
-// lib/reminders/templates.js and is still for Ellen and Katie to mark up;
+// lib/reminders/templates.js (samples: lib/reminders/guide.js) and is still for Ellen and Katie to mark up;
 // this card is where they can read it. A server component: FoldCard folds
 // it, each email is a native <details> like the sent list's.
 
 import FoldCard from '@/components/FoldCard';
-import { sampleAutomaticEmails } from '@/lib/reminders/templates';
+import { sampleAutomaticEmails } from '@/lib/reminders/guide';
 
 export const AUTOMATIC_EMAILS_ANCHOR = 'automatic-emails';
 
