@@ -165,7 +165,7 @@ export default async function AccountsPage() {
         </Link>
       </p>
 
-      <details className="mt-6 rounded-lg border border-neutral-200">
+      <details className="card mt-6 p-0">
         <summary className="cursor-pointer select-none px-4 py-2.5 text-sm font-semibold text-neutral-700">
           Account changes made here{' '}
           <span className="font-normal text-neutral-500">

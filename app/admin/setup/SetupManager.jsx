@@ -1116,7 +1116,7 @@ function groupByYear(events) {
 function YearGroup({ year, list, past }) {
   const visible = list.filter((e) => eventStatus(e.published, e.archivedAt) === 'published').length;
   return (
-    <details open={!past} className="group rounded-lg border border-neutral-200">
+    <details open={!past} className="card group p-0">
       <summary className={`${SUMMARY} px-4 py-3`}>
         <span>
           <span className="font-bold">{year}</span>
