@@ -6,7 +6,7 @@
 import { getStaff, can } from '@/lib/staff';
 import { clearancePill } from '@/lib/format';
 import { createClient } from '@/lib/supabase/server';
-import { csvCell } from '@/lib/csv';
+import { csvCell, csvResponse, logExport } from '@/lib/csv';
 import { dayInMorristown, todayInMorristown } from '@/lib/events';
 
 // Quoting and spreadsheet-formula safety: lib/csv.js.
@@ -107,10 +107,6 @@ export async function GET(request) {
   const csv = rows.map((r) => r.map(esc).join(',')).join('\r\n');
   const stamp = todayInMorristown();
   const slug = (event?.name ?? 'event').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-  return new Response(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="buddies-${slug}-${stamp}.csv"`,
-    },
-  });
+  await logExport(supabase, 'buddies', { event: eventId });
+  return csvResponse(csv, `buddies-${slug}-${stamp}.csv`);
 }

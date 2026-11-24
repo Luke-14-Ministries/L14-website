@@ -6,7 +6,7 @@
 import { formatPhone } from '@/lib/format';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { csvCell } from '@/lib/csv';
+import { csvCell, csvResponse, logExport } from '@/lib/csv';
 import { todayInMorristown, inPaymentsScope } from '@/lib/events';
 
 // Quoting and spreadsheet-formula safety: lib/csv.js.
@@ -80,10 +80,6 @@ export async function GET(request) {
 
   // \ufeff is the UTF-8 byte-order mark so Excel reads dashes/accents correctly.
   const csv = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\r\n');
-  return new Response(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="luke14-balances-${todayInMorristown()}.csv"`,
-    },
-  });
+  await logExport(supabase, 'balances', { event: eventFilter, paystate });
+  return csvResponse(csv, `luke14-balances-${todayInMorristown()}.csv`);
 }

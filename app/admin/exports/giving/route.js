@@ -3,7 +3,7 @@
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { csvCell } from '@/lib/csv';
+import { csvCell, csvResponse, logExport } from '@/lib/csv';
 import { QB_GIFT_ACCOUNT, QB_HEADER, giftProduct, receiptRows } from '@/lib/quickbooks';
 import { dayInMorristown, todayInMorristown } from '@/lib/events';
 
@@ -67,12 +67,8 @@ export async function GET(request) {
       );
     }
     const csvQb = '\ufeff' + qb.map((r) => r.map(esc).join(',')).join('\r\n');
-    return new Response(csvQb, {
-      headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="luke14-giving-quickbooks-${todayInMorristown()}.csv"`,
-      },
-    });
+    await logExport(supabase, 'giving', { format: 'quickbooks', from: fFrom, to: fTo, fund: fFund, method: fMethod });
+    return csvResponse(csvQb, `luke14-giving-quickbooks-${todayInMorristown()}.csv`);
   }
 
   const rows = [['Date', 'Donor', 'Email', 'Amount', 'Fund', 'Method', 'Status', 'Note']];
@@ -91,10 +87,6 @@ export async function GET(request) {
 
   // UTF-8 byte-order mark so Excel reads accents and dashes correctly.
   const csv = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\r\n');
-  return new Response(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="luke14-giving-${todayInMorristown()}.csv"`,
-    },
-  });
+  await logExport(supabase, 'giving', { from: fFrom, to: fTo, fund: fFund, method: fMethod });
+  return csvResponse(csv, `luke14-giving-${todayInMorristown()}.csv`);
 }

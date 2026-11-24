@@ -4,7 +4,7 @@
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { csvCell } from '@/lib/csv';
+import { csvCell, csvResponse, logExport } from '@/lib/csv';
 import { dayInMorristown, todayInMorristown } from '@/lib/events';
 
 // Quoting and spreadsheet-formula safety: lib/csv.js.
@@ -39,18 +39,6 @@ export async function GET(request) {
   }
   const csv = rows.map((r) => r.map(esc).join(',')).join('\r\n');
   const stamp = todayInMorristown();
-  if (mailchimp) {
-    return new Response(csv, {
-      headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="newsletter-mailchimp-import-${stamp}.csv"`,
-      },
-    });
-  }
-  return new Response(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="newsletter-list-${stamp}.csv"`,
-    },
-  });
+  await logExport(supabase, 'newsletter', { format: mailchimp ? 'mailchimp' : '' });
+  return csvResponse(csv, mailchimp ? `newsletter-mailchimp-import-${stamp}.csv` : `newsletter-list-${stamp}.csv`);
 }

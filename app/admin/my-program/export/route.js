@@ -8,24 +8,13 @@
 // them. Who may ask: ../access.js.
 
 import { getProgramRoster, programRosterRows, askAboutWords, buddyWords } from '@/lib/programs';
-import { csvCell } from '@/lib/csv';
+import { csvCell, csvResponse, logExport } from '@/lib/csv';
+import { createClient } from '@/lib/supabase/server';
 import { programForCaller } from '../access';
 
-// "Children - Camp Celebrate 2027 - Week 2.csv". Characters Windows refuses
-// in a file name become spaces; the plain filename= is the ASCII fallback and
-// filename*= carries the real one.
-function fileNames(program) {
-  const base = `${program.programName} - ${program.eventName}`
-    .replace(/[\\/:*?"<>|\r\n]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  const ascii = base.replace(/[–—]/g, '-').replace(/[^\x20-\x7e]/g, '').trim() || 'program';
-  const encoded = encodeURIComponent(`${base}.csv`).replace(
-    /['()*]/g,
-    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
-  );
-  return `filename="${ascii}.csv"; filename*=UTF-8''${encoded}`;
-}
+// "Children - Camp Celebrate 2027 - Week 2.csv": csvResponse() (lib/csv.js)
+// makes the Windows-safe name and its plain-ASCII fallback, the way this
+// route did on its own until 23 Nov 2026.
 
 export async function GET(request) {
   const url = new URL(request.url);
@@ -56,12 +45,8 @@ export async function GET(request) {
 
   // ﻿: the UTF-8 byte-order mark, so Excel reads the em-dash correctly.
   const csv = '﻿' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n');
-  return new Response(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; ${fileNames(program)}`,
-      // A roster of disabled children's names: not for any shared cache.
-      'Cache-Control': 'private, no-store',
-    },
-  });
+  // A roster of disabled children's names: csvResponse keeps it out of any
+  // shared cache.
+  await logExport(await createClient(), 'program_roster', { program: program.programId, event: program.eventId });
+  return csvResponse(csv, `${program.programName} - ${program.eventName}.csv`);
 }

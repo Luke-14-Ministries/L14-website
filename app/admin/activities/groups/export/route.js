@@ -7,7 +7,7 @@
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { csvCell } from '@/lib/csv';
+import { csvCell, csvResponse, logExport } from '@/lib/csv';
 import { todayInMorristown } from '@/lib/events';
 import { GROUP_ROLE_LABEL } from '@/lib/activityGroups';
 import { loadActivityGroups } from '../load';
@@ -57,10 +57,6 @@ export async function GET(request) {
 
   const csv = rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
   const slug = (activity.name || 'activity').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-  return new Response(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="groups-${slug}-${todayInMorristown()}.csv"`,
-    },
-  });
+  await logExport(supabase, 'activity_groups', { activity: activityId });
+  return csvResponse(csv, `groups-${slug}-${todayInMorristown()}.csv`);
 }

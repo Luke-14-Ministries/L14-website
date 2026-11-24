@@ -46,6 +46,26 @@ const labelOf = (field) =>
 const name = (p) =>
   p ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Unnamed' : null;
 
+// The eight CSV exports (0182), in the words of the pages they come from.
+const EXPORT_LABEL = {
+  balances: 'Balances',
+  giving: 'Giving',
+  payments: 'Event payments',
+  rosters: 'Rosters',
+  buddies: 'Buddy pairings',
+  newsletter: 'Newsletter list',
+  activity_groups: 'Activity groups',
+  program_roster: 'Program roster (leader)',
+};
+
+// The URL choices the download was made with, as "event: all · status:
+// confirmed". Ids stay ids: this is for answering "what did they take",
+// and the page they came from can turn an id back into a name.
+const filterWords = (filters) => {
+  const pairs = Object.entries(filters ?? {});
+  return pairs.length ? pairs.map(([k, v]) => `${k}: ${v}`).join(' · ') : 'no filters';
+};
+
 export default async function AccessLogPage() {
   const staff = await getStaff();
   if (!staff) await bounceNonStaff('/admin/staff/access-log/');
@@ -67,6 +87,15 @@ export default async function AccessLogPage() {
     )
     .order('changed_at', { ascending: false })
     .limit(200);
+
+  // Downloads (0182, 23 Nov 2026): every CSV export, who took it and with
+  // which filters. Its own read and its own error line, so a problem with one
+  // list never hides the other.
+  const { data: exports, error: exportsError } = await supabase
+    .from('export_log')
+    .select('id, kind, filters, exported_at, who:profiles!export_log_profile_id_fkey ( first_name, last_name )')
+    .order('exported_at', { ascending: false })
+    .limit(100);
 
   const selfGrants = (rows ?? []).filter(
     (r) => r.changed_by_self && r.new_value === 'true'
@@ -157,6 +186,48 @@ export default async function AccessLogPage() {
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+          </ResizableTable>
+        </div>
+      )}
+
+      <h3 className="mt-10 mb-1 text-lg font-bold">Downloads</h3>
+      <p className="text-sm text-neutral-500 mb-4 max-w-4xl">
+        Every CSV export of family, payment or giving details: who downloaded it, when, and
+        with which filters. Recorded since 23 November 2026, and nobody can edit or delete
+        it. Shows the most recent 100.
+      </p>
+      {exportsError ? (
+        <p className="mb-4 rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+          The downloads could not be read: {exportsError.message}. This doesn&rsquo;t mean
+          nothing was downloaded.
+        </p>
+      ) : (exports ?? []).length === 0 ? (
+        <p className="text-neutral-600">No downloads recorded yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <ResizableTable storageKey="staff-export-log">
+          <table className="w-full text-sm">
+            <thead className="bg-neutral-50 text-neutral-500">
+              <tr className="text-left">
+                <th className="px-3 py-2 font-semibold">When</th>
+                <th className="px-3 py-2 font-semibold">Who</th>
+                <th className="px-3 py-2 font-semibold">Export</th>
+                <th className="px-3 py-2 font-semibold">Filters</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {(exports ?? []).map((x) => (
+                <tr key={x.id}>
+                  <td className="px-3 py-2 whitespace-nowrap text-neutral-600">{whenInMorristown(x.exported_at)}</td>
+                  <td className="px-3 py-2 font-semibold">
+                    {name(x.who) ?? <span className="italic font-normal text-neutral-500">login since removed</span>}
+                  </td>
+                  <td className="px-3 py-2">{EXPORT_LABEL[x.kind] ?? x.kind}</td>
+                  <td className="px-3 py-2 text-neutral-600 break-all">{filterWords(x.filters)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
           </ResizableTable>

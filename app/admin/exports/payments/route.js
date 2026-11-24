@@ -19,7 +19,7 @@
 
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { csvCell } from '@/lib/csv';
+import { csvCell, csvResponse, logExport } from '@/lib/csv';
 import { QB_HEADER, QB_REGISTRATION_ACCOUNT, eventProduct, receiptRows } from '@/lib/quickbooks';
 import { dayInMorristown, todayInMorristown, inPaymentsScope } from '@/lib/events';
 
@@ -185,12 +185,8 @@ export async function GET(request) {
     const today = todayInMorristown();
     const range = from || to ? `${from || 'start'}-to-${to || today}` : `all-time-${today}`;
     const csvQb = '\ufeff' + qb.map((row) => row.map(esc).join(',')).join('\r\n');
-    return new Response(csvQb, {
-      headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="luke14-event-payments-quickbooks-${range}.csv"`,
-      },
-    });
+    await logExport(supabase, 'payments', { format: 'quickbooks', event: eventFilter, paystate, from, to });
+    return csvResponse(csvQb, `luke14-event-payments-quickbooks-${range}.csv`);
   }
 
   for (const p of pays ?? []) {
@@ -215,12 +211,9 @@ export async function GET(request) {
 
   // UTF-8 byte-order mark so Excel reads accents and dashes correctly.
   const csv = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\r\n');
-  return new Response(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="luke14-event-payments-${
-        from || to ? `${from || 'start'}-to-${to || todayInMorristown()}` : todayInMorristown()
-      }.csv"`,
-    },
-  });
+  await logExport(supabase, 'payments', { event: eventFilter, paystate, from, to });
+  return csvResponse(
+    csv,
+    `luke14-event-payments-${from || to ? `${from || 'start'}-to-${to || todayInMorristown()}` : todayInMorristown()}.csv`
+  );
 }

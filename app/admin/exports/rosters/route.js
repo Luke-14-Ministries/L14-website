@@ -4,7 +4,7 @@
 import { formatPhone } from '@/lib/format';
 import { getStaff, can } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { csvCell } from '@/lib/csv';
+import { csvCell, csvResponse, logExport } from '@/lib/csv';
 import { todayInMorristown, eventInScope } from '@/lib/events';
 
 // Quoting and spreadsheet-formula safety: lib/csv.js.
@@ -132,10 +132,6 @@ export async function GET(request) {
   // \ufeff is the UTF-8 byte-order mark. Without it Excel guesses the wrong
   // encoding and renders em-dashes as "â€"" gibberish.
   const csv = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\r\n');
-  return new Response(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="luke14-rosters-${todayInMorristown()}.csv"`,
-    },
-  });
+  await logExport(supabase, 'rosters', { event: fEvent, role: fRole, status: fStatus });
+  return csvResponse(csv, `luke14-rosters-${todayInMorristown()}.csv`);
 }
