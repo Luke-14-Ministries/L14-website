@@ -1,6 +1,6 @@
 -- Checks for migrations 0171 and 0178 (a new contact email is confirmed first;
 -- five links a day, the notice to the old address, families logging their
--- own emails). Run on a
+-- own emails) and 0180 (a merge with two pending changes). Run on a
 -- fresh database after every migration (no seed needed):
 --   L14_DB=l14_email bash supabase/tests/run_rls_local.sh
 --   psql ... -d l14_email -f supabase/tests/contact_email_rules.sql
@@ -264,6 +264,49 @@ begin
      and sent_by = '00000000-0000-0000-0000-0000000000e1';
   if n <> 5 then raise exception 'FAIL 6: feedback rows % (address not fixed?)', n; end if;
   raise notice 'PASS 6 feedback rows go to info@ and carry the sender';
+end $$;
+rollback;
+
+\echo == 7 merging two households that each have a pending contact email (0180)
+begin;
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000e9', 'admin@example.test');
+insert into public.staff (profile_id, role) values ('00000000-0000-0000-0000-0000000000e9', 'admin');
+insert into public.households (id, display_name, email)
+values ('00000000-0000-0000-0000-0000000000f2', 'Second family', 'second@example.test');
+insert into public.household_members (household_id, profile_id, role)
+values ('00000000-0000-0000-0000-0000000000f2', '00000000-0000-0000-0000-0000000000e2', 'owner');
+insert into public.household_email_changes (household_id, new_email, token_hash) values
+  ('00000000-0000-0000-0000-0000000000f1', 'kept-new@example.test', 'hash-kept-0180'),
+  ('00000000-0000-0000-0000-0000000000f2', 'merged-new@example.test', 'hash-merged-0180');
+insert into public.household_invites (household_id, email, token_hash, invited_by)
+values ('00000000-0000-0000-0000-0000000000f2', 'friend@example.test', 'hash-invite-0180',
+        '00000000-0000-0000-0000-0000000000e2');
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e9', true) \g /dev/null
+select set_config('request.jwt.claims', '{"aal":"aal2"}', true) \g /dev/null
+do $$
+begin
+  perform public.admin_merge_households('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000f2');
+  raise notice 'PASS 7 merge with two pending contact emails succeeds';
+end $$;
+set local role postgres;
+do $$
+declare n int; v text;
+begin
+  select new_email into v from public.household_email_changes where household_id = '00000000-0000-0000-0000-0000000000f1';
+  if v is distinct from 'kept-new@example.test' then raise exception 'FAIL 7: kept pending change is %', v; end if;
+  select count(*) into n from public.household_email_changes where new_email = 'merged-new@example.test';
+  if n <> 0 then raise exception 'FAIL 7: the merged household''s pending change survived'; end if;
+  select count(*) into n from public.household_invites
+   where token_hash = 'hash-invite-0180' and cancelled_at is null;
+  if n <> 0 then raise exception 'FAIL 7: the merged household''s open invite is still open'; end if;
+  select role into v from public.household_members
+   where household_id = '00000000-0000-0000-0000-0000000000f1' and profile_id = '00000000-0000-0000-0000-0000000000e2';
+  if v is distinct from 'adult' then raise exception 'FAIL 7: the login that came across is % (expected adult)', v; end if;
+  select count(*) into n from public.admin_account_log where action = 'merge_households'
+     and target_household_id = '00000000-0000-0000-0000-0000000000f2';
+  if n <> 1 then raise exception 'FAIL 7: merge not in the account log'; end if;
+  raise notice 'PASS 7 kept change survives, merged change and invite gone, one owner, logged';
 end $$;
 rollback;
 

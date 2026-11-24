@@ -336,6 +336,108 @@ begin
 end;
 $$;
 
+-- ---------------------------------------------------------------------
+-- Accounts tools (0180, 23 Nov 2026): "Delete family & all their data"
+-- needs the administrator's own code (aal2), refuses a family with real
+-- money, keeps a staff member's login, and is logged. Everything here is
+-- rolled back at the end, so the checks below see the seed as it was.
+-- ---------------------------------------------------------------------
+do $$
+declare
+  uAdm uuid := 'abab0000-0000-4000-8000-0000000000a1';
+  uSF  uuid := 'abab0000-0000-4000-8000-0000000000a2';  -- staff, and a parent
+  uPl  uuid := 'abab0000-0000-4000-8000-0000000000a3';  -- plain family login
+  uM   uuid := 'abab0000-0000-4000-8000-0000000000a4';  -- family with a card payment
+  uA uuid;
+  ev uuid; opt uuid;
+  hMoney uuid; hMix uuid; pMix uuid; regMoney uuid; regMix uuid;
+  res jsonb;
+  n bigint;
+begin
+  begin
+    select v into uA from t where k='uA';
+    select v into ev from t where k='ev';
+    select id into opt from public.event_options where event_id = ev and participant_role = 'camper';
+
+    insert into auth.users (id, email) values
+      (uAdm, 'adm@example.test'), (uSF, 'sf@example.test'),
+      (uPl, 'pl@example.test'), (uM, 'm@example.test');
+    insert into public.staff (profile_id, role) values (uAdm, 'admin'), (uSF, 'registrar');
+
+    insert into public.households (display_name) values ('Money family') returning id into hMoney;
+    insert into public.households (display_name) values ('Mixed family') returning id into hMix;
+    insert into public.household_members (household_id, profile_id, role) values
+      (hMoney, uM, 'owner'), (hMix, uSF, 'owner'), (hMix, uPl, 'adult');
+    insert into public.people (household_id, first_name, last_name)
+      values (hMix, 'Mia', 'Mixed') returning id into pMix;
+
+    insert into public.registrations (household_id, event_id) values (hMoney, ev) returning id into regMoney;
+    insert into public.payments (registration_id, amount_cents, method, status, stripe_payment_intent_id)
+      values (regMoney, 5000, 'card', 'succeeded', 'pi_harness_0180');
+    -- The mixed family has a registration, a person on it and a check not yet
+    -- received: not real money, so the purge goes ahead and takes them.
+    insert into public.registrations (household_id, event_id) values (hMix, ev) returning id into regMix;
+    insert into public.registration_participants (registration_id, person_id, event_option_id)
+      values (regMix, pMix, opt);
+    insert into public.payments (registration_id, amount_cents, method, status)
+      values (regMix, 5000, 'check', 'pending');
+
+    set local role authenticated;
+
+    -- A remembered browser (aal1) reads staff pages but may not purge.
+    perform pg_temp.as_user_aal1(uAdm);
+    perform pg_temp.expect_denied('purge needs the administrator''s own code (aal2) (0180)',
+      format('select public.admin_purge_household(%L)', hMix));
+    perform pg_temp.expect_denied('removing a login needs the administrator''s own code (aal2) (0180)',
+      format('select public.admin_delete_login(%L)', uPl));
+
+    perform pg_temp.as_user(uAdm);
+    begin
+      perform public.admin_purge_household(hMoney);
+      raise exception 'FAIL: a family with a card payment was purged (0180)';
+    exception when raise_exception then
+      if sqlerrm not like '%Deletion Requests%' then raise; end if;
+    end;
+
+    -- Only an administrator, even with a code.
+    perform pg_temp.as_user(uSF);
+    perform pg_temp.expect_denied('a registrar cannot purge a household (0180)',
+      format('select public.admin_purge_household(%L)', hMix));
+
+    perform pg_temp.as_user(uAdm);
+    res := public.admin_purge_household(hMix);
+    perform pg_temp.expect('purge deletes the plain login only (0180)', (res ->> 'logins_deleted')::bigint, 1);
+    perform pg_temp.expect('purge names the staff login it kept (0180)',
+      (case when res -> 'logins_kept' ? 'sf@example.test' then 1 else 0 end)::bigint, 1);
+    select count(*) into n from public.admin_account_log where target_household_id = hMix and action = 'purge_household';
+    perform pg_temp.expect('the purge is in the account log (0180)', n, 1);
+
+    perform pg_temp.as_user(uA);
+    select count(*) into n from public.admin_account_log;
+    perform pg_temp.expect('a family reads no account log (0180)', n, 0);
+    perform pg_temp.expect_denied('nobody signed in writes the account log (0180)',
+      'insert into public.admin_account_log (action) values (''delete_login'')');
+
+    set local role postgres;
+    select count(*) into n from auth.users where id = uSF;
+    perform pg_temp.expect('the staff member keeps their login (0180)', n, 1);
+    select count(*) into n from public.staff where profile_id = uSF;
+    perform pg_temp.expect('and stays staff (0180)', n, 1);
+    select count(*) into n from auth.users where id = uPl;
+    perform pg_temp.expect('the plain family login is deleted (0180)', n, 0);
+    select count(*) into n from public.households where id = hMix;
+    perform pg_temp.expect('the household is gone (0180)', n, 0);
+    select count(*) into n from public.households where id = hMoney;
+    perform pg_temp.expect('the family with a card payment is untouched (0180)', n, 1);
+
+    raise exception 'ROLLBACK_0180';
+  exception when raise_exception then
+    if sqlerrm <> 'ROLLBACK_0180' then raise; end if;
+  end;
+  raise notice 'PASS accounts tools (0180)';
+end;
+$$;
+
 
 -- ---------------------------------------------------------------------
 -- Who changed a status, when, and why someone is waitlisted (0128). Its
