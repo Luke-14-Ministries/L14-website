@@ -25,6 +25,22 @@ import { dayInMorristown } from '@/lib/events';
 
 const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf' };
 
+// The first bytes each real file of that type starts with (23 Nov 2026,
+// security review). The browser's file type comes from the file's NAME, so a
+// renamed file of any kind passes it; the first eight bytes do not lie.
+// Staff open these files, so only the three kinds the box asks for get in.
+const MAGIC = {
+  'image/jpeg': [0xff, 0xd8, 0xff],
+  'image/png': [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  'application/pdf': [0x25, 0x50, 0x44, 0x46, 0x2d], // %PDF-
+};
+async function reallyIs(file, type) {
+  const want = MAGIC[type];
+  if (!want) return false;
+  const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  return want.every((b, i) => head[i] === b);
+}
+
 // `personName`: whose form this is -- a camper and their parent or buddy can
 // each have a box for the same activity on one page (27 Oct 2026).
 export default function WaiverUpload({ participantId, activityId, providerName, existing = null, personName = null }) {
@@ -50,6 +66,17 @@ export default function WaiverUpload({ participantId, activityId, providerName, 
       return;
     }
     setBusy(true);
+    let genuine = false;
+    try {
+      genuine = await reallyIs(file, file.type);
+    } catch {
+      genuine = false;
+    }
+    if (!genuine) {
+      setError('That file is not really a JPG, PNG or PDF. Please choose the screenshot, photo or PDF itself.');
+      setBusy(false);
+      return;
+    }
     const check = await checkImageFile(file, {
       kind: 'document',
       maxBytes: BUCKET_LIMIT_BYTES['waiver-confirmations'],

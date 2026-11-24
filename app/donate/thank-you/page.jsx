@@ -4,12 +4,19 @@ import { dollars } from '@/lib/payments';
 
 export const metadata = { title: 'Thank you' };
 
+// A Checkout Session id as Stripe writes it. Anything else in the address
+// is not worth a call to Stripe (23 Nov 2026, security review): the page is
+// public, so without this anyone could make the server ask Stripe about any
+// string, as often as they liked.
+const SESSION_ID = /^cs_(test|live)_[A-Za-z0-9]{10,200}$/;
+
 // Where Stripe returns a donor after giving. The gift is recorded by the
 // stripe-webhook Edge Function; this page just says thank you and sets
 // expectations (including the pending state of a bank-transfer gift).
 export default async function DonateThankYouPage({ searchParams }) {
   const params = await searchParams;
-  const sessionId = typeof params?.session_id === 'string' ? params.session_id : '';
+  const raw = typeof params?.session_id === 'string' ? params.session_id : '';
+  const sessionId = SESSION_ID.test(raw) ? raw : '';
 
   let amount = null;
   let pending = false;
@@ -17,8 +24,13 @@ export default async function DonateThankYouPage({ searchParams }) {
   if (stripe && sessionId) {
     try {
       const s = await stripe.checkout.sessions.retrieve(sessionId);
-      amount = s.amount_total;
-      pending = s.payment_status !== 'paid';
+      // Only a gift's own session shows its amount (metadata.gift, set by
+      // createDonationCheckout). A camp payment's session id pasted here
+      // gets the plain thank-you, never that family's amount or status.
+      if (s.metadata?.gift === '1') {
+        amount = s.amount_total;
+        pending = s.payment_status !== 'paid';
+      }
     } catch {
       /* generic message */
     }
