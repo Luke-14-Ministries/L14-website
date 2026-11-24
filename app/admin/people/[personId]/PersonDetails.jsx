@@ -76,17 +76,17 @@ export default function PersonDetails({ person, canEdit }) {
           {person.preferred_name ? <span className="text-neutral-500"> · goes by {person.preferred_name}</span> : null}
         </Row>
         <Row name="Date of birth">{fmtDob(person.date_of_birth) || <span className="text-amber-700">Not recorded</span>}</Row>
-        <Row name="Sex">{person.gender || '—'}</Row>
+        <Row name="Sex">{person.gender || 'Not recorded'}</Row>
         <Row name="Own phone">
           {phone ? (
             <a href={telHref(phone) ?? undefined} className="text-brand underline">
               {phone}
             </a>
           ) : (
-            '—'
+            'Not recorded'
           )}
         </Row>
-        <Row name="Own email">{person.email || '—'}</Row>
+        <Row name="Own email">{person.email || 'Not recorded'}</Row>
         {done && <p className="mt-2 text-sm text-green-700">Saved.</p>}
         {canEdit && (
           <button

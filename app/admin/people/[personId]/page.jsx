@@ -145,8 +145,8 @@ function FormAnswers({ sensitive, support, name }) {
   if (!sensitive) {
     return (
       <div id="form-answers" className="mt-4">
-        <Section title="Form answers">
-          <p className="text-neutral-500">Form answers need access to Sensitive.</p>
+        <Section title="Support details from the family">
+          <p className="text-neutral-500">These need access to Sensitive.</p>
         </Section>
       </div>
     );
@@ -154,10 +154,10 @@ function FormAnswers({ sensitive, support, name }) {
   if (!support) {
     return (
       <div id="form-answers" className="mt-4">
-        <Section title="Form answers">
-          <p className="text-amber-700">
-            No form answers on file. Nobody has filled in the support details for {name} yet.
-          </p>
+        <Section title="Support details from the family">
+          {/* Plain empty state (23 Nov 2026); gray, since adults other
+              than campers are often never asked. */}
+          <p className="text-neutral-500">The family hasn&rsquo;t filled these in for {name} yet.</p>
         </Section>
       </div>
     );
@@ -179,7 +179,7 @@ function FormAnswers({ sensitive, support, name }) {
   return (
     <div id="form-answers" className="mt-4">
       <Section
-        title="Form answers"
+        title="Support details from the family"
         note={
           saved
             ? `What the family wrote, under the questions from the form. Last saved ${formatDay(s.details_saved_at)}.`
@@ -820,7 +820,7 @@ export default async function PersonPage({ params }) {
                     const cls = rv ? reviewClassInfo(rv) : null;
                     const flags = rv?.flags ?? [];
                     return (
-                      <Row label="Review">
+                      <Row label="To sort out">
                         {cls ? (
                           <Pill cls={cls.cls} title={cls.hint}>
                             {reviewClassLabel(rv)}
@@ -933,7 +933,7 @@ export default async function PersonPage({ params }) {
             {household.display_name}
           </Link>
         ) : (
-          <span className="text-neutral-600">{household?.display_name ?? 'No household'}</span>
+          <span className="text-neutral-600">{household?.display_name ?? 'No family'}</span>
         )}
         <span aria-hidden className="mx-2 text-neutral-400">
           ›
@@ -962,7 +962,7 @@ export default async function PersonPage({ params }) {
         )}
       </h2>
       <p className="mt-1 text-sm text-neutral-500">
-        {household?.display_name ?? 'No household'}
+        {household?.display_name ?? 'No family'}
         {' · '}
         {ageAt(person.date_of_birth, soonest) != null
           ? `${ageAt(person.date_of_birth, soonest)}${soonest ? ' at camp' : ''}`
@@ -1023,7 +1023,7 @@ export default async function PersonPage({ params }) {
           )}
         </Section>
 
-        <Section title="Permissions" note="The latest answer for this person. Earlier answers are kept.">
+        <Section title="Permissions" note="What the family last told us.">
           {latestConsent.size === 0 ? (
             <p className="text-neutral-500">Nothing recorded yet.</p>
           ) : (
@@ -1091,14 +1091,14 @@ export default async function PersonPage({ params }) {
         {/* E31 */}
         <Section
           title="Their family"
-          note="Where everyone else in this household is sleeping."
+          note="Where everyone else in this family is sleeping."
         >
-          <Row label="Household">{household?.display_name ?? '—'}</Row>
+          <Row label="Family">{household?.display_name ?? 'Not recorded'}</Row>
           <Row label="Contact">
-            {[household?.email, household?.phone ? formatPhone(household.phone) : null].filter(Boolean).join(' · ') || '—'}
+            {[household?.email, household?.phone ? formatPhone(household.phone) : null].filter(Boolean).join(' · ') || 'Not recorded'}
           </Row>
           {(siblings ?? []).length === 0 ? (
-            <p className="mt-2 text-neutral-500">Nobody else in this household.</p>
+            <p className="mt-2 text-neutral-500">Nobody else in this family.</p>
           ) : (
             <ul className="mt-2 space-y-1">
               {(siblings ?? []).map((s) => {
@@ -1165,7 +1165,7 @@ export default async function PersonPage({ params }) {
                 })()}
               </Row>
               {allergySummary(support) && <Row label="Detail">{allergySummary(support)}</Row>}
-              <Row label="Dietary needs">{support.dietary_needs || '—'}</Row>
+              <Row label="Dietary needs">{support.dietary_needs || 'Not recorded'}</Row>
               <Row label="Seizures">{support.has_seizures ? 'Yes' : 'No'}</Row>
               <Row label="Rescue medication">{support.has_rescue_medication ? 'Yes' : 'No'}</Row>
               {/* "Needs a buddy" was here and is gone (31 Aug). The Buddy card
@@ -1174,7 +1174,7 @@ export default async function PersonPage({ params }) {
                   the rest of the season. */}
               <p className="mt-2 text-xs text-neutral-500">
                 This is a summary. Every answer the family gave is under{' '}
-                <a href="#form-answers" className="text-brand underline">Form answers</a> below.
+                <a href="#form-answers" className="text-brand underline">Support details from the family</a> below.
               </p>
             </>
           )}
@@ -1191,17 +1191,17 @@ export default async function PersonPage({ params }) {
             </p>
           ) : (
             <>
-              <Row label="Name">{support.emergency_contact_name || '—'}</Row>
+              <Row label="Name">{support.emergency_contact_name || 'Not recorded'}</Row>
               <Row label="Phone">
                 {support.emergency_contact_phone ? (
                   <a href={telHref(support.emergency_contact_phone) ?? undefined} className="text-brand underline">
                     {formatPhone(support.emergency_contact_phone)}
                   </a>
                 ) : (
-                  '—'
+                  'Not recorded'
                 )}
               </Row>
-              <Row label="Relationship">{support.emergency_contact_relationship || '—'}</Row>
+              <Row label="Relationship">{support.emergency_contact_relationship || 'Not recorded'}</Row>
             </>
           )}
         </Section>
