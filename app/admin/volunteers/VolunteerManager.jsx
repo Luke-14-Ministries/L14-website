@@ -447,13 +447,13 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
             rather than a button on every row. */}
         {maySeeChecks && (
           <Link href="/admin/background-checks/screening/" className="btn-outline py-2! shrink-0">
-            Background Screening (send invites)
+            Send background check invites
           </Link>
         )}
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Everyone registered as a Volunteer: decide each application here (press Open, or the
-        volunteer pill). Background checks are sent from Background Screening and kept on Background
+        volunteer pill). Background checks are sent from Send Background Check Invites and kept on Background
         Checks, where a background check done another way is recorded by hand; the record also shows here under
         each card. The paperwork is kept in the restricted SharePoint folder. Other staff see whether a
         background check is on file, whether it&rsquo;s current, and the verdict.
@@ -470,7 +470,21 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
             missingCheck.size === 1 ? 'adult without a background check' : 'adults without a background check',
             missingCheck.size > 0 ? 'text-amber-700' : 'text-green-700',
           ],
-        ].map(([key, n, label, tone]) => (
+        ].map(([key, n, label, tone]) =>
+          // For someone who can open Background Checks, this tile goes there
+          // (23 Nov 2026 review): that is where a background check is sent
+          // and recorded, and where the red number now sits. Without the
+          // grant it still narrows the list below.
+          key === 'check' && maySeeChecks ? (
+            <Link
+              key={key}
+              href="/admin/background-checks/#volunteers"
+              title="Adults without a current background check marked OK, counted once however many weeks they serve. Under-18s are not screened. Opens Background Checks."
+              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-left hover:border-brand"
+            >
+              <span className={`font-bold text-lg ${tone}`}>{n}</span> {label} →
+            </Link>
+          ) : (
           <button
             key={key}
             type="button"
@@ -489,7 +503,8 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
           >
             <span className={`font-bold text-lg ${tone}`}>{n}</span> {label}
           </button>
-        ))}
+          )
+        )}
       </div>
 
       {total === 0 && (
