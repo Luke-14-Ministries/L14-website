@@ -102,13 +102,15 @@ export default async function CancellationsPage({ searchParams }) {
             showHandled ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
           }`}
         >
-          Settled ({handled.length})
+          {/* "Closed", not "Settled" (23 Nov 2026 review): the same pair of
+              words as Deletion Requests. */}
+          Closed ({handled.length})
         </Link>
       </div>
 
       {shaped.length === 0 ? (
         <p className="text-neutral-500">
-          {showHandled ? 'Nothing settled yet.' : 'No open requests.'}
+          {showHandled ? 'Nothing closed yet.' : 'No open requests.'}
         </p>
       ) : (
         <CancellationList rows={shaped} />

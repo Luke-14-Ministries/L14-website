@@ -70,7 +70,7 @@ function Row({ row }) {
         Asked {dayInMorristown(row.requestedAt)}
         {row.phone && <> · {row.phone}</>}
         {row.email && <> · {row.email}</>}
-        {row.handledAt && <> · settled {dayInMorristown(row.handledAt)}</>}
+        {row.handledAt && <> · closed {dayInMorristown(row.handledAt)}</>}
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">

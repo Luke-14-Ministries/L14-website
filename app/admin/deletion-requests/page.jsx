@@ -27,6 +27,10 @@ export default async function DeletionRequestsPage({ searchParams }) {
     .order('created_at', { ascending: false });
   if (error) throw new Error(`Deletion requests: ${error.message}`);
 
+  // Counted for the two pills (23 Nov 2026 review): one text link that said
+  // "Show closed requests" gave no sign whether anything was open.
+  const openCount = (rows ?? []).filter((r) => r.status === 'requested').length;
+  const closedCount = (rows ?? []).length - openCount;
   const shaped = (rows ?? [])
     .filter((r) => (showClosed ? r.status !== 'requested' : r.status === 'requested'))
     .map((r) => ({
@@ -50,12 +54,30 @@ export default async function DeletionRequestsPage({ searchParams }) {
         family, delete what can go, and note what was kept and why. Payments, signed releases and
         background checks are kept for three years.
       </p>
-      <p className="mb-4 text-sm">
-        <Link href={showClosed ? '/admin/deletion-requests' : '/admin/deletion-requests?closed=1'} className="text-brand underline">
-          {showClosed ? 'Show open requests' : 'Show closed requests'}
+      {/* Open and Closed pills, the same as Cancellations (23 Nov 2026). */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <Link
+          href="/admin/deletion-requests"
+          className={`rounded-full px-3 py-1 text-sm font-semibold ${
+            !showClosed ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+          }`}
+        >
+          Open ({openCount})
         </Link>
-      </p>
-      <DeletionList rows={shaped} />
+        <Link
+          href="/admin/deletion-requests?closed=1"
+          className={`rounded-full px-3 py-1 text-sm font-semibold ${
+            showClosed ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+          }`}
+        >
+          Closed ({closedCount})
+        </Link>
+      </div>
+      {shaped.length === 0 ? (
+        <p className="text-neutral-500">{showClosed ? 'Nothing closed yet.' : 'No open requests.'}</p>
+      ) : (
+        <DeletionList rows={shaped} />
+      )}
     </div>
   );
 }
