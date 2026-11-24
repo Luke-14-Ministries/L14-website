@@ -52,7 +52,9 @@ function Flag({ tone, children, title }) {
           ? 'bg-blue-100 text-blue-800'
           : 'bg-neutral-200 text-neutral-600';
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] leading-5 font-semibold ${cls}`} title={title}>
+    // whitespace-nowrap: a rounded-full pill wrapped onto two lines reads as a
+    // blob (23 Nov 2026, P99).
+    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] leading-5 font-semibold ${cls}`} title={title}>
       {children}
     </span>
   );
@@ -514,8 +516,8 @@ export default function RosterTable({ events, rows, programs = [] }) {
                         </Flag>
                       )}
                       {!r.agreementsSigned && (
-                        <Flag tone="amber" title="No signed agreements on file for this registration">
-                          Agreements not signed
+                        <Flag tone="amber" title="Agreements not signed: no signed agreements on file for this registration">
+                          Not signed
                         </Flag>
                       )}
                     </span>
