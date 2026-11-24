@@ -14,6 +14,7 @@ import { clearanceMark } from '@/lib/format';
 import { ageAt } from '@/lib/programs';
 import { rejectedOutsideView } from '@/lib/rejectedUploads';
 import EmailLog from '@/components/EmailLog';
+import HouseholdLoginsList from '@/components/HouseholdLoginsList';
 import ReminderPause from './ReminderPause';
 import Panel from './Panel';
 import { isRegistryRole, isVolunteerRole, roleAgeFlags } from '@/lib/roles';
@@ -183,6 +184,32 @@ export default async function RegistrationDetailPage({ params }) {
   const emails = reg.households?.id ? await loadEmailLog(supabase, { householdId: reg.households.id, limit: 50 }) : [];
   const eventNameByReg = new Map((familyRegs ?? []).map((r) => [r.id, r.events?.name ?? null]));
   const manyEvents = (familyRegs ?? []).length > 1;
+
+  // Who can sign in to this household, how they joined, and any invite still
+  // waiting (0180, 23 Nov 2026): a family can invite another adult itself
+  // now, so the office sees it here, beside the family's contact card.
+  let householdLogins = [];
+  let householdInvites = [];
+  if (reg.households?.id) {
+    const [{ data: lg, error: lgError }, { data: inv, error: invError }] = await Promise.all([
+      supabase.rpc('staff_household_logins', { p_household_id: reg.households.id }),
+      supabase
+        .from('household_invites')
+        .select('id, email, invited_by, created_at, expires_at')
+        .eq('household_id', reg.households.id)
+        .is('accepted_at', null)
+        .is('cancelled_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at'),
+    ]);
+    if (lgError) throw new Error(`Who signs in to this household: ${lgError.message}`);
+    if (invError) throw new Error(`This household's invites: ${invError.message}`);
+    householdLogins = lg ?? [];
+    householdInvites = (inv ?? []).map((i) => ({
+      ...i,
+      invited_by_name: householdLogins.find((l) => l.profile_id === i.invited_by)?.name ?? null,
+    }));
+  }
 
   // Paused automatic reminders (0138), with who paused them.
   const { data: pauseRow, error: pauseError } = await supabase
@@ -840,6 +867,28 @@ export default async function RegistrationDetailPage({ params }) {
             empty="No emails have gone to this family yet."
           />
         </Panel>
+      }
+      // Folded unless an invite is still waiting: most visits need only the
+      // names, and those are one click away.
+      loginsPanel={
+        reg.households?.id ? (
+          <Panel
+            title="Who can sign in"
+            count={`${householdLogins.length}${
+              householdInvites.length
+                ? `, ${householdInvites.length} invite${householdInvites.length === 1 ? '' : 's'} waiting`
+                : ''
+            }`}
+            defaultOpen={householdInvites.length > 0}
+          >
+            <HouseholdLoginsList
+              householdId={reg.households.id}
+              logins={householdLogins}
+              invites={householdInvites}
+              canRemove={can(staff, 'write:registration')}
+            />
+          </Panel>
+        ) : null
       }
       canWritePayments={can(staff, 'write:payments')}
       feesPanel={

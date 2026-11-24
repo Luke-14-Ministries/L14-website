@@ -2030,6 +2030,8 @@ export default function RegistrationManager({
   feesPanel = null,
   // Emails sent to this household (page.jsx, message_log), a card at the end.
   emailsPanel = null,
+  // Who can sign in to the household (page.jsx, 0180), under Family contact.
+  loginsPanel = null,
   // How it is being paid (StaffPlanPanel, server-built, Payments read): the
   // last section of Money.
   planPanel = null,
@@ -2443,6 +2445,8 @@ export default function RegistrationManager({
         )}
 
         {canWrite && <HouseholdEditor registrationId={registration.id} household={registration.household} />}
+
+        {loginsPanel}
 
         <AgreementsCard signatures={signatures} />
 
