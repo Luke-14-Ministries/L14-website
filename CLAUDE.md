@@ -663,6 +663,22 @@ These are the ministry's rules, agreed at board level. Do not relax them for con
   Prefer authenticator-app (TOTP) over passkeys on shared ministry accounts: a passkey is bound
   to one device and cannot be shared between two admins; a TOTP seed can live in the vault.
 
+### Supabase Auth settings that must stay on
+
+The site's code assumes these dashboard settings (Supabase → Authentication). None of them can be
+seen from the repository, so a change in the dashboard breaks things silently. Tick each when
+checked and write the date (security review, 23 Nov 2026; Lawrence to check first).
+
+| Setting | Where | Why the site needs it | Last checked |
+|---|---|---|---|
+| Captcha (Turnstile) on | Attack Protection | Sign-up, sign-in, reset and resend check the widget's token only at Supabase (see *Traps*) | |
+| Require current password to change it | Providers → Email (or Sign In / Up) | The dashboard's Change password asks for it; a reset link is exempt | |
+| Secure email change (both addresses) | Providers → Email | The Contact page and `/auth/confirm/changed/` say both links are needed | |
+| Minimum password length 10, leaked-password check on | Providers → Email / Attack Protection | The forms say "at least 10"; `lib/authErrors.js` words the breach refusal | |
+| Confirm email on | Providers → Email | Sign-up lands on Check your email; the Log in form offers the link again | |
+| Refresh-token reuse detection on | Sessions | A stolen refresh token used twice ends the session | |
+| All four link templates (Confirm sign up, Reset password, Change email address, Magic link) point at `/auth/confirm/?token_hash=…` | Emails | The button page spends the token on a POST; `{{ .ConfirmationURL }}` brings back scanner-spent links (`supabase/EMAIL-TEMPLATE-SNIPPETS.md`) | |
+
 ---
 
 ## Working rules
