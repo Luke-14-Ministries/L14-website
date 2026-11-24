@@ -193,9 +193,10 @@ export default async function CheckinPage({ searchParams }) {
         }
         intro={
           <>
-            Mark people as they arrive. Works on a phone. Red flags are quick alerts, and the full
-            details are on the Medical &amp; Support page. A family paying at the door pays on their own
-            phone. Show them the QR code.
+            {/* 23 Nov 2026: says what to press, in the button's own words. */}
+            Press <em>Check in</em> as each person arrives. Red flags are quick alerts; the full details are
+            on Medical &amp; Support. If a family owes money, press their amount and they can pay on their
+            own phone from the payment code.
           </>
         }
       />

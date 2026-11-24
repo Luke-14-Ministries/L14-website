@@ -74,7 +74,7 @@ export default function CheckinList({ rows }) {
           }
           className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-700 hover:border-brand"
         >
-          Pay on your phone (QR)
+          Show payment code
         </button>
       </div>
 
@@ -118,7 +118,7 @@ export default function CheckinList({ rows }) {
               <p className="text-sm text-neutral-500">
                 {/* The gray line is the household -- worth saying, because in
                     testing it read as a mystery second name. */}
-                <span title="Household">{r.household}</span>
+                <span title="Family">{r.household}</span>
                 {/* Only for staff with Payments read (the page asks nothing
                     otherwise). The amount is the FAMILY's balance, shown on
                     each of its people -- hence "family owes". */}
@@ -136,7 +136,7 @@ export default function CheckinList({ rows }) {
                     title="What this family still owes. Tap for a QR code that opens their own payment page."
                     className="ml-2 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-xs font-semibold hover:bg-amber-200"
                   >
-                    family owes {r.owed} · QR
+                    Family owes {r.owed} · show payment code
                   </button>
                 )}
                 {r.flags.length > 0 && (
