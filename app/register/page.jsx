@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
-import { programOf, campKey, registrationOpen, OPEN_EVENT_COLUMNS, enrollmentOption } from '@/lib/events';
+import { programOf, campKey, registrationOpen, OPEN_EVENT_COLUMNS, enrollmentOption, isWeekName } from '@/lib/events';
 
 export const metadata = { title: 'Register' };
 
@@ -64,7 +64,7 @@ export default async function RegisterPage() {
         {/* Signed in, the account pages' header (26 Oct 2026): title left,
             the Back to dashboard pill right. A visitor keeps the public hero. */}
         {user ? (
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div className={TITLE_ROW}>
             <h1 className="text-3xl font-bold">Register</h1>
             <BackLink />
           </div>
@@ -72,11 +72,21 @@ export default async function RegisterPage() {
           <h1 className="text-3xl font-bold text-center">Register</h1>
         )}
         <p className={`${user ? 'mt-2' : 'text-center mt-3'} text-neutral-600 mb-8`}>
-          Choose what you&rsquo;re registering for. One account covers your
-          whole family, every event, and volunteering. Registering for a group
-          home or a church group? Same form: your account is the household, and
-          you add everyone you&rsquo;re bringing.
+          {/* Shorter (23 Nov 2026); the volunteer note is said once, here,
+              instead of on every card. */}
+          One account covers your whole family and every event. Registering a group home or
+          church group? Use the same form and add everyone you&rsquo;re bringing.
         </p>
+        {programs.length > 0 && (
+          <p className={`${user ? '' : 'text-center'} -mt-4 mb-8 text-sm text-neutral-600`}>
+            Volunteering? Register here too and choose <strong>Volunteer</strong> as your role.
+            You&rsquo;ll fill out the{' '}
+            <Link href="/register/volunteer/" className="text-brand underline font-semibold">
+              volunteer application
+            </Link>{' '}
+            after.
+          </p>
+        )}
 
         {programs.length === 0 ? (
           <p className="text-center text-neutral-600">
@@ -110,8 +120,9 @@ export default async function RegisterPage() {
                   </div>
                   {p.events.length > 1 && (
                     <p className="mt-1 text-sm text-neutral-600">
-                      {p.events.length} sessions. You&rsquo;ll pick yours during
-                      registration.
+                      {p.events.length}{' '}
+                      {p.events.every((e) => isWeekName(e.name)) ? 'weeks' : 'sessions'}. You&rsquo;ll
+                      choose yours on the next page.
                     </p>
                   )}
                   {/* One way in (29 Oct 2026, Lawrence): a volunteer
@@ -126,14 +137,6 @@ export default async function RegisterPage() {
                     >
                       Register
                     </Link>
-                    <p className="mt-3 text-sm text-neutral-600">
-                      Families, groups and volunteers all start here. If you&rsquo;re volunteering,
-                      choose <strong>Volunteer</strong> as your role. You&rsquo;ll fill out the{' '}
-                      <Link href="/register/volunteer/" className="text-brand underline font-semibold">
-                        volunteer application
-                      </Link>{' '}
-                      after.
-                    </p>
                   </div>
                 </div>
               );

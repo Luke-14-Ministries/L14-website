@@ -3,7 +3,7 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { yearsSince } from '@/lib/format';
 import VolunteerApplication from './VolunteerApplication';
 import BackBar from '@/components/BackBar';
-import BackLink from '@/components/BackLink';
+import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { isVolunteerRole } from '@/lib/roles';
 
 export const metadata = { title: 'Volunteer' };
@@ -22,7 +22,7 @@ export default async function VolunteerPage() {
     return (
       <section className="bg-neutral-50 py-12">
         <div className="container-site max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold text-center">Volunteer with Us</h1>
+          <h1 className="text-3xl font-bold text-center">Volunteer with us</h1>
           <p className="text-center text-neutral-600 mt-3 mb-8">
             Camp Celebrate volunteers: $495 per week, and worth every minute.
           </p>
@@ -108,8 +108,8 @@ export default async function VolunteerPage() {
     return (
       <section className="bg-neutral-50 py-12">
         <div className="container-site max-w-3xl mx-auto">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h1 className="text-3xl font-bold">Volunteer with Us</h1>
+          <div className={TITLE_ROW}>
+            <h1 className="text-3xl font-bold">Volunteer with us</h1>
             <BackLink />
           </div>
           <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6 mt-8">
@@ -257,13 +257,15 @@ export default async function VolunteerPage() {
   return (
     <section className="bg-neutral-50 py-12">
       <div className="container-site max-w-3xl mx-auto">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="text-3xl font-bold">Volunteer Application</h1>
+        <div className={TITLE_ROW}>
+          <h1 className="text-3xl font-bold">Volunteer application</h1>
           <BackLink />
         </div>
+        {/* Shorter (23 Nov 2026): the background check explanation is said
+            once, under the Submit button, where the next step happens. */}
         <p className="text-neutral-600 mt-2 mb-8">
           Tell us where you&rsquo;d like to serve and a little about yourself. Our team reviews
-          every application. If you&rsquo;re 18 or older, after our team reviews your application you&rsquo;ll get an email from VolunteerBadge, the company that runs our background checks. It asks for your permission and your details on their secure site; the check runs only after you agree there. We never see your Social Security number.
+          every application.
         </p>
         <div className="space-y-6">
           {volunteers.map(({ participant, event }) => (

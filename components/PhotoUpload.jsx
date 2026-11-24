@@ -427,7 +427,7 @@ export default function PhotoUpload({ personId, personName, initialUrl = null, o
           // The phone's selfie route, offered on a computer too (Lawrence,
           // 4 Nov 2026): often the easiest camera to hand.
           <p className="mt-2 text-xs text-neutral-600 max-w-sm">
-            Easier on your phone? Sign in there, open this page and choose &ldquo;Take a photo&rdquo;
+            Easier on your phone? Log in there, open this page and choose &ldquo;Take a photo&rdquo;
             for a selfie.
           </p>
         )}

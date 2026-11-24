@@ -38,7 +38,7 @@ import {
   dobProblem,
 } from '@/lib/format';
 import { submitFamilyRegistration } from './actions';
-import { formatDueDate, agreementText, formatDueDateShort, todayInMorristown } from '@/lib/events';
+import { formatDueDate, agreementText, formatDueDateShort, todayInMorristown, isWeekName } from '@/lib/events';
 import SupportDetailsFields from '@/components/SupportDetailsFields';
 import { emptySupport, hasFullerDetail, supportProblems } from '@/lib/support';
 import { hasPhone } from '@/lib/caregivers';
@@ -820,6 +820,9 @@ export default function FamilyWizard({
   const [result, setResult] = useState(null);
 
   const week = weeks[weekIdx] ?? weeks[0];
+  // "week" when every choice is a camp week, as the register page says
+  // (23 Nov 2026); "session" for anything else.
+  const unit = weeks.length > 0 && weeks.every((w) => isWeekName(w.name)) ? 'week' : 'session';
 
   // The capacity a signature is given in is only a QUESTION when the answer
   // is not already on the form. Testing, 25 Aug: a registration containing a
@@ -1444,8 +1447,8 @@ export default function FamilyWizard({
         title="What you're registering for"
         subtitle={
           weeks.length === 1
-            ? 'One session is open for registration right now.'
-            : 'Choose the session your family or group is attending.'
+            ? `One ${unit} is open for registration right now.`
+            : `${weeks.length} ${unit}s. Choose the one your family or group is attending.`
         }
       >
         <div className="space-y-2">
@@ -1485,7 +1488,7 @@ export default function FamilyWizard({
         {alreadyRegisteredHere && (
           <p className="mt-3 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
             <span className="font-semibold">
-              You already have a registration for this session
+              You already have a registration for this {unit}
             </span>{' '}
             ({alreadyRegisteredHere.people}{' '}
             {alreadyRegisteredHere.people === 1 ? 'person' : 'people'}). This form is blank
@@ -2468,7 +2471,7 @@ export default function FamilyWizard({
                 : `${namedCount} ${namedCount === 1 ? 'person' : 'people'} · ${money(total)}`}
             </p>
             <p className="hidden text-xs text-neutral-500 sm:block">
-              {week ? fmtWeek(week) : 'Choose a session above'} · you pay from your
+              {week ? fmtWeek(week) : `Choose a ${unit} above`} · you pay from your
               dashboard afterward
             </p>
             {/* What each card still needs, said here, each a way to it
@@ -2565,7 +2568,7 @@ export default function FamilyWizard({
           ? ` Volunteers arrive ${formatDueDateShort(week.volunteerArrivesOn)}, a day before campers, for orientation.`
           : ''}
         {isUpdate
-          ? ' Updating replaces your saved answers for this session. Nobody is added twice.'
+          ? ` Updating replaces your saved answers for this ${unit}. Nobody is added twice.`
           : ''}
       </p>
     </div>
