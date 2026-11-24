@@ -42,8 +42,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // The two groups on this page (the board, 14 Nov 2026).
 const GROUPS = [
-  ['volunteer', 'Volunteers', 'Volunteer template'],
-  ['family', 'Family adults', 'Parents, siblings and caregivers 18+ · family template · a registry search is the fallback on Background Checks'],
+  ['volunteer', 'Volunteers', 'Volunteer form'],
+  ['family', 'Parents, siblings and caregivers', '18 and older · family form · a registry search is the fallback on Background Checks'],
 ];
 
 function detail(r) {
@@ -65,8 +65,8 @@ function detail(r) {
         ? `OK to serve recorded ${dayInMorristown(r.confirmedAt)}.`
         : `Clear${r.completedAt ? ` on ${dayInMorristown(r.completedAt)}` : ''}. Record it as OK to serve.`;
     case 'consider':
-      if (r.recordedByHand) return 'The ministry’s verdict is already on their background check record (Background Checks).';
-      return 'Records were released on the report. Read it in VolunteerBadge, then record the ministry’s verdict on their background check record (Background Checks).';
+      if (r.recordedByHand) return 'The ministry’s decision is already on their background check record (Background Checks).';
+      return 'Records were released on the report. Read it in VolunteerBadge, then record the ministry’s decision on their background check record (Background Checks).';
     case 'error':
     case 'not_sent':
       return `${r.problem ?? 'It didn’t go through.'} They are back on the list to send again.`;
@@ -276,8 +276,8 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       {/* Connection: off, test, live, or a problem. */}
       {mode === 'off' && (
         <p className="rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
-          <strong>VolunteerBadge isn&rsquo;t connected yet.</strong> Once its key is added to the site,
-          invites are sent from here. Who is due is listed below meanwhile.
+          <strong>VolunteerBadge isn&rsquo;t connected yet.</strong> Who is due is listed below. Invites
+          can be sent from this page once an administrator connects it.
         </p>
       )}
       {mode === 'test' && (
@@ -305,7 +305,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
         title="1 · Who is due"
         // The line under the title says what the pills don't (Lawrence, 15 Nov
         // 2026: "subtitle and pills are redundant").
-        summary="Volunteers and family adults with no background check on file, or one out of date. Adult campers stay on the registry search for now."
+        summary="Volunteers, parents, siblings and caregivers with no background check on file, or one out of date. Adult campers stay on the registry search for now."
         pills={[
           orderable.length > 0 && { text: `${orderable.length} ready to send`, cls: CHECK_TONE.hold },
           blocked.length > 0 && { text: `${blocked.length} can’t be sent yet`, cls: CHECK_TONE.todo },
@@ -425,9 +425,13 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
               disabled={busy || picked.size === 0 || !connected || Boolean(creditsBlock)}
               className="btn-primary mt-4 disabled:opacity-50"
             >
+              {/* 23 Nov 2026: "Send 0 invites (uses 0 credits)" when nobody is
+                  ticked read as a mistake; say what to do instead. */}
               {busy
                 ? 'Working…'
-                : mode === 'test'
+                : picked.size === 0
+                  ? 'Select people to send invites'
+                  : mode === 'test'
                   ? `Send ${picked.size} test ${picked.size === 1 ? 'invite' : 'invites'} (no credits)`
                   : `Send ${picked.size} VolunteerBadge ${picked.size === 1 ? 'invite' : 'invites'} (uses ${picked.size} ${picked.size === 1 ? 'credit' : 'credits'}${free != null ? `, ${free} free` : ''})`}
             </button>
@@ -457,8 +461,8 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
               {blocked.map((c) => (
                 <li key={c.personId}>
                   <strong>{c.name}</strong>
-                  <span className="text-xs text-amber-800"> ({c.group === 'family' ? 'family adult' : 'volunteer'})</span>
-                  {c.reason ? ` (${c.reason === 'never checked' ? 'no background check on file' : `background check ${c.reason}`})` : ''}:
+                  <span className="text-xs text-amber-800"> ({c.group === 'family' ? 'parent, sibling or caregiver' : 'volunteer'})</span>
+                  {c.reason ? ` (${c.reason})` : ''}:
                   {/* Each hold as a bold label, then why (Lawrence, 15 Nov 2026). */}
                   {(c.holds?.length ? c.holds : [{ label: '', text: c.blockedBecause }]).map((h, i) => (
                     <span key={i}>
@@ -540,7 +544,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
             rows.length === 0 ? null : which === 'finished' ? (
               <details key={which} className="mt-4">
                 <summary className="cursor-pointer text-sm font-semibold text-neutral-600">
-                  Finished ({rows.length}): OK to serve or verdict recorded, taken back or replaced
+                  Finished ({rows.length}): OK to serve or decision recorded, taken back or replaced
                 </summary>
                 {table(rows)}
               </details>
@@ -579,7 +583,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                       <td className="px-3 py-2">
                         <StatusMark
                           state={(r.status === 'clear' && r.confirmedAt) || r.recordedByHand ? 'yes' : state}
-                          label={(r.status === 'clear' && r.confirmedAt) || (r.recordedByHand && r.status === 'clear') ? 'OK to serve' : r.recordedByHand ? 'Verdict recorded' : words}
+                          label={(r.status === 'clear' && r.confirmedAt) || (r.recordedByHand && r.status === 'clear') ? 'OK to serve' : r.recordedByHand ? 'Decision recorded' : words}
                           title={detail(r)}
                         />
                         {/* So it is plain later that this check ran without ID
@@ -623,7 +627,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                               Open VolunteerBadge
                             </a>
                             <a href={`/admin/background-checks/#check-${r.personId}`} className="block text-xs text-brand underline">
-                              Record the verdict →
+                              Record the decision →
                             </a>
                           </>
                         )}

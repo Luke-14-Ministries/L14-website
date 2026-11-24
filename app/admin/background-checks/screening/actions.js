@@ -34,7 +34,9 @@ import { refreshOne, refreshOpenRequests } from '@/lib/volunteerBadgeSync';
 import { loadScreeningCandidates } from '@/lib/screeningCandidates';
 import { creditPicture, creditShortfall } from '@/lib/volunteerBadgeCredits';
 
-const NOT_CONNECTED = 'VolunteerBadge isn’t connected yet (no VOLUNTEERBADGE_API_KEY on this site).';
+// 23 Nov 2026: no variable name on screen (staff can't act on it). The key
+// is VOLUNTEERBADGE_API_KEY in Vercel (lib/volunteerBadgeApi.js).
+const NOT_CONNECTED = 'VolunteerBadge isn’t connected yet, so nothing can be sent. Tell an administrator.';
 const MAX_BATCH = 50;
 
 async function gate() {

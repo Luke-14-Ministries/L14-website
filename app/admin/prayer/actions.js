@@ -14,6 +14,14 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail, sendEmailBatch } from '@/lib/email';
 import { PRAYER_FROM, PRAYER_REPLY_TO, PRAYER_MAX, prayerListEmail, prayerBodyIsEmpty } from '@/lib/prayer';
 
+// 23 Nov 2026: staff see what happened and who to tell; the variable name
+// goes to the server log, where whoever fixes it will look.
+const NO_SERVER_KEY = 'The prayer list can’t be changed or sent from the site right now. Nothing was changed. Tell an administrator.';
+function noServerKey(where) {
+  console.error(`${where}: SUPABASE_SERVICE_ROLE_KEY is not set, so the prayer list cannot be reached.`);
+  return { ok: false, error: NO_SERVER_KEY };
+}
+
 function cleanMessage(input) {
   const subject = String(input?.subject ?? '').trim().slice(0, PRAYER_MAX.subject);
   const body = String(input?.body ?? '').trim().slice(0, PRAYER_MAX.body);
@@ -29,9 +37,9 @@ function cleanMessage(input) {
 // address back. Service role, because no signed-in role writes the list (0141).
 export async function removeFromPrayerList(id) {
   const staff = await getStaff();
-  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Changing the prayer list needs Prayer list write.' };
+  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Changing the prayer list needs edit access to the Prayer list.' };
   const db = createAdminClient();
-  if (!db) return { ok: false, error: 'The site’s server key (SUPABASE_SERVICE_ROLE_KEY) is not set in Vercel, so the list cannot be changed.' };
+  if (!db) return noServerKey('removeFromPrayerList');
   const now = new Date().toISOString();
   const { error } = await db
     .from('prayer_list_subscribers')
@@ -49,9 +57,9 @@ export async function removeFromPrayerList(id) {
 // nobody is put on the list without their own say-so.
 export async function allowPrayerSignUpAgain(id) {
   const staff = await getStaff();
-  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Changing the prayer list needs Prayer list write.' };
+  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Changing the prayer list needs edit access to the Prayer list.' };
   const db = createAdminClient();
-  if (!db) return { ok: false, error: 'The site’s server key (SUPABASE_SERVICE_ROLE_KEY) is not set in Vercel, so the list cannot be changed.' };
+  if (!db) return noServerKey('allowPrayerSignUpAgain');
   const { error } = await db
     .from('prayer_list_subscribers')
     .update({ removed_by_staff_at: null })
@@ -66,7 +74,7 @@ export async function allowPrayerSignUpAgain(id) {
 // unsubscribe link goes to a page that says it is a test.
 export async function sendPrayerTest(input) {
   const staff = await getStaff();
-  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Sending to the prayer list needs Prayer list write.' };
+  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Sending to the prayer list needs edit access to the Prayer list.' };
   const msg = cleanMessage(input);
   if (msg.error) return { ok: false, error: msg.error };
   if (!staff.email) return { ok: false, error: 'Your login has no email address to send a test to.' };
@@ -77,17 +85,12 @@ export async function sendPrayerTest(input) {
 
 export async function sendPrayerEmail(input) {
   const staff = await getStaff();
-  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Sending to the prayer list needs Prayer list write.' };
+  if (!can(staff, 'write:prayer')) return { ok: false, error: 'Sending to the prayer list needs edit access to the Prayer list.' };
   const msg = cleanMessage(input);
   if (msg.error) return { ok: false, error: msg.error };
 
   const db = createAdminClient();
-  if (!db) {
-    return {
-      ok: false,
-      error: 'The prayer list cannot send yet: the site’s server key (SUPABASE_SERVICE_ROLE_KEY) is not set in Vercel. Nothing was sent.',
-    };
-  }
+  if (!db) return noServerKey('sendPrayerEmail');
   const { data: people, error: readError } = await db
     .from('prayer_list_subscribers')
     .select('email, token')

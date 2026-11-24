@@ -51,10 +51,11 @@ export default function TemplatePicker({ templates, volunteer, family }) {
 
   return (
     <div className="rounded-sm border border-neutral-200 bg-neutral-50 px-4 py-3">
-      <p className="text-sm font-semibold">VolunteerBadge application templates</p>
+      {/* 23 Nov 2026: named for what it decides, not VolunteerBadge's word. */}
+      <p className="text-sm font-semibold">Which VolunteerBadge form each group gets</p>
       <div className="mt-2 flex flex-wrap items-end gap-4">
         {pick('vb-template-volunteer', v, setV, 'Volunteers')}
-        {pick('vb-template-family', f, setF, 'Family adults')}
+        {pick('vb-template-family', f, setF, 'Parents, siblings and caregivers')}
         <button type="button" onClick={save} disabled={busy || !changed} className="btn-outline btn-sm disabled:opacity-50">
           {busy ? 'Saving…' : 'Save'}
         </button>

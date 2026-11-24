@@ -13,7 +13,7 @@ import { todayInMorristown } from '@/lib/events';
 
 export async function reviewVolunteerApplication(participantId, decision, { override = false } = {}) {
   const staff = await getStaff();
-  if (!can(staff, 'write:registration')) return { ok: false, error: 'Not permitted.' };
+  if (!can(staff, 'write:registration')) return { ok: false, error: 'Deciding a volunteer application needs edit access to Registration info.' };
   if (!['approved', 'declined', 'applied'].includes(decision)) {
     return { ok: false, error: 'Unknown decision.' };
   }
@@ -76,7 +76,7 @@ const VERDICTS = ['ok', 'follow_up', 'not_permitted'];
 export async function setVolunteerClearance({ personId, onFile, date, verdict, note }) {
   const staff = await getStaff();
   if (!can(staff, 'background_checks')) {
-    return { ok: false, error: 'Recording a background check needs the Background-checks grant.' };
+    return { ok: false, error: 'Recording a background check needs edit access to Background checks.' };
   }
   if (!personId) return { ok: false, error: 'Missing person.' };
   const isOn = Boolean(onFile);
@@ -88,8 +88,8 @@ export async function setVolunteerClearance({ personId, onFile, date, verdict, n
     if (bad) return { ok: false, error: bad };
   }
   const v = verdict ? String(verdict) : null;
-  if (v && !VERDICTS.includes(v)) return { ok: false, error: 'Unknown verdict.' };
-  if (v && !isOn) return { ok: false, error: 'A verdict needs the paperwork on file first.' };
+  if (v && !VERDICTS.includes(v)) return { ok: false, error: 'Unknown decision.' };
+  if (v && !isOn) return { ok: false, error: 'Record the background check as on file before recording a decision.' };
 
   const supabase = await createClient();
   // A check entered here is a volunteer's full check. Over a camper's

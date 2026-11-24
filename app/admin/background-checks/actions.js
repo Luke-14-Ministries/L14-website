@@ -25,7 +25,7 @@ const REGISTRY_RESULTS = ['ok', 'follow_up', 'not_permitted'];
 export async function recordRegistrySearch({ personId, date, result, note }) {
   const staff = await getStaff();
   if (!can(staff, 'write:background_checks')) {
-    return { ok: false, error: 'Recording a registry search needs the background checks grant.' };
+    return { ok: false, error: 'Recording a registry search needs edit access to Background checks.' };
   }
   if (!personId) return { ok: false, error: 'Missing person.' };
   const day = String(date ?? '').trim();
@@ -58,7 +58,7 @@ export async function recordRegistrySearch({ personId, date, result, note }) {
 export async function setCheckLength(months) {
   const staff = await getStaff();
   if (!can(staff, 'write:background_checks')) {
-    return { ok: false, error: 'Changing how long a check lasts needs the background checks grant.' };
+    return { ok: false, error: 'Changing how long a background check lasts needs edit access to Background checks.' };
   }
   const n = Number(String(months ?? '').trim());
   if (!Number.isInteger(n) || n < 1 || n > 60) {

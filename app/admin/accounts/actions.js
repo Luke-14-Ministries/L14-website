@@ -214,7 +214,9 @@ export async function resendVerification(email, captchaToken = null) {
         error: 'The bot check did not go through. Close this box, open it again and tick the check before sending.',
       };
     }
-    return { ok: false, error: `The email was not sent. Supabase said: ${msg}` };
+    // 23 Nov 2026: the sign-in service's own words go to the server log.
+    console.error('admin account email:', msg);
+    return { ok: false, error: 'The email was not sent. Try again in a few minutes, and tell an administrator if it keeps happening.' };
   }
   return { ok: true };
 }

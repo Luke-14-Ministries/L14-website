@@ -1112,7 +1112,8 @@ export async function refundPayment(registrationId, input) {
 
   const stripe = getStripe();
   if (!stripe) {
-    return { ok: false, error: 'Stripe is not configured, so this payment cannot be refunded here.' };
+    console.error('refundPayment: STRIPE_SECRET_KEY is not set.');
+    return { ok: false, error: 'Card refunds aren’t set up on this site, so nothing was refunded. Tell an administrator.' };
   }
 
   // RESERVE first (0107): the over-refund guard runs, and holds a lock on the
