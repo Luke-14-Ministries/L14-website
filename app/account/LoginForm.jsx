@@ -108,6 +108,8 @@ export default function LoginForm({ newSite = false } = {}) {
   // Set by the idle auto-logout when it signs someone out, so the login page can
   // explain why they landed back here.
   const timedOut = searchParams.get('timeout');
+  // Set by "Log out everywhere" on the Security page (app/auth/signout).
+  const everywhere = searchParams.get('signedout') === 'everywhere';
 
   const supabase = createClient();
 
@@ -531,6 +533,12 @@ export default function LoginForm({ newSite = false } = {}) {
       {timedOut && !error && (
         <p className="mb-4 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
           You were signed out after a period of inactivity. Please log in again.
+        </p>
+      )}
+
+      {everywhere && !error && (
+        <p className="mb-4 rounded-sm border border-green-300 bg-green-50 px-4 py-3 text-green-800">
+          You are logged out on every browser and phone that was signed in to your account.
         </p>
       )}
 

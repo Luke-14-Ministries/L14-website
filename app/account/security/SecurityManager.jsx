@@ -15,13 +15,57 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { whenInMorristown } from '@/lib/events';
+import { thisBrowserTrustHash } from '../trust-actions';
 
-export default function SecurityManager({ required }) {
+// "Chrome on Windows" from a remembered browser's user agent, so the list of
+// remembered browsers can be told apart (23 Nov 2026). A rough reading, for a
+// person's eye only; nothing decides anything from it. Order matters: Edge
+// and Opera also say "Chrome", and Chrome also says "Safari".
+function browserName(ua = '') {
+  const browser = /Edg(e|A|iOS)?\//.test(ua)
+    ? 'Edge'
+    : /OPR\/|Opera/.test(ua)
+      ? 'Opera'
+      : /Firefox\/|FxiOS/.test(ua)
+        ? 'Firefox'
+        : /Chrome\/|CriOS/.test(ua)
+          ? 'Chrome'
+          : /Safari\//.test(ua)
+            ? 'Safari'
+            : 'A browser';
+  const system = /iPhone/.test(ua)
+    ? 'iPhone'
+    : /iPad/.test(ua)
+      ? 'iPad'
+      : /Android/.test(ua)
+        ? 'Android'
+        : /Windows/.test(ua)
+          ? 'Windows'
+          : /CrOS/.test(ua)
+            ? 'Chromebook'
+            : /Mac OS X|Macintosh/.test(ua)
+              ? 'Mac'
+              : /Linux/.test(ua)
+                ? 'Linux'
+                : '';
+  return system ? `${browser} on ${system}` : browser;
+}
+
+// How long a remembered browser skips the code: 30 days for families, 7 for
+// staff (Lawrence, 18 Oct 2026). The database decides (0176); this is only
+// the words. Until 23 Nov 2026 the page said "30 days (7 for staff)" to
+// everyone; it now says the one that applies.
+export default function SecurityManager({ required, isStaff = false }) {
+  const trustDays = isStaff ? 7 : 30;
   const router = useRouter();
   const supabase = createClient();
 
   const [factors, setFactors] = useState([]);
-  const [trustedCount, setTrustedCount] = useState(0);
+  // Remembered browsers, one row each (RLS: own rows only). `thisHash` marks
+  // the row that is this browser.
+  const [trusted, setTrusted] = useState([]);
+  const [thisHash, setThisHash] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -95,40 +139,41 @@ export default function SecurityManager({ required }) {
         label: byId.get(f.id) || f.friendly_name || 'Authenticator app',
       }))
     );
-    // Browsers remembered via "skip the code for 30 days" (RLS: own rows only).
-    const { count, error: countError } = await supabase
+    // Remembered browsers (RLS: own rows only), newest first.
+    const { data: rows, error: trustedError } = await supabase
       .from('mfa_trusted_devices')
-      .select('id', { count: 'exact', head: true })
-      .gt('expires_at', new Date().toISOString());
+      .select('id, token_hash, user_agent, created_at, last_used_at, expires_at')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
     // Not read as "none remembered" without saying so.
-    if (countError) setError(`Remembered browsers could not be loaded: ${countError.message}`);
-    setTrustedCount(count ?? 0);
+    if (trustedError) setError(`Remembered browsers could not be loaded: ${trustedError.message}`);
+    setTrusted(rows ?? []);
+    try {
+      setThisHash(await thisBrowserTrustHash());
+    } catch {
+      /* only the "this browser" label is lost */
+    }
     setLoading(false);
   }, [supabase]);
 
-  async function forgetTrustedBrowsers() {
-    if (
-      !confirm(
-        'Forget all trusted browsers? Your 6-digit code will be required again at the next login on every device. (Your password and authenticator app are unaffected.)'
-      )
-    )
-      return;
+  // One browser, or all of them (`id` null). Deleting a row takes its
+  // trusted sessions with it (0104's cascade), so the code is asked for at
+  // that browser's next login.
+  async function forgetBrowsers(id = null) {
+    const question = id
+      ? 'Forget this browser? The 6-digit code will be asked for at its next login.'
+      : 'Forget all remembered browsers? The 6-digit code will be asked for at the next login on every one. Your password and authenticator app do not change.';
+    if (!confirm(question)) return;
+    setError('');
     setBusy(true);
-    const { error: delError } = await supabase
-      .from('mfa_trusted_devices')
-      .delete()
-      .neq('token_hash', '');
+    const base = supabase.from('mfa_trusted_devices').delete();
+    const { error: delError } = id ? await base.eq('id', id) : await base.neq('token_hash', '');
     setBusy(false);
     if (delError) {
       setError(delError.message);
       return;
     }
-    try {
-      localStorage.removeItem('l14_mfa_trust');
-    } catch {
-      /* fine */
-    }
-    setTrustedCount(0);
+    setTrusted((list) => (id ? list.filter((t) => t.id !== id) : []));
   }
 
   useEffect(() => {
@@ -352,14 +397,14 @@ export default function SecurityManager({ required }) {
       // device row takes its trusted sessions with it (0104's cascade).
       const { data: left, error: listError } = await supabase.auth.mfa.listFactors();
       if (listError) {
-        leftError = `Your device was removed, but we couldn't check your remembered browsers (${listError.message}). If you turn two-factor on again, use "Forget all trusted browsers" afterward.`;
+        leftError = `Your device was removed, but we couldn't check your remembered browsers (${listError.message}). If you turn two-factor on again, forget them under Remembered browsers afterward.`;
       } else if (!(left?.totp ?? []).some((f) => f.status === 'verified')) {
         const { error: forgetError } = await supabase
           .from('mfa_trusted_devices')
           .delete()
           .neq('token_hash', '');
         if (forgetError) {
-          leftError = `Your device was removed, but we couldn't forget your remembered browsers (${forgetError.message}). If you turn two-factor on again, use "Forget all trusted browsers" afterward.`;
+          leftError = `Your device was removed, but we couldn't forget your remembered browsers (${forgetError.message}). If you turn two-factor on again, forget them under Remembered browsers afterward.`;
         }
       }
       // Re-issue the session so the cookie's copy of the user stops listing the
@@ -607,20 +652,47 @@ export default function SecurityManager({ required }) {
           </button>
 
           <div className="mt-6 border-t border-neutral-100 pt-4">
-            <p className="text-sm font-semibold mb-1">Trusted browsers</p>
+            <h3 className="text-base font-semibold mb-1">Remembered browsers</h3>
             <p className="text-sm text-neutral-500 mb-2">
-              {trustedCount > 0
-                ? `${trustedCount} ${trustedCount === 1 ? 'browser is' : 'browsers are'} remembered. The code is skipped there for 30 days (7 for staff); the password is still required.`
-                : 'None right now. Checking “Remember this browser” at login skips the code there for 30 days (7 for staff).'}
+              {trusted.length > 0
+                ? `On these, the code is skipped for ${trustDays} days from when you ticked “Remember this browser.” The password is still needed.`
+                : `None right now. Ticking “Remember this browser” when you log in skips the code there for ${trustDays} days.`}
             </p>
-            {trustedCount > 0 && (
-              <button
-                onClick={forgetTrustedBrowsers}
-                disabled={busy}
-                className="text-red-700 underline text-sm"
-              >
-                Forget all trusted browsers
-              </button>
+            {trusted.length > 0 && (
+              <>
+                <ul className="divide-y divide-neutral-100 mb-2">
+                  {trusted.map((t) => (
+                    <li key={t.id} className="py-2 flex items-center justify-between gap-3">
+                      <span className="min-w-0 text-sm">
+                        <span className="font-medium">{browserName(t.user_agent ?? '')}</span>
+                        {thisHash && t.token_hash === thisHash && (
+                          <span className="text-neutral-500"> · this browser</span>
+                        )}
+                        <span className="block text-neutral-500">
+                          Remembered {whenInMorristown(t.created_at)} · last used{' '}
+                          {t.last_used_at ? whenInMorristown(t.last_used_at) : 'not since'}
+                        </span>
+                      </span>
+                      <button
+                        onClick={() => forgetBrowsers(t.id)}
+                        disabled={busy}
+                        className="shrink-0 text-red-700 underline text-sm"
+                      >
+                        Forget
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {trusted.length > 1 && (
+                  <button
+                    onClick={() => forgetBrowsers()}
+                    disabled={busy}
+                    className="text-red-700 underline text-sm"
+                  >
+                    Forget all
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -633,6 +705,31 @@ export default function SecurityManager({ required }) {
             Set up two-factor
           </button>
         </div>
+      )}
+
+      {/* Always shown, two-factor or not (23 Nov 2026). Log Out on the
+          dashboard ends this browser only (app/auth/signout); this ends every
+          session on the account, for a lost phone or a password someone else
+          may know. */}
+      {!loading && (
+        <form
+          action="/auth/signout/"
+          method="post"
+          className="mt-6 border-t border-neutral-100 pt-4"
+          onSubmit={(e) => {
+            if (!confirm('Log out on every browser and phone, this one included?')) e.preventDefault();
+          }}
+        >
+          <h3 className="text-base font-semibold mb-1">Signed in somewhere else?</h3>
+          <p className="text-sm text-neutral-500 mb-2">
+            Log Out ends this browser only. If you lost a phone or think someone else knows
+            your password, log out everywhere, then change your password.
+          </p>
+          <input type="hidden" name="scope" value="global" />
+          <button type="submit" className="btn-outline py-1.5! text-sm">
+            Log out everywhere
+          </button>
+        </form>
       )}
     </div>
   );

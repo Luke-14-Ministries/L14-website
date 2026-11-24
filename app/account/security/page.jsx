@@ -29,7 +29,9 @@ export default async function SecurityPage({ searchParams }) {
         <div className="mb-4 flex justify-end">
           <BackLink />
         </div>
-        <SecurityManager required={required || Boolean(staff)} />
+        {/* isStaff for the 7-day words (23 Nov 2026); required also covers
+            ?required=1 from the admin gate. */}
+        <SecurityManager required={required || Boolean(staff)} isStaff={Boolean(staff)} />
       </div>
     </section>
   );

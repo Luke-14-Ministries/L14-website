@@ -12,6 +12,7 @@
 // (the middleware, and these two actions) can read it. Security audit,
 // "think like a hacker" round.
 
+import { createHash } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 
@@ -56,4 +57,16 @@ export async function trustedBrowserCheck() {
   // which fails closed. Throwing here would stop the login altogether.
   if (trustError) console.error('trustedBrowserCheck:', trustError.message);
   return ok === true;
+}
+
+// For the Security page's list of remembered browsers: which row is THIS
+// browser (23 Nov 2026)? Returns the SHA-256 of this browser's token -- the
+// same hash the row holds, and which the person's own rows already show the
+// page -- never the token itself, which stays HttpOnly. A hash cannot be
+// turned back into a token, and mark_session_trusted() wants the token.
+export async function thisBrowserTrustHash() {
+  const jar = await cookies();
+  const token = jar.get(NAME)?.value;
+  if (!token || !TOKEN_SHAPE.test(token)) return null;
+  return createHash('sha256').update(token, 'utf8').digest('hex');
 }
