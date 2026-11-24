@@ -7,7 +7,9 @@ import { statusPill } from '@/lib/format';
 import { searchWords, ilikeContains } from '@/lib/search';
 
 import ResizableTable from '@/components/ResizableTable';
-export const metadata = { title: 'Search · Staff Admin' };
+// The header's box words this page (23 Nov 2026 review): one name in the
+// heading and the browser title.
+export const metadata = { title: 'Find a Person or Family · Staff Admin' };
 
 // Find a person or a family by name or email and get to their page in one
 // step (Ellen's "search tab"; Lawrence, 14 Oct 2026). The box lives in the
@@ -99,13 +101,14 @@ export default async function SearchPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Search</h2>
+      <h2 className="text-xl font-bold mb-1">Find a person or family</h2>
       <form action="/admin/search/" method="get" className="mb-5 flex flex-wrap items-center gap-2">
         <input
           type="search"
           name="q"
           defaultValue={q}
           placeholder="A name, part of a name, or an email"
+          aria-label="Search people and families"
           className="w-80 max-w-full rounded-sm border border-neutral-300 px-3 py-2"
           autoFocus
         />

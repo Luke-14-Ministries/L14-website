@@ -1,11 +1,12 @@
 import Link from 'next/link';
-import { ADMIN_NAV as NAV } from '@/lib/adminNav';
+import { ADMIN_NAV as NAV, SECTIONS, TOP } from '@/lib/adminNav';
 import { redirect } from 'next/navigation';
 import { passwordIsStale, getStaff, can } from '@/lib/staff';
 import { getProgramLeadership } from '@/lib/programs';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { sinceISO, STAFF_ASSIGNED_TYPES, isCurrentEventRow, todayInMorristown } from '@/lib/events';
 import AdminNav from './AdminNav';
+import AdminSearch from './AdminSearch';
 import { VOLUNTEER_ROLES } from '@/lib/roles';
 import { adultOnFirstDay } from '@/lib/backgroundChecks';
 import { backgroundCheckWork } from '@/lib/backgroundCheckWork';
@@ -14,16 +15,14 @@ import { volunteerBadgeMode } from '@/lib/volunteerBadge';
 
 export const metadata = { title: 'Staff Admin' };
 
-// The full planned admin structure, gated by role. `ready: false` items show as
-// greyed placeholders so the shape of the system (and the access model) is visible
-// while the pages get built one at a time.
 // A plain-language description of what each role can do, shown in the header so
 // a staff member always knows which "hat" they are wearing and what it grants.
 const ROLE_INFO = {
   admin: {
     label: 'Administrator',
-    blurb:
-      'Full access: registrations, rosters, settings, accounts and two-factor resets. You can grant or remove any staff role, including administrator.',
+    // One plain sentence (23 Nov 2026 review); the list of areas it named
+    // was the whole sidebar again.
+    blurb: 'You can open everything and change who has access.',
   },
   registrar: {
     label: 'Registrar',
@@ -35,34 +34,8 @@ const ROLE_INFO = {
   },
 };
 
-// group: 'events' items live inside the collapsible "Events" section of the
-// sidebar; ungrouped items render at the top (before) or bottom (after) level.
-
-// The sidebar in sections (Lawrence, 14 Oct 2026, reviewing the hierarchy):
-// the two queues at the top, then People, the camp-week tools (the one
-// collapsible group), requests, money, communication and the admin pages. Scholarship
-// requests sit under Event Payments because a scholarship decision is a money
-// decision. An item that appears in no section (a leader's My Program) is
-// shown on its own after the top two. Order inside a section is this list's.
-const SECTIONS = [
-  // Search is the box in the header, not a sidebar item (Lawrence, 15 Oct
-  // 2026); /admin/search is only where a search lands.
-  { key: 'people', label: 'People', hrefs: ['/admin/rosters', '/admin/volunteers', '/admin/background-checks', '/admin/changes'] },
-  {
-    key: 'camp',
-    label: 'Camp Week',
-    collapsible: true,
-    hrefs: ['/admin/checkin', '/admin/dietary', '/admin/medical', '/admin/activities', '/admin/buddies', '/admin/lodging', '/admin/programs'],
-  },
-  { key: 'requests', label: 'Requests', hrefs: ['/admin/cancellations', '/admin/deletion-requests'] },
-  { key: 'money', label: 'Money', hrefs: ['/admin/payments', '/admin/scholarships', '/admin/giving'] },
-  // Everything that writes to people outside (Lawrence, 28 Oct 2026): the
-  // emails to registered families, the newsletter list, the prayer list. A
-  // prayer-team login with only the Prayer list grant sees this one section.
-  { key: 'communication', label: 'Communication', hrefs: ['/admin/email-families', '/admin/newsletter', '/admin/prayer'] },
-  { key: 'admin', label: 'Admin', hrefs: ['/admin/setup', '/admin/accounts', '/admin/staff'] },
-];
-const TOP = ['/admin', '/admin/review'];
+// The sidebar's pages, sections and order are lib/adminNav.js (ADMIN_NAV,
+// SECTIONS, TOP; moved there 23 Nov 2026).
 
 export default async function AdminLayout({ children }) {
   const [staff, leaderships] = await Promise.all([getStaff(), getProgramLeadership()]);
@@ -189,9 +162,9 @@ export default async function AdminLayout({ children }) {
     myProgramCount += count ?? 0;
   }
 
-  // A small attention dot on "Recent Changes" when unreviewed family edits
-  // exist. Count only -- cheap head query; RLS scopes what this staffer may
-  // count (support-detail rows stay invisible without the sensitive grant).
+  // The amber number on Changes to Review when unreviewed family edits
+  // exist. RLS scopes what this staffer may count (support-detail rows stay
+  // invisible without the sensitive grant).
   let unreviewedChanges = 0;
   let volunteersAwaiting = 0;
   let volunteersMissingCheck = 0;
@@ -237,8 +210,8 @@ export default async function AdminLayout({ children }) {
           .select('household_id, person_id, changed_at')
           .is('reviewed_at', null)
           .limit(5000),
-        // Applications sitting in "applied" — same treatment as Recent
-        // Changes: a number on the nav whenever something needs review.
+        // Applications sitting in "applied" — same treatment as Changes to
+        // Review: a number on the nav whenever something needs review.
         // Not for an archived event (Lawrence, 4 Nov 2026): no badge counts
         // an event staff have taken off every current list.
         // Current events only, and not a cancelled place: the same people as
@@ -556,7 +529,9 @@ export default async function AdminLayout({ children }) {
               Staff Admin
             </p>
           )}
-          <h1 className="text-2xl font-bold">{fullName}</h1>
+          {/* A <p>, not an <h1> (23 Nov 2026 review): the page's own heading
+              is what the page is about; the signed-in name is context. */}
+          <p className="text-2xl font-bold font-heading">{fullName}</p>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <span className="rounded-full bg-brand-light text-brand-dark px-2.5 py-0.5 text-xs font-semibold">
               {/* Everyone with a program_leaders grant is a leader; the one
@@ -590,7 +565,9 @@ export default async function AdminLayout({ children }) {
             )}
             <span className="text-xs text-neutral-500">{viewerEmail}</span>
           </div>
-          <p className="text-xs text-neutral-500 mt-1.5">
+          {/* Hidden on a phone (23 Nov 2026 review): it pushed the page's
+              own content a screen down, and the role pill above says it. */}
+          <p className="hidden sm:block text-xs text-neutral-500 mt-1.5">
             {isLeaderOnly
               ? `You lead ${leaderships
                   .map((l) => l.programName)
@@ -608,7 +585,7 @@ export default async function AdminLayout({ children }) {
           {/* The account buttons on their own row, the search on its own row
               beneath (Lawrence, 27 Oct 2026: the search box read as one strip
               with My Dashboard and Log Out). */}
-          <div className="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
+          <div className="flex w-full shrink-0 flex-col items-stretch gap-3 sm:w-auto sm:items-end">
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <Link href="/account/dashboard/" className="btn-outline py-1.5! text-sm">
                 My Dashboard
@@ -620,25 +597,15 @@ export default async function AdminLayout({ children }) {
               </form>
             </div>
             {/* Find a person or family from any staff page (14 Oct 2026).
-                A plain GET form: no script between typing and results. */}
-            {staff && can(staff, 'read:registration') && (
-              <form action="/admin/search/" method="get" className="flex items-center gap-1">
-                <input
-                  type="search"
-                  name="q"
-                  placeholder="Find a person or family"
-                  aria-label="Search people and families"
-                  className="w-80 max-w-full rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm"
-                />
-                <button type="submit" className="btn-outline py-1.5! text-sm">
-                  Search
-                </button>
-              </form>
-            )}
+                AdminSearch leaves it off /admin/search, which has its own
+                box (23 Nov 2026 review: two search boxes on one page). */}
+            {staff && can(staff, 'read:registration') && <AdminSearch />}
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[220px_1fr] print:block">
+        {/* 240px, not 220 (23 Nov 2026): "Background Checks" with its amber
+            and red numbers fits on one line. */}
+        <div className="grid gap-6 lg:grid-cols-[240px_1fr] print:block">
           <div className="print:hidden">
             <AdminNav
             top={TOP.map((h) => items.find((n) => n.href === h)).filter(Boolean)}
@@ -692,11 +659,14 @@ export default async function AdminLayout({ children }) {
             // background checks); a leader sees one blue number (26 Oct 2026).
             showLegend={!isLeaderOnly}
             mailBadges={{ '/admin/review': unreadReplies }}
-            redBadges={{ '/admin/volunteers': volunteersMissingCheck }}
+            // On Background Checks since 23 Nov 2026 (it was on Volunteers,
+            // Lawrence 15 Oct): that is where the background check is sent
+            // and recorded. Volunteers still says how many on its own tile.
+            redBadges={{ '/admin/background-checks': volunteersMissingCheck }}
             redBadgeTitles={{
-              '/admin/volunteers': [
-                'adult volunteer who can’t be approved yet: no current background check marked OK (done on Background Checks)',
-                'adult volunteers who can’t be approved yet: no current background check marked OK (done on Background Checks)',
+              '/admin/background-checks': [
+                'adult volunteer who can’t be approved yet: no current background check marked OK',
+                'adult volunteers who can’t be approved yet: no current background check marked OK',
               ],
             }}
             />
