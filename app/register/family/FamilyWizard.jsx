@@ -1431,7 +1431,7 @@ export default function FamilyWizard({
               className="text-brand underline font-semibold"
               onClick={() => setAllCards(false)}
             >
-              Fold all
+              Close all
             </button>
           </span>
         </p>

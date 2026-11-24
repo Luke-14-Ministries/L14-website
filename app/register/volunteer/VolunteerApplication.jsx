@@ -399,7 +399,7 @@ export default function VolunteerApplication({
             )}
           </div>
           <p className="text-xs text-neutral-500 mt-3">
-            If you&rsquo;re 18 or older, after our team reviews your application you&rsquo;ll get an email from VolunteerBadge, the company that runs our background checks. It asks for your permission and your details on their secure site; the check runs only after you agree there. We never see your Social Security number.
+            If you&rsquo;re 18 or older, after our team reviews your application you&rsquo;ll get an email from VolunteerBadge, the company that runs our background checks. It asks for your permission and your details on their secure site; the background check runs only after you agree there. We never see your Social Security number.
           </p>
         </div>
       )}
