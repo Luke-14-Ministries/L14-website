@@ -68,9 +68,8 @@ function RegisterBlock({ camp }) {
     return (
       <>
         <div className="prose-site mt-6">
-          <p>
-            Registration opens {camp.opensOn ?? 'soon'}. Create your account now so you are ready.
-          </p>
+          {/* The headline above already gives the opening day. */}
+          <p>Create your account now so you are ready.</p>
           {camp.early && (
             <p>
               Register by <strong>{formatDueDate(camp.early.endsOn)}</strong> and get{' '}
