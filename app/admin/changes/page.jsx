@@ -6,7 +6,9 @@ import ChangesList from './ChangesList';
 import { whenInMorristown } from '@/lib/events';
 import { afterApprovalFilter, dobDropsUnder18 } from '@/lib/changesAfterApproval';
 
-export const metadata = { title: 'Recent Changes · Staff Admin' };
+// "Recent Changes" until 23 Nov 2026: it lists changes waiting to be
+// marked reviewed, so it is named as the queue it is.
+export const metadata = { title: 'Changes to Review · Staff Admin' };
 
 // Tracked changes: every edit a FAMILY makes (Manage Household, wizard
 // resubmits) is logged field-by-field by database triggers (migration 0013),
@@ -111,7 +113,7 @@ export default async function RecentChangesPage() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Recent Changes</h2>
+      <h2 className="text-xl font-bold mb-1">Changes to Review</h2>
       <p className="text-sm text-neutral-500 mb-1">
         Changes made after someone was approved for a current event: every edit a family makes to their
         own information, and staff edits to names, dates of birth and safety details, shown old → new with

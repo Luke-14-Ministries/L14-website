@@ -6,7 +6,8 @@ import EventFilter from '@/components/EventFilter';
 import ProgramBoard from './ProgramBoard';
 import { isVolunteerRole } from '@/lib/roles';
 
-export const metadata = { title: 'Programs · Staff Admin' };
+// "Program Groups" (23 Nov 2026), not the public site's Programs menu.
+export const metadata = { title: 'Program Groups · Staff Admin' };
 
 // The assignment portal: who is in which program, for one event.
 //
@@ -205,7 +206,7 @@ export default async function ProgramsPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Programs</h2>
+      <h2 className="text-xl font-bold mb-1">Program Groups</h2>
       <p className="text-sm text-neutral-500 mb-4">
         Which group each person is in for the week: nursery, children, youth, young adults, men or
         women. Families never see or choose this. A program leader sees only their own list, with
@@ -230,7 +231,11 @@ export default async function ProgramsPage({ searchParams }) {
           eventId={selected.id}
           eventName={selected.name}
           eventStartsOn={selected.starts_on}
-          programs={programs ?? []}
+          programs={(programs ?? []).map((p) =>
+            // 0150's placement is named "N/A (e.g. staff)" in the database;
+            // the board says what it means (23 Nov 2026 review).
+            p.not_a_program ? { ...p, name: 'No program (staff and others)' } : p
+          )}
           people={people}
           leaders={leaders}
           leaderCandidates={can(staff, 'admin') ? leaderCandidates : []}

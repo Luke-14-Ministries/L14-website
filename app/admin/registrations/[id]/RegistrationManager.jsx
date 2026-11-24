@@ -2263,7 +2263,7 @@ export default function RegistrationManager({
             obviously in need of review, and no way to answer it.
 
             Amber, because it is work outstanding that drains when somebody
-            acts — the same rule the cancellation queue and Recent Changes
+            acts — the same rule the cancellation queue and Changes to Review
             follow. */}
         {/* The scholarship request is step 1 inside the Review card since
             4 Nov 2026 (scholarshipSlot), not a section of its own. */}

@@ -771,7 +771,7 @@ export default function ReviewCard({
           {awaiting.reason && <p className="mt-1 text-amber-900">&ldquo;{awaiting.reason}&rdquo;</p>}
           <p className="mt-1 text-xs text-amber-900">
             This doesn&rsquo;t count as waiting on staff. When the family replies from their
-            dashboard, it comes back to staff. Their edits still show in Recent Changes.
+            dashboard, it comes back to staff. Their edits still show in Changes to Review.
           </p>
           {canWrite && <button
             type="button"

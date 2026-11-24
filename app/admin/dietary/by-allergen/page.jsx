@@ -6,7 +6,7 @@ import { isCurrentEventRow, eventInScope, eventScopeHeading } from '@/lib/events
 import { allergenWords } from '@/lib/support';
 import PrintButton from '@/components/PrintButton';
 
-export const metadata = { title: 'Allergies by allergen' };
+export const metadata = { title: 'Allergies by Allergen · Staff Admin' };
 
 // The kitchen list WITH names (Ellen's ink, 15 Oct 2026; build plan item 9):
 // grouped by allergen, each person named with their severity, anaphylaxis

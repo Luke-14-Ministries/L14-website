@@ -40,7 +40,7 @@ import CheckCard from './CheckCard';
 import CreditLine from './CreditLine';
 import ResizableTable from '@/components/ResizableTable';
 
-export const metadata = { title: 'Background Checks' };
+export const metadata = { title: 'Background Checks · Staff Admin' };
 
 const SOON_DAYS = 60;
 const BASE = '/admin/background-checks/';
@@ -368,7 +368,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
               href="/admin/background-checks/screening/"
               className={`${chip(x.vbStatus === 'clear' ? CHECK_TONE.done : CHECK_TONE.hold)} underline`}
             >
-              {x.vbStatus === 'clear' ? 'VolunteerBadge: clear, confirm on Background Screening →' : 'VolunteerBadge: needs review →'}
+              {x.vbStatus === 'clear' ? 'VolunteerBadge: clear, confirm on Send Background Check Invites →' : 'VolunteerBadge: needs review →'}
             </Link>
           )}
           {x.bucket === 'soon' && <span className={chip(CHECK_TONE.todo)}>Expires soon</span>}
@@ -466,7 +466,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
 
   const screeningLink = (
     <Link href="/admin/background-checks/screening/" className="font-semibold text-brand underline">
-      Background Screening
+      Send Background Check Invites
     </Link>
   );
   const CARD_TEXT = {
@@ -582,7 +582,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-700">
             <li>
               <strong>Volunteers</strong> and <strong>parents, siblings and caregivers</strong>: VolunteerBadge.
-              Background Screening lists who can be sent and shows the credits; nothing goes until you press Send.
+              Send Background Check Invites lists who can be sent and shows the credits; nothing goes until you press Send.
               Results come back there.
             </li>
             <li>
@@ -593,9 +593,10 @@ export default async function BackgroundChecksPage({ searchParams }) {
               <strong>Background check record</strong> under the person&rsquo;s row.
             </li>
           </ul>
-          {/* Named for both halves of that page (Lawrence, 15 Nov 2026). */}
+          {/* Named for both halves of that page (Lawrence, 15 Nov 2026);
+              the page's own name is its heading (23 Nov 2026). */}
           <Link href="/admin/background-checks/screening/" className="btn-primary mt-3 inline-block py-2!">
-            Background Screening: send invites, see results →
+            Send invites and see results →
           </Link>
         </div>
         <CheckLengthForm months={months} onFile={onFileCount ?? 0} canEdit={canWrite} />

@@ -5,7 +5,8 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import CancellationList from './CancellationList';
 
-export const metadata = { title: 'Cancellation Requests · Staff Admin' };
+// One name in the sidebar, heading and browser title (23 Nov 2026).
+export const metadata = { title: 'Cancellations · Staff Admin' };
 
 // Families asking to cancel. A real queue, because a request with nobody
 // watching it is worse than no request at all -- the family believes they have
@@ -79,7 +80,7 @@ export default async function CancellationsPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Cancellation Requests</h2>
+      <h2 className="text-xl font-bold mb-1">Cancellations</h2>
       <p className="text-sm text-neutral-500 mb-4">
         Families asking to cancel. Marking one handled records that you dealt with it. It
         does <strong>not</strong> release places or move money. Do those on the registration

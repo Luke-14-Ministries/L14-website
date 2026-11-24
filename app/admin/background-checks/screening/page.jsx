@@ -11,7 +11,10 @@ import { creditPicture } from '@/lib/volunteerBadgeCredits';
 import { settledByRecord } from '@/lib/backgroundChecks';
 import { todayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Background Screening · Staff Admin' };
+// "Background Screening" until 23 Nov 2026: it differed from Background
+// Checks by a synonym. The page sends VolunteerBadge invites and shows what
+// came back.
+export const metadata = { title: 'Send Background Check Invites · Staff Admin' };
 // A batch is sent one person at a time from the browser; Refresh asks
 // VolunteerBadge about up to 20 invites in one press.
 export const maxDuration = 60;
@@ -166,7 +169,7 @@ export default async function ScreeningPage() {
   return (
     <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
-        <h2 className="text-xl font-bold">Background Screening</h2>
+        <h2 className="text-xl font-bold">Send Background Check Invites</h2>
         <BackLink href="/admin/background-checks" label="Back to Background Checks" />
       </div>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">

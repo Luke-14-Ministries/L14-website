@@ -78,7 +78,7 @@ const MOVED_WORDS = {
   agreement_signatures: ['signed agreement', 'signed agreements'],
   coupons: ['coupon', 'coupons'],
   message_log: ['email record', 'email records'],
-  family_change_log: ['Recent Changes line', 'Recent Changes lines'],
+  family_change_log: ['Changes to Review line', 'Changes to Review lines'],
   data_deletion_requests: ['deletion request', 'deletion requests'],
   reminder_sends: ['reminder record', 'reminder records'],
   household_invites: ['invite', 'invites'],

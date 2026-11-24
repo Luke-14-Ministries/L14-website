@@ -178,7 +178,7 @@ export default function PersonDetails({ person, canEdit }) {
         </button>
       </div>
       <p className="text-xs text-neutral-500">
-        Name and date of birth changes are logged in Recent Changes. Support and medical details
+        Name and date of birth changes are logged in Changes to Review. Support and medical details
         and caregivers are changed by the family on their account, or on a registration page.
       </p>
     </form>

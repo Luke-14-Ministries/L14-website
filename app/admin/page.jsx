@@ -394,7 +394,7 @@ export default async function AdminOverview({ searchParams }) {
 
       {/* The work queue: families with someone still pending review.
           Given an id (25 Aug) because other pages point at it in words --
-          Recent Changes says new people "land in the Awaiting Review queue on
+          Changes to Review says new people "land in the Awaiting Review queue on
           the Overview" -- and a page you have to hunt for is not really a
           queue. That sentence is now a link to this card. */}
       {can(staff, 'read:registration') && reviewList.length > 0 && (
@@ -405,7 +405,7 @@ export default async function AdminOverview({ searchParams }) {
           <h3 className="font-bold mb-1">New registrations awaiting review</h3>
           <p className="text-sm text-neutral-500 mb-3">
             New sign-ups, newly added people and changed roles. Open one to confirm, waitlist or
-            edit it. Changes to existing details are on the Recent Changes page.
+            edit it. Changes to existing details are on Changes to Review.
           </p>
           <ul className="divide-y divide-neutral-100">
             {reviewList.map(([id, r]) => (

@@ -12,7 +12,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { upcomingReminders, reminderMode } from '@/lib/reminders/run';
 import { todayInMorristown } from '@/lib/events';
 
-export const metadata = { title: 'Email Registrants · Staff Admin' };
+// "Email Registrants" until 23 Nov 2026: one email goes to each household.
+export const metadata = { title: 'Email Families · Staff Admin' };
 
 // The automatic emails that are about money. The 7-day list is worked out
 // with the service-role client, which sees every family's balance, so a
@@ -151,7 +152,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Email Registrants</h2>
+      <h2 className="text-xl font-bold mb-1">Email Families</h2>
       <p className="text-sm text-neutral-500 mb-4">
         Email the people registered for an event about a change. You can send to everyone, the
         campers&rsquo; families, the volunteers, or only the people on one activity. Each household

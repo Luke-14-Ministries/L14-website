@@ -7,7 +7,7 @@ import EventFilter from '@/components/EventFilter';
 import { signedPhotoUrls } from '@/lib/photos';
 import { isCurrentEventRow, eventDateRange } from '@/lib/events';
 
-export const metadata = { title: "Photographer's List — Staff Admin" };
+export const metadata = { title: "Photographer's List · Staff Admin" };
 
 // The camp photographer's list (Lawrence, 26 Oct 2026: "need to still have
 // photo flag maintained to give list to camp photographer").

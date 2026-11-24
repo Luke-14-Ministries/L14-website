@@ -274,7 +274,7 @@ function ScreeningPanel({ clearance, vb, email }) {
   const checkrOut = ['invited', 'pending', 'suspended'].includes(checkrStatus);
   const screening = (
     <Link href="/admin/background-checks/screening/" className="text-brand underline">
-      Background Screening
+      Send Background Check Invites
     </Link>
   );
   let title = 'VolunteerBadge';
