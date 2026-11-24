@@ -92,7 +92,7 @@ const words = (t, n) => (Array.isArray(t) ? t[n === 1 ? 0 : 1] : t);
 // the badges always agree. Module level, like Stat.
 function WaitingCard({ lines }) {
   return (
-    <div id="waiting" className="scroll-mt-4 rounded-lg bg-white border border-neutral-200 shadow-xs p-6 mb-8">
+    <div id="waiting" className="card scroll-mt-4 mb-8">
       <h3 className="font-bold mb-1">Waiting on staff</h3>
       {lines.length === 0 ? (
         <p className="text-sm text-neutral-500">Nothing is waiting on staff.</p>
@@ -455,7 +455,7 @@ export default async function AdminOverview({ searchParams }) {
 
       <WaitingCard lines={waitingLines} />
 
-      <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
+      <div className="card">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <h3 className="font-bold">By event</h3>
           <Link href="/admin/rosters" className="btn-outline btn-sm">

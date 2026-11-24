@@ -255,7 +255,7 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
       </div>
 
       {open && (
-        <div className="mt-3 rounded-lg border border-neutral-200 bg-white p-4 text-sm">
+        <div className="card mt-3 p-4 text-sm">
           {/* The decision first, then what it rests on. */}
           {canReview && app && app.status !== 'withdrawn' && (
             <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-3">
@@ -480,7 +480,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
               key={key}
               href="/admin/background-checks/#volunteers"
               title="Adults without a current background check marked OK, counted once however many weeks they serve. Under-18s are not screened. Opens Background Checks."
-              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-left hover:border-brand"
+              className="card px-4 py-2 text-left hover:border-brand"
             >
               <span className={`font-bold text-lg ${tone}`}>{n}</span> {label} →
             </Link>
@@ -519,7 +519,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
       )}
 
       {groups.map((g) => ({ ...g, rows: g.rows.filter(SHOWS[show]) })).filter((g) => g.rows.length > 0).map((g) => (
-        <div key={g.event.id} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5 mb-6">
+        <div key={g.event.id} className="card p-5 mb-6">
           <h3 className="font-bold">
             {g.event.name}
             {g.event.starts_on && (

@@ -329,7 +329,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
           reject a provider confirmation. The cards below only say where each
           person stands; an "awaiting staff review" pill there links to its row here. */}
       {selected && (
-        <section id="to-check" className="mb-5 scroll-mt-6 rounded-lg border border-neutral-200 bg-white p-4">
+        <section id="to-check" className="card mb-5 scroll-mt-6 p-4">
           <h3 className="font-bold">
             Confirmations to check{' '}
             {toCheck.length > 0 && (

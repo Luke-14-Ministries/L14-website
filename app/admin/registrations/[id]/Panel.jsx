@@ -60,7 +60,7 @@ export default function Panel({ title, count = null, children, defaultOpen = tru
     if (open && scrollTo) document.getElementById(scrollTo.target)?.scrollIntoView({ block: 'start' });
   }, [open, scrollTo]);
   return (
-    <div id={id} className="rounded-lg bg-white border border-neutral-200 shadow-xs scroll-mt-4">
+    <div id={id} className="card p-0 scroll-mt-4">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

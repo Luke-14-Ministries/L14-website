@@ -40,7 +40,7 @@ export default function PrayerPeopleTable({ people, canWrite }) {
   }
 
   return (
-    <details className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
+    <details className="card">
       <summary className="fold-summary cursor-pointer font-bold">
         Who is on it <span className="font-normal text-neutral-500">({current})</span>
       </summary>

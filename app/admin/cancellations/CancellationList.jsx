@@ -39,7 +39,7 @@ function Row({ row }) {
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
+    <div className="card p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-lg font-bold">
           {row.household}

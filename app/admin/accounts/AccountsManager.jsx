@@ -482,7 +482,7 @@ export default function AccountsManager({
                       >
                         ⋯
                       </summary>
-                      <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border border-neutral-200 bg-white py-1 shadow-lg text-left">
+                      <div className="absolute right-0 top-full z-20 mt-1 w-72 rounded-lg border border-neutral-200 bg-white py-1 text-left shadow-lg">
                         <MenuItem
                           disabled={Boolean(a.email_confirmed_at)}
                           reason={a.email_confirmed_at ? 'email already confirmed' : null}

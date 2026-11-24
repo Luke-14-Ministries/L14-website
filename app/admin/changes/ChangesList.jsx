@@ -249,7 +249,7 @@ export default function ChangesList({ groups: given }) {
       )}
 
       {shown.map((g) => (
-        <div key={g.householdId ?? 'unknown'} className="rounded-lg bg-white border border-neutral-200 shadow-xs">
+        <div key={g.householdId ?? 'unknown'} className="card p-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-3">
             <button
               type="button"

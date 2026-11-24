@@ -42,7 +42,7 @@ export default function ReviewGroup({ rows }) {
           </button>
         </div>
       )}
-      <ul className="divide-y divide-neutral-100 overflow-hidden rounded-lg border border-neutral-200 bg-white">
+      <ul className="card p-0 divide-y divide-neutral-100 overflow-hidden">
         {rows.map((r) => {
           const isOpen = open.has(r.id);
           const bodyId = `review-row-${r.id}`;

@@ -1814,7 +1814,7 @@ function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true, f
     ? familyRegistrations
     : [{ id: registration.id, event: registration.event, participants: registration.participants, attention: [] }, ...familyRegistrations];
   return (
-    <div className="mb-6 rounded-lg border border-neutral-200 bg-white px-6 py-5 shadow-xs">
+    <div className="card mb-6 px-6 py-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">

@@ -58,17 +58,17 @@ export default async function PrayerListPage() {
       </p>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
+        <div className="card p-5">
           <div className="text-3xl font-bold">{onList.length}</div>
           <div className="text-sm font-semibold text-neutral-700">On the list</div>
           <div className="text-xs text-neutral-500">confirmed and getting the emails</div>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
+        <div className="card p-5">
           <div className="text-3xl font-bold">{pending.length}</div>
           <div className="text-sm font-semibold text-neutral-700">Not confirmed yet</div>
           <div className="text-xs text-neutral-500">signed up but haven&rsquo;t confirmed by email</div>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
+        <div className="card p-5">
           <div className="text-3xl font-bold">{left.length}</div>
           <div className="text-sm font-semibold text-neutral-700">Unsubscribed or taken off</div>
           <div className="text-xs text-neutral-500">not emailed again unless they sign up again</div>
@@ -76,13 +76,13 @@ export default async function PrayerListPage() {
       </div>
 
       {can(staff, 'write:prayer') && (
-        <div className="mb-8 rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
+        <div className="card mb-8">
           <h3 className="mb-3 font-bold">Write to the prayer list</h3>
           <PrayerComposer count={onList.length} />
         </div>
       )}
 
-      <div className="mb-8 rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
+      <div className="card mb-8">
         <h3 className="mb-3 font-bold">Sent</h3>
         {(sends ?? []).length === 0 ? (
           <p className="text-sm text-neutral-500">Nothing sent yet.</p>

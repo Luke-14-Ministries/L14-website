@@ -131,7 +131,7 @@ export default async function SearchPage({ searchParams }) {
       )}
 
       {sorted.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white mb-6">
+        <div className="card p-0 overflow-x-auto mb-6">
           <ResizableTable storageKey="search-results">
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-neutral-500">

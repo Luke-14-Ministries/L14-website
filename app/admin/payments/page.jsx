@@ -373,7 +373,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
         {eventCards.map(([key, e]) => (
-          <div key={key} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
+          <div key={key} className="card p-5">
             <h4 className="font-bold mb-2">{cardHeading(e)}</h4>
             <dl className="text-sm space-y-1">
               <div className="flex justify-between"><dt className="text-neutral-500">Fees (net of assistance)</dt><dd className="font-semibold">{money(e.fees)}</dd></div>
@@ -385,7 +385,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
             </dl>
           </div>
         ))}
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
+        <div className="card p-5">
           <h4 className="font-bold mb-2">Fee covers</h4>
           <div className="text-2xl font-bold">{money(feeCoverTotal)}</div>
           <p className="text-xs text-neutral-500 mt-1">
@@ -524,7 +524,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
       </p>
       {/* lg:overflow-visible lets the row-actions menu overlay the table
           edge on desktop; small screens keep horizontal scrolling. */}
-      <div className="overflow-x-auto lg:overflow-visible rounded-lg border border-neutral-200 bg-white mb-8">
+      <div className="card p-0 overflow-x-auto lg:overflow-visible mb-8">
         <ResizableTable storageKey="event-payments">
         <table className="w-full text-left text-sm">
           <thead className="bg-neutral-50 text-neutral-500">

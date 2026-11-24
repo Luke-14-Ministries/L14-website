@@ -589,7 +589,7 @@ export default function LodgingBoard({
         </p>
       )}
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+      <div className="card mb-5 flex flex-wrap items-center justify-between gap-3 p-4">
         <div className="min-w-0">
           <p className="font-semibold">
             {publishedAt ? (
@@ -624,7 +624,7 @@ export default function LodgingBoard({
         </div>
       </div>
 
-      <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-4">
+      <div className="card mb-6 p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h3 className="font-bold">Not yet placed</h3>
           {placing && (

@@ -343,7 +343,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
   }
 
   return (
-    <section className="mt-6 rounded-lg border border-neutral-200 bg-white">
+    <section className="card p-0 mt-6">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

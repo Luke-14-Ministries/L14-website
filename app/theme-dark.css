@@ -468,7 +468,12 @@
   @media screen {
     /* White surfaces become the card colour (white itself stays white, for
        the words on solid buttons). */
-    :where(html[data-theme='dark']:has([data-theme-area])) .bg-white {
+    /* card, field and field-sm (globals.css, 23 Nov 2026) draw their white
+       from inside the class, so they are named here beside bg-white. */
+    :where(html[data-theme='dark']:has([data-theme-area])) .bg-white,
+    :where(html[data-theme='dark']:has([data-theme-area])) .card,
+    :where(html[data-theme='dark']:has([data-theme-area])) .field,
+    :where(html[data-theme='dark']:has([data-theme-area])) .field-sm {
       background-color: var(--dark-card);
     }
     :where(html[data-theme='dark']:has([data-theme-area])) .bg-white\/95 {

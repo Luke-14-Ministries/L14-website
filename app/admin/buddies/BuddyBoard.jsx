@@ -245,11 +245,11 @@ export default function BuddyBoard({
           need a buddy is the whole job of this page; it should be the first
           thing on it and it should be amber while it is not zero. */}
       <div className="mb-5 flex flex-wrap gap-4">
-        <div className="rounded-lg border border-neutral-200 bg-white px-5 py-3">
+        <div className="card px-5 py-3">
           <div className="text-3xl font-bold">{campers.length}</div>
           <div className="text-sm font-semibold text-neutral-700">asking for a buddy</div>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white px-5 py-3">
+        <div className="card px-5 py-3">
           <div className="text-3xl font-bold text-green-700">
             {campers.length - unpaired.length}
           </div>
@@ -273,7 +273,7 @@ export default function BuddyBoard({
         </div>
       </div>
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+      <div className="card mb-5 flex flex-wrap items-center justify-between gap-3 p-4">
         <div className="min-w-0">
           <p className="font-semibold">
             {publishedAt ? (
@@ -328,7 +328,7 @@ export default function BuddyBoard({
             return (
               <div
                 key={c.participantId}
-                className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs"
+                className="card p-5"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="text-lg font-bold">
@@ -497,7 +497,7 @@ export default function BuddyBoard({
           Collapsed by default: it is a list of every camper at the event, and
           it is a thing you do occasionally, not the job this page is for. */}
       {canMark && otherCampers.length > 0 && (
-        <div className="mt-8 rounded-lg border border-neutral-200 bg-white p-5">
+        <div className="card mt-8 p-5">
           <button
             type="button"
             onClick={() => setMarkOpen((o) => !o)}

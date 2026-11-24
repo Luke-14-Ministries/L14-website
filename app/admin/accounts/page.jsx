@@ -125,7 +125,7 @@ export default async function AccountsPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
+    <div className="card">
       <h2 className="text-xl font-bold mb-1">Accounts</h2>
       {/* max-w-prose caps this at a 65-character measure, as everywhere else
           in the staff pages. Reworded 23 Nov 2026: no more "test data" (the

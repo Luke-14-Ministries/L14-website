@@ -93,7 +93,9 @@ def rule(sels, decls, ind='    '):
     w(f'{ind}}}')
 w('    /* White surfaces become the card colour (white itself stays white, for')
 w('       the words on solid buttons). */')
-rule(['.bg-white'], ['background-color: var(--dark-card)'])
+w('    /* card, field and field-sm (globals.css, 23 Nov 2026) draw their white')
+w('       from inside the class, so they are named here beside bg-white. */')
+rule(['.bg-white', '.card', '.field', '.field-sm'], ['background-color: var(--dark-card)'])
 for a in (95, 60):
     rule([f'.bg-white\\/{a}'], [f'background-color: color-mix(in oklab, var(--dark-card) {a}%, transparent)'])
 rule(['.text-black'], ['color: var(--color-neutral-900)'])

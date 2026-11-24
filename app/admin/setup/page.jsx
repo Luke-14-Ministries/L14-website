@@ -91,7 +91,7 @@ export default async function SetupPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
+    <div className="card">
       <h2 className="text-xl font-bold mb-1">Setup &amp; Manage Events</h2>
       <p className="text-sm text-neutral-500 mb-6 max-w-4xl">
         Create events and open or close registration for each one. The{' '}

@@ -135,7 +135,7 @@ function WaiverBlock({ f, set, setMany, attached, choices = [], activityName, ha
   const group = useId();
 
   return (
-    <fieldset className="mt-4 rounded-lg border border-neutral-200 bg-white p-3">
+    <fieldset className="card mt-4 p-3">
       <legend className="px-1 text-sm font-bold">Waiver</legend>
       <p className="text-xs text-neutral-500">
         How a family agrees to the risks of this activity, if there are any.
@@ -733,7 +733,7 @@ export function ActivityCard({
   const total = signedUp + interested;
 
   return (
-    <div className="rounded-lg bg-white border border-neutral-200 shadow-xs">
+    <div className="card p-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -842,7 +842,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
   const misplaced = slots.filter((s) => outsideCamp(s.slot_date)).length;
 
   return (
-    <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
+    <div className="card mt-4 p-4">
       <h4 className="text-sm font-bold">
         <button
           type="button"

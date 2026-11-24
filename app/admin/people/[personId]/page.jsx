@@ -60,7 +60,7 @@ function ageAt(dob, onDate) {
 
 function Section({ title, children, note }) {
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-5">
+    <div className="card p-5">
       <h2 className="font-semibold text-brand-dark">{title}</h2>
       {note && <p className="mt-0.5 text-xs text-neutral-500">{note}</p>}
       <div className="mt-3 text-sm">{children}</div>

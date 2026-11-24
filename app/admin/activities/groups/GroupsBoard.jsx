@@ -408,7 +408,7 @@ export default function GroupsBoard({
         </p>
       )}
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+      <div className="card mb-5 flex flex-wrap items-center justify-between gap-3 p-4">
         <p className="font-semibold">
           {going.length} going · {placed} placed · {going.length - placed} to place ·{' '}
           {volunteersPlaced > 0 &&
@@ -487,7 +487,7 @@ export default function GroupsBoard({
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section className="rounded-lg border border-neutral-200 bg-white p-4" aria-label="To place">
+        <section className="card p-4" aria-label="To place">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="font-bold">To place</h3>
             {inHand && (

@@ -209,7 +209,7 @@ function Table({
   const sortProps = { sortKey, sortDir, onSort };
   const rowProps = { selfId, busyId, onPatch, onRemove, openId, onToggleGrants };
   return (
-    <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+    <div className="card p-0 overflow-x-auto">
       <ResizableTable storageKey="staff-list">
       <table className="w-full text-left text-sm">
         <thead className="bg-neutral-50 text-neutral-500">
@@ -514,7 +514,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
         </div>
       )}
 
-      <div className="mt-8 rounded-lg bg-white border border-neutral-200 shadow-xs p-6 max-w-lg">
+      <div className="card mt-8 max-w-lg">
         <h3 className="font-bold mb-1">Add a staff member</h3>
         <p className="text-sm text-neutral-500 mb-3">
           They need an account on the site first, made the same way families make one. Start typing

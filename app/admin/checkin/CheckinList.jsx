@@ -90,7 +90,7 @@ export default function CheckinList({ rows }) {
         </p>
       )}
 
-      <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 bg-white">
+      <ul className="card p-0 divide-y divide-neutral-100">
         {filtered.map((r) => (
           <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="flex min-w-0 items-center gap-3">

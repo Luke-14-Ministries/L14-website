@@ -16,7 +16,7 @@ function Row({ r }) {
       if (!res.ok) setError(res.error);
     });
   return (
-    <li className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
+    <li className="card p-5">
       <p className="font-semibold">
         {r.household} · {SCOPE[r.scope]}
       </p>

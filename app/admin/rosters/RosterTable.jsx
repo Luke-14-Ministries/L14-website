@@ -276,7 +276,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
           what to order, and who not to photograph. Both follow the filters. */}
       {filtered.length > 0 && (
         <div className="mb-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-lg border border-neutral-200 bg-white p-4">
+          <div className="card p-4">
             <p className="font-semibold text-sm">T-shirt sizes</p>
             {shirtCounts.ordered.length === 0 ? (
               <p className="mt-1 text-sm text-neutral-500">No sizes recorded yet.</p>
@@ -301,7 +301,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
             </p>
           </div>
 
-          <div className="rounded-lg border border-neutral-200 bg-white p-4">
+          <div className="card p-4">
             <p className="font-semibold text-sm">Photo permission</p>
             {noPhoto.length === 0 ? (
               <p className="mt-1 text-sm text-neutral-500">
@@ -348,7 +348,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
           and scroll to move sideways. The name column stays in place. The print view and the
           CSV both include every column.
         </p>
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+        <div className="card p-0 overflow-x-auto">
           <ResizableTable storageKey="rosters">
           <table className="w-full text-left text-sm">
             <thead className="bg-neutral-50 text-neutral-500">

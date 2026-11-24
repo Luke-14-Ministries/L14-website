@@ -160,7 +160,7 @@ export default async function PrintSheetsPage({ searchParams }) {
         <p className="text-neutral-500">No current events. Sheets are made from an event&rsquo;s registrations.</p>
       ) : (
         <>
-          <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs mb-6">
+          <div className="card mb-6">
             <h3 className="font-bold">{event.name}</h3>
             <ul className="divide-y divide-neutral-100">
               {sheets.map(({ key, ...s }) => (
@@ -170,7 +170,7 @@ export default async function PrintSheetsPage({ searchParams }) {
           </div>
 
           {programSheets.length > 0 && (
-            <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
+            <div className="card">
               <h3 className="font-bold">Program rosters</h3>
               <p className="text-sm text-neutral-600">
                 For program leaders: the people in each program, with a flag where staff should ask

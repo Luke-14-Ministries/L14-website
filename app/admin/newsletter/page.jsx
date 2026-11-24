@@ -74,25 +74,25 @@ export default async function NewsletterPage() {
       )}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
+        <div className="card p-5">
           <div className="text-3xl font-bold">{subscribed.length}</div>
           {/* No "N opted out" under it (Lawrence, 15 Oct 2026): somebody who
               has news off is simply not on the list, and a count of them
               with no names is a question, not information. */}
           <div className="text-sm font-semibold text-neutral-700">on the list</div>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
+        <div className="card p-5">
           <div className="text-3xl font-bold text-green-700">{joined}</div>
           <div className="text-sm font-semibold text-neutral-700">joined in the last 30 days</div>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-xs">
+        <div className="card p-5">
           <div className="text-3xl font-bold text-neutral-500">{left}</div>
           <div className="text-sm font-semibold text-neutral-700">left in the last 30 days</div>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+        <div className="card p-0 overflow-x-auto">
           <ResizableTable storageKey="newsletter">
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-neutral-500">
@@ -122,7 +122,7 @@ export default async function NewsletterPage() {
           </ResizableTable>
         </div>
 
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
+        <div className="card p-4">
           <h3 className="font-semibold text-neutral-700 mb-2">Last 30 days</h3>
           {(recent ?? []).length === 0 ? (
             <p className="text-sm text-neutral-500">No changes.</p>

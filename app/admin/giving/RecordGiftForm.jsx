@@ -73,7 +73,7 @@ export default function RecordGiftForm() {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
+    <form onSubmit={submit} className="card">
       <h3 className="font-bold mb-1">Record a mailed or cash gift</h3>
       <p className="text-sm text-neutral-500 mb-4">
         The donor&rsquo;s email links the gift to their giving history if they have an account

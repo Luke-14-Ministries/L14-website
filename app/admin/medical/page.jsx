@@ -193,7 +193,7 @@ export default async function MedicalPage({ searchParams }) {
             {rows.length === 0 ? (
               <p className="text-neutral-500 text-sm">No medical or support details recorded.</p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+              <div className="card p-0 overflow-x-auto">
                 <ResizableTable storageKey="medical">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-neutral-50 text-neutral-500">

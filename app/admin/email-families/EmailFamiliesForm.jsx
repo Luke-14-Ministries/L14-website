@@ -208,7 +208,7 @@ export default function EmailFamiliesForm({
       </label>
 
       {/* The preview: who, how many, and the exact words. */}
-      <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm">
+      <div className="card p-4 text-sm">
         {!eventId ? (
           <p className="text-neutral-500">Choose an event to see who this goes to.</p>
         ) : choosing ? (
@@ -297,7 +297,7 @@ export default function EmailFamiliesForm({
       </div>
 
       {results && (
-        <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm">
+        <div className="card p-4 text-sm">
           <p className="font-semibold">
             {plural(sentCount, 'email', 'emails')} sent
             {failedCount > 0 && `, ${failedCount} failed`}.

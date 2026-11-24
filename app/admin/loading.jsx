@@ -2,7 +2,7 @@
 // stays, and this fills the page area instead of nothing.
 export default function Loading() {
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-6" role="status" aria-live="polite">
+    <div className="card" role="status" aria-live="polite">
       <div className="h-6 w-48 animate-pulse rounded-sm bg-neutral-200" />
       <div className="mt-4 space-y-2">
         <div className="h-4 w-full animate-pulse rounded-sm bg-neutral-100" />

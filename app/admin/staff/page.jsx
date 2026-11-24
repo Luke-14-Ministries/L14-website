@@ -95,7 +95,7 @@ export default async function StaffAccessPage() {
       {/* One fold, collapsed by default (Lawrence, 2 Oct 2026: the page is for
           doing). <details> needs no client JS. Consolidated 21 Oct 2026 from
           five folds that narrated how the page had changed. */}
-      <details className="group mb-6 rounded-lg bg-white border border-neutral-200 p-4 text-sm">
+      <details className="card group mb-6 p-4 text-sm">
         <summary className={SUMMARY}>
           <span className="font-bold">How access works</span>
         </summary>

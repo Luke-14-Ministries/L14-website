@@ -170,7 +170,7 @@ export default async function DietaryPage({ searchParams }) {
             {rows.length === 0 ? (
               <p className="text-neutral-500 text-sm">No dietary needs or allergies recorded.</p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+              <div className="card p-0 overflow-x-auto">
                 <ResizableTable storageKey="dietary">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-neutral-50 text-neutral-500">

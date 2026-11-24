@@ -167,7 +167,7 @@ export default async function ScreeningPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-neutral-200 shadow-xs p-6">
+    <div className="card">
       <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
         <h2 className="text-xl font-bold">Send Background Check Invites</h2>
         <BackLink href="/admin/background-checks" label="Back to Background Checks" />

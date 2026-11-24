@@ -108,7 +108,7 @@ export default async function AdminGivingPage({ searchParams }) {
 
       {/* Plain GET form: works with no JavaScript, and the URL becomes a
           shareable/bookmarkable report ("gifts to the camp fund this quarter"). */}
-      <form method="get" className="mb-6 flex flex-wrap items-end gap-3 rounded-lg bg-white border border-neutral-200 p-4">
+      <form method="get" className="card mb-6 flex flex-wrap items-end gap-3 p-4">
         <label className="block text-sm">
           <span className="block font-semibold mb-1">From</span>
           <input type="date" name="from" defaultValue={fFrom} className="field-sm w-auto" />
@@ -148,15 +148,15 @@ export default async function AdminGivingPage({ searchParams }) {
         {!fFrom && !fTo && <>. Set From and To above to choose a period.</>}
       </p>
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
+        <div className="card p-5">
           <div className="text-2xl font-bold">{money(total)}</div>
           <div className="text-sm text-neutral-500">Total gifts (incl. clearing) · {periodLabel}</div>
         </div>
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
+        <div className="card p-5">
           <div className="text-2xl font-bold">{good.length}</div>
           <div className="text-sm text-neutral-500">Gifts recorded · {periodLabel}</div>
         </div>
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-5">
+        <div className="card p-5">
           <div className="text-sm font-semibold mb-1">By fund <span className="font-normal text-neutral-500">· {periodLabel}</span></div>
           {byFund.size === 0 ? (
             <p className="text-sm text-neutral-500">No gifts yet.</p>
@@ -176,7 +176,7 @@ export default async function AdminGivingPage({ searchParams }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <RecordGiftForm />
 
-        <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
+        <div className="card">
           <h3 className="font-bold mb-3">Recent gifts</h3>
           {all.length === 0 ? (
             <p className="text-neutral-500 text-sm">No gifts yet.</p>

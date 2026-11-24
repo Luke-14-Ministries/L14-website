@@ -518,7 +518,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-xs">
+      <div className="card">
         <h2 className="text-xl font-bold">Background Checks</h2>
         <p className="mt-1 text-sm text-neutral-600">
           Everyone 18 or older on an upcoming event gets a background check (the board, 14 Nov 2026), in three groups:{' '}
@@ -619,7 +619,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
             defaultOpen={f.work > 0 || Boolean(sel[param])}
           >
             <p className="text-sm text-neutral-600">{text.intro}</p>
-            <div className="rounded-lg border border-neutral-200 bg-white p-4">
+            <div className="card p-4">
               <FilterPills
                 label={text.label}
                 filters={FILTERS}
