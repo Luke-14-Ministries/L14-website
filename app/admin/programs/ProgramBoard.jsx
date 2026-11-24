@@ -9,6 +9,7 @@
 // them all at once -- and the per-person dropdown is there for the exceptions
 // rather than as the main road.
 
+import SortMark from '@/components/SortMark';
 import FilterChips from '@/components/FilterChips';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -41,9 +42,7 @@ function SortHeading({ label, col, sort, setSort }) {
         className="inline-flex items-center gap-1 text-left font-semibold hover:text-brand"
       >
         {label}
-        <span aria-hidden className={`text-xs ${on ? 'text-brand' : 'text-neutral-400'}`}>
-          {on ? (sort.dir === 1 ? '▲' : '▼') : '↕'}
-        </span>
+        <SortMark dir={on ? (sort.dir === 1 ? 'asc' : 'desc') : null} />
       </button>
     </th>
   );

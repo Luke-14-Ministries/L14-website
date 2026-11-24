@@ -22,6 +22,9 @@
 //   Delete family each open the step-up box (components/StepUpModal.jsx),
 //   which asks for the administrator's own code; none acts on one click.
 
+import Pill from '@/components/Pill';
+import StatusMark from '@/components/StatusMark';
+import SortMark from '@/components/SortMark';
 import FilterChips from '@/components/FilterChips';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import SearchSelect from '@/components/SearchSelect';
@@ -118,9 +121,9 @@ function Th({ k, children, right, sort, onSort }) {
       }`}
     >
       {children}
-      {sort.key === k && (
-        <span className="ml-1 text-xs">{sort.dir === 'asc' ? '▲' : '▼'}</span>
-      )}
+      <span className="ml-1">
+        <SortMark dir={sort.key === k ? sort.dir : null} />
+      </span>
     </th>
   );
 }
@@ -410,20 +413,17 @@ export default function AccountsManager({
                         name || <span className="text-neutral-400">No name</span>
                       )}
                       {isSelf && (
-                        <span className="ml-1.5 text-xs rounded-sm bg-neutral-200 px-1.5 py-0.5 align-middle">you</span>
+                        <Pill className="ml-1.5 align-middle">you</Pill>
                       )}
                       {a.staff_role && a.staff_active !== false && (
-                        <span className="ml-1.5 text-xs rounded-sm bg-blue-100 text-blue-800 px-1.5 py-0.5 align-middle">
+                        <Pill tone="info" className="ml-1.5 align-middle">
                           {roleWord(a.staff_role)}
-                        </span>
+                        </Pill>
                       )}
                       {!a.email_confirmed_at && (
-                        <span
-                          title="Never confirmed their email address"
-                          className="ml-1.5 text-xs rounded-sm bg-amber-100 text-amber-800 px-1.5 py-0.5 align-middle"
-                        >
+                        <Pill tone="todo" title="Never confirmed their email address" className="ml-1.5 align-middle">
                           unconfirmed
-                        </span>
+                        </Pill>
                       )}
                     </div>
                     <div className="text-neutral-500 break-all">{a.email}</div>
@@ -435,10 +435,11 @@ export default function AccountsManager({
                     {fmtDate(a.last_sign_in_at)}
                   </td>
                   <td className="px-3 py-2.5">
+                    {/* The shared mark (23 Nov 2026, design scheme). */}
                     {(a.mfa_factor_count ?? 0) > 0 ? (
-                      <span className="text-green-700 font-semibold">On</span>
+                      <StatusMark state="yes" label="On" title="Two-factor is set up" />
                     ) : (
-                      <span className="text-neutral-400">Off</span>
+                      <StatusMark state="na" label="Off" title="No two-factor set up" />
                     )}
                   </td>
                   <td className="px-3 py-2.5 text-neutral-600">

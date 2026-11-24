@@ -4,6 +4,7 @@
 // (newest submissions first by default); CSV and print links that carry the
 // active filters so the export matches the screen.
 
+import SortMark from '@/components/SortMark';
 import { shortEventName, dayInMorristown, eventInScope, isEventScope } from '@/lib/events';
 import { useMemo, useState } from 'react';
 import EventFilter from '@/components/EventFilter';
@@ -369,7 +370,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                         title="Sort by this column"
                       >
                         {c.label}
-                        {sort.key === c.key && <span aria-hidden>{sort.dir === 'asc' ? '▲' : '▼'}</span>}
+                        <SortMark dir={sort.key === c.key ? sort.dir : null} />
                       </button>
                     )}
                   </th>

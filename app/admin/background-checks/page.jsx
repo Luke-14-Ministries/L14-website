@@ -519,7 +519,6 @@ export default async function BackgroundChecksPage({ searchParams }) {
           green, blue and gray as every pill below. */}
       <AdminPageHeader
         title="Background Checks"
-        className="mb-0"
         intro={
           <>
             Everyone 18 or older on an upcoming event gets a background check (the board, 14 Nov 2026), in three groups:{' '}

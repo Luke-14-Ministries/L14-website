@@ -7,6 +7,8 @@
 // Deactivated section also offers Remove, which drops the staff row entirely
 // for helpers who have moved on (re-addable later; nothing else is touched).
 
+import StatusMark from '@/components/StatusMark';
+import SortMark from '@/components/SortMark';
 import { Fragment, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateStaffMember, addStaffMember, removeStaffMember, setStaffGrants, applyPreset } from './actions';
@@ -26,9 +28,9 @@ import ResizableTable from '@/components/ResizableTable';
 // there and not yet blurred was lost on every remount. The lint rule that
 // caught it is react-hooks/static-components.
 
-function SortTh({ k, children, center, sortKey, sortDir, onSort }) {
+function SortTh({ k, children, center, sortKey, sortDir, onSort, className = '' }) {
   return (
-    <th className={`px-4 py-2 font-semibold ${center ? 'text-center' : ''}`}>
+    <th className={`px-4 py-2 font-semibold ${center ? 'text-center' : ''} ${className}`}>
       <button
         type="button"
         onClick={() => onSort(k)}
@@ -36,9 +38,7 @@ function SortTh({ k, children, center, sortKey, sortDir, onSort }) {
         title={`Sort by ${typeof children === 'string' ? children.toLowerCase() : 'this column'}`}
       >
         {children}
-        <span aria-hidden="true" className="text-xs">
-          {sortKey === k ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}
-        </span>
+        <SortMark dir={sortKey === k ? sortDir : null} />
       </button>
     </th>
   );
@@ -112,7 +112,8 @@ An administrator can grant and remove access, manage accounts and name program l
               }}
               className="h-4 w-4"
             />
-            {m.role === 'admin' ? 'Yes' : 'No'}
+            {/* The shared mark (23 Nov 2026, design scheme), beside the box. */}
+            <StatusMark state={m.role === 'admin' ? 'yes' : 'na'} label={m.role === 'admin' ? 'Yes' : 'No'} />
           </label>
         </td>
         <td className="px-4 py-3 text-center">
@@ -214,7 +215,9 @@ function Table({
       <table className="w-full text-left text-sm">
         <thead className="bg-neutral-50 text-neutral-500">
                     <tr>
-            <SortTh k="name" {...sortProps}>Person</SortTh>
+            {/* A minimum width (23 Nov 2026): names and sign-in addresses
+                wrapped a letter at a time once the grants panel widened. */}
+            <SortTh k="name" className="min-w-56" {...sortProps}>Person</SortTh>
             <SortTh k="role" center {...sortProps}>Administrator (grants access)</SortTh>
             <SortTh k="grants" center {...sortProps}>Grants</SortTh>
             <th className="px-4 py-2" />

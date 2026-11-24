@@ -16,7 +16,7 @@
 // blocked site data): the widths then last for this visit only. Widths are a
 // convenience, never data, so there is nothing to tell anyone.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const MIN = 56;
 const STEP = 16;
@@ -42,6 +42,10 @@ function save(key, widths) {
 
 export default function ResizableTable({ storageKey, defaults = [], children }) {
   const ref = useRef(null);
+  // True when the columns are wider than the box shows (23 Nov 2026, the
+  // admin review: Background Checks' Status column ran past the card's edge
+  // with nothing to say the table scrolled sideways).
+  const [overflows, setOverflows] = useState(false);
 
   useEffect(() => {
     const table = ref.current?.querySelector('table');
@@ -73,6 +77,11 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
       table.style.tableLayout = 'fixed';
       table.style.width = `${shown.reduce((a, b) => a + b, 0)}px`;
       table.style.minWidth = '100%';
+      // Measured after layout, outside React's render.
+      requestAnimationFrame(() => {
+        const room = ref.current?.clientWidth ?? 0;
+        setOverflows(room > 0 && table.offsetWidth > room + 1);
+      });
     };
     const fallback = () => ths.map((th, i) => defaults[i] ?? Math.max(MIN, Math.round(th.getBoundingClientRect().width)));
     const current = () => {
@@ -147,5 +156,14 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
 
-  return <div ref={ref}>{children}</div>;
+  return (
+    <div ref={ref}>
+      {overflows && (
+        <p className="mb-1 text-xs text-neutral-500 print:hidden">
+          More columns than fit: scroll sideways, or drag a column edge to narrow it.
+        </p>
+      )}
+      {children}
+    </div>
+  );
 }

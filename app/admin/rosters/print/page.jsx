@@ -3,7 +3,7 @@ import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from '@/components/PrintButton';
 import BackLink from '@/components/BackLink';
-import StatusMark from '@/components/StatusMark';
+import StatusMark, { StatusLegend } from '@/components/StatusMark';
 import { STATUS_LABEL, formatPhone } from '@/lib/format';
 import { eventInScope } from '@/lib/events';
 
@@ -92,6 +92,12 @@ export default async function PrintRostersPage({ searchParams }) {
           <PrintButton />
         </span>
       </div>
+      {/* The key, printed (23 Nov 2026, design scheme): paper has no
+          tooltips, and the ✓ is the one mark on this sheet. */}
+      <StatusLegend
+        className="mb-4"
+        items={[['yes', 'confirmed; other statuses are written out']]}
+      />
 
       {(events ?? []).map((ev) => {
         const rows = (byEvent.get(ev.id) ?? []).sort((a, b) => a.person.localeCompare(b.person));

@@ -20,6 +20,7 @@
 // client boundary: wrap the table in a small 'use client' file of its own
 // that builds the columns (see app/admin/my-program/ProgramRosterTable.jsx).
 
+import SortMark from '@/components/SortMark';
 import { useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 const MIN_WIDTH = 60;
@@ -318,11 +319,7 @@ export default function DataTable({
                         className="inline-flex max-w-full items-center gap-1 hover:text-neutral-800"
                       >
                         <span className="truncate">{c.label}</span>
-                        {active && (
-                          <span aria-hidden className="text-[10px]">
-                            {sort.dir === 'asc' ? '▲' : '▼'}
-                          </span>
-                        )}
+                        <SortMark dir={active ? sort.dir : null} />
                       </button>
                     ) : (
                       <span className="block truncate">{c.label}</span>
