@@ -14,8 +14,9 @@ export const metadata = { title: 'Adult Adventure Retreat' };
 // retreat is over, and the next one registers here. With no retreat
 // published ahead, the page says the dates are coming and offers no button.
 //
-// The arrival time is not a Setup field, so it stays here: the weekday follows
-// the start date, the time is this line.
+// Arrival: the event's Arrival note from Setup when staff have written one
+// (0184, 23 Nov 2026), printed as typed. Until then this line, with the
+// weekday from the start date, as before.
 const ARRIVAL_TIME = '6:00 PM';
 
 const day = (iso, opts) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
@@ -51,6 +52,10 @@ function bannerDates(fromIso, toIso) {
 // One line beside the button: what a visitor can do today.
 function statusLine(r) {
   if (!r) return 'Dates and registration for the next retreat will be posted here soon.';
+  if (r.state === 'open' && r.full) {
+    // Staff's switch on Setup (0184).
+    return `${r.program} is full. You can still register to join the waiting list.`;
+  }
   if (r.state === 'open') {
     return r.early
       ? `Register by ${formatDueDate(r.early.endsOn)} and get ${dollars(r.early.cents)} off each person.`
@@ -130,7 +135,7 @@ export default async function AdultAdventureRetreatPage() {
                     {retreat.year}
                   </Fact>
                   <Fact label="Arrival">
-                    {ARRIVAL_TIME} {day(retreat.startsOn, { weekday: 'long' })}
+                    {retreat.arrivalNote ?? `${ARRIVAL_TIME} ${day(retreat.startsOn, { weekday: 'long' })}`}
                   </Fact>
                   {retreat.priceCents != null && <Fact label="Cost">{dollars(retreat.priceCents)} per person</Fact>}
                   {retreat.capacity != null && <Fact label="Spots">Limited to {retreat.capacity}</Fact>}

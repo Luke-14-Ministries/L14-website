@@ -257,7 +257,7 @@ export default async function DashboardPage({ searchParams }) {
           `id, family_notes, created_at, awaiting_family_since, awaiting_family_reason,
            family_replied_at, family_reply_unread,
            hold_since, hold_reason, deposit_waived_at,
-           events ( id, name, event_type, starts_on, ends_on, archived_at, hidden_from_families_at, deposit_cents, balance_due_on, campus_map_url, returned_payment_fee_cents,
+           events ( id, name, event_type, starts_on, ends_on, archived_at, hidden_from_families_at, deposit_cents, balance_due_on, campus_map_url, returned_payment_fee_cents, location,
                     event_medical_contacts ( name, phone ) ),
            registration_participants ( id, camp_role, status, checked_in_at, waitlist_reason,
              participant_money ( fee_cents, discount_cents, early_discount_cents, family_discount_cents ),
@@ -1304,6 +1304,8 @@ export default async function DashboardPage({ searchParams }) {
                       key={r.id}
                       eventName={r.events?.name ?? 'Camp registration'}
                       dateLabel={eventDates(r.events)}
+                      // Not for a past event: where it was is no help now.
+                      place={isPast(r) ? '' : r.events?.location ?? ''}
                       past={isPast(r)}
                       peopleLabel={(() => {
                         const n = registrationHeads(parts);

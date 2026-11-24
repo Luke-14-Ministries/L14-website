@@ -39,7 +39,7 @@ export default async function VolunteerInformationPage() {
 
       <section className="container-site py-14 max-w-3xl mx-auto text-center">
         <h2 className="text-3xl font-bold">
-          {campHeadline(camp)}
+          {campHeadline(camp, { volunteers: true })}
         </h2>
         <div className="prose-site mt-6">
           <p>
@@ -77,7 +77,8 @@ export default async function VolunteerInformationPage() {
           />
           <h2 className="text-3xl font-bold mb-6">Location, Dates, Schedule</h2>
           <div className="prose-site">
-            <p>Carson Springs Baptist Conference Center in Newport, TN</p>
+            {/* Setup's Location when set (0184, 23 Nov 2026). */}
+            <p>{camp?.location ?? 'Carson Springs Baptist Conference Center in Newport, TN'}</p>
             {camp ? (
               <p>
                 {camp.year} Dates:

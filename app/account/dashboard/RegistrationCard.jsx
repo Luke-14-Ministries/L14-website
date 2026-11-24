@@ -33,6 +33,9 @@ import { CLEARING_PILL } from '@/lib/payments';
 export default function RegistrationCard({
   eventName,
   dateLabel = '',
+  // Where the event is, from Setup's Location (0184, 23 Nov 2026), on its own
+  // line under the name and dates. Blank: nothing shown.
+  place = '',
   past = false,
   peopleLabel,
   totalLabel,
@@ -115,6 +118,7 @@ export default function RegistrationCard({
               All set
             </span>
           )}
+          {place && <span className="basis-full pl-6 text-sm text-neutral-500">{place}</span>}
         </span>
         <span className="flex items-center gap-3 text-sm text-neutral-600">
           <span>

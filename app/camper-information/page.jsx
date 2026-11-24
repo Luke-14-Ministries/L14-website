@@ -77,16 +77,22 @@ export default async function CamperInformationPage() {
         <div className="container-site max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold mb-6">Location, Dates, Schedule</h2>
           <div className="prose-site">
-            <p>
-              <a
-                href="https://web.archive.org/web/20180826150855/http://www.tnbaptist.org/carson/"
-                target="_blank"
-                rel="noopener"
-                className="text-brand font-semibold underline"
-              >
-                Carson Springs Baptist Conference Center in Newport, TN
-              </a>
-            </p>
+            {/* The event's Location from Setup when staff have set it (0184,
+                23 Nov 2026); the venue this page always named otherwise. */}
+            {camp?.location ? (
+              <p className="font-semibold">{camp.location}</p>
+            ) : (
+              <p>
+                <a
+                  href="https://web.archive.org/web/20180826150855/http://www.tnbaptist.org/carson/"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-brand font-semibold underline"
+                >
+                  Carson Springs Baptist Conference Center in Newport, TN
+                </a>
+              </p>
+            )}
             {camp ? (
               <p>
                 {camp.year} Dates:
@@ -94,6 +100,7 @@ export default async function CamperInformationPage() {
                   <span key={w.name}>
                     <br />
                     {dayRange(w.startsOn, w.endsOn)}
+                    {w.full && !camp.full ? ' (full: registering joins the waiting list)' : ''}
                     {n < camp.weeks.length - 1 ? ' and' : ''}
                   </span>
                 ))}
