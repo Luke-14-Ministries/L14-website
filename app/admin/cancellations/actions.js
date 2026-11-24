@@ -24,7 +24,10 @@ export async function settleCancellation({ requestId, status, staffNote }) {
   const user = await getCurrentUser();
   const supabase = await createClient();
 
-  const { error } = await supabase
+  // The changed row comes back, so a request settled a moment ago by someone
+  // else (or withdrawn by the family) is said, not reported as saved
+  // (security review, 23 Nov 2026).
+  const { data: changed, error } = await supabase
     .from('registration_cancellation_requests')
     .update({
       status,
@@ -34,11 +37,15 @@ export async function settleCancellation({ requestId, status, staffNote }) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', requestId)
-    .eq('status', 'open');
+    .eq('status', 'open')
+    .select('id');
 
   if (error) {
     console.error('settleCancellation:', error.message);
     return { ok: false, error: withReason('That could not be saved.', error) };
+  }
+  if (!changed?.length) {
+    return { ok: false, error: 'This request was already settled or withdrawn. Refresh the page to see where it stands.' };
   }
 
   revalidatePath('/admin/cancellations');

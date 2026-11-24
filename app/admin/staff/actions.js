@@ -35,6 +35,7 @@ export async function updateStaffMember(profileId, patch) {
     clean.can_view_background_checks = !!patch.can_view_background_checks;
   }
   if (patch.active !== undefined) clean.active = !!patch.active;
+  if (Object.keys(clean).length === 0) return { ok: true };
 
   const supabase = await createClient();
   // Was this person an administrator? Unticking the box leaves every area at
@@ -50,8 +51,10 @@ export async function updateStaffMember(profileId, patch) {
     if (beforeError) return { ok: false, error: `Their current role could not be read: ${beforeError.message}` };
     wasAdmin = before?.role === 'admin';
   }
-  const { error } = await supabase.from('staff').update(clean).eq('profile_id', profileId);
+  const { data: changed, error } = await supabase.from('staff').update(clean).eq('profile_id', profileId).select('profile_id');
   if (error) return { ok: false, error: error.message };
+  // No row: they were taken off staff since the page loaded (23 Nov 2026).
+  if (!changed?.length) return { ok: false, error: 'Nothing was changed. This person is no longer on staff. Refresh the page.' };
 
   // Making someone an administrator also gives every area write, Giving
   // included -- an administrator can grant themselves anything anyway, so the
@@ -139,10 +142,11 @@ export async function removeStaffMember(profileId) {
   const supabase = await createClient();
   const { error: grantsError } = await supabase.from('staff_grants').delete().eq('profile_id', profileId);
   if (grantsError) return { ok: false, error: `Their access ticks could not be cleared, so they were not removed: ${grantsError.message}` };
-  const { error } = await supabase.from('staff').delete().eq('profile_id', profileId);
+  const { data: removed, error } = await supabase.from('staff').delete().eq('profile_id', profileId).select('profile_id');
   if (error) return { ok: false, error: error.message };
   revalidatePath('/admin/staff');
   revalidatePath('/admin/staff/access-log');
+  if (!removed?.length) return { ok: false, error: 'They were already off staff. Refresh the page.' };
   return { ok: true };
 }
 

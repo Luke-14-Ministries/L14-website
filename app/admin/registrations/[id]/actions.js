@@ -71,13 +71,29 @@ function clean(fields, allowed) {
   return out;
 }
 
+// What each check asks for, in the words of the Staff & Access ticks, so a
+// refusal says which access is missing (security review, 23 Nov 2026: one
+// sentence for every need sent a Finance login hunting for a Registration
+// tick it already had, when the missing one was the decision).
+const NEED_WORDS = {
+  'write:registration': 'This needs Registration write access.',
+  'write:payments': 'This needs Payments write access.',
+  'decide:scholarships':
+    'Deciding a scholarship, a discount or a deposit waiver needs both Payments write and Registration write access.',
+};
+
 async function requireRegistrar(need = 'write:registration') {
   const staff = await getStaff();
   if (!can(staff, need)) {
-    return { staff: null, error: 'You do not have permission to change registrations.' };
+    const words = NEED_WORDS[need] ?? 'Your access does not include this.';
+    return { staff: null, error: `${words} Ask an administrator to check your Staff & Access ticks.` };
   }
   return { staff, error: null };
 }
+
+// One sentence for a write that changed nothing: the row is gone, belongs to
+// another registration, or the page is out of date.
+const NOTHING_CHANGED = 'Nothing was changed. That person is not on this registration any more. Refresh the page.';
 
 // After any write, refresh the screens that show this data. The detail page is
 // the one being edited; the overview and rosters show counts and status chips
@@ -216,12 +232,18 @@ export async function setParticipantStatus(
   if (status === 'waitlisted') patch.waitlist_reason = waitlistReason;
 
   const supabase = await createClient();
-  const { error } = await supabase
+  // Filtered by the registration as well as the id, and the changed row read
+  // back: a participant id from another registration, or one deleted since
+  // the page loaded, is refused rather than reported as saved (23 Nov 2026).
+  const { data: changed, error } = await supabase
     .from('registration_participants')
     .update(patch)
-    .eq('id', participantId);
+    .eq('id', participantId)
+    .eq('registration_id', registrationId)
+    .select('id');
 
   if (error) return { ok: false, error: error.message };
+  if (!changed?.length) return { ok: false, error: NOTHING_CHANGED };
 
   // Cancelling one week must take the both-weeks discount off the other (0070).
   // This is the moment that stops being true, and the discount is derived, so
@@ -234,6 +256,7 @@ export async function setParticipantStatus(
       .from('registration_participants')
       .select('person_id')
       .eq('id', participantId)
+      .eq('registration_id', registrationId)
       .maybeSingle();
     if (whoError) console.error('multi-week discount recalc:', whoError.message);
     if (who?.person_id) {
@@ -296,9 +319,23 @@ export async function updateHousehold(registrationId, householdId, fields) {
   if (authError) return { ok: false, error: authError };
 
   const patch = clean(fields || {}, HOUSEHOLD_FIELDS);
+  if (Object.keys(patch).length === 0) return { ok: true };
   const supabase = await createClient();
-  const { error } = await supabase.from('households').update(patch).eq('id', householdId);
+  // The household must be this registration's (23 Nov 2026): the page sends
+  // both ids, and a mismatched pair would edit some other family's contact
+  // details from this screen.
+  const { data: reg, error: regError } = await supabase
+    .from('registrations')
+    .select('household_id')
+    .eq('id', registrationId)
+    .maybeSingle();
+  if (regError) return { ok: false, error: withReason('The registration could not be read.', regError) };
+  if (!reg || reg.household_id !== householdId) {
+    return { ok: false, error: 'That household is not the one on this registration. Refresh the page.' };
+  }
+  const { data: changed, error } = await supabase.from('households').update(patch).eq('id', householdId).select('id');
   if (error) return { ok: false, error: error.message };
+  if (!changed?.length) return { ok: false, error: 'Nothing was changed. Refresh the page and try again.' };
   revalidateAll(registrationId);
   return { ok: true };
 }
@@ -324,11 +361,14 @@ export async function setParticipantEnrollment(registrationId, participantId, in
   if (Object.keys(patch).length === 0) return { ok: true };
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: changed, error } = await supabase
     .from('registration_participants')
     .update(patch)
-    .eq('id', participantId);
+    .eq('id', participantId)
+    .eq('registration_id', registrationId)
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!changed?.length) return { ok: false, error: NOTHING_CHANGED };
   revalidateAll(registrationId);
   return { ok: true };
 }
@@ -390,7 +430,7 @@ export async function addParticipant(registrationId, input) {
   // The household to attach the new person to, read from the registration.
   const { data: reg, error: regError } = await supabase
     .from('registrations')
-    .select('household_id')
+    .select('household_id, event_id')
     .eq('id', registrationId)
     .maybeSingle();
   if (regError) return { ok: false, error: regError.message };
@@ -405,11 +445,16 @@ export async function addParticipant(registrationId, input) {
   // recalc_early_registration_discount().)
   const { data: opt, error: optError } = await supabase
     .from('event_options')
-    .select('id')
+    .select('id, event_id')
     .eq('id', optionId)
     .maybeSingle();
   if (optError) return { ok: false, error: optError.message };
   if (!opt) return { ok: false, error: 'That camp option no longer exists.' };
+  // An option from another event would put this person, and that event's
+  // fee, on a registration for a different week (23 Nov 2026).
+  if (opt.event_id !== reg.event_id) {
+    return { ok: false, error: 'That camp option belongs to a different event. Choose one of this event’s options.' };
+  }
 
   // Staff can SELECT any person (people_select allows is_staff), so the insert
   // may safely return the new id -- the RETURNING-under-RLS pitfall that bites
@@ -518,6 +563,7 @@ export async function deleteParticipantPermanently(registrationId, participantId
     .from('registration_participants')
     .select('status')
     .eq('id', participantId)
+    .eq('registration_id', registrationId)
     .maybeSingle();
   if (readError) return { ok: false, error: readError.message };
   if (!row) return { ok: false, error: 'That entry no longer exists.' };
@@ -528,11 +574,18 @@ export async function deleteParticipantPermanently(registrationId, participantId
     };
   }
 
-  const { error } = await supabase
+  // Still only a cancelled entry on this registration: the status is checked
+  // again in the delete itself, so a person re-instated in another tab since
+  // the read above is never deleted (23 Nov 2026).
+  const { data: removed, error } = await supabase
     .from('registration_participants')
     .delete()
-    .eq('id', participantId);
+    .eq('id', participantId)
+    .eq('registration_id', registrationId)
+    .eq('status', 'cancelled')
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!removed?.length) return { ok: false, error: 'Nothing was deleted. Refresh the page to see where this person stands.' };
   revalidateAll(registrationId);
   return { ok: true };
 }
@@ -584,9 +637,10 @@ export async function setAdjustments(registrationId, participantId, input) {
     .from('registration_participants')
     .select('id, participant_money ( discount_cents, discount_reason )')
     .eq('id', participantId)
+    .eq('registration_id', registrationId)
     .maybeSingle();
   if (readError) return { ok: false, error: readError.message };
-  if (!part) return { ok: false, error: 'That participant no longer exists.' };
+  if (!part) return { ok: false, error: 'That person is not on this registration any more. Refresh the page.' };
   const current = part.participant_money;
   if (!current) {
     // Someone who may decide holds Payments write, so the money row is theirs
@@ -815,6 +869,12 @@ export async function reviewRegistration(registrationId, { action, reason = '', 
   // Waive the deposit (0096): one definer function does the mark and the
   // scholarships and recalculates, so the page can never half-do it.
   if (action === 'waive_deposit') {
+    // A waiver is a decision (0102), so the decide-scholarships check comes
+    // first and its own sentence says what is missing. waive_deposit() checks
+    // the same in the database; asking first spares the raw refusal
+    // (23 Nov 2026).
+    const { error: decideError } = await requireRegistrar('decide:scholarships');
+    if (decideError) return { ok: false, error: decideError };
     const { data: n, error } = await supabase.rpc('waive_deposit', {
       p_registration_id: registrationId,
       p_reason: typeof reason === 'string' ? reason.trim().slice(0, 300) : null,

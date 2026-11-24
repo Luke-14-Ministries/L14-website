@@ -9,6 +9,7 @@
 import { revalidatePath } from 'next/cache';
 import { getStaff, can } from '@/lib/staff';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
+import { withReason } from '@/lib/dbErrors';
 
 export async function settleDeletionRequest({ requestId, status, staffNote }) {
   const staff = await getStaff();
@@ -20,12 +21,17 @@ export async function settleDeletionRequest({ requestId, status, staffNote }) {
   }
   const user = await getCurrentUser();
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: changed, error } = await supabase
     .from('data_deletion_requests')
     .update({ status, staff_note: staffNote.trim(), handled_by: user?.id ?? null, handled_at: new Date().toISOString() })
     .eq('id', requestId)
-    .eq('status', 'requested');
-  if (error) return { ok: false, error: error.message };
+    .eq('status', 'requested')
+    .select('id');
+  if (error) return { ok: false, error: withReason('That could not be saved.', error) };
+  // No row changed: someone closed it first (security review, 23 Nov 2026).
+  if (!changed?.length) {
+    return { ok: false, error: 'This request was already closed. Refresh the page to see what was recorded.' };
+  }
   revalidatePath('/admin/deletion-requests');
   return { ok: true };
 }

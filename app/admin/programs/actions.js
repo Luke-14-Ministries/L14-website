@@ -293,7 +293,7 @@ export async function revokeProgramLeader({ grantId }) {
   if (!grantId) return { ok: false, error: 'Nothing to remove.' };
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: changed, error } = await supabase
     .from('program_leaders')
     .update({
       active: false,
@@ -301,12 +301,16 @@ export async function revokeProgramLeader({ grantId }) {
       // brought the badge back unasked (found 29 Sep 2026, Testing Script 3 §7.5).
       is_lead: false,
     })
-    .eq('id', grantId);
+    .eq('id', grantId)
+    .eq('active', true)
+    .select('id');
 
   if (error) {
     console.error('revokeProgramLeader:', error.message);
     return { ok: false, error: withReason('That could not be removed.', error) };
   }
+  // Nothing changed: already removed, perhaps in another tab (23 Nov 2026).
+  if (!changed?.length) return { ok: false, error: 'This leader was already removed. Refresh the page.' };
 
   revalidatePath('/admin/programs');
   return { ok: true };
