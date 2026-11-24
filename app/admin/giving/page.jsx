@@ -79,9 +79,24 @@ export default async function AdminGivingPage({ searchParams }) {
   const byFund = new Map();
   for (const g of good) byFund.set(g.fund, (byFund.get(g.fund) ?? 0) + (g.amount_cents ?? 0));
 
+  // The year-end statements, one button at top right (23 Nov 2026 review):
+  // they were only reachable by choosing "Donor statements" in the export
+  // dropdown, which nobody looking for January's letters thought to open.
+  // It carries the dates in the filter; the statements page takes this
+  // calendar year when none are set.
+  const statementQs = new URLSearchParams();
+  if (fFrom) statementQs.set('from', fFrom);
+  if (fTo) statementQs.set('to', fTo);
+  const statementHref = `/admin/giving/statements/${statementQs.size ? `?${statementQs}` : ''}`;
+
   return (
     <div>
-      <h2 className="text-xl font-bold mb-2">Giving</h2>
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xl font-bold">Giving</h2>
+        <a href={statementHref} className="btn-outline py-1.5! text-sm">
+          Year-end statements (print)
+        </a>
+      </div>
       {/* Exports: report, then format (GivingExportBar.jsx); both follow the
           filter form below. */}
       <GivingExportBar from={fFrom} to={fTo} fund={fFund} method={fMethod} />

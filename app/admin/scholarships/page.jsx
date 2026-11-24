@@ -160,14 +160,15 @@ export default async function ScholarshipRequestsPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1">Scholarship Requests</h2>
-      <p className="text-xs text-neutral-500 mb-2">
-        Part of{' '}
-        <Link href="/admin/payments/" className="text-brand-dark hover:underline">
-          Event Payments
+      {/* The way back to Event Payments at top right (23 Nov 2026 review);
+          the line explaining why the page sits under Money is gone, since
+          the sidebar's Money heading says it. */}
+      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xl font-bold">Scholarship Requests</h2>
+        <Link href="/admin/payments/" className="text-sm text-brand underline">
+          Event Payments →
         </Link>
-        , because a scholarship decision is a money decision.
-      </p>
+      </div>
       <p className="text-sm text-neutral-500 mb-4">
         Families asking for help with the fee, for one person or for the whole family.
         Approving one takes the amount off what that family owes. Their balance, dashboard and
