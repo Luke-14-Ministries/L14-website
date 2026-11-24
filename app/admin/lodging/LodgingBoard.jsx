@@ -33,7 +33,9 @@ const STAFF_ROLES = new Set(['volunteer', 'volunteer_child']);
 // The import's source tag (0076 wrote "Accessible room (venue list)") is for
 // whoever checks the data, not for the board (23 Nov 2026).
 function boardNote(note) {
-  return (note ?? '').replace(/\s*\(venue list\)/i, '').trim();
+  const n = (note ?? '').replace(/\s*\(venue list\)/i, '').trim();
+  // "Accessible room" alone only repeats the pill.
+  return /^accessible room\.?$/i.test(n) ? '' : n;
 }
 
 function sexTint(gender) {

@@ -1051,7 +1051,7 @@ export default async function PersonPage({ params }) {
           note="Who supports them, and who they support."
         >
           {(asCamper ?? []).length === 0 && (asBuddy ?? []).length === 0 ? (
-            <p className="text-neutral-500">No buddy pairing.</p>
+            <p className="text-neutral-500">No buddy assigned.</p>
           ) : (
             <ul className="space-y-1">
               {(asCamper ?? []).map((b) => {
