@@ -598,7 +598,7 @@ export default async function FamilyRegisterPage({ searchParams }) {
         )}
         <WaitingInvites invites={waitingInvites} className="mt-4" />
         <p className="text-neutral-600 mt-2 mb-6">
-          Signed in as {user.email}.{' '}
+          Logged in as {user.email}.{' '}
           {existing?.isUpdate
             ? 'Your saved registration is below. Make your changes, then update it.'
             : 'Your answers save to your account.'}

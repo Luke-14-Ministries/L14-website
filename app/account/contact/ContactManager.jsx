@@ -106,9 +106,9 @@ export default function ContactManager({ email, profile }) {
           run('email', () => requestLoginEmailChange(f.new_email, f.code ?? ''));
         }}
       >
-        <h2 className="text-lg font-bold mb-1">Sign-in email</h2>
+        <h2 className="text-lg font-bold mb-1">Login email</h2>
         <p className="text-sm text-neutral-500 mb-4">
-          The address you sign in with, and where password reset emails go. Currently{' '}
+          The address you log in with, and where password reset emails go. Currently{' '}
           <span className="font-semibold">{email}</span>. To change it, enter the new address.{' '}
           {/* Both links, because "secure email change" is on in Supabase: it
               said one link until 23 Nov 2026, and the second email then

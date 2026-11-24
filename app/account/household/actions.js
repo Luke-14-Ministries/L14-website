@@ -542,7 +542,7 @@ export async function createMyHousehold(form) {
       error: msg.includes('already have a household')
         ? 'You already have a household. Reload the page to manage it.'
         : msg.includes('not authenticated')
-          ? 'You have been signed out. Please sign in again, then set up your household.'
+          ? 'You have been logged out. Please log in again, then set up your household.'
           : msg.includes('first and last name')
             ? 'Give your first and last name.'
             : `Your household could not be set up (${msg || 'no reason given'}). Please try again, or email registration@luke14ministries.net if it keeps happening.`,
@@ -602,7 +602,7 @@ export async function removeHouseholdLogin(householdId, profileId) {
     p_household_id: householdId,
     p_profile_id: profileId,
   });
-  if (error) return { ok: false, error: familyError('removeHouseholdLogin', error, 'That sign-in could not be removed.') };
+  if (error) return { ok: false, error: familyError('removeHouseholdLogin', error, 'That login could not be removed.') };
   revalidatePath('/account/household');
-  return { ok: true, message: 'Removed. They can no longer sign in to this household.' };
+  return { ok: true, message: 'Removed. They can no longer log in to this household.' };
 }

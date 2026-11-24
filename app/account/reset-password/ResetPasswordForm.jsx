@@ -123,7 +123,7 @@ export default function ResetPasswordForm() {
           ? 'Staff passwords are changed once a year. Choose a new one to carry on: at least 10 characters, and not one you use anywhere else.'
           : needsCurrent
             ? 'Enter your current password, then choose a new one (at least 10 characters).'
-            : <>You&rsquo;re signed in from the link in your email. Choose a new password (at least 10 characters) and you&rsquo;re done.</>}
+            : <>You&rsquo;re logged in from the link in your email. Choose a new password (at least 10 characters) and you&rsquo;re done.</>}
       </p>
 
       {error && (

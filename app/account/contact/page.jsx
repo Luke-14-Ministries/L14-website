@@ -43,12 +43,12 @@ export default async function ContactPage() {
           <BackLink />
         </div>
         <p className="text-neutral-600 mb-3">
-          Your own details: your name, your phone and the email you sign in with.
+          Your own details: your name, your phone and the email you log in with.
         </p>
         <p className="mb-8 rounded-sm border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
           <strong>Camp reminders and payment receipts</strong> go to your household&rsquo;s contact
           email{householdEmail ? <>, <span className="font-semibold">{householdEmail}</span></> : null}, not
-          necessarily the one you sign in with. Change it, and the household phone and address, on{' '}
+          necessarily the one you log in with. Change it, and the household phone and address, on{' '}
           <Link href="/account/household/" className="text-brand font-semibold underline">
             Manage household
           </Link>

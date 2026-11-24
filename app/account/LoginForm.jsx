@@ -426,7 +426,7 @@ export default function LoginForm({ newSite = false } = {}) {
         )}
         {mfa.email && (
           <p className="text-sm text-neutral-700 mb-1">
-            Signing in as <strong className="break-all">{mfa.email}</strong>.{' '}
+            Logging in as <strong className="break-all">{mfa.email}</strong>.{' '}
             <button
               type="button"
               onClick={useDifferentAccount}
@@ -538,7 +538,7 @@ export default function LoginForm({ newSite = false } = {}) {
 
       {everywhere && !error && (
         <p className="mb-4 rounded-sm border border-green-300 bg-green-50 px-4 py-3 text-green-800">
-          You are logged out on every browser and phone that was signed in to your account.
+          You are logged out on every browser and phone that was logged in to your account.
         </p>
       )}
 

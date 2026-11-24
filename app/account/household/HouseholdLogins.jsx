@@ -60,9 +60,9 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
 
   return (
     <section id="logins" className="mt-6 rounded-lg bg-white border border-neutral-200 shadow-xs p-6 scroll-mt-24">
-      <h2 className="text-lg font-bold mb-1">Who can sign in to this household</h2>
+      <h2 className="text-lg font-bold mb-1">Who can log in to this household</h2>
       <p className="text-sm text-neutral-600 mb-4">
-        Another parent, guardian or adult in your family can have their own sign-in. They see, and
+        Another parent, guardian or adult in your family can have their own login. They see, and
         can change, the same things you can: registrations, payments and everyone&rsquo;s details.
         Invite them by email.
       </p>
@@ -75,13 +75,13 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
               {l.is_me ? <span className="text-neutral-500"> (you)</span> : null}
             </span>
             <span className="flex items-center gap-3">
-              <span className="text-neutral-500">{l.role === 'owner' ? 'Started this account' : 'Can sign in'}</span>
+              <span className="text-neutral-500">{l.role === 'owner' ? 'Started this account' : 'Can log in'}</span>
               {iAmOwner && !l.is_me && l.role !== 'owner' ? (
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => {
-                    if (window.confirm(`Remove ${l.name || 'this person'}'s sign-in? They will no longer see this household.`)) {
+                    if (window.confirm(`Remove ${l.name || 'this person'}'s login? They will no longer see this household.`)) {
                       run(() => removeHouseholdLogin(householdId, l.profile_id));
                     }
                   }}
@@ -142,12 +142,12 @@ export default function HouseholdLogins({ householdId, logins = [], invites = []
         </button>
       </form>
       <p className="mt-2 text-xs text-neutral-500">
-        They sign in, or create an account, with the address you enter. If they already have their own
+        They log in, or create an account, with the address you enter. If they already have their own
         household on the site with a registration or other records, staff will join the two: email{' '}
         <a href="mailto:registration@luke14ministries.net" className="text-brand underline">
           registration@luke14ministries.net
         </a>
-        . Only the person who started this account can remove a sign-in.
+        . Only the person who started this account can remove a login.
       </p>
       {status && (
         <p className={`mt-2 text-sm ${status.ok ? 'text-green-700' : 'text-red-700'}`} role="status">

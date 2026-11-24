@@ -978,7 +978,7 @@ export default async function DashboardPage({ searchParams }) {
               )}
               Welcome, {greeting}
             </h1>
-            <p className="text-neutral-500">Signed in as {user.email}</p>
+            <p className="text-neutral-500">Logged in as {user.email}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {/* Staff door -- only when this login is also active staff: one

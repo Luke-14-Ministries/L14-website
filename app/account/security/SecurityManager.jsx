@@ -737,7 +737,7 @@ export default function SecurityManager({ required, isStaff = false }) {
             if (!confirm('Log out on every browser and phone, this one included?')) e.preventDefault();
           }}
         >
-          <h3 className="text-base font-semibold mb-1">Signed in somewhere else?</h3>
+          <h3 className="text-base font-semibold mb-1">Logged in somewhere else?</h3>
           <p className="text-sm text-neutral-500 mb-2">
             Log Out ends this browser only. If you lost a phone or think someone else knows
             your password, log out everywhere, then change your password.

@@ -23,7 +23,7 @@ const MAX_REPLY = 4000;
 
 export async function replyToStaff({ registrationId, body } = {}) {
   const user = await getCurrentUser();
-  if (!user) return { ok: false, error: 'Please sign in again, then send your reply.' };
+  if (!user) return { ok: false, error: 'Please log in again, then send your reply.' };
   if (!registrationId) return { ok: false, error: 'Which registration is this about?' };
   const text = String(body ?? '').trim();
   if (!text) return { ok: false, error: 'Write your reply first.' };

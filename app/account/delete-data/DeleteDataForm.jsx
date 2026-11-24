@@ -45,7 +45,7 @@ export default function DeleteDataForm() {
           <input type="radio" name="scope" className="mt-1" checked={scope === 'account_and_medical'} onChange={() => setScope('account_and_medical')} />
           <span>
             <span className="font-semibold">Delete our account and medical information</span>
-            <span className="block text-sm text-neutral-600">Every sign-in for this household, the household and everyone in it.</span>
+            <span className="block text-sm text-neutral-600">Every login for this household, the household and everyone in it.</span>
           </span>
         </label>
       </fieldset>

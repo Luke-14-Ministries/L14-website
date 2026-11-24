@@ -29,7 +29,7 @@ const ENOUGH = 'Thank you, we have your notes. Please email info@luke14ministrie
 
 export async function sendWebsiteFeedback({ message, page, userAgent } = {}) {
   const user = await getCurrentUser();
-  if (!user) return { ok: false, error: 'Please sign in again, then send your note.' };
+  if (!user) return { ok: false, error: 'Please log in again, then send your note.' };
 
   const text = String(message ?? '').trim();
   if (text.length < MIN_MESSAGE) {

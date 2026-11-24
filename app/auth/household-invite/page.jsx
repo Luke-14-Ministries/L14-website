@@ -56,14 +56,14 @@ export default async function HouseholdInvitePage({ searchParams }) {
     body = (
       <>
         {invite.invited_by_name || 'Someone in your family'} invited <strong>{invite.email}</strong> to share the{' '}
-        <strong>{householdWords}</strong>. Sign in with that address, or create an account with it. You will come
+        <strong>{householdWords}</strong>. Log in with that address, or create an account with it. You will come
         straight back here to join.
       </>
     );
     action = (
       <div className="flex flex-wrap justify-center gap-3">
         <Link href={`/account/?next=${encodeURIComponent(here)}`} className="btn-primary inline-block">
-          Sign in
+          Log in
         </Link>
         <Link href={`/account/signup/?next=${encodeURIComponent(here)}`} className="btn-outline inline-block">
           Create an account
@@ -71,17 +71,17 @@ export default async function HouseholdInvitePage({ searchParams }) {
       </div>
     );
   } else if (!rightLogin) {
-    title = 'Signed in with a different address';
+    title = 'Logged in with a different address';
     body = (
       <>
-        This invite is for <strong>{invite.email}</strong>, and you are signed in as <strong>{user.email}</strong>. Sign out,
-        then sign in or create an account with the invited address.
+        This invite is for <strong>{invite.email}</strong>, and you are logged in as <strong>{user.email}</strong>. Log out,
+        then log in or create an account with the invited address.
       </>
     );
     action = (
       <form action="/auth/signout/" method="post">
         <button type="submit" className="btn-outline">
-          Sign out
+          Log out
         </button>
       </form>
     );
@@ -89,7 +89,7 @@ export default async function HouseholdInvitePage({ searchParams }) {
     body = (
       <>
         {invite.invited_by_name || 'Someone in your family'} invited you to share the <strong>{householdWords}</strong>.
-        With your own sign-in you&rsquo;ll see, and can change, its registrations, payments and details, the same as
+        With your own login you&rsquo;ll see, and can change, its registrations, payments and details, the same as
         the adults already on it.
       </>
     );
