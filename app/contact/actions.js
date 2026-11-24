@@ -29,11 +29,16 @@ import { site } from '@/lib/site';
 const MAX = { name: 120, email: 200, subject: 200, message: 5000 };
 
 const clean = (v, n) => String(v ?? '').trim().slice(0, n);
+// One-line fields (name, email, subject) also lose control characters, each
+// turned into a space (23 Nov 2026, security review). The subject and the
+// reply-to address go into the email's headers, where a typed line break
+// could start a header of its own. The message keeps its line breaks.
+const oneLine = (v, n) => clean(String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, ' '), n);
 
 export async function sendContactMessage(form) {
-  const name = clean(form?.name, MAX.name);
-  const email = clean(form?.email, MAX.email);
-  const subject = clean(form?.subject, MAX.subject);
+  const name = oneLine(form?.name, MAX.name);
+  const email = oneLine(form?.email, MAX.email);
+  const subject = oneLine(form?.subject, MAX.subject);
   const message = clean(form?.message, MAX.message);
 
   // Validated again here, not only in the browser. The form checks these too
@@ -91,7 +96,7 @@ export async function sendContactMessage(form) {
       ok: false,
       error:
         'Sorry, we could not send that just now. Please email us at ' +
-        `${site.emails.info}, or call (423) 748-4954.`,
+        `${site.emails.info}, or call ${site.phone}.`,
     };
   }
 
