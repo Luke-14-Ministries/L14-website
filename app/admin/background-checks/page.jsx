@@ -109,6 +109,22 @@ function FilterPills({ filters, counts, current, hrefFor, label }) {
 // 2026). CheckLengthForm uses the same classes.
 const HOW_TO_BOX = 'rounded-lg border border-neutral-300 bg-white p-4';
 
+// One line of the To do box (24 Nov 2026): the count in a pill of the key's
+// colour, then plain words, then an optional link on the right.
+function CountRow({ n, tone, action = null, children }) {
+  return (
+    <li className="flex items-center gap-3 py-1.5 text-sm text-neutral-800">
+      <span
+        className={`inline-flex min-w-8 justify-center rounded-full px-2 py-0.5 font-bold tabular-nums ${CHECK_TONE[tone]}`}
+      >
+        {n}
+      </span>
+      <span className="flex-1">{children}</span>
+      {action}
+    </li>
+  );
+}
+
 
 function StatusPill({ pill }) {
   return (
@@ -534,60 +550,64 @@ export default async function BackgroundChecksPage({ searchParams }) {
       {/* For everyone, above the three cards (Lawrence, 15 Nov 2026). */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className={HOW_TO_BOX}>
-          <h3 className="font-bold">How to run a background check</h3>
-          {/* What is due leads (23 Nov 2026), then the balance, then three
-              short steps; the longer explanation is in "How this works". */}
-          <p className="mt-1 text-sm text-neutral-700">
-            {/* The counts stand out like the credits (Lawrence, 14 Nov 2026). */}
-            {readyToInvite > 0 ? (
-              <strong className="text-red-700">
-                {readyToInvite} {readyToInvite === 1 ? 'adult is' : 'adults are'} ready for a VolunteerBadge invite
-              </strong>
-            ) : (
-              'Nobody is ready for a VolunteerBadge invite right now'
-            )}
-            {heldCount > 0 && (
-              <>
-                {' '}(<strong className="text-amber-700">{heldCount} more waiting on a deposit</strong>)
-              </>
-            )}
-            {work.results > 0 && (
-              <>
-                {', '}
-                <strong className="text-amber-700">
-                  {work.results} VolunteerBadge {work.results === 1 ? 'result' : 'results'} to confirm
-                </strong>
-              </>
-            )}
-            {work.registry > 0 && (
-              <>
-                {', '}
-                <strong className="text-amber-700">
-                  {work.registry} adult {work.registry === 1 ? 'camper’s' : 'campers’'} registry{' '}
-                  {work.registry === 1 ? 'search' : 'searches'} due
-                </strong>
-              </>
-            )}
-            .
+          {/* 24 Nov 2026 (Lawrence: the bold, coloured sentence was hard to
+              read at a glance). One row per job: the number in a pill coloured
+              by the key above (amber to do, blue waiting on someone else), the
+              words plain. The steps that used to sit here are one small line
+              at the bottom; the longer version is "How this works". */}
+          <h3 className="font-bold">To do</h3>
+          {readyToInvite + work.results + work.registry === 0 ? (
+            <p className="mt-1 text-sm text-neutral-700">Nothing to do right now.</p>
+          ) : (
+            <ul className="mt-1 divide-y divide-neutral-100">
+              {readyToInvite > 0 && (
+                <CountRow n={readyToInvite} tone="todo">
+                  {readyToInvite === 1 ? 'adult is' : 'adults are'} ready for a VolunteerBadge invite
+                </CountRow>
+              )}
+              {work.results > 0 && (
+                <CountRow n={work.results} tone="todo">
+                  VolunteerBadge {work.results === 1 ? 'result' : 'results'} to confirm
+                </CountRow>
+              )}
+              {work.registry > 0 && (
+                <CountRow
+                  n={work.registry}
+                  tone="todo"
+                  action={
+                    <a href="#campers" className="whitespace-nowrap text-sm font-semibold text-brand underline">
+                      Go to the list ↓
+                    </a>
+                  }
+                >
+                  adult {work.registry === 1 ? 'camper needs' : 'campers need'} a registry search
+                </CountRow>
+              )}
+            </ul>
+          )}
+          {heldCount > 0 && (
+            <ul className="mt-1">
+              <CountRow n={heldCount} tone="waiting">
+                more {heldCount === 1 ? 'is' : 'are'} waiting on a deposit. Their invite can go once it&rsquo;s paid.
+              </CountRow>
+            </ul>
+          )}
+          {/* The VolunteerBadge balance, in view before anyone is ready; red
+              when it won't cover the people ready now. */}
+          <p className="mt-3 border-t border-neutral-200 pt-3 text-sm text-neutral-700">
+            <CreditLine
+              mode={vbMode}
+              credits={vbCredits}
+              outstanding={vbOutstanding}
+              problem={vbProblem}
+              needed={readyToInvite}
+            />
           </p>
-          {/* The VolunteerBadge balance, in view before anyone is ready. */}
-          <p className="mt-2 text-sm text-neutral-700">
-            <CreditLine mode={vbMode} credits={vbCredits} outstanding={vbOutstanding} problem={vbProblem} />
+          <p className="mt-2 text-xs text-neutral-500">
+            Volunteers, parents, siblings and caregivers get a VolunteerBadge invite. Adult campers get a registry
+            search from their row. Done another way? Record it under <strong>Background check record</strong> on their
+            row.
           </p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-700">
-            <li>
-              <strong>Volunteers, parents, siblings and caregivers:</strong> send a VolunteerBadge invite with the
-              button below. Results show there too.
-            </li>
-            <li>
-              <strong>Adult campers:</strong> run a registry search from their row.
-            </li>
-            <li>
-              <strong>Done another way?</strong> Record it under <strong>Background check record</strong> on their row.
-            </li>
-          </ul>
-          {/* Named for both halves of that page (Lawrence, 15 Nov 2026);
-              the page's own name is its heading (23 Nov 2026). */}
           <Link href="/admin/background-checks/screening/" className="btn-primary mt-3 inline-block btn-sm">
             Send invites and see results →
           </Link>
