@@ -6,17 +6,21 @@
 // readers and the button says whether the card is open. `badges` stay in the
 // title, so what matters is visible with the card closed. The fold arrow is
 // the site's one marker (FoldArrow), at the left of the title.
+//
+// The card is the shared `card` class and the title an h3 by default (23 Nov
+// 2026, the design scheme: page title h2, card title h3). `as` picks another
+// level where the card sits under a section heading of its own.
 
 import { useId, useState } from 'react';
 import FoldArrow from './FoldArrow';
 
-export default function FoldCard({ title, badges = null, defaultOpen = true, className = '', children }) {
+export default function FoldCard({ title, badges = null, defaultOpen = true, as: Heading = 'h3', className = '', children }) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = useId();
 
   return (
-    <div className={`rounded-lg bg-white border border-neutral-200 shadow-xs p-6 ${className}`}>
-      <h4 className="font-bold">
+    <div className={`card ${className}`}>
+      <Heading className="font-bold">
         <button
           type="button"
           onClick={() => setOpen(!open)}
@@ -28,7 +32,7 @@ export default function FoldCard({ title, badges = null, defaultOpen = true, cla
           <span>{title}</span>
           {badges}
         </button>
-      </h4>
+      </Heading>
       <div id={bodyId} hidden={!open} className="mt-3">
         {children}
       </div>

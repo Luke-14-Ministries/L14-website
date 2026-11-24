@@ -118,6 +118,8 @@ for k in keep:
 for cls, col in (('neutral-700', '#4a5259'), ('neutral-800', '#3b4248'), ('neutral-900', '#2c3237')):
     rule([f'.bg-{cls}'], [f'background-color: {col}'])
 rule(['.bg-brand', '.btn-primary'], ['background-color: #2a6f77'])
+w('    /* btn-danger (globals.css, 23 Nov 2026): a red button with white words. */')
+rule(['.btn-danger'], [f'background-color: {val["red-700"]}'])
 rule(['.bg-brand-dark'], ['background-color: #1d4e54'])
 w('    /* "Cancel plan" (StaffPlanPanel) forces its red with bg-red-700!. */')
 rule(['.bg-red-700\\!'], [f'background-color: {val["red-700"]} !important'])
@@ -132,6 +134,7 @@ rule(['.hover\\:bg-white:hover'], ['background-color: var(--dark-card)'], '     
 for k in keep:
     rule([f'.hover\\:bg-{k}:hover'], [f'background-color: {val[k]}'], '      ')
 rule(['.btn-gold:hover'], [f'background-color: {val["amber-600"]}'], '      ')
+rule(['.btn-danger:hover'], [f'background-color: {val["red-800"]}'], '      ')
 rule(['.btn-primary:hover', '.hover\\:bg-brand-dark:hover'], ['background-color: #1d4e54'], '      ')
 rule(['.hover\\:bg-brand:hover', '.btn-outline:hover'], ['background-color: #2a6f77', 'color: #fff'], '      ')
 w('    }')

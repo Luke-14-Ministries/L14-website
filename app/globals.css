@@ -104,6 +104,65 @@
   @apply btn border-2 border-transparent bg-brand-gold text-white hover:bg-amber-600;
 }
 
+/*
+  The design scheme for staff pages (23 Nov 2026, the admin review). One
+  class per piece, so a page reads like its neighbours without anyone copying
+  a string of utilities from another file. CLAUDE.md's "Design scheme" lists
+  them with the shared components (AdminPageHeader, Pill, FilterChips,
+  Notice, EmptyState).
+
+  Buttons come in three sizes. The plain btn-* size is for the public site
+  and Check-In's main button; btn-sm is the staff standard; btn-xs is for a
+  button inside a table row. They replace the py-1.5! / py-2! overrides that
+  every staff file carried. A size class only changes padding and type, so it
+  combines with any colour: `btn-outline btn-sm`, `btn-danger btn-xs`.
+*/
+@utility btn-sm {
+  @apply px-4 py-1.5 text-sm;
+}
+
+@utility btn-xs {
+  @apply px-2.5 py-1 text-xs;
+}
+
+/* A red button for an act that cannot be taken back (cancel a plan, delete
+   a family). On the dark keep list in scripts/gen-dark-css.py. */
+@utility btn-danger {
+  @apply btn border-2 border-transparent bg-red-700 text-white hover:bg-red-800;
+}
+
+/* A text box, select or text area on a staff page, with a teal focus ring
+   so the box being typed in is plain to see. field-sm is the tighter box for
+   a table row or a crowded filter line. field-label is the small bold words
+   above a field. A field that should not fill its line adds w-auto. */
+@utility field {
+  @apply w-full rounded-sm border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-brand focus:ring-2 focus:ring-brand/30 focus:outline-none;
+}
+
+@utility field-sm {
+  @apply field px-2 py-1;
+}
+
+@utility field-label {
+  @apply mb-1 block text-xs font-semibold text-neutral-600;
+}
+
+/* The white card every staff section sits in. `card p-4` for a tighter one. */
+@utility card {
+  @apply rounded-lg border border-neutral-200 bg-white p-6 shadow-xs;
+}
+
+/* Table cells. One header look on every staff table: a pale grey band,
+   small bold grey words in sentence case (no capitals; Background Checks
+   shouted until 23 Nov 2026). */
+@utility th-cell {
+  @apply bg-neutral-50 px-3 py-2 text-left text-xs font-semibold text-neutral-600;
+}
+
+@utility td-cell {
+  @apply px-3 py-2 align-top;
+}
+
 @utility prose-site {
   @apply space-y-4 leading-relaxed text-lg;
 }
