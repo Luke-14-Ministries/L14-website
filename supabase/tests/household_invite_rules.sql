@@ -1,4 +1,4 @@
--- Checks for migrations 0174 and 0178 (inviting another adult to a household;
+-- Checks for migrations 0174, 0178 and 0186 (inviting another adult to a household;
 -- daily limit, adults only, removing a login, the empty-household fold-in) and 0179
 -- (waiting invites listed for the invited sign-in, joining by id, the two-factor
 -- rule on accepting). Fresh
@@ -196,6 +196,15 @@ set local role authenticated;
 -- Dad (an adult, joined in 2) cannot remove Mom (the owner).
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', true) \g /dev/null
 select set_config('request.jwt.claims', '{"aal":"aal2","email":"dad@example.test"}', true) \g /dev/null
+-- Dad asks for a contact-email change first; removing him must cancel it (0186).
+do $$
+declare v text;
+begin
+  v := public.request_household_email_change('00000000-0000-0000-0000-0000000000b1', 'new-contact@example.test',
+    encode(sha256(convert_to('email-change-token-dad-1', 'UTF8')), 'hex'));
+  if v is distinct from 'pending' then raise exception 'FAIL 5: the email change was not left pending (%)', v; end if;
+  raise notice 'PASS 5 a login asks for a contact-email change';
+end $$;
 do $$
 begin
   begin
@@ -240,7 +249,10 @@ begin
   if n <> 0 then raise exception 'FAIL 5: person still linked'; end if;
   select count(*) into n from public.family_change_log where field = 'login' and new_value = 'Removed';
   if n <> 1 then raise exception 'FAIL 5: removal not logged'; end if;
-  raise notice 'PASS 5 membership gone, person unlinked, logged';
+  select count(*) into n from public.household_email_changes
+   where household_id = '00000000-0000-0000-0000-0000000000b1';
+  if n <> 0 then raise exception 'FAIL 5: the removed login''s email change is still pending'; end if;
+  raise notice 'PASS 5 membership gone, person unlinked, logged, pending email change gone';
 end $$;
 rollback;
 
