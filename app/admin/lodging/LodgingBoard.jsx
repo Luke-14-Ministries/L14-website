@@ -29,6 +29,13 @@ const STAFF_ROLES = new Set(['volunteer', 'volunteer_child']);
 // a glance, the way CampSite's board did (29 Sep 2026). Gender is free text
 // on the household form ("Female", "male", "F"), so it is read
 // case-insensitively; anything else stays neutral.
+
+// The import's source tag (0076 wrote "Accessible room (venue list)") is for
+// whoever checks the data, not for the board (23 Nov 2026).
+function boardNote(note) {
+  return (note ?? '').replace(/\s*\(venue list\)/i, '').trim();
+}
+
 function sexTint(gender) {
   const g = String(gender ?? '').trim().toLowerCase();
   if (g === 'female' || g === 'f') return 'border-pink-200 bg-pink-50';
@@ -430,19 +437,16 @@ export default function LodgingBoard({
               <span className="ml-2 text-xs font-normal text-neutral-500">
                 {KIND_LABEL[lodging.kind] ?? lodging.kind}
               </span>
-              {lodging.accessible ? (
+              {/* A pill only where a room IS accessible (23 Nov 2026): "not
+                  marked accessible" on nearly every room drowned the few
+                  that are. Placing someone with mobility notes in an
+                  unmarked room still asks first. */}
+              {lodging.accessible && (
                 <span
                   className="ml-2 rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-semibold text-neutral-700"
-                  title={lodging.accessibleNotes || 'Marked accessible'}
+                  title={boardNote(lodging.accessibleNotes) || 'Marked accessible'}
                 >
-                  accessible
-                </span>
-              ) : (
-                <span
-                  className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-500"
-                  title="Not marked accessible. This may only mean nobody has checked."
-                >
-                  not marked accessible
+                  Accessible
                 </span>
               )}
             </h3>
@@ -477,8 +481,8 @@ export default function LodgingBoard({
               four fits. Capacity is the arithmetic; this is the fact. */}
           {lodging.beds && <p className="mt-0.5 text-xs text-neutral-600">{lodging.beds}</p>}
 
-          {lodging.accessibleNotes && (
-            <p className="mt-0.5 text-xs text-neutral-500">{lodging.accessibleNotes}</p>
+          {boardNote(lodging.accessibleNotes) && (
+            <p className="mt-0.5 text-xs text-neutral-500">{boardNote(lodging.accessibleNotes)}</p>
           )}
 
           {here.length > 0 && (
@@ -758,14 +762,14 @@ export default function LodgingBoard({
       {parentIds.length > 0 && (
         <div className="mb-2 flex justify-end gap-3 text-sm">
           <button type="button" onClick={foldAll} className="underline text-neutral-600 hover:text-neutral-900">
-            Fold all buildings
+            Collapse all
           </button>
           <button
             type="button"
             onClick={() => setFolded(new Set())}
             className="underline text-neutral-600 hover:text-neutral-900"
           >
-            Open all
+            Expand all
           </button>
         </div>
       )}
