@@ -21,7 +21,9 @@ const KIND = {
   not_submitted: 'registration not submitted',
 };
 
-export default function UpcomingReminders({ rows, mode, error }) {
+// moneyHidden: how many families had payment reminders taken off because the
+// viewer has no Payments read (page.jsx drops them on the server).
+export default function UpcomingReminders({ rows, mode, error, moneyHidden = 0 }) {
   const badge =
     mode === 'live' ? null : (
       <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
@@ -49,6 +51,12 @@ export default function UpcomingReminders({ rows, mode, error }) {
             </li>
           ))}
         </ul>
+      )}
+      {!error && moneyHidden > 0 && (
+        <p className="mt-3 text-sm text-neutral-600">
+          Payment reminders also go to {moneyHidden} {moneyHidden === 1 ? 'family' : 'families'} in
+          these 7 days. Who and when shows only with Payments read access.
+        </p>
       )}
       <p className="mt-3 text-xs text-neutral-500">
         Sent each morning, one email per family. Pause them for a family from its registration&rsquo;s

@@ -431,7 +431,14 @@ export default async function PersonPage({ params }) {
 
   const staff = await getStaff();
   if (!staff) await bounceNonStaff(`/admin/people/${personId}/`);
-  if (!can(staff, 'staff')) redirect('/admin');
+  // A person's page is registration, background-check or support detail, so
+  // it opens for staff holding one of those (security review, 23 Nov 2026).
+  // Any staff login used to do: a prayer-only or giving-only login could read
+  // a camper's household, places and history here. The database still lets
+  // every staff login read those rows; narrowing that is a separate decision.
+  if (!(can(staff, 'read:registration') || can(staff, 'read:background_checks') || can(staff, 'read:sensitive'))) {
+    redirect('/admin');
+  }
 
   // read:sensitive is what person_support's select policy asks
   // (can_view_person_support -> can_view_sensitive() = has_grant('sensitive',

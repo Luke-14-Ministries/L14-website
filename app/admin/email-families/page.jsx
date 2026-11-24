@@ -14,6 +14,13 @@ import { todayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Email Registrants · Staff Admin' };
 
+// The automatic emails that are about money. The 7-day list is worked out
+// with the service-role client, which sees every family's balance, so a
+// viewer without Payments read must not learn from it who owes what
+// (security review, 23 Nov 2026): these kinds are dropped here, on the
+// server, and the card says only how many families they reach.
+const MONEY_KINDS = new Set(['plan_upcoming', 'plan_finished', 'card_expiring', 'deposit', 'balance', 'past_due']);
+
 // A long list is sent one email at a time, with a pause between (actions.js),
 // so the Send can take a minute; the default function time would cut it off.
 export const maxDuration = 300;
@@ -127,6 +134,20 @@ export default async function EmailFamiliesPage({ searchParams }) {
       upcomingError = `The list could not be worked out: ${e?.message ?? 'unknown error'}`;
     }
   }
+  // Families (counted once across the 7 days) whose payment reminders were
+  // taken off the list.
+  let moneyHidden = 0;
+  if (upcoming && !can(staff, 'read:payments')) {
+    const hidden = new Set();
+    upcoming = upcoming
+      .map((r) => {
+        const kinds = r.kinds.filter((k) => !MONEY_KINDS.has(k));
+        if (kinds.length < r.kinds.length) hidden.add(r.household);
+        return { ...r, kinds };
+      })
+      .filter((r) => r.kinds.length > 0);
+    moneyHidden = hidden.size;
+  }
 
   return (
     <div>
@@ -149,7 +170,7 @@ export default async function EmailFamiliesPage({ searchParams }) {
         origin={origin}
       />
 
-      <UpcomingReminders rows={upcoming ?? []} mode={reminderMode()} error={upcomingError} />
+      <UpcomingReminders rows={upcoming ?? []} mode={reminderMode()} error={upcomingError} moneyHidden={moneyHidden} />
 
       <EmailsSentSection
         result={sent}
