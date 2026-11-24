@@ -172,7 +172,9 @@ An administrator can grant and remove access, manage accounts and name program l
                 onClick={() => {
                   if (
                     window.confirm(
-                      `Remove ${m.name} from the staff list? Their account and family records stay, and you can add them again later. Their role and access grants here will be lost.`
+                      `Remove ${m.name} from the staff list?
+
+Their access ticks are cleared too, so adding them again later starts with no access. Their account and family records stay.`
                     )
                   ) {
                     onRemove(m);
@@ -253,6 +255,9 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  // An amber line for a save that worked but needs a second look: an
+  // administrator unticked keeps their area ticks (23 Nov 2026).
+  const [warning, setWarning] = useState('');
 
   const [addEmail, setAddEmail] = useState('');
   // A new staff member starts with no grants; the administrator applies a
@@ -292,9 +297,14 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
     setNotice('');
     setBusyId(profileId);
     start(async () => {
+      setWarning('');
       const res = await updateStaffMember(profileId, changes);
       if (!res.ok) setError(res.error);
       else {
+        if (res.warning) {
+          const who = members.find((x) => x.profileId === profileId)?.name ?? 'This person';
+          setWarning(`${who}: ${res.warning}`);
+        }
         const fields = {};
         if (changes.role !== undefined) fields.role = changes.role;
         if (changes.active !== undefined) fields.active = !!changes.active;
@@ -343,7 +353,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       const res = await removeStaffMember(m.profileId);
       if (!res.ok) setError(res.error);
       else {
-        setNotice(`${m.name} removed from staff. Their account and records stay.`);
+        setNotice(`${m.name} removed from staff, with their access ticks cleared. Their account and records stay.`);
         setSaved((cur) => {
           const next = { ...cur };
           delete next[m.profileId];
@@ -457,6 +467,11 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
       {notice && (
         <p className="mb-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
           {notice}
+        </p>
+      )}
+      {warning && (
+        <p className="mb-3 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {warning}
         </p>
       )}
 

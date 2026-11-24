@@ -37,6 +37,19 @@ export async function updateStaffMember(profileId, patch) {
   if (patch.active !== undefined) clean.active = !!patch.active;
 
   const supabase = await createClient();
+  // Was this person an administrator? Unticking the box leaves every area at
+  // write (below), so the page says to review their ticks (security review,
+  // 23 Nov 2026).
+  let wasAdmin = false;
+  if (clean.role !== undefined && clean.role !== 'admin') {
+    const { data: before, error: beforeError } = await supabase
+      .from('staff')
+      .select('role')
+      .eq('profile_id', profileId)
+      .maybeSingle();
+    if (beforeError) return { ok: false, error: `Their current role could not be read: ${beforeError.message}` };
+    wasAdmin = before?.role === 'admin';
+  }
   const { error } = await supabase.from('staff').update(clean).eq('profile_id', profileId);
   if (error) return { ok: false, error: error.message };
 
@@ -53,6 +66,13 @@ export async function updateStaffMember(profileId, patch) {
     return { ok: true, grants: res.grants };
   }
   revalidatePath('/admin/staff');
+  if (wasAdmin) {
+    return {
+      ok: true,
+      warning:
+        'No longer an administrator. Their area ticks are unchanged, so they still have write on every area they had, Giving included. Open their ticks and take away what they should not keep.',
+    };
+  }
   return { ok: true };
 }
 
@@ -101,10 +121,14 @@ export async function addStaffMember(email, role) {
 }
 
 // Remove someone from the staff list entirely -- for a helper who has moved
-// on, as opposed to Deactivate, which parks them for reactivation. Deletes
-// ONLY the staff row: their account, family records, and anything they
-// recorded as staff (notes, grants -- those reference profiles, not staff)
-// are untouched, and they can be re-added later with "Add a staff member".
+// on, as opposed to Deactivate, which parks them for reactivation. Their
+// account, family records and anything they recorded as staff are untouched,
+// and they can be re-added later with "Add a staff member".
+//
+// Their access ticks (staff_grants) go first, then the staff row (security
+// review, 23 Nov 2026). The grants reference profiles, not staff, so until
+// then they outlived the removal, and adding the person back brought Giving
+// or Sensitive back with them. Each removed tick lands in the access log.
 export async function removeStaffMember(profileId) {
   const staff = await getStaff();
   if (!can(staff, 'admin')) return { ok: false, error: 'Admins only.' };
@@ -113,9 +137,12 @@ export async function removeStaffMember(profileId) {
   }
 
   const supabase = await createClient();
+  const { error: grantsError } = await supabase.from('staff_grants').delete().eq('profile_id', profileId);
+  if (grantsError) return { ok: false, error: `Their access ticks could not be cleared, so they were not removed: ${grantsError.message}` };
   const { error } = await supabase.from('staff').delete().eq('profile_id', profileId);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/admin/staff');
+  revalidatePath('/admin/staff/access-log');
   return { ok: true };
 }
 
