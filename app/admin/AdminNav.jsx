@@ -253,8 +253,11 @@ export default function AdminNav({
     pathname === `${href}/` ||
     (href !== '/admin' && pathname?.startsWith(`${href}/`)) ||
     // A registration detail page is reached FROM the roster, so Rosters stays
-    // lit while inside one -- the trail back stays visible (24 Aug).
-    (href === '/admin/rosters' && pathname?.startsWith('/admin/registrations'));
+    // lit while inside one -- the trail back stays visible (24 Aug). A
+    // person's page too (23 Nov 2026 review): its breadcrumb starts at
+    // Rosters, and nothing in the sidebar was lit there.
+    (href === '/admin/rosters' &&
+      (pathname?.startsWith('/admin/registrations') || pathname?.startsWith('/admin/people')));
 
   const all = [...top, ...loose, ...sections.flatMap((sec) => sec.items)];
   const current = all.find((n) => isActive(n.href));

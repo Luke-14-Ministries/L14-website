@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import BackLink from '@/components/BackLink';
 import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -883,6 +882,20 @@ export default async function PersonPage({ params }) {
                           </>
                         );
                       })()}
+                      {/* The application itself is read and decided on
+                          Volunteers, where this row opens (23 Nov 2026
+                          review). A plain link: next/link doubled the #
+                          part (14 Nov 2026). */}
+                      {/* Volunteers lists a volunteer with no application
+                          yet too, so the link is there either way. */}
+                      {(isVolunteerRole(p.camp_role) || appByPart.has(p.id)) && (
+                        <a
+                          href={`/admin/volunteers/${p.registrations?.event_id ? `?event=${p.registrations.event_id}` : ''}#v-${p.id}`}
+                          className="ml-2 whitespace-nowrap text-brand underline"
+                        >
+                          Volunteer application →
+                        </a>
+                      )}
                     </Row>
                   )}
                 </div>
@@ -906,10 +919,36 @@ export default async function PersonPage({ params }) {
       ? clearancePill({ minor: true })
       : clearancePill(chk ?? null, todayInMorristown(), { forRegistry: !volunteerNow });
 
+  // The family's registration for the breadcrumb: the soonest current one,
+  // else the latest earlier one; none, and the family is plain words.
+  const familyRegId = (currentParts[0] ?? sortedParts[0])?.registration_id ?? null;
+
   return (
     <div>
-      {/* An admin sub-page's header (26 Oct 2026): the person left, the back
-          pill right, as everywhere signed in. */}
+      {/* A breadcrumb, as on the registration page (23 Nov 2026 review): it
+          says where this page sits and leads to the family's registration as
+          well as back to Rosters. It replaced the "Rosters" back pill; the
+          sidebar keeps Rosters lit here too (AdminNav.jsx). */}
+      <nav aria-label="Breadcrumb" className="mb-4 text-sm">
+        <Link href="/admin/rosters/" className="text-brand underline">
+          Rosters
+        </Link>
+        <span aria-hidden className="mx-2 text-neutral-400">
+          ›
+        </span>
+        {household?.display_name && familyRegId ? (
+          <Link href={`/admin/registrations/${familyRegId}/`} className="text-brand underline">
+            {household.display_name}
+          </Link>
+        ) : (
+          <span className="text-neutral-600">{household?.display_name ?? 'No household'}</span>
+        )}
+        <span aria-hidden className="mx-2 text-neutral-400">
+          ›
+        </span>
+        <span className="text-neutral-600">{displayName || 'Person'}</span>
+      </nav>
+
       <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="flex items-center gap-4">
       {photoUrl && (
@@ -952,7 +991,6 @@ export default async function PersonPage({ params }) {
       </p>
       </div>
       </div>
-      <BackLink href="/admin/rosters/" label="Rosters" />
       </div>
 
       {!sensitive && (
