@@ -481,7 +481,7 @@ export default function RosterTable({ events, rows, programs = [] }) {
                   </td>
                   <td className="px-4 py-2">
                     <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         statusPill(r.status).cls
                       }`}
                     >

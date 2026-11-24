@@ -84,7 +84,7 @@ function Headcount({ h }) {
     <p className={`mb-3 text-sm ${over ? 'text-amber-900 font-semibold' : 'text-neutral-600'}`}>
       <span className="font-semibold">{h.event}:</span> {h.confirmed} confirmed
       {h.capacity != null ? ` of ${h.capacity} places (${Math.max(0, h.capacity - h.confirmed)} left)` : ' · no capacity set'}
-      {h.waiting > 0 && ` · ${h.waiting} waiting on a decision`}
+      {h.waiting > 0 && ` · ${h.waiting} awaiting review`}
       {h.waitlisted > 0 && ` · ${h.waitlisted} waitlisted`}
       {over && '. Approving everyone waiting would go over capacity.'}
     </p>

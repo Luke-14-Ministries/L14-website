@@ -67,7 +67,8 @@ export default async function MyProgramPrintPage({ searchParams }) {
       />
 
       <div className="border-b-2 border-neutral-800 pb-2">
-        <p className="text-xs uppercase tracking-wide text-neutral-500">Program roster</p>
+        {/* On paper only: on screen PrintSheetHeader already says it. */}
+        <p className="hidden text-xs uppercase tracking-wide text-neutral-500 print:block">Program roster</p>
         <h2 className="text-2xl font-bold">{program.programName}</h2>
         <p className="text-sm text-neutral-600">
           {program.eventName}
