@@ -143,7 +143,7 @@ export default async function AdminOverview({ searchParams }) {
   // table's own "Show past events" link the same day.
   const { data: eventRows, error: eventRowsError } = await supabase
     .from('events')
-    .select('id, name, starts_on, ends_on, archived_at, capacity')
+    .select('id, name, starts_on, ends_on, archived_at, capacity, waitlist_notice_at')
     .order('starts_on');
   if (eventRowsError) throw new Error(`Events: ${eventRowsError.message}`);
   const scope =
@@ -285,6 +285,8 @@ export default async function AdminOverview({ searchParams }) {
         id: e.id,
         name: e.name,
         over,
+        // Staff's "tell families it's full" switch on Setup (0184).
+        full: Boolean(e.waitlist_notice_at),
         text:
           e.capacity != null
             ? `${r.confirmed} confirmed of ${e.capacity} places (${Math.max(0, e.capacity - r.confirmed)} left)`
@@ -387,6 +389,21 @@ export default async function AdminOverview({ searchParams }) {
               <span className="font-semibold">{l.name}:</span> {l.text}
               {l.waiting > 0 && ` · ${l.waiting} awaiting review`}
               {l.over && ' · approving everyone waiting would go over capacity'}
+              {/* The way to say so on the public pages (23 Nov 2026 review,
+                  A4-23): Setup's full switch, for administrators. */}
+              {l.full ? (
+                ' · families are told it’s full'
+              ) : (
+                l.over &&
+                can(staff, 'write:setup') && (
+                  <>
+                    {' · '}
+                    <Link href={`/admin/setup/#event-${l.id}`} className="font-normal text-brand underline">
+                      Tell families it&rsquo;s full
+                    </Link>
+                  </>
+                )
+              )}
             </li>
           ))}
         </ul>

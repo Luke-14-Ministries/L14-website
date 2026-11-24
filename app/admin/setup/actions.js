@@ -17,7 +17,7 @@ import { withReason } from '@/lib/dbErrors';
 // its next save, and nowhere else.
 const EVENT_STATUSES = new Set(['unpublished', 'published', 'archived']);
 
-export async function updateEventRegistration(eventId, { status, opensAt, closesAt }) {
+export async function updateEventRegistration(eventId, { status, opensAt, closesAt, full }) {
   const staff = await getStaff();
   if (!can(staff, 'write:setup')) return { ok: false, error: 'Admins only.' };
   if (!eventId) return { ok: false, error: 'Missing event.' };
@@ -27,6 +27,16 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
   }
 
   const supabase = await createClient();
+  const { data: cur, error: curError } = await supabase
+    .from('events')
+    .select('archived_at, hidden_from_families_at, waitlist_notice_at')
+    .eq('id', eventId)
+    .maybeSingle();
+  if (curError) {
+    console.error('updateEventRegistration (read current):', curError.message);
+    return { ok: false, error: withReason('Could not save. Please try again.', curError) };
+  }
+  if (!cur) return { ok: false, error: 'That event was not found.' };
   const patch = {
     published: status === 'published',
     registration_opens_at: opensAt || null,
@@ -35,19 +45,15 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
     // Only an archived event can be hidden from family dashboards (0147).
     hidden_from_families_at: null,
   };
+  // "Tell families this event is full" (0184, 23 Nov 2026). The stamp says
+  // when it was switched on, so re-saving keeps the first one. Undefined (an
+  // older form) leaves it alone.
+  if (full !== undefined) {
+    patch.waitlist_notice_at = full ? cur.waitlist_notice_at ?? new Date().toISOString() : null;
+  }
   // The archive mark (0099). The date it was first set is kept: re-saving an
   // archived event does not move it.
   if (status === 'archived') {
-    const { data: cur, error: curError } = await supabase
-      .from('events')
-      .select('archived_at, hidden_from_families_at')
-      .eq('id', eventId)
-      .maybeSingle();
-    if (curError) {
-      console.error('updateEventRegistration (read archived_at):', curError.message);
-      return { ok: false, error: withReason('Could not save. Please try again.', curError) };
-    }
-    if (!cur) return { ok: false, error: 'That event was not found.' };
     patch.archived_at = cur.archived_at ?? new Date().toISOString();
     // Re-saving an archived event keeps its family-dashboard choice.
     patch.hidden_from_families_at = cur.hidden_from_families_at ?? null;
@@ -68,8 +74,12 @@ export async function updateEventRegistration(eventId, { status, opensAt, closes
   revalidatePath('/register/family');
   revalidatePath('/admin');
   revalidatePath('/account/dashboard');
+  for (const page of PUBLIC_EVENT_PAGES) revalidatePath(page);
   return { ok: true };
 }
+
+// The public pages that print an event's facts from Setup (lib/campFacts.js).
+const PUBLIC_EVENT_PAGES = ['/camp-celebrate', '/camper-information', '/volunteer-information', '/adult-adventure-retreat'];
 
 // Clear an archived event from family dashboards, or show it again (0147;
 // Lawrence, 4 Nov 2026). For a test event or one cancelled before it ran: a
@@ -123,6 +133,10 @@ export async function updateEventDetails(
     returnedFeeDollars,
     // The deposit per person (29 Oct 2026; until then set only at creation).
     depositDollars,
+    // What families read about the event (23 Nov 2026 review, A4-02/A4-05):
+    // its name, where it is, the day volunteers arrive, the arrival line and
+    // the venue map. Undefined (an older form) leaves each one alone.
+    name, location, volunteerArrivesOn, arrivalNote, campusMapUrl,
   }
 ) {
   const staff = await getStaff();
@@ -132,6 +146,44 @@ export async function updateEventDetails(
   if (!startsOn || !endsOn) return { ok: false, error: 'An event needs a start and an end date.' };
   if (endsOn < startsOn) {
     return { ok: false, error: 'The end date is before the start date. Check the two dates.' };
+  }
+
+  // The facts families read (23 Nov 2026 review). Each is checked before
+  // anything saves, so a bad link never leaves half a save behind.
+  const facts = {};
+  if (name !== undefined) {
+    const n = String(name ?? '').trim();
+    if (!n) return { ok: false, error: 'Give the event a name.' };
+    if (n.length > 120) return { ok: false, error: 'Keep the name under 120 characters.' };
+    facts.name = n;
+  }
+  if (location !== undefined) {
+    const l = String(location ?? '').trim();
+    if (l.length > 200) return { ok: false, error: 'Keep the location under 200 characters.' };
+    facts.location = l || null;
+  }
+  if (volunteerArrivesOn !== undefined) {
+    const v = String(volunteerArrivesOn ?? '').trim();
+    if (v && !/^\d{4}-\d{2}-\d{2}$/.test(v)) return { ok: false, error: 'The volunteer arrival day is not a date.' };
+    if (v && v > startsOn) {
+      return { ok: false, error: 'Volunteers arrive on or before the first day. Check the volunteer arrival day.' };
+    }
+    facts.volunteer_arrives_on = v || null;
+  }
+  if (arrivalNote !== undefined) {
+    const a = String(arrivalNote ?? '').trim();
+    if (a.length > 200) return { ok: false, error: 'Keep the arrival note under 200 characters.' };
+    facts.arrival_note = a || null;
+  }
+  if (campusMapUrl !== undefined) {
+    const u = String(campusMapUrl ?? '').trim();
+    // Families open it from their dashboard, so a secure web address only
+    // (the database also refuses anything that is not a web link, 0175).
+    if (u && !/^https:\/\/\S+$/i.test(u)) {
+      return { ok: false, error: 'The campus map link has to be a web address starting with https://' };
+    }
+    if (u.length > 2000) return { ok: false, error: 'The campus map link is too long.' };
+    facts.campus_map_url = u || null;
   }
 
   let cap = null;
@@ -242,6 +294,11 @@ export async function updateEventDetails(
   // The settings a later week takes from this one (0137). Dates are each
   // week's own; the both-weeks discount is the later week's.
   const shared = {
+    // The venue and how arrival works are the same for every week of a camp
+    // (23 Nov 2026); the name and the volunteer arrival DAY are each week's own.
+    ...('location' in facts ? { location: facts.location } : {}),
+    ...('campus_map_url' in facts ? { campus_map_url: facts.campus_map_url } : {}),
+    ...('arrival_note' in facts ? { arrival_note: facts.arrival_note } : {}),
     capacity: cap,
     early_registration_ends_on: earlyEndsOn || null,
     early_registration_discount_cents: earlyCents,
@@ -251,11 +308,23 @@ export async function updateEventDetails(
     returned_payment_fee_cents: returnedFeeCents,
     deposit_cents: depositCents,
   };
+  // What the dates were, to say afterwards what a change touched.
+  const { data: before, error: beforeError } = await supabase
+    .from('events')
+    .select('starts_on, ends_on, volunteer_arrives_on')
+    .eq('id', eventId)
+    .maybeSingle();
+  if (beforeError) {
+    return { ok: false, error: withReason('Could not save the event. Please try again.', beforeError) };
+  }
+  if (!before) return { ok: false, error: 'That event was not found.' };
+
   const { error } = await supabase
     .from('events')
     .update({
       starts_on: startsOn,
       ends_on: endsOn,
+      ...facts,
       ...shared,
       ...(pct !== undefined ? { multi_week_discount_percent: pct } : {}),
       // Saved by hand: a later week stops following its earlier week (0137).
@@ -331,9 +400,9 @@ export async function updateEventDetails(
   if (meError) {
     return { ok: false, error: `The event saved, but its later weeks could not be checked: ${meError.message}` };
   }
-  const name = String(me?.name ?? '');
-  if (name.includes(' — ')) {
-    const program = name.split(' — ')[0].trim();
+  const savedName = String(me?.name ?? '');
+  if (savedName.includes(' — ')) {
+    const program = savedName.split(' — ')[0].trim();
     // LIKE wildcards in a camp's name are matched literally.
     const like = `${program.replace(/[\\%_]/g, (c) => `\\${c}`)} — %`;
     const { data: later, error: laterError } = await supabase
@@ -392,11 +461,38 @@ export async function updateEventDetails(
     }
   }
 
+  // After a date change (23 Nov 2026 review, A4-03): who is registered and
+  // which activity times now fall outside the event's days. Nothing is
+  // moved and nobody is emailed; staff are told, with links.
+  let datesMoved = null;
+  const newArrives = 'volunteer_arrives_on' in facts ? facts.volunteer_arrives_on : before.volunteer_arrives_on;
+  if (
+    before.starts_on !== startsOn ||
+    before.ends_on !== endsOn ||
+    (before.volunteer_arrives_on ?? null) !== (newArrives ?? null)
+  ) {
+    const [{ data: regs, error: regsError }, { data: slots, error: slotsError }] = await Promise.all([
+      supabase.from('registrations').select('id, registration_participants ( status )').eq('event_id', eventId),
+      supabase.from('activity_slots').select('id, slot_date, activities!inner ( event_id )').eq('activities.event_id', eventId),
+    ]);
+    if (regsError || slotsError) {
+      // The dates saved; only the follow-up count failed. Said, not hidden.
+      datesMoved = { error: (regsError ?? slotsError).message };
+    } else {
+      const first = newArrives && newArrives < startsOn ? newArrives : startsOn;
+      datesMoved = {
+        families: (regs ?? []).filter((r) => (r.registration_participants ?? []).some((p) => p.status !== 'cancelled')).length,
+        slotsOutside: (slots ?? []).filter((t) => t.slot_date && (t.slot_date < first || t.slot_date > endsOn)).length,
+      };
+    }
+  }
+
   revalidatePath('/admin/setup');
   revalidatePath('/register');
   revalidatePath('/register/family');
   revalidatePath('/account/dashboard');
-  return { ok: true, copiedTo, notCopied: [...kept, ...priceNotes].join(' ') || null };
+  for (const page of PUBLIC_EVENT_PAGES) revalidatePath(page);
+  return { ok: true, copiedTo, notCopied: [...kept, ...priceNotes].join(' ') || null, datesMoved };
 }
 
 // A price cut reaches the people already registered (0145); a raise reaches

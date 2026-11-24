@@ -6,10 +6,11 @@
 // their own clocks.
 
 import EmptyState from '@/components/EmptyState';
+import Link from 'next/link';
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateEventRegistration, updateEventDetails, createEvent, setHiddenFromFamilies } from './actions';
-import { EVENT_TYPE_LABELS } from '@/lib/events';
+import { EVENT_TYPE_LABELS, staffAssigns, programOf as programName } from '@/lib/events';
 import { PLAN_MIN_DAYS } from '@/lib/plans';
 import FoldArrow from '@/components/FoldArrow';
 import TimeSelect from '@/components/TimeSelect';
@@ -103,11 +104,146 @@ function statusOf(row) {
   if (row.status !== 'published') return ['Unpublished, not on the public site', tone('unpublished')];
   if (!row.hasPublishedOption)
     return ['No published price, can\'t open', 'bg-red-100 text-red-800'];
+  // registrationOpen() closes an event after its last day (23 Nov 2026).
+  if (row.isPast) return ['Published · over, registration closed', tone('published')];
   if (row.opensAt && new Date(row.opensAt) > now)
     return [`Published · opens ${new Date(row.opensAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, tone('published')];
   if (row.closesAt && new Date(row.closesAt) < now)
     return [`Published · closed ${new Date(row.closesAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, tone('published')];
   return ['Published · open now', tone('published')];
+}
+
+// The public pages each kind of event appears on (23 Nov 2026 review, A4-11),
+// so staff can look at what families see after a save. The camp pages show
+// the next camp; the retreat page the next retreat; Register lists every
+// event open now.
+const SITE_PAGES = {
+  camp_week: [
+    ['/camp-celebrate/', 'Camp Celebrate'],
+    ['/camper-information/', 'Camper Information'],
+    ['/volunteer-information/', 'Volunteer Information'],
+    ['/register/', 'Register'],
+  ],
+  retreat: [
+    ['/adult-adventure-retreat/', 'Adult Adventure Retreat'],
+    ['/register/', 'Register'],
+  ],
+};
+const sitePages = (type) => SITE_PAGES[type] ?? [['/register/', 'Register']];
+
+// The staff pages that hold the rest of an event's setup, opened on this
+// event. Rooms and Program Groups are for camps only (staffAssigns): a
+// retreat sorts those on arrival, and those pages leave it out.
+function alsoFor(e) {
+  const q = `?event=${e.id}`;
+  return [
+    [`/admin/activities/${q}`, 'Activities'],
+    ...(staffAssigns({ event_type: e.eventType })
+      ? [
+          [`/admin/lodging/${q}`, 'Rooms & Cabins'],
+          [`/admin/programs/${q}`, 'Program Groups'],
+        ]
+      : []),
+    // The medical contact families read stays on Check-In (0109), where
+    // staff look for it during camp; this is the way there.
+    [`/admin/checkin/${q}`, 'Medical contact (Check-In)'],
+    [`/admin/email-families/${q}`, 'Email Families'],
+  ];
+}
+
+const families = (n) => `${n} ${n === 1 ? 'family is' : 'families are'}`;
+
+// 'YYYY-MM-DD' to 'YYYY-MM-DD' in whole days, by parts (no time zone moves it).
+const daysBetween = (fromIso, toIso) => {
+  const t = (iso) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((t(toIso) - t(fromIso)) / 86400000);
+};
+
+// A save's message: words, then any links (23 Nov 2026: "See it on the site",
+// and after a date change the pages to check). Module level (CLAUDE.md).
+function SaveNotice({ notice, className = 'mt-3' }) {
+  if (!notice) return null;
+  return (
+    <p
+      className={`${className} rounded-sm border px-3 py-2 text-sm ${
+        notice.ok ? 'border-green-300 bg-green-50 text-green-800' : 'border-red-300 bg-red-50 text-red-800'
+      }`}
+    >
+      {notice.message}
+      {(notice.links ?? []).map(([href, label]) => (
+        <span key={href}>
+          {' '}
+          <Link href={href} className="font-semibold underline" target={href.startsWith('/admin') ? undefined : '_blank'}>
+            {label}
+          </Link>
+        </span>
+      ))}
+    </p>
+  );
+}
+
+// The agreements this event asks families to sign, read-only (23 Nov 2026
+// review, A4-20). A signature points at one exact version, so new wording is
+// a new version made by a developer, never an edit on this page.
+function AgreementsFold({ e }) {
+  const list = e.agreements ?? [];
+  return (
+    <details className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 text-sm">
+      <summary className="fold-summary flex cursor-pointer items-center gap-2 px-4 py-2.5 font-semibold text-neutral-800">
+        Agreements families sign ({list.length})
+      </summary>
+      <div className="border-t border-neutral-200 p-4">
+        {list.length === 0 ? (
+          <p className="text-neutral-600">This event asks for no agreements.</p>
+        ) : (
+          <>
+            <p className="mb-3 text-xs text-neutral-600">
+              Families sign these when they register. To change the wording, ask Lawrence: each
+              signature points at the exact version the family signed, so new wording becomes a new
+              version rather than an edit here. Activity waivers are set on each activity, on{' '}
+              <Link href={`/admin/activities/?event=${e.id}`} className="text-brand underline">
+                Activities
+              </Link>
+              .{' '}
+              <Link href={`/admin/setup/agreements/?event=${e.id}`} className="font-semibold text-brand underline">
+                Print these agreements
+              </Link>
+            </p>
+            <div className="space-y-2">
+              {list.map((a) => (
+                <details key={a.id} className="rounded-sm border border-neutral-200 bg-white">
+                  <summary className="fold-summary flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2">
+                    <span className="font-semibold">{a.title}</span>
+                    <span className="text-xs text-neutral-500">
+                      version {a.version}
+                      {a.createdOn ? ` · since ${fmtDate(a.createdOn)}` : ''}
+                      {a.required ? '' : ' · optional'}
+                      {a.appliesTo === 'participant' ? ' · signed for each person' : ' · signed once per family'}
+                    </span>
+                  </summary>
+                  <div className="border-t border-neutral-200 px-3 py-2 text-neutral-700">
+                    {a.externalUrl ? (
+                      <p>
+                        Signed on another site:{' '}
+                        <a href={a.externalUrl} target="_blank" rel="noopener" className="text-brand underline">
+                          {a.externalUrl}
+                        </a>
+                      </p>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{a.text || 'No text on file.'}</p>
+                    )}
+                  </div>
+                </details>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </details>
+  );
 }
 
 // A second step for an archived event (0147; Lawrence, 4 Nov 2026): clear it
@@ -164,7 +300,36 @@ function FamilyDashboardChoice({ e }) {
   );
 }
 
-function EventRow({ e }) {
+// Every box on an event card as its saved value, in the form's own strings.
+// The card compares against it to say what changed, and to take a newer
+// saved value when the event changed under it (below).
+function formValues(e) {
+  return {
+    status: eventStatus(e.published, e.archivedAt),
+    opens: isoToLocal(e.opensAt),
+    closes: isoToLocal(e.closesAt),
+    full: Boolean(e.waitlistNoticeAt),
+    name: e.name ?? '',
+    location: e.location ?? '',
+    volArrives: e.volunteerArrivesOn ?? '',
+    arrivalNote: e.arrivalNote ?? '',
+    mapUrl: e.campusMapUrl ?? '',
+    startsOn: e.startsOn ?? '',
+    endsOn: e.endsOn ?? '',
+    capacity: e.capacity == null ? '' : String(e.capacity),
+    fee: e.feeCents == null ? '' : (e.feeCents / 100).toFixed(2),
+    earlyEndsOn: e.earlyEndsOn ?? '',
+    early: e.earlyCents ? (e.earlyCents / 100).toFixed(2) : '',
+    balanceDueOn: e.balanceDueOn ?? '',
+    family: e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '',
+    familyFrom: String(e.familyFromPerson ?? 3),
+    multiWeek: String(e.multiWeekPercent ?? 0),
+    returnedFee: ((e.returnedFeeCents ?? 0) / 100).toFixed(2),
+    deposit: ((e.depositCents ?? 0) / 100).toFixed(2),
+  };
+}
+
+function EventRow({ e, reminderMode }) {
   const router = useRouter();
   const [, start] = useTransition();
   const savedStatus = eventStatus(e.published, e.archivedAt);
@@ -191,6 +356,17 @@ function EventRow({ e }) {
   // is a weekly act, and changing the DATE of camp is not. Putting them on one
   // row invites the second while doing the first.
   const [editing, setEditing] = useState(false);
+  // What families read (23 Nov 2026 review): name, location, the volunteers'
+  // arrival day, the arrival line and the venue map.
+  const [name, setName] = useState(e.name ?? '');
+  const [location, setLocation] = useState(e.location ?? '');
+  const [volArrives, setVolArrives] = useState(e.volunteerArrivesOn ?? '');
+  // Edited by hand in this save: then a new first day leaves it alone.
+  const [volTouched, setVolTouched] = useState(false);
+  const [arrivalNote, setArrivalNote] = useState(e.arrivalNote ?? '');
+  const [mapUrl, setMapUrl] = useState(e.campusMapUrl ?? '');
+  // Staff's "this event is full" switch (0184).
+  const [full, setFull] = useState(Boolean(e.waitlistNoticeAt));
   const [startsOn, setStartsOn] = useState(e.startsOn ?? '');
   const [endsOn, setEndsOn] = useState(e.endsOn ?? '');
   const [capacity, setCapacity] = useState(e.capacity == null ? '' : String(e.capacity));
@@ -211,6 +387,26 @@ function EventRow({ e }) {
   // carries the both-weeks discount, where it applies; an earlier week's
   // details are the defaults for any later week not yet saved by hand.
   const isLaterWeek = (e.earlierWeeks ?? []).length > 0;
+
+  // The event changed under this card (23 Nov 2026, found in the review):
+  // saving Week 1 copies its settings to Week 2, and router.refresh() gave
+  // Week 2's card the new values while its boxes kept the old ones, so it
+  // read "unsaved changes" and its Save would have put the old values back.
+  // When the saved values move, a card nobody has edited takes them; a card
+  // with edits keeps them. React's "adjust state when a prop changes"
+  // pattern: compared during render, no effect.
+  const saved = formValues(e);
+  const [base, setBase] = useState(saved);
+  if (JSON.stringify(base) !== JSON.stringify(saved)) {
+    const current = {
+      status, opens, closes, full, name, location, volArrives, arrivalNote, mapUrl, startsOn, endsOn,
+      capacity, fee, earlyEndsOn, early, balanceDueOn, family, familyFrom, multiWeek, returnedFee, deposit,
+    };
+    const untouched = Object.keys(base).every((k) => current[k] === base[k]);
+    setBase(saved);
+    if (untouched) resetTo(saved);
+  }
+
   const followers = (e.laterWeeks ?? []).filter((w) => !w.setByHand).map((w) => w.name);
   const ownSet = (e.laterWeeks ?? []).filter((w) => w.setByHand).map((w) => w.name);
 
@@ -220,6 +416,11 @@ function EventRow({ e }) {
   // writes stay separate actions underneath; the status one runs first, so a
   // details error never hides a status change that did save.
   const detailsDirty =
+    name !== (e.name ?? '') ||
+    location !== (e.location ?? '') ||
+    volArrives !== (e.volunteerArrivesOn ?? '') ||
+    arrivalNote !== (e.arrivalNote ?? '') ||
+    mapUrl !== (e.campusMapUrl ?? '') ||
     startsOn !== (e.startsOn ?? '') ||
     endsOn !== (e.endsOn ?? '') ||
     capacity !== (e.capacity == null ? '' : String(e.capacity)) ||
@@ -233,22 +434,44 @@ function EventRow({ e }) {
     returnedFee !== ((e.returnedFeeCents ?? 0) / 100).toFixed(2) ||
     deposit !== ((e.depositCents ?? 0) / 100).toFixed(2);
 
+  // A new first day moves the volunteers' arrival day by as many days, unless
+  // staff changed that day themselves in this save (23 Nov 2026 review,
+  // A4-03). Shown in the box before saving, so nothing moves unseen.
+  function changeStartsOn(v) {
+    setStartsOn(v);
+    if (!volTouched && e.volunteerArrivesOn && e.startsOn && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      setVolArrives(addDays(e.volunteerArrivesOn, daysBetween(e.startsOn, v)));
+    }
+  }
+
+  // Every box back to the given values (the saved ones).
+  function resetTo(v) {
+    setStatus(v.status);
+    setOpens(v.opens);
+    setCloses(v.closes);
+    setFull(v.full);
+    setName(v.name);
+    setLocation(v.location);
+    setVolArrives(v.volArrives);
+    setVolTouched(false);
+    setArrivalNote(v.arrivalNote);
+    setMapUrl(v.mapUrl);
+    setStartsOn(v.startsOn);
+    setEndsOn(v.endsOn);
+    setCapacity(v.capacity);
+    setFee(v.fee);
+    setEarlyEndsOn(v.earlyEndsOn);
+    setEarly(v.early);
+    setBalanceDueOn(v.balanceDueOn);
+    setFamily(v.family);
+    setFamilyFrom(v.familyFrom);
+    setMultiWeek(v.multiWeek);
+    setReturnedFee(v.returnedFee);
+    setDeposit(v.deposit);
+  }
+
   function undoAll() {
-    setStatus(savedStatus);
-    setOpens(isoToLocal(e.opensAt));
-    setCloses(isoToLocal(e.closesAt));
-    setStartsOn(e.startsOn ?? '');
-    setEndsOn(e.endsOn ?? '');
-    setCapacity(e.capacity == null ? '' : String(e.capacity));
-    setFee(e.feeCents == null ? '' : (e.feeCents / 100).toFixed(2));
-    setEarlyEndsOn(e.earlyEndsOn ?? '');
-    setEarly(e.earlyCents ? (e.earlyCents / 100).toFixed(2) : '');
-    setBalanceDueOn(e.balanceDueOn ?? '');
-    setFamily(e.familyDiscountCents ? (e.familyDiscountCents / 100).toFixed(2) : '');
-    setFamilyFrom(String(e.familyFromPerson ?? 3));
-    setMultiWeek(String(e.multiWeekPercent ?? 0));
-    setReturnedFee(((e.returnedFeeCents ?? 0) / 100).toFixed(2));
-    setDeposit(((e.depositCents ?? 0) / 100).toFixed(2));
+    resetTo(formValues(e));
     setNotice(null);
   }
 
@@ -273,12 +496,14 @@ function EventRow({ e }) {
     setNotice(null);
     start(async () => {
       const said = [];
+      const links = [];
       let failed = null;
       if (dirty) {
         const res = await updateEventRegistration(e.id, {
           status,
           opensAt: localToIso(opens),
           closesAt: localToIso(closes),
+          full,
         });
         // Say what the saved status DOES (Lawrence, 1 Nov 2026: "the public
         // site shows it now" read wrong for an event just archived).
@@ -300,6 +525,11 @@ function EventRow({ e }) {
           multiWeekPercent: isLaterWeek ? multiWeek : undefined,
           returnedFeeDollars: returnedFee,
           depositDollars: deposit,
+          name,
+          location,
+          volunteerArrivesOn: volArrives,
+          arrivalNote,
+          campusMapUrl: mapUrl,
         });
         if (res.ok) {
           said.push(
@@ -307,13 +537,32 @@ function EventRow({ e }) {
               res.notCopied ? ` ${res.notCopied}` : ''
             }`
           );
+          // What a date change reached (A4-03). Activity times are not moved
+          // and families are not emailed: staff decide both.
+          const m = res.datesMoved;
+          if (m?.error) {
+            said.push(`The dates saved, but who they affect could not be counted (${m.error}).`);
+          } else if (m) {
+            said.push(`The dates changed. ${families(m.families)} registered; nobody was emailed.`);
+            if (m.families > 0) links.push([`/admin/email-families/?event=${e.id}`, 'Email Families']);
+            if (m.slotsOutside > 0) {
+              said.push(
+                `${m.slotsOutside} activity ${m.slotsOutside === 1 ? 'time is' : 'times are'} now outside the event's days and ${
+                  m.slotsOutside === 1 ? 'was' : 'were'
+                } not moved.`
+              );
+              links.push([`/admin/activities/?event=${e.id}`, 'Check Activities']);
+            }
+          }
         } else failed = res.error;
       }
+      // Where families will see it (A4-11).
+      if (!failed && status === 'published') links.push([sitePages(e.eventType)[0][0], 'See it on the site']);
       setBusy(false);
       setNotice(
         failed
           ? { ok: false, message: said.length ? `${said.join(' ')} But: ${failed}` : failed }
-          : { ok: true, message: said.join(' ') }
+          : { ok: true, message: said.join(' '), links }
       );
       router.refresh();
     });
@@ -321,6 +570,7 @@ function EventRow({ e }) {
 
   const dirty =
     status !== savedStatus ||
+    full !== Boolean(e.waitlistNoticeAt) ||
     legacyBoth ||
     opens !== isoToLocal(e.opensAt) ||
     closes !== isoToLocal(e.closesAt);
@@ -333,9 +583,33 @@ function EventRow({ e }) {
   });
   const statusHint = EVENT_STATUSES.find(([v]) => v === status)?.[2];
 
+  // Said before Save (23 Nov 2026 review, A4-21): publishing with no times
+  // opens registration the moment it saves; taking an event off the site
+  // with families on it reaches them.
+  const opensOnSave =
+    status === 'published' && savedStatus !== 'published' && !opens && !closes && e.hasPublishedOption && !e.isPast;
+  const leavingFamilies = status !== savedStatus && status !== 'published' && (e.regFamilies ?? 0) > 0;
+
+  // A rename (A4-02): the part before " — " pairs a camp's weeks.
+  const trimmedName = name.trim();
+  const renamed = trimmedName !== '' && trimmedName !== (e.name ?? '');
+  const hadDash = String(e.name ?? '').includes(' — ');
+  const hasDash = trimmedName.includes(' — ');
+  const pairingNote = !renamed
+    ? null
+    : hadDash && !hasDash
+      ? 'This name no longer has " — ", so the event stops being paired with its other weeks (the both-weeks discount, settings copied to later weeks, and the camp pages).'
+      : !hadDash && hasDash
+        ? 'This name now has " — ", so it is paired with other events whose names start the same way in the same year (the both-weeks discount, copied settings, the camp pages).'
+        : hadDash && programName(trimmedName) !== programName(e.name)
+          ? 'The part before " — " changed, so this week is paired with different weeks (the both-weeks discount, copied settings, the camp pages).'
+          : null;
+  const volMoved = !volTouched && volArrives !== (e.volunteerArrivesOn ?? '') && startsOn !== (e.startsOn ?? '');
+  const mapLooksRight = /^https:\/\/\S+$/i.test(mapUrl.trim());
+
 
   return (
-    <div className="rounded-lg border border-neutral-200 p-4">
+    <div id={`event-${e.id}`} className="scroll-mt-20 rounded-lg border border-neutral-200 p-4">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -354,6 +628,7 @@ function EventRow({ e }) {
           <p className="text-sm text-neutral-500">
             {fmtDate(e.startsOn)} &ndash; {fmtDate(e.endsOn)} &middot; {money(e.feeCents)}/person
             {e.capacity ? ` · capacity ${e.capacity}` : ''}
+            {e.regPeople != null ? ` · ${e.regPeople} registered` : ''}
             {!open && (dirty || detailsDirty) && (
               <span className="ml-2 font-semibold text-amber-800">· unsaved changes</span>
             )}
@@ -404,12 +679,57 @@ function EventRow({ e }) {
         )}
       </div>
       <p className="mt-2 text-xs text-neutral-600">{statusHint}</p>
+      {status === 'published' && (
+        // A switch, not a count (0184): staff run the waiting list by hand.
+        <label className="mt-2 flex items-start gap-2 text-sm">
+          <input type="checkbox" checked={full} onChange={(ev) => setFull(ev.target.checked)} className="mt-1" />
+          <span>
+            Tell families this event is full (new registrations join the waiting list)
+            <span className="block text-xs text-neutral-600">
+              The public pages then say it&rsquo;s full and that registering joins the waiting list.
+              Registration stays open; you approve or waitlist each person on Awaiting Review.
+            </span>
+          </span>
+        </label>
+      )}
       {legacyBoth && status === 'archived' && (
         <p className="mt-1 text-xs text-amber-800">
-          Saved before 26 Oct as both visible and archived. Save stores it as Archived (off the public site).
+          This event is marked both visible and archived. Saving will archive it.
         </p>
       )}
       {savedStatus === 'archived' && status === 'archived' && <FamilyDashboardChoice e={e} />}
+
+      {/* Where it shows, and the rest of its setup (A4-11, A4-22). */}
+      <div className="mt-3 space-y-1 text-xs text-neutral-600">
+        <p>
+          <span className="font-semibold text-neutral-700">Shows on:</span>{' '}
+          {savedStatus === 'published' ? (
+            sitePages(e.eventType).map(([href, label], i) => (
+              <span key={href}>
+                {i > 0 && ' · '}
+                <a href={href} target="_blank" rel="noopener" className="text-brand underline">
+                  {label}
+                </a>
+              </span>
+            ))
+          ) : savedStatus === 'archived' ? (
+            'Not on the site (archived)'
+          ) : (
+            'Not on the site yet'
+          )}
+        </p>
+        <p>
+          <span className="font-semibold text-neutral-700">Also for this event:</span>{' '}
+          {alsoFor(e).map(([href, label], i) => (
+            <span key={href}>
+              {i > 0 && ' · '}
+              <Link href={href} className="text-brand underline">
+                {label}
+              </Link>
+            </span>
+          ))}
+        </p>
+      </div>
 
       {/* A folding section, not a link (Lawrence, 4 Nov 2026), with the
           site's left-hand arrow. Folding keeps unsaved edits. */}
@@ -421,19 +741,46 @@ function EventRow({ e }) {
         className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-neutral-800"
       >
         <FoldArrow open={editing} />
-        Dates, capacity, price and discounts
+        Name, place, dates, price and discounts
         {!editing && detailsDirty && <span className="font-semibold text-amber-800">· unsaved changes</span>}
       </button>
 
       {editing && (
         <div className="border-t border-neutral-200 p-4">
+          {/* What families read (23 Nov 2026 review, A4-02/A4-05). */}
+          <div className="mb-3 grid gap-3 sm:grid-cols-4">
+            <label className="text-sm sm:col-span-2">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Name</span>
+              <input value={name} onChange={(ev) => setName(ev.target.value)} className="field-sm" />
+            </label>
+            <label className="text-sm sm:col-span-2">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Location</span>
+              <input
+                value={location}
+                onChange={(ev) => setLocation(ev.target.value)}
+                placeholder="Blank: the camp pages name Carson Springs"
+                className="field-sm"
+              />
+            </label>
+          </div>
+          {(renamed || e.regFamilies > 0) && (
+            <p className="-mt-1 mb-3 text-xs text-neutral-600">
+              {e.regFamilies > 0 && (
+                <>
+                  {families(e.regFamilies)} registered for this event.
+                  {renamed && ' The new name shows on their dashboard, statements and emails.'}{' '}
+                </>
+              )}
+              {pairingNote && <span className="font-semibold text-amber-800">{pairingNote}</span>}
+            </p>
+          )}
           <div className="grid gap-3 sm:grid-cols-4">
             <label className="text-sm">
               <span className="block font-semibold text-neutral-700 mb-0.5">First day</span>
               <input
                 type="date"
                 value={startsOn}
-                onChange={(ev) => setStartsOn(ev.target.value)}
+                onChange={(ev) => changeStartsOn(ev.target.value)}
                 className="field-sm"
               />
             </label>
@@ -462,6 +809,49 @@ function EventRow({ e }) {
                 inputMode="decimal"
                 value={fee}
                 onChange={(ev) => setFee(ev.target.value)}
+                className="field-sm"
+              />
+            </label>
+          </div>
+
+          <div className="mt-3 grid items-start gap-3 sm:grid-cols-4">
+            <label className="text-sm">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Volunteers arrive</span>
+              <input
+                type="date"
+                value={volArrives}
+                onChange={(ev) => {
+                  setVolArrives(ev.target.value);
+                  setVolTouched(true);
+                }}
+                className="field-sm"
+              />
+              {volMoved && <span className="mt-0.5 block text-xs text-neutral-600">Moved with the first day.</span>}
+            </label>
+            <label className="text-sm">
+              <span className="block font-semibold text-neutral-700 mb-0.5">Arrival note</span>
+              <input
+                value={arrivalNote}
+                onChange={(ev) => setArrivalNote(ev.target.value)}
+                placeholder="e.g. 6:00 PM Thursday"
+                maxLength={200}
+                className="field-sm"
+              />
+            </label>
+            <label className="text-sm sm:col-span-2">
+              <span className="block font-semibold text-neutral-700 mb-0.5">
+                Campus map link
+                {mapLooksRight && (
+                  <a href={mapUrl.trim()} target="_blank" rel="noopener" className="ml-2 font-normal text-brand underline">
+                    Open
+                  </a>
+                )}
+              </span>
+              <input
+                type="url"
+                value={mapUrl}
+                onChange={(ev) => setMapUrl(ev.target.value)}
+                placeholder="https://"
                 className="field-sm"
               />
             </label>
@@ -582,6 +972,18 @@ function EventRow({ e }) {
             </summary>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>
+                <strong>Name and location</strong> show on the public pages, the family dashboard,
+                statements and emails. A blank location keeps the Carson Springs sentence on the camp
+                pages. <strong>Arrival note</strong> is the retreat page&rsquo;s Arrival line (blank:
+                6:00 PM on the first day). The <strong>campus map</strong> opens from the family
+                dashboard once someone is checked in.
+              </li>
+              <li>
+                <strong>First day:</strong> changing it moves the volunteers&rsquo; arrival day by the
+                same number of days, unless you change that day too. Activity times are not moved and
+                families are not emailed; Save says how many are registered.
+              </li>
+              <li>
                 <strong>Price:</strong> a <em>lower</em> price also applies to everyone already
                 registered, unless their scholarship and discount add up to more than the new price.
                 If a family has paid more than the new total, they&rsquo;re due a refund, and Save
@@ -615,27 +1017,32 @@ function EventRow({ e }) {
                 and they&rsquo;re charged the amount they saw then.
               </li>
               <li>
-                <strong>Weeks of one camp:</strong> saving an earlier week copies its price, places,
-                early registration, balance due, deposit, family discount and returned fee to a later week
-                that has not been saved on its own.
+                <strong>Weeks of one camp:</strong> saving an earlier week copies its location, campus
+                map, arrival note, price, places, early registration, balance due, deposit, family
+                discount and returned fee to a later week that has not been saved on its own. The name
+                and the dates are each week&rsquo;s own.
               </li>
             </ul>
-            <ReminderScheduleNote />
+            <ReminderScheduleNote mode={reminderMode} />
           </details>
 
         </div>
       )}
       </div>
 
-      {notice && (
-        <p
-          className={`mt-3 rounded-sm border px-3 py-2 text-sm ${
-            notice.ok
-              ? 'border-green-300 bg-green-50 text-green-800'
-              : 'border-red-300 bg-red-50 text-red-800'
-          }`}
-        >
-          {notice.message}
+      <AgreementsFold e={e} />
+
+      <SaveNotice notice={notice} />
+      {opensOnSave && (
+        <p className="mt-3 text-sm text-amber-800">
+          Registration will open as soon as you save, and close after the event&rsquo;s last day. Set an
+          open time above to open it later.
+        </p>
+      )}
+      {leavingFamilies && (
+        <p className="mt-3 text-sm text-amber-800">
+          {families(e.regFamilies)} registered for this event. They keep it on their dashboards
+          {status === 'archived' ? ', folded among past events' : ''}; nobody is emailed.
         </p>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -661,10 +1068,19 @@ function EventRow({ e }) {
 
 // ---------------------------------------------------------------------------
 // The reminder-email schedule (Lawrence, 27 Oct 2026; the draft is
-// 01 Plans and Decisions\Luke14-Automatic-Emails-Draft.pdf). Not sent yet:
-// said here so whoever adds an event knows which of its dates the reminders
-// will run from. Module level, beside the other shared pieces.
-function ReminderScheduleNote() {
+// 01 Plans and Decisions\Luke14-Automatic-Emails-Draft.pdf), said here so
+// whoever adds an event knows which of its dates the reminders run from.
+// Since 23 Nov 2026 (review, A4-06) it prints the job's real mode, read on
+// the server from reminderMode() (lib/reminders/run.js), and lists what the
+// job actually sends (lib/reminders/run.js, remindersForDay). Module level,
+// beside the other shared pieces.
+const REMINDER_MODE_LINE = {
+  live: 'They go out automatically each morning, to every family.',
+  test: 'Test mode: they go only to @luke14ministries.net addresses. Other families are not emailed.',
+  off: 'Switched off: no reminder emails go out until REMINDERS_MODE is set back to live.',
+};
+
+function ReminderScheduleNote({ mode }) {
   return (
     <div className="mt-2 text-xs text-neutral-600">
       <p className="font-semibold text-neutral-700">Reminder emails run from the event&rsquo;s dates</p>
@@ -674,14 +1090,26 @@ function ReminderScheduleNote() {
           <em>balance due</em> date and on it, then weekly once it is past due.
         </li>
         <li>
-          <strong>Missing details</strong> (support details, applications, waivers, agreements): monthly
-          on the 15th until done, then 2 weeks and 5 days before the <em>first day</em>.
+          <strong>Missing details</strong> (support details, volunteer applications, activity waivers, and a
+          staff question waiting on the family): monthly on the 15th until done, then 2 weeks and 5 days
+          before the <em>first day</em>.
         </li>
         <li>
-          <strong>Payment plans:</strong> a notice 1 week before each automatic payment.
+          <strong>Payment plans:</strong> a notice 1 week before each automatic payment (10 days for a bank
+          account).
+        </li>
+        <li>
+          <strong>Also:</strong> a confirmation or off-the-waiting-list note the morning after staff approve
+          someone, and a nudge for a registration started but not submitted.
         </li>
       </ul>
-      <p className="mt-1">These go out automatically each morning. Until the site goes live, they go to staff addresses only.</p>
+      <p className="mt-1">
+        {REMINDER_MODE_LINE[mode] ?? REMINDER_MODE_LINE.test}{' '}
+        <Link href="/admin/email-families/" className="text-brand underline">
+          See the next 7 days on Email Families
+        </Link>
+        .
+      </p>
     </div>
   );
 }
@@ -822,7 +1250,7 @@ function DraftFields({ draft, onChange }) {
   );
 }
 
-function NewEventPanel({ events }) {
+function NewEventPanel({ events, reminderMode }) {
   const router = useRouter();
   const [, start] = useTransition();
   const [open, setOpen] = useState(false);
@@ -1016,7 +1444,7 @@ function NewEventPanel({ events }) {
               ) : sources.length ? (
                 <>
                   Copied from {[...new Set(sources.map((s) => s.name))].join(' and ')}, with every date moved to
-                  the same weekday a year later. This copies the description, agreements, activities and their
+                  the same weekday a year later. This copies the agreements, activities and their
                   waivers{isCamp ? ', rooms and cabins (empty, no one assigned)' : ''}, and the money settings:
                   registration dates, early registration and its discount, family and both-weeks discounts,
                   balance due and returned payment fee. People, assignments and program leaders are not
@@ -1037,7 +1465,7 @@ function NewEventPanel({ events }) {
               <summary className="fold-summary cursor-pointer text-xs font-semibold text-neutral-700">
                 Reminder emails use the first day and the balance due date
               </summary>
-              <ReminderScheduleNote />
+              <ReminderScheduleNote mode={reminderMode} />
             </details>
           )}
 
@@ -1065,17 +1493,7 @@ function NewEventPanel({ events }) {
         </div>
       )}
 
-      {notice && (
-        <p
-          className={`mt-2 rounded-sm border px-3 py-2 text-sm ${
-            notice.ok
-              ? 'border-green-300 bg-green-50 text-green-800'
-              : 'border-red-300 bg-red-50 text-red-800'
-          }`}
-        >
-          {notice.message}
-        </p>
-      )}
+      <SaveNotice notice={notice} className="mt-2" />
     </div>
   );
 }
@@ -1113,7 +1531,7 @@ function groupByYear(events) {
   ];
 }
 
-function YearGroup({ year, list, past }) {
+function YearGroup({ year, list, past, reminderMode }) {
   const visible = list.filter((e) => eventStatus(e.published, e.archivedAt) === 'published').length;
   return (
     <details open={!past} className="card group p-0">
@@ -1128,23 +1546,23 @@ function YearGroup({ year, list, past }) {
       </summary>
       <div className="space-y-4 border-t border-neutral-200 p-4">
         {list.map((e) => (
-          <EventRow key={e.id} e={e} />
+          <EventRow key={e.id} e={e} reminderMode={reminderMode} />
         ))}
       </div>
     </details>
   );
 }
 
-export default function SetupManager({ events }) {
+export default function SetupManager({ events, reminderMode = 'test' }) {
   return (
     <div>
-      <NewEventPanel events={events} />
+      <NewEventPanel events={events} reminderMode={reminderMode} />
       {events.length === 0 ? (
         <EmptyState kind="missing">No events yet. Use “New event” above to make the first.</EmptyState>
       ) : (
         <div className="space-y-4">
           {groupByYear(events).map((g) => (
-            <YearGroup key={g.year} year={g.year} list={g.list} past={g.past} />
+            <YearGroup key={g.year} year={g.year} list={g.list} past={g.past} reminderMode={reminderMode} />
           ))}
         </div>
       )}

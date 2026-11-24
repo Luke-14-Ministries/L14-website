@@ -4,8 +4,9 @@ import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import SetupManager from './SetupManager';
-import { enrollmentOption, todayInMorristown } from '@/lib/events';
+import { enrollmentOption, todayInMorristown, agreementText } from '@/lib/events';
 import { turnstileConfigured } from '@/lib/turnstile';
+import { reminderMode } from '@/lib/reminders/run';
 
 export const metadata = { title: 'Setup & Manage Events · Staff Admin' };
 
@@ -27,12 +28,49 @@ export default async function SetupPage() {
   const { data: events, error: eventsError } = await supabase
     .from('events')
     .select(
-      'id, name, event_type, starts_on, ends_on, archived_at, hidden_from_families_at, deposit_cents, balance_due_on, family_discount_cents, family_discount_from_person, multi_week_discount_percent, returned_payment_fee_cents, location, published, registration_opens_at, registration_closes_at, capacity, early_registration_ends_on, early_registration_discount_cents, details_set_by_hand_at, event_options ( id, fee_cents, published, participant_role )'
+      'id, name, event_type, starts_on, ends_on, archived_at, hidden_from_families_at, deposit_cents, balance_due_on, family_discount_cents, family_discount_from_person, multi_week_discount_percent, returned_payment_fee_cents, location, volunteer_arrives_on, arrival_note, campus_map_url, waitlist_notice_at, published, registration_opens_at, registration_closes_at, capacity, early_registration_ends_on, early_registration_discount_cents, details_set_by_hand_at, event_options ( id, fee_cents, published, participant_role )'
     )
     .order('starts_on', { ascending: true });
   // Never an empty list for a failed read: "No events yet" would invite
   // creating a duplicate of an event that exists.
   if (eventsError) throw new Error(`Events: ${eventsError.message}`);
+
+  // Who is registered, per event (23 Nov 2026 review): the card says how many
+  // families a rename, a date change or unpublishing would reach. Read with
+  // the staff member's own client, so only for someone with Registration
+  // read; anyone else sees no count rather than a false "0 families".
+  const regCounts = new Map();
+  const canCount = can(staff, 'read:registration');
+  if (canCount) {
+    const { data: regs, error: regsError } = await supabase
+      .from('registrations')
+      .select('event_id, registration_participants ( status )');
+    if (regsError) throw new Error(`Registrations: ${regsError.message}`);
+    for (const r of regs ?? []) {
+      const live = (r.registration_participants ?? []).filter((p) => p.status !== 'cancelled').length;
+      if (!live) continue;
+      const c = regCounts.get(r.event_id) ?? { families: 0, people: 0 };
+      c.families += 1;
+      c.people += live;
+      regCounts.set(r.event_id, c);
+    }
+  }
+
+  // The agreements each event asks families to sign (A4-20), read-only here:
+  // a signature points at one exact version, so new wording is a new version
+  // made by a developer, never an edit. Activity waivers are not listed; they
+  // belong to the activity and live on Activities.
+  const { data: reqs, error: reqsError } = await supabase
+    .from('agreement_requirements')
+    .select('event_id, applies_to, is_required, agreements ( id, key, version, title, body, delivery, external_url, created_at )')
+    .not('event_id', 'is', null);
+  if (reqsError) throw new Error(`Agreements: ${reqsError.message}`);
+  const agreementsByEvent = new Map();
+  for (const q of reqs ?? []) {
+    if (!q.agreements) continue;
+    if (!agreementsByEvent.has(q.event_id)) agreementsByEvent.set(q.event_id, []);
+    agreementsByEvent.get(q.event_id).push(q);
+  }
 
   // "Past" is decided here, on the ministry's calendar day, not in the browser:
   // the year groups below collapse on it, and a server/client disagreement
@@ -71,6 +109,29 @@ export default async function SetupPage() {
     // 0137: saved by hand on Setup at least once (a later week then stops
     // taking the earlier week's details).
     setByHand: Boolean(e.details_set_by_hand_at),
+    // What families read about the event (23 Nov 2026 review): the day
+    // volunteers arrive, the arrival line and the venue map (0184, 0078).
+    volunteerArrivesOn: e.volunteer_arrives_on ?? '',
+    arrivalNote: e.arrival_note ?? '',
+    campusMapUrl: e.campus_map_url ?? '',
+    // Staff's "this event is full" switch (0184).
+    waitlistNoticeAt: e.waitlist_notice_at ?? null,
+    // null = this staff member cannot count (no Registration read).
+    regFamilies: canCount ? regCounts.get(e.id)?.families ?? 0 : null,
+    regPeople: canCount ? regCounts.get(e.id)?.people ?? 0 : null,
+    agreements: (agreementsByEvent.get(e.id) ?? [])
+      .map((q) => ({
+        id: q.agreements.id,
+        title: q.agreements.title,
+        version: q.agreements.version,
+        createdOn: String(q.agreements.created_at ?? '').slice(0, 10),
+        required: q.is_required !== false,
+        appliesTo: q.applies_to,
+        externalUrl: q.agreements.delivery === 'external_link' ? q.agreements.external_url : null,
+        // The words as families read them, {{event}} filled (agreementText).
+        text: agreementText(q.agreements.body, e),
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title)),
   }));
 
   // The weeks of one camp (Lawrence, 27 Oct 2026): events whose names share
@@ -97,14 +158,13 @@ export default async function SetupPage() {
       <AdminPageHeader
         title="Setup &amp; Manage Events"
         intro={
+          // Shortened 23 Nov 2026 (review): each status explains itself under
+          // the dropdown, so the intro only says what the page is for.
           <>
-            Create events and open or close registration for each one. The{' '}
-            <span className="font-semibold">Event status</span> controls each event.{' '}
-            <em>Unpublished</em> keeps it off the public site while staff set it up.{' '}
-            <em>Published</em> puts it on the site. <em>Archived</em> takes a finished event off the
-            site and out of current lists, and keeps its records. Registration open and close times
-            are optional. Leave them blank and a published event takes registrations until you
-            change it. Set them and registration opens and closes on its own.
+            Create events and decide what families see. Each event&rsquo;s{' '}
+            <span className="font-semibold">Event status</span> puts it on the public site, keeps it
+            off while you set it up, or archives it once it&rsquo;s over. Open and close times are
+            optional; registration always closes after the event&rsquo;s last day.
           </>
         }
       />
@@ -126,7 +186,7 @@ export default async function SetupPage() {
           sends.
         </Notice>
       )}
-      <SetupManager events={rows} />
+      <SetupManager events={rows} reminderMode={reminderMode()} />
     </div>
   );
 }
