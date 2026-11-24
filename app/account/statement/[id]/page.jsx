@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import BackLink from '@/components/BackLink';
+import { site } from '@/lib/site';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
 import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
@@ -311,7 +312,7 @@ export default async function MyStatementPage({ params }) {
         Registration payments for camp and other ministry events cover event costs (food, lodging,
         and activities) and are not tax-deductible. Payments marked &ldquo;clearing the bank&rdquo;
         are counted above and finish settling within a few days. Questions? Email
-        registration@luke14ministries.net or call (423) 748-4954.
+        {site.emails.registration} or call {site.phone}.
       </p>
     </div>
   );

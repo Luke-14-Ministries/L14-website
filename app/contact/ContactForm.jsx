@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Turnstile, { turnstileEnabled } from '@/components/Turnstile';
 import { sendContactMessage } from './actions';
+import { site } from '@/lib/site';
+import { telHref } from '@/lib/phone';
 
 const FIELD =
   'w-full rounded-sm border border-neutral-300 px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-brand';
@@ -57,8 +59,8 @@ export default function ContactForm() {
         <p className="mt-2">
           Someone from Luke 14 Ministries will read it and get back to you at{' '}
           <span className="font-semibold">{form.email}</span>. If it is urgent, please call{' '}
-          <a href="tel:+14237484954" className="font-semibold underline">
-            (423) 748-4954
+          <a href={telHref(site.phone)} className="font-semibold underline">
+            {site.phone}
           </a>
           .
         </p>

@@ -1,4 +1,6 @@
 import ContactForm from './ContactForm';
+import { site } from '@/lib/site';
+import { telHref } from '@/lib/phone';
 
 export const metadata = { title: 'Contact' };
 
@@ -41,10 +43,10 @@ export default function ContactPage() {
               <div>
                 <p className="font-bold">Phone</p>
                 <a
-                  href="tel:+14237484954"
+                  href={telHref(site.phone)}
                   className="text-brand font-semibold underline"
                 >
-                  (423) 748-4954
+                  {site.phone}
                 </a>
               </div>
             </div>
