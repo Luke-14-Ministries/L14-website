@@ -3,6 +3,7 @@
 // 11 Nov 2026), unchanged, side by side on a computer and stacked on a phone.
 // A server component: ReviewGroup mounts it only when its row is open.
 
+import Pill, { PILL_SHAPE } from '@/components/Pill';
 import Link from 'next/link';
 import { REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel, planFailingNext } from '@/lib/plans';
 import { statusPill } from '@/lib/format';
@@ -29,9 +30,7 @@ export default function ReviewRowBody({ r, seesMoney, nameOf }) {
                   {p.people?.first_name} {p.people?.last_name}
                 </span>
                 <span className="text-neutral-400">· {p.camp_role?.replace('_', '/')}</span>
-                <span className={`rounded-sm px-1.5 py-0.5 font-semibold ${pill.cls}`}>
-                  {pill.text}
-                </span>
+                <Pill cls={pill.cls}>{pill.text}</Pill>
               </li>
             );
           })}
@@ -40,12 +39,9 @@ export default function ReviewRowBody({ r, seesMoney, nameOf }) {
       <div>
         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400">Money</p>
         {cls ? (
-          <span
-            title={cls.hint}
-            className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
-          >
+          <Pill cls={cls.cls} title={cls.hint}>
             {reviewClassLabel(r.review)}
-          </span>
+          </Pill>
         ) : (
           <span className="text-neutral-400">—</span>
         )}
@@ -68,7 +64,7 @@ export default function ReviewRowBody({ r, seesMoney, nameOf }) {
                 {/* Straight to the conversation (Lawrence, 28 Oct 2026). */}
                 <Link
                   href={`/admin/registrations/${r.id}/#family-messages`}
-                  className="inline-block whitespace-nowrap rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-400 hover:bg-amber-200"
+                  className={`${PILL_SHAPE} bg-amber-100 text-amber-800 ring-1 ring-amber-400 hover:bg-amber-200`}
                 >
                   ✉ Family replied
                   {r.familyRepliedAt ? ` ${dayInMorristown(r.familyRepliedAt)}` : ''}

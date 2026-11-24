@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Pill from '@/components/Pill';
 import FilterChips from '@/components/FilterChips';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
@@ -594,9 +595,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                     {!dueOn ? (
                       <span className="text-neutral-400">—</span>
                     ) : overdue ? (
-                      <span className="rounded-sm bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-800">
-                        Overdue · {formatDueDateShort(dueOn)}
-                      </span>
+                      <Pill tone="hold">Overdue · {formatDueDateShort(dueOn)}</Pill>
                     ) : (
                       <span className={bal > 0 ? '' : 'text-neutral-400'}>{formatDueDateShort(dueOn)}</span>
                     )}
@@ -607,9 +606,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                       if (!rt) return <span className="text-neutral-400">—</span>;
                       if (rt.route === 'none') {
                         return requiresPaymentChoice(r?.events) ? (
-                          <span className="rounded-sm bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800">
-                            Not finished
-                          </span>
+                          <Pill tone="todo">Not finished</Pill>
                         ) : (
                           <span className="text-neutral-400">—</span>
                         );
@@ -635,12 +632,9 @@ export default async function AdminPaymentsPage({ searchParams }) {
                       return (
                         <div className="space-y-1">
                           {c && (
-                            <span
-                              title={c.hint}
-                              className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-0.5 text-xs font-semibold ${c.cls}`}
-                            >
+                            <Pill cls={c.cls} title={c.hint}>
                               {reviewClassLabel(rv)}
-                            </span>
+                            </Pill>
                           )}
                           {credit > 0 && (
                             <span

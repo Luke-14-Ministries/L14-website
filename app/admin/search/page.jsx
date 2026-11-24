@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Pill from '@/components/Pill';
 import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
@@ -180,7 +181,7 @@ export default async function SearchPage({ searchParams }) {
                                   {shortEventName(ev?.name ?? 'Event')}
                                 </Link>
                                 <span className="text-neutral-500">{ROLE_LABEL[r.camp_role] ?? r.camp_role}</span>
-                                <span className={`rounded-sm px-1.5 py-0.5 font-semibold ${pill.cls}`}>{pill.text}</span>
+                                <Pill cls={pill.cls}>{pill.text}</Pill>
                               </li>
                             );
                           })}

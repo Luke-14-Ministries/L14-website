@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Pill from '@/components/Pill';
 import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
@@ -827,12 +828,9 @@ export default async function PersonPage({ params }) {
                     return (
                       <Row label="Review">
                         {cls ? (
-                          <span
-                            title={cls.hint}
-                            className={`rounded-sm px-1.5 py-0.5 text-xs font-semibold ${cls.cls}`}
-                          >
+                          <Pill cls={cls.cls} title={cls.hint}>
                             {reviewClassLabel(rv)}
-                          </span>
+                          </Pill>
                         ) : (
                           <span className="text-neutral-500">—</span>
                         )}

@@ -50,6 +50,7 @@
 // sees it; a person added or renamed since the conversation is named again
 // as waiting on it.
 
+import Pill from '@/components/Pill';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -376,7 +377,7 @@ export default function ReviewCard({
           deposit") would say it twice. */}
       {cls && !scholarshipSlot && (
         <p className="text-sm mb-3">
-          <span className={`inline-block rounded-sm px-2 py-0.5 font-semibold ${cls.cls}`}>{reviewClassLabel(review)}</span>{' '}
+          <Pill cls={cls.cls}>{reviewClassLabel(review)}</Pill>{' '}
           <span className="text-neutral-600">
             {hint}
             {review.deposit_expected_cents > 0 && (
