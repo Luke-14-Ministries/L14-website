@@ -31,9 +31,23 @@ export async function proxy(request) {
 
 export const config = {
   matcher: [
-    // Everything except Next's own build output, the favicon, and image files.
-    // Those are static assets: running an auth check on them would mean an
-    // extra network round-trip to Supabase for every logo on every page.
-    '/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    // 1. Every server action, wherever it is posted. A server action can be
+    //    POSTed to ANY path -- an image path included -- and the two-factor
+    //    gate in updateSession refuses actions from a session still owing its
+    //    code. With only the page matcher below, an action posted to a path
+    //    it skips (it used to skip anything ending .png, .jpg and so on) ran
+    //    with no gate at all (security review, 23 Nov 2026). This entry
+    //    catches every request carrying a Next-Action header, whatever its
+    //    path.
+    { source: '/:path*', has: [{ type: 'header', key: 'next-action' }] },
+    // 2. Pages. Skipped: Next's own build output, the site icons, robots.txt,
+    //    security.txt, the photos under images/ and the PDFs under resources/
+    //    (never the /resources/ page itself). Those are static files: an auth
+    //    check on them is an extra round-trip to Supabase for every logo.
+    //    Until 23 Nov 2026 this skipped ANY path ending in an image extension,
+    //    so /admin/people/x.png was never sent to the sign-in screen, and the
+    //    page below it rendered without the gate's redirect. Now only the real
+    //    static folders are skipped, by name.
+    '/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|apple-icon\\.png|robots\\.txt|\\.well-known/|images/|resources/[^/]+\\.pdf).*)',
   ],
 };
