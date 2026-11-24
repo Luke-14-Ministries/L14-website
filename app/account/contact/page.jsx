@@ -4,7 +4,9 @@ import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import ContactManager from './ContactManager';
 import BackLink, { TITLE_ROW } from '@/components/BackLink';
 
-export const metadata = { title: 'My Account Details' };
+// One name per account page, in sentence case, the same in the heading, the
+// dashboard's link and the browser tab (23 Nov 2026).
+export const metadata = { title: 'My account details' };
 
 // The person's own account details: name, personal phone and sign-in email. Family/household contact info (the address and phone camp
 // uses) lives under Manage Household -- this page links there.
@@ -15,7 +17,7 @@ export default async function ContactPage() {
   const supabase = await createClient();
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('first_name, last_name, phone, sms_opt_in')
+    .select('first_name, last_name, phone')
     .eq('id', user.id)
     .maybeSingle();
   // CLAUDE.md: never swallow a query error -- here it would show empty boxes
@@ -37,7 +39,7 @@ export default async function ContactPage() {
     <section className="bg-neutral-50 py-12 min-h-[60vh]">
       <div className="container-site max-w-2xl mx-auto">
         <div className={`${TITLE_ROW} mb-2`}>
-          <h1 className="text-3xl font-bold">My Account Details</h1>
+          <h1 className="text-3xl font-bold">My account details</h1>
           <BackLink />
         </div>
         <p className="text-neutral-600 mb-3">
@@ -48,7 +50,7 @@ export default async function ContactPage() {
           email{householdEmail ? <>, <span className="font-semibold">{householdEmail}</span></> : null}, not
           necessarily the one you sign in with. Change it, and the household phone and address, on{' '}
           <Link href="/account/household/" className="text-brand font-semibold underline">
-            Manage Household
+            Manage household
           </Link>
           .
         </p>
@@ -59,7 +61,6 @@ export default async function ContactPage() {
             first_name: profile?.first_name ?? '',
             last_name: profile?.last_name ?? '',
             phone: profile?.phone ?? '',
-            sms_opt_in: profile?.sms_opt_in === true,
           }}
         />
       </div>

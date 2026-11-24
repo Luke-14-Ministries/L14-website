@@ -1,12 +1,13 @@
 'use server';
 
-// My Account Details (was My Contact Info & Preferences). Everything here is the signed-in user's own
+// My account details (was My Contact Info & Preferences). Everything here is the signed-in user's own
 // record: profiles_update_self RLS allows only their row, and the login-email
 // change goes through Supabase Auth's own confirmation flow.
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { familyError } from '@/lib/dbErrors';
+import { myHouseholdIds } from '@/lib/myHousehold';
 
 const clean = (v) => {
   const s = String(v ?? '').trim();
@@ -20,19 +21,69 @@ export async function updateMyProfile(form) {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Your session has expired. Please log in again.' };
 
+  const first = clean(form.first_name);
+  const last = clean(form.last_name);
+  // sms_opt_in is no longer sent (23 Nov 2026: the "OK to text me" tick is
+  // hidden until texting families is planned), so it is left out of the
+  // update and the two opt-ins already saved stay as they are.
   const { error } = await supabase
     .from('profiles')
-    .update({
-      first_name: clean(form.first_name),
-      last_name: clean(form.last_name),
-      phone: clean(form.phone),
-      sms_opt_in: form.sms_opt_in === 'on' || form.sms_opt_in === true,
-    })
+    .update({ first_name: first, last_name: last, phone: clean(form.phone) })
     .eq('id', user.id);
   if (error) return { ok: false, error: familyError('updateMyProfile', error, 'Your details could not be saved.') };
+
+  // The caller's own card on Manage household follows a corrected name
+  // (23 Nov 2026), so the spelling reaches rosters and nametags. One
+  // direction only, and only their OWN person row (people.profile_id = this
+  // login) in a household they belong to: scoped by membership explicitly,
+  // never by RLS alone (staff RLS reads every family). Blank names never
+  // overwrite the card, and a person on a registration keeps their name, the
+  // same lock as updatePersonInfo (rosters and signed agreements use it).
+  let note = null;
+  if (first || last) {
+    const { ids, error: idsError } = await myHouseholdIds(supabase);
+    if (idsError) return { ok: false, error: `Your details were saved, but your household card was not: ${idsError}` };
+    if (ids.length > 0) {
+      const { data: me, error: meError } = await supabase
+        .from('people')
+        .select('id, household_id, first_name, last_name')
+        .eq('profile_id', user.id)
+        .in('household_id', ids)
+        .limit(1)
+        .maybeSingle();
+      if (meError) {
+        return { ok: false, error: familyError('updateMyProfile person', meError, 'Your details were saved, but your household card could not be read.') };
+      }
+      const changed = me && ((first && first !== me.first_name) || (last && last !== me.last_name));
+      if (changed) {
+        const { count, error: countError } = await supabase
+          .from('registration_participants')
+          .select('id', { count: 'exact', head: true })
+          .eq('person_id', me.id)
+          .neq('status', 'cancelled');
+        if (countError) {
+          return { ok: false, error: familyError('updateMyProfile registrations', countError, 'Your details were saved, but your registrations could not be read.') };
+        }
+        if ((count ?? 0) > 0) {
+          note =
+            'Saved. Your name on camp registrations stays as it was, because rosters and signed agreements already use it. Email the ministry and staff can correct it.';
+        } else {
+          const { error: personError } = await supabase
+            .from('people')
+            .update({ first_name: first ?? undefined, last_name: last ?? undefined })
+            .eq('id', me.id)
+            .eq('household_id', me.household_id);
+          if (personError) {
+            return { ok: false, error: familyError('updateMyProfile person', personError, 'Your details were saved, but your household card was not.') };
+          }
+        }
+      }
+    }
+  }
   revalidatePath('/account/contact');
   revalidatePath('/account/dashboard');
-  return { ok: true };
+  revalidatePath('/account/household');
+  return note ? { ok: true, message: note } : { ok: true };
 }
 
 // Changing the LOGIN email is an auth operation: Supabase emails a

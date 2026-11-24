@@ -49,7 +49,7 @@ export default async function ManageHouseholdPage() {
       <section className="bg-neutral-50 py-12 min-h-[60vh]">
         <div className="container-site max-w-3xl mx-auto">
           <div className={TITLE_ROW}>
-            <h1 className="text-3xl font-bold">Manage Household</h1>
+            <h1 className="text-3xl font-bold">Manage household</h1>
             <BackLink />
           </div>
           <p className="mt-2 text-neutral-700">

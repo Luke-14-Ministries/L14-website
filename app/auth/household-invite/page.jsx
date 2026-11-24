@@ -46,7 +46,7 @@ export default async function HouseholdInvitePage({ searchParams }) {
     body =
       invite.status === 'accepted'
         ? 'If you accepted it, the household is on your dashboard.'
-        : 'Ask your family to send a new one from Manage Household.';
+        : 'Ask your family to send a new one from Manage household.';
     action = (
       <Link href="/account/dashboard/" className="btn-primary inline-block">
         Go to my dashboard

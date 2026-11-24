@@ -67,7 +67,7 @@ export default async function EmailChangedPage({ searchParams }) {
           <p className="text-neutral-700 mb-6">{body}</p>
           <p className="text-sm text-neutral-600 mb-6">
             This does not change where camp email goes. That is your household&rsquo;s contact
-            email, on Manage Household.
+            email, on Manage household.
           </p>
           <Link href={user ? '/account/dashboard/' : '/account/'} className="btn-primary w-full">
             {user ? 'Go to my dashboard' : 'Log in'}

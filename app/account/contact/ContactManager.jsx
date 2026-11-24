@@ -64,8 +64,11 @@ export default function ContactManager({ email, profile }) {
         }}
       >
         <h2 className="text-lg font-bold mb-1">My name &amp; phone</h2>
+        {/* Says where a name change goes (23 Nov 2026): updateMyProfile
+            copies it to your own card on Manage household. */}
         <p className="text-sm text-neutral-500 mb-4">
-          How your name appears across the site, and your own cell number.
+          How your name appears across the site. A change here also updates your own card on
+          Manage household.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
@@ -76,18 +79,16 @@ export default function ContactManager({ email, profile }) {
             <span className="block text-sm font-semibold mb-1">Last name</span>
             <input name="last_name" defaultValue={profile.last_name} className={inputCls} />
           </label>
+          {/* The "OK to text me" tick is hidden (23 Nov 2026): the site
+              sends no texts, so it promised something that never happens.
+              The column and the opt-ins already saved are untouched. */}
           <label className="block">
             <span className="block text-sm font-semibold mb-1">My phone</span>
             <input name="phone" type="tel" defaultValue={profile.phone} className={inputCls} />
-          </label>
-          <label className="flex items-end gap-2 pb-2">
-            <input
-              type="checkbox"
-              name="sms_opt_in"
-              defaultChecked={profile.sms_opt_in}
-              className="h-4 w-4"
-            />
-            <span className="text-sm">OK to text me at this number</span>
+            <span className="mt-1 block text-xs text-neutral-500">
+              Your own cell, for camp staff to reach you directly. Your household&rsquo;s main phone
+              is on Manage household.
+            </span>
           </label>
         </div>
         <div className="mt-4 flex items-center gap-3">
@@ -116,7 +117,7 @@ export default function ContactManager({ email, profile }) {
           changes until both are pressed. This does not change where camp email goes: that is your household&rsquo;s contact
           email, changed on{' '}
           <Link href="/account/household/" className="text-brand underline">
-            Manage Household
+            Manage household
           </Link>
           .
         </p>

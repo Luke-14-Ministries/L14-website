@@ -88,7 +88,7 @@ async function signAgreementIfNeeded(supabase, user, registrationId, input) {
       : '';
     const norm = (v) => (v || '').trim().toLowerCase().replace(/\s+/g, ' ');
     if (contactFull.trim() && norm(signerName) !== norm(contactFull)) {
-      return `The agreement has to be signed by ${contactFull.trim()}, the primary contact for your family. Change the primary contact under Manage Household if someone else is signing.`;
+      return `The agreement has to be signed by ${contactFull.trim()}, the primary contact for your family. Change the primary contact under Manage household if someone else is signing.`;
     }
 
     const { data: existingSig, error: existingSigError } = await supabase

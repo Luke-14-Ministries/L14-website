@@ -1546,7 +1546,7 @@ export default function FamilyWizard({
             a household ended up called "Victoria" with only Lawrence in it. */}
         <p className="mt-1.5 text-sm text-neutral-500">
           The primary contact is added to your household, whether or not they&rsquo;re
-          attending. You can change who it is later on Manage Household.
+          attending. You can change who it is later on Manage household.
         </p>
         <label className={label} htmlFor="fw-email">Email</label>
         <input
