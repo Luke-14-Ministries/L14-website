@@ -513,7 +513,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
 
       {inactiveMembers.length > 0 && (
         <div className="mt-6">
-          <h3 className="font-semibold text-neutral-700 mb-2">Deactivated</h3>
+          <h3 className="mb-2 text-lg font-bold">Deactivated</h3>
           <Table rows={view(inactiveMembers)} {...tableProps} />
         </div>
       )}

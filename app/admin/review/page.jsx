@@ -428,7 +428,7 @@ export default async function ReviewQueuePage({ searchParams }) {
 
       {groups.map((g) => (
         <section key={g.event?.id ?? 'none'} className="mb-8">
-          <h3 className="font-semibold text-neutral-700 mb-2">
+          <h3 className="mb-2 text-lg font-bold">
             {g.event?.name ?? 'No event'}
             <span className="ml-2 text-sm font-normal text-neutral-500">
               {g.rows.length} {g.rows.length === 1 ? 'family' : 'families'}

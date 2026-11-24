@@ -131,7 +131,7 @@ export default async function NewsletterPage() {
         </div>
 
         <div className="card p-4">
-          <h3 className="font-semibold text-neutral-700 mb-2">Last 30 days</h3>
+          <h3 className="mb-2 text-lg font-bold">Last 30 days</h3>
           {(recent ?? []).length === 0 ? (
             <p className="text-sm text-neutral-500">No changes.</p>
           ) : (

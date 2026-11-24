@@ -3,7 +3,7 @@ import Pill from '@/components/Pill';
 import { redirect, notFound } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { allergyPill, statusPill, telHref, formatPhone, clearancePill } from '@/lib/format';
+import { allergyPill, statusPill, telHref, formatPhone, clearancePill, PILL_TONE_WORDS } from '@/lib/format';
 import PersonDetails from './PersonDetails';
 import AddToRegistration from './AddToRegistration';
 import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/support';
@@ -62,7 +62,9 @@ function ageAt(dob, onDate) {
 function Section({ title, children, note }) {
   return (
     <div className="card p-5">
-      <h2 className="font-semibold text-brand-dark">{title}</h2>
+      {/* A card title: h3, bold, the page's own colour (23 Nov 2026, design
+          scheme; the page title is the h2, and teal is for links). */}
+      <h3 className="font-bold">{title}</h3>
       {note && <p className="mt-0.5 text-xs text-neutral-500">{note}</p>}
       <div className="mt-3 text-sm">{children}</div>
     </div>
@@ -138,7 +140,7 @@ function AnswerYesNo({ value, saved, tone }) {
 function AnswerGroup({ title, hint, children }) {
   return (
     <div className="mt-6 first:mt-0">
-      <h3 className="border-b border-neutral-200 pb-1 font-semibold">{title}</h3>
+      <h4 className="border-b border-neutral-200 pb-1 font-semibold">{title}</h4>
       {hint && <p className="mt-0.5 text-xs text-neutral-500">{hint}</p>}
       <dl>{children}</dl>
     </div>
@@ -977,9 +979,11 @@ export default async function PersonPage({ params }) {
       </p>
       <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
         <span className="text-neutral-500">Background check:</span>
-        <span title={checkPill.title} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${checkPill.cls}`}>
+        {/* The colour key rides in the tooltip (23 Nov 2026), as it does
+            under Background Checks' intro. */}
+        <Pill cls={checkPill.cls} title={`${checkPill.title} Colors: ${PILL_TONE_WORDS.map(([, w]) => w).join('; ')}.`}>
           {checkPill.text}
-        </span>
+        </Pill>
         {can(staff, 'background_checks') && checkPill.key !== 'minor' && (
           // A plain link: next/link doubled the # part (14 Nov 2026).
           <a href={`/admin/background-checks/#check-${person.id}`} className="text-xs text-brand underline">

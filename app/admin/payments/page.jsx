@@ -372,7 +372,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
           files follow that filter, so the row sits with what it depends on. */}
       <ExportBar eventFilter={eventFilter} paystate={paystate} defaultFrom={monthStart} defaultTo={dueToday} />
 
-      <h3 className="font-semibold text-neutral-700 mb-2">
+      <h3 className="mb-2 text-lg font-bold">
         By event <span className="font-normal text-sm text-neutral-500">· {scopeLabel}</span>
       </h3>
       {events.size === 0 && (
@@ -408,15 +408,16 @@ export default async function AdminPaymentsPage({ searchParams }) {
 
       {/* Above the table (Lawrence, 26 Oct 2026): recording a check is the
           everyday job here, and the table is long. */}
-      <h3 className="font-semibold text-neutral-700 mb-2">Record a payment &amp; recent activity</h3>
+      <h3 className="mb-2 text-lg font-bold">Record a payment &amp; recent activity</h3>
       <div className="grid items-start gap-6 lg:grid-cols-2 mb-8">
-        <FoldCard title="Record a check or cash payment">
+        <FoldCard as="h4" title="Record a check or cash payment">
           <RecordPaymentForm registrations={regOptions} />
         </FoldCard>
 
         {/* The status counts sit in the title, so they read with the card
             closed (Lawrence, 26 Oct 2026). */}
         <FoldCard
+          as="h4"
           title="Recent activity"
           badges={recentCounts.map(([status, n]) => (
             <span
@@ -457,7 +458,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
         </FoldCard>
       </div>
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
-        <h3 className="font-semibold text-neutral-700">Balances by family</h3>
+        <h3 className="text-lg font-bold">Balances by family</h3>
         {/* Two plain links (23 Nov 2026 review): this row was styled as tabs,
             with "Balances" underlined, but the other two are separate pages,
             not tabs of this one. The photo and Creed flags that used to show

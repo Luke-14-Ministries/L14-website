@@ -199,7 +199,7 @@ export default async function SearchPage({ searchParams }) {
 
       {households.length > 0 && (
         <>
-          <h3 className="font-semibold text-neutral-700 mb-2">Families</h3>
+          <h3 className="mb-2 text-lg font-bold">Families</h3>
           <ul className="space-y-1 text-sm">
             {households.map((h) => (
               <li key={h.id} className="rounded-sm border border-neutral-200 bg-white px-3 py-2">
