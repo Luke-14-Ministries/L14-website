@@ -111,12 +111,15 @@ export default function RecordGiftForm() {
           </select>
         </div>
         <div>
-          <label className="field-label whitespace-nowrap">Date received (blank = today)</label>
+          {/* Label and hint apart (23 Nov 2026). */}
+          <label className="field-label whitespace-nowrap">Date received</label>
           <input type="date" className="field" value={f.receivedOn} onChange={set('receivedOn')} />
+          <p className="mt-1 text-xs text-neutral-500">Leave blank for today.</p>
         </div>
         <div className="sm:col-span-2">
-          <label className="field-label whitespace-nowrap">Note (check number, in memory of, etc.)</label>
+          <label className="field-label whitespace-nowrap">Note</label>
           <input className="field" value={f.note} onChange={set('note')} />
+          <p className="mt-1 text-xs text-neutral-500">The check number, or who the gift is in memory of.</p>
         </div>
       </div>
 

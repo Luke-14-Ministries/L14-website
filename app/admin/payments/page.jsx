@@ -11,7 +11,7 @@ import RecordPaymentForm from './RecordPaymentForm';
 import FoldCard from '@/components/FoldCard';
 import ExportBar from './ExportBar';
 import { requiresPaymentChoice, ROUTE_LABEL, SCHEDULE_LABEL, REVIEW_CLASS, REVIEW_FLAG, reviewClassLabel, reviewClassInfo } from '@/lib/plans';
-import { isStaleRefund, STALE_REFUND_DAYS, CLEARING_PILL } from '@/lib/payments';
+import { isStaleRefund, STALE_REFUND_DAYS, paymentStatusPill } from '@/lib/payments';
 import RecheckRefund from './RecheckRefund';
 
 import ResizableTable from '@/components/ResizableTable';
@@ -25,13 +25,6 @@ const METHOD_LABEL = {
   check: 'Check',
   cash: 'Cash',
   other: 'Other',
-};
-const STATUS_CLS = {
-  pending: 'bg-neutral-100 text-neutral-600',
-  processing: CLEARING_PILL,
-  succeeded: 'bg-green-100 text-green-800',
-  failed: 'bg-red-100 text-red-800',
-  refunded: 'bg-neutral-200 text-neutral-600',
 };
 
 // Event money only (Camp Celebrate, retreats, dinners...). Donations live on the separate Giving page, behind their
@@ -202,7 +195,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
     const r = regById.get(b.registration_id);
     return {
       id: b.registration_id,
-      label: `${r?.households?.display_name ?? 'Household'}: ${eventNameWithYear(r?.events)} (balance ${money(b.balance_cents)})`,
+      label: `${r?.households?.display_name ?? 'Family'}: ${eventNameWithYear(r?.events)} (balance ${money(b.balance_cents)})`,
     };
   });
 
@@ -386,11 +379,11 @@ export default async function AdminPaymentsPage({ searchParams }) {
           <div key={key} className="card p-5">
             <h4 className="font-bold mb-2">{cardHeading(e)}</h4>
             <dl className="text-sm space-y-1">
-              <div className="flex justify-between"><dt className="text-neutral-500">Fees (net of assistance)</dt><dd className="font-semibold">{money(e.fees)}</dd></div>
+              <div className="flex justify-between"><dt className="text-neutral-500">Fees after scholarships and discounts</dt><dd className="font-semibold">{money(e.fees)}</dd></div>
               {e.assist > 0 && (
                 <div className="flex justify-between"><dt className="text-neutral-500">Scholarships &amp; discounts</dt><dd className="font-semibold text-green-700">−{money(e.assist)}</dd></div>
               )}
-              <div className="flex justify-between"><dt className="text-neutral-500">Paid / clearing</dt><dd className="font-semibold text-green-700">{money(e.paid)}</dd></div>
+              <div className="flex justify-between"><dt className="text-neutral-500">Paid (including bank payments still clearing)</dt><dd className="font-semibold text-green-700">{money(e.paid)}</dd></div>
               <div className="flex justify-between"><dt className="text-neutral-500">Outstanding</dt><dd className="font-semibold text-amber-700">{money(e.outstanding)}</dd></div>
             </dl>
           </div>
@@ -422,9 +415,11 @@ export default async function AdminPaymentsPage({ searchParams }) {
           badges={recentCounts.map(([status, n]) => (
             <span
               key={status}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLS[status] ?? 'bg-neutral-100 text-neutral-600'}`}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${paymentStatusPill(status).cls}`}
             >
-              {n} {status}
+              {/* The shared words (lib/payments.js, 23 Nov 2026), not the
+                  stored "succeeded" / "processing". */}
+              {n} {paymentStatusPill(status).text.toLowerCase()}
             </span>
           ))}
         >
@@ -437,7 +432,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                 return (
                   <li key={i} className="py-2 flex flex-wrap items-center justify-between gap-2">
                     <span className="min-w-0">
-                      <span className="font-medium">{r?.households?.display_name ?? 'Household'}</span>{' '}
+                      <span className="font-medium">{r?.households?.display_name ?? 'Family'}</span>{' '}
                       <span className="text-neutral-500">
                         · {formatDay(p.received_on ?? p.created_at)} · {METHOD_LABEL[p.method] ?? p.method}
                       </span>
@@ -447,8 +442,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
                         <span className="text-neutral-500"> + {money(p.fee_cover_cents)} fee cover</span>
                       )}
                     </span>
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLS[p.status] ?? ''}`}>
-                      {p.status}
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${paymentStatusPill(p.status).cls}`}>
+                      {paymentStatusPill(p.status).text}
                     </span>
                   </li>
                 );
@@ -532,7 +527,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
         <table className="w-full text-left text-sm">
           <thead className="bg-neutral-50 text-neutral-500">
             <tr>
-              <th className="px-4 py-2 font-semibold">Household</th>
+              <th className="px-4 py-2 font-semibold">Family</th>
               <th className="px-4 py-2 font-semibold">Event</th>
               <th className="px-4 py-2 font-semibold text-right">Fees</th>
               <th className="px-4 py-2 font-semibold text-right">Scholarship / discount</th>
@@ -557,7 +552,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                 <tr key={b.registration_id} className="border-t border-neutral-100">
                   <td className="px-4 py-2">
                     <Link href={`/admin/registrations/${b.registration_id}`} className="text-brand underline font-medium">
-                      {r?.households?.display_name ?? 'Household'}
+                      {r?.households?.display_name ?? 'Family'}
                     </Link>
                     {countByReg.get(b.registration_id) > 0 && (
                       <span className="block text-xs text-neutral-500">

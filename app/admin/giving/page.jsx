@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import RecordGiftForm from './RecordGiftForm';
 import { dayInMorristown, formatDay } from '@/lib/events';
 import GivingExportBar from './GivingExportBar';
-import { CLEARING_PILL } from '@/lib/payments';
+import { paymentStatusPill } from '@/lib/payments';
 
 export const metadata = { title: 'Giving · Staff Admin' };
 
@@ -17,13 +17,6 @@ const METHOD_LABEL = {
   check: 'Check',
   cash: 'Cash',
   other: 'Other',
-};
-const STATUS_CLS = {
-  pending: 'bg-neutral-100 text-neutral-600',
-  processing: CLEARING_PILL,
-  succeeded: 'bg-green-100 text-green-800',
-  failed: 'bg-red-100 text-red-800',
-  refunded: 'bg-neutral-200 text-neutral-600',
 };
 
 // Donor giving records -- deliberately a SEPARATE page from camp payments,
@@ -197,8 +190,8 @@ export default async function AdminGivingPage({ searchParams }) {
                     <span className="font-semibold">{money(g.amount_cents)}</span>
                     <span className="text-neutral-500"> · {METHOD_LABEL[g.method] ?? g.method}</span>
                   </span>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLS[g.status] ?? ''}`}>
-                    {g.status}
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${paymentStatusPill(g.status).cls}`}>
+                    {paymentStatusPill(g.status).text}
                   </span>
                 </li>
               ))}
