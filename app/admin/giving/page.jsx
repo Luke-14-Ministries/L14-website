@@ -3,7 +3,7 @@ import AdminPageHeader from '@/components/AdminPageHeader';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import RecordGiftForm from './RecordGiftForm';
-import { dayInMorristown } from '@/lib/events';
+import { dayInMorristown, formatDay } from '@/lib/events';
 import GivingExportBar from './GivingExportBar';
 import { CLEARING_PILL } from '@/lib/payments';
 
@@ -192,7 +192,7 @@ export default async function AdminGivingPage({ searchParams }) {
                   <span className="min-w-0">
                     <span className="font-medium">{g.donor_name || g.email || 'Anonymous'}</span>{' '}
                     <span className="text-neutral-500">
-                      · {giftDate(g)} · {g.fund}
+                      · {formatDay(giftDate(g))} · {g.fund}
                     </span>
                     <br />
                     <span className="font-semibold">{money(g.amount_cents)}</span>

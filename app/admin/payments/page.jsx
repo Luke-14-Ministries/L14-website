@@ -5,7 +5,7 @@ import AdminPageHeader from '@/components/AdminPageHeader';
 import { redirect } from 'next/navigation';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import { balanceDueOn, formatDueDateShort, todayInMorristown, dayInMorristown, inPaymentsScope, eventNameWithYear, eventScopeLabel } from '@/lib/events';
+import { balanceDueOn, formatDueDateShort, todayInMorristown, formatDay, inPaymentsScope, eventNameWithYear, eventScopeLabel } from '@/lib/events';
 import EventFilter from '@/components/EventFilter';
 import RecordPaymentForm from './RecordPaymentForm';
 import FoldCard from '@/components/FoldCard';
@@ -335,7 +335,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                   <Link href={`/admin/registrations/${r.registration_id}/#payments`} className="font-semibold underline">
                     {reg?.households?.display_name ?? 'A family'}
                   </Link>{' '}
-                  · {money(r.amount_cents)} · pending since {dayInMorristown(r.created_at)}
+                  · {money(r.amount_cents)} · pending since {formatDay(r.created_at)}
                   {reg?.events?.name ? ` · ${reg.events.name}` : ''}
                   {can(staff, 'write:payments') && <RecheckRefund refundId={r.id} />}
                 </li>
@@ -439,7 +439,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
                     <span className="min-w-0">
                       <span className="font-medium">{r?.households?.display_name ?? 'Household'}</span>{' '}
                       <span className="text-neutral-500">
-                        · {dayInMorristown(p.received_on ?? p.created_at)} · {METHOD_LABEL[p.method] ?? p.method}
+                        · {formatDay(p.received_on ?? p.created_at)} · {METHOD_LABEL[p.method] ?? p.method}
                       </span>
                       <br />
                       <span className="font-semibold">{money(p.amount_cents)}</span>

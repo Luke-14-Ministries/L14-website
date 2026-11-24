@@ -77,6 +77,7 @@ export default async function PrintRostersPage({ searchParams }) {
   return (
     <div className="mx-auto max-w-3xl p-8 print-sheet bg-white print:text-[12px]">
       <PrintSheetHeader
+        className="mb-6"
         title="Rosters"
         back={{ href: `/admin/rosters/${fEvent ? `?event=${fEvent}` : ''}`, label: 'Back to Rosters' }}
       />

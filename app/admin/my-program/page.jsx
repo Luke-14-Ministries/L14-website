@@ -10,6 +10,7 @@ import {
   programRosterRows,
 } from '@/lib/programs';
 import FlagsNote from './FlagsNote';
+import { eventDateRange } from '@/lib/events';
 import ProgramRosterTable from './ProgramRosterTable';
 
 export const metadata = { title: 'My Program' };
@@ -68,7 +69,7 @@ export default async function MyProgramPage({ searchParams }) {
         intro={
           <>
             {current.eventName}
-            {current.startsOn ? ` · from ${current.startsOn}` : ''} · {rows.length}{' '}
+            {current.startsOn ? ` · ${eventDateRange(current.startsOn, current.endsOn)}` : ''} · {rows.length}{' '}
             {rows.length === 1 ? 'person' : 'people'} in your program.
           </>
         }

@@ -2,7 +2,7 @@ import BackLink, { TITLE_ROW } from '@/components/BackLink';
 import { redirect } from 'next/navigation';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
-import { agreementText } from '@/lib/events';
+import { agreementText, formatDay } from '@/lib/events';
 
 export const metadata = { title: 'My Agreements' };
 
@@ -20,14 +20,18 @@ export const metadata = { title: 'My Agreements' };
 // Saving a copy is the browser's print-to-PDF, which every phone and desktop
 // has, rather than a generated file we would then have to store and secure.
 
+// Ministry time, said as such (23 Nov 2026, review): the server runs on UTC,
+// so a signature at 9pm in Morristown printed as the next morning.
+const TZ = 'America/New_York';
 const fmtDateTime = (iso) =>
-  new Date(iso).toLocaleString('en-US', {
+  `${new Date(iso).toLocaleString('en-US', {
+    timeZone: TZ,
     month: 'long',
     day: 'numeric',
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-  });
+  })} ET`;
 
 const SIGNER_ROLE_LABEL = {
   // "for themselves" was a mis-caption, not just terse: the option it
@@ -177,6 +181,7 @@ export default async function AgreementsPage() {
           <p className="text-sm text-neutral-600">
             Account: {user.email} · Printed{' '}
             {new Date().toLocaleDateString('en-US', {
+              timeZone: TZ,
               month: 'long',
               day: 'numeric',
               year: 'numeric',
@@ -231,6 +236,7 @@ export default async function AgreementsPage() {
                                   `${x.people.first_name} ${x.people.last_name} (${
                                     PERSON_ROLE_LABEL[x.signer_role] ?? x.signer_role
                                   }, ${new Date(x.signed_at).toLocaleDateString('en-US', {
+                                    timeZone: TZ,
                                     month: 'short',
                                     day: 'numeric',
                                     year: 'numeric',
@@ -270,7 +276,7 @@ export default async function AgreementsPage() {
                     {c.granted ? 'Yes' : 'No'}
                   </span>
                   <span className="text-xs text-neutral-400">
-                    recorded {new Date(c.recorded_at).toLocaleDateString('en-US')}
+                    recorded {formatDay(c.recorded_at)}
                   </span>
                 </li>
               ))}

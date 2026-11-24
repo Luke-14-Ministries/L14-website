@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { reviewVolunteerApplication } from './actions';
 import ClearanceEditor from '@/components/ClearanceEditor';
 import { clearancePill, isMinor, formatPhone, CHECK_TONE } from '@/lib/format';
+import { formatDay, eventDateRange } from '@/lib/events';
 
 // One pill per volunteer (Lawrence, 4 Nov 2026). Since 0152 the place at
 // camp and the application are one decision, so the two pills that named
@@ -268,8 +269,8 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
                 {toDecide
                   ? 'Waiting on your decision. Read the application below, then:'
                   : app.status === 'approved'
-                    ? `Approved${app.reviewed_at ? ` ${new Date(app.reviewed_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}` : ''}. Change it:`
-                    : `Declined${app.reviewed_at ? ` ${new Date(app.reviewed_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' })}` : ''}. Change it:`}
+                    ? `Approved${app.reviewed_at ? ` ${formatDay(app.reviewed_at)}` : ''}. Change it:`
+                    : `Declined${app.reviewed_at ? ` ${formatDay(app.reviewed_at)}` : ''}. Change it:`}
               </span>
               {(toDecide || app.status === 'declined' || row.participantStatus === 'waitlisted') && (
                 <button
@@ -306,7 +307,7 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
                 <dd>
                   {age != null ? `${age}` : 'unknown (no birth date on file)'}
                   {person?.date_of_birth && (
-                    <span className="text-neutral-500"> (b. {person.date_of_birth})</span>
+                    <span className="text-neutral-500"> (born {formatDay(person.date_of_birth)})</span>
                   )}
                 </dd>
               </div>
@@ -365,7 +366,7 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
                   <dd>
                     {age != null ? `${age}` : 'unknown (no birth date on file)'}
                     {person?.date_of_birth && (
-                      <span className="text-neutral-500"> (b. {person.date_of_birth})</span>
+                      <span className="text-neutral-500"> (born {formatDay(person.date_of_birth)})</span>
                     )}
                   </dd>
                 </div>
@@ -511,7 +512,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
             {g.event.starts_on && (
               <span className="font-normal text-sm text-neutral-500">
                 {' '}
-                ({g.event.starts_on} – {g.event.ends_on})
+                ({eventDateRange(g.event.starts_on, g.event.ends_on)})
               </span>
             )}
           </h3>

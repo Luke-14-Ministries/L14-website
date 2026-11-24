@@ -3,7 +3,7 @@ import BackLink from '@/components/BackLink';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
-import { dayInMorristown } from '@/lib/events';
+import { dayInMorristown, formatDay } from '@/lib/events';
 import GivingStatementSheet, { statementTitle } from '@/components/GivingStatementSheet';
 
 export const metadata = { title: 'Giving Statements · Staff Admin' };
@@ -89,7 +89,7 @@ export default async function GivingStatementsPage({ searchParams }) {
           <button type="submit" className="btn-primary btn-sm">Apply</button>
         </form>
         <p className="text-sm text-neutral-500">
-          {donorList.length} {donorList.length === 1 ? 'donor' : 'donors'} · {from} to {to} · each
+          {donorList.length} {donorList.length === 1 ? 'donor' : 'donors'} · {formatDay(from)} to {formatDay(to)} · each
           statement prints on its own page · settled gifts only.
         </p>
       </div>

@@ -5,6 +5,7 @@
 // say different things. No hooks: it renders on the server.
 
 import { dollars } from '@/lib/payments';
+import { formatDay } from '@/lib/events';
 
 const METHOD_LABEL = {
   card: 'Card',
@@ -80,7 +81,7 @@ export default function GivingStatementSheet({ yearTitle, rangeLine, name, email
         <tbody>
           {gifts.map((g, i) => (
             <tr key={i} className="border-b border-neutral-200">
-              <td className="py-1 pr-3">{g.date}</td>
+              <td className="py-1 pr-3 whitespace-nowrap">{formatDay(g.date)}</td>
               <td className="py-1 pr-3">{g.fund}</td>
               <td className="py-1 pr-3">{METHOD_LABEL[g.method] ?? g.method}</td>
               <td className="py-1 text-right">{dollars(g.amount_cents)}</td>

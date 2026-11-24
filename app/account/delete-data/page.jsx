@@ -59,7 +59,7 @@ export default async function DeleteDataPage() {
           {requests.map((r) => (
             <li key={r.id} className="px-4 py-3">
               <span className="font-semibold">{SCOPE[r.scope]}</span> · requested{' '}
-              {new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} ·{' '}
+              {new Date(r.created_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'long', day: 'numeric', year: 'numeric' })} ·{' '}
               {STATUS[r.status]}
               {askedBy.has(r.requested_by) && <span className="text-neutral-600"> · asked by {askedBy.get(r.requested_by)}</span>}
               {r.staff_note && <span className="block text-neutral-600">{r.staff_note}</span>}

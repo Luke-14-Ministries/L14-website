@@ -1,10 +1,9 @@
 import { notFound, redirect } from 'next/navigation';
-import BackLink from '@/components/BackLink';
 import { site } from '@/lib/site';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
-import PrintButton from './PrintButton';
-import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
+import PrintSheetHeader from '@/components/PrintSheetHeader';
+import { balanceDueOn, formatDueDateShort, formatDay, eventDateRange } from '@/lib/events';
 import FeeLines from '@/components/FeeLines';
 import { ROLE_LABEL } from '@/lib/roles';
 
@@ -79,7 +78,9 @@ export default async function FamilyStatementPage({ params }) {
   const goodPays = (pays ?? []).filter(
     (p) => p.status === 'succeeded' || p.status === 'processing' || p.status === 'refunded'
   );
+  // Morristown's day, not the server's (UTC turns over at 8pm ET).
   const today = new Date().toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -87,14 +88,11 @@ export default async function FamilyStatementPage({ params }) {
 
   return (
     <div className="print-sheet mx-auto max-w-2xl p-8 bg-white print:text-[12px] text-neutral-900">
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-6 print:hidden">
-        <h1 className="text-xl font-bold">Family statement (print view)</h1>
-        {/* The way back on the title's line, Print under it (27 Oct 2026). */}
-        <span className="flex flex-col items-end gap-2">
-          <BackLink href={`/admin/registrations/${id}/`} label="Back to the registration" />
-          <PrintButton />
-        </span>
-      </div>
+      <PrintSheetHeader
+        className="mb-6"
+        title="Family statement"
+        back={{ href: `/admin/registrations/${id}/`, label: 'Back to the registration' }}
+      />
 
       {/* Letterhead */}
       <div className="border-b-2 border-neutral-800 pb-3 mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -136,7 +134,7 @@ export default async function FamilyStatementPage({ params }) {
           <p className="text-neutral-600">
             {reg.events?.name}
             <br />
-            {reg.events?.starts_on} – {reg.events?.ends_on}
+            {eventDateRange(reg.events?.starts_on, reg.events?.ends_on)}
           </p>
         </div>
       </div>
@@ -197,7 +195,7 @@ export default async function FamilyStatementPage({ params }) {
           <tbody>
             {goodPays.map((p, i) => (
               <tr key={i} className="border-b border-neutral-200">
-                <td className="py-1 pr-3">{dayInMorristown(p.received_on ?? p.created_at)}</td>
+                <td className="py-1 pr-3">{formatDay(p.received_on ?? p.created_at)}</td>
                 <td className="py-1 pr-3">{METHOD_LABEL[p.method] ?? p.method}</td>
                 <td className="py-1 pr-3">
                   {p.status === 'processing' ? 'clearing the bank' : p.status === 'refunded' ? 'received, refunded' : 'received'}

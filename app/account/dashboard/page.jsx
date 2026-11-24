@@ -15,7 +15,7 @@ import {
   fullScholarshipRequested,
   CLEARING_PILL,
 } from '@/lib/payments';
-import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown } from '@/lib/events';
+import { balanceDueOn, formatDueDate, formatDueDateShort, dayInMorristown, formatDay } from '@/lib/events';
 import { requiresPaymentChoice, feeLabel, planHasProblem } from '@/lib/plans';
 import PlanPanel from './PlanPanel';
 import FeedbackBox from './FeedbackBox';
@@ -760,7 +760,8 @@ export default async function DashboardPage({ searchParams }) {
     failed: ['Failed, not received', 'bg-red-100 text-red-800'],
     refunded: ['Refunded', 'bg-neutral-200 text-neutral-600'],
   };
-  const payDate = (p) => dayInMorristown(p.received_on ?? p.created_at);
+  // "Nov 15, 2026", as on the statement (23 Nov 2026, review).
+  const payDate = (p) => formatDay(p.received_on ?? p.created_at);
 
   // WHAT EACH REGISTRATION STILL NEEDS FROM THE FAMILY (Lawrence, 26 Oct
   // 2026: rows with something outstanding open with an amber "Needs:" chip,
@@ -1559,7 +1560,7 @@ export default async function DashboardPage({ searchParams }) {
                               {(refundsByReg.get(r.id) ?? []).map((rf, i) => (
                                 <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-1">
                                   <span className="text-neutral-700">
-                                    {dayInMorristown(rf.refunded_on ?? rf.created_at)} · Refunded{' '}
+                                    {formatDay(rf.refunded_on ?? rf.created_at)} · Refunded{' '}
                                     <span className="font-semibold">{dollars(rf.amount_cents)}</span>
                                     {(rf.fee_cover_cents ?? 0) > 0 && (
                                       <span className="text-neutral-500">
@@ -1638,7 +1639,7 @@ export default async function DashboardPage({ searchParams }) {
                                 className={`flex justify-between gap-2 py-0.5 ${f.waived_at ? 'text-neutral-400' : 'text-amber-800'}`}
                               >
                                 <span>
-                                  {feeLabel(f)} ({dayInMorristown(f.created_at)})
+                                  {feeLabel(f)} ({formatDay(f.created_at)})
                                   {f.waived_at && <span className="ml-1 text-xs">waived</span>}
                                 </span>
                                 <span className={f.waived_at ? 'line-through' : ''}>{dollars(f.amount_cents)}</span>
@@ -1918,7 +1919,7 @@ export default async function DashboardPage({ searchParams }) {
                   return (
                     <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="text-neutral-700">
-                        {dayInMorristown(g.received_on ?? g.created_at)} ·{' '}
+                        {formatDay(g.received_on ?? g.created_at)} ·{' '}
                         <span className="font-semibold">{dollars(g.amount_cents)}</span>
                         <span className="text-neutral-500"> · {g.fund}</span>
                       </span>

@@ -11,10 +11,10 @@ import PrintButton from '@/components/PrintButton';
 //
 // A server component (PrintButton and BackLink are the client parts), so any
 // sheet may use it.
-export default function PrintSheetHeader({ title, back, printLabel, intro, introClassName = 'mb-6' }) {
+export default function PrintSheetHeader({ title, back, printLabel, intro, introClassName = 'mb-6', className = 'mb-2' }) {
   return (
     <>
-      <div className="mb-2 flex items-start justify-between gap-4 print:hidden">
+      <div className={`${className} flex items-start justify-between gap-4 print:hidden`}>
         <h1 className="text-xl font-bold">{title}</h1>
         {/* The way back on the title's line, Print under it (27 Oct 2026). */}
         <span className="flex shrink-0 flex-col items-end gap-2">

@@ -187,12 +187,14 @@ export default function CheckinList({ rows }) {
                   <span>
                     Arrived ✓{' '}
                     {new Date(r.checkedInAt).toLocaleTimeString('en-US', {
+                      timeZone: 'America/New_York',
                       hour: 'numeric',
                       minute: '2-digit',
                     })}
                   </span>
                   <span className="text-xs font-normal opacity-75">
                     {new Date(r.checkedInAt).toLocaleDateString('en-US', {
+                      timeZone: 'America/New_York',
                       weekday: 'short',
                       month: 'short',
                       day: 'numeric',

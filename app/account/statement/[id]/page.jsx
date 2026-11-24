@@ -3,7 +3,7 @@ import BackLink from '@/components/BackLink';
 import { site } from '@/lib/site';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import PrintButton from './PrintButton';
-import { balanceDueOn, formatDueDateShort, dayInMorristown } from '@/lib/events';
+import { balanceDueOn, formatDueDateShort, formatDay, eventDateRange } from '@/lib/events';
 import { participantMoney, dollars } from '@/lib/payments';
 import FeeLines from '@/components/FeeLines';
 import { FAMILY_ROLE_LABEL as ROLE_LABEL } from '@/lib/roles';
@@ -99,7 +99,9 @@ export default async function MyStatementPage({ params }) {
   const goodPays = (pays ?? []).filter(
     (p) => p.status === 'succeeded' || p.status === 'processing' || p.status === 'refunded'
   );
+  // Morristown's day, not the server's (UTC turns over at 8pm ET).
   const today = new Date().toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -156,7 +158,7 @@ export default async function MyStatementPage({ params }) {
           <p className="text-neutral-600">
             {reg.events?.name}
             <br />
-            {reg.events?.starts_on} – {reg.events?.ends_on}
+            {eventDateRange(reg.events?.starts_on, reg.events?.ends_on)}
           </p>
         </div>
       </div>
@@ -236,7 +238,7 @@ export default async function MyStatementPage({ params }) {
           <tbody>
             {goodPays.map((p, i) => (
               <tr key={i} className="border-b border-neutral-200">
-                <td className="py-1 pr-3">{dayInMorristown(p.received_on ?? p.created_at)}</td>
+                <td className="py-1 pr-3">{formatDay(p.received_on ?? p.created_at)}</td>
                 <td className="py-1 pr-3">{METHOD_LABEL[p.method] ?? p.method}</td>
                 <td className="py-1 pr-3">
                   {p.status === 'processing' ? 'clearing the bank' : p.status === 'refunded' ? 'received, refunded' : 'received'}

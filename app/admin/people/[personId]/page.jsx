@@ -8,7 +8,7 @@ import PersonDetails from './PersonDetails';
 import AddToRegistration from './AddToRegistration';
 import { allergySummary, allergenWords, SUPPORT_QUESTIONS as Q } from '@/lib/support';
 import { REVIEW_FLAG, reviewClassLabel, reviewClassInfo } from '@/lib/plans';
-import { dayInMorristown, isCurrentEventRow, todayInMorristown } from '@/lib/events';
+import { formatDay, isCurrentEventRow, todayInMorristown } from '@/lib/events';
 import { signedPhotoUrls } from '@/lib/photos';
 import { isVolunteerRole, ROLE_LABEL } from '@/lib/roles';
 
@@ -182,7 +182,7 @@ function FormAnswers({ sensitive, support, name }) {
         title="Form answers"
         note={
           saved
-            ? `What the family wrote, under the questions from the form. Last saved ${dayInMorristown(s.details_saved_at)}.`
+            ? `What the family wrote, under the questions from the form. Last saved ${formatDay(s.details_saved_at)}.`
             : 'What\'s on file. The family has never saved the form, so any yes/no question they skipped shows "Not answered".'
         }
       >
@@ -348,7 +348,7 @@ function VolunteerAnswers({ parts, appByPart, adultName, dob }) {
             <AnswerGroup
               key={p.id}
               title={`${p.registrations?.events?.name ?? 'Event'}: ${a.status}${
-                a.updated_at ? `, last saved ${dayInMorristown(a.updated_at)}` : ''
+                a.updated_at ? `, last saved ${formatDay(a.updated_at)}` : ''
               }`}
             >
               {!child && (
@@ -574,7 +574,7 @@ export default async function PersonPage({ params }) {
     guardian: 'as guardian',
     account_holder: 'as the account holder',
   };
-  const fmtDate = (iso) => dayInMorristown(iso);
+  const fmtDate = (iso) => formatDay(iso);
 
   // Cabin names for rooms, so "Room 3" reads as "Oak Cabin · Room 3". A room
   // points at its cabin; a cabin points at nothing.
