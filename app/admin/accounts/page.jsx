@@ -136,7 +136,7 @@ export default async function AccountsPage() {
           <>
             Every account on the site, families and staff. Removing an account never deletes a
             family&rsquo;s registrations or payments. &ldquo;Delete family &amp; all their data&rdquo;
-            does, and only for a family with no payments on record. Resetting two-factor, removing an
+            does, and only for a family with no card or bank payments on record. Resetting two-factor, removing an
             account and deleting a family each ask for your own two-factor code first.
           </>
         }
