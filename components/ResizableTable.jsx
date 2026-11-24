@@ -159,7 +159,7 @@ export default function ResizableTable({ storageKey, defaults = [], children }) 
   return (
     <div ref={ref}>
       {overflows && (
-        <p className="mb-1 text-xs text-neutral-500 print:hidden">
+        <p className="mb-1 px-3 pt-1 text-xs text-neutral-500 print:hidden">
           More columns than fit: scroll sideways, or drag a column edge to narrow it.
         </p>
       )}

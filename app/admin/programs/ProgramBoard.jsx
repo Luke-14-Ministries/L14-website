@@ -372,8 +372,12 @@ export default function ProgramBoard({
       )}
 
       <div className="overflow-x-auto rounded-sm border border-neutral-200 bg-white">
-        {/* Adjustable widths, remembered in this browser (15 Nov 2026). */}
-        <ResizableTable storageKey="programs-columns" defaults={[44, 220, 80, 200, 220, 220, 220]}>
+        {/* Adjustable widths, remembered in this browser (15 Nov 2026). The
+            Program column, the one staff act on, sits right after Name with
+            room for its select; the others are narrower (23 Nov 2026, P99: at
+            1366px every select was cut to "Not pla"). A new storage key, so
+            widths saved for the old column order do not land on the new one. */}
+        <ResizableTable storageKey="programs-columns-v2" defaults={[44, 200, 220, 56, 110, 150, 170]}>
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left">
             <tr>
@@ -386,11 +390,11 @@ export default function ProgramBoard({
                 />
               </th>
               <SortHeading label="Name" col="name" sort={sort} setSort={setSort} />
+              <SortHeading label="Program" col="program" sort={sort} setSort={setSort} />
               <SortHeading label="Age" col="age" sort={sort} setSort={setSort} />
               <SortHeading label="Role" col="role" sort={sort} setSort={setSort} />
               <SortHeading label="Family" col="family" sort={sort} setSort={setSort} />
               <SortHeading label="Buddy" col="buddy" sort={sort} setSort={setSort} />
-              <SortHeading label="Program" col="program" sort={sort} setSort={setSort} />
             </tr>
           </thead>
           <tbody>
@@ -421,16 +425,6 @@ export default function ProgramBoard({
                     <span className="block text-xs text-neutral-500">goes by {p.preferred}</span>
                   )}
                 </td>
-                <td className="px-3 py-2">{ageAt(p.dob, eventStartsOn) ?? '—'}</td>
-                <td className="px-3 py-2">{ROLE_LABEL[p.role] ?? p.role}</td>
-                <td className="px-3 py-2 text-neutral-600">{p.household}</td>
-                <td className="px-3 py-2 text-neutral-700">
-                  {p.buddies?.length
-                    ? p.buddies.join(', ')
-                    : p.follows
-                      ? `Buddy to ${p.follows.map((c) => c.name).join(' and ')}`
-                      : <span className="text-neutral-400">—</span>}
-                </td>
                 <td className="px-3 py-2">
                   {p.follows ? (
                     // A buddy goes where their camper goes (14 Nov 2026).
@@ -449,7 +443,7 @@ export default function ProgramBoard({
                     value={p.programId ?? ''}
                     onChange={(e) => placeOne(p.participantId, e.target.value)}
                     disabled={pending || !canPlace}
-                    className={`rounded-sm border px-2 py-1 text-sm ${
+                    className={`w-full rounded-sm border px-2 py-1 text-sm ${
                       p.programId ? 'border-neutral-300' : 'border-amber-400 bg-amber-50'
                     }`}
                   >
@@ -461,6 +455,16 @@ export default function ProgramBoard({
                     ))}
                   </select>
                   )}
+                </td>
+                <td className="px-3 py-2">{ageAt(p.dob, eventStartsOn) ?? '—'}</td>
+                <td className="px-3 py-2">{ROLE_LABEL[p.role] ?? p.role}</td>
+                <td className="px-3 py-2 text-neutral-600">{p.household}</td>
+                <td className="px-3 py-2 text-neutral-700">
+                  {p.buddies?.length
+                    ? p.buddies.join(', ')
+                    : p.follows
+                      ? `Buddy to ${p.follows.map((c) => c.name).join(' and ')}`
+                      : <span className="text-neutral-400">—</span>}
                 </td>
               </tr>
             ))}
