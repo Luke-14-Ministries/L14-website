@@ -264,8 +264,10 @@ export default async function AdminPaymentsPage({ searchParams }) {
     ['partial', 'Partially paid'],
     ['paid', 'Fully paid'],
     ['scholarship', 'Scholarship/discount'],
-    ['deposit_paid', 'To review: deposit received'],
-    ['full_scholarship', 'To contact: full scholarship'],
+    // 'To review: deposit received' and 'To contact: full scholarship' left
+    // the row on 23 Nov 2026 (review): Awaiting Review lists both, with the
+    // flags beside them. matchesPaystate still answers ?paystate=deposit_paid
+    // and full_scholarship, so an old bookmark keeps working.
     ['neither', 'Deposit short'],
     ['flagged', 'Deposit short, part paid'],
     ['credit', 'Credit to settle'],
@@ -290,7 +292,16 @@ export default async function AdminPaymentsPage({ searchParams }) {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-2">Event Payments</h2>
+      {/* Money Changes (the money audit trail, 0111) at top right for
+          administrators, who alone may read it (23 Nov 2026 review). */}
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xl font-bold">Event Payments</h2>
+        {can(staff, 'admin') && (
+          <Link href="/admin/payments/changes/" className="text-sm text-brand underline">
+            Money changes →
+          </Link>
+        )}
+      </div>
       {/* Exports: report, then format, then dates (ExportBar.jsx). */}
       <ExportBar eventFilter={eventFilter} paystate={paystate} defaultFrom={monthStart} defaultTo={dueToday} />
       <p className="text-sm text-neutral-500 mb-4">
@@ -437,19 +448,18 @@ export default async function AdminPaymentsPage({ searchParams }) {
       </div>
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
         <h3 className="font-semibold text-neutral-700">Balances by family</h3>
-        {/* Scholarship decisions are money decisions (Lawrence, 14 Oct 2026),
-            so their page sits here as a tab rather than elsewhere in the
-            sidebar. The photo and Creed flags that used to show in the
-            Review column live on the review queue instead. */}
-        <nav className="flex gap-3 text-sm">
-          <span className="font-semibold text-brand-dark border-b-2 border-brand">Balances</span>
-          <Link href="/admin/scholarships/" className="text-neutral-600 hover:text-brand-dark hover:underline">
+        {/* Two plain links (23 Nov 2026 review): this row was styled as tabs,
+            with "Balances" underlined, but the other two are separate pages,
+            not tabs of this one. The photo and Creed flags that used to show
+            in the Review column live on Awaiting Review. */}
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link href="/admin/scholarships/" className="text-brand underline">
             Scholarship Requests →
           </Link>
-          <Link href="/admin/review/" className="text-neutral-600 hover:text-brand-dark hover:underline">
-            Review queue →
+          <Link href="/admin/review/" className="text-brand underline">
+            Awaiting Review →
           </Link>
-        </nav>
+        </div>
       </div>
       {/* Search (a plain form: works without JavaScript, and the address
           keeps the search with the event and the chip chosen). */}
@@ -495,24 +505,23 @@ export default async function AdminPaymentsPage({ searchParams }) {
           {q ? ` matching “${q}”` : ''}
         </span>
       </div>
-      {/* Planned global actions — visible placeholders so staff can see
-          what is coming (Resend-powered reminders). Per-family actions
-          (statement, email, refund) live in each row's ⋯ menu. */}
-      <div className="flex flex-wrap items-center gap-2 mb-3 text-sm">
-        <span className="text-neutral-500 font-semibold">Actions:</span>
-        {['Email balance reminders (all shown)', 'Email selected families'].map((label) => (
-          <button
-            key={label}
-            type="button"
-            disabled
-            title="Planned, not active yet"
-            className="cursor-not-allowed rounded-sm border border-dashed border-neutral-300 px-3 py-1 text-neutral-400"
-          >
-            {label}
-          </button>
-        ))}
-        <span className="text-xs text-neutral-400">coming soon</span>
-      </div>
+      {/* The two disabled "coming soon" buttons (balance reminders, email
+          selected families) were never wired and are gone (23 Nov 2026
+          review): the automatic emails (0138) send balance reminders, and
+          Email Families is where staff write to families themselves. */}
+      <p className="mb-3 text-sm text-neutral-500">
+        Families who still owe get reminder emails automatically.
+        {can(staff, 'write:registration') && (
+          <>
+            {' '}
+            To write to families yourself, use{' '}
+            <Link href="/admin/email-families/" className="text-brand underline">
+              Email Families
+            </Link>
+            .
+          </>
+        )}
+      </p>
       {/* lg:overflow-visible lets the row-actions menu overlay the table
           edge on desktop; small screens keep horizontal scrolling. */}
       <div className="overflow-x-auto lg:overflow-visible rounded-lg border border-neutral-200 bg-white mb-8">
@@ -655,8 +664,8 @@ export default async function AdminPaymentsPage({ searchParams }) {
                   <td className="px-4 py-2 text-right">
                     {/* Per-family actions. <details> = no JavaScript needed;
                         the menu floats over the table, anchored to the ⋯
-                        button. Email + Refund are planned placeholders
-                        (refunds work in Stripe today). */}
+                        button. The disabled "Email balance owed" item was
+                        removed on 23 Nov 2026: it was never wired. */}
                     <details className="relative inline-block text-left">
                       <summary
                         className="cursor-pointer select-none list-none rounded-sm border border-neutral-300 px-2 py-0.5 font-bold text-neutral-600 hover:border-brand [&::-webkit-details-marker]:hidden"
@@ -671,14 +680,6 @@ export default async function AdminPaymentsPage({ searchParams }) {
                         >
                           Statement
                         </a>
-                        <button
-                          type="button"
-                          disabled
-                          title="Planned, not active yet"
-                          className="block w-full cursor-not-allowed px-3 py-1.5 text-left text-neutral-400"
-                        >
-                          Email balance owed + payment link
-                        </button>
                         {/* Real since 0038. A refund reverses one PAYMENT,
                             and this table knows balances, not transactions --
                             so the action lives on the family's registration

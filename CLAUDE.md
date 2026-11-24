@@ -77,9 +77,7 @@ forces PKCE regardless, so there is no flow setting to protect. **Protect the te
 back at `/auth/callback` with `{{ .ConfirmationURL }}`, links become `?code=` links tied to one
 browser again.
 
-**Still open in the code:** the balance-reminder buttons in `app/admin/payments/page.jsx` are
-`disabled` placeholders (the automatic emails, `0138`, do the reminding; the buttons were never wired).
-The public Newsletter page and the Wheels for Kenya sign-up still link out to Google Forms, and Host a
+**Still open in the code:** the public Newsletter page and the Wheels for Kenya sign-up still link out to Google Forms, and Host a
 Speaker to an Airtable form; the Pray page's form is the site's own since `0141`. Of the automatic
 emails, draft items 5.4 (before camp) and 5.5 (giving statement ready) are not built, and Ellen and
 Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
@@ -413,7 +411,7 @@ One leader per program may be marked **lead** (`0071`/`0072`) — a label, not a
   a paid family "not finished"). A new reader of the balance that re-derives "net due"
   from the columns must add `fees_cents`.
 - **The money audit trail** (`0111`): every write to `payments`, `payment_refunds`, `payment_plans`,
-  `coupons`, `coupon_redemptions`, `participant_money` and `registration_fees` lands in `money_change_log` (administrators read it). A
+  `coupons`, `coupon_redemptions`, `participant_money` and `registration_fees` lands in `money_change_log` (administrators read it, on *Money Changes*, `/admin/payments/changes/`, 23 Nov 2026). A
   refund row is edited only while pending and its money never changes; a payment with a refund on
   file stays with its family; `payments.status` follows the refunds on file. **Plans are created
   only by Stripe's webhook** — staff change status, the early-discount decision, the cancel stamps
