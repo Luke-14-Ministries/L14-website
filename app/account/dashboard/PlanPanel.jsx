@@ -112,7 +112,7 @@ export default function PlanPanel({ registrationId, plan, installments, balanceC
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <button type="button" onClick={cancelPlan} disabled={pending} className="btn-outline py-1.5!">
-              {pending ? 'Cancelling…' : 'Yes, cancel the plan'}
+              {pending ? 'Canceling…' : 'Yes, cancel the plan'}
             </button>
             <button
               type="button"

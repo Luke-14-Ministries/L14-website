@@ -18,7 +18,7 @@ import {
   setAsideAfterFailing,
   declineReason,
 } from '@/lib/plans';
-import { dayInMorristown } from '@/lib/events';
+import { formatDay, whenInMorristown } from '@/lib/events';
 
 import ResizableTable from '@/components/ResizableTable';
 const money = (c) => `$${((c ?? 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -85,7 +85,7 @@ export default function StaffPlanPanel({
           {plan.status === 'failed' && (
             <p className="mb-2 text-sm font-semibold text-red-700">
               This plan stopped after 3 failed payments
-              {planStoppedAt(plan) ? ` on ${dayInMorristown(planStoppedAt(plan))}` : ''}.
+              {planStoppedAt(plan) ? ` on ${formatDay(planStoppedAt(plan))}` : ''}.
             </p>
           )}
           {/* The earlier flag (Lawrence, 27 Oct 2026): one failed payment is
@@ -94,7 +94,7 @@ export default function StaffPlanPanel({
               try fails. */}
           {failing && (
             <p className="mb-2 text-sm font-semibold text-amber-800">
-              ⚑ A plan payment failed{failing.since ? ` on ${dayInMorristown(failing.since)}` : ''}.{' '}
+              ⚑ A plan payment failed{failing.since ? ` on ${formatDay(failing.since)}` : ''}.{' '}
               {planFailingNext(failing)}.
             </p>
           )}
@@ -110,7 +110,7 @@ export default function StaffPlanPanel({
           </p>
           {plan.status === 'cancelled' && plan.cancelled_at && (
             <p className="mt-1 text-sm font-semibold text-neutral-700">
-              Cancelled {dayInMorristown(plan.cancelled_at)} by{' '}
+              Canceled {formatDay(plan.cancelled_at)} by{' '}
               {cancelledByFamily ? 'the family' : cancelledByName ?? 'staff'}.
               {cancelledByFamily && plan.keeps_early_discount
                 ? ' Decide whether they keep the early-registration discount.'
@@ -119,14 +119,14 @@ export default function StaffPlanPanel({
           )}
           {plan.status === 'completed' && (installments ?? []).some((i) => i.status === 'waived') && (
             <p className="mt-1 text-sm text-neutral-700">
-              Closed {dayInMorristown(plan.updated_at)}. Nothing was left to pay, so the remaining
+              Closed {formatDay(plan.updated_at)}. Nothing was left to pay, so the remaining
               dates weren&rsquo;t needed.
             </p>
           )}
           {plan.consented_at && (
             <details className="text-xs text-neutral-500 mt-1">
               <summary className="fold-summary">
-                Consent given {new Date(plan.consented_at).toLocaleString('en-US', { timeZone: 'America/New_York' })}
+                Consent given {whenInMorristown(plan.consented_at)} ET
               </summary>
               <p className="mt-1">{plan.consent_text}</p>
             </details>
@@ -144,7 +144,7 @@ export default function StaffPlanPanel({
             <tbody>
               {(installments ?? []).map((i) => (
                 <tr key={i.id} className="border-t border-neutral-100">
-                  <td className="py-1">{i.due_on}</td>
+                  <td className="py-1 whitespace-nowrap">{formatDay(i.due_on)}</td>
                   <td className="py-1 text-right">
                     {['scheduled', 'failed'].includes(i.status) ? `≈ ${money(i.amount_cents)}` : money(i.amount_cents)}
                   </td>

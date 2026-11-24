@@ -825,7 +825,7 @@ export default function AccountsManager({
             <strong>{confirm.row.household_name ?? 'this household'}</strong> is then
             deleted. Blank contact details on the kept household are filled from
             this one. Its open invites, and any contact-email change still waiting
-            for a click, are cancelled. There is no undo. If both households are
+            for a click, are canceled. There is no undo. If both households are
             registered for the same event, cancel one of those registrations first.
           </p>
           <div className="mb-4">

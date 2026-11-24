@@ -106,7 +106,7 @@ export default function CancelRequest({ registrationId, people = [], openRequest
 
       {people.length > 1 && (
         <fieldset className="mt-3">
-          <legend className="text-sm font-semibold">Who is cancelling?</legend>
+          <legend className="text-sm font-semibold">Who is canceling?</legend>
           <p className="text-xs text-neutral-500 mb-1">
             Leave them all unchecked if the whole family is canceling.
           </p>

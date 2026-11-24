@@ -42,7 +42,7 @@ export default async function HouseholdInvitePage({ searchParams }) {
     body = 'The link may be incomplete. Open it again from the email, or ask your family to send a new invite.';
   } else if (invite.status !== 'open') {
     title =
-      invite.status === 'accepted' ? 'This invite has been used' : invite.status === 'expired' ? 'This invite has expired' : 'This invite was cancelled';
+      invite.status === 'accepted' ? 'This invite has been used' : invite.status === 'expired' ? 'This invite has expired' : 'This invite was canceled';
     body =
       invite.status === 'accepted'
         ? 'If you accepted it, the household is on your dashboard.'

@@ -5,11 +5,11 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { settleCancellation } from './actions';
-import { dayInMorristown } from '@/lib/events';
+import { formatDay } from '@/lib/events';
 
 const STATUS = {
   open: ['Open', 'bg-amber-100 text-amber-800'],
-  actioned: ['Cancelled', 'bg-neutral-200 text-neutral-700'],
+  actioned: ['Canceled', 'bg-neutral-200 text-neutral-700'],
   declined: ['Not canceled', 'bg-neutral-200 text-neutral-700'],
   withdrawn: ['Withdrawn by family', 'bg-neutral-100 text-neutral-500'],
 };
@@ -50,7 +50,7 @@ function Row({ row }) {
       </div>
 
       <p className="mt-1 text-sm">
-        <span className="font-semibold">Cancelling:</span>{' '}
+        <span className="font-semibold">Canceling:</span>{' '}
         {row.who === null ? (
           <span className="text-amber-800 font-semibold">
             the whole registration ({row.peopleCount}{' '}
@@ -68,10 +68,10 @@ function Row({ row }) {
       )}
 
       <p className="mt-2 text-xs text-neutral-500">
-        Asked {dayInMorristown(row.requestedAt)}
+        Asked {formatDay(row.requestedAt)}
         {row.phone && <> · {row.phone}</>}
         {row.email && <> · {row.email}</>}
-        {row.handledAt && <> · closed {dayInMorristown(row.handledAt)}</>}
+        {row.handledAt && <> · closed {formatDay(row.handledAt)}</>}
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-3">

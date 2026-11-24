@@ -176,7 +176,7 @@ export async function cancelContactEmailChange(householdId) {
   const { error: scopeError } = await assertMine(supabase, { household: householdId });
   if (scopeError) return { ok: false, error: scopeError };
   const { error } = await supabase.rpc('cancel_household_email_change', { p_household_id: householdId });
-  if (error) return { ok: false, error: familyError('cancelContactEmailChange', error, 'The change could not be cancelled.') };
+  if (error) return { ok: false, error: familyError('cancelContactEmailChange', error, 'The change could not be canceled.') };
   revalidatePath('/account/household');
   return { ok: true };
 }
@@ -588,7 +588,7 @@ export async function inviteAdult(householdId, form) {
 export async function cancelInvite(inviteId) {
   const supabase = await createClient();
   const { error } = await supabase.rpc('cancel_household_invite', { p_invite_id: inviteId });
-  if (error) return { ok: false, error: familyError('cancelInvite', error, 'The invitation could not be cancelled.') };
+  if (error) return { ok: false, error: familyError('cancelInvite', error, 'The invitation could not be canceled.') };
   revalidatePath('/account/household');
   return { ok: true };
 }
