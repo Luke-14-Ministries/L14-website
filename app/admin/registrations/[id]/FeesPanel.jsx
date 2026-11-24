@@ -74,7 +74,7 @@ function FeeRow({ fee, canWaive, registrationId }) {
             type="button"
             onClick={waive}
             disabled={pending || !reason.trim()}
-            className="btn-primary py-1! text-sm disabled:opacity-40"
+            className="btn-primary btn-sm disabled:opacity-40"
           >
             {pending ? 'Waiving…' : 'Waive fee'}
           </button>
@@ -144,7 +144,7 @@ function AddFeeForm({ registrationId }) {
           type="button"
           onClick={add}
           disabled={pending || !amount.trim() || !reason.trim()}
-          className="btn-primary py-1.5! text-sm disabled:opacity-40"
+          className="btn-primary btn-sm disabled:opacity-40"
         >
           {pending ? 'Adding…' : 'Add fee'}
         </button>

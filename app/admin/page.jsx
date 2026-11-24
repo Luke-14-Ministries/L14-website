@@ -458,7 +458,7 @@ export default async function AdminOverview({ searchParams }) {
       <div className="rounded-lg bg-white border border-neutral-200 shadow-xs p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <h3 className="font-bold">By event</h3>
-          <Link href="/admin/rosters" className="btn-outline py-1.5! text-sm">
+          <Link href="/admin/rosters" className="btn-outline btn-sm">
             View full rosters
           </Link>
         </div>

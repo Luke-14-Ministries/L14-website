@@ -60,7 +60,7 @@ export default function GivingExportBar({ from = '', to = '', fund = '', method 
           <option value="quickbooks" disabled={statements}>QuickBooks CSV</option>
           <option value="pdf" disabled={!statements}>PDF / print (statements only)</option>
         </select>
-        <a href={href} className="btn-outline py-1.5! text-sm">
+        <a href={href} className="btn-outline btn-sm">
           {statements ? 'Open print view' : 'Download'}
         </a>
       </div>

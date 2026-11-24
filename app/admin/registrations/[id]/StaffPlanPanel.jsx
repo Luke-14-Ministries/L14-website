@@ -170,17 +170,17 @@ export default function StaffPlanPanel({
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {plan.status === 'active' && (
-              <button type="button" disabled={pending} onClick={() => run('pause')} className="btn-outline py-1.5!">
+              <button type="button" disabled={pending} onClick={() => run('pause')} className="btn-outline btn-sm">
                 Pause plan
               </button>
             )}
             {['paused', 'failed'].includes(plan.status) && (
-              <button type="button" disabled={pending} onClick={() => run('resume')} className="btn-outline py-1.5!">
+              <button type="button" disabled={pending} onClick={() => run('resume')} className="btn-outline btn-sm">
                 {plan.status === 'failed' ? 'Retry and resume plan' : 'Resume plan'}
               </button>
             )}
             {!['cancelled', 'completed'].includes(plan.status) && !confirmCancel && (
-              <button type="button" disabled={pending} onClick={() => setConfirmCancel(true)} className="btn-outline py-1.5! text-red-700">
+              <button type="button" disabled={pending} onClick={() => setConfirmCancel(true)} className="btn-outline btn-sm text-red-700">
                 Cancel plan…
               </button>
             )}
@@ -210,7 +210,7 @@ export default function StaffPlanPanel({
                   type="button"
                   disabled={pending}
                   onClick={() => run('cancel', { keepsEarlyDiscount: keep })}
-                  className="btn-primary py-1.5! bg-red-700!"
+                  className="btn-danger btn-sm"
                 >
                   Cancel plan
                 </button>

@@ -95,7 +95,7 @@ export default function ExportBar({ eventFilter = '', paystate = '', defaultFrom
           onChange={(e) => setTo(e.target.value)}
           className={`${selectCls} disabled:bg-neutral-100 disabled:text-neutral-400`}
         />
-        <a href={href} className="btn-outline py-1.5! text-sm">
+        <a href={href} className="btn-outline btn-sm">
           Download
         </a>
       </div>

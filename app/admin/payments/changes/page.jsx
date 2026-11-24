@@ -230,7 +230,7 @@ export default async function MoneyChangesPage({ searchParams }) {
           <span className="block font-semibold mb-1">To</span>
           <input type="date" name="to" defaultValue={to} className="rounded-sm border border-neutral-300 px-2 py-1.5" />
         </label>
-        <button type="submit" className="btn-outline py-1.5! px-3! text-sm">
+        <button type="submit" className="btn-outline btn-sm">
           Show
         </button>
         {filtered && (

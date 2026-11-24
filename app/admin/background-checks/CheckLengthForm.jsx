@@ -61,7 +61,7 @@ export default function CheckLengthForm({ months, onFile, canEdit }) {
               className="w-20 rounded-sm border border-neutral-300 px-2 py-1"
             />
           </label>
-          <button type="submit" disabled={pending} className="btn-primary py-1.5! text-sm">
+          <button type="submit" disabled={pending} className="btn-primary btn-sm">
             {pending ? 'Saving…' : 'Save'}
           </button>
           <button

@@ -247,14 +247,14 @@ export default function ScholarshipReview({ row, showRegistrationLink = false })
             <button
               onClick={approve}
               disabled={pending}
-              className="btn-primary py-1.5! text-sm disabled:opacity-50"
+              className="btn-primary btn-sm disabled:opacity-50"
             >
               {pending ? 'Saving…' : 'Approve this award'}
             </button>
             <button
               onClick={decline}
               disabled={pending}
-              className="btn-outline py-1.5! text-sm disabled:opacity-50"
+              className="btn-outline btn-sm disabled:opacity-50"
             >
               Decline
             </button>

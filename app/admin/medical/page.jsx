@@ -118,7 +118,7 @@ export default async function MedicalPage({ searchParams }) {
         <h2 className="text-xl font-bold">Medical &amp; Support</h2>
         <a
           href={`/admin/medical/print/${eventFilter && !isEventScope(eventFilter) ? `?event=${eventFilter}` : ''}`}
-          className="btn-outline py-1.5! text-sm"
+          className="btn-outline btn-sm"
         >
           Medical sheet (print)
         </a>
@@ -154,7 +154,7 @@ export default async function MedicalPage({ searchParams }) {
           placeholder="Find a person or household…"
           className="w-64 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
         />
-        <button type="submit" className="btn-outline py-1.5! text-sm">Search</button>
+        <button type="submit" className="btn-outline btn-sm">Search</button>
         {q && (
           <a href="/admin/medical" className="text-sm text-brand underline">
             Clear

@@ -550,10 +550,6 @@
     :where(html[data-theme='dark']:has([data-theme-area])) .bg-brand-dark {
       background-color: #1d4e54;
     }
-    /* "Cancel plan" (StaffPlanPanel) forces its red with bg-red-700!. */
-    :where(html[data-theme='dark']:has([data-theme-area])) .bg-red-700\! {
-      background-color: oklch(50.5% 0.213 27.518) !important;
-    }
     /* The navy words of the logo vanish on dark, so Header carries a copy
        with the words light (Luke_14_Ministries_Logo_dark.png, the emblem
        untouched); dark mode swaps which one shows. */

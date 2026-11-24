@@ -101,7 +101,7 @@ function One({ person, reg }) {
             router.refresh();
           });
         }}
-        className="btn-primary py-1! text-sm"
+        className="btn-primary btn-sm"
       >
         {pending ? 'Adding…' : 'Add'}
       </button>

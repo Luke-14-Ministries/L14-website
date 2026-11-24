@@ -327,7 +327,7 @@ export default function AccountsManager({
                 rows: rows.filter((r) => selected.has(r.user_id)),
               })
             }
-            className="btn-outline py-1! text-sm"
+            className="btn-outline btn-sm"
           >
             Remove accounts…
           </button>
@@ -662,7 +662,7 @@ export default function AccountsManager({
             </p>
           )}
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={closeConfirm} className="btn-outline py-1.5!">
+            <button type="button" onClick={closeConfirm} className="btn-outline btn-sm">
               Cancel
             </button>
             <button
@@ -675,7 +675,7 @@ export default function AccountsManager({
                   else setConfirm((c) => (c ? { ...c, error: res.error } : c));
                 })
               }
-              className="btn-primary py-1.5! disabled:opacity-40"
+              className="btn-primary btn-sm disabled:opacity-40"
             >
               {busy ? 'Sending…' : 'Send'}
             </button>
@@ -698,7 +698,7 @@ export default function AccountsManager({
             people and registrations stay as they are.
           </p>
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={closeConfirm} className="btn-outline py-1.5!">
+            <button type="button" onClick={closeConfirm} className="btn-outline btn-sm">
               Cancel
             </button>
             <button
@@ -710,7 +710,7 @@ export default function AccountsManager({
                   () => `Took ${confirm.row.email} out of ${confirm.row.household_name ?? 'the household'}.`
                 )
               }
-              className="btn-primary py-1.5!"
+              className="btn-primary btn-sm"
             >
               {busy ? 'Taking out…' : 'Take out'}
             </button>
@@ -787,7 +787,7 @@ export default function AccountsManager({
               );
             })()}
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={closeConfirm} className="btn-outline py-1.5!">
+            <button type="button" onClick={closeConfirm} className="btn-outline btn-sm">
               Cancel
             </button>
             <button
@@ -807,7 +807,7 @@ export default function AccountsManager({
                     }${confirm.personId ? ', and marked which family member they are' : ''}.`
                 )
               }
-              className="btn-primary py-1.5!"
+              className="btn-primary btn-sm"
             >
               {busy ? 'Linking…' : 'Link account'}
             </button>
@@ -848,7 +848,7 @@ export default function AccountsManager({
             />
           </div>
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={closeConfirm} className="btn-outline py-1.5!">
+            <button type="button" onClick={closeConfirm} className="btn-outline btn-sm">
               Cancel
             </button>
             <button
@@ -868,7 +868,7 @@ export default function AccountsManager({
                   }
                 )
               }
-              className="btn-primary py-1.5!"
+              className="btn-primary btn-sm"
             >
               {busy ? 'Merging…' : 'Merge'}
             </button>

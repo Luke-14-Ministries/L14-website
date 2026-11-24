@@ -93,10 +93,10 @@ export default function PrayerComposer({ count }) {
         </details>
       )}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={test} disabled={pending || !ready} className="btn-outline py-1.5! text-sm disabled:opacity-50">
+        <button type="button" onClick={test} disabled={pending || !ready} className="btn-outline btn-sm disabled:opacity-50">
           Send a test to me
         </button>
-        <button type="button" onClick={send} disabled={pending || !ready || count === 0} className="btn-primary py-1.5! text-sm disabled:opacity-50">
+        <button type="button" onClick={send} disabled={pending || !ready || count === 0} className="btn-primary btn-sm disabled:opacity-50">
           {pending ? 'Sending…' : `Send to ${count} ${count === 1 ? 'person' : 'people'}`}
         </button>
       </div>

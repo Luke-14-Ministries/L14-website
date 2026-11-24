@@ -76,7 +76,7 @@ function Row({ row }) {
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Link
           href={`/admin/registrations/${row.registrationId}`}
-          className="btn-outline py-1.5! text-sm"
+          className="btn-outline btn-sm"
         >
           Open the registration
         </Link>
@@ -102,14 +102,14 @@ function Row({ row }) {
             <button
               onClick={() => settle('actioned')}
               disabled={pending}
-              className="btn-primary py-1.5! text-sm"
+              className="btn-primary btn-sm"
             >
               {pending ? 'Saving…' : 'Handled: places canceled'}
             </button>
             <button
               onClick={() => settle('declined')}
               disabled={pending}
-              className="btn-outline py-1.5! text-sm"
+              className="btn-outline btn-sm"
             >
               Handled: staying after all
             </button>

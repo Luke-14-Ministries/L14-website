@@ -112,7 +112,7 @@ export default async function SearchPage({ searchParams }) {
           className="w-80 max-w-full rounded-sm border border-neutral-300 px-3 py-2"
           autoFocus
         />
-        <button type="submit" className="btn-primary py-2!">
+        <button type="submit" className="btn-primary btn-sm">
           Search
         </button>
         <span className="text-sm text-neutral-500">

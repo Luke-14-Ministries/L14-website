@@ -128,7 +128,7 @@ export default function RecordGiftForm() {
         <p className="mt-3 rounded-sm border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">{done}</p>
       )}
 
-      <button type="submit" disabled={pending} className="btn-primary py-2! mt-4">
+      <button type="submit" disabled={pending} className="btn-primary btn-sm mt-4">
         {pending ? 'Recording…' : 'Record gift'}
       </button>
     </form>

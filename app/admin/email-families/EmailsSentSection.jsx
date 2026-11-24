@@ -119,7 +119,7 @@ export default function EmailsSentSection({ result, byEvent, filters, eventOptio
             <span className="block font-semibold mb-1">To</span>
             <input type="date" name="sent_to" defaultValue={filters.to} className={field} />
           </label>
-          <button type="submit" className="btn-primary py-1.5! text-sm">
+          <button type="submit" className="btn-primary btn-sm">
             Apply
           </button>
           {hasEmailFilters(filters) && (

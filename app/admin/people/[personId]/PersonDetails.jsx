@@ -165,11 +165,11 @@ export default function PersonDetails({ person, canEdit }) {
       )}
       <div className="flex flex-wrap items-center gap-3">
         {confirm ? (
-          <button type="button" onClick={() => save(true)} disabled={pending} className="btn-primary py-1.5! text-sm">
+          <button type="button" onClick={() => save(true)} disabled={pending} className="btn-primary btn-sm">
             {pending ? 'Saving…' : 'Change it anyway'}
           </button>
         ) : (
-          <button type="submit" disabled={pending} className="btn-primary py-1.5! text-sm">
+          <button type="submit" disabled={pending} className="btn-primary btn-sm">
             {pending ? 'Saving…' : 'Save'}
           </button>
         )}

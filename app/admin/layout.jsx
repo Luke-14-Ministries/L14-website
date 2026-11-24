@@ -234,11 +234,11 @@ export default async function AdminLayout({ children }) {
               with My Dashboard and Log Out). */}
           <div className="flex w-full shrink-0 flex-col items-stretch gap-3 sm:w-auto sm:items-end">
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <Link href="/account/dashboard/" className="btn-outline py-1.5! text-sm">
+              <Link href="/account/dashboard/" className="btn-outline btn-sm">
                 My Dashboard
               </Link>
               <form action="/auth/signout/" method="post">
-                <button type="submit" className="btn-outline py-1.5! text-sm">
+                <button type="submit" className="btn-outline btn-sm">
                   Log Out
                 </button>
               </form>

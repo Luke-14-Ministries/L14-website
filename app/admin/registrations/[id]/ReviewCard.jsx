@@ -509,7 +509,7 @@ export default function ReviewCard({
                   type="button"
                   disabled={pending}
                   onClick={() => setCreedNoting(true)}
-                  className="btn-outline py-1! ml-2 text-xs"
+                  className="btn-outline btn-xs ml-2"
                 >
                   Talked with Larry…
                 </button>
@@ -537,7 +537,7 @@ export default function ReviewCard({
                       type="button"
                       disabled={pending}
                       onClick={() => run('creed_discussed', { reason: creedNote })}
-                      className="btn-primary py-1.5! text-sm disabled:opacity-50"
+                      className="btn-primary btn-sm disabled:opacity-50"
                     >
                       {pending ? 'Saving…' : 'Record it'}
                     </button>
@@ -647,7 +647,7 @@ export default function ReviewCard({
                       run('undo_deposit_waiver', { reason: undoReason });
                     }
                   }}
-                  className="btn-outline py-1.5! text-sm disabled:opacity-50"
+                  className="btn-outline btn-sm disabled:opacity-50"
                 >
                   {pending ? 'Saving…' : 'Undo the waiver'}
                 </button>
@@ -666,7 +666,7 @@ export default function ReviewCard({
       {canDecide && !depositWaived && cls && review?.review_class === 'neither' && depositCents > 0 && (
         <div className="mb-4">
           {!waiving ? (
-            <button type="button" disabled={pending} onClick={() => setWaiving(true)} className="btn-outline py-1.5! text-sm">
+            <button type="button" disabled={pending} onClick={() => setWaiving(true)} className="btn-outline btn-sm">
               Waive the deposit…
             </button>
           ) : (
@@ -691,7 +691,7 @@ export default function ReviewCard({
                   type="button"
                   disabled={pending}
                   onClick={() => run('waive_deposit', { reason: waiveReason })}
-                  className="btn-primary py-1.5! text-sm disabled:opacity-50"
+                  className="btn-primary btn-sm disabled:opacity-50"
                 >
                   {pending ? 'Saving…' : 'Waive the deposit'}
                 </button>
@@ -721,7 +721,7 @@ export default function ReviewCard({
             type="button"
             disabled={pending}
             onClick={() => run('lift_hold')}
-            className="btn-outline py-1.5! mt-2 text-sm"
+            className="btn-outline btn-sm mt-2"
           >
             Lift the hold without deciding
           </button>}
@@ -730,7 +730,7 @@ export default function ReviewCard({
       {canWrite && !hold?.since && canHold && (
         <div className="mb-4">
           {!holding ? (
-            <button type="button" disabled={pending} onClick={() => setHolding(true)} className="btn-outline py-1.5! text-sm">
+            <button type="button" disabled={pending} onClick={() => setHolding(true)} className="btn-outline btn-sm">
               Put on hold…
             </button>
           ) : (
@@ -753,7 +753,7 @@ export default function ReviewCard({
                   type="button"
                   disabled={pending || !holdReason.trim()}
                   onClick={() => run('hold', { reason: holdReason })}
-                  className="btn-primary py-1.5! text-sm disabled:opacity-50"
+                  className="btn-primary btn-sm disabled:opacity-50"
                 >
                   {pending ? 'Saving…' : 'Put on hold'}
                 </button>
@@ -777,7 +777,7 @@ export default function ReviewCard({
             type="button"
             disabled={pending}
             onClick={() => run('answered')}
-            className="btn-outline py-1.5! mt-2 text-sm"
+            className="btn-outline btn-sm mt-2"
           >
             The family has answered
           </button>}
@@ -831,7 +831,7 @@ export default function ReviewCard({
               type="button"
               disabled={pending}
               onClick={() => run('approve')}
-              className="btn-primary py-1.5! text-sm disabled:opacity-50"
+              className="btn-primary btn-sm disabled:opacity-50"
             >
               {pending ? 'Saving…' : `Approve ${waiting.length === 1 ? 'this person' : `all ${waiting.length}`}`}
             </button>
@@ -840,7 +840,7 @@ export default function ReviewCard({
                 type="button"
                 disabled={pending}
                 onClick={() => setWaitlisting(true)}
-                className="btn-outline py-1.5! text-sm"
+                className="btn-outline btn-sm"
               >
                 Waitlist {waiting.length === 1 ? 'this person' : `all ${waiting.length}`}…
               </button>
@@ -850,7 +850,7 @@ export default function ReviewCard({
                 type="button"
                 disabled={pending}
                 onClick={() => setAsking(true)}
-                className="btn-outline py-1.5! text-sm"
+                className="btn-outline btn-sm"
               >
                 Ask the family for more information…
               </button>
@@ -879,7 +879,7 @@ export default function ReviewCard({
                   type="button"
                   disabled={pending || !waitlistReason.trim()}
                   onClick={() => run('waitlist', { reason: waitlistReason })}
-                  className="btn-primary py-1.5! text-sm disabled:opacity-50"
+                  className="btn-primary btn-sm disabled:opacity-50"
                 >
                   {pending ? 'Saving…' : `Waitlist ${waiting.length === 1 ? 'this person' : `all ${waiting.length}`}`}
                 </button>
@@ -913,7 +913,7 @@ export default function ReviewCard({
                   type="button"
                   disabled={pending || !reason.trim()}
                   onClick={() => run('ask', { reason })}
-                  className="btn-primary py-1.5! text-sm disabled:opacity-50"
+                  className="btn-primary btn-sm disabled:opacity-50"
                 >
                   Send and mark as waiting on the family
                 </button>

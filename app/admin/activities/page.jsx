@@ -304,7 +304,7 @@ export default async function AdminActivitiesPage({ searchParams }) {
             the ones you are looking at — same rule as the kitchen list. */}
         <a
           href={`/admin/activities/print/${selected ? `?event=${selected}` : ''}`}
-          className="btn-outline py-2! text-sm"
+          className="btn-outline btn-sm"
         >
           Print activity sheets
         </a>

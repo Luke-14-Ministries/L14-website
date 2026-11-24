@@ -275,7 +275,7 @@ export default function ChangesList({ groups: given }) {
             <button
               onClick={() => review(g.householdId, g.changes.map((c) => c.id))}
               disabled={busy === g.householdId}
-              className="btn-outline py-1.5! text-sm"
+              className="btn-outline btn-sm"
             >
               {busy === g.householdId ? '…' : 'Mark all reviewed'}
             </button>
@@ -338,7 +338,7 @@ export default function ChangesList({ groups: given }) {
                   <button
                     onClick={() => review(c.id, [c.id])}
                     disabled={busy === c.id}
-                    className="rounded-sm border border-neutral-300 px-3 py-1.5 font-semibold text-neutral-700 hover:border-brand hover:text-brand"
+                    className="btn-outline btn-sm disabled:opacity-50"
                   >
                     {busy === c.id ? '…' : 'Reviewed ✓'}
                   </button>

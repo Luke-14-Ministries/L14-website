@@ -37,10 +37,10 @@ function Row({ r }) {
           />
           {error && <p className="text-sm text-red-700">{error}</p>}
           <div className="flex gap-2">
-            <button type="button" className="btn-primary py-1.5!" disabled={pending} onClick={() => go('done')}>
+            <button type="button" className="btn-primary btn-sm" disabled={pending} onClick={() => go('done')}>
               Mark done
             </button>
-            <button type="button" className="btn-outline py-1.5!" disabled={pending} onClick={() => go('declined')}>
+            <button type="button" className="btn-outline btn-sm" disabled={pending} onClick={() => go('declined')}>
               Close without deleting
             </button>
           </div>

@@ -275,7 +275,7 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
                   onClick={() => review('approved')}
                   disabled={pending || !cleared}
                   title={cleared ? undefined : 'Needs a background check marked OK to serve. Record it below.'}
-                  className="btn-primary py-1.5! text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Approve
                 </button>
@@ -284,7 +284,7 @@ function VolunteerRow({ row, maySeeChecks, mayEditChecks = false, canReview = tr
                 <button
                   onClick={() => review('declined')}
                   disabled={pending}
-                  className="rounded-sm border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50"
+                  className="btn-outline btn-sm text-red-700 disabled:opacity-50"
                 >
                   Decline
                 </button>
@@ -446,7 +446,7 @@ export default function VolunteerManager({ groups, maySeeChecks = false, mayEdit
             bulk upload takes a whole list at once -- so it gets its own screen
             rather than a button on every row. */}
         {maySeeChecks && (
-          <Link href="/admin/background-checks/screening/" className="btn-outline py-2! shrink-0">
+          <Link href="/admin/background-checks/screening/" className="btn-outline btn-sm shrink-0">
             Send background check invites
           </Link>
         )}

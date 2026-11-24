@@ -173,7 +173,7 @@ function LodgingForm({ initial, kinds, submitLabel, onSubmit, onCancel, pending 
         </div>
       </div>
       <div className="mt-2 flex items-center gap-3">
-        <button type="submit" disabled={pending} className="btn-primary px-3! py-1! text-sm">
+        <button type="submit" disabled={pending} className="btn-primary btn-sm">
           {pending ? 'Saving…' : submitLabel}
         </button>
         <button type="button" onClick={onCancel} className="text-sm underline">
@@ -406,7 +406,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
                   setAddingUnder('root');
                 }}
                 disabled={pending}
-                className="btn-outline px-3! py-1! text-sm"
+                className="btn-outline btn-sm"
               >
                 + Add a building / place
               </button>
@@ -444,7 +444,7 @@ export default function LodgingSetup({ eventId, eventName, lodgings, otherEvents
                   type="button"
                   onClick={copy}
                   disabled={pending || !copyFrom}
-                  className="btn-primary px-3! py-1! text-sm disabled:opacity-50"
+                  className="btn-primary btn-sm disabled:opacity-50"
                 >
                   {pending ? 'Copying…' : 'Copy them here'}
                 </button>

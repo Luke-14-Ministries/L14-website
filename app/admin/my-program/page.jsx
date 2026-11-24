@@ -112,10 +112,10 @@ export default async function MyProgramPage({ searchParams }) {
           the CSV is a download, the print view a page of its own. */}
       {rows.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <a href={`/admin/my-program/export/?grant=${grant}`} className="btn-outline py-1.5! text-sm">
+          <a href={`/admin/my-program/export/?grant=${grant}`} className="btn-outline btn-sm">
             Download CSV
           </a>
-          <Link href={`/admin/my-program/print/?grant=${grant}`} className="btn-outline py-1.5! text-sm">
+          <Link href={`/admin/my-program/print/?grant=${grant}`} className="btn-outline btn-sm">
             Print / PDF
           </Link>
           <span className="text-xs text-neutral-500">

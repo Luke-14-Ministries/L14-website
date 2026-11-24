@@ -293,14 +293,14 @@ export default function BuddyBoard({
               orientation (14 Oct 2026). Both carry the event. */}
           <a
             href={`/admin/buddies/export?event=${eventId}`}
-            className="btn-outline py-2! text-sm"
+            className="btn-outline btn-sm"
             title="Every pairing for this event as a CSV: camper, buddy, household, background check status."
           >
             Download CSV
           </a>
           <a
             href={`/admin/buddies/print/?event=${eventId}`}
-            className="btn-outline py-2! text-sm"
+            className="btn-outline btn-sm"
             title="One printable sheet per buddy, with their camper's details, to hand out at orientation."
           >
             Print buddy sheets
@@ -309,7 +309,7 @@ export default function BuddyBoard({
             <button
               onClick={togglePublish}
               disabled={pending}
-              className={publishedAt ? 'btn-outline py-2!' : 'btn-primary py-2!'}
+              className={publishedAt ? 'btn-outline btn-sm' : 'btn-primary btn-sm'}
             >
               {publishedAt ? 'Unpublish' : 'Publish assignments'}
             </button>
@@ -476,7 +476,7 @@ export default function BuddyBoard({
                     <button
                       onClick={() => setPicking(c.participantId)}
                       disabled={pending}
-                      className="btn-outline py-1.5! text-sm"
+                      className="btn-outline btn-sm"
                     >
                       {mine.length === 0 ? 'Assign a buddy' : 'Add another buddy'}
                     </button>

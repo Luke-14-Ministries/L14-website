@@ -477,7 +477,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
           placeholder="Search by family, person or event"
           className="w-full sm:w-80 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
         />
-        <button type="submit" className="btn-outline py-1.5! px-3! text-sm">
+        <button type="submit" className="btn-outline btn-sm">
           Search
         </button>
         {q && (

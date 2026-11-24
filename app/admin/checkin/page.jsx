@@ -181,7 +181,7 @@ export default async function CheckinPage({ searchParams }) {
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xl font-bold">Check-In</h2>
         {eventId && (
-          <a href={`/admin/checkin/print/?event=${eventId}`} className="btn-outline py-1.5! text-sm">
+          <a href={`/admin/checkin/print/?event=${eventId}`} className="btn-outline btn-sm">
             Arrival sheet (print)
           </a>
         )}

@@ -98,7 +98,7 @@ export default async function DietaryPage({ searchParams }) {
             href={`/admin/dietary/print${
               eventFilter ? `?event=${eventFilter}` : showPast ? '?past=1' : ''
             }`}
-            className="btn-outline py-2! text-sm"
+            className="btn-outline btn-sm"
           >
             Kitchen list (no names)
             {eventFilter && !isEventScope(eventFilter) && <span className="font-normal">, this event</span>}
@@ -107,7 +107,7 @@ export default async function DietaryPage({ searchParams }) {
               2026): for the cook and the nurse, not the kitchen door. */}
           <a
             href={`/admin/dietary/by-allergen${eventFilter ? `?event=${eventFilter}` : ''}`}
-            className="btn-outline py-2! text-sm"
+            className="btn-outline btn-sm"
           >
             By allergen (names)
           </a>
@@ -152,7 +152,7 @@ export default async function DietaryPage({ searchParams }) {
           placeholder="Find a person or household…"
           className="w-64 rounded-sm border border-neutral-300 px-3 py-1.5 text-sm"
         />
-        <button type="submit" className="btn-outline py-1.5! text-sm">Search</button>
+        <button type="submit" className="btn-outline btn-sm">Search</button>
         {q && (
           <a href="/admin/dietary" className="text-sm text-brand underline">
             Clear

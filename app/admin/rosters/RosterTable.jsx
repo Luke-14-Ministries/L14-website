@@ -263,10 +263,10 @@ export default function RosterTable({ events, rows, programs = [] }) {
             {families} {families === 1 ? 'family' : 'families'} · {filtered.length}{' '}
             {filtered.length === 1 ? 'person' : 'people'}
           </span>
-          <a href={csvHref} className="btn-outline py-1.5! text-sm">
+          <a href={csvHref} className="btn-outline btn-sm">
             Download CSV
           </a>
-          <a href={printHref} className="btn-outline py-1.5! text-sm">
+          <a href={printHref} className="btn-outline btn-sm">
             Print view
           </a>
         </div>

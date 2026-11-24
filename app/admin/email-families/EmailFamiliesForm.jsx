@@ -291,7 +291,7 @@ export default function EmailFamiliesForm({
           type="button"
           onClick={send}
           disabled={sending || choosing || sendable.length === 0}
-          className="btn-primary py-2! text-sm disabled:opacity-50"
+          className="btn-primary btn-sm disabled:opacity-50"
         >
           {sending ? 'Sending… (one at a time)' : `Send to ${plural(sendable.length, 'family', 'families')}`}
         </button>

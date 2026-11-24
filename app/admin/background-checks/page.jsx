@@ -595,7 +595,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
           </ul>
           {/* Named for both halves of that page (Lawrence, 15 Nov 2026);
               the page's own name is its heading (23 Nov 2026). */}
-          <Link href="/admin/background-checks/screening/" className="btn-primary mt-3 inline-block py-2!">
+          <Link href="/admin/background-checks/screening/" className="btn-primary mt-3 inline-block btn-sm">
             Send invites and see results →
           </Link>
         </div>

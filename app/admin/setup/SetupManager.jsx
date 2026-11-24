@@ -642,7 +642,7 @@ function EventRow({ e }) {
           type="button"
           onClick={saveAll}
           disabled={(!dirty && !detailsDirty) || busy}
-          className="btn-primary py-1.5! text-sm disabled:opacity-40"
+          className="btn-primary btn-sm disabled:opacity-40"
         >
           {busy ? 'Saving…' : 'Save'}
         </button>
@@ -918,7 +918,7 @@ function NewEventPanel({ events }) {
   return (
     <div className="mb-6">
       {!open ? (
-        <button type="button" onClick={() => setOpen(true)} className="btn-primary py-1.5! text-sm">
+        <button type="button" onClick={() => setOpen(true)} className="btn-primary btn-sm">
           + New event
         </button>
       ) : (
@@ -1045,7 +1045,7 @@ function NewEventPanel({ events }) {
               type="button"
               onClick={submit}
               disabled={busy || !drafts.length}
-              className="btn-primary py-1.5! text-sm disabled:opacity-40"
+              className="btn-primary btn-sm disabled:opacity-40"
             >
               {busy ? 'Creating…' : drafts.length > 1 ? `Create ${drafts.length} events` : 'Create event'}
             </button>

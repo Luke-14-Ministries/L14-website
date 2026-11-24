@@ -176,7 +176,7 @@ export default function CheckinList({ rows }) {
               className={
                 r.checkedInAt
                   ? 'rounded-lg bg-green-100 text-green-800 px-4 py-2.5 font-semibold border border-green-300'
-                  : 'btn-primary py-2.5!'
+                  : 'btn-primary btn-sm'
               }
             >
               {/* Time AND date (25 Aug). A camp week runs several days and

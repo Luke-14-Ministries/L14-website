@@ -149,7 +149,7 @@ export default function RecordPaymentForm({ registrations }) {
         </p>
       )}
 
-      <button type="submit" disabled={pending} className="btn-primary py-2! mt-4">
+      <button type="submit" disabled={pending} className="btn-primary btn-sm mt-4">
         {pending ? 'Recording…' : 'Record payment'}
       </button>
     </form>

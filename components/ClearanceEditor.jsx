@@ -65,7 +65,7 @@ function CopyLine({ label, text, onUse }) {
       <span className="block text-xs font-semibold text-neutral-500">{label}</span>
       <div className="flex flex-wrap items-center gap-2">
         <code className="rounded-sm border border-neutral-200 bg-white px-2 py-1 text-xs break-all">{text}</code>
-        <button type="button" onClick={copy} className="btn-outline py-0.5! px-2! text-xs">
+        <button type="button" onClick={copy} className="btn-outline btn-xs">
           {copied ? 'Copied ✓' : 'Copy'}
         </button>
         {onUse && (
@@ -202,7 +202,7 @@ export default function ClearanceEditor({ personId, clearance, vb, email, firstN
               Changing this record needs the Background checks write grant.
             </span>
           )}
-          {canEdit && <button onClick={save} disabled={pending} className="btn-primary py-1.5! text-sm">
+          {canEdit && <button onClick={save} disabled={pending} className="btn-primary btn-sm">
             {pending ? 'Saving…' : 'Save record'}
           </button>}
           {clearance?.paperwork_marked_at && (

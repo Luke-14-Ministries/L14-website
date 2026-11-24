@@ -74,7 +74,7 @@ export default function MedicalContact({ eventId, name, phone, canEdit }) {
           className="rounded-sm border border-neutral-300 px-3 py-1.5"
         />
       </label>
-      <button type="submit" disabled={saving} className="btn-primary py-1.5!">
+      <button type="submit" disabled={saving} className="btn-primary btn-sm">
         {saving ? 'Saving…' : 'Save'}
       </button>
       <button

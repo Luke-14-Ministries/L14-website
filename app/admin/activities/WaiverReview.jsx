@@ -120,7 +120,7 @@ export default function ReviewActions({ upload, canReview = false }) {
           type="button"
           onClick={() => run('accepted')}
           disabled={pending}
-          className="btn-outline py-0.5! px-2! text-xs"
+          className="btn-outline btn-xs"
         >
           {pending && !rejecting ? 'Saving…' : 'Accept'}
         </button>

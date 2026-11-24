@@ -156,7 +156,7 @@ export default function StepUpModal({
           </p>
         )}
         <div className="flex gap-3 justify-end">
-          <button type="button" onClick={onClose} disabled={busy} className="btn-outline py-1.5!">
+          <button type="button" onClick={onClose} disabled={busy} className="btn-outline btn-sm">
             Cancel
           </button>
           <button
@@ -165,7 +165,7 @@ export default function StepUpModal({
             className={
               danger
                 ? 'rounded-sm bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-semibold px-4 py-1.5'
-                : 'btn-primary py-1.5! disabled:opacity-40'
+                : 'btn-primary btn-sm disabled:opacity-40'
             }
           >
             {busy ? busyLabel : confirmLabel}

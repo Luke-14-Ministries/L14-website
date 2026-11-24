@@ -172,7 +172,7 @@ function GroupCard({
               onChange={(e) => setSize(e.target.value)}
             />
           </label>
-          <button type="submit" disabled={pending} className="btn-primary py-1! text-xs">
+          <button type="submit" disabled={pending} className="btn-primary btn-xs">
             Save
           </button>
           <button
@@ -276,7 +276,7 @@ function GroupCard({
           type="button"
           onClick={() => onPlace(group.id)}
           disabled={pending}
-          className={`mt-3 btn-outline py-1! text-xs ${overBy > 0 ? 'border-red-400! text-red-700!' : ''}`}
+          className={`mt-3 btn-outline btn-xs ${overBy > 0 ? 'border-red-400! text-red-700!' : ''}`}
         >
           Place {inHandNames} here
           {overBy > 0 && ` (over by ${overBy})`}
@@ -416,10 +416,10 @@ export default function GroupsBoard({
           {groups.length} {groups.length === 1 ? noun.one : noun.many}
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <a href={`/admin/activities/groups/print/?activity=${activity.id}`} className="btn-outline py-2!">
+          <a href={`/admin/activities/groups/print/?activity=${activity.id}`} className="btn-outline btn-sm">
             Print {noun.many}
           </a>
-          <a href={`/admin/activities/groups/export/?activity=${activity.id}`} className="btn-outline py-2!">
+          <a href={`/admin/activities/groups/export/?activity=${activity.id}`} className="btn-outline btn-sm">
             Download CSV
           </a>
         </div>
@@ -602,7 +602,7 @@ export default function GroupsBoard({
                 type="button"
                 onClick={() => run(() => createGroup({ activityId: activity.id }))}
                 disabled={pending}
-                className="btn-primary py-1.5! text-sm"
+                className="btn-primary btn-sm"
               >
                 Add a {noun.one}
               </button>

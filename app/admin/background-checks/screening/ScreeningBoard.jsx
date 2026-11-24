@@ -349,7 +349,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                           return n;
                         })
                       }
-                      className="btn-outline py-1.5! text-sm"
+                      className="btn-outline btn-sm"
                     >
                       {allIn ? 'Select none' : `Select all ${list.length}`}
                     </button>
@@ -511,7 +511,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
           type="button"
           onClick={refresh}
           disabled={busy || !connected || open.length === 0}
-          className="btn-outline py-1.5! text-sm disabled:opacity-50"
+          className="btn-outline btn-sm disabled:opacity-50"
         >
           Check VolunteerBadge for updates
         </button>
@@ -612,7 +612,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         {r.status === 'clear' && !r.confirmedAt && !r.recordedByHand && mode === 'live' && (
-                          <button type="button" disabled={busy} onClick={() => confirmClear(r)} className="btn-primary py-1! px-3! text-xs">
+                          <button type="button" disabled={busy} onClick={() => confirmClear(r)} className="btn-primary btn-xs">
                             OK to serve
                           </button>
                         )}
@@ -661,7 +661,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                               Goes to VolunteerBadge with the invite. At least 10 characters, no personal details.
                             </p>
                             <div className="mt-1.5 flex gap-2">
-                              <button type="button" disabled={busy} onClick={() => resend(r)} className="btn-primary py-1! px-2! text-xs">
+                              <button type="button" disabled={busy} onClick={() => resend(r)} className="btn-primary btn-xs">
                                 Resend
                               </button>
                               <button type="button" onClick={() => setResendFor(null)} className="text-xs text-neutral-600 underline">

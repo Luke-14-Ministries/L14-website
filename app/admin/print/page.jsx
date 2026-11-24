@@ -29,7 +29,7 @@ function SheetRow({ title, forWhom, href, note }) {
         <p className="text-sm text-neutral-600">{forWhom}</p>
         {note && <p className="text-xs text-neutral-500">{note}</p>}
       </div>
-      <a href={href} className="btn-outline py-1.5! text-sm">
+      <a href={href} className="btn-outline btn-sm">
         Open sheet
       </a>
     </li>

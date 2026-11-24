@@ -48,12 +48,12 @@ export default async function NewsletterPage() {
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">Newsletter</h2>
         <span className="flex flex-wrap gap-2">
-          <a href="/admin/newsletter/export" className="btn-outline py-2! text-sm">
+          <a href="/admin/newsletter/export" className="btn-outline btn-sm">
             Download CSV
           </a>
           <a
             href="/admin/newsletter/export?format=mailchimp"
-            className="btn-outline py-2! text-sm"
+            className="btn-outline btn-sm"
             title="Email Address, First Name, Last Name, Tags: Mailchimp's import layout, tagged 'website'"
           >
             Mailchimp import CSV

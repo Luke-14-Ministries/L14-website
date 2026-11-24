@@ -300,10 +300,10 @@ export default function FamilyScholarshipReview({ row, showRegistrationLink = fa
           {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button onClick={approve} disabled={pending} className="btn-primary py-1.5! text-sm disabled:opacity-50">
+            <button onClick={approve} disabled={pending} className="btn-primary btn-sm disabled:opacity-50">
               {pending ? 'Saving…' : flagged ? 'Approve again' : 'Approve this award'}
             </button>
-            <button onClick={decline} disabled={pending} className="btn-outline py-1.5! text-sm disabled:opacity-50">
+            <button onClick={decline} disabled={pending} className="btn-outline btn-sm disabled:opacity-50">
               Decline
             </button>
             <span className="text-xs text-neutral-600">

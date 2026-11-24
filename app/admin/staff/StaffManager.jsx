@@ -151,7 +151,7 @@ An administrator can grant and remove access, manage accounts and name program l
               }}
               disabled={busy || isSelf}
               title={isSelf ? 'You cannot deactivate yourself.' : undefined}
-              className="rounded-sm border border-neutral-300 px-3 py-1.5 text-sm font-semibold text-neutral-700 hover:border-red-400 hover:text-red-700 disabled:opacity-40"
+              className="btn-outline btn-sm disabled:opacity-40"
             >
               {busy ? '…' : 'Deactivate'}
             </button>
@@ -160,7 +160,7 @@ An administrator can grant and remove access, manage accounts and name program l
               <button
                 onClick={() => onPatch(m.profileId, { active: true })}
                 disabled={busy}
-                className="rounded-sm border border-green-300 bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-800"
+                className="btn-outline btn-sm disabled:opacity-40"
               >
                 {busy ? '…' : 'Reactivate'}
               </button>
@@ -181,7 +181,7 @@ Their access ticks are cleared too, so adding them again later starts with no ac
                   }
                 }}
                 disabled={busy}
-                className="rounded-sm border border-neutral-300 px-3 py-1.5 text-sm font-semibold text-neutral-600 hover:border-red-400 hover:text-red-700 disabled:opacity-40"
+                className="btn-outline btn-sm text-red-700 disabled:opacity-40"
               >
                 {busy ? '…' : 'Remove'}
               </button>
@@ -609,7 +609,7 @@ export default function StaffManager({ members, selfId, accounts = [] }) {
             />
             Administrator
           </label>
-          <button type="submit" disabled={adding} className="btn-primary py-2!">
+          <button type="submit" disabled={adding} className="btn-primary btn-sm">
             {adding ? 'Adding…' : 'Add to staff'}
           </button>
         </form>

@@ -93,7 +93,7 @@ export default async function AdminGivingPage({ searchParams }) {
     <div>
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xl font-bold">Giving</h2>
-        <a href={statementHref} className="btn-outline py-1.5! text-sm">
+        <a href={statementHref} className="btn-outline btn-sm">
           Year-end statements (print)
         </a>
       </div>
@@ -135,7 +135,7 @@ export default async function AdminGivingPage({ searchParams }) {
             ))}
           </select>
         </label>
-        <button type="submit" className="btn-primary py-1.5! text-sm">Apply</button>
+        <button type="submit" className="btn-primary btn-sm">Apply</button>
         {(fFrom || fTo || fFund || fMethod) && (
           <a href="/admin/giving" className="text-sm text-neutral-500 underline">Clear</a>
         )}

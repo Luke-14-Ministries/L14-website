@@ -513,7 +513,7 @@ export default function LodgingBoard({
             <button
               onClick={() => doAssignGroup(placingGroup, lodging)}
               disabled={pending}
-              className="mt-3 btn-primary py-1! text-xs"
+              className="mt-3 btn-primary btn-xs"
             >
               Place all {placingGroup.length} of the {placingGroup[0]?.household} here
             </button>
@@ -523,7 +523,7 @@ export default function LodgingBoard({
             <button
               onClick={() => doAssign(peopleById.get(placing), lodging)}
               disabled={pending}
-              className="mt-3 btn-outline py-1! text-xs"
+              className="mt-3 btn-outline btn-xs"
             >
               {placedIds.has(placing) ? 'Move' : 'Place'} {peopleById.get(placing)?.name} here
             </button>
@@ -609,14 +609,14 @@ export default function LodgingBoard({
         <div className="flex flex-wrap items-center gap-2">
           {/* Carries the event through, same rule as the kitchen list and the
               activity sheets: the paper says what the screen said. */}
-          <a href={`/admin/lodging/print/?event=${eventId}`} className="btn-outline py-2!">
+          <a href={`/admin/lodging/print/?event=${eventId}`} className="btn-outline btn-sm">
             Print room list
           </a>
           {canPlace && (
             <button
               onClick={togglePublish}
               disabled={pending}
-              className={publishedAt ? 'btn-outline py-2!' : 'btn-primary py-2!'}
+              className={publishedAt ? 'btn-outline btn-sm' : 'btn-primary btn-sm'}
             >
               {publishedAt ? 'Unpublish' : 'Publish assignments'}
             </button>

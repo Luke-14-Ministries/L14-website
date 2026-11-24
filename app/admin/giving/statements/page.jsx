@@ -86,7 +86,7 @@ export default async function GivingStatementsPage({ searchParams }) {
             <span className="block font-semibold mb-1">One donor (name or email, optional)</span>
             <input name="donor" defaultValue={donorFilter} placeholder="leave blank for all donors" className="w-full rounded-sm border border-neutral-300 px-2 py-1.5" />
           </label>
-          <button type="submit" className="btn-primary py-1.5!">Apply</button>
+          <button type="submit" className="btn-primary btn-sm">Apply</button>
         </form>
         <p className="text-sm text-neutral-500">
           {donorList.length} {donorList.length === 1 ? 'donor' : 'donors'} · {from} to {to} · each

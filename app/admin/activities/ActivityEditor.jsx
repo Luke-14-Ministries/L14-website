@@ -588,7 +588,7 @@ export function ActivityEditor({ activity, eventId = null, canEmail = false, wai
                 );
               }}
               disabled={pending}
-              className="btn-primary py-1.5! text-sm disabled:opacity-50"
+              className="btn-primary btn-sm disabled:opacity-50"
             >
               {pending ? 'Saving…' : 'Save'}
             </button>
@@ -647,7 +647,7 @@ export function AddActivity({ eventId, eventName, waiverChoices = [] }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="btn-outline py-2! text-sm">
+      <button onClick={() => setOpen(true)} className="btn-outline btn-sm">
         + Add an activity to {eventName || 'this event'}
       </button>
     );
@@ -691,7 +691,7 @@ export function AddActivity({ eventId, eventName, waiverChoices = [] }) {
             });
           }}
           disabled={pending}
-          className="btn-primary py-1.5! text-sm disabled:opacity-50"
+          className="btn-primary btn-sm disabled:opacity-50"
         >
           {pending ? 'Adding…' : 'Add it'}
         </button>
@@ -966,7 +966,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
         <button
           onClick={() => run(() => createSlot(activity.id, { ...f, date: shown(dayRef, f.date) }))}
           disabled={pending}
-          className="btn-outline py-1.5! text-sm disabled:opacity-50"
+          className="btn-outline btn-sm disabled:opacity-50"
         >
           {pending ? 'Adding…' : 'Add this time'}
         </button>
@@ -1050,7 +1050,7 @@ export function SlotEditor({ activity, slots = [], event = null }) {
               })
             }
             disabled={pending}
-            className="mt-3 btn-primary py-1.5! text-sm disabled:opacity-50"
+            className="mt-3 btn-primary btn-sm disabled:opacity-50"
           >
             {pending ? 'Making…' : 'Make these times'}
           </button>

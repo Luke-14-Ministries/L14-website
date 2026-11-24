@@ -125,7 +125,7 @@ export function RegistryQuickSearch({ row, today }) {
             />
           </label>
           <div className="flex gap-3">
-            <button type="submit" disabled={pending} className="btn-primary py-1! text-sm">
+            <button type="submit" disabled={pending} className="btn-primary btn-sm">
               {pending ? 'Saving…' : 'Save'}
             </button>
             <button type="button" onClick={() => setMode('idle')} className="text-sm text-neutral-600 underline">

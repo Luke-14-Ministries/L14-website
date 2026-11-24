@@ -55,7 +55,7 @@ export default function TemplatePicker({ templates, volunteer, family }) {
       <div className="mt-2 flex flex-wrap items-end gap-4">
         {pick('vb-template-volunteer', v, setV, 'Volunteers')}
         {pick('vb-template-family', f, setF, 'Family adults')}
-        <button type="button" onClick={save} disabled={busy || !changed} className="btn-outline py-1.5! text-sm disabled:opacity-50">
+        <button type="button" onClick={save} disabled={busy || !changed} className="btn-outline btn-sm disabled:opacity-50">
           {busy ? 'Saving…' : 'Save'}
         </button>
       </div>

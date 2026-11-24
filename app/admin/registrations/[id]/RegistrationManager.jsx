@@ -316,10 +316,10 @@ function PersonEditor({ registrationId, person, onDone }) {
       </div>
       <ErrorNote>{error}</ErrorNote>
       <div className="mt-3 flex gap-2">
-        <button onClick={() => save()} disabled={pending} className="btn-primary py-1.5! text-sm">
+        <button onClick={() => save()} disabled={pending} className="btn-primary btn-sm">
           {pending ? 'Saving…' : 'Save changes'}
         </button>
-        <button onClick={onDone} disabled={pending} className="btn-outline py-1.5! text-sm">
+        <button onClick={onDone} disabled={pending} className="btn-outline btn-sm">
           Cancel
         </button>
       </div>
@@ -382,10 +382,10 @@ function AdjustmentsEditor({ registrationId, participant, onDone }) {
       </div>
       <ErrorNote>{error}</ErrorNote>
       <div className="mt-3 flex gap-2">
-        <button onClick={() => save()} disabled={pending} className="btn-primary py-1.5! text-sm">
+        <button onClick={() => save()} disabled={pending} className="btn-primary btn-sm">
           {pending ? 'Saving…' : 'Save'}
         </button>
-        <button onClick={onDone} disabled={pending} className="btn-outline py-1.5! text-sm">
+        <button onClick={onDone} disabled={pending} className="btn-outline btn-sm">
           Cancel
         </button>
       </div>
@@ -729,7 +729,7 @@ function EnrollmentEditor({ registrationId, participant, onDone }) {
             <option value="false">No, they&rsquo;ve been before</option>
           </select>
         </label>
-        <button onClick={saveEnrollment} disabled={pending} className="btn-primary py-1.5! text-sm">
+        <button onClick={saveEnrollment} disabled={pending} className="btn-primary btn-sm">
           {pending ? 'Saving…' : saved ? 'Saved ✓' : 'Save'}
         </button>
       </div>
@@ -786,7 +786,7 @@ function ConsentRow({ label, help, record, disabled, onSet }) {
           type="button"
           onClick={() => onSet(true)}
           disabled={disabled || value === true}
-          className="btn-outline py-1! px-3! text-xs disabled:opacity-40"
+          className="btn-outline btn-xs disabled:opacity-40"
         >
           Set yes
         </button>
@@ -794,7 +794,7 @@ function ConsentRow({ label, help, record, disabled, onSet }) {
           type="button"
           onClick={() => onSet(false)}
           disabled={disabled || value === false}
-          className="btn-outline py-1! px-3! text-xs disabled:opacity-40"
+          className="btn-outline btn-xs disabled:opacity-40"
         >
           Set no
         </button>
@@ -931,7 +931,7 @@ function AddPerson({ registrationId, options }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="btn-outline py-2! text-sm mt-4">
+      <button onClick={() => setOpen(true)} className="btn-outline btn-sm mt-4">
         + Add a person to this week
       </button>
     );
@@ -991,22 +991,22 @@ function AddPerson({ registrationId, options }) {
               key={d.id}
               onClick={() => add({ existing_person_id: d.id })}
               disabled={pending}
-              className="btn-primary py-1.5! text-sm"
+              className="btn-primary btn-sm"
             >
               Use {d.name}
               {d.date_of_birth ? ` (born ${d.date_of_birth})` : ''}
             </button>
           ))}
-          <button onClick={() => add({ confirm_new: true })} disabled={pending} className="btn-outline py-1.5! text-sm">
+          <button onClick={() => add({ confirm_new: true })} disabled={pending} className="btn-outline btn-sm">
             Add as a new person anyway
           </button>
         </div>
       )}
       <div className="mt-3 flex gap-2">
-        <button onClick={() => add()} disabled={pending} className="btn-primary py-1.5! text-sm">
+        <button onClick={() => add()} disabled={pending} className="btn-primary btn-sm">
           {pending ? 'Adding…' : 'Add person'}
         </button>
-        <button onClick={() => setOpen(false)} disabled={pending} className="btn-outline py-1.5! text-sm">
+        <button onClick={() => setOpen(false)} disabled={pending} className="btn-outline btn-sm">
           Cancel
         </button>
       </div>
@@ -1164,10 +1164,10 @@ function HouseholdEditor({ registrationId, household }) {
           </div>
           <ErrorNote>{error}</ErrorNote>
           <div className="mt-3 flex gap-2">
-            <button onClick={() => save()} disabled={pending} className="btn-primary py-1.5! text-sm">
+            <button onClick={() => save()} disabled={pending} className="btn-primary btn-sm">
               {pending ? 'Saving…' : 'Save changes'}
             </button>
-            <button onClick={() => setEditing(false)} disabled={pending} className="btn-outline py-1.5! text-sm">
+            <button onClick={() => setEditing(false)} disabled={pending} className="btn-outline btn-sm">
               Cancel
             </button>
           </div>
@@ -1283,7 +1283,7 @@ function FamilyMessages({ registrationId, messages, unreadIds = [], canWrite = t
           className="flex-1 rounded-sm border border-neutral-300 px-3 py-2 text-sm"
           maxLength={1000}
         />
-        <button onClick={add} disabled={pending || !body.trim()} className="btn-primary py-2! text-sm">
+        <button onClick={add} disabled={pending || !body.trim()} className="btn-primary btn-sm">
           {pending ? 'Saving…' : 'Post note'}
         </button>
       </div>}
@@ -1358,7 +1358,7 @@ function PaymentsCard({ registrationId, payments, stripeBase = '', event = null,
                   <button
                     type="button"
                     onClick={() => setOpenFor(openFor === p.id ? null : p.id)}
-                    className="btn-outline py-1! px-3! text-sm"
+                    className="btn-outline btn-sm"
                   >
                     {/* "Refund…" read as unfinished rather than as "opens a
                         form" (flagged twice, 25 Aug), and "Cancel" beside a
@@ -1685,7 +1685,7 @@ function RefundForm({ registrationId, payment, event = null, feePeople = 0, depo
           onClick={submit}
           disabled={pending || Boolean(blockedBecause)}
           title={blockedBecause || `Refund ${money(cents + feeCents)}`}
-          className="btn-primary py-1.5! text-sm disabled:opacity-50"
+          className="btn-primary btn-sm disabled:opacity-50"
         >
           {pending ? 'Refunding…' : `Refund ${money(cents + feeCents)}`}
         </button>
@@ -1829,7 +1829,7 @@ function FamilyHeader({ registration, familyRegistrations, canSeeMoney = true, f
             sends the staffer back to the Overview (21 Oct screen walk). */}
         {canSeeMoney && <a
           href={`/admin/registrations/${registration.id}/statement`}
-          className="btn-outline py-1.5! text-sm"
+          className="btn-outline btn-sm"
         >
           Family statement (print)
         </a>}
