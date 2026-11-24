@@ -191,6 +191,8 @@ Katie's wording mark-up is still to come (`lib/reminders/templates.js`).
 | How are allergies printed? | `allergenWords()` / `allergySummary()` in `lib/support.js` |
 | What refund to suggest | `refundSuggestion()` in `lib/payments.js` — a suggestion, never a lock |
 | Must a family choose a payment route? | `requiresPaymentChoice()` in `lib/plans.js` — returns `false` |
+| Is this household, person, registration or participant the signed-in family's own? (every `/account/*` and wizard action, before RLS) | `assertMine()` / `myHouseholdIds()` in `lib/myHousehold.js` (23 Nov 2026); family-facing database errors go through `familyError()` in `lib/dbErrors.js` |
+| What does a staff CSV export send? | `csvResponse()` and `logExport()` in `lib/csv.js` (no-store headers; each download recorded in `export_log`, `0182`, listed on Access Changes) |
 | May this staff member…? | `can(staff, 'read:<area>' \| 'write:<area>')`, vocabulary in `lib/grants.js` |
 | May they decide a scholarship, a hand-set discount or a deposit waiver? | `can(staff, 'decide:scholarships')` / `can_decide_scholarships()` — Payments **and** Registration write (`0102`) |
 | Which activity waivers are outstanding? (our waiver unsigned, or the provider's confirmation not uploaded or rejected by staff, on an active signup) | the `activity_waivers_outstanding` view (`0120`, restated `0124` with `upload_status`/`review_note`; security invoker — families their own rows, staff all); never re-derive it on a page |
