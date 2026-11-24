@@ -3,16 +3,13 @@ import PageHero from '@/components/PageHero';
 import VideoEmbed from '@/components/VideoEmbed';
 import { asset } from '@/lib/site';
 import { getCampFacts, campHeadline } from '@/lib/campFacts';
+import { latestCampVideos } from '@/lib/campVideos';
 
 export const metadata = { title: 'Camp Celebrate' };
 
-// The latest summer's videos, as the old site shows them; the same pair heads
-// Camp Memories (app/camp-memories/page.jsx). After each camp, put the new
-// year's here and add it at the top there.
-const highlights = [
-  { week: 'Week 1', youtube: 'uU4mb2_N4YA' },
-  { week: 'Week 2', youtube: '93X7D2tUgiA' },
-];
+// The newest summer's videos, from lib/campVideos.js (23 Nov 2026), which
+// also feeds Camp Memories. After each camp, add the new year there.
+const highlights = latestCampVideos();
 
 const features = [
   {
@@ -148,12 +145,16 @@ export default async function CampCelebratePage() {
           ))}
         </div>
         <div className="mt-14 text-center">
-          <h2 className="text-3xl font-bold mb-8">Camp Celebrate 2026 Highlights</h2>
-          <div className="grid gap-8 sm:grid-cols-2">
-            {highlights.map(({ week, youtube }) => (
-              <div key={week}>
-                <h3 className="text-2xl font-bold mb-4">{week}</h3>
-                <VideoEmbed youtube={youtube} title={`Camp Celebrate 2026 ${week} highlights`} />
+          <h2 className="text-3xl font-bold mb-8">Camp Celebrate {highlights.year} Highlights</h2>
+          <div className={`grid gap-8 ${highlights.videos.length > 1 ? 'sm:grid-cols-2' : ''}`}>
+            {highlights.videos.map((v) => (
+              <div key={v.youtube ?? v.vimeo}>
+                {v.week && <h3 className="text-2xl font-bold mb-4">Week {v.week}</h3>}
+                <VideoEmbed
+                  youtube={v.youtube}
+                  vimeo={v.vimeo}
+                  title={`Camp Celebrate ${highlights.year}${v.week ? ` Week ${v.week}` : ''} highlights`}
+                />
               </div>
             ))}
           </div>

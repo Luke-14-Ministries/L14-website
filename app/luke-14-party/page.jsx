@@ -1,8 +1,26 @@
 import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 import { asset } from '@/lib/site';
+import { todayInMorristown } from '@/lib/events';
 
 export const metadata = { title: 'Luke 14 Party' };
+
+// The page reads today's date (PARTY.showUntil below), so it is built again
+// every hour rather than once at deploy, when the date would be frozen.
+export const revalidate = 3600;
+
+// The next Party, in one place (23 Nov 2026, review A4-12). The page said
+// "April 2027 / Date TBD" by hand and would have kept saying it in May.
+// `when` is what the page prints (a month until the day is fixed, then the
+// date), `date` the day itself once known, and `showUntil` the last day the
+// line is shown: after it the page says only "Date to be announced" until
+// someone writes the next Party here. A Setup event for the Party would be
+// the long-term answer; this is the small one.
+const PARTY = {
+  when: 'April 2027',
+  date: null, // e.g. 'Saturday, April 17, 2027' once it is set
+  showUntil: '2027-04-30',
+};
 
 // Full photo gallery from the original page
 const galleryImages = [
@@ -34,6 +52,8 @@ const galleryImages = [
 ].map((f) => ({ src: asset(`/images/${f}`), alt: 'Luke 14 Party photo' }));
 
 export default function Luke14PartyPage() {
+  // The Morristown calendar day, so the line comes off on the right morning.
+  const current = todayInMorristown() <= PARTY.showUntil;
   return (
     <>
       <PageHero
@@ -43,8 +63,17 @@ export default function Luke14PartyPage() {
       />
 
       <section className="container-site py-14 text-center">
-        <h2 className="text-3xl font-bold">April 2027</h2>
-        <p className="mt-3 text-4xl font-bold text-brand">Date TBD</p>
+        {current ? (
+          <>
+            <h2 className="text-3xl font-bold">{PARTY.when}</h2>
+            <p className="mt-3 text-4xl font-bold text-brand">{PARTY.date ?? 'Date to be announced'}</p>
+          </>
+        ) : (
+          <>
+            <h2 className="text-3xl font-bold">The next Luke 14 Party</h2>
+            <p className="mt-3 text-4xl font-bold text-brand">Date to be announced</p>
+          </>
+        )}
       </section>
 
       <section className="bg-brand-light py-14">
