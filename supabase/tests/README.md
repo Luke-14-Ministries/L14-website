@@ -39,7 +39,7 @@ pass the suite to `run_rls_local.sh` straight after the migrations.
 | `lower_price_rules.sql` | `0145`: a lowered price reaches people already registered. | Loads the seed itself; pass it to the runner |
 | `prayer_rules.sql` | `0141`: the prayer list. | Seed |
 | `staff_answers_rules.sql` | `0081`: family discount, review classes, agreements, deletion requests. | Seed |
-| `volunteerbadge_rules.sql` | `0165`, `0167`, `0170`: VolunteerBadge requests, who sends and reads them, OK to serve from a clear result. | Seed |
+| `volunteerbadge_rules.sql` | `0165`, `0167`, `0170`, `0187`: VolunteerBadge requests, who sends and reads them, OK to serve from a clear result, marking a taken-back invite cancelled in VolunteerBadge. | Seed |
 
 ## On the build machine (Windows, PostgreSQL 16 installed 18 Oct 2026)
 

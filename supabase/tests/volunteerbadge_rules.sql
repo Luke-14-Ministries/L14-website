@@ -1,4 +1,4 @@
--- Checks for migrations 0165, 0167 and 0170: VolunteerBadge requests. Who may send and read them,
+-- Checks for migrations 0165, 0167, 0170 and 0187: VolunteerBadge requests. Who may send and read them,
 -- one open invite per person and per address, the adult / Not permitted guard,
 -- the frozen columns, and OK to serve from a clear result (never from a sandbox one;
 -- 0167: a completion date that fits the invite, and a newer check on file wins;
