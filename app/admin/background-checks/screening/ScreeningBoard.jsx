@@ -20,6 +20,7 @@ import {
   refreshVolunteerBadge,
   confirmVolunteerBadgeClear,
   cancelVolunteerBadgeRequest,
+  markCancelledInVolunteerBadge,
   resendWithoutIdStep,
 } from './actions';
 
@@ -74,15 +75,19 @@ function detail(r) {
     case 'expired':
       return 'The link ran out before a background check started. They are back on the list to send again. For 30 days the site still looks for a late background check and ties it here if one turns up.';
     case 'cancelled':
-      return 'Taken back here. (It isn’t canceled in VolunteerBadge.)';
-    case 'superseded':
-      return 'Replaced by a resend without the ID step.';
+    case 'superseded': {
+      const what = r.status === 'cancelled' ? 'Taken back here' : 'Replaced by a resend without the ID step';
+      if (r.vbCancelledAt) return `${what}, and cancelled in VolunteerBadge on ${dayInMorristown(r.vbCancelledAt)}.`;
+      if (r.toCancelInVb)
+        return `${what}. VolunteerBadge’s link still works${r.expiresAt ? ` until ${dayInMorristown(r.expiresAt)}` : ''}, so it still holds a credit.`;
+      return `${what}.`;
+    }
     default:
       return '';
   }
 }
 
-export default function ScreeningBoard({ candidates, requests, mode, credits, outstanding = 0, connectionProblem, dashboardUrl }) {
+export default function ScreeningBoard({ candidates, requests, mode, credits, outstanding = 0, toCancelInVb = 0, connectionProblem, dashboardUrl }) {
   const router = useRouter();
   const [picked, setPicked] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
@@ -107,8 +112,11 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
   const orderable = useMemo(() => candidates.filter((c) => !c.blockedBecause), [candidates]);
   const blocked = useMemo(() => candidates.filter((c) => c.blockedBecause && !c.inProgress), [candidates]);
   // Done rows fold away under the open ones (Lawrence, 15 Nov 2026).
+  // A taken-back invite still to cancel in VolunteerBadge stays up top (0187).
   const isFinished = (r) =>
-    (r.status === 'clear' && r.confirmedAt) || r.recordedByHand || r.status === 'cancelled' || r.status === 'superseded';
+    (r.status === 'clear' && r.confirmedAt) ||
+    r.recordedByHand ||
+    ((r.status === 'cancelled' || r.status === 'superseded') && !r.toCancelInVb);
   const active = requests.filter((r) => !isFinished(r));
   const finished = requests.filter(isFinished);
   const allPicked = orderable.length > 0 && picked.size === orderable.length;
@@ -236,7 +244,12 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       const res = await resendWithoutIdStep(r.personId, why);
       setNote(
         res.ok
-          ? { tone: 'yes', text: `${r.name}: sent again without the ID step.${res.warning ? ` ${res.warning}` : ''}` }
+          ? {
+              tone: 'yes',
+              text: `${r.name}: sent again without the ID step.${res.warning ? ` ${res.warning}` : ''}${
+                mode === 'live' ? ' Cancel their earlier invite in VolunteerBadge too, then press Done on its row.' : ''
+              }`,
+            }
           : { tone: 'no', text: res.error }
       );
       if (res.ok) {
@@ -255,13 +268,37 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
         ? `Take back ${r.name}'s invite? Do this only if it isn't in VolunteerBadge's Applications list. They go back on the list to send again.`
         : r.status === 'processing' || r.status === 'in_review'
           ? `Stop following ${r.name}'s invite here? The site couldn't match it to VolunteerBadge's background check (see the note). Look at their background check in VolunteerBadge and record the result by hand on Background Checks. They go back on the list to send again.`
-          : `Take back ${r.name}'s invite here? It is NOT canceled in VolunteerBadge: if they still finish applying, the background check runs and uses a credit. They go back on the list to send again.`;
+          : `Take back ${r.name}'s invite here? Then cancel it in VolunteerBadge too: until you do, their link still works, and if they finish applying the background check runs and uses a credit. They go back on the list to send again.`;
     if (!window.confirm(words)) return;
     setBusy(true);
     setNote(null);
     try {
       const res = await cancelVolunteerBadgeRequest(r.id);
-      setNote(res.ok ? { tone: 'yes', text: `${r.name}: taken back.` } : { tone: 'no', text: res.error });
+      const cancelThere = mode === 'live' && r.status !== 'sending';
+      setNote(
+        res.ok
+          ? { tone: 'yes', text: `${r.name}: taken back.${cancelThere ? ' Now cancel the invite in VolunteerBadge too, then press Done on its row.' : ''}` }
+          : { tone: 'no', text: res.error }
+      );
+    } finally {
+      setBusy(false);
+      router.refresh();
+    }
+  }
+
+  // Staff cancelled it on VolunteerBadge's dashboard (0187).
+  async function markCancelledThere(r) {
+    if (
+      !window.confirm(
+        `Is ${r.name}'s invite cancelled in VolunteerBadge? Press OK only once VolunteerBadge shows it cancelled. From then on it doesn't hold a credit here.`
+      )
+    )
+      return;
+    setBusy(true);
+    setNote(null);
+    try {
+      const res = await markCancelledInVolunteerBadge(r.id);
+      setNote(res.ok ? { tone: 'yes', text: `${r.name}: recorded as cancelled in VolunteerBadge.` } : { tone: 'no', text: res.error });
     } finally {
       setBusy(false);
       router.refresh();
@@ -270,6 +307,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
 
   const open = requests.filter((r) => ['sending', 'invited', 'applied', 'processing', 'in_review'].includes(r.status));
   const waitingOnYou = requests.filter((r) => !r.confirmedAt && !r.recordedByHand && (r.status === 'clear' || r.status === 'consider'));
+  const cancelThere = requests.filter((r) => r.toCancelInVb);
   const lastChecked = requests.map((r) => r.lastCheckedAt).filter(Boolean).sort().pop();
 
   return (
@@ -296,6 +334,13 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
       {mode === 'live' && !connectionProblem && (
         <p className="text-sm text-neutral-600">
           Connected to VolunteerBadge. <CreditLine mode={mode} credits={credits} outstanding={outstanding} />
+          {toCancelInVb > 0 && (
+            <span className="mt-1 block">
+              <strong className="text-amber-700">{toCancelInVb}</strong> taken-back{' '}
+              {toCancelInVb === 1 ? 'invite is' : 'invites are'} still to cancel in VolunteerBadge (see below). Each
+              holds a credit until you do.
+            </span>
+          )}
         </p>
       )}
 
@@ -509,10 +554,11 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
         summary={`Invites from the last 90 days and what came back.${lastChecked ? ` Last checked with VolunteerBadge ${whenInMorristown(lastChecked)}.` : ''}`}
         pills={[
           waitingOnYou.length > 0 && { text: `${waitingOnYou.length} waiting on you`, cls: CHECK_TONE.todo },
+          cancelThere.length > 0 && { text: `${cancelThere.length} to cancel in VolunteerBadge`, cls: CHECK_TONE.todo },
           open.length > 0 && { text: `${open.length} open`, cls: CHECK_TONE.waiting },
           finished.length > 0 && { text: `${finished.length} finished`, cls: CHECK_TONE.na },
         ].filter(Boolean)}
-        defaultOpen={waitingOnYou.length > 0 || open.length > 0}
+        defaultOpen={waitingOnYou.length > 0 || cancelThere.length > 0 || open.length > 0}
       >
         <button
           type="button"
@@ -584,7 +630,7 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                       </td>
                       <td className="px-3 py-2">
                         <StatusMark
-                          state={(r.status === 'clear' && r.confirmedAt) || r.recordedByHand ? 'yes' : state}
+                          state={(r.status === 'clear' && r.confirmedAt) || r.recordedByHand ? 'yes' : r.toCancelInVb ? 'warn' : state}
                           label={(r.status === 'clear' && r.confirmedAt) || (r.recordedByHand && r.status === 'clear') ? 'OK to serve' : r.recordedByHand ? 'Decision recorded' : words}
                           title={detail(r)}
                         />
@@ -598,6 +644,9 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                       </td>
                       <td className="px-3 py-2 text-neutral-700">
                         {detail(r)}
+                        {r.toCancelInVb && (
+                          <span className="mt-1 block font-semibold text-amber-800">Cancel this invite in VolunteerBadge too.</span>
+                        )}
                         {/* Before OK to serve: whose record VolunteerBadge says it is
                             (0166), beside ours. The date of birth is a yes only. */}
                         {r.status === 'clear' && !r.confirmedAt && !r.recordedByHand && (
@@ -631,6 +680,21 @@ export default function ScreeningBoard({ candidates, requests, mode, credits, ou
                             <a href={`/admin/background-checks/#check-${r.personId}`} className="block text-xs text-brand underline">
                               Record the decision →
                             </a>
+                          </>
+                        )}
+                        {r.toCancelInVb && mode === 'live' && (
+                          <>
+                            <a href={dashboardUrl} target="_blank" rel="noopener noreferrer" className="block text-brand underline">
+                              Open VolunteerBadge
+                            </a>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => markCancelledThere(r)}
+                              className="btn-outline btn-xs mt-1"
+                            >
+                              Done: cancelled in VolunteerBadge
+                            </button>
                           </>
                         )}
                         {((r.status === 'sending' && r.stuck) || (r.status !== 'sending' && r.canTakeBack)) && (

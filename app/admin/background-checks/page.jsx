@@ -31,7 +31,7 @@ import { loadScreeningPeople, registryBucket, volunteerBucket, fullCheckCurrent 
 import { latestVbRequests } from '@/lib/screeningCandidates';
 import { volunteerBadge, volunteerBadgeMode } from '@/lib/volunteerBadge';
 import { VolunteerBadgeError } from '@/lib/volunteerBadgeApi';
-import { creditPicture } from '@/lib/volunteerBadgeCredits';
+import { creditPicture, countToCancelInVb } from '@/lib/volunteerBadgeCredits';
 import CheckLengthForm from './CheckLengthForm';
 import RegistrySearchForm from './RegistrySearchForm';
 import { RegistryQuickSearch } from './RegistryQueue';
@@ -292,10 +292,13 @@ export default async function BackgroundChecksPage({ searchParams }) {
   const vbMode = volunteerBadgeMode();
   let vbCredits = null;
   let vbOutstanding = 0;
+  // Taken-back invites still to cancel in VolunteerBadge (0187); live only.
+  let vbToCancel = 0;
   let vbProblem = null;
   if (vbMode !== 'off') {
     try {
       ({ credits: vbCredits, outstanding: vbOutstanding } = await creditPicture(supabase, volunteerBadge()));
+      if (vbMode === 'live') vbToCancel = await countToCancelInVb(supabase);
     } catch (err) {
       vbProblem = err instanceof VolunteerBadgeError ? err.message : err?.message ?? 'VolunteerBadge couldn’t be reached.';
     }
@@ -556,7 +559,7 @@ export default async function BackgroundChecksPage({ searchParams }) {
               words plain. The steps that used to sit here are one small line
               at the bottom; the longer version is "How this works". */}
           <h3 className="font-bold">To do</h3>
-          {readyToInvite + work.results + work.registry === 0 ? (
+          {readyToInvite + work.results + work.registry + vbToCancel === 0 ? (
             <p className="mt-1 text-sm text-neutral-700">Nothing to do right now.</p>
           ) : (
             <ul className="mt-1 divide-y divide-neutral-100">
@@ -581,6 +584,20 @@ export default async function BackgroundChecksPage({ searchParams }) {
                   }
                 >
                   adult {work.registry === 1 ? 'camper needs' : 'campers need'} a registry search
+                </CountRow>
+              )}
+              {vbToCancel > 0 && (
+                <CountRow
+                  n={vbToCancel}
+                  tone="todo"
+                  action={
+                    <a href="/admin/background-checks/screening/" className="whitespace-nowrap text-sm font-semibold text-brand underline">
+                      See which →
+                    </a>
+                  }
+                >
+                  taken-back {vbToCancel === 1 ? 'invite' : 'invites'} to cancel in VolunteerBadge too (each holds a credit
+                  until then)
                 </CountRow>
               )}
             </ul>

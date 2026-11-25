@@ -8,7 +8,7 @@ import TemplatePicker from './TemplatePicker';
 import { loadScreeningCandidates } from '@/lib/screeningCandidates';
 import { volunteerBadge, volunteerBadgeMode } from '@/lib/volunteerBadge';
 import { VolunteerBadgeError, VB_DASHBOARD, loadRoster, namesAgree, possibleNameMatches, namesDiffer, canTakeBack } from '@/lib/volunteerBadgeApi';
-import { creditPicture } from '@/lib/volunteerBadgeCredits';
+import { creditPicture, stillToCancelInVb, takenBackStillLive } from '@/lib/volunteerBadgeCredits';
 import { settledByRecord } from '@/lib/backgroundChecks';
 import { todayInMorristown } from '@/lib/events';
 
@@ -45,10 +45,12 @@ export default async function ScreeningPage() {
   const { data: requests, error: requestsError } = await supabase
     .from('volunteerbadge_requests')
     .select(
-      'id, person_id, invited_email, status, vb_check_status, vb_result, apply_expires_at, completed_at, problem, sent_at, last_checked_at, confirmed_at, id_verification_waived, vb_first_name, vb_last_name, vb_dob_agrees, people ( first_name, last_name )'
+      'id, person_id, invited_email, status, vb_check_status, vb_result, apply_expires_at, completed_at, problem, sent_at, last_checked_at, confirmed_at, id_verification_waived, vb_application_id, vb_cancelled_at, sandbox, vb_first_name, vb_last_name, vb_dob_agrees, people ( first_name, last_name )'
     )
     .eq('sandbox', sandbox)
-    .or(`sent_at.gte."${since}",status.in.(sending,invited,applied,processing,in_review,clear,consider)`)
+    // A taken-back invite still to cancel in VolunteerBadge stays on the list
+    // however old (its link may have no end date).
+    .or(`sent_at.gte."${since}",status.in.(sending,invited,applied,processing,in_review,clear,consider),${takenBackStillLive(now.toISOString())}`)
     .order('sent_at', { ascending: false });
   if (requestsError) throw new Error(`VolunteerBadge requests: ${requestsError.message}`);
   // A clear or needs-review result already settled by a record entered by
@@ -96,6 +98,10 @@ export default async function ScreeningPage() {
       // before 0166): OK to serve asks twice (Fable review, 14 Nov 2026).
       dobUnchecked: r.vb_dob_agrees !== true,
       canTakeBack: canTakeBack(r.status, r.problem),
+      // Taken back or replaced here, but VB's link still works: staff cancel
+      // it on VB's dashboard, then press Done (0187).
+      toCancelInVb: stillToCancelInVb(r, now),
+      vbCancelledAt: r.vb_cancelled_at,
       resendable: resendOn.has(r.id),
     }));
 
@@ -194,6 +200,7 @@ export default async function ScreeningPage() {
         mode={mode}
         credits={credits}
         outstanding={outstanding}
+        toCancelInVb={rows.filter((r) => r.toCancelInVb).length}
         connectionProblem={connectionProblem}
         dashboardUrl={VB_DASHBOARD}
       />

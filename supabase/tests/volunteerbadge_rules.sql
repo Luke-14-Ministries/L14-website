@@ -545,4 +545,57 @@ begin
 end $$;
 rollback;
 
+\echo == 9 recorded as cancelled in VolunteerBadge (0187)
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','16500000-0000-4000-8000-000000000001',true),
+       set_config('request.jwt.claims','{"sub":"16500000-0000-4000-8000-000000000001","aal":"aal2"}',true) \g /dev/null
+do $$
+declare r record;
+begin
+  insert into public.volunteerbadge_requests (id, person_id, invited_email, sandbox, vb_cancelled_at)
+  values ('65000000-0000-0000-0000-000000000091','20000000-0000-0000-0000-000000000002','cancel9@example.test', false, now());
+  select * into r from public.volunteerbadge_requests where id = '65000000-0000-0000-0000-000000000091';
+  if r.vb_cancelled_at is not null then raise exception 'FAIL 9a: a new row came in already marked cancelled in VB'; end if;
+  raise notice 'PASS 9a a new row can''t start marked cancelled in VolunteerBadge';
+  begin
+    update public.volunteerbadge_requests set vb_cancelled_at = now() where id = '65000000-0000-0000-0000-000000000091';
+    raise exception 'FAIL 9b: an open invite was marked cancelled in VB';
+  exception when sqlstate 'P0001' then raise notice 'PASS 9b only a taken-back or replaced invite can be marked';
+  end;
+  update public.volunteerbadge_requests set status = 'cancelled' where id = '65000000-0000-0000-0000-000000000091';
+  update public.volunteerbadge_requests
+     set vb_cancelled_at = '2000-01-01', vb_cancelled_by = '00000000-0000-0000-0000-00000000000b'
+   where id = '65000000-0000-0000-0000-000000000091';
+  select * into r from public.volunteerbadge_requests where id = '65000000-0000-0000-0000-000000000091';
+  if r.vb_cancelled_at < now() - interval '1 minute'
+     or r.vb_cancelled_by is distinct from '16500000-0000-4000-8000-000000000001' then
+    raise exception 'FAIL 9c: the stamp reads % / %', r.vb_cancelled_at, r.vb_cancelled_by;
+  end if;
+  raise notice 'PASS 9c the stamp is now() and the signed-in writer, whatever was sent';
+  begin
+    update public.volunteerbadge_requests set vb_cancelled_at = null, vb_cancelled_by = null
+     where id = '65000000-0000-0000-0000-000000000091';
+    raise exception 'FAIL 9d: the stamp was cleared';
+  exception when sqlstate 'P0001' then raise notice 'PASS 9d the stamp can''t be cleared or changed';
+  end;
+end $$;
+-- The seed's registrar holds Background checks read only: may see the row, can't stamp one.
+update public.volunteerbadge_requests set status = 'superseded' where id = '65000000-0000-0000-0000-000000000091';
+insert into public.volunteerbadge_requests (id, person_id, invited_email, sandbox)
+values ('65000000-0000-0000-0000-000000000092','20000000-0000-0000-0000-000000000003','cancel9b@example.test', false);
+update public.volunteerbadge_requests set status = 'cancelled' where id = '65000000-0000-0000-0000-000000000092';
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000b',true),
+       set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000b","aal":"aal2"}',true) \g /dev/null
+do $$
+declare n int;
+begin
+  update public.volunteerbadge_requests set vb_cancelled_at = now() where id = '65000000-0000-0000-0000-000000000092';
+  get diagnostics n = row_count;
+  if n > 0 then raise exception 'FAIL 9e: a reader marked an invite cancelled in VB'; end if;
+  raise notice 'PASS 9e a reader can''t mark it (no row reached)';
+exception when sqlstate '42501' then raise notice 'PASS 9e a reader can''t mark it';
+end $$;
+rollback;
+
 \echo ALL VOLUNTEERBADGE CHECKS PASSED

@@ -19,6 +19,8 @@
 //   4. refreshVolunteerBadge: the site asks VB (no webhook; VB never calls us).
 //   5. confirmVolunteerBadgeClear: a clear result becomes OK to serve only when
 //      staff press the button (confirm_volunteerbadge_clear, 0165).
+//   6. cancelVolunteerBadgeRequest (take back) and markCancelledInVolunteerBadge:
+//      staff cancel the invite on VB's own dashboard, then say so here (0187).
 //
 // All of it needs Background checks write AND read (0058): sending an invite
 // spends the ministry's credits and asks a real person for their SSN, which
@@ -455,12 +457,15 @@ export async function confirmVolunteerBadgeClear(requestId, { secondLookAcknowle
   return { ok: true, note: typeof kept === 'string' && kept ? kept : null };
 }
 
-// Take back an invite HERE (it is not cancelled in VolunteerBadge, which has
-// no call for that): a send that never got a clear answer and didn't reach VB,
-// an invite staff no longer want answered, an applied invite with no check,
-// or an open invite the site couldn't match to VB's record (a problem on the
-// row), so nothing is stuck open (Fable review, 14 Nov 2026). Never a check
-// that is running and matched (canTakeBack, lib/volunteerBadgeApi.js).
+// Take back an invite HERE: a send that never got a clear answer and didn't
+// reach VB, an invite staff no longer want answered, an applied invite with no
+// check, or an open invite the site couldn't match to VB's record (a problem
+// on the row), so nothing is stuck open (Fable review, 14 Nov 2026). Never a
+// check that is running and matched (canTakeBack, lib/volunteerBadgeApi.js).
+// VB has no call to cancel an invite, so its link keeps working: the board
+// then asks staff to cancel it on VB's dashboard too, and the row holds a
+// credit until they press "Done" (markCancelledInVolunteerBadge, 0187) or the
+// link runs out.
 export async function cancelVolunteerBadgeRequest(requestId) {
   if (!(await gate())) return { ok: false, error: 'Not permitted.' };
   const supabase = await createClient();
@@ -494,6 +499,27 @@ export async function cancelVolunteerBadgeRequest(requestId) {
     .select('id');
   if (error) return { ok: false, error: withReason('Not taken back.', error) };
   if (!data?.length) return { ok: false, error: 'Not taken back: it changed meanwhile. Reload the page.' };
+  revalidateScreening();
+  return { ok: true };
+}
+
+// Staff cancelled a taken-back or replaced invite on VolunteerBadge's own
+// dashboard and say so here (0187, Lawrence, 25 Nov 2026). From now on it
+// holds no credit. The database stamps when and who, and refuses anyone
+// without Background checks write, an open invite, or a second press.
+// Nothing is sent to VolunteerBadge.
+export async function markCancelledInVolunteerBadge(requestId) {
+  if (!(await gate())) return { ok: false, error: 'Not permitted.' };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('volunteerbadge_requests')
+    .update({ vb_cancelled_at: new Date().toISOString() })
+    .eq('id', requestId)
+    .in('status', ['cancelled', 'superseded'])
+    .is('vb_cancelled_at', null)
+    .select('id');
+  if (error) return { ok: false, error: withReason('Not recorded.', error) };
+  if (!data?.length) return { ok: false, error: 'Not recorded: it changed meanwhile, or is already marked. Reload the page.' };
   revalidateScreening();
   return { ok: true };
 }

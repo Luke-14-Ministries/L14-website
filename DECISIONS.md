@@ -5159,3 +5159,27 @@ migrations `0175`–`0186` carry the database side. The numbered record, with ev
   "Awaiting review" as the one label for a submitted person, dates as "Nov 15, 2026".
 - **Family pages** list a household's people oldest first (`sortByAge()`), and a registration owing a
   balance with no plan running reads "Registered", not "All set" (Lawrence, the same day).
+
+## 2026-11-25 — A taken-back VolunteerBadge invite gets a "cancel it there too" step (0187)
+
+- **Why.** VolunteerBadge's API has no call to cancel an invite, but staff can cancel one whose check
+  hasn't started on VB's own dashboard. Taking an invite back here (cancelled) or replacing it with a
+  resend (superseded) left VB's link working. The row held a credit until the link ran out (7 days for
+  live links), and nobody was told to cancel it in VB (Lawrence, 25 Nov 2026).
+- **What.** A taken-back or replaced live invite with a VB application id and a link that hasn't run out
+  stays in the open part of the board with the to-do "Cancel this invite in VolunteerBadge too", a link to
+  VB and a **Done: cancelled in VolunteerBadge** button. The button needs the same grant as take back.
+  The database stamps `vb_cancelled_at`/`vb_cancelled_by` itself (`guard_volunteerbadge_vb_cancel`): only on
+  a cancelled or superseded row, only with Background checks write, once, never cleared. From that press
+  the row holds no credit (`takenBackStillLive()` in `lib/volunteerBadgeCredits.js`). Background Checks'
+  To do card and the board's credit line show how many are still to cancel, when there are any. Test-mode
+  rows never get the step. No nav badge was added: the Background Checks badge counts other work, and a
+  separate query on every staff page wasn't worth it.
+- **A check that turns up anyway.** Refresh and the late look are unchanged. They never read a
+  cancelled or superseded row, before or after this change. If someone finishes on a link that was
+  marked cancelled in VB (the cancel didn't take, or they were quicker), VB runs the check and charges it.
+  The site doesn't tie that check to the old row, the same as today for any taken-back invite. The person
+  is already back on the due list, where the "already in VolunteerBadge" note shows when VB's record
+  matches. Staff look there and record the result by hand rather than send again. Until VB charges that
+  check, the free count can read one credit high. The balance is asked of VB on every send, so it is right
+  again once VB charges.
