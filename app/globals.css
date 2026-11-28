@@ -204,6 +204,13 @@
 .effort-footer {
   display: none;
 }
+/* On a phone the bar charts shrink to the card, so their labels are drawn
+   larger in the chart's own units (screen only; print keeps the 11). */
+@media screen and (max-width: 639px) {
+  .effort-vbars text {
+    font-size: 22px !important; /* over the inline 11 */
+  }
+}
 @media print {
   .effort-report {
     page: effort;

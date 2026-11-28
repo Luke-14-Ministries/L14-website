@@ -6,7 +6,15 @@ import PrintButton from '@/components/PrintButton';
 import { getStaff, can, bounceNonStaff } from '@/lib/staff';
 import { createClient } from '@/lib/supabase/server';
 import { formatDay } from '@/lib/events';
-import { effortSummary, nightMessages, tokenMixRows, hireOut, runModel, runSensitivity, isNightHour } from '@/lib/buildEffort';
+import {
+  effortSummary,
+  nightMessages,
+  tokenMixRows,
+  hireOut,
+  runModel,
+  runSensitivity,
+  isNightHour,
+} from '@/lib/buildEffort';
 import { VBars, RangeBars, PairedBars, Legend } from './charts';
 
 // The website build effort and running costs report (0188, Lawrence, 28 Nov
@@ -39,7 +47,9 @@ export default async function BuildEffortPage() {
     return (
       <div>
         <AdminPageHeader title="Website Build Effort and Running Costs" />
-        <EmptyState kind="missing">No report has been loaded yet. Its figures are added in Supabase, not in the code.</EmptyState>
+        <EmptyState kind="missing">
+          No report has been loaded yet. Its figures are added in Supabase, not in the code.
+        </EmptyState>
       </div>
     );
   }
@@ -47,14 +57,14 @@ export default async function BuildEffortPage() {
   const d = snap.data ?? {};
   const asOf = formatDay(snap.as_of);
   return (
-    <div className="effort-report">
+    <div className="effort-report min-w-0 max-w-full">
       <AdminPageHeader
         title={d.title ?? 'Website Build Effort and Running Costs'}
         intro={
           <>
             <strong>As of {asOf}.</strong>
-            {d.revised && <strong> {d.revised}</strong>} What building the new Luke 14 site took, and what it costs to run
-            against the old setup. {d.intro}
+            {d.revised && <strong> {d.revised}</strong>} What building the new Luke 14 site took, and what it costs to
+            run against the old setup. {d.intro}
           </>
         }
         actions={
@@ -124,7 +134,11 @@ function Tile({ label, value, sub }) {
 }
 
 function Est() {
-  return <span className="ml-1 rounded-full border border-neutral-400 px-1.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-600">Estimate</span>;
+  return (
+    <span className="ml-1 rounded-full border border-neutral-400 px-1.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-600">
+      Estimate
+    </span>
+  );
 }
 
 function Notes({ items }) {
@@ -145,13 +159,18 @@ function Summary({ d }) {
   return (
     <section className="card p-5 effort-section">
       <p className="text-neutral-800">
-        Since July the new site has taken about <strong>{num(s.hours.mid)} hours</strong> at the keyboard, and Claude has
-        used about <strong>{s.tokens.totalB} billion tokens</strong>. At Anthropic&rsquo;s pay-as-you-go prices that use
-        would cost about <strong>{money(s.api.total)}</strong>. {d.notes?.subscription}
+        Since July the new site has taken about <strong>{num(s.hours.mid)} hours</strong> at the keyboard, and Claude
+        has used about <strong>{s.tokens.totalB} billion tokens</strong>. At Anthropic&rsquo;s pay-as-you-go prices that
+        use would cost about <strong>{money(s.api.total)}</strong>. {d.notes?.subscription}
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4">
         <Tile
-          label={<>Hours at the keyboard<Est /></>}
+          label={
+            <>
+              Hours at the keyboard
+              <Est />
+            </>
+          }
           value={num(s.hours.mid)}
           sub={`Likely ${num(s.hours.low)} to ${num(s.hours.high)}. ${
             s.hours.parts
@@ -160,16 +179,30 @@ function Summary({ d }) {
           }`}
         />
         <Tile
-          label={<>Claude tokens<Est /></>}
+          label={
+            <>
+              Claude tokens
+              <Est />
+            </>
+          }
           value={`${s.tokens.totalB} billion`}
           sub={`${s.tokens.measuredB} billion measured across ${num(s.tokens.calls)} requests; ${s.tokens.earlyB.mid} billion estimated (${s.tokens.earlyB.low} to ${s.tokens.earlyB.high}).`}
         />
         <Tile
-          label={<>At pay-as-you-go prices<Est /></>}
+          label={
+            <>
+              At pay-as-you-go prices
+              <Est />
+            </>
+          }
           value={money(s.api.total)}
           sub={`${money(s.api.measured)} of it measured. Covered by the subscription, so not money spent.`}
         />
-        <Tile label="Code changes saved" value={`${num(s.commits)} commits`} sub={`Plus ${num(s.prompts)} messages from Lawrence to Claude.`} />
+        <Tile
+          label="Code changes saved"
+          value={`${num(s.commits)} commits`}
+          sub={`Plus ${num(s.prompts)} messages from Lawrence to Claude.`}
+        />
       </div>
     </section>
   );
@@ -199,36 +232,64 @@ function Produced({ d }) {
   );
 }
 
+// A table from the sm width up and in print; on a phone each row is a small
+// labeled block, so the page never scrolls sideways (Lawrence, 28 Nov 2026).
 function EstimatesTable({ rows, unit }) {
   if (!rows.length) return null;
+  const fmt = (v) => (unit === 'usd' ? money(v) : num(v));
   return (
-    <table className="mt-3 w-full text-sm">
-      <thead className="text-left text-neutral-600">
-        <tr>
-          <th className="th-cell">Period</th>
-          <th className="th-cell">How</th>
-          <th className="th-cell text-right">Low</th>
-          <th className="th-cell text-right">Middle</th>
-          <th className="th-cell text-right">High</th>
-        </tr>
-      </thead>
-      <tbody>
+    <>
+      <ul className="mt-3 space-y-2 sm:hidden print:hidden">
         {rows.map((r) => (
-          <tr key={`${r.period}-${r.what}`} className="border-t border-neutral-100">
-            <td className="td-cell whitespace-nowrap">{r.period}</td>
-            <td className="td-cell">
+          <li key={`${r.period}-${r.what}`} className="rounded-sm border border-neutral-200 p-2.5 text-sm">
+            <p className="font-semibold">{r.period}</p>
+            <p className="text-neutral-700">
               {r.what}: {r.how}
               {!/^measured/i.test(String(r.how)) && <Est />}
-            </td>
-            {['low', 'mid', 'high'].map((k) => (
-              <td key={k} className="td-cell text-right tabular-nums">
-                {unit === 'usd' ? money(r[k]) : num(r[k])}
-              </td>
-            ))}
-          </tr>
+            </p>
+            <dl className="mt-1.5 grid grid-cols-3 gap-2 text-right tabular-nums">
+              {[
+                ['low', 'Low'],
+                ['mid', 'Middle'],
+                ['high', 'High'],
+              ].map(([k, label]) => (
+                <div key={k}>
+                  <dt className="text-xs text-neutral-600">{label}</dt>
+                  <dd className="font-semibold">{fmt(r[k])}</dd>
+                </div>
+              ))}
+            </dl>
+          </li>
         ))}
-      </tbody>
-    </table>
+      </ul>
+      <table className="mt-3 hidden w-full text-sm sm:table print:table">
+        <thead className="text-left text-neutral-600">
+          <tr>
+            <th className="th-cell">Period</th>
+            <th className="th-cell">How</th>
+            <th className="th-cell text-right">Low</th>
+            <th className="th-cell text-right">Middle</th>
+            <th className="th-cell text-right">High</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={`${r.period}-${r.what}`} className="border-t border-neutral-100">
+              <td className="td-cell whitespace-nowrap">{r.period}</td>
+              <td className="td-cell">
+                {r.what}: {r.how}
+                {!/^measured/i.test(String(r.how)) && <Est />}
+              </td>
+              {['low', 'mid', 'high'].map((k) => (
+                <td key={k} className="td-cell text-right tabular-nums">
+                  {fmt(r[k])}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }
 
@@ -246,7 +307,15 @@ function Hours({ d }) {
         series={[
           { key: 'hours_measured', label: 'Measured', kind: 'solid' },
           { key: 'hours_estimated', label: 'Estimated', kind: 'hatch' },
-          ...(recalled ? [{ key: 'hours_recalled', label: 'From Lawrence’s recollection', kind: 'dots' }] : []),
+          ...(recalled
+            ? [
+                {
+                  key: 'hours_recalled',
+                  label: 'From Lawrence’s recollection',
+                  kind: 'dots',
+                },
+              ]
+            : []),
         ]}
         xLabel={monthTick(rows)}
         fmt={(v) => `${Math.round(v * 10) / 10}`}
@@ -276,16 +345,34 @@ function Tokens({ d }) {
         id="tokens"
         rows={rows}
         series={[
-          { key: 'tokens_millions', label: 'Measured (millions)', kind: 'solid' },
-          { key: 'tokens_estimated_millions', label: 'Estimated (millions)', kind: 'hatch' },
+          {
+            key: 'tokens_millions',
+            label: 'Measured (millions)',
+            kind: 'solid',
+          },
+          {
+            key: 'tokens_estimated_millions',
+            label: 'Estimated (millions)',
+            kind: 'hatch',
+          },
         ]}
         xLabel={monthTick(rows)}
         fmt={(v) => num(Math.round(v))}
         ariaLabel="Claude tokens each week in millions: measured, and estimated before mid-September."
       />
       <p className="mt-1 text-xs text-neutral-600">Millions of tokens a week.</p>
-      <Legend id="tokens-key" items={[['solid', 'Measured'], ['hatch', 'Estimated from the hours worked']]} />
-      <EstimatesTable rows={(d.estimates ?? []).filter((r) => r.what !== 'Hours at the keyboard' && !String(r.what).startsWith('Pay'))} />
+      <Legend
+        id="tokens-key"
+        items={[
+          ['solid', 'Measured'],
+          ['hatch', 'Estimated from the hours worked'],
+        ]}
+      />
+      <EstimatesTable
+        rows={(d.estimates ?? []).filter(
+          (r) => r.what !== 'Hours at the keyboard' && !String(r.what).startsWith('Pay'),
+        )}
+      />
       <EstimatesTable rows={(d.estimates ?? []).filter((r) => String(r.what).startsWith('Pay'))} unit="usd" />
     </Section>
   );
@@ -308,7 +395,32 @@ function TokenMix({ d }) {
   return (
     <Section title="4 · Where the tokens went">
       <p className="mb-3 text-sm text-neutral-700">{d.notes?.mix} Tokens in millions.</p>
-      <div className="overflow-x-auto">
+      <ul className="space-y-2 sm:hidden print:hidden">
+        {[...rows, total].map((r) => (
+          <li
+            key={r.model}
+            className={`rounded-sm border p-2.5 text-sm ${r === total ? 'border-neutral-400 font-bold' : 'border-neutral-200'}`}
+          >
+            <p className="font-semibold">{r.model}</p>
+            <dl className="mt-1.5 grid grid-cols-3 gap-2 text-right tabular-nums">
+              {[
+                ['Requests', num(r.calls)],
+                ['Read new', num(r.newM)],
+                ['Written', num(r.outputM)],
+                ['Re-read', num(r.rereadM)],
+                ['Total', num(r.totalM)],
+                ['At API prices', money(r.usd)],
+              ].map(([label, v]) => (
+                <div key={label}>
+                  <dt className="text-xs font-normal text-neutral-600">{label}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto sm:block print:block">
         <table className="w-full text-sm">
           <thead className="text-left text-neutral-600">
             <tr>
@@ -334,7 +446,10 @@ function TokenMix({ d }) {
       <dl className="mt-3 grid gap-2 text-sm text-neutral-700 sm:grid-cols-2 print:grid-cols-2">
         <div>
           <dt className="font-semibold">Requests</dt>
-          <dd>Each time Claude is called for its next step: reading a file, running a command, writing an answer. One message from Lawrence can lead to dozens.</dd>
+          <dd>
+            Each time Claude is called for its next step: reading a file, running a command, writing an answer. One
+            message from Lawrence can lead to dozens.
+          </dd>
         </div>
         <div>
           <dt className="font-semibold">Read new</dt>
@@ -346,7 +461,10 @@ function TokenMix({ d }) {
         </div>
         <div>
           <dt className="font-semibold">Re-read</dt>
-          <dd>With every request Claude reads the whole conversation so far again, from a saved copy. It repeats a lot, so it is most of the total, but it costs a small fraction of the normal rate.</dd>
+          <dd>
+            With every request Claude reads the whole conversation so far again, from a saved copy. It repeats a lot, so
+            it is most of the total, but it costs a small fraction of the normal rate.
+          </dd>
         </div>
       </dl>
     </Section>
@@ -355,7 +473,10 @@ function TokenMix({ d }) {
 
 function WhenWork({ d }) {
   const night = nightMessages(d.prompt_hours);
-  const rows = (d.prompt_hours ?? []).map((r) => ({ ...r, hour: Number(r.hour_et) }));
+  const rows = (d.prompt_hours ?? []).map((r) => ({
+    ...r,
+    hour: Number(r.hour_et),
+  }));
   const hourWord = (h) => (h === 0 ? '12a' : h === 12 ? '12p' : h < 12 ? `${h}a` : `${h - 12}p`);
   const lc = d.late_commits;
   return (
@@ -382,7 +503,13 @@ function WhenWork({ d }) {
         ariaLabel="Messages from Lawrence to Claude by hour of the day, Eastern time, with 10 PM to 6 AM marked."
       />
       <p className="mt-1 text-xs text-neutral-600">Messages by hour of the day, Eastern time.</p>
-      <Legend id="hourly-key" items={[['solid', '10 PM to 6 AM'], ['light', 'Daytime and evening']]} />
+      <Legend
+        id="hourly-key"
+        items={[
+          ['solid', '10 PM to 6 AM'],
+          ['light', 'Daytime and evening'],
+        ]}
+      />
     </Section>
   );
 }
@@ -390,8 +517,22 @@ function WhenWork({ d }) {
 function HireOut({ d }) {
   const h = hireOut(d.hire_out);
   const rows = [
-    ...h.options.map((o) => ({ label: o.scenario, low: Number(o.cost_low), high: Number(o.cost_high), kind: 'hatch' })),
-    ...(h.summary ? [{ label: h.summary.scenario, low: Number(h.summary.cost_low), high: Number(h.summary.cost_high), kind: 'solid' }] : []),
+    ...h.options.map((o) => ({
+      label: o.scenario,
+      low: Number(o.cost_low),
+      high: Number(o.cost_high),
+      kind: 'hatch',
+    })),
+    ...(h.summary
+      ? [
+          {
+            label: h.summary.scenario,
+            low: Number(h.summary.cost_low),
+            high: Number(h.summary.cost_high),
+            kind: 'solid',
+          },
+        ]
+      : []),
   ];
   return (
     <Section title="6 · What hiring it out might have cost">
@@ -411,15 +552,28 @@ function HireOut({ d }) {
         {h.reference && (
           <>
             {' '}
-            For comparison, before AI coding tools an agency would typically have quoted {money(h.reference.cost_low)} to{' '}
-            {money(h.reference.cost_high)} for the same scope.
+            For comparison, before AI coding tools an agency would typically have quoted {money(
+              h.reference.cost_low,
+            )}{' '}
+            to {money(h.reference.cost_high)} for the same scope.
           </>
         )}
       </p>
       {rows.length > 0 && (
         <>
-          <RangeBars id="hire" rows={rows} fmt={money} ariaLabel="Estimated cost range for each way of hiring the work out, and the most likely range." />
-          <Legend id="hire-key" items={[['hatch', 'Range for each option'], ['solid', 'Most likely overall']]} />
+          <RangeBars
+            id="hire"
+            rows={rows}
+            fmt={money}
+            ariaLabel="Estimated cost range for each way of hiring the work out, and the most likely range."
+          />
+          <Legend
+            id="hire-key"
+            items={[
+              ['hatch', 'Range for each option'],
+              ['solid', 'Most likely overall'],
+            ]}
+          />
         </>
       )}
       <ul className="mt-3 space-y-1.5 text-sm text-neutral-700">
@@ -429,7 +583,13 @@ function HireOut({ d }) {
             {o.hours_low != null && o.rate_low != null && (
               <>
                 {' '}
-                ({num(o.hours_low)} to {num(o.hours_high)} hours at {money(o.rate_low)} to {money(o.rate_high)} an hour)
+                ({num(o.hours_low)} to {num(o.hours_high)} hours at {money(o.rate_low)} to {money(o.rate_high)} an hour
+                {o.kind === 'option' && o.cost_low != null && (
+                  <>
+                    , {money(o.cost_low)} to {money(o.cost_high)}
+                  </>
+                )}
+                )
               </>
             )}
             : {o.basis}
@@ -463,21 +623,99 @@ function RunningCostsBody({ d, m, settings }) {
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4">
-        <Tile label={<>Old setup, a year<Est /></>} value={money(t.old)} sub="CampSite, Squarespace, PayPal, Checkr" />
-        <Tile label={<>New setup, a year<Est /></>} value={money(t.new)} sub="Stripe, Vercel, Supabase, VolunteerBadge" />
-        <Tile label={<>Saving, a year<Est /></>} value={money(t.saving)} sub={`${t.savingPct}% less than the old setup`} />
         <Tile
-          label={<>In scholarships<Est /></>}
+          label={
+            <>
+              Old setup, a year
+              <Est />
+            </>
+          }
+          value={money(t.old)}
+          sub="CampSite, Squarespace, PayPal, Checkr"
+        />
+        <Tile
+          label={
+            <>
+              New setup, a year
+              <Est />
+            </>
+          }
+          value={money(t.new)}
+          sub="Stripe, Vercel, Supabase, VolunteerBadge"
+        />
+        <Tile
+          label={
+            <>
+              Saving, a year
+              <Est />
+            </>
+          }
+          value={money(t.saving)}
+          sub={`${t.savingPct}% less than the old setup`}
+        />
+        <Tile
+          label={
+            <>
+              In scholarships
+              <Est />
+            </>
+          }
           value={`about ${num(t.scholarshipsEquiv)} more a year`}
           sub={`At last season’s average of about ${money(t.avgScholarship)} each.`}
         />
       </div>
       {settings.note && <p className="mt-3 text-sm text-neutral-700">{settings.note}</p>}
       <div className="mt-4">
-        <PairedBars id="run" rows={m.lines} fmt={money} ariaLabel={`Yearly running cost by line, old setup against new: ${money(t.old)} against ${money(t.new)}.`} />
-        <Legend id="run-key" items={[['light', 'Old setup'], ['solid', 'New setup']]} />
+        <PairedBars
+          id="run"
+          rows={m.lines}
+          fmt={money}
+          ariaLabel={`Yearly running cost by line, old setup against new: ${money(t.old)} against ${money(t.new)}.`}
+        />
+        <Legend
+          id="run-key"
+          items={[
+            ['light', 'Old setup'],
+            ['solid', 'New setup'],
+          ]}
+        />
       </div>
-      <div className="mt-4 overflow-x-auto">
+      <ul className="mt-4 space-y-2 sm:hidden print:hidden">
+        {[
+          ...m.lines,
+          {
+            line: 'Total',
+            old: t.old,
+            new: t.new,
+            saving: t.saving,
+            total: true,
+          },
+        ].map((l) => (
+          <li
+            key={l.line}
+            className={`rounded-sm border p-2.5 text-sm ${l.total ? 'border-neutral-400 font-bold' : 'border-neutral-200'}`}
+          >
+            <p className="font-semibold">{l.line}</p>
+            <dl className="mt-1 space-y-0.5">
+              {[
+                ['Old', l.oldWay, l.old],
+                ['New', l.newWay, l.new],
+              ].map(([label, way, v]) => (
+                <div key={label} className="flex items-baseline gap-2">
+                  <dt className="w-9 shrink-0 text-xs text-neutral-600">{label}</dt>
+                  <dd className="min-w-0 flex-1 text-neutral-700">{way}</dd>
+                  <dd className="tabular-nums">{money(v)}</dd>
+                </div>
+              ))}
+              <div className="flex items-baseline gap-2">
+                <dt className="flex-1 text-xs text-neutral-600">Saving</dt>
+                <dd className="font-semibold tabular-nums">{money(l.saving)}</dd>
+              </div>
+            </dl>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 hidden overflow-x-auto sm:block print:block">
         <table className="w-full text-sm">
           <thead className="text-left text-neutral-600">
             <tr>
@@ -513,52 +751,61 @@ function RunningCostsBody({ d, m, settings }) {
       </div>
       <h4 className="mt-5 font-bold">How much bank transfers matter</h4>
       <p className="text-sm text-neutral-700">
-        The same settings, with more or fewer people paying by bank transfer instead of by card. The old setup had no bank
-        option, so its cost stays the same.
+        The same settings, with more or fewer people paying by bank transfer instead of by card. The old setup had no
+        bank option, so its cost stays the same.
       </p>
-      <table className="mt-2 w-full max-w-lg text-sm">
-        <thead className="text-left text-neutral-600">
-          <tr>
-            <th className="th-cell">Paid by bank transfer</th>
-            <th className="th-cell text-right">Old</th>
-            <th className="th-cell text-right">New</th>
-            <th className="th-cell text-right">Saving</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sens.map((r) => (
-            <tr key={r.share} className={`border-t border-neutral-100 ${r.share === Number(settings.bank_pct) ? 'font-bold' : ''}`}>
-              <td className="td-cell">{r.share}%</td>
-              <td className="td-cell text-right tabular-nums">{money(r.old)}</td>
-              <td className="td-cell text-right tabular-nums">{money(r.new)}</td>
-              <td className="td-cell text-right tabular-nums">{money(r.saving)}</td>
+      <div className="mt-2 max-w-lg overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-left text-neutral-600">
+            <tr>
+              <th className="th-cell">Paid by bank transfer</th>
+              <th className="th-cell text-right">Old</th>
+              <th className="th-cell text-right">New</th>
+              <th className="th-cell text-right">Saving</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sens.map((r) => (
+              <tr
+                key={r.share}
+                className={`border-t border-neutral-100 ${r.share === Number(settings.bank_pct) ? 'font-bold' : ''}`}
+              >
+                <td className="td-cell">{r.share}%</td>
+                <td className="td-cell text-right tabular-nums">{money(r.old)}</td>
+                <td className="td-cell text-right tabular-nums">{money(r.new)}</td>
+                <td className="td-cell text-right tabular-nums">{money(r.saving)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <h4 className="mt-5 font-bold">Other savings, counted and not</h4>
       <Notes items={d.notes?.run_other} />
       <h4 className="mt-5 font-bold">What these figures assume, and what they leave out</h4>
       <Notes items={d.notes?.run_assumptions} />
       <h4 className="mt-5 font-bold">Rates used</h4>
-      <table className="mt-1 w-full text-xs">
-        <thead className="text-left text-neutral-600">
-          <tr>
-            <th className="th-cell">Setup</th>
-            <th className="th-cell">What</th>
-            <th className="th-cell">Source</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(d.run_rates ?? []).map((r) => (
-            <tr key={r.key} className="border-t border-neutral-100">
-              <td className="td-cell whitespace-nowrap">{r.setup === 'both' ? 'Both' : r.setup === 'old' ? 'Old' : 'New'}</td>
-              <td className="td-cell">{r.what}</td>
-              <td className="td-cell text-neutral-600">{r.source}</td>
+      <div className="mt-1 overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="text-left text-neutral-600">
+            <tr>
+              <th className="th-cell">Setup</th>
+              <th className="th-cell">What</th>
+              <th className="th-cell">Source</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {(d.run_rates ?? []).map((r) => (
+              <tr key={r.key} className="border-t border-neutral-100">
+                <td className="td-cell whitespace-nowrap">
+                  {r.setup === 'both' ? 'Both' : r.setup === 'old' ? 'Old' : 'New'}
+                </td>
+                <td className="td-cell">{r.what}</td>
+                <td className="td-cell text-neutral-600">{r.source}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

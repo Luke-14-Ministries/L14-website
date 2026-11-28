@@ -74,7 +74,7 @@ export function VBars({ id, rows, series, xLabel, fmt = (v) => String(v), ariaLa
   const step = (W - ml - mr) / Math.max(1, rows.length);
   const bw = step * 0.72;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={ariaLabel} className="effort-chart block">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={ariaLabel} className="effort-chart effort-vbars block">
       <Hatch id={id} />
       {ticks.map((t) => (
         <g key={t}>
