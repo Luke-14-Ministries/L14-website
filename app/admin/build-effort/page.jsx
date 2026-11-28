@@ -52,8 +52,9 @@ export default async function BuildEffortPage() {
         title={d.title ?? 'Website Build Effort and Running Costs'}
         intro={
           <>
-            <strong>As of {asOf}.</strong> What building the new Luke 14 site took, and what it costs to run against the
-            old setup. {d.intro}
+            <strong>As of {asOf}.</strong>
+            {d.revised && <strong> {d.revised}</strong>} What building the new Luke 14 site took, and what it costs to run
+            against the old setup. {d.intro}
           </>
         }
         actions={
@@ -76,6 +77,7 @@ export default async function BuildEffortPage() {
       {/* Printed at the foot of every page (globals.css, the effort-report block). */}
       <p className="effort-footer">
         Luke 14 Ministries · Website build effort and running costs · as of {asOf}
+        {d.revised_on ? `, revised ${formatDay(d.revised_on)}` : ''}
       </p>
     </div>
   );
@@ -151,7 +153,11 @@ function Summary({ d }) {
         <Tile
           label={<>Hours at the keyboard<Est /></>}
           value={num(s.hours.mid)}
-          sub={`Likely ${num(s.hours.low)} to ${num(s.hours.high)}. About ${num(s.hours.measuredMid)} measured, the rest estimated.`}
+          sub={`Likely ${num(s.hours.low)} to ${num(s.hours.high)}. ${
+            s.hours.parts
+              ? `${s.hours.parts.map((p, i) => `${i ? 'about' : 'About'} ${num(p.mid)} ${p.label}`).join(', ')}.`
+              : `About ${num(s.hours.measuredMid)} measured, the rest estimated.`
+          }`}
         />
         <Tile
           label={<>Claude tokens<Est /></>}
@@ -228,6 +234,9 @@ function EstimatesTable({ rows, unit }) {
 
 function Hours({ d }) {
   const rows = d.weekly ?? [];
+  // Hours from a person's recollection (28 Nov 2026), drawn only when the
+  // snapshot has them.
+  const recalled = rows.some((r) => Number(r.hours_recalled) > 0);
   return (
     <Section title="2 · Hours at the keyboard, week by week">
       <p className="mb-3 text-sm text-neutral-700">{d.notes?.hours}</p>
@@ -237,12 +246,22 @@ function Hours({ d }) {
         series={[
           { key: 'hours_measured', label: 'Measured', kind: 'solid' },
           { key: 'hours_estimated', label: 'Estimated', kind: 'hatch' },
+          ...(recalled ? [{ key: 'hours_recalled', label: 'From Lawrence’s recollection', kind: 'dots' }] : []),
         ]}
         xLabel={monthTick(rows)}
         fmt={(v) => `${Math.round(v * 10) / 10}`}
-        ariaLabel="Hours at the keyboard each week: measured from session records, and estimated from commit times before mid-September."
+        ariaLabel={`Hours at the keyboard each week: measured from session records, and estimated from commit times before mid-September${
+          recalled ? ', with hours from Lawrence’s recollection added on top for some weeks' : ''
+        }.`}
       />
-      <Legend id="hours-key" items={[['solid', 'Measured from session records'], ['hatch', 'Estimated from commit times']]} />
+      <Legend
+        id="hours-key"
+        items={[
+          ['solid', 'Measured from session records'],
+          ['hatch', 'Estimated from commit times', <Est key="e" />],
+          ...(recalled ? [['dots', 'From Lawrence’s recollection', <Est key="e" />]] : []),
+        ]}
+      />
       <EstimatesTable rows={(d.estimates ?? []).filter((r) => r.what === 'Hours at the keyboard')} />
     </Section>
   );

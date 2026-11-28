@@ -1,8 +1,9 @@
 // Plain SVG charts for the build effort report, drawn on the server (no
 // chart library, no 'use client'). Built to read in black and white when
 // printed: measured or chosen bars are solid, estimated ones are hatched,
-// and a third kind is a light fill with an outline. Colours are the theme's
-// variables, so dark mode swaps them.
+// recalled ones (a person's recollection, 28 Nov 2026) are dotted with a
+// dashed outline, and a fourth kind is a light fill with an outline. Colours
+// are the theme's variables, so dark mode swaps them.
 
 const FILL = {
   solid: { fill: 'var(--color-brand)' },
@@ -13,6 +14,7 @@ const TEXT = { fill: 'var(--color-neutral-600)', fontSize: 11 };
 // The fill for a kind; a hatch needs the chart's own pattern id.
 function fillFor(kind, id) {
   if (kind === 'hatch') return { fill: `url(#${id}-hatch)`, stroke: 'var(--color-brand)', strokeWidth: 1 };
+  if (kind === 'dots') return { fill: `url(#${id}-dots)`, stroke: 'var(--color-neutral-600)', strokeWidth: 1, strokeDasharray: '3 2' };
   return FILL[kind] ?? FILL.solid;
 }
 
@@ -21,6 +23,9 @@ function Hatch({ id }) {
     <defs>
       <pattern id={`${id}-hatch`} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
         <line x1="0" y1="0" x2="0" y2="5" style={{ stroke: 'var(--color-brand)', strokeWidth: 2 }} />
+      </pattern>
+      <pattern id={`${id}-dots`} width="5" height="5" patternUnits="userSpaceOnUse">
+        <circle cx="2.5" cy="2.5" r="1" style={{ fill: 'var(--color-neutral-600)' }} />
       </pattern>
     </defs>
   );
@@ -34,17 +39,19 @@ export function niceMax(v) {
   return 10 * p;
 }
 
-// A key for a chart's kinds of bar.
+// A key for a chart's kinds of bar: [kind, words, mark?]; the mark (an
+// "Estimate" badge) follows the words.
 export function Legend({ items, id }) {
   return (
     <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-neutral-700">
-      {items.map(([kind, label]) => (
+      {items.map(([kind, label, mark]) => (
         <li key={label} className="flex items-center gap-1.5">
           <svg width="14" height="14" aria-hidden="true">
             <Hatch id={`${id}-${kind}`} />
             <rect x="0.5" y="0.5" width="13" height="13" style={fillFor(kind, `${id}-${kind}`)} />
           </svg>
           {label}
+          {mark}
         </li>
       ))}
     </ul>
