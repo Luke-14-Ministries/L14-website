@@ -5183,3 +5183,25 @@ migrations `0175`–`0186` carry the database side. The numbered record, with ev
   matches. Staff look there and record the result by hand rather than send again. Until VB charges that
   check, the free count can read one credit high. The balance is asked of VB on every send, so it is right
   again once VB charges.
+
+## 2026-11-28 — The build effort report becomes a staff page; its figures live only in the database (0188)
+
+- **What.** The "Website Build Effort and Running Costs" dashboard (a Claude artifact of 10 Nov 2026) is now
+  `/admin/build-effort`, for staff with the Giving grant, who may show it to donors or print it. It isn't linked
+  from the menu or anywhere else (Lawrence, 28 Nov 2026). It has seven sections (what the time produced, hours
+  and tokens week by week, where the tokens went, when the work happens, hire-out estimates, running costs) and
+  a **Print or save as PDF** button. The print CSS gives Letter pages, a page per section and a footer with the
+  as-of date.
+- **Why the database.** The repository is public, and the figures include late-night work counts, hire-out
+  estimates and running-cost rates. They are one JSON document per row in `build_effort_snapshots` (`0188`):
+  Giving read, no write through the API at all. Rows are added in Supabase's SQL editor. The page reads the
+  newest (`as_of`, then `created_at`), so a revision, such as Lawrence's corrected August to October hours, is a
+  new row and no code change. Even the prose notes that quote figures, and the running-cost settings, are in the
+  JSON. The code (`lib/buildEffort.js`, tested with made-up numbers) holds only the formulas, and it says so on
+  the page when a rate is missing instead of printing zero.
+- **Running costs are shown at fixed settings.** The dashboard let the viewer move sliders. The page shows the
+  snapshot's `run_settings` with a sentence saying what they are, and a table for the bank-transfer share. A
+  different scenario is a new row.
+- **Charts** are plain server-drawn SVG (no chart library): measured bars solid, estimated ones hatched, so a
+  black-and-white printout still tells them apart. Every estimate carries an "Estimate" mark, and hire-out
+  opens with "Estimates, not quotes, and not a donated value."

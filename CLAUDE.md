@@ -49,7 +49,7 @@ past event stays on a family's dashboard, folded; Setup can clear an archived te
 dashboards (`0147`).
 
 **Database.** Supabase project `luke14-prod` (ref `nnbcxqxwkivadzognpno`). Migrations run through
-**`0187`** (the files, 25 Nov 2026; the live ledger can trail them until a push is applied, so check
+**`0188`** (the files, 28 Nov 2026; the live ledger can trail them until a push is applied, so check
 Supabase `list_migrations` before assuming the newest are live). **Never edit a migration that has been run; new work takes the next number.** The CLI
 ledger begins at `0012` (`0001`–`0011` predate it) and some files are more than one ledger row
 (`0023`, `0028`, `0032`, `0059`, `0070`) — both expected, neither is drift.

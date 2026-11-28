@@ -190,6 +190,61 @@
 }
 
 /*
+  The build effort report printed or saved as PDF (/admin/build-effort,
+  28 Nov 2026): Letter, no browser header or footer (the page's own margin
+  moves inside, as on print sheets), each numbered section on a new page,
+  and a footer with the as-of date on every page. The admin chrome is
+  already print:hidden. Charts are SVG, solid against hatched, so they read
+  in black and white.
+*/
+@page effort {
+  size: letter;
+  margin: 0;
+}
+.effort-footer {
+  display: none;
+}
+@media print {
+  .effort-report {
+    page: effort;
+    padding: 12mm 14mm 18mm;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    font-size: 10.5pt;
+  }
+  .effort-report .card {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 6mm;
+  }
+  .effort-report .effort-break {
+    break-before: page;
+  }
+  .effort-report .effort-chart,
+  .effort-report table,
+  .effort-report dl,
+  .effort-report ul,
+  .effort-report h4 {
+    break-inside: avoid;
+  }
+  .effort-report h4 {
+    break-after: avoid;
+  }
+  .effort-footer {
+    display: block;
+    position: fixed;
+    left: 14mm;
+    right: 14mm;
+    bottom: 7mm;
+    border-top: 1px solid #999;
+    padding-top: 2mm;
+    font-size: 8.5pt;
+    color: #444;
+  }
+}
+
+/*
   The fold arrow on a native <details> (26 Oct 2026; components/FoldArrow.jsx
   is the same arrow for buttons): a ▶ at the LEFT of the summary, turned to
   point down while open, in place of the browser's own marker. Give the
